@@ -6,9 +6,11 @@
  */
 
 import React from 'react';
+import {Filter} from '@carbon/icons-react';
+import {Button, Form, FormGroup, RadioButton, RadioButtonGroup} from '@carbon/react';
 import classnames from 'classnames';
 
-import {Popover, Form, Button, ButtonGroup, Icon} from 'components';
+import {Popover} from 'components';
 import {t} from 'translation';
 
 export default function BooleanFilter({filter, setFilter}) {
@@ -25,25 +27,38 @@ export default function BooleanFilter({filter, setFilter}) {
     <Popover
       isTabTip
       className="BooleanFilter"
-      title={
-        <>
-          <Icon type="filter" className={classnames('indicator', {active: filter})} /> {title}
-        </>
+      trigger={
+        <Popover.ListBox size="sm">
+          <Filter className={classnames('indicator', {active: filter})} />
+          {title}
+        </Popover.ListBox>
       }
     >
-      <Form compact>
-        <fieldset>
-          <ButtonGroup>
-            <Button active={value === true} onClick={() => setFilter({values: [true]})}>
-              {t('common.filter.variableModal.bool.true')}
-            </Button>
-            <Button active={value === false} onClick={() => setFilter({values: [false]})}>
-              {t('common.filter.variableModal.bool.false')}
-            </Button>
-          </ButtonGroup>
-        </fieldset>
+      <Form>
+        <FormGroup legendText={t('common.value')} key={value}>
+          <RadioButtonGroup name="bool-value">
+            <RadioButton
+              checked={value === true}
+              value="true"
+              labelText={t('common.filter.variableModal.bool.true')}
+              onClick={() => setFilter({values: [true]})}
+            />
+            <RadioButton
+              checked={value === false}
+              value="false"
+              labelText={t('common.filter.variableModal.bool.false')}
+              onClick={() => setFilter({values: [false]})}
+            />
+          </RadioButtonGroup>
+        </FormGroup>
         <hr />
-        <Button className="reset-button" disabled={!filter} onClick={() => setFilter()}>
+        <Button
+          size="sm"
+          kind="ghost"
+          className="reset-button"
+          disabled={!filter}
+          onClick={() => setFilter()}
+        >
           {t('common.off')}
         </Button>
       </Form>

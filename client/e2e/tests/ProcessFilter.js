@@ -31,17 +31,17 @@ test('variable filter modal dependent on variable type', async (t) => {
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Variable'));
 
-  await t.click(Common.typeahead);
+  await t.click(Common.comboBox);
   await t.typeText(Filter.variableTypeahead, 'dc', {replace: true});
 
   await t.takeElementScreenshot(Common.modalContainer, 'process-analysis/img/variable-filter.png');
 
   await t.typeText(Filter.variableTypeahead, 'boolVar', {replace: true});
-  await t.click(Common.typeaheadOption('boolVar'));
+  await t.click(Common.carbonOption('boolVar'));
   await t.click(Filter.firstMultiSelectValue);
 
   await t.typeText(Filter.variableTypeahead, 'stringVar', {replace: true});
-  await t.click(Common.typeaheadOption('stringVar'));
+  await t.click(Common.carbonOption('stringVar'));
 
   await t.expect(Filter.stringValues.textContent).contains('aStringValue');
 
@@ -53,7 +53,7 @@ test('variable filter modal dependent on variable type', async (t) => {
     .pressKey('tab');
 
   await t.typeText(Filter.variableTypeahead, 'integerVar', {replace: true});
-  await t.click(Common.typeaheadOption('integerVar'));
+  await t.click(Common.carbonOption('integerVar'));
 
   await t
     .typeText(Filter.variableFilterValueInput, '14', {replace: true})
@@ -62,7 +62,7 @@ test('variable filter modal dependent on variable type', async (t) => {
   await t.click(Filter.variableOrButton);
 
   await t.typeText(Filter.variableTypeahead, 'dateVar', {replace: true});
-  await t.click(Common.typeaheadOption('dateVar'));
+  await t.click(Common.carbonOption('dateVar'));
   await t.click(Filter.dateFilterTypeSelect);
   await t.click(Filter.dateFilterTypeOption('Between'));
   await t.click(Filter.dateFilterStartInput);
@@ -86,7 +86,7 @@ test('filter for custom string variable values', async (t) => {
   await t.click(Report.filterOption('Variable'));
 
   await t.typeText(Filter.variableTypeahead, 'stringVar', {replace: true});
-  await t.click(Common.typeaheadOption('stringVar'));
+  await t.click(Common.carbonOption('stringVar'));
 
   await t.expect(Filter.stringValues.textContent).contains('aStringValue');
 
@@ -114,8 +114,8 @@ test('should apply a filter to the report result', async (t) => {
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Variable'));
 
-  await t.click(Common.typeahead);
-  await t.click(Common.typeaheadOption('amount'));
+  await t.click(Common.comboBox);
+  await t.click(Common.carbonOption('amount'));
   await t.click(Filter.variableFilterOperatorButton('is less than'));
 
   await t.typeText(Filter.variableFilterValueInput, '100', {replace: true});

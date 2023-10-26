@@ -52,7 +52,7 @@ export default function AutoRefreshSelect({refreshRateMs, onRefresh, onChange, s
       size={size}
       iconDescription={t('dashboard.autoRefresh')}
       hasIconOnly
-      fullScreenTarget={document.querySelector('.fullscreen')}
+      menuTarget={document.querySelector('.fullscreen')}
     >
       {menuItems.map(({value, label}) => {
         const currentValue = !refreshRateMs ? 'off' : (refreshRateMs / (60 * 1000)).toString();

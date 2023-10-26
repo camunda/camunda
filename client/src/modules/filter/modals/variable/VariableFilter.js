@@ -7,9 +7,9 @@
 
 import {useEffect, useState} from 'react';
 import classnames from 'classnames';
-import {Button} from '@carbon/react';
+import {Button, ComboBox, InlineNotification, Stack} from '@carbon/react';
 
-import {Modal, Typeahead, Labeled} from 'components';
+import {Modal} from 'components';
 import {t} from 'translation';
 
 import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
@@ -18,8 +18,6 @@ import {BooleanInput} from './boolean';
 import {NumberInput} from './number';
 import {StringInput} from './string';
 import {DateInput} from './date';
-
-import './VariableFilter.scss';
 
 export default function VariableFilter({
   addFilter,
@@ -81,11 +79,9 @@ export default function VariableFilter({
     }
   }, [filterData]);
 
-  const selectVariable = (nameOrId) => {
-    const variable = variables.find((variable) => getId(variable) === nameOrId);
-
-    setSelectedVariable(variable);
-    setFilter(getInputComponentForVariable(variable).defaultFilter);
+  const selectVariable = ({selectedItem}) => {
+    setSelectedVariable(selectedItem);
+    setFilter(getInputComponentForVariable(selectedItem).defaultFilter);
   };
 
   const getInputComponentForVariable = (variable) => {
@@ -106,12 +102,6 @@ export default function VariableFilter({
   };
 
   const changeFilter = (filter) => setFilter(filter);
-
-  const getId = (variable) => {
-    if (variable) {
-      return variable.id || variable.name;
-    }
-  };
 
   const getVariableName = (variable) => (variable ? variable.label || variable.name : null);
 
@@ -147,43 +137,48 @@ export default function VariableFilter({
         })}
       </Modal.Header>
       <Modal.Content>
-        {definitions && (
-          <FilterSingleDefinitionSelection
-            availableDefinitions={definitions}
-            applyTo={applyTo}
-            setApplyTo={async (applyTo) => {
-              setApplyTo(applyTo);
-              setValid(false);
-              setFilter({});
-              setVariables([]);
-              setVariables(await config.getVariables(applyTo));
-              setSelectedVariable(null);
-            }}
-          />
-        )}
-        {getPretext?.(selectedVariable)}
-        <Labeled className="LabeledTypeahead" label={t('common.filter.variableModal.inputLabel')}>
-          <Typeahead
-            onChange={selectVariable}
-            value={variables.length > 0 && getId(selectedVariable)}
+        <Stack gap={6}>
+          {definitions && (
+            <FilterSingleDefinitionSelection
+              availableDefinitions={definitions}
+              applyTo={applyTo}
+              setApplyTo={async (applyTo) => {
+                setApplyTo(applyTo);
+                setValid(false);
+                setFilter({});
+                setVariables([]);
+                setVariables(await config.getVariables(applyTo));
+                setSelectedVariable(null);
+              }}
+            />
+          )}
+          {getPretext?.(selectedVariable)}
+          {!variables.length && (
+            <InlineNotification
+              kind="warning"
+              hideCloseButton
+              subtitle={t('common.filter.variableModal.noVariables')}
+            />
+          )}
+          <ComboBox
+            id="variableSelection"
+            titleText={t('common.filter.variableModal.inputLabel')}
             placeholder={t('common.filter.variableModal.inputPlaceholder')}
-            noValuesMessage={t('common.filter.variableModal.noVariables')}
-          >
-            {variables.map((variable) => (
-              <Typeahead.Option key={getId(variable)} value={getId(variable)}>
-                {getVariableName(variable)}
-              </Typeahead.Option>
-            ))}
-          </Typeahead>
-        </Labeled>
-        <ValueInput
-          config={config}
-          variable={selectedVariable}
-          changeFilter={changeFilter}
-          filter={filter}
-          definition={applyTo}
-        />
-        {getPosttext?.(selectedVariable)}
+            disabled={!variables.length}
+            items={variables}
+            itemToString={getVariableName}
+            selectedItem={selectedVariable}
+            onChange={selectVariable}
+          />
+          <ValueInput
+            config={config}
+            variable={selectedVariable}
+            changeFilter={changeFilter}
+            filter={filter}
+            definition={applyTo}
+          />
+          {getPosttext?.(selectedVariable)}
+        </Stack>
       </Modal.Content>
       <Modal.Footer>
         <Button kind="secondary" className="cancel" onClick={close}>

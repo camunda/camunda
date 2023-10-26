@@ -5,11 +5,20 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {Component} from 'react';
 import classnames from 'classnames';
 import deepEqual from 'fast-deep-equal';
+import {
+  Button,
+  InlineNotification,
+  RadioButton,
+  RadioButtonGroup,
+  Stack,
+  TextInput,
+} from '@carbon/react';
+import {Add} from '@carbon/icons-react';
 
-import {ButtonGroup, Button, Input, Icon, Checklist} from 'components';
+import {Checklist} from 'components';
 import {t} from 'translation';
 import debouncePromise from 'debouncePromise';
 
@@ -21,7 +30,7 @@ const valuesToLoad = 10;
 
 const debounceRequest = debouncePromise();
 
-export default class StringInput extends React.Component {
+export default class StringInput extends Component {
   static defaultFilter = {operator: 'in', values: []};
 
   state = {
@@ -45,7 +54,7 @@ export default class StringInput extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
-    if (deepEqual(prevProps.variable !== this.props.variable)) {
+    if (!deepEqual(prevProps.variable, this.props.variable)) {
       this.reset();
     }
   }
@@ -113,21 +122,20 @@ export default class StringInput extends React.Component {
     return this.props.filter.values.filter((value) => availableValues.includes(value));
   };
 
-  setOperator = (operator) => (evt) => {
-    evt.preventDefault();
+  setOperator = (newOperator) => {
     const {filter, changeFilter} = this.props;
 
     const containToEquality =
-      filter.operator.includes('contains') && !operator.includes('contains');
+      filter.operator.includes('contains') && !newOperator.includes('contains');
     const equalityToContain =
-      !filter.operator.includes('contains') && operator.includes('contains');
+      !filter.operator.includes('contains') && newOperator.includes('contains');
 
     let newValues = filter.values;
     if (containToEquality || equalityToContain) {
       newValues = [];
     }
 
-    changeFilter({operator, values: newValues});
+    changeFilter({operator: newOperator, values: newValues});
 
     if (containToEquality) {
       this.loadAvailableValues();
@@ -207,23 +215,21 @@ export default class StringInput extends React.Component {
     const containMode = operator.includes('contains');
 
     return (
-      <div className={classnames('StringInput', {hasMore, containMode})}>
-        <div className="buttonRow">
-          <ButtonGroup>
-            <Button onClick={this.setOperator('in')} active={operator === 'in'}>
-              {t('common.filter.list.operators.is')}
-            </Button>
-            <Button onClick={this.setOperator('not in')} active={operator === 'not in'}>
-              {t('common.filter.list.operators.not')}
-            </Button>
-            <Button onClick={this.setOperator('contains')} active={operator === 'contains'}>
-              {t('common.filter.list.operators.contains')}
-            </Button>
-            <Button onClick={this.setOperator('not contains')} active={operator === 'not contains'}>
-              {t('common.filter.list.operators.notContains')}
-            </Button>
-          </ButtonGroup>
-        </div>
+      <Stack gap={6} className={classnames('StringInput', {hasMore, containMode})}>
+        <RadioButtonGroup
+          className="buttonRow"
+          valueSelected={operator}
+          name="stringFilterOperator"
+          onChange={this.setOperator}
+        >
+          <RadioButton labelText={t('common.filter.list.operators.is')} value="in" />
+          <RadioButton labelText={t('common.filter.list.operators.not')} value="not in" />
+          <RadioButton labelText={t('common.filter.list.operators.contains')} value="contains" />
+          <RadioButton
+            labelText={t('common.filter.list.operators.notContains')}
+            value="not contains"
+          />
+        </RadioButtonGroup>
         {operator.includes('contains') ? (
           <ValueListInput
             filter={{
@@ -238,7 +244,7 @@ export default class StringInput extends React.Component {
             allowMultiple
           />
         ) : (
-          <div className="valueSelection">
+          <Stack gap={6} className="valueSelection">
             <Checklist
               customHeader={t('common.filter.variableModal.multiSelect.header')}
               selectedItems={values}
@@ -258,21 +264,46 @@ export default class StringInput extends React.Component {
                 empty: t('common.filter.variableModal.multiSelect.empty'),
               }}
             />
-            {hasMore && (
+            <div className="buttonsRow">
+              {hasMore && (
+                <Button
+                  className="loadMore"
+                  onClick={this.loadMore}
+                  disabled={this.state.loading && this.props.disabled}
+                  kind="ghost"
+                  size="sm"
+                >
+                  {t('common.filter.variableModal.loadMore')}
+                </Button>
+              )}
               <Button
-                className="loadMore"
-                onClick={this.loadMore}
-                disabled={this.state.loading && this.props.disabled}
-                link
+                size="sm"
+                kind="ghost"
+                disabled={showCustomValueInput}
+                className="customValueButton"
+                onClick={() => {
+                  this.setState({showCustomValueInput: true, showCustomValueSuccess: false});
+                }}
+                renderIcon={Add}
               >
-                {t('common.filter.variableModal.loadMore')}
+                {t('common.value')}
               </Button>
+            </div>
+            {showCustomValueSuccess && (
+              <InlineNotification
+                className="notification"
+                kind="success"
+                subtitle={t('common.filter.variableModal.addedToList')}
+              />
             )}
             {showCustomValueInput && (
               <div className="customValueInput">
-                <Input
+                <TextInput
+                  id="customValue"
                   value={customValue}
+                  labelText={t('common.filter.variableModal.customValue')}
                   placeholder={t('common.filter.variableModal.customValue')}
+                  hideLabel
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       this.addCustomValue();
@@ -280,30 +311,19 @@ export default class StringInput extends React.Component {
                   }}
                   onChange={(e) => this.setState({customValue: e.target.value})}
                 />
-                <Button disabled={!customValue} onClick={this.addCustomValue}>
+                <Button
+                  kind="secondary"
+                  size="md"
+                  disabled={!customValue}
+                  onClick={this.addCustomValue}
+                >
                   {t('common.filter.variableModal.addToList')}
                 </Button>
               </div>
             )}
-            <div className="customValueButtonRow">
-              {showCustomValueSuccess && (
-                <div className="notification">{t('common.filter.variableModal.addedToList')}</div>
-              )}
-              <Button
-                small
-                disabled={showCustomValueInput}
-                className="customValueButton"
-                onClick={() => {
-                  this.setState({showCustomValueInput: true, showCustomValueSuccess: false});
-                }}
-              >
-                <Icon type="plus" />
-                {t('common.value')}
-              </Button>
-            </div>
-          </div>
+          </Stack>
         )}
-      </div>
+      </Stack>
     );
   }
 

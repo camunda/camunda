@@ -29,7 +29,7 @@ it('should remove all values except the first one if operator is "is less/greate
     />
   );
 
-  node.instance().setOperator('<')({preventDefault: () => null});
+  node.instance().setOperator('<');
   expect(props.changeFilter).toHaveBeenCalledWith({
     operator: '<',
     values: ['123'],

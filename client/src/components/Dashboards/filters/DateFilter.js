@@ -208,7 +208,7 @@ export default function DateFilter({
             </>
           }
           className="filterMenu"
-          fullScreenTarget={document.querySelector('.fullscreen')}
+          menuTarget={document.querySelector('.fullscreen')}
         >
           <MenuItem
             label={t('common.filter.dateModal.unit.between')}

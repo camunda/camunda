@@ -6,9 +6,10 @@
  */
 
 import React, {useState, useEffect} from 'react';
+import {Button, ComboBox, InlineNotification, Stack, Tag} from '@carbon/react';
+import {ChevronDown, TrashCan} from '@carbon/icons-react';
 import classnames from 'classnames';
 
-import {Button, Icon, Labeled, Tooltip, Typeahead} from 'components';
 import {t} from 'translation';
 
 import {BooleanInput} from './boolean';
@@ -30,13 +31,14 @@ export default function FilterInstance({
   applyTo,
 }) {
   const [isNew, setIsNew] = useState(true);
+  const [selectedVariable, setSelectedVariable] = useState(null);
 
-  const getInputComponentForVariable = (type) => {
-    if (!type) {
+  const getInputComponentForVariable = (variable) => {
+    if (!variable || !('type' in variable)) {
       return () => null;
     }
 
-    switch (type.toLowerCase()) {
+    switch (variable.type.toLowerCase()) {
       case 'string':
         return StringInput;
       case 'boolean':
@@ -48,7 +50,7 @@ export default function FilterInstance({
     }
   };
 
-  const InputComponent = getInputComponentForVariable(filter.type);
+  const InputComponent = getInputComponentForVariable(filter);
 
   const isValid = InputComponent.isValid?.(filter.data);
   const isMoreThanOneFilter = filters.length > 1;
@@ -63,94 +65,100 @@ export default function FilterInstance({
     }
   }, [collapsed, filters, expanded, filterIdx]);
 
-  const selectVariable = (value) => {
-    const nameAndType = value.split('_');
-    const type = nameAndType.pop();
-    const name = nameAndType.join('_');
-    const variable = variables.find((variable) => variable.name === name && variable.type === type);
+  useEffect(() => {
+    if (filter) {
+      setSelectedVariable(() => findVariableForFilter(variables, filter));
+    }
+  }, [filter, variables]);
 
+  const selectVariable = ({selectedItem}) => {
+    setSelectedVariable(selectedItem);
     updateFilterData({
-      name,
-      type,
-      data: getInputComponentForVariable(variable.type).defaultFilter,
+      ...selectedItem,
+      data: getInputComponentForVariable(selectedItem).defaultFilter,
     });
   };
 
+  const getVariableName = (variable) => (variable ? variable.label || variable.name : null);
+
+  function handleKeyDown(evt) {
+    if ((evt.key === ' ' || evt.key === 'Enter') && evt.target === evt.currentTarget && isValid) {
+      toggleExpanded();
+    }
+  }
+
   return (
     <section className={classnames('FilterInstance', {collapsed})}>
-      {!isNew && filters.length > 1 && (
-        <div
-          tabIndex="0"
-          className={classnames('sectionTitle', {clickable: isValid})}
-          onClick={isValid ? toggleExpanded : undefined}
-          onKeyDown={(evt) => {
-            if (
-              (evt.key === ' ' || evt.key === 'Enter') &&
-              evt.target === evt.currentTarget &&
-              isValid
-            ) {
-              toggleExpanded();
-            }
-          }}
-        >
-          <span className="highlighted">{getVariableLabel(variables, filter)}</span>{' '}
-          {t('common.filter.list.operators.is')}…
-          {!collapsed && (
-            <Tooltip content={t('common.delete')}>
+      <Stack gap={6}>
+        {!isNew && filters.length > 1 && (
+          <div
+            tabIndex={0}
+            className={classnames('sectionTitle', {clickable: isValid})}
+            onClick={isValid ? toggleExpanded : undefined}
+            onKeyDown={handleKeyDown}
+          >
+            <Tag type="blue">{getVariableLabel(variables, filter)}</Tag>
+            <span>{t('common.filter.list.operators.is')}…</span>
+            {!collapsed && (
               <Button
-                icon
+                size="sm"
+                kind="ghost"
+                hasIconOnly
+                iconDescription={t('common.delete')}
+                renderIcon={TrashCan}
                 className="removeButton"
                 onClick={(evt) => {
                   evt.stopPropagation();
                   onRemove();
                 }}
-              >
-                <Icon type="delete" />
-              </Button>
-            </Tooltip>
-          )}
-          {isValid && (
-            <span className={classnames('sectionToggle', {expanded})}>
-              <Icon type="down" />
-            </span>
-          )}
-        </div>
-      )}
-      <Labeled className="LabeledTypeahead" label={t('common.filter.variableModal.inputLabel')}>
-        <Typeahead
-          onChange={selectVariable}
-          value={variables.length > 0 ? filter.name + '_' + filter.type : undefined}
+              />
+            )}
+            {isValid && <ChevronDown className={classnames('sectionToggle', {expanded})} />}
+          </div>
+        )}
+        {!variables.length && (
+          <InlineNotification
+            kind="warning"
+            hideCloseButton
+            subtitle={t('common.filter.variableModal.noVariables')}
+          />
+        )}
+        <ComboBox
+          id="multiVariableSelection"
+          titleText={t('common.filter.variableModal.inputLabel')}
           placeholder={t('common.filter.variableModal.inputPlaceholder')}
-          noValuesMessage={t('common.filter.variableModal.noVariables')}
-        >
-          {variables.map(({name, label, type}) => (
-            <Typeahead.Option
-              key={name + '_' + type}
-              value={name + '_' + type}
-              disabled={filters.some((filter) => filter.name === name && filter.type === type)}
-            >
-              {label || name}
-            </Typeahead.Option>
-          ))}
-        </Typeahead>
-      </Labeled>
-      {applyTo && (
-        <InputComponent
-          config={config}
-          variable={{name: filter.name, type: filter.type}}
-          changeFilter={(data) => {
-            updateFilterData({...filter, data});
-          }}
-          filter={filter.data}
-          definition={applyTo}
+          disabled={!variables.length}
+          items={variables}
+          itemToString={getVariableName}
+          selectedItem={selectedVariable}
+          onChange={selectVariable}
+          shouldFilterItem={({item}) =>
+            !filters.some((filter) => filter.name === item.name && filter.type === item.type)
+          }
         />
-      )}
+        {applyTo && (
+          <InputComponent
+            config={config}
+            variable={{name: filter.name, type: filter.type}}
+            changeFilter={(data) => {
+              updateFilterData({...filter, data});
+            }}
+            filter={filter.data}
+            definition={applyTo}
+          />
+        )}
+      </Stack>
     </section>
   );
 }
 
 function getVariableLabel(variables, {name, type}) {
-  return (
-    variables.find((variable) => variable.name === name && variable.type === type)?.label || name
+  return findVariableForFilter(variables, {name, type})?.label || name;
+}
+
+function findVariableForFilter(variables, {name, type}) {
+  const variableForGivenFilter = variables.find(
+    (variable) => variable.name === name && variable.type === type
   );
+  return variableForGivenFilter || null;
 }

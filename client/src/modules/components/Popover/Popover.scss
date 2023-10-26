@@ -43,19 +43,17 @@
       }
     }
 
-    .ListBoxTrigger {
-      .cds--list-box__label {
-        display: flex;
-        align-items: center;
+    .ListBoxTrigger .cds--list-box__label {
+      display: flex;
+      align-items: center;
 
-        svg {
-          margin-right: 0.5rem;
-        }
+      svg {
+        margin-right: 0.5rem;
       }
     }
 
-    .ButtonTrigger,
-    .ListBoxTrigger {
+    .ListBoxTrigger,
+    .ButtonTrigger {
       min-width: 100%;
     }
 

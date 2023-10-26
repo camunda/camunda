@@ -5,11 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {useState} from 'react';
 import update from 'immutability-helper';
 import classnames from 'classnames';
+import {MultiValueInput} from '@camunda/camunda-optimize-composite-components';
+import {Checkbox, Stack, TextInput} from '@carbon/react';
 
-import {MultiValueInput, Input, LabeledInput, Message, Labeled} from 'components';
 import {t} from 'translation';
 
 import './ValueListInput.scss';
@@ -23,56 +24,90 @@ export default function ValueListInput({
   isValid = () => true,
   errorMessage,
 }) {
+  const [value, setValue] = useState('');
   const {includeUndefined, values} = filter;
 
   function updateValues(values) {
     onChange({...filter, values});
   }
 
-  function paste(evt) {
+  function addValue(value) {
+    const trimmedValue = value.trim();
+
+    if (trimmedValue) {
+      updateValues([...values, trimmedValue]);
+    }
+    setValue('');
+  }
+
+  function removeValue(_, idx) {
+    updateValues(values.filter((_, index) => idx !== index));
+  }
+
+  function handlePaste(evt) {
     const paste = (evt.clipboardData || window.clipboardData).getData('text');
     evt.preventDefault();
+
     const newValues = paste.match(/[^\s]+/g);
+
     if (values) {
       updateValues([...values, ...newValues]);
     }
   }
 
+  const valueObjects = values.map((value) => ({value, invalid: !isValid(value)}));
+
+  function handleKeyDown(evt) {
+    if (['Enter', 'Tab', ',', ';', ' '].includes(evt.key)) {
+      if (value) {
+        evt.preventDefault();
+      }
+      addValue(value);
+    }
+    if (value === '' && evt.key === 'Backspace' && values.length > 0) {
+      const lastElementIndex = valueObjects.length - 1;
+      removeValue(valueObjects[lastElementIndex].value, lastElementIndex);
+    }
+  }
+
   return (
-    <div className={classnames('ValueListInput', className)}>
-      <Labeled label={t('common.value')}>
-        {!allowMultiple && (
-          <Input
-            type="text"
-            className="singeValueInput"
-            value={values[0] || ''}
-            onChange={({target}) => updateValues(target.value ? [target.value] : [])}
-            placeholder={t('common.filter.variableModal.enterValue')}
-          />
-        )}
-        {allowMultiple && (
-          <MultiValueInput
-            placeholder={t('common.filter.variableModal.enterMultipleValues')}
-            values={values.map((value) => ({value, invalid: !isValid(value)}))}
-            onAdd={(value) => value.trim() && updateValues([...values, value])}
-            onRemove={(_, idx) => updateValues(values.filter((_, index) => idx !== index))}
-            onClear={() => updateValues([])}
-            onPaste={paste}
-          />
-        )}
-      </Labeled>
-      {errorMessage && <Message error>{errorMessage}</Message>}
+    <Stack gap={6} className={classnames('ValueListInput', className)}>
+      {!allowMultiple && (
+        <TextInput
+          id="singeValueInput"
+          labelText={t('common.value')}
+          className="singeValueInput"
+          value={values[0] || ''}
+          onChange={({target}) => updateValues(target.value ? [target.value] : [])}
+          placeholder={t('common.filter.variableModal.enterValue')}
+        />
+      )}
+      {allowMultiple && (
+        <MultiValueInput
+          id="multipleValuesInput"
+          value={value}
+          placeholder={t('common.filter.variableModal.enterMultipleValues')}
+          values={valueObjects}
+          onRemove={removeValue}
+          onPaste={handlePaste}
+          onChange={({target: {value}}) => setValue(value)}
+          onKeyDown={handleKeyDown}
+          onBlur={() => addValue(value)}
+          invalid={!!errorMessage}
+          invalidText={errorMessage}
+        />
+      )}
       {allowUndefined && (
-        <LabeledInput
+        <Checkbox
+          id="undefinedOption"
           className="undefinedOption"
-          type="checkbox"
           checked={includeUndefined}
-          label={t('common.nullOrUndefined')}
+          labelText={t('common.nullOrUndefined')}
           onChange={({target: {checked}}) =>
             onChange(update(filter, {includeUndefined: {$set: checked}}))
           }
         />
       )}
-    </div>
+    </Stack>
   );
 }

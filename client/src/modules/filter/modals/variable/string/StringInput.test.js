@@ -7,8 +7,7 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
-
-import {Button, Input} from 'components';
+import {RadioButtonGroup} from '@carbon/react';
 
 import StringInput from './StringInput';
 
@@ -59,7 +58,7 @@ it('should load 10 more values if the user wants more', () => {
     loading: false,
   });
 
-  node.find('[link]').simulate('click', {preventDefault: jest.fn()});
+  node.find('.loadMore').simulate('click', {preventDefault: jest.fn()});
 
   expect(props.config.getValues).toHaveBeenCalledWith('foo', 'String', 21, '', props.definition);
 });
@@ -67,21 +66,13 @@ it('should load 10 more values if the user wants more', () => {
 it('should reset values when switching between operators types', () => {
   const node = shallow(<StringInput {...props} filter={{operator: 'in', values: ['A']}} />);
 
-  node
-    .find('.buttonRow')
-    .find(Button)
-    .at(2)
-    .simulate('click', {preventDefault: () => {}});
+  node.find(RadioButtonGroup).simulate('change', 'contains');
 
   const newFilter = {operator: 'contains', values: []};
   expect(props.changeFilter).toHaveBeenCalledWith(newFilter);
 
   node.setProps({filter: newFilter});
-  node
-    .find('.buttonRow')
-    .find(Button)
-    .at(1)
-    .simulate('click', {preventDefault: () => {}});
+  node.find(RadioButtonGroup).simulate('change', 'not in');
 
   expect(props.changeFilter).toHaveBeenCalledWith({operator: 'not in', values: []});
 });
@@ -177,12 +168,12 @@ it('should allow adding custom values', async () => {
   node.find('.customValueButton').simulate('click');
   node
     .find('.customValueInput')
-    .find(Input)
+    .find('TextInput')
     .simulate('change', {target: {value: 'newValue'}});
-  node.find('.customValueInput').find(Button).simulate('click');
+  node.find('.customValueInput').find('Button').simulate('click');
 
   expect(props.changeFilter).toHaveBeenCalledWith({operator: 'in', values: ['newValue']});
-  expect(node).toIncludeText('Value added to list');
+  expect(node.find('InlineNotification').prop('subtitle')).toBe('Value added to list');
 });
 
 it('should not show previous contains value as custom value after switching operator', async () => {
@@ -190,11 +181,8 @@ it('should not show previous contains value as custom value after switching oper
 
   await flushPromises();
 
-  node
-    .find('.buttonRow')
-    .find(Button)
-    .at(0)
-    .simulate('click', {preventDefault: () => {}});
+  node.find(RadioButtonGroup).simulate('change', 'in');
+
   node.setProps({filter: {operator: 'in', values: []}});
 
   await flushPromises();

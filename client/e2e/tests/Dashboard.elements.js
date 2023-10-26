@@ -39,7 +39,7 @@ export const createTileModal = Selector('.CreateTileModal');
 export const createTileModalReportOptions = createTileModal.find('#addReportSelector');
 export const addFilterButton = Selector('.Button').withText('Add a filter');
 export const instanceStateFilter = Selector('.InstanceStateFilter .Popover button');
-export const selectionFilter = Selector('.SelectionFilter .Popover .Button');
+export const selectionFilter = Selector('.SelectionFilter .Popover .ListBoxTrigger');
 export const switchElement = (text) => Selector('.Switch').withText(text);
 export const toggleElement = (text) => Selector('.cds--toggle__label').withText(text);
 export const dashboardContainer = Selector('.Dashboard');

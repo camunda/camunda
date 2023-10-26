@@ -1,40 +1,20 @@
-.dark .SelectionFilter {
-  .hint {
-    color: var(--silver-darken-80);
-  }
-}
-
 .SelectionFilter {
-  .hint {
-    font-size: 12px;
-    color: var(--grey-lighten-56);
-    margin: 0;
-    padding: 5px 0;
-  }
-
   .customValue {
     display: flex;
+    align-items: center;
 
-    .Switch {
-      margin-right: 0;
-    }
-
-    .Typeahead {
+    .valueSelection {
       min-width: 200px;
+      margin-right: 8px;
 
-      &.invalid .typeaheadInput {
-        border-color: var(--red-base-62);
+      input {
+        background-color: var(--cds-field-02);
       }
-    }
-
-    > .Button:hover {
-      background: none;
     }
   }
 
   .customValueAddButton {
-    width: auto;
-    margin-bottom: 5px;
+    margin-left: auto;
   }
 
   .filterText b {

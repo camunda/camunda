@@ -3,15 +3,6 @@
 .dark .FiltersView {
   border-color: var(--grey-darken-36);
 
-  > .Button {
-    color: var(--silver-darken-87);
-
-    &:hover {
-      border: none;
-      background: none;
-    }
-  }
-
   > * > .title {
     color: var(--silver-darken-87);
   }

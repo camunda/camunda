@@ -8,7 +8,8 @@
 import React, {useState} from 'react';
 import update from 'immutability-helper';
 import equals from 'fast-deep-equal';
-import {Calendar, Checkbox} from '@carbon/icons-react';
+import {Calendar} from '@carbon/icons-react';
+import {Checkbox} from '@carbon/react';
 
 import {Button, Icon} from 'components';
 import {VariableFilter, AssigneeFilter} from 'filter';

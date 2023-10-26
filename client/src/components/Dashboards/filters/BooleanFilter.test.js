@@ -7,8 +7,7 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
-
-import {Button} from 'components';
+import {RadioButton} from '@carbon/react';
 
 import BooleanFilter from './BooleanFilter';
 
@@ -24,7 +23,7 @@ beforeEach(() => {
 it('should filter for boolean', () => {
   const node = shallow(<BooleanFilter {...props} />);
 
-  node.find(Button).first().simulate('click');
+  node.find(RadioButton).first().simulate('click');
 
   expect(props.setFilter).toHaveBeenCalledWith({values: [true]});
 });

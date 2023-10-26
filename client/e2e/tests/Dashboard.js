@@ -343,8 +343,8 @@ test('filters', async (t) => {
   await t.click(e.addFilterButton);
   await t.click(Common.option('Variable'));
 
-  await t.typeText(Filter.typeaheadInput, 'invoiceCategory', {replace: true});
-  await t.click(Common.typeaheadOption('invoiceCategory'));
+  await t.typeText(Common.comboBox, 'invoiceCategory', {replace: true});
+  await t.click(Common.carbonOption('invoiceCategory'));
   await t.click(Filter.multiSelectValue('Software License Costs'));
   await t.click(Filter.multiSelectValue('Travel Expenses'));
   await t.click(Filter.multiSelectValue('Misc'));
@@ -367,16 +367,16 @@ test('filters', async (t) => {
   await t.expect(e.instanceStateFilter.textContent).contains('Running');
 
   await t.click(e.selectionFilter);
-  await t.click(e.switchElement('Software License Costs'));
-  await t.click(e.switchElement('Misc'));
+  await t.click(Common.toggleElement('Software License Costs'));
+  await t.click(Common.toggleElement('Misc'));
 
   await t.takeElementScreenshot(e.dashboardContainer, 'img/filter-viewMode.png', {
     crop: {bottom: 450},
   });
 
   await t.click(e.customValueAddButton);
-  await t.typeText(e.typeaheadInput, 'Other', {replace: true});
-  await t.click(Common.typeaheadOption('Other'));
+  await t.typeText(Common.comboBox, 'Other', {replace: true});
+  await t.click(Common.carbonOption('Other'));
 
   await t.maximizeWindow();
 

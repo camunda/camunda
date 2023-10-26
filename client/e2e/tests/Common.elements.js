@@ -73,3 +73,4 @@ export const usersTypeahead = Selector('.MultiUserInput input');
 export const comboBox = Selector('.cds--combo-box input');
 export const overflowMenuOptions = Selector('.cds--overflow-menu-options');
 export const overflowMenuOption = (text) => overflowMenuOptions.find('button').withText(text);
+export const toggleElement = (text) => Selector('.cds--toggle__label').withText(text);

@@ -159,27 +159,31 @@ export default function MultipleVariableFilter({
           />
         )}
         <div className="info">{t('common.filter.variableModal.info')}</div>
-        {filters.map((filter, idx) => (
-          <div className="variableContainer" key={filter.name + filter.type}>
-            {idx !== 0 && <span className="orOperator">{t('common.filter.variableModal.or')}</span>}
-            <FilterInstance
-              expanded={idx === expandedFilter}
-              toggleExpanded={() => {
-                setExpandedFilter(idx === expandedFilter ? -1 : idx);
-              }}
-              filter={filter}
-              updateFilterData={(newFilter) => updateFilterData(idx, newFilter)}
-              variables={variables}
-              config={config}
-              applyTo={applyTo}
-              filters={filters}
-              onRemove={() => {
-                setExpandedFilter(-1);
-                setFilters(filters.filter((_, filterIdx) => filterIdx !== idx));
-              }}
-            />
-          </div>
-        ))}
+        {filters.map((filter, idx) => {
+          return (
+            <div className="variableContainer" key={filter.name + filter.type}>
+              {idx !== 0 && (
+                <span className="orOperator">{t('common.filter.variableModal.or')}</span>
+              )}
+              <FilterInstance
+                expanded={idx === expandedFilter}
+                toggleExpanded={() => {
+                  setExpandedFilter(idx === expandedFilter ? -1 : idx);
+                }}
+                filter={filter}
+                updateFilterData={(newFilter) => updateFilterData(idx, newFilter)}
+                variables={variables}
+                config={config}
+                applyTo={applyTo}
+                filters={filters}
+                onRemove={() => {
+                  setExpandedFilter(-1);
+                  setFilters(filters.filter((_, filterIdx) => filterIdx !== idx));
+                }}
+              />
+            </div>
+          );
+        })}
         <Button
           className="orButton"
           disabled={!valid || variables.length <= filters.length}

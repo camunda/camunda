@@ -11,8 +11,14 @@ import {shallow} from 'enzyme';
 import SelectionFilter from './SelectionFilter';
 import DateFilter from './DateFilter';
 import BooleanFilter from './BooleanFilter';
-import {VariableFilter} from './VariableFilter';
+import VariableFilter from './VariableFilter';
 import {getVariableNames} from './service';
+
+jest.mock('hooks', () => ({
+  useErrorHandling: jest
+    .fn()
+    .mockImplementation(() => ({mightFail: jest.fn().mockImplementation((data, cb) => cb(data))})),
+}));
 
 jest.mock('./service', () => ({
   getVariableNames: jest.fn().mockReturnValue([{name: 'foo', type: 'String', label: 'fooLabel'}]),

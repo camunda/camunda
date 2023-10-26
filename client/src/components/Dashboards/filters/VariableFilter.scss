@@ -1,5 +1,8 @@
 .VariableFilter__Dashboard {
-  line-height: 1;
+  > .cds--popover-container {
+    width: 100%;
+  }
+
   .title > span {
     white-space: nowrap;
     overflow: hidden;
