@@ -143,6 +143,7 @@ export default function ShareEntity({
         {filter && (
           <Checkbox
             id="shareFilterCheckbox"
+            className="shareFilterCheckbox"
             disabled={!isShared}
             checked={includeFilters}
             onChange={(evt) => {
