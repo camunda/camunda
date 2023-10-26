@@ -181,7 +181,7 @@ class ClusterTopologyTest {
         ClusterTopology.init()
             .addMember(member(1), MemberState.initializeAsActive(Map.of()))
             .startTopologyChange(List.of(new PartitionJoinOperation(member(1), 1, 1)));
-    final var changeId = initialTopology.changes().orElseThrow().id();
+    final var changeId = initialTopology.pendingChanges().orElseThrow().id();
 
     // when
     final var finalTopology =

@@ -125,7 +125,7 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
         .lastChange()
         .ifPresent(lastChange -> builder.setLastChange(encodeCompletedChange(lastChange)));
     clusterTopology
-        .changes()
+        .pendingChanges()
         .ifPresent(changePlan -> builder.setCurrentChange(encodeChangePlan(changePlan)));
 
     return builder.build();

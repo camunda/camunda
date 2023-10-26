@@ -37,7 +37,7 @@ public record ClusterTopology(
     long version,
     Map<MemberId, MemberState> members,
     Optional<CompletedChange> lastChange,
-    Optional<ClusterChangePlan> changes) {
+    Optional<ClusterChangePlan> pendingChanges) {
 
   private static final int UNINITIALIZED_VERSION = -1;
 
@@ -63,7 +63,7 @@ public record ClusterTopology(
 
     final var newMembers =
         ImmutableMap.<MemberId, MemberState>builder().putAll(members).put(memberId, state).build();
-    return new ClusterTopology(version, newMembers, lastChange, changes);
+    return new ClusterTopology(version, newMembers, lastChange, pendingChanges);
   }
 
   /**
@@ -101,14 +101,14 @@ public record ClusterTopology(
     }
 
     final var newMembers = mapBuilder.buildKeepingLast();
-    return new ClusterTopology(version, newMembers, lastChange, changes);
+    return new ClusterTopology(version, newMembers, lastChange, pendingChanges);
   }
 
   public ClusterTopology startTopologyChange(final List<TopologyChangeOperation> operations) {
     if (hasPendingChanges()) {
       throw new IllegalArgumentException(
           "Expected to start new topology change, but there is a topology change in progress "
-              + changes);
+              + pendingChanges);
     } else if (operations.isEmpty()) {
       throw new IllegalArgumentException(
           "Expected to start new topology change, but there is no operation");
@@ -141,7 +141,7 @@ public record ClusterTopology(
               .collect(Collectors.toMap(Entry::getKey, Entry::getValue, MemberState::merge));
 
       final Optional<ClusterChangePlan> mergedChanges =
-          Stream.of(changes, other.changes)
+          Stream.of(pendingChanges, other.pendingChanges)
               .flatMap(Optional::stream)
               .reduce(ClusterChangePlan::merge);
 
@@ -151,7 +151,7 @@ public record ClusterTopology(
   }
 
   public boolean hasPendingChanges() {
-    return changes.isPresent() && changes.orElseThrow().hasPendingChanges();
+    return pendingChanges.isPresent() && pendingChanges.orElseThrow().hasPendingChanges();
   }
 
   /**
@@ -159,7 +159,7 @@ public record ClusterTopology(
    *     otherwise returns false.
    */
   private boolean hasPendingChangesFor(final MemberId memberId) {
-    return changes.isPresent() && changes.get().hasPendingChangesFor(memberId);
+    return pendingChanges.isPresent() && pendingChanges.get().hasPendingChangesFor(memberId);
   }
 
   /**
@@ -173,7 +173,7 @@ public record ClusterTopology(
     if (!hasPendingChangesFor(memberId)) {
       return Optional.empty();
     }
-    return Optional.of(changes.orElseThrow().nextPendingOperation());
+    return Optional.of(pendingChanges.orElseThrow().nextPendingOperation());
   }
 
   /**
@@ -197,7 +197,7 @@ public record ClusterTopology(
     }
     final ClusterTopology result =
         new ClusterTopology(
-            version, members, lastChange, Optional.of(changes.orElseThrow().advance()));
+            version, members, lastChange, Optional.of(pendingChanges.orElseThrow().advance()));
 
     if (!result.hasPendingChanges()) {
       // The last change has been applied. Clean up the members that are marked as LEFT in the
@@ -212,7 +212,7 @@ public record ClusterTopology(
               .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
       // Increment the version so that other members can merge by overwriting their local topology.
-      final var completedChange = changes.orElseThrow().completed();
+      final var completedChange = pendingChanges.orElseThrow().completed();
       return new ClusterTopology(
           result.version() + 1, currentMembers, Optional.of(completedChange), Optional.empty());
     }
@@ -247,6 +247,6 @@ public record ClusterTopology(
     if (!hasPendingChanges()) {
       throw new NoSuchElementException();
     }
-    return changes.orElseThrow().nextPendingOperation();
+    return pendingChanges.orElseThrow().nextPendingOperation();
   }
 }
