@@ -29,7 +29,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <version.zeebe>8.3.0</version.zeebe>
+    <version.zeebe>8.3.1</version.zeebe>
     <version.identity>8.3.0</version.identity>
     <version.elasticsearch>7.17.10</version.elasticsearch>
     <version.elasticsearch-client>8.7.1</version.elasticsearch-client>
