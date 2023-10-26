@@ -92,9 +92,14 @@ final class TopologyManagementRequestsHandler implements TopologyManagementApi {
             (result, error) -> {
               if (error == null) {
                 // TODO: This must be return result directly
-                responseFuture.complete(
-                    new TopologyChangeStatus(
-                        result.finalTopology().changes().version(), StatusCode.IN_PROGRESS));
+                final var changeStatus =
+                    result.finalTopology().pendingChanges().isPresent()
+                        ? new TopologyChangeStatus(
+                            result.finalTopology().pendingChanges().get().id(),
+                            StatusCode.IN_PROGRESS)
+                        : new TopologyChangeStatus(
+                            result.finalTopology().version(), StatusCode.COMPLETED);
+                responseFuture.complete(changeStatus);
               } else {
                 responseFuture.completeExceptionally(error);
               }
