@@ -8,7 +8,7 @@
 import React from 'react';
 import update from 'immutability-helper';
 import deepEqual from 'fast-deep-equal';
-import {Accordion, AccordionItem, Tag} from '@carbon/react';
+import {Accordion, AccordionItem, Layer, Tag} from '@carbon/react';
 import {Db2Database, Factor, Filter as FilterIcon} from '@carbon/icons-react';
 
 import {Filter} from 'filter';
@@ -338,7 +338,7 @@ export default withErrorHandling(
 
       return (
         <div className="ReportControlPanel">
-          <div className="controlSections">
+          <Layer className="controlSections">
             <Accordion>
               <AccordionItem
                 title={
@@ -460,7 +460,7 @@ export default withErrorHandling(
                 />
               </AccordionItem>
             </Accordion>
-          </div>
+          </Layer>
           {result && typeof result.instanceCount !== 'undefined' && (
             <div className="instanceCount">
               {t(
