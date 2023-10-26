@@ -63,13 +63,13 @@ it('should call updateMeasure with correct payload for deleting a measure', () =
 it('should show Select for single-measure reports', () => {
   const node = shallow(<Measure {...props} />);
 
-  expect(node.find('Select')).toExist();
+  expect(node.find('CarbonSelect')).toExist();
 });
 
 it('should call updateMeasure with correct payload for switching measures', () => {
   const node = shallow(<Measure {...props} />);
 
-  node.find('Select').at(0).simulate('change', 'duration');
+  node.find('CarbonSelect').at(0).simulate('change', 'duration');
 
   expect(createReportUpdate.mock.calls[0][4].view.properties.$set).toEqual(['duration']);
   expect(props.onChange).toHaveBeenCalled();
@@ -80,7 +80,7 @@ it('should keep a correct order of measures', () => {
     <Measure {...props} report={update(props.report, {view: {properties: {$set: ['duration']}}})} />
   );
 
-  node.find('Select').at(1).simulate('change', 'frequency');
+  node.find('CarbonSelect').at(1).simulate('change', 'frequency');
   expect(createReportUpdate.mock.calls[0][4].view.properties.$set).toEqual([
     'frequency',
     'duration',

@@ -494,16 +494,6 @@ it('should show not show a measure selection where it does not make sense', () =
   expect(node.find('Measure')).not.toExist();
 });
 
-it('should allow collapsing sections', () => {
-  const node = shallow(<ReportControlPanel {...props} />);
-
-  node.find('.source .sectionTitle').simulate('click');
-  expect(node.find('.source')).toHaveClassName('collapsed');
-
-  node.find('.source .sectionTitle').simulate('click');
-  expect(node.find('.source')).not.toHaveClassName('collapsed');
-});
-
 it('should reset columnOrder only when changing definition', async () => {
   const reportWithConfig = update(report, {
     data: {

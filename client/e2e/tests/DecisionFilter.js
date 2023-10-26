@@ -30,7 +30,7 @@ test('should apply a filter to the report result', async (t) => {
 
   const unfiltered = +(await ProcessReport.reportNumber.textContent);
 
-  await t.click(Report.sectionToggle('Filters'));
+  await t.click(ProcessReport.sectionToggle('Filters'));
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Input Variable'));
   await t.click(Common.typeahead);
@@ -52,7 +52,7 @@ test('should have seperate input and output variables', async (t) => {
   await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Evaluation Count');
 
-  await t.click(Report.sectionToggle('Filters'));
+  await t.click(ProcessReport.sectionToggle('Filters'));
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Input Variable'));
   await t.click(Common.typeahead);

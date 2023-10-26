@@ -603,6 +603,7 @@
         "evaluation": "Zeige Evaluierungsanzahl"
       },
       "aggregation": {
+        "label": "Aggregation",
         "userTaskLegend": "Benutzeraufgabendauer",
         "durationLegend": "Basis-Aggregationen",
         "variableLegend": "Variablenaggregationen",

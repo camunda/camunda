@@ -1,50 +1,6 @@
 .AggregationType {
-  display: inline-block;
-  flex: 0 0 51px;
-
-  &.Popover .buttonWrapper .Button {
-    border-left: none;
-    padding: 6px 0;
-    width: 51px;
-    height: 32px;
-    text-align: center;
-    font-size: 11px;
-    color: var(--grey-base-40);
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-
-    &:not(.icon) {
-      padding-right: 0px;
-    }
-
-    &:hover,
-    &.active {
-      color: var(--black);
-
-      .content {
-        display: none;
-      }
-      .editIcon {
-        display: inline-block;
-      }
-    }
-
-    &:not(:hover):not(.active) {
-      .content {
-        display: inline;
-      }
-      .editIcon {
-        display: none;
-      }
-    }
-
-    .downIcon {
-      display: none;
-    }
-
-    .editIcon {
-      margin: 0;
-    }
+  .buttonWrapper button {
+    color: var(--cds-text-primary, #161616);
   }
 
   h4 {

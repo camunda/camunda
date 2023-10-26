@@ -122,12 +122,17 @@ const selectControlPanelOption = (type) => async (t, name, subname) => {
     await selectView(t, name);
     await selectControlPanelOption('Measure')(t, subname);
   } else {
-    const dropdown = Selector('.label').withText(type).nextSibling();
+    const dropdownButton = Selector('.label').withText(type).nextSibling().find('button');
+    const selectedOption = await dropdownButton.innerText;
+    if (selectedOption === name) {
+      return;
+    }
 
-    await t.click(dropdown.find('button')).click(dropdown.find('.DropdownOption').withText(name));
+    await t.click(dropdownButton).click(Common.menuOption(name));
 
     if (subname) {
-      await t.click(dropdown.find('.Submenu .DropdownOption').withText(subname));
+      await t.hover(Common.menuOption(name));
+      await t.click(Common.submenuOption(subname));
     }
   }
 };

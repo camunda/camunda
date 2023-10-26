@@ -7,7 +7,7 @@
 
 import React from 'react';
 
-import {Select, SelectionPreview} from 'components';
+import {CarbonSelect, SelectionPreview} from 'components';
 import {t} from 'translation';
 import {reportConfig, createReportUpdate} from 'services';
 
@@ -33,17 +33,23 @@ export default function Measure({report, onChange}) {
 
   const options = (
     <>
-      <Select.Option value="frequency" disabled={firstMeasure === 'frequency'}>
-        {getLabel('frequency', isIncidentReport)}
-      </Select.Option>
+      <CarbonSelect.Option
+        label={getLabel('frequency', isIncidentReport)}
+        value="frequency"
+        disabled={firstMeasure === 'frequency'}
+      />
       {report.view.entity === 'processInstance' && (
-        <Select.Option value="percentage" disabled={firstMeasure === 'percentage'}>
-          {getLabel('percentage', isIncidentReport)}
-        </Select.Option>
+        <CarbonSelect.Option
+          label={getLabel('percentage', isIncidentReport)}
+          value="percentage"
+          disabled={firstMeasure === 'percentage'}
+        />
       )}
-      <Select.Option value="duration" disabled={firstMeasure === 'duration'}>
-        {getLabel('duration', isIncidentReport)}
-      </Select.Option>
+      <CarbonSelect.Option
+        label={getLabel('duration', isIncidentReport)}
+        value="duration"
+        disabled={firstMeasure === 'duration'}
+      />
     </>
   );
 
@@ -72,14 +78,13 @@ export default function Measure({report, onChange}) {
       <>
         <li className="Measure select">
           <span className="label">{t('report.measure')}</span>
-          <Select value={firstMeasure} onChange={(property) => updateMeasure([property])}>
+          <CarbonSelect value={firstMeasure} onChange={(property) => updateMeasure([property])}>
             {options}
-          </Select>
+          </CarbonSelect>
           <AggregationType report={report} onChange={onChange} />
         </li>
         <li className="addMeasure">
-          <Select
-            value={firstMeasure}
+          <CarbonSelect
             onChange={(secondMeasure) => {
               updateMeasure(
                 [firstMeasure, secondMeasure].sort(
@@ -87,10 +92,10 @@ export default function Measure({report, onChange}) {
                 )
               );
             }}
-            label={'+ ' + t('report.addMeasure')}
+            placeholder={'+ ' + t('report.addMeasure')}
           >
             {options}
-          </Select>
+          </CarbonSelect>
         </li>
       </>
     );
