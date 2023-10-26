@@ -159,7 +159,7 @@ class PartitionReassignRequestTransformerTest {
       newTopology = oldClusterTopology.startTopologyChange(operations);
     }
     while (newTopology.hasPendingChanges()) {
-      final var operation = newTopology.changes().pendingOperations().get(0);
+      final var operation = newTopology.nextPendingOperation();
       final var applier = topologyChangeSimulator.getApplier(operation);
       final Either<Exception, UnaryOperator<MemberState>> init = applier.init(newTopology);
       if (init.isLeft()) {

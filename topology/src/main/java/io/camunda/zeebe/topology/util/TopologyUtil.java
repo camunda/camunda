@@ -10,13 +10,13 @@ package io.camunda.zeebe.topology.util;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
-import io.camunda.zeebe.topology.state.ClusterChangePlan;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.PartitionState;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -42,7 +42,7 @@ public final class TopologyUtil {
     }
 
     return new io.camunda.zeebe.topology.state.ClusterTopology(
-        0, Map.copyOf(memberStates), ClusterChangePlan.empty());
+        0, Map.copyOf(memberStates), Optional.empty(), Optional.empty());
   }
 
   public static Set<PartitionMetadata> getPartitionDistributionFrom(

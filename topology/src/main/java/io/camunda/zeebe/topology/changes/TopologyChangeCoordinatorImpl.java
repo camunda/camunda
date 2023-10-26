@@ -150,12 +150,12 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
       final ClusterTopology updatedTopology,
       final TopologyChangeAppliersImpl topologyChangeSimulator,
       final ActorFuture<ClusterTopology> simulationCompleted) {
-    if (updatedTopology.changes().pendingOperations().isEmpty()) {
+    if (!updatedTopology.hasPendingChanges()) {
       simulationCompleted.complete(updatedTopology);
       return;
     }
 
-    final var operation = updatedTopology.changes().pendingOperations().get(0);
+    final var operation = updatedTopology.nextPendingOperation();
     final OperationApplier applier = topologyChangeSimulator.getApplier(operation);
     final var result = applier.init(updatedTopology);
     if (result.isLeft()) {

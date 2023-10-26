@@ -150,6 +150,7 @@ final class ProtoBufSerializerTest {
         topologyWithOneMemberTwoPartitions(),
         topologyWithTwoMembers(),
         topologyWithClusterChangePlan(),
+        topologyWithCompletedClusterChangePlan(),
         topologyWithClusterChangePlanWithMemberOperations());
   }
 
@@ -220,6 +221,15 @@ final class ProtoBufSerializerTest {
     return ClusterTopology.init()
         .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
         .startTopologyChange(changes);
+  }
+
+  private static ClusterTopology topologyWithCompletedClusterChangePlan() {
+    final List<TopologyChangeOperation> changes =
+        List.of(new PartitionLeaveOperation(MemberId.from("1"), 1));
+    return ClusterTopology.init()
+        .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
+        .startTopologyChange(changes)
+        .advanceTopologyChange(MemberId.from("1"), m -> m);
   }
 
   private static ClusterTopology topologyWithClusterChangePlanWithMemberOperations() {

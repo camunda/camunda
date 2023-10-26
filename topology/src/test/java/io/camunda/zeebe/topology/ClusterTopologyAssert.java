@@ -72,7 +72,12 @@ public final class ClusterTopologyAssert
   }
 
   public ClusterTopologyAssert hasPendingOperationsWithSize(final int expectedSize) {
-    assertThat(actual.changes().pendingOperations()).hasSize(expectedSize);
+    if (expectedSize > 0) {
+      assertThat(actual.hasPendingChanges()).isTrue();
+      assertThat(actual.pendingChanges().orElseThrow().pendingOperations()).hasSize(expectedSize);
+    } else {
+      assertThat(actual.hasPendingChanges()).isFalse();
+    }
     return this;
   }
 
@@ -84,6 +89,38 @@ public final class ClusterTopologyAssert
 
   public ClusterTopologyAssert hasVersion(final long version) {
     assertThat(actual.version()).isEqualTo(version);
+    return this;
+  }
+
+  /**
+   * Asserts that the actual topology has the same topology as the expected topology ignoring
+   * timestamps and versions.
+   */
+  public ClusterTopologyAssert hasSameTopologyAs(final ClusterTopology expected) {
+    assertThat(actual.members().keySet())
+        .containsExactlyInAnyOrderElementsOf(expected.members().keySet());
+
+    // Compare MemberStates without timestamp and version
+    assertThat(actual.members())
+        .usingRecursiveComparison()
+        .ignoringFieldsMatchingRegexes(".*lastUpdated", ".*version")
+        .isEqualTo(expected.members());
+
+    // compare last change without timestamps
+    final var optionalActualCompletedChange = actual.lastChange();
+    final var optionalExpectedCompletedChange = expected.lastChange();
+    assertThat(optionalActualCompletedChange)
+        .usingRecursiveComparison()
+        .ignoringFieldsMatchingRegexes(".*startedAt", ".*completedAt")
+        .isEqualTo(optionalExpectedCompletedChange);
+
+    // compare ongoing change without timestamps
+    final var optionalActualOngoingChange = actual.pendingChanges();
+    final var optionalExpectedOngoingChange = expected.pendingChanges();
+    assertThat(optionalActualOngoingChange)
+        .usingRecursiveComparison()
+        .ignoringFieldsMatchingRegexes(".*startedAt", ".*version")
+        .isEqualTo(optionalExpectedOngoingChange);
     return this;
   }
 }

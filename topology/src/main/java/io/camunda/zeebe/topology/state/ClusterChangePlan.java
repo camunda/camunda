@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.topology.state;
 
+import io.atomix.cluster.MemberId;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -18,13 +21,18 @@ import java.util.List;
  * pending operations. This helps to choose the latest state of the topology change when receiving
  * gossip update out of order.
  */
-public record ClusterChangePlan(int version, List<TopologyChangeOperation> pendingOperations) {
-  public static ClusterChangePlan empty() {
-    return new ClusterChangePlan(0, List.of());
-  }
+public record ClusterChangePlan(
+    long id,
+    int version,
+    Status status,
+    Instant startedAt,
+    List<CompletedOperation> completedOperations,
+    List<TopologyChangeOperation> pendingOperations) {
 
-  public static ClusterChangePlan init(final List<TopologyChangeOperation> operations) {
-    return new ClusterChangePlan(1, List.copyOf(operations));
+  public static ClusterChangePlan init(
+      final long id, final List<TopologyChangeOperation> operations) {
+    return new ClusterChangePlan(
+        id, 1, Status.IN_PROGRESS, Instant.now(), List.of(), List.copyOf(operations));
   }
 
   /** To be called when the first operation is completed. */
@@ -32,7 +40,14 @@ public record ClusterChangePlan(int version, List<TopologyChangeOperation> pendi
     // List#subList hold on to the original list. Make a copy to prevent a potential memory leak.
     final var nextPendingOperations =
         List.copyOf(pendingOperations.subList(1, pendingOperations.size()));
-    return new ClusterChangePlan(version + 1, nextPendingOperations);
+    final var newCompletedOperations = new ArrayList<>(completedOperations);
+    newCompletedOperations.add(new CompletedOperation(pendingOperations.get(0), Instant.now()));
+    return new ClusterChangePlan(
+        id, version + 1, status, startedAt(), newCompletedOperations, nextPendingOperations);
+  }
+
+  CompletedChange completed() {
+    return new CompletedChange(id, Status.COMPLETED, startedAt(), Instant.now());
   }
 
   public ClusterChangePlan merge(final ClusterChangePlan other) {
@@ -44,5 +59,25 @@ public record ClusterChangePlan(int version, List<TopologyChangeOperation> pendi
       return other;
     }
     return this;
+  }
+
+  public boolean hasPendingChangesFor(final MemberId memberId) {
+    return !pendingOperations.isEmpty() && pendingOperations.get(0).memberId().equals(memberId);
+  }
+
+  public TopologyChangeOperation nextPendingOperation() {
+    return pendingOperations().get(0);
+  }
+
+  public boolean hasPendingChanges() {
+    return !pendingOperations().isEmpty();
+  }
+
+  public record CompletedOperation(TopologyChangeOperation operation, Instant completedAt) {}
+
+  public enum Status {
+    IN_PROGRESS,
+    COMPLETED,
+    FAILED;
   }
 }

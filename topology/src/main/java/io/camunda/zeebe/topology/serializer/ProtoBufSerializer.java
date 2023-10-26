@@ -21,8 +21,10 @@ import io.camunda.zeebe.topology.gossip.ClusterTopologyGossipState;
 import io.camunda.zeebe.topology.protocol.Requests;
 import io.camunda.zeebe.topology.protocol.Requests.ChangeStatus;
 import io.camunda.zeebe.topology.protocol.Topology;
+import io.camunda.zeebe.topology.protocol.Topology.CompletedChange;
 import io.camunda.zeebe.topology.protocol.Topology.MemberState;
 import io.camunda.zeebe.topology.state.ClusterChangePlan;
+import io.camunda.zeebe.topology.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.PartitionState;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
@@ -34,6 +36,7 @@ import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOp
 import java.time.Instant;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRequestsSerializer {
@@ -94,10 +97,17 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
             .map(e -> Map.entry(MemberId.from(e.getKey()), decodeMemberState(e.getValue())))
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 
-    final var changes = decodeChangePlan(encodedClusterTopology.getChanges());
+    final Optional<io.camunda.zeebe.topology.state.CompletedChange> completedChange =
+        encodedClusterTopology.hasLastChange()
+            ? Optional.of(decodeCompletedChange(encodedClusterTopology.getLastChange()))
+            : Optional.empty();
+    final Optional<ClusterChangePlan> currentChange =
+        encodedClusterTopology.hasCurrentChange()
+            ? Optional.of(decodeChangePlan(encodedClusterTopology.getCurrentChange()))
+            : Optional.empty();
 
     return new io.camunda.zeebe.topology.state.ClusterTopology(
-        encodedClusterTopology.getVersion(), members, changes);
+        encodedClusterTopology.getVersion(), members, completedChange, currentChange);
   }
 
   private Topology.ClusterTopology encodeClusterTopology(
@@ -106,12 +116,19 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
         clusterTopology.members().entrySet().stream()
             .collect(Collectors.toMap(e -> e.getKey().id(), e -> encodeMemberState(e.getValue())));
 
-    final var encodedChangePlan = encodeChangePlan(clusterTopology.changes());
-    return Topology.ClusterTopology.newBuilder()
-        .setVersion(clusterTopology.version())
-        .putAllMembers(members)
-        .setChanges(encodedChangePlan)
-        .build();
+    final var builder =
+        Topology.ClusterTopology.newBuilder()
+            .setVersion(clusterTopology.version())
+            .putAllMembers(members);
+
+    clusterTopology
+        .lastChange()
+        .ifPresent(lastChange -> builder.setLastChange(encodeCompletedChange(lastChange)));
+    clusterTopology
+        .pendingChanges()
+        .ifPresent(changePlan -> builder.setCurrentChange(encodeChangePlan(changePlan)));
+
+    return builder.build();
   }
 
   private io.camunda.zeebe.topology.state.MemberState decodeMemberState(
@@ -203,10 +220,43 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
   }
 
   private Topology.ClusterChangePlan encodeChangePlan(final ClusterChangePlan changes) {
-    final var builder = Topology.ClusterChangePlan.newBuilder().setVersion(changes.version());
+    final var builder =
+        Topology.ClusterChangePlan.newBuilder()
+            .setVersion(changes.version())
+            .setId(changes.id())
+            .setStatus(fromTopologyChangeStatus(changes.status()))
+            .setStartedAt(
+                Timestamp.newBuilder()
+                    .setSeconds(changes.startedAt().getEpochSecond())
+                    .setNanos(changes.startedAt().getNano())
+                    .build());
     changes
         .pendingOperations()
-        .forEach(operation -> builder.addOperation(encodeOperation(operation)));
+        .forEach(operation -> builder.addPendingOperations(encodeOperation(operation)));
+    changes
+        .completedOperations()
+        .forEach(operation -> builder.addCompletedOperations(encodeCompletedOperation(operation)));
+
+    return builder.build();
+  }
+
+  private CompletedChange encodeCompletedChange(
+      final io.camunda.zeebe.topology.state.CompletedChange completedChange) {
+    final var builder = Topology.CompletedChange.newBuilder();
+    builder
+        .setId(completedChange.id())
+        .setStatus(fromTopologyChangeStatus(completedChange.status()))
+        .setCompletedAt(
+            Timestamp.newBuilder()
+                .setSeconds(completedChange.completedAt().getEpochSecond())
+                .setNanos(completedChange.completedAt().getNano())
+                .build())
+        .setStartedAt(
+            Timestamp.newBuilder()
+                .setSeconds(completedChange.startedAt().getEpochSecond())
+                .setNanos(completedChange.startedAt().getNano())
+                .build());
+
     return builder.build();
   }
 
@@ -238,13 +288,51 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
     return builder.build();
   }
 
+  private Topology.CompletedTopologyChangeOperation encodeCompletedOperation(
+      final ClusterChangePlan.CompletedOperation completedOperation) {
+    return Topology.CompletedTopologyChangeOperation.newBuilder()
+        .setOperation(encodeOperation(completedOperation.operation()))
+        .setCompletedAt(
+            Timestamp.newBuilder()
+                .setSeconds(completedOperation.completedAt().getEpochSecond())
+                .setNanos(completedOperation.completedAt().getNano())
+                .build())
+        .build();
+  }
+
   private ClusterChangePlan decodeChangePlan(final Topology.ClusterChangePlan clusterChangePlan) {
 
     final var version = clusterChangePlan.getVersion();
     final var pendingOperations =
-        clusterChangePlan.getOperationList().stream().map(this::decodeOperation).toList();
+        clusterChangePlan.getPendingOperationsList().stream()
+            .map(this::decodeOperation)
+            .collect(Collectors.toList());
+    final var completedOperations =
+        clusterChangePlan.getCompletedOperationsList().stream()
+            .map(this::decodeCompletedOperation)
+            .collect(Collectors.toList());
 
-    return new ClusterChangePlan(version, pendingOperations);
+    return new ClusterChangePlan(
+        clusterChangePlan.getId(),
+        clusterChangePlan.getVersion(),
+        toChangeStatus(clusterChangePlan.getStatus()),
+        Instant.ofEpochSecond(
+            clusterChangePlan.getStartedAt().getSeconds(),
+            clusterChangePlan.getStartedAt().getNanos()),
+        completedOperations,
+        pendingOperations);
+  }
+
+  private io.camunda.zeebe.topology.state.CompletedChange decodeCompletedChange(
+      final CompletedChange completedChange) {
+    return new io.camunda.zeebe.topology.state.CompletedChange(
+        completedChange.getId(),
+        toChangeStatus(completedChange.getStatus()),
+        Instant.ofEpochSecond(
+            completedChange.getStartedAt().getSeconds(), completedChange.getStartedAt().getNanos()),
+        Instant.ofEpochSecond(
+            completedChange.getCompletedAt().getSeconds(),
+            completedChange.getCompletedAt().getNanos()));
   }
 
   private TopologyChangeOperation decodeOperation(
@@ -275,6 +363,13 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
       // rolling update.
       throw new IllegalStateException("Unknown operation: " + topologyChangeOperation);
     }
+  }
+
+  private CompletedOperation decodeCompletedOperation(
+      final Topology.CompletedTopologyChangeOperation operation) {
+    return new CompletedOperation(
+        decodeOperation(operation.getOperation()),
+        Instant.ofEpochSecond(operation.getCompletedAt().getSeconds()));
   }
 
   @Override
@@ -423,6 +518,23 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
       case IN_PROGRESS -> ChangeStatus.IN_PROGRESS;
       case COMPLETED -> ChangeStatus.COMPLETED;
       case FAILED -> ChangeStatus.FAILED;
+    };
+  }
+
+  private Topology.ChangeStatus fromTopologyChangeStatus(final ClusterChangePlan.Status status) {
+    return switch (status) {
+      case IN_PROGRESS -> Topology.ChangeStatus.IN_PROGRESS;
+      case COMPLETED -> Topology.ChangeStatus.COMPLETED;
+      case FAILED -> Topology.ChangeStatus.FAILED;
+    };
+  }
+
+  private ClusterChangePlan.Status toChangeStatus(final Topology.ChangeStatus status) {
+    return switch (status) {
+      case IN_PROGRESS -> ClusterChangePlan.Status.IN_PROGRESS;
+      case COMPLETED -> ClusterChangePlan.Status.COMPLETED;
+      case FAILED -> ClusterChangePlan.Status.FAILED;
+      default -> throw new IllegalStateException("Unknown status: " + status);
     };
   }
 }

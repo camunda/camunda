@@ -12,6 +12,8 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.topology.state.MemberState.State;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
@@ -32,12 +34,15 @@ import java.util.stream.Stream;
  * <p>This class is immutable. Each mutable methods returns a new instance with the updated state.
  */
 public record ClusterTopology(
-    long version, Map<MemberId, MemberState> members, ClusterChangePlan changes) {
+    long version,
+    Map<MemberId, MemberState> members,
+    Optional<CompletedChange> lastChange,
+    Optional<ClusterChangePlan> pendingChanges) {
 
   private static final int UNINITIALIZED_VERSION = -1;
 
   public static ClusterTopology uninitialized() {
-    return new ClusterTopology(UNINITIALIZED_VERSION, Map.of(), ClusterChangePlan.empty());
+    return new ClusterTopology(UNINITIALIZED_VERSION, Map.of(), Optional.empty(), Optional.empty());
   }
 
   public boolean isUninitialized() {
@@ -45,7 +50,7 @@ public record ClusterTopology(
   }
 
   public static ClusterTopology init() {
-    return new ClusterTopology(0, Map.of(), ClusterChangePlan.empty());
+    return new ClusterTopology(0, Map.of(), Optional.empty(), Optional.empty());
   }
 
   public ClusterTopology addMember(final MemberId memberId, final MemberState state) {
@@ -58,7 +63,7 @@ public record ClusterTopology(
 
     final var newMembers =
         ImmutableMap.<MemberId, MemberState>builder().putAll(members).put(memberId, state).build();
-    return new ClusterTopology(version, newMembers, changes);
+    return new ClusterTopology(version, newMembers, lastChange, pendingChanges);
   }
 
   /**
@@ -96,19 +101,24 @@ public record ClusterTopology(
     }
 
     final var newMembers = mapBuilder.buildKeepingLast();
-    return new ClusterTopology(version, newMembers, changes);
+    return new ClusterTopology(version, newMembers, lastChange, pendingChanges);
   }
 
   public ClusterTopology startTopologyChange(final List<TopologyChangeOperation> operations) {
     if (hasPendingChanges()) {
       throw new IllegalArgumentException(
           "Expected to start new topology change, but there is a topology change in progress "
-              + changes);
+              + pendingChanges);
     } else if (operations.isEmpty()) {
       throw new IllegalArgumentException(
           "Expected to start new topology change, but there is no operation");
     } else {
-      return new ClusterTopology(version + 1, members, ClusterChangePlan.init(operations));
+      final long newVersion = version + 1;
+      return new ClusterTopology(
+          newVersion,
+          members,
+          lastChange,
+          Optional.of(ClusterChangePlan.init(newVersion, operations)));
     }
   }
 
@@ -128,12 +138,20 @@ public record ClusterTopology(
     } else {
       final var mergedMembers =
           Stream.concat(members.entrySet().stream(), other.members().entrySet().stream())
-              .collect(
-                  Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, MemberState::merge));
+              .collect(Collectors.toMap(Entry::getKey, Entry::getValue, MemberState::merge));
 
-      final var mergedChanges = changes.merge(other.changes);
-      return new ClusterTopology(version, ImmutableMap.copyOf(mergedMembers), mergedChanges);
+      final Optional<ClusterChangePlan> mergedChanges =
+          Stream.of(pendingChanges, other.pendingChanges)
+              .flatMap(Optional::stream)
+              .reduce(ClusterChangePlan::merge);
+
+      return new ClusterTopology(
+          version, ImmutableMap.copyOf(mergedMembers), lastChange, mergedChanges);
     }
+  }
+
+  public boolean hasPendingChanges() {
+    return pendingChanges.isPresent() && pendingChanges.orElseThrow().hasPendingChanges();
   }
 
   /**
@@ -141,8 +159,7 @@ public record ClusterTopology(
    *     otherwise returns false.
    */
   private boolean hasPendingChangesFor(final MemberId memberId) {
-    return !changes.pendingOperations().isEmpty()
-        && changes.pendingOperations().get(0).memberId().equals(memberId);
+    return pendingChanges.isPresent() && pendingChanges.get().hasPendingChangesFor(memberId);
   }
 
   /**
@@ -156,7 +173,7 @@ public record ClusterTopology(
     if (!hasPendingChangesFor(memberId)) {
       return Optional.empty();
     }
-    return Optional.of(changes.pendingOperations().get(0));
+    return Optional.of(pendingChanges.orElseThrow().nextPendingOperation());
   }
 
   /**
@@ -178,7 +195,9 @@ public record ClusterTopology(
       throw new IllegalStateException(
           "Expected to advance the topology change, but there is no pending change");
     }
-    final ClusterTopology result = new ClusterTopology(version, members, changes.advance());
+    final ClusterTopology result =
+        new ClusterTopology(
+            version, members, lastChange, Optional.of(pendingChanges.orElseThrow().advance()));
 
     if (!result.hasPendingChanges()) {
       // The last change has been applied. Clean up the members that are marked as LEFT in the
@@ -193,7 +212,9 @@ public record ClusterTopology(
               .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
       // Increment the version so that other members can merge by overwriting their local topology.
-      return new ClusterTopology(result.version() + 1, currentMembers, ClusterChangePlan.empty());
+      final var completedChange = pendingChanges.orElseThrow().completed();
+      return new ClusterTopology(
+          result.version() + 1, currentMembers, Optional.of(completedChange), Optional.empty());
     }
 
     return result;
@@ -205,10 +226,6 @@ public record ClusterTopology(
 
   public MemberState getMember(final MemberId memberId) {
     return members().get(memberId);
-  }
-
-  public boolean hasPendingChanges() {
-    return !changes.pendingOperations().isEmpty();
   }
 
   public int clusterSize() {
@@ -224,5 +241,12 @@ public record ClusterTopology(
   public int partitionCount() {
     return (int)
         members.values().stream().flatMap(m -> m.partitions().keySet().stream()).distinct().count();
+  }
+
+  public TopologyChangeOperation nextPendingOperation() {
+    if (!hasPendingChanges()) {
+      throw new NoSuchElementException();
+    }
+    return pendingChanges.orElseThrow().nextPendingOperation();
   }
 }
