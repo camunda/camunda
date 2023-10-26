@@ -74,8 +74,7 @@ public final class ClusterTopologyAssert
   public ClusterTopologyAssert hasPendingOperationsWithSize(final int expectedSize) {
     if (expectedSize > 0) {
       assertThat(actual.hasPendingChanges()).isTrue();
-      assertThat(actual.changes().ongoingChange().orElseThrow().pendingOperations())
-          .hasSize(expectedSize);
+      assertThat(actual.changes().orElseThrow().pendingOperations()).hasSize(expectedSize);
     } else {
       assertThat(actual.hasPendingChanges()).isFalse();
     }
@@ -108,16 +107,16 @@ public final class ClusterTopologyAssert
         .isEqualTo(expected.members());
 
     // compare last change without timestamps
-    final var optionalActualCompletedChange = actual.changes().lastChange();
-    final var optionalExpectedCompletedChange = expected.changes().lastChange();
+    final var optionalActualCompletedChange = actual.lastChange();
+    final var optionalExpectedCompletedChange = expected.lastChange();
     assertThat(optionalActualCompletedChange)
         .usingRecursiveComparison()
         .ignoringFieldsMatchingRegexes(".*startedAt", ".*completedAt")
         .isEqualTo(optionalExpectedCompletedChange);
 
     // compare ongoing change without timestamps
-    final var optionalActualOngoingChange = actual.changes().ongoingChange();
-    final var optionalExpectedOngoingChange = expected.changes().ongoingChange();
+    final var optionalActualOngoingChange = actual.changes();
+    final var optionalExpectedOngoingChange = expected.changes();
     assertThat(optionalActualOngoingChange)
         .usingRecursiveComparison()
         .ignoringFieldsMatchingRegexes(".*startedAt", ".*version")

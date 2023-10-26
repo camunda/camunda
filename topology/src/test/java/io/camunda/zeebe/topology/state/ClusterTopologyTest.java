@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.topology.ClusterTopologyAssert;
-import io.camunda.zeebe.topology.state.ClusterChangePlan.CompletedChange;
 import io.camunda.zeebe.topology.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.topology.state.MemberState.State;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
@@ -182,7 +181,7 @@ class ClusterTopologyTest {
         ClusterTopology.init()
             .addMember(member(1), MemberState.initializeAsActive(Map.of()))
             .startTopologyChange(List.of(new PartitionJoinOperation(member(1), 1, 1)));
-    final var changeId = initialTopology.changes().ongoingChange().orElseThrow().id();
+    final var changeId = initialTopology.changes().orElseThrow().id();
 
     // when
     final var finalTopology =
@@ -194,11 +193,9 @@ class ClusterTopologyTest {
         new ClusterTopology(
             2,
             Map.of(member(1), MemberState.initializeAsActive(Map.of(1, PartitionState.active(1)))),
-            new ClusterChangePlan(
-                0,
-                Optional.of(
-                    new CompletedChange(changeId, Status.COMPLETED, Instant.now(), Instant.now())),
-                Optional.empty()));
+            Optional.of(
+                new CompletedChange(changeId, Status.COMPLETED, Instant.now(), Instant.now())),
+            Optional.empty());
 
     ClusterTopologyAssert.assertThatClusterTopology(finalTopology).hasSameTopologyAs(expected);
   }
