@@ -9,24 +9,18 @@ package io.camunda.zeebe.topology.api;
 
 import static java.lang.Math.max;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
-import io.camunda.zeebe.topology.changes.NoopPartitionChangeExecutor;
-import io.camunda.zeebe.topology.changes.NoopTopologyMembershipChangeExecutor;
-import io.camunda.zeebe.topology.changes.TopologyChangeAppliersImpl;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.topology.util.TopologyUtil;
-import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import net.jqwik.api.EdgeCasesMode;
@@ -151,24 +145,8 @@ class PartitionReassignRequestTransformerTest {
             .get();
 
     // apply operations to generate new topology
-    final var topologyChangeSimulator =
-        new TopologyChangeAppliersImpl(
-            new NoopPartitionChangeExecutor(), new NoopTopologyMembershipChangeExecutor());
-    ClusterTopology newTopology = oldClusterTopology;
-    if (!operations.isEmpty()) {
-      newTopology = oldClusterTopology.startTopologyChange(operations);
-    }
-    while (newTopology.hasPendingChanges()) {
-      final var operation = newTopology.nextPendingOperation();
-      final var applier = topologyChangeSimulator.getApplier(operation);
-      final Either<Exception, UnaryOperator<MemberState>> init = applier.init(newTopology);
-      if (init.isLeft()) {
-        fail("fail");
-      }
-      newTopology = newTopology.updateMember(operation.memberId(), init.get());
-      newTopology = newTopology.advanceTopologyChange(operation.memberId(), applier.apply().join());
-    }
-
+    final ClusterTopology newTopology =
+        TestTopologyChangeSimulator.apply(oldClusterTopology, operations);
     // then
     final var newDistribution = TopologyUtil.getPartitionDistributionFrom(newTopology, "temp");
     assertThat(newDistribution).isEqualTo(expectedNewDistribution);
