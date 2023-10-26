@@ -10,7 +10,6 @@ package io.camunda.zeebe.topology;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.topology.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import java.util.Collection;
@@ -103,55 +102,26 @@ public final class ClusterTopologyAssert
         .containsExactlyInAnyOrderElementsOf(expected.members().keySet());
 
     // Compare MemberStates without timestamp and version
-    for (final var member : actual.members().keySet()) {
-      final var actualState = actual.members().get(member);
-      final var expectedState = expected.members().get(member);
-      assertThat(actualState.state()).isEqualTo(expectedState.state());
-      assertThat(actualState.partitions()).isEqualTo(expectedState.partitions());
-    }
+    assertThat(actual.members())
+        .usingRecursiveComparison()
+        .ignoringFieldsMatchingRegexes(".*lastUpdated", ".*version")
+        .isEqualTo(expected.members());
 
     // compare last change without timestamps
     final var optionalActualCompletedChange = actual.changes().lastChange();
     final var optionalExpectedCompletedChange = expected.changes().lastChange();
-    if (optionalActualCompletedChange.isPresent()) {
-      assertThat(optionalExpectedCompletedChange).isPresent();
-      final var actualCompletedChange = optionalActualCompletedChange.get();
-      final var expectedCompletedChange = optionalExpectedCompletedChange.get();
-
-      assertThat(actualCompletedChange.status()).isEqualTo(expectedCompletedChange.status());
-      assertThat(actualCompletedChange.id()).isEqualTo(expectedCompletedChange.id());
-    } else {
-      assertThat(optionalExpectedCompletedChange).isEmpty();
-    }
+    assertThat(optionalActualCompletedChange)
+        .usingRecursiveComparison()
+        .ignoringFieldsMatchingRegexes(".*startedAt", ".*completedAt")
+        .isEqualTo(optionalExpectedCompletedChange);
 
     // compare ongoing change without timestamps
     final var optionalActualOngoingChange = actual.changes().ongoingChange();
     final var optionalExpectedOngoingChange = expected.changes().ongoingChange();
-    if (optionalActualOngoingChange.isPresent()) {
-      assertThat(optionalExpectedOngoingChange).isPresent();
-      final var actualOngoingChange = optionalActualOngoingChange.get();
-      final var expectedOngoingChange = optionalExpectedOngoingChange.get();
-
-      assertThat(actualOngoingChange.status()).isEqualTo(expectedOngoingChange.status());
-      assertThat(actualOngoingChange.id()).isEqualTo(expectedOngoingChange.id());
-
-      // compare completed operations without timestamps
-      final var actualCompletedOperations =
-          actualOngoingChange.completedOperations().stream()
-              .map(CompletedOperation::operation)
-              .toList();
-      final var expectedCompletedOperations =
-          expectedOngoingChange.completedOperations().stream()
-              .map(CompletedOperation::operation)
-              .toList();
-      assertThat(actualCompletedOperations)
-          .containsExactlyInAnyOrderElementsOf(expectedCompletedOperations);
-
-      assertThat(actualOngoingChange.pendingOperations())
-          .containsExactlyInAnyOrderElementsOf(expectedOngoingChange.pendingOperations());
-    } else {
-      assertThat(optionalExpectedOngoingChange).isEmpty();
-    }
+    assertThat(optionalActualOngoingChange)
+        .usingRecursiveComparison()
+        .ignoringFieldsMatchingRegexes(".*startedAt", ".*version")
+        .isEqualTo(optionalExpectedOngoingChange);
     return this;
   }
 }
