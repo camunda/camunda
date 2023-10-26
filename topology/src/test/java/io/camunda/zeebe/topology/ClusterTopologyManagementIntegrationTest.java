@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.topology;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.Node;
@@ -25,6 +23,7 @@ import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiperConfig;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -170,24 +169,25 @@ class ClusterTopologyManagementIntegrationTest {
     startFutures.forEach(ActorFuture::join);
 
     // when
+    final ClusterTopologyManagerService service = nodes.get(0).service();
     final TopologyChangeCoordinator coordinator =
-        nodes.get(0).service().getTopologyChangeCoordinator().orElseThrow();
-    final var topologyChanged =
-        coordinator
-            .applyOperations(
-                List.of(
-                    new PartitionJoinOperation(MemberId.from("0"), 2, 1),
-                    new PartitionLeaveOperation(MemberId.from("1"), 1)))
-            .join();
+        service.getTopologyChangeCoordinator().orElseThrow();
+    coordinator
+        .applyOperations(
+            ignore ->
+                Either.right(
+                    List.of(
+                        new PartitionJoinOperation(MemberId.from("0"), 2, 1),
+                        new PartitionLeaveOperation(MemberId.from("1"), 1))))
+        .join();
 
     // then
     Awaitility.await("The topology change should complete.")
         .untilAsserted(
             () ->
-                assertThat(coordinator.hasCompletedChanges(topologyChanged.version()).join())
-                    .isTrue());
-    ClusterTopologyAssert.assertThatClusterTopology(
-            nodes.get(0).service().getClusterTopology().join())
+                ClusterTopologyAssert.assertThatClusterTopology(service.getClusterTopology().join())
+                    .hasPendingOperationsWithSize(0));
+    ClusterTopologyAssert.assertThatClusterTopology(service.getClusterTopology().join())
         .describedAs("The cluster must have the expected topology after change.")
         .hasMemberWithPartitions(0, Set.of(1, 2))
         .hasMemberWithPartitions(1, Set.of());

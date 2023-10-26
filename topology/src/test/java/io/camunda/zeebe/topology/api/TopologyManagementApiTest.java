@@ -109,6 +109,10 @@ final class TopologyManagementApiTest {
   @Test
   void shouldRemoveMembers() {
     // given
+    recordingCoordinator.setCurrentTopology(
+        ClusterTopology.init()
+            .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
+            .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of())));
     final var request =
         new TopologyManagementRequest.RemoveMembersRequest(
             Set.of(MemberId.from("1"), MemberId.from("2")));
