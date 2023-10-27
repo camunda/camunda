@@ -6,12 +6,19 @@
  */
 
 import React from 'react';
-import {DataTable, TableBody, TableContainer} from '@carbon/react';
+import {
+  DataTable,
+  TableBody,
+  TableContainer,
+  TableExpandHeader,
+  TableRow,
+} from '@carbon/react';
 import {
   Table,
   TableExpandRow,
   ExpandableTableCell,
   TableExpandedRow,
+  TableHead,
 } from './styled';
 
 type Props = {
@@ -44,6 +51,11 @@ const PartiallyExpandableDataTable: React.FC<Props> = ({
       }) => (
         <TableContainer {...getTableContainerProps()} data-testid={dataTestId}>
           <Table {...getTableProps()}>
+            <TableHead>
+              <TableRow>
+                <TableExpandHeader />
+              </TableRow>
+            </TableHead>
             <TableBody>
               {rows.map((row, index) => {
                 const expandedContent = expandedContents?.[row.id];
@@ -67,7 +79,10 @@ const PartiallyExpandableDataTable: React.FC<Props> = ({
                     </TableExpandRow>
 
                     {isExpandable && (
-                      <TableExpandedRow colSpan={headers.length + 1}>
+                      <TableExpandedRow
+                        colSpan={headers.length + 1}
+                        id={`expanded-row-${row.id}`}
+                      >
                         {React.cloneElement(expandedContent, {
                           tabIndex: row.isExpanded ? 0 : -1,
                         })}

@@ -21,6 +21,7 @@ import {LinkWrapper, ErrorMessage} from '../styled';
 import {EmptyState} from 'modules/components/EmptyState';
 import {ReactComponent as EmptyStateProcessIncidents} from 'modules/components/Icon/empty-state-process-incidents.svg';
 import {Details} from './Details';
+import {generateErrorMessageId} from './utils/generateErrorMessageId';
 
 const IncidentsByError: React.FC = observer(() => {
   const location = useLocation();
@@ -62,7 +63,7 @@ const IncidentsByError: React.FC = observer(() => {
       headers={[{key: 'incident', header: 'incident'}]}
       rows={incidents.map(({errorMessage, instancesWithErrorCount}) => {
         return {
-          id: errorMessage,
+          id: generateErrorMessageId(errorMessage),
           incident: (
             <LinkWrapper
               to={Locations.processes({
@@ -90,7 +91,7 @@ const IncidentsByError: React.FC = observer(() => {
       expandedContents={incidents.reduce(
         (accumulator, {errorMessage, processes}) => ({
           ...accumulator,
-          [errorMessage]: (
+          [generateErrorMessageId(errorMessage)]: (
             <Details errorMessage={errorMessage} processes={processes} />
           ),
         }),

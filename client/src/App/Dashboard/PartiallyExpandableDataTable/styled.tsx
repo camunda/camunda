@@ -12,12 +12,17 @@ import {
   TableExpandRow as BaseTableExpandRow,
   DataTableSkeleton as BaseDataTableSkeleton,
   TableExpandedRow as BaseTableExpandedRow,
+  TableHead as BaseTableHead,
 } from '@carbon/react';
 
 import {ARROW_ICON_WIDTH} from 'modules/constants';
 
 const Table = styled(BaseTable)`
   table-layout: fixed;
+`;
+
+const TableHead = styled(BaseTableHead)`
+  display: none;
 `;
 
 type Props = {
@@ -83,4 +88,5 @@ export {
   TableExpandRow,
   DataTableSkeleton,
   TableExpandedRow,
+  TableHead,
 };
