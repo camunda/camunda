@@ -23,6 +23,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 @Slf4j
@@ -75,6 +76,11 @@ public class DecisionReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T,
   @Override
   protected String[] getIndexNames(final ExecutionContext<DecisionReportDataDto> context) {
     return InstanceIndexUtil.getDecisionInstanceIndexAliasName(context.getReportData());
+  }
+
+  @Override
+  protected String[] getMultiIndexAlias() {
+    return new String[]{DECISION_INSTANCE_MULTI_ALIAS};
   }
 
   @Override

@@ -143,9 +143,14 @@ public class ProcessReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T, 
   @Override
   protected String[] getIndexNames(final ExecutionContext<ProcessReportDataDto> context) {
     if (context.getReportData().isManagementReport()) {
-      return new String[]{PROCESS_INSTANCE_MULTI_ALIAS};
+      getMultiIndexAlias();
     }
     return InstanceIndexUtil.getProcessInstanceIndexAliasNames(context.getReportData());
+  }
+
+  @Override
+  protected String[] getMultiIndexAlias() {
+    return new String[]{PROCESS_INSTANCE_MULTI_ALIAS};
   }
 
   @Override

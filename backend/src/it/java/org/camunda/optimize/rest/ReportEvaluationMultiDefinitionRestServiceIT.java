@@ -69,13 +69,80 @@ public class ReportEvaluationMultiDefinitionRestServiceIT extends AbstractReport
     assertThat(processReportResponse.getResult().getInstanceCount()).isEqualTo(2);
   }
 
+  @ParameterizedTest
+  @EnumSource(ProcessReportDataType.class)
+  public void evaluateProcessReportOneDefinitionHasNoData(final ProcessReportDataType reportType) {
+    // given
+    final String key1 = "key1";
+    final String key2 = "key2";
+    final String variableName = "var1";
+    final String candidateGroupName = "firstGroup";
+    final String processInstanceId1 = engineIntegrationExtension.deployAndStartProcessWithVariables(
+      BpmnModels.getSingleUserTaskDiagram(key1), ImmutableMap.of(variableName, 1)
+    ).getId();
+    final String processDefinition2 = engineIntegrationExtension.deployProcessAndGetId(BpmnModels.getSingleUserTaskDiagram(key2));
+    engineIntegrationExtension.createGroup(candidateGroupName);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(candidateGroupName);
+    engineIntegrationExtension.claimAllRunningUserTasks();
+    engineIntegrationExtension.completeUserTaskWithoutClaim(processInstanceId1);
+
+    importAllEngineEntitiesFromScratch();
+
+    final List<ReportDataDefinitionDto> definitions = List.of(
+      new ReportDataDefinitionDto(key1), new ReportDataDefinitionDto(key2)
+    );
+
+    // when
+    final AuthorizedSingleReportEvaluationResponseDto<?, SingleProcessReportDefinitionRequestDto> processReportResponse =
+      reportClient.evaluateReport(
+        TemplatedProcessReportDataBuilder.createReportData()
+          .setReportDataType(reportType)
+          .setVariableName(variableName)
+          .setVariableType(VariableType.SHORT)
+          .definitions(definitions)
+          .build()
+      );
+
+    // then
+    assertThat(processReportResponse.getResult().getInstanceCount()).isEqualTo(1);
+  }
+
+  @ParameterizedTest
+  @EnumSource(ProcessReportDataType.class)
+  public void evaluateProcessReportNeitherDefinitionHasData(final ProcessReportDataType reportType) {
+    // given
+    final String key1 = "key1";
+    final String key2 = "key2";
+    final String variableName = "var1";
+    engineIntegrationExtension.deployProcessAndGetId(BpmnModels.getSingleUserTaskDiagram(key1));
+    engineIntegrationExtension.deployProcessAndGetId(BpmnModels.getSingleUserTaskDiagram(key2));
+
+    importAllEngineEntitiesFromScratch();
+
+    final List<ReportDataDefinitionDto> definitions = List.of(
+      new ReportDataDefinitionDto(key1), new ReportDataDefinitionDto(key2)
+    );
+
+    // when
+    final AuthorizedSingleReportEvaluationResponseDto<?, SingleProcessReportDefinitionRequestDto> processReportResponse =
+      reportClient.evaluateReport(
+        TemplatedProcessReportDataBuilder.createReportData()
+          .setReportDataType(reportType)
+          .setVariableName(variableName)
+          .setVariableType(VariableType.SHORT)
+          .definitions(definitions)
+          .build()
+      );
+
+    // then
+    assertThat(processReportResponse.getResult().getInstanceCount()).isEqualTo(0);
+  }
+
   @Test
   public void evaluateDecisionReport_onlyDataForTheFirstDefinitionIsIncluded() {
     // given
     final String key1 = "key1";
     final String key2 = "key2";
-    // note: we are keeping track of the definition id here as the instance id's are not easily obtainable for
-    // decisions
     final String firstDefinitionId = engineIntegrationExtension
       .deployAndStartDecisionDefinition(DmnModels.createDefaultDmnModel(key1))
       .getId();

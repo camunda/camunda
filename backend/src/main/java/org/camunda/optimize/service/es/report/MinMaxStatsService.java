@@ -240,7 +240,7 @@ public class MinMaxStatsService {
         "Could not retrieve stats for firstField %s and secondField %s on index %s",
         firstField,
         secondField,
-        indexNames
+        Arrays.toString(indexNames)
       );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);

@@ -67,6 +67,8 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
 
   protected abstract String[] getIndexNames(final ExecutionContext<D> context);
 
+  protected abstract String[] getMultiIndexAlias();
+
   public <R extends ReportDefinitionDto<D>> CommandEvaluationResult<T> evaluate(final ReportEvaluationContext<R> reportEvaluationContext) {
     return evaluate(new ExecutionContext<>(reportEvaluationContext));
   }
@@ -77,11 +79,32 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
       new CountRequest(getIndexNames(executionContext)).query(setupUnfilteredBaseQuery(executionContext));
 
     SearchResponse response;
-    CountResponse unfilteredInstanceCountResponse;
     try {
-      response = executeElasticSearchCommand(executionContext, searchRequest);
-      unfilteredInstanceCountResponse = esClient.count(unfilteredTotalInstanceCountRequest);
-      executionContext.setUnfilteredTotalInstanceCount(unfilteredInstanceCountResponse.getCount());
+      response = executeRequests(executionContext, searchRequest, unfilteredTotalInstanceCountRequest);
+    } catch (ElasticsearchStatusException e) {
+      if (isInstanceIndexNotFoundException(e)) {
+        if (executionContext.getReportData().getDefinitions().size() > 1) {
+          // If there are multiple data sources, we retry with the process instance index multi alias to get a result
+          log.info(
+            "Could not evaluate report because at least one required instance index {} does not exist. Retrying with index " +
+              "multi alias",
+            Arrays.asList(getIndexNames(executionContext))
+          );
+          searchRequest.indices(getMultiIndexAlias());
+          unfilteredTotalInstanceCountRequest.indices(getMultiIndexAlias());
+          try {
+            response = executeRequests(executionContext, searchRequest, unfilteredTotalInstanceCountRequest);
+          } catch (ElasticsearchStatusException ex) {
+            return returnEmptyResult(executionContext);
+          } catch (IOException ex) {
+            throw e;
+          }
+        } else {
+          return returnEmptyResult(executionContext);
+        }
+      } else {
+        throw e;
+      }
     } catch (IOException e) {
       String reason =
         String.format(
@@ -93,28 +116,33 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
         );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
-    } catch (ElasticsearchStatusException e) {
-      if (isInstanceIndexNotFoundException(e)) {
-        log.info(
-          "Could not evaluate report because required instance index {} does not exist. Returning empty result instead",
-          Arrays.asList(getIndexNames(executionContext))
-        );
-        return mapToReportResult.apply(new CompositeCommandResult(
-          executionContext.getReportData(),
-          viewPart.getViewProperty(executionContext),
-          // the default number value differs across views, see the corresponding createEmptyResult implementations
-          // thus we refer to it here in order to create an appropriate empty result
-          // see https://jira.camunda.com/browse/OPT-3336
-          viewPart.createEmptyResult(executionContext).getViewMeasures().stream()
-            .findFirst()
-            .map(CompositeCommandResult.ViewMeasure::getValue)
-            .orElse(null)
-        ));
-      } else {
-        throw e;
-      }
     }
     return retrieveQueryResult(response, executionContext);
+  }
+
+  private CommandEvaluationResult<T> returnEmptyResult(final ExecutionContext<D> executionContext) {
+    log.info("Could not evaluate report. Returning empty result instead");
+    return mapToReportResult.apply(new CompositeCommandResult(
+      executionContext.getReportData(),
+      viewPart.getViewProperty(executionContext),
+      // the default number value differs across views, see the corresponding createEmptyResult implementations
+      // thus we refer to it here in order to create an appropriate empty result
+      // see https://jira.camunda.com/browse/OPT-3336
+      viewPart.createEmptyResult(executionContext).getViewMeasures().stream()
+        .findFirst()
+        .map(CompositeCommandResult.ViewMeasure::getValue)
+        .orElse(null)
+    ));
+  }
+
+  private SearchResponse executeRequests(final ExecutionContext<D> executionContext, final SearchRequest searchRequest,
+                                         final CountRequest unfilteredTotalInstanceCountRequest) throws IOException {
+    SearchResponse response;
+    CountResponse unfilteredInstanceCountResponse;
+    response = executeElasticSearchCommand(executionContext, searchRequest);
+    unfilteredInstanceCountResponse = esClient.count(unfilteredTotalInstanceCountRequest);
+    executionContext.setUnfilteredTotalInstanceCount(unfilteredInstanceCountResponse.getCount());
+    return response;
   }
 
   private SearchResponse executeElasticSearchCommand(final ExecutionContext<D> executionContext,
