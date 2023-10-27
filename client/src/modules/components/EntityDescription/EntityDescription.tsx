@@ -114,7 +114,6 @@ export default function EntityDescription({description, onEdit}: EntityDescripti
             kind="ghost"
             size="sm"
             className="edit"
-            link
             onClick={openModal}
             renderIcon={Edit}
             hasIconOnly
@@ -122,15 +121,7 @@ export default function EntityDescription({description, onEdit}: EntityDescripti
           />
         )}
         {onEdit && !description && (
-          <Button
-            kind="tertiary"
-            size="sm"
-            className="add"
-            link
-            onClick={openModal}
-            renderIcon={Add}
-            iconDescription="Add"
-          >
+          <Button kind="tertiary" size="sm" className="add" onClick={openModal} renderIcon={Add}>
             {t('report.addDescription')}
           </Button>
         )}
