@@ -1,0 +1,371 @@
+openapi: "3.0.2"
+info:
+  title: Cluster Topology Management API
+  version: "1.0"
+  description: API for managing cluster membership and partition distribution.
+servers:
+  - url: "{schema}://{host}:{port}/actuator/cluster"
+    variables:
+      host:
+        default: localhost
+        description: Management server hostname
+      port:
+        default: "9600"
+        description: Management server port
+      schema:
+        default: http
+        description: Management server schema
+paths:
+  /brokers/{brokerId}:
+    post:
+      summary: Add a broker to the cluster
+      description: Add a broker with the given brokerId to the cluster. The broker must be running
+                   to complete the operation.
+      parameters:
+        - $ref: '#/components/parameters/BrokerId'
+      responses:
+        '202':
+          $ref: '#/components/responses/AddBrokersResponse'
+        '409':
+          $ref: '#/components/responses/ConcurrentChangeError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '502':
+          $ref: '#/components/responses/GatewayError'
+        '504':
+          $ref: '#/components/responses/TimeoutError'
+    delete:
+      summary: Remove a broker from the cluster.
+      description: Remove a broker with the given brokerId from the cluster. The broker must be
+                   running to complete the operation.
+      parameters:
+        - $ref: '#/components/parameters/BrokerId'
+      responses:
+        '202':
+          $ref: '#/components/responses/RemoveBrokerResponse'
+        '409':
+          $ref: '#/components/responses/ConcurrentChangeError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '502':
+          $ref: '#/components/responses/GatewayError'
+        '504':
+          $ref: '#/components/responses/TimeoutError'
+  /brokers:
+    post:
+      summary: Reconfigure the cluster with the given brokers.
+      description: The final cluster consists of only the brokers in the request body. New brokers
+                   in the request will be added to the cluster. Any existing brokers that are not part
+                   of the request will be removed from the cluster. The partitions will be re-distributed
+                   to the given brokers. All brokers must be running to complete the operation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScaleRequest"
+      responses:
+        '202':
+          $ref: "#/components/responses/ScaleBrokersResponse"
+        '409':
+          $ref: '#/components/responses/ConcurrentChangeError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '502':
+          $ref: '#/components/responses/GatewayError'
+        '504':
+          $ref: '#/components/responses/TimeoutError'
+    get:
+      summary: Return the list of broker ids
+      responses:
+        '200':
+          description: Returns the list of broker ids
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BrokerId"
+
+  /:
+    get:
+      summary: Get current topology
+      description: Returns the current topology of the cluster.
+      responses:
+        '200':
+          $ref: "#/components/responses/GetTopologyResponse"
+
+
+components:
+  parameters:
+    BrokerId:
+      name: brokerId
+      required: true
+      in: path
+      description: Id of the broker
+      schema:
+        $ref: '#/components/schemas/BrokerId'
+
+  responses:
+    ConcurrentChangeError:
+      description: Failed to accept request. Another topology change is in progress.
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/Error"
+
+    GatewayError:
+      description: Gateway failed to send request to the broker.
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/Error"
+
+    TimeoutError:
+      description: Request from gateway to broker timed out.
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/Error"
+
+    InternalError:
+      description: Internal error
+      content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Error"
+
+    AddBrokersResponse:
+      description: Request to add a new broker is accepted.
+      content:
+        application.json:
+          schema:
+            $ref: "#/components/schemas/PostOperationResponse"
+
+    ScaleBrokersResponse:
+      description: Request to reconfigure brokers is accepted.
+      content:
+        application.json:
+          schema:
+            $ref: "#/components/schemas/PostOperationResponse"
+
+    RemoveBrokerResponse:
+      description: Request to remove broker is accepted.
+      content:
+        application.json:
+          schema:
+            $ref: "#/components/schemas/PostOperationResponse"
+
+    GetTopologyResponse:
+      description: response body for getting current topology
+      content:
+        application.json:
+          schema:
+            $ref: "#/components/schemas/GetTopologyResponse"
+
+  schemas:
+    Error:
+      title: Error response
+      description: Generic response for all errors
+      type: object
+      properties:
+        message:
+          description: Error message
+          type: string
+          example: something failed
+
+    ScaleRequest:
+      title: ScaleRequest
+      description: Request body for changing the cluster topology
+      type: array
+      items:
+        $ref: "#/components/schemas/BrokerId"
+
+    PostOperationResponse:
+      title: PostOperationResponse
+      description: Returns the current topology, planned changes and the expected final topology
+                   when the planned changes have completed.
+      type: object
+      properties:
+        changeId:
+          description: The id to track topology change.
+          type: integer
+        currentTopology:
+          description: Current topology of the cluster
+          type: array
+          items:
+            $ref: "#/components/schemas/BrokerState"
+        plannedChanges:
+          description: A sequence operations for processing to the request.
+          type: array
+          items:
+            $ref: "#/components/schemas/Operation"
+        expectedTopology:
+          description: The expected final topology when the planned changes have completed.
+          type: array
+          items:
+            $ref: "#/components/schemas/BrokerState"
+
+
+    GetTopologyResponse:
+      title: GetTopologyResponse
+      description: Current topology of the cluster
+      type: object
+      properties:
+        version:
+          type: integer
+          description: The version of the topology
+          example: 1
+        brokers:
+          type: array
+          items:
+            $ref: "#/components/schemas/BrokerState"
+        change:
+            $ref: "#/components/schemas/TopologyChange"
+
+    TopologyChange:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: The id of the current ongoing or last completed change.
+          example: 3
+        status:
+          type: string
+          enum:
+            - IN_PROGRESS
+            - COMPLETED
+            - FAILED
+        startedAt:
+          type: string
+          format: date-time
+          description: The time when the topology change was started
+          example: "2020-01-01T00:00:00Z"
+        completedAt:
+          type: string
+          format: date-time
+          description: The time when the topology change was completed
+          example: "2020-01-01T00:00:00Z"
+        internalVersion:
+          type: integer
+          format: int64
+          description: The internal version of the topology change
+          example: 1
+        completed:
+          description: The list of operations that have been completed if the change status is not COMPLETED.
+          type: array
+          items:
+            allOf:
+              - $ref: "#/components/schemas/Operation"
+              - type: object
+                properties:
+                  completedAt:
+                    type: string
+                    format: date-time
+                    description: The time when the operation was completed
+                    example: "2020-01-01T00:00:00Z"
+        pending:
+          description: The list of operations that are pending.
+          type: array
+          items:
+            $ref: "#/components/schemas/Operation"
+
+    Operation:
+      type: object
+      properties:
+        operation:
+          type: string
+          enum:
+            - BROKER_ADD
+            - BROKER_REMOVE
+            - PARTITION_JOIN
+            - PARTITION_LEAVE
+            - PARTITION_RECONFIGURE_PRIORITY
+        brokerId:
+          $ref: "#/components/schemas/BrokerId"
+        partitionId:
+          $ref: "#/components/schemas/PartitionId"
+        priority:
+          type: integer
+          format: int32
+          description: The priority of the partition
+          example: 3
+
+    BrokerState:
+      title: BrokerState
+      description: State of a broker
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/BrokerId"
+        state:
+          $ref: "#/components/schemas/BrokerStateCode"
+        version:
+          type: integer
+          description: The version of the broker state
+          example: 1
+        lastUpdatedAt:
+          type: string
+          format: date-time
+          description: The time when the broker state was last updated
+          example: "2020-01-01T00:00:00Z"
+        partitions:
+          type: array
+          items:
+            $ref: "#/components/schemas/PartitionState"
+
+    BrokerStateCode:
+      title: BrokerStateCode
+      description: State of a broker
+      type: string
+      enum:
+        - UNKNOWN
+        - ACTIVE
+        - JOINING
+        - LEAVING
+        - LEFT
+
+    PartitionState:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/PartitionId"
+        state:
+          $ref: "#/components/schemas/PartitionStateCode"
+        priority:
+          type: integer
+          format: int32
+          description: The priority of the partition
+          example: 1
+
+    PartitionStateCode:
+      title: PartitionStateCode
+      description: State of a partition
+      type: string
+      enum:
+        - UNKNOWN
+        - JOINING
+        - ACTIVE
+        - LEAVING
+
+    ChangeId:
+      title: ChangeId
+      description: The ID of broker
+      type: integer
+      format: int32
+      example: 8
+
+    BrokerId:
+      title: BrokerId
+      description: The ID of broker
+      type: integer
+      format: int32
+      example: 8
+
+    PartitionId:
+      title: PartitionId
+      description: The ID of broker
+      type: integer
+      format: int32
+      example: 8
