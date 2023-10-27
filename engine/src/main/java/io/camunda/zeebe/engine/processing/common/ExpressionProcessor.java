@@ -27,8 +27,14 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class ExpressionProcessor {
 
-  private static final EvaluationContext EMPTY_EVALUATION_CONTEXT = x -> null;
+  private static final List<ResultType> INTERVAL_RESULT_TYPES =
+      List.of(ResultType.DURATION, ResultType.PERIOD, ResultType.STRING);
+  private static final List<ResultType> DATE_TIME_RESULT_TYPES =
+      List.of(ResultType.DATE_TIME, ResultType.STRING);
+  private static final List<ResultType> NULLABLE_DATE_TIME_RESULT_TYPES =
+      List.of(ResultType.NULL, ResultType.DATE_TIME, ResultType.STRING);
 
+  private static final EvaluationContext EMPTY_EVALUATION_CONTEXT = x -> null;
   private final DirectBuffer resultView = new UnsafeBuffer();
 
   private final ExpressionLanguage expressionLanguage;
@@ -142,36 +148,29 @@ public final class ExpressionProcessor {
    */
   public Either<Failure, Interval> evaluateIntervalExpression(
       final Expression expression, final long scopeKey) {
-    final var result = evaluateExpression(expression, scopeKey);
-    if (result.isFailure()) {
-      return Either.left(createFailureMessage(result, result.getFailureMessage(), scopeKey));
-    }
-    switch (result.getType()) {
-      case DURATION:
-        return Either.right(new Interval(result.getDuration()));
-      case PERIOD:
-        return Either.right(new Interval(result.getPeriod()));
-      case STRING:
-        try {
-          return Either.right(Interval.parse(result.getString()));
-        } catch (final DateTimeParseException e) {
-          return Either.left(
-              createFailureMessage(
-                  result,
-                  String.format(
-                      "Invalid duration format '%s' for expression '%s'.",
-                      result.getString(), expression.getExpression()),
-                  scopeKey));
-        }
-      default:
-        final var expected = List.of(ResultType.DURATION, ResultType.PERIOD, ResultType.STRING);
-        return Either.left(
-            createFailureMessage(
-                result,
-                String.format(
-                    "Expected result of the expression '%s' to be one of '%s', but was '%s'.",
-                    expression.getExpression(), expected, result.getType()),
-                scopeKey));
+    return evaluateExpressionAsEither(expression, scopeKey)
+        .flatMap(result -> typeCheck(result, INTERVAL_RESULT_TYPES, scopeKey))
+        .flatMap(
+            result ->
+                switch (result.getType()) {
+                  case DURATION -> Either.right(new Interval(result.getDuration()));
+                  case PERIOD -> Either.right(new Interval(result.getPeriod()));
+                  default -> parseIntervalString(expression, scopeKey, result);
+                });
+  }
+
+  private Either<Failure, Interval> parseIntervalString(
+      final Expression expression, final long scopeKey, final EvaluationResult result) {
+    try {
+      return Either.right(Interval.parse(result.getString()));
+    } catch (final DateTimeParseException e) {
+      return Either.left(
+          createFailureMessage(
+              result,
+              String.format(
+                  "Invalid duration format '%s' for expression '%s'.",
+                  result.getString(), expression.getExpression()),
+              scopeKey));
     }
   }
 
@@ -211,27 +210,17 @@ public final class ExpressionProcessor {
    */
   public Either<Failure, Optional<ZonedDateTime>> evaluateDateTimeExpression(
       final Expression expression, final Long scopeKey, final boolean isNullable) {
-    final var result = evaluateExpression(expression, scopeKey);
-    if (result.isFailure()) {
-      return Either.left(createFailureMessage(result, result.getFailureMessage(), scopeKey));
-    }
-    if (isNullable && result.getType() == ResultType.NULL) {
-      return Either.right(Optional.empty());
-    }
-    if (result.getType() == ResultType.DATE_TIME) {
-      return Either.right(Optional.of(result.getDateTime()));
-    }
-    if (result.getType() == ResultType.STRING) {
-      return evaluateDateTimeExpressionString(result, scopeKey, isNullable);
-    }
-    final var expected = List.of(ResultType.DATE_TIME, ResultType.STRING);
-    return Either.left(
-        createFailureMessage(
-            result,
-            String.format(
-                "Expected result of the expression '%s' to be one of '%s', but was '%s'.",
-                expression.getExpression(), expected, result.getType()),
-            scopeKey));
+    final var dateTimeResultTypes =
+        isNullable ? NULLABLE_DATE_TIME_RESULT_TYPES : DATE_TIME_RESULT_TYPES;
+    return evaluateExpressionAsEither(expression, scopeKey)
+        .flatMap(result -> typeCheck(result, dateTimeResultTypes, scopeKey))
+        .flatMap(
+            result ->
+                switch (result.getType()) {
+                  case NULL -> Either.right(Optional.empty());
+                  case DATE_TIME -> Either.right(Optional.of(result.getDateTime()));
+                  default -> evaluateDateTimeExpressionString(result, scopeKey, isNullable);
+                });
   }
 
   /**
