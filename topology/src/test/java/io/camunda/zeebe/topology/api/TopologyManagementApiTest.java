@@ -20,6 +20,7 @@ import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.PartitionState;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
@@ -100,9 +101,8 @@ final class TopologyManagementApiTest {
     final var changeStatus = clientApi.addMembers(request).join();
 
     // then
-    assertThat(recordingCoordinator.getLastAppliedOperation())
-        .containsExactly(new MemberJoinOperation(MemberId.from("1")));
-    assertThat(changeStatus.changeId()).isEqualTo(initialTopology.version() + 1);
+    final var expected = new MemberJoinOperation(MemberId.from("1"));
+    assertThat(changeStatus.plannedChanges()).containsExactly(expected);
   }
 
   @Test
@@ -120,12 +120,11 @@ final class TopologyManagementApiTest {
     final var changeStatus = clientApi.removeMembers(request).join();
 
     // then
-    assertThat(recordingCoordinator.getLastAppliedOperation())
-        .containsExactlyInAnyOrderElementsOf(
-            Set.of(
-                new MemberLeaveOperation(MemberId.from("1")),
-                new MemberLeaveOperation(MemberId.from("2"))));
-    assertThat(changeStatus.changeId()).isEqualTo(initialTopology.version() + 1);
+    final List<TopologyChangeOperation> expected =
+        List.of(
+            new MemberLeaveOperation(MemberId.from("1")),
+            new MemberLeaveOperation(MemberId.from("2")));
+    assertThat(changeStatus.plannedChanges()).containsExactlyElementsOf(expected);
   }
 
   @Test
@@ -138,9 +137,8 @@ final class TopologyManagementApiTest {
     final var changeStatus = clientApi.joinPartition(request).join();
 
     // then
-    assertThat(recordingCoordinator.getLastAppliedOperation())
+    assertThat(changeStatus.plannedChanges())
         .containsExactly(new PartitionJoinOperation(MemberId.from("1"), 1, 3));
-    assertThat(changeStatus.changeId()).isEqualTo(initialTopology.version() + 1);
   }
 
   @Test
@@ -152,9 +150,8 @@ final class TopologyManagementApiTest {
     final var changeStatus = clientApi.leavePartition(request).join();
 
     // then
-    assertThat(recordingCoordinator.getLastAppliedOperation())
+    assertThat(changeStatus.plannedChanges())
         .containsExactly(new PartitionLeaveOperation(MemberId.from("1"), 1));
-    assertThat(changeStatus.changeId()).isEqualTo(initialTopology.version() + 1);
   }
 
   @Test
@@ -176,11 +173,10 @@ final class TopologyManagementApiTest {
     final var changeStatus = clientApi.reassignPartitions(request).join();
 
     // then
-    assertThat(recordingCoordinator.getLastAppliedOperation())
+    assertThat(changeStatus.plannedChanges())
         .containsExactly(
             new PartitionJoinOperation(MemberId.from("2"), 2, 1),
             new PartitionLeaveOperation(MemberId.from("1"), 2));
-    assertThat(changeStatus.changeId()).isEqualTo(initialTopology.version() + 1);
   }
 
   @Test
@@ -200,11 +196,10 @@ final class TopologyManagementApiTest {
     final var changeStatus = clientApi.scaleMembers(request).join();
 
     // then
-    assertThat(recordingCoordinator.getLastAppliedOperation())
+    assertThat(changeStatus.plannedChanges())
         .containsExactly(
             new MemberJoinOperation(MemberId.from("2")),
             new PartitionJoinOperation(MemberId.from("2"), 2, 1),
             new PartitionLeaveOperation(MemberId.from("1"), 2));
-    assertThat(changeStatus.changeId()).isEqualTo(initialTopology.version() + 1);
   }
 }
