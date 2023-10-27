@@ -4,7 +4,7 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.tasklist.qa.migration.v100;
+package io.camunda.tasklist.qa.migration.v800;
 
 import static io.camunda.tasklist.property.ImportProperties.DEFAULT_VARIABLE_SIZE_THRESHOLD;
 import static io.camunda.tasklist.qa.util.VariablesUtil.createBigVariableWithSuffix;

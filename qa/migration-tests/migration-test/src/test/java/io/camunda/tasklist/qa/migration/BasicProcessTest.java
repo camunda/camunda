@@ -6,7 +6,6 @@
  */
 package io.camunda.tasklist.qa.migration;
 
-import static io.camunda.tasklist.schema.templates.TaskTemplate.ASSIGNEE;
 import static io.camunda.tasklist.schema.templates.TaskTemplate.BPMN_PROCESS_ID;
 import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -16,7 +15,7 @@ import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.UserEntity;
 import io.camunda.tasklist.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.qa.migration.util.AbstractMigrationTest;
-import io.camunda.tasklist.qa.migration.v100.BasicProcessDataGenerator;
+import io.camunda.tasklist.qa.migration.v800.BasicProcessDataGenerator;
 import io.camunda.tasklist.schema.indices.UserIndex;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import java.io.IOException;
@@ -66,7 +65,8 @@ public class BasicProcessTest extends AbstractMigrationTest {
             .source(new SearchSourceBuilder().query(termQuery(BPMN_PROCESS_ID, bpmnProcessId)));
     final List<TaskEntity> tasks = entityReader.searchEntitiesFor(searchRequest, TaskEntity.class);
     assertThat(tasks).hasSize(BasicProcessDataGenerator.PROCESS_INSTANCE_COUNT);
-    assertThat(tasks).extracting(ASSIGNEE).containsOnlyNulls();
+    // 1.3.0-0_task_clean_assignee.json is not anymore part in the migration path
+    // assertThat(tasks).extracting(ASSIGNEE).containsOnlyNulls();
   }
 
   @Test

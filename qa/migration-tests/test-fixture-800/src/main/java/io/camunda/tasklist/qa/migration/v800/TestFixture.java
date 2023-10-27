@@ -8,6 +8,7 @@ package io.camunda.tasklist.qa.migration.v800;
 
 import io.camunda.tasklist.qa.util.TestContext;
 import io.camunda.tasklist.qa.util.migration.AbstractTestFixture;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -15,16 +16,22 @@ public class TestFixture extends AbstractTestFixture {
 
   public static final String VERSION = "8.0.0";
 
-  @Override
-  public void setup(TestContext testContext) {
-    super.setup(testContext);
-    startZeebeAndTasklist();
-    // no new data is created
-    stopZeebeAndTasklist(testContext);
-  }
+  @Autowired private BasicProcessDataGenerator basicProcessDataGenerator;
+
+  @Autowired private BigVariableProcessDataGenerator bigVariableProcessDataGenerator;
 
   @Override
   public String getVersion() {
     return VERSION;
+  }
+
+  @Override
+  protected void generateData(TestContext testContext) {
+    try {
+      basicProcessDataGenerator.createData(testContext);
+      bigVariableProcessDataGenerator.createData(testContext);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 }

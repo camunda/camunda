@@ -16,20 +16,25 @@ public abstract class AbstractTestFixture implements TestFixture {
 
   protected ZeebeContainer broker;
   protected GenericContainer<?> tasklistContainer;
-  protected TestContext testContext;
   @Autowired private TestContainerUtil testContainerUtil;
 
   @Override
   public void setup(TestContext testContext) {
-    this.testContext = testContext;
+    startZeebeAndTasklist(testContext);
+    generateData(testContext);
+    stopZeebeAndTasklist(testContext);
   }
 
-  protected void startZeebeAndTasklist() {
+  private void startZeebeAndTasklist(TestContext testContext) {
     broker = testContainerUtil.startZeebe(getVersion(), testContext);
     tasklistContainer = testContainerUtil.startTasklist(getVersion(), testContext);
   }
 
-  protected void stopZeebeAndTasklist(TestContext testContext) {
+  private void stopZeebeAndTasklist(TestContext testContext) {
     testContainerUtil.stopZeebeAndTasklist(testContext);
+  }
+
+  protected void generateData(TestContext testContext) {
+    // by default, no new data is created
   }
 }

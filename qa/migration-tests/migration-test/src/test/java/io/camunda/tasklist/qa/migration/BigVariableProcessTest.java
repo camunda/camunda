@@ -6,9 +6,9 @@
  */
 package io.camunda.tasklist.qa.migration;
 
-import static io.camunda.tasklist.qa.migration.v100.BigVariableProcessDataGenerator.BIG_VAR_NAME;
-import static io.camunda.tasklist.qa.migration.v100.BigVariableProcessDataGenerator.SMALL_VAR_NAME;
-import static io.camunda.tasklist.qa.migration.v100.BigVariableProcessDataGenerator.SMALL_VAR_VALUE;
+import static io.camunda.tasklist.qa.migration.v800.BigVariableProcessDataGenerator.BIG_VAR_NAME;
+import static io.camunda.tasklist.qa.migration.v800.BigVariableProcessDataGenerator.SMALL_VAR_NAME;
+import static io.camunda.tasklist.qa.migration.v800.BigVariableProcessDataGenerator.SMALL_VAR_VALUE;
 import static io.camunda.tasklist.schema.indices.VariableIndex.PROCESS_INSTANCE_ID;
 import static io.camunda.tasklist.schema.templates.TaskTemplate.BPMN_PROCESS_ID;
 import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
@@ -19,7 +19,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.property.ImportProperties;
 import io.camunda.tasklist.qa.migration.util.AbstractMigrationTest;
-import io.camunda.tasklist.qa.migration.v100.BigVariableProcessDataGenerator;
+import io.camunda.tasklist.qa.migration.v800.BigVariableProcessDataGenerator;
 import io.camunda.tasklist.qa.util.VariablesUtil;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import java.io.IOException;
