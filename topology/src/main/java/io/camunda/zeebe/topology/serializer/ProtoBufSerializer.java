@@ -17,11 +17,8 @@ import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionReq
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.ScaleRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementResponse.StatusCode;
-import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossipState;
 import io.camunda.zeebe.topology.protocol.Requests;
-import io.camunda.zeebe.topology.protocol.Requests.ChangeStatus;
 import io.camunda.zeebe.topology.protocol.Topology;
 import io.camunda.zeebe.topology.protocol.Topology.CompletedChange;
 import io.camunda.zeebe.topology.protocol.Topology.MemberState;
@@ -505,28 +502,6 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
   }
 
   @Override
-  public byte[] encode(final TopologyChangeStatus topologyChangeStatus) {
-    return Requests.TopologyChangeStatus.newBuilder()
-        .setChangeId(topologyChangeStatus.changeId())
-        .setStatus(fromTopologyChangeStatus(topologyChangeStatus.status()))
-        .build()
-        .toByteArray();
-  }
-
-  @Override
-  public TopologyChangeStatus decodeTopologyChangeStatus(final byte[] encodedTopologyChangeStatus) {
-    try {
-      final var topologyChangeStatus =
-          Requests.TopologyChangeStatus.parseFrom(encodedTopologyChangeStatus);
-      return new TopologyChangeStatus(
-          topologyChangeStatus.getChangeId(),
-          toTopologyChangeStatus(topologyChangeStatus.getStatus()));
-    } catch (final InvalidProtocolBufferException e) {
-      throw new DecodingFailed(e);
-    }
-  }
-
-  @Override
   public byte[] encode(final TopologyChangeResponse topologyChangeResponse) {
     final var builder = Requests.TopologyChangeResponse.newBuilder();
 
@@ -562,24 +537,6 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
       final Map<MemberId, io.camunda.zeebe.topology.state.MemberState> topologyChangeResponse) {
     return topologyChangeResponse.entrySet().stream()
         .collect(Collectors.toMap(e -> e.getKey().id(), e -> encodeMemberState(e.getValue())));
-  }
-
-  private StatusCode toTopologyChangeStatus(final ChangeStatus status) {
-    return switch (status) {
-      case IN_PROGRESS -> StatusCode.IN_PROGRESS;
-      case COMPLETED -> StatusCode.COMPLETED;
-      case FAILED -> StatusCode.FAILED;
-      case UNRECOGNIZED, STATUS_UNKNOWN -> throw new IllegalStateException(
-          "Unknown status: " + status);
-    };
-  }
-
-  private ChangeStatus fromTopologyChangeStatus(final StatusCode status) {
-    return switch (status) {
-      case IN_PROGRESS -> ChangeStatus.IN_PROGRESS;
-      case COMPLETED -> ChangeStatus.COMPLETED;
-      case FAILED -> ChangeStatus.FAILED;
-    };
   }
 
   private Topology.ChangeStatus fromTopologyChangeStatus(final ClusterChangePlan.Status status) {
