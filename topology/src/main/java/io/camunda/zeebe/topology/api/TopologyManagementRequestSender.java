@@ -20,7 +20,7 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 /** Forwards all requests to the coordinator. */
-final class TopologyManagementRequestSender {
+public final class TopologyManagementRequestSender {
   private static final Duration TIMEOUT = Duration.ofSeconds(10);
   private final ClusterCommunicationService communicationService;
   private final MemberId coordinator;
