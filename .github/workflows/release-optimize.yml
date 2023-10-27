@@ -15,10 +15,26 @@ on:
         required: true
         description: 'The branch used for the release checkout.'
         default: '0.0.0'
+      PUSH_CHANGES:
+        required: true
+        description: 'Should the changes be pushed to remote locations.'
+        default: true
+      DOCKER_LATEST:
+        required: true
+        description: 'Should the docker image be tagged as latest.'
+        default: true
+      ADDITIONAL_DOCKER_TAG:
+        required: false
+        description: 'Any additional tag that should be added to the docker image.'
+        default: '0.0.0'
       DRY_RUN:
         required: true
         description: 'Check if this is an actual release or a dry run.'
         default: 'true'
+      RELEASE_EXAMPLES:
+        required: true
+        description: 'Verify whether the optimize examples repository has to be updated.'
+        default: false
 
 jobs:
   build:
@@ -43,7 +59,7 @@ jobs:
             secret/data/products/optimize/ci/camunda-optimize GITHUB_OPTIMIZE_APP_KEY;
 
       - name: Setup Maven
-        uses: ./.github/actions/setup-maven
+        uses: camunda/camunda-optimize/.github/actions/setup-maven@master
         with:
           secrets: ${{ toJSON(secrets) }}
 
@@ -86,3 +102,14 @@ jobs:
           BRANCH: ${{ github.event.inputs.BRANCH }}
         run: |
           .github/scripts/update-previous-version.sh
+
+      - name: Trigger release examples repo
+        if: inputs.RELEASE_EXAMPLES == 'true'
+        env:
+          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
+          GITHUB_APP_ID: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
+          RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION }}
+          DEVELOPMENT_VERSION: ${{ github.event.inputs.DEVELOPMENT_VERSION }}
+          BRANCH: ${{ github.event.inputs.BRANCH }}
+        run: |
+          .github/scripts/update_example_repo.sh
