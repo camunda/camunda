@@ -16,12 +16,12 @@ import io.camunda.zeebe.gateway.admin.backup.PartitionBackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.State;
 import io.camunda.zeebe.gateway.cmd.BrokerErrorException;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
+import io.camunda.zeebe.management.backups.BackupInfo;
+import io.camunda.zeebe.management.backups.Error;
+import io.camunda.zeebe.management.backups.PartitionBackupInfo;
+import io.camunda.zeebe.management.backups.StateCode;
+import io.camunda.zeebe.management.backups.TakeBackupResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
-import io.camunda.zeebe.shared.management.openapi.models.BackupInfo;
-import io.camunda.zeebe.shared.management.openapi.models.Error;
-import io.camunda.zeebe.shared.management.openapi.models.PartitionBackupInfo;
-import io.camunda.zeebe.shared.management.openapi.models.StateCode;
-import io.camunda.zeebe.shared.management.openapi.models.TakeBackupResponse;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
 import java.time.Instant;
@@ -188,7 +188,7 @@ public final class BackupEndpoint {
       } else if (error instanceof ConnectException) {
         errorCode = 502;
         message = "Failed to send request from gateway to broker." + error.getMessage();
-      } else if (error instanceof BrokerErrorException brokerError) {
+      } else if (error instanceof final BrokerErrorException brokerError) {
         final var rootError = brokerError.getError();
         errorCode =
             switch (rootError.getCode()) {

@@ -416,6 +416,7 @@
             </goals>
             <configuration>
               <inputSpec>${project.basedir}/src/main/resources/api/backup-management-api.yaml</inputSpec>
+              <modelPackage>io.camunda.zeebe.management.backups</modelPackage>
             </configuration>
           </execution>
           <execution>
@@ -425,7 +426,7 @@
             </goals>
             <configuration>
               <inputSpec>${project.basedir}/src/main/resources/api/cluster-api.yaml</inputSpec>
-              <modelPackage>io.camunda.zeebe.shared.management.openapi.models.cluster</modelPackage>
+              <modelPackage>io.camunda.zeebe.management.cluster</modelPackage>
             </configuration>
           </execution>
         </executions>
