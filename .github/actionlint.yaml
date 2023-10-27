@@ -1,11 +1,36 @@
 self-hosted-runner:
   # Labels of self-hosted runner in array of strings.
   labels:
-  - gcp-core-2-default
-  - gcp-core-4-default
-  - gcp-core-8-default
-  - gcp-core-16-default
-  - gcp-core-32-default
+    - aws-core-2-release
+    - aws-core-4-release
+    - aws-core-8-release
+    - aws-core-16-release
+    - aws-core-32-release
+    - aws-core-2-longrunning
+    - aws-core-4-longrunning
+    - aws-core-8-longrunning
+    - aws-core-16-longrunning
+    - aws-core-32-longrunning
+    - aws-core-2-default
+    - aws-core-4-default
+    - aws-core-8-default
+    - aws-core-16-default
+    - aws-core-32-default
+    - gcp-core-2-release
+    - gcp-core-4-release
+    - gcp-core-8-release
+    - gcp-core-16-release
+    - gcp-core-32-release
+    - gcp-core-2-longrunning
+    - gcp-core-4-longrunning
+    - gcp-core-8-longrunning
+    - gcp-core-16-longrunning
+    - gcp-core-32-longrunning
+    - gcp-core-2-default
+    - gcp-core-4-default
+    - gcp-core-8-default
+    - gcp-core-16-default
+    - gcp-core-32-default
 # Configuration variables in array of strings defined in your repository or
 # organization. `null` means disabling configuration variables check.
 # Empty array means no configuration variable is allowed.
