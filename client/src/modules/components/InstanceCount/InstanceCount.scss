@@ -76,44 +76,22 @@
         width: auto;
         background: transparent;
         border: 0;
+        color: var(--grey-lighten-56);
 
         .downIcon {
           display: none;
         }
 
-        &.icon {
-          width: 20px;
-          height: 20px;
-
-          &:hover {
-            background-color: var(--silver-darken-94);
-          }
-
-          &:active,
-          &.active {
-            background-color: var(--silver-darken-80);
-          }
-
-          .Icon {
-            margin: 2px;
-          }
+        &::after {
+          content: '.';
         }
 
-        &:not(.icon) {
-          color: var(--grey-lighten-56);
-          padding-right: 0;
+        &:disabled {
+          cursor: text;
+        }
 
-          &::after {
-            content: '.';
-          }
-
-          &:disabled {
-            cursor: text;
-          }
-
-          &:not(:disabled):hover {
-            text-decoration: underline;
-          }
+        &:not(:disabled):hover {
+          text-decoration: underline;
         }
       }
     }

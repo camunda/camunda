@@ -97,7 +97,13 @@ export default function InstanceCount({report, noInfo, additionalFilter, showHea
             }
           }}
         >
-          <Popover trigger={trigger} disabled={noInfo} className="instanceCountPopover" floating>
+          <Popover
+            title={t('report.instanceCount.appliedFilters')}
+            trigger={trigger}
+            disabled={noInfo}
+            className="instanceCountPopover"
+            floating
+          >
             {showHeader && (
               <div className="countString">
                 {typeof instanceCount === 'number' &&
