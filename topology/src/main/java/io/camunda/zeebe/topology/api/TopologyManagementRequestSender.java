@@ -9,8 +9,6 @@ package io.camunda.zeebe.topology.api;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.camunda.zeebe.scheduler.ConcurrencyControl;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
@@ -22,103 +20,73 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 /** Forwards all requests to the coordinator. */
-final class TopologyManagementRequestSender implements TopologyManagementApi {
+final class TopologyManagementRequestSender {
   private static final Duration TIMEOUT = Duration.ofSeconds(10);
   private final ClusterCommunicationService communicationService;
   private final MemberId coordinator;
-  private final ConcurrencyControl executor;
   private final TopologyRequestsSerializer serializer;
 
   public TopologyManagementRequestSender(
       final ClusterCommunicationService communicationService,
       final MemberId coordinator,
-      final TopologyRequestsSerializer serializer,
-      final ConcurrencyControl executor) {
+      final TopologyRequestsSerializer serializer) {
     this.communicationService = communicationService;
     this.coordinator = coordinator;
-    this.executor = executor;
     this.serializer = serializer;
   }
 
-  @Override
-  public ActorFuture<TopologyChangeStatus> addMembers(final AddMembersRequest addMembersRequest) {
-    final var responseFuture =
-        communicationService.send(
-            TopologyRequestTopics.ADD_MEMBER.topic(),
-            addMembersRequest,
-            serializer::encodeAddMembersRequest,
-            serializer::decodeTopologyChangeStatus,
-            coordinator,
-            TIMEOUT);
-    return toActorFuture(responseFuture);
+  public CompletableFuture<TopologyChangeStatus> addMembers(
+      final AddMembersRequest addMembersRequest) {
+    return communicationService.send(
+        TopologyRequestTopics.ADD_MEMBER.topic(),
+        addMembersRequest,
+        serializer::encodeAddMembersRequest,
+        serializer::decodeTopologyChangeStatus,
+        coordinator,
+        TIMEOUT);
   }
 
-  @Override
-  public ActorFuture<TopologyChangeStatus> removeMembers(
+  public CompletableFuture<TopologyChangeStatus> removeMembers(
       final RemoveMembersRequest removeMembersRequest) {
-    final var responseFuture =
-        communicationService.send(
-            TopologyRequestTopics.REMOVE_MEMBER.topic(),
-            removeMembersRequest,
-            serializer::encodeRemoveMembersRequest,
-            serializer::decodeTopologyChangeStatus,
-            coordinator,
-            TIMEOUT);
-    return toActorFuture(responseFuture);
+    return communicationService.send(
+        TopologyRequestTopics.REMOVE_MEMBER.topic(),
+        removeMembersRequest,
+        serializer::encodeRemoveMembersRequest,
+        serializer::decodeTopologyChangeStatus,
+        coordinator,
+        TIMEOUT);
   }
 
-  @Override
-  public ActorFuture<TopologyChangeStatus> joinPartition(
+  public CompletableFuture<TopologyChangeStatus> joinPartition(
       final JoinPartitionRequest joinPartitionRequest) {
-    final var responseFuture =
-        communicationService.send(
-            TopologyRequestTopics.JOIN_PARTITION.topic(),
-            joinPartitionRequest,
-            serializer::encodeJoinPartitionRequest,
-            serializer::decodeTopologyChangeStatus,
-            coordinator,
-            TIMEOUT);
-    return toActorFuture(responseFuture);
+    return communicationService.send(
+        TopologyRequestTopics.JOIN_PARTITION.topic(),
+        joinPartitionRequest,
+        serializer::encodeJoinPartitionRequest,
+        serializer::decodeTopologyChangeStatus,
+        coordinator,
+        TIMEOUT);
   }
 
-  @Override
-  public ActorFuture<TopologyChangeStatus> leavePartition(
+  public CompletableFuture<TopologyChangeStatus> leavePartition(
       final LeavePartitionRequest leavePartitionRequest) {
-    final var responseFuture =
-        communicationService.send(
-            TopologyRequestTopics.LEAVE_PARTITION.topic(),
-            leavePartitionRequest,
-            serializer::encodeLeavePartitionRequest,
-            serializer::decodeTopologyChangeStatus,
-            coordinator,
-            TIMEOUT);
-    return toActorFuture(responseFuture);
+    return communicationService.send(
+        TopologyRequestTopics.LEAVE_PARTITION.topic(),
+        leavePartitionRequest,
+        serializer::encodeLeavePartitionRequest,
+        serializer::decodeTopologyChangeStatus,
+        coordinator,
+        TIMEOUT);
   }
 
-  @Override
-  public ActorFuture<TopologyChangeStatus> reassignPartitions(
+  public CompletableFuture<TopologyChangeStatus> reassignPartitions(
       final ReassignPartitionsRequest reassignPartitionsRequest) {
-    final var responseFuture =
-        communicationService.send(
-            TopologyRequestTopics.REASSIGN_PARTITIONS.topic(),
-            reassignPartitionsRequest,
-            serializer::encodeReassignPartitionsRequest,
-            serializer::decodeTopologyChangeStatus,
-            coordinator,
-            TIMEOUT);
-    return toActorFuture(responseFuture);
-  }
-
-  private ActorFuture<TopologyChangeStatus> toActorFuture(
-      final CompletableFuture<TopologyChangeStatus> responseFuture) {
-    final ActorFuture<TopologyChangeStatus> resultFuture = executor.createFuture();
-    responseFuture
-        .thenAccept(resultFuture::complete)
-        .exceptionally(
-            error -> {
-              resultFuture.completeExceptionally(error);
-              return null;
-            });
-    return resultFuture;
+    return communicationService.send(
+        TopologyRequestTopics.REASSIGN_PARTITIONS.topic(),
+        reassignPartitionsRequest,
+        serializer::encodeReassignPartitionsRequest,
+        serializer::decodeTopologyChangeStatus,
+        coordinator,
+        TIMEOUT);
   }
 }
