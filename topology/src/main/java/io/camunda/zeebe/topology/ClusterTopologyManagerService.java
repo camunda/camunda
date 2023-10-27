@@ -18,6 +18,8 @@ import io.camunda.zeebe.topology.TopologyInitializer.FileInitializer;
 import io.camunda.zeebe.topology.TopologyInitializer.GossipInitializer;
 import io.camunda.zeebe.topology.TopologyInitializer.StaticInitializer;
 import io.camunda.zeebe.topology.TopologyInitializer.SyncInitializer;
+import io.camunda.zeebe.topology.api.TopologyManagementRequestsHandler;
+import io.camunda.zeebe.topology.api.TopologyRequestServer;
 import io.camunda.zeebe.topology.changes.NoopTopologyMembershipChangeExecutor;
 import io.camunda.zeebe.topology.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.topology.changes.TopologyChangeAppliersImpl;
@@ -44,6 +46,8 @@ public final class ClusterTopologyManagerService extends Actor implements Topolo
   private final boolean isCoordinator;
   private final PersistedClusterTopology persistedClusterTopology;
   private final Path topologyFile;
+  private TopologyChangeCoordinator topologyChangeCoordinator;
+  private TopologyRequestServer topologyRequestServer;
 
   public ClusterTopologyManagerService(
       final Path dataRootDirectory,
@@ -69,9 +73,18 @@ public final class ClusterTopologyManagerService extends Actor implements Topolo
             new ProtoBufSerializer(),
             config,
             clusterTopologyManager::onGossipReceived);
-    clusterTopologyManager.setTopologyGossiper(clusterTopologyGossiper::updateClusterTopology);
-
     isCoordinator = localMemberId.id().equals(COORDINATOR_ID);
+    if (isCoordinator) {
+      // Only a coordinator can start topology change
+      topologyChangeCoordinator = new TopologyChangeCoordinatorImpl(clusterTopologyManager, this);
+      topologyRequestServer =
+          new TopologyRequestServer(
+              communicationService,
+              new ProtoBufSerializer(),
+              new TopologyManagementRequestsHandler(topologyChangeCoordinator, this),
+              this);
+    }
+    clusterTopologyManager.setTopologyGossiper(clusterTopologyGossiper::updateClusterTopology);
   }
 
   private TopologyInitializer getNonCoordinatorInitializer() {
@@ -126,6 +139,11 @@ public final class ClusterTopologyManagerService extends Actor implements Topolo
         isCoordinator
             ? getCoordinatorInitializer(staticConfiguration)
             : getNonCoordinatorInitializer();
+
+    if (topologyRequestServer != null) {
+      topologyRequestServer.start();
+    }
+
     // Start gossiper first so that when ClusterTopologyManager initializes the topology, it can
     // immediately gossip it.
     clusterTopologyGossiper
@@ -145,17 +163,15 @@ public final class ClusterTopologyManagerService extends Actor implements Topolo
   }
 
   public Optional<TopologyChangeCoordinator> getTopologyChangeCoordinator() {
-    // Only a coordinator can start topology change
-    return isCoordinator
-        // create new instance every time, as we do not expect to make topology changes very often.
-        // So there is no need to keep an instance in the field unnecessarily.
-        ? Optional.of(new TopologyChangeCoordinatorImpl(clusterTopologyManager, this))
-        : Optional.empty();
+    return Optional.ofNullable(topologyChangeCoordinator);
   }
 
   @Override
   protected void onActorClosing() {
     clusterTopologyGossiper.closeAsync();
+    if (topologyRequestServer != null) {
+      topologyRequestServer.close();
+    }
   }
 
   public void registerPartitionChangeExecutor(

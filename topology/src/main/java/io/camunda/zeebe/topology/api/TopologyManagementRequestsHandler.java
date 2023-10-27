@@ -27,7 +27,7 @@ import java.util.List;
  * Handles the requests for the topology management. This is expected be running on the coordinator
  * node.
  */
-final class TopologyManagementRequestsHandler implements TopologyManagementApi {
+public final class TopologyManagementRequestsHandler implements TopologyManagementApi {
 
   private final TopologyChangeCoordinator coordinator;
   private final ConcurrencyControl executor;

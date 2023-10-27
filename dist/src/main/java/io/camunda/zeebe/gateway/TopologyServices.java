@@ -9,12 +9,15 @@ package io.camunda.zeebe.gateway;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.ClusterMembershipService;
+import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.topology.GatewayClusterTopologyService;
+import io.camunda.zeebe.topology.api.TopologyManagementRequestSender;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiperConfig;
+import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -55,5 +58,11 @@ public class TopologyServices {
     gatewayClusterTopologyService.addUpdateListener(brokerTopologyManager);
 
     return brokerTopologyManager;
+  }
+
+  @Bean
+  TopologyManagementRequestSender topologyManagementRequestSender() {
+    return new TopologyManagementRequestSender(
+        clusterCommunicationService, MemberId.from("0"), new ProtoBufSerializer());
   }
 }

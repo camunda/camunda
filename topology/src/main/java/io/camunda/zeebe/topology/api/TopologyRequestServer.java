@@ -23,7 +23,7 @@ public final class TopologyRequestServer implements AutoCloseable {
   private final ConcurrencyControl executor;
   private final TopologyRequestsSerializer serializer;
 
-  TopologyRequestServer(
+  public TopologyRequestServer(
       final ClusterCommunicationService communicationService,
       final TopologyRequestsSerializer serializer,
       final TopologyManagementApi topologyManagementApi,
@@ -34,7 +34,7 @@ public final class TopologyRequestServer implements AutoCloseable {
     this.executor = executor;
   }
 
-  void start() {
+  public void start() {
     registerAddMemberRequestsHandler();
     registerRemoveMemberRequestsHandler();
     registerJoinPartitionRequestsHandler();
@@ -92,15 +92,17 @@ public final class TopologyRequestServer implements AutoCloseable {
   private CompletableFuture<TopologyChangeStatus> toCompletableFuture(
       final ActorFuture<TopologyChangeStatus> resultFuture) {
     final var future = new CompletableFuture<TopologyChangeStatus>();
-    executor.runOnCompletion(
-        resultFuture,
-        (status, error) -> {
-          if (error == null) {
-            future.complete(status);
-          } else {
-            future.completeExceptionally(error);
-          }
-        });
+    executor.run(
+        () ->
+            executor.runOnCompletion(
+                resultFuture,
+                (status, error) -> {
+                  if (error == null) {
+                    future.complete(status);
+                  } else {
+                    future.completeExceptionally(error);
+                  }
+                }));
     return future;
   }
 }

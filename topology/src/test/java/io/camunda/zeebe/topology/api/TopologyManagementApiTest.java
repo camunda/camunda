@@ -36,7 +36,7 @@ import org.junit.jupiter.api.Test;
 // Test to verify that server handles requests from the clients. This test uses the actual
 // communicationService to ensure that request subscription and handling is done correctly.
 final class TopologyManagementApiTest {
-  private TopologyManagementApi clientApi;
+  private TopologyManagementRequestSender clientApi;
 
   private final RecordingChangeCoordinator recordingCoordinator = new RecordingChangeCoordinator();
   private TopologyRequestServer requestServer;
@@ -62,8 +62,7 @@ final class TopologyManagementApiTest {
         new TopologyManagementRequestSender(
             gateway.getCommunicationService(),
             coordinator.getMembershipService().getLocalMember().id(),
-            new ProtoBufSerializer(),
-            new TestConcurrencyControl());
+            new ProtoBufSerializer());
 
     requestServer =
         new TopologyRequestServer(
