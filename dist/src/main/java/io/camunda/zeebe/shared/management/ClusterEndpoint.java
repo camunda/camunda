@@ -7,9 +7,13 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequestSender;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
 import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
@@ -27,23 +31,93 @@ public class ClusterEndpoint {
   }
 
   @WriteOperation
-  public WebEndpointResponse<?> scale(
-      @Selector final ClusterComponent clusterComponent, final List<String> ids) {
-    return switch (clusterComponent) {
-      case BROKERS -> new WebEndpointResponse<>("Scaling brokers is not supported", 400);
+  public WebEndpointResponse<?> scale(@Selector final Resource resource, final List<String> ids) {
+    return switch (resource) {
+      case BROKERS -> new WebEndpointResponse<>("Scaling brokers is not supported", 501);
+      case PARTITIONS -> new WebEndpointResponse<>("Scaling partitions is not supported", 501);
     };
   }
 
   @WriteOperation
-  public WebEndpointResponse<?> addMember(
-      @Selector final ClusterComponent clusterComponent, @Selector final String id) {
-    return switch (clusterComponent) {
-      case ClusterComponent.BROKERS -> new WebEndpointResponse<>(
-          "Adding brokers is not supported", 400);
+  public WebEndpointResponse<?> add(@Selector final Resource resource, @Selector final String id) {
+    return switch (resource) {
+      case BROKERS -> new WebEndpointResponse<>("Adding brokers is not supported", 501);
+      case PARTITIONS -> new WebEndpointResponse<>("Adding partitions is not supported", 501);
     };
   }
 
-  public enum ClusterComponent {
+  @DeleteOperation
+  public WebEndpointResponse<?> remove(
+      @Selector final Resource resource, @Selector final String id) {
+    return switch (resource) {
+      case BROKERS -> new WebEndpointResponse<>("Removing brokers is not supported", 501);
+      case PARTITIONS -> new WebEndpointResponse<>("Removing partitions is not supported", 501);
+    };
+  }
+
+  @WriteOperation
+  public WebEndpointResponse<?> addSubResource(
+      @Selector final Resource resource,
+      @Selector final String resourceId,
+      @Selector final Resource subResource,
+      @Selector final String subResourceId,
+      final int priority) {
+    return switch (resource) {
+      case BROKERS -> switch (subResource) {
+        case PARTITIONS -> new WebEndpointResponse<>(
+            // POST /cluster/brokers/1/partitions/2
+            requestSender
+                .joinPartition(
+                    new JoinPartitionRequest(
+                        MemberId.from(resourceId), Integer.parseInt(subResourceId), priority))
+                .join());
+        case BROKERS -> new WebEndpointResponse<>(404);
+      };
+      case PARTITIONS -> switch (subResource) {
+        case BROKERS -> new WebEndpointResponse<>(
+            // POST /cluster/partitions/1/brokers/2
+            requestSender
+                .joinPartition(
+                    new JoinPartitionRequest(
+                        MemberId.from(subResourceId), Integer.parseInt(resourceId), priority))
+                .join());
+        case PARTITIONS -> new WebEndpointResponse<>(404);
+      };
+    };
+  }
+
+  @DeleteOperation
+  public WebEndpointResponse<?> removeSubResource(
+      @Selector final Resource resource,
+      @Selector final String resourceId,
+      @Selector final Resource subResource,
+      @Selector final String subResourceId) {
+    return switch (resource) {
+      case BROKERS -> switch (subResource) {
+        case PARTITIONS -> new WebEndpointResponse<>(
+            // DELETE /cluster/brokers/1/partitions/2
+            requestSender
+                .leavePartition(
+                    new LeavePartitionRequest(
+                        MemberId.from(resourceId), Integer.parseInt(subResourceId)))
+                .join());
+        case BROKERS -> new WebEndpointResponse<>(404);
+      };
+      case PARTITIONS -> switch (subResource) {
+        case BROKERS -> new WebEndpointResponse<>(
+            // DELETE /cluster/partitions/1/brokers/2
+            requestSender
+                .leavePartition(
+                    new LeavePartitionRequest(
+                        MemberId.from(subResourceId), Integer.parseInt(resourceId)))
+                .join());
+        case PARTITIONS -> new WebEndpointResponse<>(404);
+      };
+    };
+  }
+
+  public enum Resource {
     BROKERS,
+    PARTITIONS,
   }
 }
