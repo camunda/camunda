@@ -20,6 +20,7 @@ import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.IdGenerator;
 import org.agrona.concurrent.SnowflakeIdGenerator;
+import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
@@ -27,6 +28,8 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
 
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
   private static final String API_TOPIC_FORMAT = "%s-api-%d";
+  // Unix epoch time for January 1, 2023 1:00:00 AM GMT+01:00
+  private static final long TIMESTAMP_OFFSET_2023 = 1672531200000L;
   private static final String ERROR_MSG_MISSING_PARTITON_MAP =
       "Node already unsubscribed from partition %d, this can only happen when atomix does not cleanly remove its handlers.";
 
@@ -39,7 +42,12 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   public AtomixServerTransport(final MessagingService messagingService, final int nodeId) {
     this.messagingService = messagingService;
     partitionsRequestMap = new Int2ObjectHashMap<>();
-    this.idGenerator = new SnowflakeIdGenerator(nodeId);
+    this.idGenerator = new SnowflakeIdGenerator(
+        SnowflakeIdGenerator.NODE_ID_BITS_DEFAULT,
+        SnowflakeIdGenerator.SEQUENCE_BITS_DEFAULT,
+        nodeId,
+        TIMESTAMP_OFFSET_2023,
+        SystemEpochClock.INSTANCE);
   }
 
   @Override
