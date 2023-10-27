@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.ws.rs.NotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -18,6 +19,7 @@ import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantIdWithDefinitionsDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.db.reader.DefinitionReader;
 import org.camunda.optimize.service.es.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -29,7 +31,6 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.DefinitionVersionHandlingUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -58,8 +59,6 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import jakarta.ws.rs.NotFoundException;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -75,6 +74,10 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_KEY;
@@ -91,10 +94,6 @@ import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionInde
 import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.TENANT_ID;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.convertToLatestParticularVersion;
-import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -135,7 +134,7 @@ public class DefinitionReaderES implements DefinitionReader {
 
     addVersionFilterToQuery(versions, latestVersionSupplier, query);
 
-    return getDefinitionWithTenantIdsDtos(query, resolveIndexNameForType(type)).stream().findFirst();
+    return getDefinitionWithTenantIdsDtos(query, type).stream().findFirst();
   }
 
   @Override
@@ -157,7 +156,7 @@ public class DefinitionReaderES implements DefinitionReader {
 
     addTenantIdFilter(tenantIds, filterQuery);
 
-    return getDefinitionWithTenantIdsDtos(filterQuery, resolveIndexNameForType(type));
+    return getDefinitionWithTenantIdsDtos(filterQuery, type);
   }
 
   @Override
@@ -627,7 +626,7 @@ public class DefinitionReaderES implements DefinitionReader {
   }
 
   private List<DefinitionWithTenantIdsDto> getDefinitionWithTenantIdsDtos(final QueryBuilder filterQuery,
-                                                                          final String[] definitionIndexNames) {
+                                                                          final DefinitionType type) {
     // 2.1 group by tenant
     final TermsAggregationBuilder tenantsAggregation =
       terms(TENANT_AGGREGATION)
@@ -640,7 +639,12 @@ public class DefinitionReaderES implements DefinitionReader {
     final TermsAggregationBuilder nameAggregation =
       terms(NAME_AGGREGATION)
         .field(DEFINITION_NAME)
-        .size(1);
+        .size(1)
+        .order(BucketOrder.aggregation("versionForSorting", false))
+        // custom sort agg to sort by numeric version value (instead of string bucket key)
+        .subAggregation(AggregationBuilders.min("versionForSorting").script(createDefaultScript(
+          "Integer.parseInt(doc['version'].value)"
+        )));
     // 2.3 group by engine
     final TermsAggregationBuilder enginesAggregation =
       terms(ENGINE_AGGREGATION)
@@ -659,7 +663,7 @@ public class DefinitionReaderES implements DefinitionReader {
         .subAggregation(enginesAggregation);
 
     final List<ParsedComposite.ParsedBucket> keyAndTypeAggBuckets =
-      performSearchAndCollectAllKeyAndTypeBuckets(filterQuery, definitionIndexNames, keyAndTypeAggregation);
+      performSearchAndCollectAllKeyAndTypeBuckets(filterQuery, resolveIndexNameForType(type), keyAndTypeAggregation);
 
     return keyAndTypeAggBuckets.stream()
       .map(keyAndTypeAgg -> {
@@ -768,7 +772,6 @@ public class DefinitionReaderES implements DefinitionReader {
         ));
       }
     }
-
     return results;
   }
 

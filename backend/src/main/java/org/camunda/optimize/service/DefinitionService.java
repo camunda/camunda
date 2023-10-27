@@ -254,11 +254,9 @@ public class DefinitionService implements ConfigurationReloadable {
                                                                                        final boolean withXml) {
     log.debug("Fetching definitions of type " + type);
     List<T> definitionsResult = definitionReader.getFullyImportedDefinitions(type, withXml);
-
     if (userId != null) {
       definitionsResult = filterAuthorizedDefinitions(userId, definitionsResult);
     }
-
     return definitionsResult;
   }
 
