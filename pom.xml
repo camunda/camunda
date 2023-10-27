@@ -34,7 +34,7 @@
     <version.elasticsearch>7.17.10</version.elasticsearch>
     <version.elasticsearch-client>8.7.1</version.elasticsearch-client>
     <version.opensearch>2.6.0</version.opensearch>
-    <version.spring.boot>3.0.12</version.spring.boot>
+    <version.spring.boot>3.1.5</version.spring.boot>
     <version.log4j>2.19.0</version.log4j>
     <version.junit>4.13.2</version.junit>
     <version.jakarta.json>2.0.1</version.jakarta.json>
@@ -58,7 +58,7 @@
     <version.yarn>v1.22.17</version.yarn>
 
     <zeebe-test-container.version>3.5.2</zeebe-test-container.version>
-    <elasticsearch-test-container.version>1.17.6</elasticsearch-test-container.version>
+    <elasticsearch-test-container.version>1.19.1</elasticsearch-test-container.version>
     <opensearch-testcontainers.version>2.0.0</opensearch-testcontainers.version>
     <postgres-test-container.version>1.17.6</postgres-test-container.version>
     <testcontainers.version>1.17.6</testcontainers.version>
@@ -470,7 +470,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.0.0-M8</version>
+          <version>3.2.1</version>
           <configuration>
             <forkCount>${env.LIMITS_CPU}</forkCount>
             <reuseForks>true</reuseForks>
@@ -484,7 +484,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-failsafe-plugin</artifactId>
-          <version>3.0.0-M8</version>
+          <version>3.2.1</version>
           <configuration>
             <forkCount>${env.LIMITS_CPU}</forkCount>
             <reuseForks>true</reuseForks>
