@@ -5,6 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
+import {Route} from '@playwright/test';
 import {DecisionInstanceDto} from 'modules/api/decisionInstances/fetchDecisionInstance';
 import {DrdDataDto} from 'modules/api/decisionInstances/fetchDrdData';
 
@@ -604,6 +605,69 @@ const mockFailedXml = `<?xml version="1.0" encoding="UTF-8"?>
 </definitions>
 `;
 
+function mockResponses({
+  decisionInstanceDetail,
+  drdData,
+  xml,
+}: {
+  decisionInstanceDetail?: DecisionInstanceDto;
+  drdData?: DrdDataDto;
+  xml?: string;
+}) {
+  return (route: Route) => {
+    if (route.request().url().includes('/api/authentications/user')) {
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify({
+          userId: 'demo',
+          displayName: 'demo',
+          canLogout: true,
+          permissions: ['read', 'write'],
+          roles: null,
+          salesPlanType: null,
+          c8Links: {},
+          username: 'demo',
+        }),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('drd-data')) {
+      return route.fulfill({
+        status: drdData === undefined ? 400 : 200,
+        body: JSON.stringify(drdData),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('/api/decision-instances/')) {
+      return route.fulfill({
+        status: decisionInstanceDetail === undefined ? 400 : 200,
+        body: JSON.stringify(decisionInstanceDetail),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('xml')) {
+      return route.fulfill({
+        status: xml === undefined ? 400 : 200,
+        body: JSON.stringify(xml),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    route.continue();
+  };
+}
+
 export {
   mockEvaluatedDecisionInstance,
   mockEvaluatedDrdData,
@@ -614,4 +678,5 @@ export {
   mockFailedDecisionInstance,
   mockFailedDrdData,
   mockFailedXml,
+  mockResponses,
 };

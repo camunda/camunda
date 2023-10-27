@@ -33,7 +33,7 @@ const DecisionPanel: React.FC = observer(() => {
   };
 
   return (
-    <Section data-testid="decision-panel">
+    <Section data-testid="decision-panel" tabIndex={0}>
       {decisionInstance?.state === 'FAILED' && (
         <IncidentBanner data-testid="incident-banner">
           {decisionInstance.errorMessage}
