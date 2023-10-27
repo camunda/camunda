@@ -27,7 +27,7 @@ interface MenuButtonProps
 	menuLabel: string
 	iconDescription?: string
 	hasIconOnly?: boolean
-	fullScreenTarget?: Element | null
+	menuTarget?: Element | null
 }
 
 export default forwardRef<HTMLDivElement, MenuButtonProps>(function MenuButton(
@@ -41,7 +41,7 @@ export default forwardRef<HTMLDivElement, MenuButtonProps>(function MenuButton(
 		disabled,
 		iconDescription,
 		hasIconOnly,
-		fullScreenTarget,
+		menuTarget,
 	},
 	forwardedRef,
 ) {
@@ -102,7 +102,7 @@ export default forwardRef<HTMLDivElement, MenuButtonProps>(function MenuButton(
 				</Button>
 				<Menu
 					ref={menuRef}
-					target={fullScreenTarget || undefined}
+					target={menuTarget || undefined}
 					id={id}
 					label={menuLabel}
 					open={open}
