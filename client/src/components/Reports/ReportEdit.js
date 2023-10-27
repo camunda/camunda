@@ -9,17 +9,11 @@ import React from 'react';
 import update from 'immutability-helper';
 import deepEqual from 'fast-deep-equal';
 import {Redirect, withRouter} from 'react-router-dom';
+import {Button, Loading, Toggle} from '@carbon/react';
 
 import {withErrorHandling} from 'HOC';
 import {nowDirty, nowPristine} from 'saveGuard';
-import {
-  ReportRenderer,
-  LoadingIndicator,
-  EntityNameForm,
-  InstanceCount,
-  Switch,
-  Button,
-} from 'components';
+import {ReportRenderer, EntityNameForm, InstanceCount} from 'components';
 import {updateEntity, createEntity, evaluateReport, getCollection} from 'services';
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -272,7 +266,7 @@ export class ReportEdit extends React.Component {
       )
     );
 
-  toggleAutoPreviewUpdate = async ({target: {checked: shouldReload}}) => {
+  toggleAutoPreviewUpdate = async (shouldReload) => {
     if (this.isReportDirty() && shouldReload) {
       await this.reEvaluateReport(this.state.report.data);
     }
@@ -312,8 +306,8 @@ export class ReportEdit extends React.Component {
             />
             {!shouldAutoReloadPreview && (
               <Button
-                main
-                primary
+                kind="primary"
+                size="md"
                 className="RunPreviewButton"
                 disabled={this.state.loadingReportData || !this.isReportComplete(report)}
                 onClick={() => this.reEvaluateReport(report.data)}
@@ -324,16 +318,15 @@ export class ReportEdit extends React.Component {
           </div>
           <div className="headerBottomLine">
             <InstanceCount noInfo report={report} />
-            <div className="updatePreview">
-              <div className="switch">
-                <Switch
-                  checked={shouldAutoReloadPreview}
-                  onChange={this.toggleAutoPreviewUpdate}
-                  label={t('report.updateReportPreview.switchLabel')}
-                  labelPosition="left"
-                />
-              </div>
-            </div>
+            <Toggle
+              id="updatePreview"
+              className="updatePreview"
+              size="sm"
+              toggled={shouldAutoReloadPreview}
+              onToggle={this.toggleAutoPreviewUpdate}
+              labelA={t('report.updateReportPreview.switchLabel')}
+              labelB={t('report.updateReportPreview.switchLabel')}
+            />
           </div>
         </div>
         <div className="Report__view">
@@ -361,7 +354,7 @@ export class ReportEdit extends React.Component {
             {!combined && this.isReportComplete(report) && <ReportWarnings report={report} />}
 
             {loadingReportData ? (
-              <LoadingIndicator />
+              <Loading withOverlay={false} className="loading" />
             ) : (
               <ReportRenderer
                 error={serverError}

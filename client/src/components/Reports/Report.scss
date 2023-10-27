@@ -19,19 +19,12 @@
         .RunPreviewButton {
           margin-left: 6px;
           min-width: auto;
+          align-self: flex-start;
         }
       }
 
       .headerBottomLine {
         justify-content: space-between;
-      }
-
-      .updatePreview {
-        margin-top: 0.625rem;
-        display: flex;
-        .Switch {
-          font-size: 0.875rem;
-        }
       }
     }
     .Report__view {
@@ -104,6 +97,10 @@
   overflow: auto;
   min-height: 0;
   margin-bottom: 24px;
+
+  .loading {
+    margin: auto;
+  }
 
   .visualization {
     display: flex;
