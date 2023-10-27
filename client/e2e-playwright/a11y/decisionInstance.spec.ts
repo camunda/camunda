@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import {expect} from '@playwright/test';
 import {test} from '../test-fixtures';
 import {
   mockEvaluatedDecisionInstance,
@@ -20,6 +19,7 @@ import {
   mockEvaluatedXmlWithoutPanels,
 } from '../mocks/decisionInstance.mocks';
 import {Paths} from 'modules/Routes';
+import {validateResults} from './validateResults';
 
 test.describe('decision detail', () => {
   for (const theme of ['light', 'dark']) {
@@ -43,13 +43,9 @@ test.describe('decision detail', () => {
         waitUntil: 'networkidle',
       });
 
-      const results = await makeAxeBuilder()
-        // the excluded selector belongs to the decision table, which caused an 'empty-table-header' violation
-        .exclude('.index-column')
-        .analyze();
+      const results = await makeAxeBuilder().analyze();
 
-      expect(results.violations).toHaveLength(0);
-      expect(results.passes.length).toBeGreaterThan(0);
+      validateResults(results);
     });
 
     test(`have no violations for an incident in ${theme} theme`, async ({
@@ -72,13 +68,9 @@ test.describe('decision detail', () => {
         waitUntil: 'networkidle',
       });
 
-      const results = await makeAxeBuilder()
-        // the excluded selector belongs to the decision table, which caused an 'empty-table-header' violation
-        .exclude('.index-column')
-        .analyze();
+      const results = await makeAxeBuilder().analyze();
 
-      expect(results.violations).toHaveLength(0);
-      expect(results.passes.length).toBeGreaterThan(0);
+      validateResults(results);
     });
 
     test(`have no violations for a decision without input output panels in ${theme} theme`, async ({
@@ -101,13 +93,9 @@ test.describe('decision detail', () => {
         waitUntil: 'networkidle',
       });
 
-      const results = await makeAxeBuilder()
-        // the disabled rule is caused by the decision table
-        .disableRules('heading-order')
-        .analyze();
+      const results = await makeAxeBuilder().analyze();
 
-      expect(results.violations).toHaveLength(0);
-      expect(results.passes.length).toBeGreaterThan(0);
+      validateResults(results);
     });
   }
 });

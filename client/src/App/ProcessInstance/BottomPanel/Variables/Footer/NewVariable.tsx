@@ -48,7 +48,7 @@ const NewVariable: React.FC = () => {
               id="name"
               size="sm"
               hideLabel
-              labelText=""
+              labelText="Name"
               type="text"
               placeholder="Name"
               autoFocus={true}
@@ -67,7 +67,7 @@ const NewVariable: React.FC = () => {
               type="text"
               id="value"
               hideLabel
-              labelText=""
+              labelText="Value"
               placeholder="Value"
               buttonLabel="Open JSON editor modal"
               tooltipPosition="left"

@@ -33,6 +33,7 @@ const EditButtons: React.FC<Props> = ({onExitEditMode}) => {
         kind="ghost"
         size="sm"
         iconDescription="Exit edit mode"
+        aria-label="Exit edit mode"
         tooltipPosition="left"
         onClick={() => {
           onExitEditMode?.();

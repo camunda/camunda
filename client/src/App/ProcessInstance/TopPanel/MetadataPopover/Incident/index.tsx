@@ -41,12 +41,12 @@ const Incident: React.FC<Props> = ({
         }}
       />
       <Stack gap={5}>
-        <Stack gap={3}>
+        <Stack gap={3} as="dl">
           <SummaryDataKey>Type</SummaryDataKey>
           <SummaryDataValue>{incident.errorType.name}</SummaryDataValue>
         </Stack>
         {incident.errorMessage !== null && (
-          <Stack gap={3}>
+          <Stack gap={3} as="dl">
             <SummaryDataKey>Error Message</SummaryDataKey>
             <SummaryDataValue $lineClamp={2}>
               {incident.errorMessage}
@@ -54,7 +54,7 @@ const Incident: React.FC<Props> = ({
           </Stack>
         )}
         {rootCauseInstance !== null && rootCauseDecision === null && (
-          <Stack gap={3}>
+          <Stack gap={3} as="dl">
             <SummaryDataKey>Root Cause Process Instance</SummaryDataKey>
             <SummaryDataValue>
               {rootCauseInstance.instanceId === processInstanceId ? (
@@ -71,7 +71,7 @@ const Incident: React.FC<Props> = ({
           </Stack>
         )}
         {rootCauseDecision !== null && (
-          <Stack gap={3}>
+          <Stack gap={3} as="dl">
             <SummaryDataKey>Root Cause Decision Instance</SummaryDataKey>
             <SummaryDataValue>
               <Link

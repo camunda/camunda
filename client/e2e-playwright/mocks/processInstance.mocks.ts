@@ -147,6 +147,32 @@ const runningInstance: InstanceMock = {
       completed: 1,
     },
   ],
+  metaData: {
+    flowNodeInstanceId: '2251799813687150',
+    flowNodeId: null,
+    flowNodeType: null,
+    instanceCount: null,
+    instanceMetadata: {
+      flowNodeId: 'Activity_0dex012',
+      flowNodeInstanceId: '2251799813687150',
+      flowNodeType: 'USER_TASK',
+      startDate: '2023-10-24T08:41:45.911+0000',
+      endDate: null,
+      calledProcessInstanceId: null,
+      calledProcessDefinitionName: null,
+      calledDecisionInstanceId: null,
+      calledDecisionDefinitionName: null,
+      eventId: '2251799813687144_2251799813687150',
+      jobType: 'io.camunda.zeebe:userTask',
+      jobRetries: 1,
+      jobWorker: '',
+      jobDeadline: null,
+      jobCustomHeaders: {},
+      jobId: '',
+    },
+    incidentCount: 0,
+    incident: null,
+  },
 };
 
 const instanceWithIncident: InstanceMock = {

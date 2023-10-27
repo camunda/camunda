@@ -102,6 +102,7 @@ const DataTable = React.forwardRef<HTMLDivElement, Props>(
                           <TableExpandRow
                             {...getRowProps({row})}
                             title={expandableRowTitle}
+                            id={`expanded-row-${row.id}`}
                           >
                             <TableCells
                               row={row}

@@ -58,7 +58,7 @@ const Value: React.FC<Props> = ({variableName, scopeId}) => {
             type="text"
             id={valueFieldName}
             hideLabel
-            labelText=""
+            labelText="Value"
             placeholder="Value"
             buttonLabel="Open JSON editor modal"
             tooltipPosition="left"

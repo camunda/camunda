@@ -42,9 +42,10 @@ const ModificationHelperModal: React.FC<Props> = observer(
         preventCloseOnClickOutside
         onClose={onClose}
         size="md"
+        aria-label="Process Instance Modification Mode"
       >
         <ModalHeader title="Process Instance Modification Mode" />
-        <ModalBody>
+        <ModalBody tabIndex={0}>
           <Container>
             <p>
               Process instance modification mode allows you to plan multiple

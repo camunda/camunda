@@ -5,9 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import {expect} from '@playwright/test';
 import {test} from '../test-fixtures';
 import {Paths} from 'modules/Routes';
+import {validateResults} from './validateResults';
 
 test.describe('login', () => {
   for (const theme of ['light', 'dark']) {
@@ -24,8 +24,7 @@ test.describe('login', () => {
 
       const results = await makeAxeBuilder().analyze();
 
-      expect(results.violations).toHaveLength(0);
-      expect(results.passes.length).toBeGreaterThan(0);
+      validateResults(results);
     });
   }
 });

@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import {expect} from '@playwright/test';
 import {test} from '../test-fixtures';
 import {
   mockDecisionInstances,
@@ -14,6 +13,7 @@ import {
   mockResponses,
   mockDecisionXml,
 } from '../mocks/decisions.mocks';
+import {validateResults} from './validateResults';
 
 test.describe('decisions', () => {
   for (const theme of ['light', 'dark']) {
@@ -41,8 +41,7 @@ test.describe('decisions', () => {
 
       const results = await makeAxeBuilder().analyze();
 
-      expect(results.violations).toHaveLength(0);
-      expect(results.passes.length).toBeGreaterThan(0);
+      validateResults(results);
     });
 
     test(`have no violations when a decision is selected in ${theme} theme`, async ({
@@ -76,14 +75,10 @@ test.describe('decisions', () => {
       });
 
       const results = await makeAxeBuilder()
-        // the excluded selector belongs to the decision table, which caused an 'empty-table-header' violation
-        .exclude('.index-column')
-        // the excluded selector belongs to the decision table, which caused a 'focusable-content' violation
         .exclude('.tjs-table-container')
         .analyze();
 
-      expect(results.violations).toHaveLength(0);
-      expect(results.passes.length).toBeGreaterThan(0);
+      validateResults(results);
     });
   }
 });

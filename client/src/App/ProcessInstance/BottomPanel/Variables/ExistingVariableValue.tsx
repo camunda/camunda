@@ -127,7 +127,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
               type="text"
               id={fieldName}
               hideLabel
-              labelText=""
+              labelText="Value"
               placeholder="Value"
               data-testid="edit-variable-value"
               buttonLabel="Open JSON editor modal"

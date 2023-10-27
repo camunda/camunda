@@ -14,6 +14,7 @@ import {
   mockResponses,
 } from '../mocks/dashboard.mocks';
 import {Paths} from 'modules/Routes';
+import {validateResults} from './validateResults';
 
 test.describe('dashboard', () => {
   for (const theme of ['light', 'dark']) {
@@ -38,8 +39,7 @@ test.describe('dashboard', () => {
 
       const results = await makeAxeBuilder().analyze();
 
-      expect(results.violations).toHaveLength(0);
-      expect(results.passes.length).toBeGreaterThan(0);
+      validateResults(results);
     });
 
     test(`have no violations when rows are expanded in ${theme} theme`, async ({
@@ -93,8 +93,7 @@ test.describe('dashboard', () => {
         .disableRules(['color-contrast'])
         .analyze();
 
-      expect(results.violations).toHaveLength(0);
-      expect(results.passes.length).toBeGreaterThan(0);
+      validateResults(results);
     });
   }
 });

@@ -84,11 +84,11 @@ const Details: React.FC<Props> = ({metaData, flowNodeId}) => {
         }}
       />
       <Stack gap={5}>
-        <Stack gap={3}>
+        <Stack gap={3} as="dl">
           <SummaryDataKey>Flow Node Instance Key</SummaryDataKey>
           <SummaryDataValue>{flowNodeInstanceId}</SummaryDataValue>
         </Stack>
-        <Stack gap={3}>
+        <Stack gap={3} as="dl">
           <SummaryDataKey>Execution Duration</SummaryDataKey>
           <SummaryDataValue>
             {getExecutionDuration(startDate!, endDate)}
@@ -96,7 +96,7 @@ const Details: React.FC<Props> = ({metaData, flowNodeId}) => {
         </Stack>
 
         {jobRetries !== null && (
-          <Stack gap={3}>
+          <Stack gap={3} as="dl">
             <SummaryDataKey>Retries Left</SummaryDataKey>
             <SummaryDataValue data-testid="retries-left-count">
               {jobRetries}
@@ -106,7 +106,7 @@ const Details: React.FC<Props> = ({metaData, flowNodeId}) => {
 
         {businessObject?.$type === 'bpmn:CallActivity' &&
           flowNodeType !== 'MULTI_INSTANCE_BODY' && (
-            <Stack gap={3}>
+            <Stack gap={3} as="dl">
               <SummaryDataKey>Called Process Instance</SummaryDataKey>
               <SummaryDataValue data-testid="called-process-instance">
                 {calledProcessInstanceId ? (
@@ -125,7 +125,7 @@ const Details: React.FC<Props> = ({metaData, flowNodeId}) => {
           )}
 
         {businessObject?.$type === 'bpmn:BusinessRuleTask' && (
-          <Stack gap={3}>
+          <Stack gap={3} as="dl">
             <SummaryDataKey>Called Decision Instance</SummaryDataKey>
             <SummaryDataValue>
               {calledDecisionInstanceId ? (

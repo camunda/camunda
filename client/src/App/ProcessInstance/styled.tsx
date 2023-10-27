@@ -20,8 +20,9 @@ const ModificationHeader = styled.div`
   align-items: center;
   padding-left: var(--cds-spacing-05);
   background-color: var(--cds-interactive);
-  color: var(--cds-text-on-color);
+  color: var(--cds-text-inverse);
   ${styles.bodyShort01};
+  font-weight: bold;
 `;
 
 const ModificationFooter = styled.div`
