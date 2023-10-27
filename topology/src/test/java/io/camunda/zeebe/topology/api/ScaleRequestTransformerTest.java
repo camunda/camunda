@@ -7,19 +7,15 @@
  */
 package io.camunda.zeebe.topology.api;
 
-import static java.lang.Math.max;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.topology.state.ClusterTopology;
-import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.topology.util.TopologyUtil;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -29,38 +25,37 @@ import net.jqwik.api.Property;
 import net.jqwik.api.ShrinkingMode;
 import net.jqwik.api.constraints.IntRange;
 
-class PartitionReassignRequestTransformerTest {
-
+class ScaleRequestTransformerTest {
   @Property(tries = 10)
-  void shouldReassignPartitionsWithReplicationFactor1(
+  void shouldScaleAndReassignWithReplicationFactor1(
       @ForAll @IntRange(min = 1, max = 100) final int partitionCount,
       @ForAll @IntRange(min = 1, max = 100) final int oldClusterSize,
       @ForAll @IntRange(min = 1, max = 100) final int newClusterSize) {
-    shouldReassignPartitionsRoundRobin(partitionCount, 1, oldClusterSize, newClusterSize);
+    shouldScaleAndReassign(partitionCount, 1, oldClusterSize, newClusterSize);
   }
 
   @Property(tries = 10)
-  void shouldReassignPartitionsWithReplicationFactor2(
+  void shouldScaleAndReassignWithReplicationFactor2(
       @ForAll @IntRange(min = 1, max = 100) final int partitionCount,
       @ForAll @IntRange(min = 2, max = 100) final int oldClusterSize,
       @ForAll @IntRange(min = 2, max = 100) final int newClusterSize) {
-    shouldReassignPartitionsRoundRobin(partitionCount, 2, oldClusterSize, newClusterSize);
+    shouldScaleAndReassign(partitionCount, 2, oldClusterSize, newClusterSize);
   }
 
   @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
-  void shouldReassignPartitionsWithReplicationFactor3(
+  void shouldScaleAndReassignWithReplicationFactor3(
       @ForAll @IntRange(min = 1, max = 100) final int partitionCount,
       @ForAll @IntRange(min = 3, max = 100) final int oldClusterSize,
       @ForAll @IntRange(min = 3, max = 100) final int newClusterSize) {
-    shouldReassignPartitionsRoundRobin(partitionCount, 3, oldClusterSize, newClusterSize);
+    shouldScaleAndReassign(partitionCount, 3, oldClusterSize, newClusterSize);
   }
 
   @Property(tries = 10)
-  void shouldReassignPartitionsWithReplicationFactor4(
+  void shouldScaleAndReassignWithReplicationFactor4(
       @ForAll @IntRange(min = 1, max = 100) final int partitionCount,
       @ForAll @IntRange(min = 4, max = 100) final int oldClusterSize,
       @ForAll @IntRange(min = 4, max = 100) final int newClusterSize) {
-    shouldReassignPartitionsRoundRobin(partitionCount, 4, oldClusterSize, newClusterSize);
+    shouldScaleAndReassign(partitionCount, 4, oldClusterSize, newClusterSize);
   }
 
   @Property
@@ -87,19 +82,11 @@ class PartitionReassignRequestTransformerTest {
                 getClusterMembers(oldClusterSize),
                 getSortedPartitionIds(partitionCount),
                 replicationFactor);
-    var oldClusterTopology = TopologyUtil.getClusterTopologyFrom(oldDistribution);
-    for (int i = 0; i < max(oldClusterSize, newClusterSize); i++) {
-      oldClusterTopology =
-          oldClusterTopology.updateMember(
-              MemberId.from(Integer.toString(i)),
-              currentState ->
-                  Objects.requireNonNullElseGet(
-                      currentState, () -> MemberState.initializeAsActive(Map.of())));
-    }
+    final var oldClusterTopology = TopologyUtil.getClusterTopologyFrom(oldDistribution);
 
     //  when
     final var operationsEither =
-        new PartitionReassignRequestTransformer(getClusterMembers(newClusterSize))
+        new ScaleRequestTransformer(getClusterMembers(newClusterSize))
             .operations(oldClusterTopology);
 
     // then
@@ -109,7 +96,7 @@ class PartitionReassignRequestTransformerTest {
         .isInstanceOf(IllegalArgumentException.class);
   }
 
-  void shouldReassignPartitionsRoundRobin(
+  void shouldScaleAndReassign(
       final int partitionCount,
       final int replicationFactor,
       final int oldClusterSize,
@@ -128,28 +115,23 @@ class PartitionReassignRequestTransformerTest {
                 getClusterMembers(oldClusterSize),
                 getSortedPartitionIds(partitionCount),
                 replicationFactor);
-    var oldClusterTopology = TopologyUtil.getClusterTopologyFrom(oldDistribution);
-    for (int i = 0; i < max(oldClusterSize, newClusterSize); i++) {
-      oldClusterTopology =
-          oldClusterTopology.updateMember(
-              MemberId.from(Integer.toString(i)),
-              currentState ->
-                  Objects.requireNonNullElseGet(
-                      currentState, () -> MemberState.initializeAsActive(Map.of())));
-    }
+    final var oldClusterTopology = TopologyUtil.getClusterTopologyFrom(oldDistribution);
 
     // when
     final var operations =
-        new PartitionReassignRequestTransformer(getClusterMembers(newClusterSize))
+        new ScaleRequestTransformer(getClusterMembers(newClusterSize))
             .operations(oldClusterTopology)
             .get();
 
     // apply operations to generate new topology
     final ClusterTopology newTopology =
         TestTopologyChangeSimulator.apply(oldClusterTopology, operations);
+
     // then
     final var newDistribution = TopologyUtil.getPartitionDistributionFrom(newTopology, "temp");
     assertThat(newDistribution).isEqualTo(expectedNewDistribution);
+    assertThat(newTopology.members().keySet())
+        .containsExactlyInAnyOrderElementsOf(getClusterMembers(newClusterSize));
   }
 
   private List<PartitionId> getSortedPartitionIds(final int partitionCount) {

@@ -14,6 +14,7 @@ import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequ
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.ScaleRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementResponse.StatusCode;
 import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator;
@@ -82,6 +83,11 @@ public final class TopologyManagementRequestsHandler implements TopologyManageme
     final var transformer =
         new PartitionReassignRequestTransformer(reassignPartitionsRequest.members());
     return handleRequest(transformer);
+  }
+
+  @Override
+  public ActorFuture<TopologyChangeStatus> scaleMembers(final ScaleRequest scaleRequest) {
+    return handleRequest(new ScaleRequestTransformer(scaleRequest.members()));
   }
 
   private ActorFuture<TopologyChangeStatus> handleRequest(final TopologyChangeRequest transformer) {

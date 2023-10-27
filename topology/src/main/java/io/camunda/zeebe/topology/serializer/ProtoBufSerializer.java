@@ -15,6 +15,7 @@ import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequ
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.ScaleRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementResponse.StatusCode;
 import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossipState;
@@ -417,6 +418,14 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
   }
 
   @Override
+  public byte[] encodeScaleRequest(final ScaleRequest scaleRequest) {
+    return Requests.ScaleRequest.newBuilder()
+        .addAllMemberIds(scaleRequest.members().stream().map(MemberId::id).toList())
+        .build()
+        .toByteArray();
+  }
+
+  @Override
   public AddMembersRequest decodeAddMembersRequest(final byte[] encodedState) {
     try {
       final var addMemberRequest = Requests.AddMembersRequest.parseFrom(encodedState);
@@ -476,6 +485,17 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
           reassignPartitionsRequest.getMemberIdsList().stream()
               .map(MemberId::from)
               .collect(Collectors.toSet()));
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  @Override
+  public ScaleRequest decodeScaleRequest(final byte[] encodedState) {
+    try {
+      final var scaleRequest = Requests.ScaleRequest.parseFrom(encodedState);
+      return new ScaleRequest(
+          scaleRequest.getMemberIdsList().stream().map(MemberId::from).collect(Collectors.toSet()));
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }

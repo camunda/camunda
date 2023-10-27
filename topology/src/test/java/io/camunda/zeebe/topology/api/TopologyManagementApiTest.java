@@ -182,4 +182,29 @@ final class TopologyManagementApiTest {
             new PartitionLeaveOperation(MemberId.from("1"), 2));
     assertThat(changeStatus.changeId()).isEqualTo(initialTopology.version() + 1);
   }
+
+  @Test
+  void shouldScaleBrokers() {
+    // given
+    final var request =
+        new TopologyManagementRequest.ScaleRequest(Set.of(MemberId.from("1"), MemberId.from("2")));
+    final ClusterTopology currentTopology =
+        ClusterTopology.init()
+            .addMember(
+                MemberId.from("1"),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1), 2, PartitionState.active(1))));
+    recordingCoordinator.setCurrentTopology(currentTopology);
+
+    // when
+    final var changeStatus = clientApi.scaleMembers(request).join();
+
+    // then
+    assertThat(recordingCoordinator.getLastAppliedOperation())
+        .containsExactly(
+            new MemberJoinOperation(MemberId.from("2")),
+            new PartitionJoinOperation(MemberId.from("2"), 2, 1),
+            new PartitionLeaveOperation(MemberId.from("1"), 2));
+    assertThat(changeStatus.changeId()).isEqualTo(initialTopology.version() + 1);
+  }
 }

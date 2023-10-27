@@ -12,7 +12,8 @@ public enum TopologyRequestTopics {
   REMOVE_MEMBER("topology-member-remove"),
   JOIN_PARTITION("topology-partition-join"),
   LEAVE_PARTITION("topology-partition-leave"),
-  REASSIGN_PARTITIONS("topology-partition-reassign");
+  REASSIGN_PARTITIONS("topology-partition-reassign"),
+  SCALE_MEMBERS("topology-member-scale");
   private final String topic;
 
   TopologyRequestTopics(final String topic) {

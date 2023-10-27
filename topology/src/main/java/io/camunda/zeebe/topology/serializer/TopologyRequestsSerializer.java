@@ -23,6 +23,8 @@ public interface TopologyRequestsSerializer {
   byte[] encodeReassignPartitionsRequest(
       TopologyManagementRequest.ReassignPartitionsRequest reassignPartitionsRequest);
 
+  byte[] encodeScaleRequest(TopologyManagementRequest.ScaleRequest scaleRequest);
+
   TopologyManagementRequest.AddMembersRequest decodeAddMembersRequest(byte[] encodedState);
 
   TopologyManagementRequest.RemoveMembersRequest decodeRemoveMembersRequest(byte[] encodedState);
@@ -33,6 +35,8 @@ public interface TopologyRequestsSerializer {
 
   TopologyManagementRequest.ReassignPartitionsRequest decodeReassignPartitionsRequest(
       byte[] encodedState);
+
+  TopologyManagementRequest.ScaleRequest decodeScaleRequest(byte[] encodedState);
 
   byte[] encode(TopologyChangeStatus topologyChangeStatus);
 

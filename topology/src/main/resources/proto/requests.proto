@@ -24,6 +24,10 @@ message LeavePartitionRequest {
   int32 partitionId = 2;
 }
 
+message ScaleRequest {
+  repeated string memberIds = 1;
+}
+
 message TopologyChangeStatus {
   int64 changeId = 1;
   ChangeStatus status = 2;
