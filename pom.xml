@@ -65,6 +65,7 @@
     <assertj.version>3.24.2</assertj.version>
     <postgres.version>42.6.0</postgres.version>
     <jakarta.rs-api.version>3.1.0</jakarta.rs-api.version>
+    <netty.version>4.1.100.Final</netty.version>
 
     <lombok.version>1.18.30</lombok.version>
     <logback.version>1.4.11</logback.version>
@@ -359,7 +360,22 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-codec-http</artifactId>
-      <version>4.1.100.Final</version>
+      <version>${netty.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-codec-http2</artifactId>
+      <version>${netty.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-handler</artifactId>
+      <version>${netty.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-handler-proxy</artifactId>
+      <version>${netty.version}</version>
     </dependency>
   </dependencies>
 
