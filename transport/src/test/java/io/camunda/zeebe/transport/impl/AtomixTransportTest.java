@@ -369,25 +369,23 @@ public class AtomixTransportTest {
   }
 
   @Test
-  public void shouldCreateUniqueRequestsIds(){
+  public void shouldCreateUniqueRequestsIds() {
     final DirectlyResponder directlyResponder = new DirectlyResponder();
 
-    serverTransport
-        .subscribe(0, RequestType.COMMAND, directlyResponder)
-        .join();
+    serverTransport.subscribe(0, RequestType.COMMAND, directlyResponder).join();
 
     // when
     final var requestFuture1 =
         clientTransport.sendRequestWithRetry(
             nodeAddressSupplier, new Request("messageABC"), REQUEST_TIMEOUT);
     requestFuture1.join();
-    long requestId1 = directlyResponder.serverResponse.getRequestId();
+    final long requestId1 = directlyResponder.serverResponse.getRequestId();
 
     final var requestFuture2 =
         clientTransport.sendRequestWithRetry(
             nodeAddressSupplier, new Request("messageABC"), REQUEST_TIMEOUT);
     requestFuture2.join();
-    long requestId2 = directlyResponder.serverResponse.getRequestId();
+    final long requestId2 = directlyResponder.serverResponse.getRequestId();
 
     // then
     assertThat(requestId1).isNotEqualByComparingTo(requestId2);
@@ -430,6 +428,7 @@ public class AtomixTransportTest {
     DirectlyResponder() {
       this.requestConsumer = (bytes -> {});
     }
+
     DirectlyResponder(final Consumer<byte[]> requestConsumer) {
       this.requestConsumer = requestConsumer;
     }
