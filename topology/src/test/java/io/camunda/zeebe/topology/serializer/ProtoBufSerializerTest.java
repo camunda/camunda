@@ -144,6 +144,7 @@ final class ProtoBufSerializerTest {
     // given
     final var topologyChangeResponse =
         new TopologyChangeResponse(
+            2,
             Map.of(
                 MemberId.from("1"),
                 MemberState.initializeAsActive(Map.of()),

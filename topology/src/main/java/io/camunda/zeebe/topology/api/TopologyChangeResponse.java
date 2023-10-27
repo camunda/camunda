@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 public record TopologyChangeResponse(
+    long changeId,
     Map<MemberId, MemberState> currentTopology,
     Map<MemberId, MemberState> expectedTopology,
     List<TopologyChangeOperation> plannedChanges) {}

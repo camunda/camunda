@@ -11,7 +11,9 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.topology.ClusterTopologyManager;
 import io.camunda.zeebe.topology.changes.TopologyChangeAppliers.OperationApplier;
+import io.camunda.zeebe.topology.state.ClusterChangePlan;
 import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.state.CompletedChange;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import java.util.ConcurrentModificationException;
 import java.util.List;
@@ -20,9 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator {
   private static final Logger LOG = LoggerFactory.getLogger(TopologyChangeCoordinatorImpl.class);
-
   private final ClusterTopologyManager clusterTopologyManager;
-
   private final ConcurrencyControl executor;
 
   public TopologyChangeCoordinatorImpl(
@@ -53,7 +53,10 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
                 // No operations to apply
                 future.complete(
                     new TopologyChangeResult(
-                        currentClusterTopology, currentClusterTopology, operations));
+                        currentClusterTopology,
+                        currentClusterTopology,
+                        currentClusterTopology.lastChange().map(CompletedChange::id).orElse(0L),
+                        operations));
                 return;
               }
 
@@ -73,11 +76,21 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
                         operations, currentClusterTopology, simulatedFinalTopology, applyFuture);
 
                     applyFuture.onComplete(
-                        (ignore, error) -> {
+                        (clusterTopologyWithPendingChanges, error) -> {
                           if (error == null) {
+                            final long changeId =
+                                clusterTopologyWithPendingChanges
+                                    .pendingChanges()
+                                    .map(ClusterChangePlan::id)
+                                    .orElse(0L); // No changes, this should not happen because
+                            // operations are not empty
+
                             future.complete(
                                 new TopologyChangeResult(
-                                    currentClusterTopology, simulatedFinalTopology, operations));
+                                    currentClusterTopology,
+                                    simulatedFinalTopology,
+                                    changeId,
+                                    operations));
                           } else {
                             future.completeExceptionally(error);
                           }

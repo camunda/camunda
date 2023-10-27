@@ -98,6 +98,7 @@ public final class TopologyManagementRequestsHandler implements TopologyManageme
               if (error == null) {
                 final var changeStatus =
                     new TopologyChangeResponse(
+                        result.changeId(),
                         result.currentTopology().members(),
                         result.finalTopology().members(),
                         result.operations());

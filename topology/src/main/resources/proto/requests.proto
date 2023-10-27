@@ -39,9 +39,10 @@ message ReassignAllPartitionsRequest {
 }
 
 message TopologyChangeResponse {
-  map<string, topology_protocol.MemberState> currentTopology = 1;
-  map<string, topology_protocol.MemberState> expectedTopology = 2;
-  repeated topology_protocol.TopologyChangeOperation plannedChanges = 6;
+  int64 changeId = 1;
+  map<string, topology_protocol.MemberState> currentTopology = 2;
+  map<string, topology_protocol.MemberState> expectedTopology = 3;
+  repeated topology_protocol.TopologyChangeOperation plannedChanges = 4;
 }
 
 enum ChangeStatus {

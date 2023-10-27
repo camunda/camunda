@@ -531,6 +531,7 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
     final var builder = Requests.TopologyChangeResponse.newBuilder();
 
     builder
+        .setChangeId(topologyChangeResponse.changeId())
         .addAllPlannedChanges(
             topologyChangeResponse.plannedChanges().stream().map(this::encodeOperation).toList())
         .putAllCurrentTopology(encodeMemberStateMap(topologyChangeResponse.currentTopology()))
@@ -546,6 +547,7 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
       final var topologyChangeResponse =
           Requests.TopologyChangeResponse.parseFrom(encodedTopologyChangeResponse);
       return new TopologyChangeResponse(
+          topologyChangeResponse.getChangeId(),
           decodeMemberStateMap(topologyChangeResponse.getCurrentTopologyMap()),
           decodeMemberStateMap(topologyChangeResponse.getExpectedTopologyMap()),
           topologyChangeResponse.getPlannedChangesList().stream()
