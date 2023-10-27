@@ -25,7 +25,7 @@ const DiagramShell: React.FC<DefaultProps | WithEmptyMessageProps> = ({
   status,
   ...props
 }) => (
-  <Container data-testid="diagram-body">
+  <Container data-testid="diagram-body" tabIndex={0}>
     {(() => {
       if (status === 'content') {
         return children;
