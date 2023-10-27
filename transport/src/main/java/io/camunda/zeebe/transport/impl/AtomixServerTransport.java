@@ -42,12 +42,13 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   public AtomixServerTransport(final MessagingService messagingService, final int nodeId) {
     this.messagingService = messagingService;
     partitionsRequestMap = new Int2ObjectHashMap<>();
-    this.idGenerator = new SnowflakeIdGenerator(
-        SnowflakeIdGenerator.NODE_ID_BITS_DEFAULT,
-        SnowflakeIdGenerator.SEQUENCE_BITS_DEFAULT,
-        nodeId,
-        TIMESTAMP_OFFSET_2023,
-        SystemEpochClock.INSTANCE);
+    this.idGenerator =
+        new SnowflakeIdGenerator(
+            SnowflakeIdGenerator.NODE_ID_BITS_DEFAULT,
+            SnowflakeIdGenerator.SEQUENCE_BITS_DEFAULT,
+            nodeId,
+            TIMESTAMP_OFFSET_2023,
+            SystemEpochClock.INSTANCE);
   }
 
   @Override
