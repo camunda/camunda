@@ -13,8 +13,8 @@ import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto
 import org.camunda.optimize.dto.optimize.query.event.sequence.TracedEventDto;
 import org.camunda.optimize.service.db.reader.EventSequenceCountReader;
 import org.camunda.optimize.service.db.reader.EventTraceStateReader;
-import org.camunda.optimize.service.es.writer.EventSequenceCountWriter;
-import org.camunda.optimize.service.es.writer.EventTraceStateWriter;
+import org.camunda.optimize.service.db.writer.EventSequenceCountWriter;
+import org.camunda.optimize.service.db.writer.EventTraceStateWriter;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -266,4 +266,5 @@ public class EventTraceStateService {
     eventSequenceCountDto.generateIdForEventSequenceCountDto();
     return eventSequenceCountDto;
   }
+
 }

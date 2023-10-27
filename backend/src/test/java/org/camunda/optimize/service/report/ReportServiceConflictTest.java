@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizationType;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.service.db.reader.ReportReader;
-import org.camunda.optimize.service.es.writer.ReportWriter;
+import org.camunda.optimize.service.db.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.relations.ReportRelationService;

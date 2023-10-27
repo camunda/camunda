@@ -41,7 +41,7 @@ import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.service.db.reader.ReportReader;
-import org.camunda.optimize.service.es.writer.ReportWriter;
+import org.camunda.optimize.service.db.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.UncombinableReportsException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeNonDefinitionScopeCompliantException;

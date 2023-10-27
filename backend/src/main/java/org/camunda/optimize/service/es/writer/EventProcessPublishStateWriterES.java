@@ -16,9 +16,11 @@ import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessPublishStateDto;
 import org.camunda.optimize.service.db.schema.index.events.EventProcessPublishStateIndex;
+import org.camunda.optimize.service.db.writer.EventProcessPublishStateWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.IdGenerator;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
@@ -27,6 +29,7 @@ import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.xcontent.XContentType;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -41,11 +44,13 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 @AllArgsConstructor
 @Component
 @Slf4j
-public class EventProcessPublishStateWriter {
+@Conditional(ElasticSearchCondition.class)
+public class EventProcessPublishStateWriterES implements EventProcessPublishStateWriter {
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
+  @Override
   public IdResponseDto createEventProcessPublishState(final EventProcessPublishStateDto eventProcessPublishStateDto) {
     String id = IdGenerator.getNextId();
     eventProcessPublishStateDto.setId(id);
@@ -77,6 +82,7 @@ public class EventProcessPublishStateWriter {
     return new IdResponseDto(id);
   }
 
+  @Override
   public void updateEventProcessPublishState(final EventProcessPublishStateDto eventProcessPublishStateDto) {
     String id = eventProcessPublishStateDto.getId();
     log.debug("Updating event process publish state [{}] in elasticsearch.", id);
@@ -122,6 +128,7 @@ public class EventProcessPublishStateWriter {
     }
   }
 
+  @Override
   public boolean markAsDeletedAllEventProcessPublishStatesForEventProcessMappingId(final String eventProcessMappingId) {
     final String updateItem = String.format(
       "event process publish state with %s [%s]",
@@ -148,6 +155,7 @@ public class EventProcessPublishStateWriter {
     );
   }
 
+  @Override
   public void markAsDeletedPublishStatesForEventProcessMappingIdExcludingPublishStateId(
     final String eventProcessMappingId,
     final String publishStateIdToExclude) {

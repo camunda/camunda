@@ -9,14 +9,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.service.db.reader.EventSequenceCountReader;
 import org.camunda.optimize.service.db.reader.EventTraceStateReader;
+import org.camunda.optimize.service.db.writer.EventSequenceCountWriter;
+import org.camunda.optimize.service.db.writer.EventTraceStateWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.EventSequenceCountReaderES;
 import org.camunda.optimize.service.es.reader.EventTraceStateReaderES;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndexES;
 import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndexES;
-import org.camunda.optimize.service.es.writer.EventSequenceCountWriter;
-import org.camunda.optimize.service.es.writer.EventTraceStateWriter;
+import org.camunda.optimize.service.es.writer.EventSequenceCountWriterES;
+import org.camunda.optimize.service.es.writer.EventTraceStateWriterES;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
@@ -46,7 +48,7 @@ public class EventTraceStateServiceFactory {
   //TODO will be handled properly with https://jira.camunda.com/browse/OPT-7244
   private EventSequenceCountWriter createEventSequenceCountWriter(final String indexKey) {
     elasticSearchSchemaManager.createIndexIfMissing(esClient, new EventSequenceCountIndexES(indexKey));
-    return new EventSequenceCountWriter(indexKey, esClient, objectMapper);
+    return new EventSequenceCountWriterES(indexKey, esClient, objectMapper);
   }
 
   //TODO will be handled properly with https://jira.camunda.com/browse/OPT-7244
@@ -58,6 +60,7 @@ public class EventTraceStateServiceFactory {
   //TODO will be handled properly with https://jira.camunda.com/browse/OPT-7244
   private EventTraceStateWriter createEventTraceStateWriter(final String indexKey) {
     elasticSearchSchemaManager.createIndexIfMissing(esClient, new EventTraceStateIndexES(indexKey));
-    return new EventTraceStateWriter(indexKey, esClient, objectMapper);
+    return new EventTraceStateWriterES(indexKey, esClient, objectMapper);
   }
+
 }

@@ -6,8 +6,8 @@
 package org.camunda.optimize.service.es.job.importing;
 
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
+import org.camunda.optimize.service.db.writer.EventProcessInstanceWriter;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.EventProcessInstanceWriter;
 
 import java.util.List;
 
@@ -25,4 +25,5 @@ public class EventProcessInstanceElasticsearchImportJob extends ElasticsearchImp
   protected void persistEntities(List<EventProcessInstanceDto> newOptimizeEntities) {
     eventProcessInstanceWriter.importProcessInstances(newOptimizeEntities);
   }
+
 }

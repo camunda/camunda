@@ -31,10 +31,10 @@ import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceUpd
 import org.camunda.optimize.dto.optimize.query.event.process.MappedEventType;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.service.db.writer.EventProcessInstanceWriter;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.EventProcessInstanceElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.EventProcessInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;

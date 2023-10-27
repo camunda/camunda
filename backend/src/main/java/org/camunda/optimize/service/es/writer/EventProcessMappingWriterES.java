@@ -14,10 +14,12 @@ import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessMappingDto;
 import org.camunda.optimize.service.db.schema.index.events.EventProcessMappingIndex;
+import org.camunda.optimize.service.db.writer.EventProcessMappingWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
@@ -27,6 +29,7 @@ import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.xcontent.XContentType;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -42,11 +45,13 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 @AllArgsConstructor
 @Component
 @Slf4j
-public class EventProcessMappingWriter {
+@Conditional(ElasticSearchCondition.class)
+public class EventProcessMappingWriterES implements EventProcessMappingWriter {
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
+  @Override
   public IdResponseDto createEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {
     String id = IdGenerator.getNextId();
     eventProcessMappingDto.setId(id);
@@ -77,6 +82,7 @@ public class EventProcessMappingWriter {
     return new IdResponseDto(id);
   }
 
+  @Override
   public void updateEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {
     updateOfEventProcessMappingWithScript(eventProcessMappingDto, Sets.newHashSet(
       EventProcessMappingIndex.NAME, EventProcessMappingIndex.XML, EventProcessMappingIndex.MAPPINGS,
@@ -85,10 +91,12 @@ public class EventProcessMappingWriter {
     ));
   }
 
+  @Override
   public void updateRoles(final EventProcessMappingDto eventProcessMappingDto) {
     updateOfEventProcessMappingWithScript(eventProcessMappingDto, Sets.newHashSet(EventProcessMappingIndex.ROLES));
   }
 
+  @Override
   public boolean deleteEventProcessMapping(final String eventProcessMappingId) {
     log.debug("Deleting event based process with id [{}].", eventProcessMappingId);
     final DeleteRequest request = new DeleteRequest(EVENT_PROCESS_MAPPING_INDEX_NAME)
@@ -107,6 +115,7 @@ public class EventProcessMappingWriter {
     return deleteResponse.getResult().equals(DeleteResponse.Result.DELETED);
   }
 
+  @Override
   public void deleteEventProcessMappings(final List<String> eventProcessMappingIds) {
     log.debug("Deleting event process mapping ids: " + eventProcessMappingIds);
 

@@ -14,11 +14,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.importing.EventProcessGatewayDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
+import org.camunda.optimize.service.db.writer.EventProcessInstanceWriter;
 import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -28,6 +30,7 @@ import org.elasticsearch.index.reindex.UpdateByQueryAction;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.xcontent.XContentType;
+import org.springframework.context.annotation.Conditional;
 
 import java.text.MessageFormat;
 import java.time.OffsetDateTime;
@@ -53,7 +56,8 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @RequiredArgsConstructor
 @Slf4j
-public class EventProcessInstanceWriter {
+@Conditional(ElasticSearchCondition.class)
+public class EventProcessInstanceWriterES implements EventProcessInstanceWriter {
 
   private static final Script VARIABLE_CLEAR_SCRIPT = new Script(
     MessageFormat.format("ctx._source.{0} = new ArrayList();\n", VARIABLES)
@@ -67,12 +71,14 @@ public class EventProcessInstanceWriter {
 
   private List<Object> gatewayLookup;
 
+  @Override
   public void setGatewayLookup(final List<EventProcessGatewayDto> gatewayLookup) {
     this.gatewayLookup = gatewayLookup.stream()
       .map(gateway -> objectMapper.convertValue(gateway, new TypeReference<Map>() {
       })).collect(Collectors.toList());
   }
 
+  @Override
   public void importProcessInstances(final List<EventProcessInstanceDto> eventProcessInstanceDtos) {
     final String importItemName = "event process instances";
     log.debug("Writing [{}] {} to ES.", eventProcessInstanceDtos.size(), importItemName);
@@ -86,6 +92,7 @@ public class EventProcessInstanceWriter {
     );
   }
 
+  @Override
   public void deleteInstancesThatEndedBefore(final OffsetDateTime endDate) {
     final String indexName = getIndexName();
     final String deletedItemIdentifier =
@@ -110,6 +117,7 @@ public class EventProcessInstanceWriter {
     log.info("Finished cleanup on {}", deletedItemIdentifier);
   }
 
+  @Override
   public void deleteVariablesOfInstancesThatEndedBefore(final OffsetDateTime endDate) {
     final String indexName = getIndexName();
     final String updateItem = String.format(
@@ -137,6 +145,7 @@ public class EventProcessInstanceWriter {
     log.info("Finished cleanup on {}", updateItem);
   }
 
+  @Override
   public void deleteEventsWithIdsInFromAllInstances(final List<String> eventIdsToDelete) {
     final String updateItem = String.format("%d event process instance events by ID", eventIdsToDelete.size());
 

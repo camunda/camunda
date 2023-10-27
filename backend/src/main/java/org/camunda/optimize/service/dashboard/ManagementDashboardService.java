@@ -30,7 +30,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.value
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.service.db.writer.DashboardWriter;
-import org.camunda.optimize.service.es.writer.ReportWriter;
+import org.camunda.optimize.service.db.writer.ReportWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;

@@ -10,7 +10,7 @@ import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.service.BackupService;
 import org.camunda.optimize.service.db.reader.BackupReader;
-import org.camunda.optimize.service.es.writer.BackupWriter;
+import org.camunda.optimize.service.db.writer.BackupWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeSnapshotRepositoryNotFoundException;

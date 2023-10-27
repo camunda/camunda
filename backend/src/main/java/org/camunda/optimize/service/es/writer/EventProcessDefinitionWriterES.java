@@ -9,12 +9,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
+import org.camunda.optimize.service.db.writer.EventProcessDefinitionWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.camunda.optimize.util.SuppressionConstants;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
@@ -27,12 +30,14 @@ import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIE
 @AllArgsConstructor
 @Component
 @Slf4j
-public class EventProcessDefinitionWriter {
+@Conditional(ElasticSearchCondition.class)
+public class EventProcessDefinitionWriterES implements EventProcessDefinitionWriter {
 
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
+  @Override
   public void importEventProcessDefinitions(final List<EventProcessDefinitionDto> definitionOptimizeDtos) {
     log.debug("Writing [{}] event process definitions to elastic.", definitionOptimizeDtos.size());
     final String importItemName = "event process definition information";
@@ -45,6 +50,7 @@ public class EventProcessDefinitionWriter {
     );
   }
 
+  @Override
   public void deleteEventProcessDefinitions(final Collection<String> definitionIds) {
     final String importItemName = "event process definition ids";
     ElasticsearchWriterUtil.doImportBulkRequestWithList(

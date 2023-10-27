@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import org.camunda.optimize.service.DefinitionService;
-import org.camunda.optimize.service.es.writer.VariableLabelWriter;
+import org.camunda.optimize.service.db.writer.VariableLabelWriter;
 import org.springframework.stereotype.Component;
 
 import java.util.stream.Collectors;
@@ -49,4 +49,5 @@ public class ProcessVariableLabelService {
   public void deleteVariableLabelsForDefinition(final String processDefinitionKey) {
     variableLabelWriter.deleteVariableLabelsForDefinition(processDefinitionKey);
   }
+
 }

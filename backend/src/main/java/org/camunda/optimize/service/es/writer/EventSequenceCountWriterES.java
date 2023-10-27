@@ -11,8 +11,10 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex;
+import org.camunda.optimize.service.db.writer.EventSequenceCountWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
@@ -20,6 +22,7 @@ import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.xcontent.XContentType;
+import org.springframework.context.annotation.Conditional;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -27,12 +30,14 @@ import java.util.List;
 
 @AllArgsConstructor
 @Slf4j
-public class EventSequenceCountWriter {
+@Conditional(ElasticSearchCondition.class)
+public class EventSequenceCountWriterES implements EventSequenceCountWriter {
 
   private final String indexKey;
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
+  @Override
   public void updateEventSequenceCountsWithAdjustments(final List<EventSequenceCountDto> eventSequenceCountDtos) {
     log.debug("Making adjustments to [{}] event sequence counts in elasticsearch", eventSequenceCountDtos.size());
     eventSequenceCountDtos.forEach(EventSequenceCountDto::generateIdForEventSequenceCountDto);
@@ -66,7 +71,8 @@ public class EventSequenceCountWriter {
       indexRequest = new IndexRequest(getIndexName()).id(eventSequenceCountDto.getId())
         .source(objectMapper.writeValueAsString(eventSequenceCountDto), XContentType.JSON);
     } catch (JsonProcessingException e) {
-      e.printStackTrace();
+      final String errorMessage = "There were errors while json processing of creating of the event sequence counts.";
+      log.error(errorMessage, e);
     }
     UpdateRequest updateRequest;
     updateRequest = new UpdateRequest().index(getIndexName()).id(eventSequenceCountDto.getId())

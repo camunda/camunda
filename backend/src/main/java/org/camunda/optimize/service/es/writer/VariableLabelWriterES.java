@@ -11,13 +11,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import org.camunda.optimize.dto.optimize.query.variable.LabelDto;
+import org.camunda.optimize.service.db.writer.VariableLabelWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.xcontent.XContentType;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -34,11 +37,13 @@ import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDI
 @RequiredArgsConstructor
 @Component
 @Slf4j
-public class VariableLabelWriter {
+@Conditional(ElasticSearchCondition.class)
+public class VariableLabelWriterES implements VariableLabelWriter {
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
+  @Override
   public void createVariableLabelUpsertRequest(DefinitionVariableLabelsDto definitionVariableLabelsDto) {
     try {
       final Map<String, Object> params = new HashMap<>();
@@ -95,6 +100,7 @@ public class VariableLabelWriter {
     }
   }
 
+  @Override
   public void deleteVariableLabelsForDefinition(final String processDefinitionKey) {
     log.debug("Deleting variable label document with id [{}].", processDefinitionKey);
     final DeleteRequest request = new DeleteRequest(VARIABLE_LABEL_INDEX_NAME)

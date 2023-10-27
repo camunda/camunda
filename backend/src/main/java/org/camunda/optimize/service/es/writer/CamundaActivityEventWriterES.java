@@ -12,14 +12,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.service.db.reader.CamundaActivityEventReader;
+import org.camunda.optimize.service.db.writer.CamundaActivityEventWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndexES;
 import org.camunda.optimize.service.util.IdGenerator;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.xcontent.XContentType;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -34,13 +37,15 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 @AllArgsConstructor
 @Component
 @Slf4j
-public class CamundaActivityEventWriter {
+@Conditional(ElasticSearchCondition.class)
+public class CamundaActivityEventWriterES implements CamundaActivityEventWriter {
 
   private final OptimizeElasticsearchClient esClient;
   private final ElasticSearchSchemaManager elasticSearchSchemaManager;
   private final ObjectMapper objectMapper;
   private final CamundaActivityEventReader camundaActivityEventReader;
 
+  @Override
   public List<ImportRequestDto> generateImportRequests(List<CamundaActivityEventDto> camundaActivityEvents) {
     String importItemName = "camunda activity events";
     log.debug("Creating imports for {} [{}].", camundaActivityEvents.size(), importItemName);
@@ -63,6 +68,7 @@ public class CamundaActivityEventWriter {
       .collect(Collectors.toList());
   }
 
+  @Override
   public void deleteByProcessInstanceIds(final String definitionKey, final List<String> processInstanceIds) {
     log.debug("Deleting camunda activity events for [{}] processInstanceIds", processInstanceIds.size());
 
@@ -102,4 +108,5 @@ public class CamundaActivityEventWriter {
       .map(CamundaActivityEventIndexES::new)
       .forEach(activityIndex -> elasticSearchSchemaManager.createIndexIfMissing(esClient, activityIndex));
   }
+
 }

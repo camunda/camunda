@@ -7,11 +7,12 @@ package org.camunda.optimize.service.es.writer;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.service.db.writer.BackupWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.db.schema.MappingMetadataUtil;
 import org.camunda.optimize.service.es.schema.MappingMetadataUtilES;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotRequest;
 import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotResponse;
@@ -19,6 +20,7 @@ import org.elasticsearch.action.admin.cluster.snapshots.delete.DeleteSnapshotReq
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.snapshots.SnapshotInfo;
 import org.elasticsearch.transport.TransportException;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -31,11 +33,14 @@ import static org.camunda.optimize.service.util.SnapshotUtil.getSnapshotPrefixWi
 @RequiredArgsConstructor
 @Component
 @Slf4j
-public class BackupWriter {
+@Conditional(ElasticSearchCondition.class)
+public class BackupWriterES implements BackupWriter {
+
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService indexNameService;
 
+  @Override
   public void triggerSnapshotCreation(final Long backupId) {
     final String snapshot1Name = getSnapshotNameForImportIndices(backupId);
     final String snapshot2Name = getSnapshotNameForNonImportIndices(backupId);
@@ -45,6 +50,7 @@ public class BackupWriter {
     });
   }
 
+  @Override
   public void deleteOptimizeSnapshots(final Long backupId) {
     final DeleteSnapshotRequest deleteSnapshotRequest = new DeleteSnapshotRequest()
       .repository(configurationService.getEsSnapshotRepositoryName())
@@ -153,4 +159,5 @@ public class BackupWriter {
       .map(indexNameService::getOptimizeIndexAliasForIndex)
       .toArray(String[]::new);
   }
+
 }

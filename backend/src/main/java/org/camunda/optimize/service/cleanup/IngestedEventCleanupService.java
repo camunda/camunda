@@ -7,7 +7,7 @@ package org.camunda.optimize.service.cleanup;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.service.es.writer.ExternalEventWriter;
+import org.camunda.optimize.service.db.writer.ExternalEventWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.springframework.stereotype.Component;
@@ -18,6 +18,7 @@ import java.time.OffsetDateTime;
 @Component
 @Slf4j
 public class IngestedEventCleanupService implements CleanupService {
+
   private final ConfigurationService configurationService;
   private final ExternalEventWriter externalEventWriter;
 
@@ -37,4 +38,5 @@ public class IngestedEventCleanupService implements CleanupService {
   private CleanupConfiguration getCleanupConfiguration() {
     return this.configurationService.getCleanupServiceConfiguration();
   }
+
 }

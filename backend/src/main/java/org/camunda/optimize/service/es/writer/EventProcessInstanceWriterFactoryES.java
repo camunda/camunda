@@ -9,10 +9,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
-import org.camunda.optimize.service.db.schema.index.events.EventProcessInstanceIndex;
+import org.camunda.optimize.service.db.writer.EventProcessInstanceWriter;
+import org.camunda.optimize.service.db.writer.EventProcessInstanceWriterFactory;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndexES;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.time.format.DateTimeFormatter;
@@ -20,14 +23,17 @@ import java.time.format.DateTimeFormatter;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class EventProcessInstanceWriterFactory {
+@Conditional(ElasticSearchCondition.class)
+public class EventProcessInstanceWriterFactoryES implements EventProcessInstanceWriterFactory {
+
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient elasticsearchClient;
   private final ConfigurationService configurationService;
   private final DateTimeFormatter dateTimeFormatter;
 
+  @Override
   public EventProcessInstanceWriter createEventProcessInstanceWriter(final EventProcessPublishStateDto processPublishStateDto) {
-    return new EventProcessInstanceWriter(
+    return new EventProcessInstanceWriterES(
       new EventProcessInstanceIndexES(processPublishStateDto.getId()),
       elasticsearchClient,
       configurationService,
@@ -36,8 +42,9 @@ public class EventProcessInstanceWriterFactory {
     );
   }
 
+  @Override
   public EventProcessInstanceWriter createAllEventProcessInstanceWriter() {
-    return new EventProcessInstanceWriter(
+    return new EventProcessInstanceWriterES(
       new EventProcessInstanceIndexES("*"),
       elasticsearchClient,
       configurationService,

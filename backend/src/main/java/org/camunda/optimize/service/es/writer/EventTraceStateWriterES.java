@@ -11,13 +11,16 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
 import org.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex;
+import org.camunda.optimize.service.db.writer.EventTraceStateWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.xcontent.XContentType;
+import org.springframework.context.annotation.Conditional;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -30,12 +33,14 @@ import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIE
 
 @AllArgsConstructor
 @Slf4j
-public class EventTraceStateWriter {
+@Conditional(ElasticSearchCondition.class)
+public class EventTraceStateWriterES implements EventTraceStateWriter {
 
   private final String indexKey;
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
+  @Override
   public void upsertEventTraceStates(final List<EventTraceStateDto> eventTraceStateDtos) {
     log.debug("Writing [{}] event trace states to elasticsearch", eventTraceStateDtos.size());
 

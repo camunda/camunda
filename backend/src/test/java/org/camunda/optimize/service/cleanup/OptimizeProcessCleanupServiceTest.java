@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.query.PageResultDto;
 import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.db.reader.ProcessInstanceReader;
 import org.camunda.optimize.service.db.writer.BusinessKeyWriter;
-import org.camunda.optimize.service.es.writer.CamundaActivityEventWriter;
+import org.camunda.optimize.service.db.writer.CamundaActivityEventWriter;
 import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.es.writer.variable.VariableUpdateInstanceWriter;

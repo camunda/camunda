@@ -10,17 +10,20 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.service.db.schema.index.events.EventIndex;
+import org.camunda.optimize.service.db.writer.ExternalEventWriter;
 import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.EventIndexES;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -36,11 +39,14 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 @AllArgsConstructor
 @Slf4j
 @Component
-public class ExternalEventWriter {
+@Conditional(ElasticSearchCondition.class)
+public class ExternalEventWriterES implements ExternalEventWriter {
+
   private final OptimizeElasticsearchClient esClient;
   private final DateTimeFormatter dateTimeFormatter;
   private final ObjectMapper objectMapper;
 
+  @Override
   public void upsertEvents(final List<EventDto> eventDtos) {
     log.debug("Writing [{}] events to elasticsearch", eventDtos.size());
     final BulkRequest bulkRequest = new BulkRequest();
@@ -66,6 +72,7 @@ public class ExternalEventWriter {
     }
   }
 
+  @Override
   public void deleteEventsOlderThan(final OffsetDateTime timestamp) {
     final String deletedItemIdentifier = String.format("external events with timestamp older than %s", timestamp);
     log.info("Deleting {}", deletedItemIdentifier);
@@ -91,6 +98,7 @@ public class ExternalEventWriter {
     }
   }
 
+  @Override
   public void deleteEventsWithIdsIn(final List<String> eventIdsToDelete) {
     final String deletedItemIdentifier =
       String.format("external events with ID from list of size %s", eventIdsToDelete.size());
@@ -116,4 +124,5 @@ public class ExternalEventWriter {
       .doc(objectMapper.convertValue(eventDto, Map.class))
       .docAsUpsert(true);
   }
+
 }
