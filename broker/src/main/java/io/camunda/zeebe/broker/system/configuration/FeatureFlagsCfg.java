@@ -37,6 +37,8 @@ public final class FeatureFlagsCfg {
   private boolean enableTimerDueDateCheckerAsync =
       DEFAULT_SETTINGS.enableTimerDueDateCheckerAsync();
 
+  private boolean disableDueDateTimerChecker = DEFAULT_SETTINGS.disableDueDateTimerChecker();
+
   public boolean isEnableYieldingDueDateChecker() {
     return enableYieldingDueDateChecker;
   }
@@ -77,13 +79,18 @@ public final class FeatureFlagsCfg {
     this.enableTimerDueDateCheckerAsync = enableTimerDueDateCheckerAsync;
   }
 
+  public void setDisableDueDateTimerChecker(final boolean disableDueDateTimerChecker) {
+    this.disableDueDateTimerChecker = disableDueDateTimerChecker;
+  }
+
   public FeatureFlags toFeatureFlags() {
     return new FeatureFlags(
         enableYieldingDueDateChecker,
         enableActorMetrics,
         enableBackup,
         enableMessageTtlCheckerAsync,
-        enableTimerDueDateCheckerAsync
+        enableTimerDueDateCheckerAsync,
+        disableDueDateTimerChecker
         /*, enableFoo*/ );
   }
 

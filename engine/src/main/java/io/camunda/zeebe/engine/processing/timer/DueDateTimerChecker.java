@@ -22,13 +22,14 @@ import java.time.Duration;
 import java.util.function.Function;
 
 public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
-
   private static final long TIMER_RESOLUTION = Duration.ofMillis(100).toMillis();
   private static final double GIVE_YIELD_FACTOR = 0.5;
   private final DueDateChecker dueDateChecker;
+  private final boolean disabled;
 
   public DueDateTimerChecker(
       final TimerInstanceState timerInstanceState, final FeatureFlags featureFlags) {
+    disabled = featureFlags.disableDueDateTimerChecker();
     dueDateChecker =
         new DueDateChecker(
             TIMER_RESOLUTION,
@@ -38,12 +39,16 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
   }
 
   public void scheduleTimer(final long dueDate) {
-    dueDateChecker.schedule(dueDate);
+    if (!disabled) {
+      dueDateChecker.schedule(dueDate);
+    }
   }
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    dueDateChecker.onRecovered(context);
+    if (!disabled) {
+      dueDateChecker.onRecovered(context);
+    }
   }
 
   @Override
@@ -53,17 +58,23 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
 
   @Override
   public void onFailed() {
-    dueDateChecker.onFailed();
+    if (!disabled) {
+      dueDateChecker.onFailed();
+    }
   }
 
   @Override
   public void onPaused() {
-    dueDateChecker.onPaused();
+    if (!disabled) {
+      dueDateChecker.onPaused();
+    }
   }
 
   @Override
   public void onResumed() {
-    dueDateChecker.onResumed();
+    if (!disabled) {
+      dueDateChecker.onResumed();
+    }
   }
 
   protected static final class TriggerTimersSideEffect
