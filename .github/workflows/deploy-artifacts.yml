@@ -53,7 +53,7 @@ jobs:
         secrets: |
           secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_USR;
           secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_PSW;
-    - name: Login to Harbor docker registry
+    - name: Login to Docker Hub
       uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3
       with:
         username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
@@ -82,29 +82,15 @@ jobs:
         CAMBPM_HOST: "172.17.0.1"
         CAMBPM_PORT: "8080"
         # ^ starting ~2023-10-10, the hostname resolution for the cambpm docker-compose service
-        # http://cambpm:8080 does not work anymore for neither SaaS nor self-hosted Linux runners. 
+        # http://cambpm:8080 does not work anymore for neither SaaS nor self-hosted Linux runners.
         # 172.17.0.1 is the host IP address from the container perspective, and cambpm is running
         # exposed there on port 8080.
-    # This is partly done already by the healthcheck in the compose file
-    - name: Check that Optimize is running and available
-      run: |
-        echo "Smoke testing if Optimize is ready"
-        curl -q -f -I http://localhost:8090/api/readyz | grep -q "200 OK"
-        echo "Smoke testing if Optimize Frontend resources are accessible"
-        curl -q -f http://localhost:8090/index.html | grep -q html
-    # If we made it to here, all checks were successful. So let's build it to push. This is not as
-    # inefficient as it looks, since docker retrieves the previously generated images from the build cache
-    - name: Deploy to Docker Hub / Harbor
-      run: |
-        # shellcheck disable=SC2086
-        docker buildx build \
-          ${tag_arguments} \
-          --build-arg VERSION="${VERSION}" \
-          --build-arg DATE="${DATE}" \
-          --build-arg REVISION="${REVISION}" \
-          --platform linux/amd64,linux/arm64 \
-          --push \
-          .
+    - name: Execute health check and push docker image
+      uses: ./.github/actions/execute-healthcheck-and-push-images
+      with:
+        version: ${{ env.VERSION }}
+        date: ${{ env.DATE }}
+        revision: ${{ env.REVISION }}
     # We're running under the same condition of main / maintenance
     # We have all dependencies presents, therefore doesn't justify another job
     - name: Deploy to Artifactory

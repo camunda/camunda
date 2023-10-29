@@ -47,7 +47,7 @@ services:
     - /var/tmp:/var/tmp
   optimize:
     container_name: optimize
-    image: registry.camunda.cloud/team-optimize/optimize:${OPTIMIZE_IMAGE_TAG:-latest}
+    image: dev.registry.camunda.cloud/team-optimize/optimize:${OPTIMIZE_IMAGE_TAG:-latest} #TODO Revert
     environment:
     - TZ=Europe/Berlin
     - OPTIMIZE_JAVA_OPTS=-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m

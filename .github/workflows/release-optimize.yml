@@ -1,4 +1,4 @@
-name: Release Camunda Optimize to Camunda Nexus and tag GitHub repository.
+name: Release Camunda Optimize to Camunda Nexus, DockerHub and internal Harbor registry.
 
 on:
   workflow_dispatch:
@@ -15,10 +15,6 @@ on:
         required: true
         description: 'The branch used for the release checkout.'
         default: '0.0.0'
-      PUSH_CHANGES:
-        required: true
-        description: 'Should the changes be pushed to remote locations.'
-        default: true
       DOCKER_LATEST:
         required: true
         description: 'Should the docker image be tagged as latest.'
@@ -40,6 +36,10 @@ jobs:
   build:
     name: Execute Release and Upload to Download Center
     runs-on: gcp-core-2-release
+    env:
+      DOCKER_IMAGE_TEAM: dev.registry.camunda.cloud/team-optimize/optimize #TODO: change to registry.camunda.cloud after testing in master
+      DOCKER_IMAGE_DOCKER_HUB: camunda/optimize
+      DOCKER_LATEST_TAG: latest
     strategy:
       fail-fast: true
     steps:
@@ -57,6 +57,36 @@ jobs:
             secret/data/common/jenkins/downloads-camunda-cloud_google_sa_key DEV_DOWNLOAD_CENTER_GCLOUD_KEY_BYTES | GCP_CREDENTIALS_NAME;
             secret/data/products/optimize/ci/camunda-optimize GITHUB_OPTIMIZE_APP_ID;
             secret/data/products/optimize/ci/camunda-optimize GITHUB_OPTIMIZE_APP_KEY;
+            secret/data/products/infra/ci/common CAMUNDA_NEXUS_USR;
+            secret/data/products/infra/ci/common CAMUNDA_NEXUS_PSW;
+            secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_USR;
+            secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_PSW;
+
+      - name: "Read Java / Version Info"
+        id: "pom-info"
+        uses: YunaBraska/java-info-action@main
+
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
+        with:
+          secrets: ${{ toJSON(secrets) }}
+
+      - name: Is current release major or manor.
+        id: is-major-or-minor
+        env:
+          RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION }}
+        run: |
+          is_major_or_minor="false"
+          is_patch="true"
+          patch_version=$(echo "$RELEASE_VERSION" | cut -d. -f3)
+          if [[ ! "$patch_version" == *"-"* ]] && [[ "$patch_version" == "0" ]]; then
+            is_major_or_minor="true"
+            is_patch="false"
+            echo "is_patchr=$is_patch"
+            echo "is_major_or_minor=$is_major_or_minor"
+          fi
+          echo "is_major_or_minor=$is_major_or_minor" >> "$GITHUB_OUTPUT"
+          echo "is_patch=$is_patch" >> "$GITHUB_OUTPUT"
 
       - name: Setup Maven
         uses: camunda/camunda-optimize/.github/actions/setup-maven@master
@@ -83,6 +113,61 @@ jobs:
           app_id: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
           private_key: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_KEY }}
 
+      - name: Install common tooling (buildx)  # required on self-hosted runners
+        uses: camunda/infra-global-github-actions/common-tooling@main
+        with:
+          buildx-enabled: true
+          java-enabled: false
+          node-enabled: false
+          python-enabled: false
+          yarn-enabled: false
+
+      - name: Define common variables
+        id: define-values
+        uses: ./.github/actions/git-environment
+
+      - name: Expose common variables as Env
+        env:
+          RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION }}
+        run: |
+          {
+          echo "VERSION=$RELEASE_VERSION"
+          echo "REVISION=${{ steps.define-values.outputs.git_commit_hash }}"
+          } >> "$GITHUB_ENV"
+
+        #TODO This should be removed once the test has been successfully run on master
+      - name: Login to Harbor docker registry
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3
+        with:
+          registry: dev.registry.camunda.cloud
+          username: ${{ steps.secrets.outputs.CAMUNDA_NEXUS_USR }}
+          password: ${{ steps.secrets.outputs.CAMUNDA_NEXUS_PSW }}
+
+      - name: Login to prod Harbor docker registry
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3
+        with:
+          registry: registry.camunda.cloud
+          username: ${{ steps.secrets.outputs.CAMUNDA_NEXUS_USR }}
+          password: ${{ steps.secrets.outputs.CAMUNDA_NEXUS_PSW }}
+
+      - name: Login to docker hub
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3
+        with:
+          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+
+      - name: Run Maven
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION }}
+          DEVELOPMENT_VERSION: ${{ github.event.inputs.DEVELOPMENT_VERSION }}
+          BRANCH: ${{ github.event.inputs.BRANCH }}
+          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
+          GITHUB_APP_ID: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
+          DRY_RUN: ${{ github.event.inputs.DRY_RUN }}
+        run: |
+          .github/scripts/execute-release.sh
+
       # This still needs changing once we are on prod
       - name: Upload artifact to Camunda Download Center
         if: inputs.DRY_RUN != 'true'
@@ -101,6 +186,7 @@ jobs:
           RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION }}
           BRANCH: ${{ github.event.inputs.BRANCH }}
         run: |
+          git checkout master
           .github/scripts/update-previous-version.sh
 
       - name: Trigger release examples repo
@@ -112,4 +198,44 @@ jobs:
           DEVELOPMENT_VERSION: ${{ github.event.inputs.DEVELOPMENT_VERSION }}
           BRANCH: ${{ github.event.inputs.BRANCH }}
         run: |
+          git checkout master
           .github/scripts/update_example_repo.sh
+
+      - name: Build Docker Image
+        run: |
+          git checkout master
+          .github/scripts/build-release-docker-images.sh
+        env:
+          MAJOR_OR_MINOR:  ${{ steps.is-major-or-minor.outputs.is_major_or_minor }}
+          DOCKER_LATEST: ${{ github.event.inputs.DOCKER_LATEST }}
+          ADDITIONAL_DOCKER_TAG: ${{ github.event.inputs.ADDITIONAL_DOCKER_TAG }}
+          DRY_RUN: ${{ github.event.inputs.DRY_RUN }}
+
+      - name: Start Smoketest
+        uses: ./.github/actions/compose
+        with:
+          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.smoketest.yml
+          project_name: smoketest
+        env:
+          OPTIMIZE_IMAGE_TAG: ${{ github.event.inputs.RELEASE_VERSION }}
+          ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch8_test_version }}
+          CAMBPM_HOST: "172.17.0.1"
+          CAMBPM_PORT: "8080"
+            # ^ starting ~2023-10-10, the hostname resolution for the cambpm docker-compose service
+            # http://cambpm:8080 does not work anymore for neither SaaS nor self-hosted Linux runners.
+            # 172.17.0.1 is the host IP address from the container perspective, and cambpm is running
+            # exposed there on port 8080.
+
+      - name: Execute health check and push docker image
+        uses: ./.github/actions/execute-healthcheck-and-push-images
+        with:
+          version: ${{ env.VERSION }}
+          date: ${{ env.DATE }}
+          revision:  ${{ env.REVISION }}
+        env:
+          DRY_RUN: ${{ github.event.inputs.DRY_RUN }}
+
+      - name: Docker log dump
+        uses: ./.github/actions/docker-logs
+        with:
+          archive_name: deploy-artifacts-docker
