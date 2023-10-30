@@ -188,8 +188,7 @@ components:
       type: object
       properties:
         changeId:
-          description: The id to track topology change.
-          type: integer
+          $ref: "#/components/schemas/ChangeId"
         currentTopology:
           description: Current topology of the cluster
           type: array
@@ -214,6 +213,7 @@ components:
       properties:
         version:
           type: integer
+          format: int64
           description: The version of the topology
           example: 1
         brokers:
@@ -227,10 +227,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          format: int64
-          description: The id of the current ongoing or last completed change.
-          example: 3
+          $ref: "#/components/schemas/ChangeId"
         status:
           type: string
           enum:
@@ -303,6 +300,7 @@ components:
           $ref: "#/components/schemas/BrokerStateCode"
         version:
           type: integer
+          format: int64
           description: The version of the broker state
           example: 1
         lastUpdatedAt:
@@ -351,21 +349,21 @@ components:
 
     ChangeId:
       title: ChangeId
-      description: The ID of broker
+      description: The ID of a topology change operation
       type: integer
-      format: int32
+      format: int64
       example: 8
 
     BrokerId:
       title: BrokerId
-      description: The ID of broker
+      description: The ID of a broker, starting from 0
       type: integer
       format: int32
-      example: 8
+      example: 0
 
     PartitionId:
       title: PartitionId
-      description: The ID of broker
+      description: The ID of a partition, starting from 1
       type: integer
       format: int32
-      example: 8
+      example: 1
