@@ -39,6 +39,7 @@ public record ClusterTopology(
     Optional<CompletedChange> lastChange,
     Optional<ClusterChangePlan> pendingChanges) {
 
+  public static final int INITIAL_VERSION = 1;
   private static final int UNINITIALIZED_VERSION = -1;
 
   public static ClusterTopology uninitialized() {
@@ -50,7 +51,7 @@ public record ClusterTopology(
   }
 
   public static ClusterTopology init() {
-    return new ClusterTopology(0, Map.of(), Optional.empty(), Optional.empty());
+    return new ClusterTopology(INITIAL_VERSION, Map.of(), Optional.empty(), Optional.empty());
   }
 
   public ClusterTopology addMember(final MemberId memberId, final MemberState state) {

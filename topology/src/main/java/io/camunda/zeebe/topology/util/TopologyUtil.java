@@ -41,8 +41,11 @@ public final class TopologyUtil {
       memberStates.put(e.getKey(), MemberState.initializeAsActive(e.getValue()));
     }
 
-    return new io.camunda.zeebe.topology.state.ClusterTopology(
-        0, Map.copyOf(memberStates), Optional.empty(), Optional.empty());
+    return new ClusterTopology(
+        ClusterTopology.INITIAL_VERSION,
+        Map.copyOf(memberStates),
+        Optional.empty(),
+        Optional.empty());
   }
 
   public static Set<PartitionMetadata> getPartitionDistributionFrom(
