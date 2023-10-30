@@ -99,7 +99,11 @@ public class UserTaskIncidentTest {
         .hasErrorMessage(
             """
             Assertion failure on evaluate the expression \
-            'assert(MISSING_VAR, MISSING_VAR != null)': The condition is not fulfilled""");
+            'assert(MISSING_VAR, MISSING_VAR != null)': The condition is not fulfilled \
+            The evaluation reported the following warnings: \
+            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'; \
+            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'; \
+            [ASSERT_FAILURE] The condition is not fulfilled""");
   }
 
   @Test
@@ -234,7 +238,11 @@ public class UserTaskIncidentTest {
         .hasErrorMessage(
             """
             Assertion failure on evaluate the expression \
-            'assert(MISSING_VAR, MISSING_VAR != null)': The condition is not fulfilled""");
+            'assert(MISSING_VAR, MISSING_VAR != null)': The condition is not fulfilled \
+            The evaluation reported the following warnings: \
+            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'; \
+            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'; \
+            [ASSERT_FAILURE] The condition is not fulfilled""");
   }
 
   @Test
@@ -358,7 +366,11 @@ public class UserTaskIncidentTest {
         .hasErrorMessage(
             """
             Assertion failure on evaluate the expression \
-            'assert(MISSING_VAR, MISSING_VAR != null)': The condition is not fulfilled""");
+            'assert(MISSING_VAR, MISSING_VAR != null)': The condition is not fulfilled \
+            The evaluation reported the following warnings: \
+            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'; \
+            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'; \
+            [ASSERT_FAILURE] The condition is not fulfilled""");
   }
 
   @Test
@@ -485,7 +497,11 @@ public class UserTaskIncidentTest {
         .hasErrorMessage(
             """
             Assertion failure on evaluate the expression \
-            'assert(MISSING_VAR, MISSING_VAR != null)': The condition is not fulfilled""");
+            'assert(MISSING_VAR, MISSING_VAR != null)': The condition is not fulfilled \
+            The evaluation reported the following warnings: \
+            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'; \
+            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'; \
+            [ASSERT_FAILURE] The condition is not fulfilled""");
   }
 
   @Test
@@ -510,7 +526,7 @@ public class UserTaskIncidentTest {
     assertIncidentCreated(processInstanceKey, userTaskActivating.getKey())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Expected result of the expression '[1,2,3]' to be one of '[DATE_TIME, STRING]', but was 'ARRAY'");
+            "Expected result of the expression '[1,2,3]' to be one of '[NULL, DATE_TIME, STRING]', but was 'ARRAY'.");
   }
 
   @Test
@@ -624,7 +640,11 @@ public class UserTaskIncidentTest {
         .hasErrorMessage(
             """
             Assertion failure on evaluate the expression \
-            'assert(MISSING_VAR, MISSING_VAR != null)': The condition is not fulfilled""");
+            'assert(MISSING_VAR, MISSING_VAR != null)': The condition is not fulfilled \
+            The evaluation reported the following warnings: \
+            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'; \
+            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'; \
+            [ASSERT_FAILURE] The condition is not fulfilled""");
   }
 
   @Test
@@ -649,7 +669,7 @@ public class UserTaskIncidentTest {
     assertIncidentCreated(processInstanceKey, userTaskActivating.getKey())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Expected result of the expression '[1,2,3]' to be one of '[DATE_TIME, STRING]', but was 'ARRAY'");
+            "Expected result of the expression '[1,2,3]' to be one of '[NULL, DATE_TIME, STRING]', but was 'ARRAY'.");
   }
 
   @Test

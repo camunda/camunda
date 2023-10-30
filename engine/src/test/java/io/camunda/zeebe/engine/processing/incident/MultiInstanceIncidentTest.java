@@ -105,7 +105,10 @@ public final class MultiInstanceIncidentTest {
     assertIncidentCreated(incident, elementInstance)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Expected result of the expression 'items' to be 'ARRAY', but was 'NULL'.");
+            """
+            Expected result of the expression 'items' to be 'ARRAY', but was 'NULL'. \
+            The evaluation reported the following warnings: \
+            [NO_VARIABLE_FOUND] No variable found with name 'items'""");
   }
 
   @Test
@@ -169,7 +172,11 @@ public final class MultiInstanceIncidentTest {
             """
             Assertion failure on evaluate the expression \
             '{x: assert(undefined_var, undefined_var != null)}': \
-            The condition is not fulfilled""");
+            The condition is not fulfilled \
+            The evaluation reported the following warnings: \
+            [NO_VARIABLE_FOUND] No variable found with name 'undefined_var'; \
+            [NO_VARIABLE_FOUND] No variable found with name 'undefined_var'; \
+            [ASSERT_FAILURE] The condition is not fulfilled""");
   }
 
   @Test
@@ -433,7 +440,11 @@ public final class MultiInstanceIncidentTest {
 
     Assertions.assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
-        .hasErrorMessage("Expected result of the expression 'x' to be 'BOOLEAN', but was 'NULL'.")
+        .hasErrorMessage(
+            """
+            Expected result of the expression 'x' to be 'BOOLEAN', but was 'NULL'. \
+            The evaluation reported the following warnings: \
+            [NO_VARIABLE_FOUND] No variable found with name 'x'""")
         .hasProcessInstanceKey(processInstanceKey)
         .hasElementInstanceKey(activityEvent.getKey())
         .hasVariableScopeKey(activityEvent.getKey());

@@ -303,7 +303,11 @@ public final class ScriptTaskExpressionTest {
         .hasErrorMessage(
             """
             Assertion failure on evaluate the expression 'assert(x, x != null)': \
-            The condition is not fulfilled""")
+            The condition is not fulfilled \
+            The evaluation reported the following warnings: \
+            [NO_VARIABLE_FOUND] No variable found with name 'x'; \
+            [NO_VARIABLE_FOUND] No variable found with name 'x'; \
+            [ASSERT_FAILURE] The condition is not fulfilled""")
         .hasBpmnProcessId(scriptTask.getValue().getBpmnProcessId())
         .hasProcessDefinitionKey(scriptTask.getValue().getProcessDefinitionKey())
         .hasProcessInstanceKey(scriptTask.getValue().getProcessInstanceKey())

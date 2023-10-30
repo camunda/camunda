@@ -112,9 +112,13 @@ public final class TimerIncidentTest {
     assertIncidentCreated(incident, elementInstance)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Expected result of the expression '"
-                + DATETIME_EXPRESSION
-                + "' to be one of '[DATE_TIME, STRING]', but was 'NULL'");
+            """
+          Expected result of the expression 'date and time(date(timer_duration),time("T00:00:00@UTC"))' \
+          to be one of '[DATE_TIME, STRING]', but was 'NULL'. \
+          The evaluation reported the following warnings: \
+          [NO_VARIABLE_FOUND] No variable found with name 'timer_duration'; \
+          [FUNCTION_INVOCATION_FAILURE] Failed to invoke function 'date': Illegal arguments: 'null'; \
+          [FUNCTION_INVOCATION_FAILURE] Failed to invoke function 'date and time': Illegal arguments: 'null', '00:00:00@UTC'""");
   }
 
   @Test
@@ -144,7 +148,7 @@ public final class TimerIncidentTest {
         .hasErrorMessage(
             "Invalid date-time format 'not_a_duration_expression' for expression '"
                 + DURATION_VARIABLE
-                + "'");
+                + "'.");
   }
 
   @Test
@@ -167,9 +171,11 @@ public final class TimerIncidentTest {
     assertIncidentCreated(incident, elementInstance)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Expected result of the expression '"
-                + DURATION_EXPRESSION
-                + "' to be one of '[DURATION, PERIOD, STRING]', but was 'NULL'");
+            """
+            Expected result of the expression 'duration(timer_duration)' to be one of '[DURATION, PERIOD, STRING]', but was 'NULL'. \
+            The evaluation reported the following warnings: \
+            [NO_VARIABLE_FOUND] No variable found with name 'timer_duration'; \
+            [FUNCTION_INVOCATION_FAILURE] Failed to invoke function 'duration': Illegal arguments: 'null'""");
   }
 
   @Test
@@ -199,7 +205,7 @@ public final class TimerIncidentTest {
         .hasErrorMessage(
             "Invalid duration format 'not_a_duration_expression' for expression '"
                 + DURATION_VARIABLE
-                + "'");
+                + "'.");
   }
 
   @Test
@@ -227,9 +233,11 @@ public final class TimerIncidentTest {
     assertIncidentCreated(incident, elementInstance)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Expected result of the expression '"
-                + CYCLE_EXPRESSION
-                + "' to be 'STRING', but was 'NULL'.");
+            """
+            Expected result of the expression 'cycle(duration(timer_duration))' to be 'STRING', but was 'NULL'. \
+            The evaluation reported the following warnings: \
+            [FUNCTION_INVOCATION_FAILURE] Failed to invoke function 'duration': Failed to parse duration from 'not_a_duration_expression'; \
+            [FUNCTION_INVOCATION_FAILURE] Failed to invoke function 'cycle': cycle function expected an interval (duration) parameter, but found 'null'""");
   }
 
   @Test

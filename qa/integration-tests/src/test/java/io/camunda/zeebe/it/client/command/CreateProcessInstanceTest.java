@@ -341,6 +341,8 @@ public final class CreateProcessInstanceTest {
             Expected to subscribe to catch event(s) of \
             'process-shouldRejectCreateWithStartInstructions-2' but \
             Failed to extract the correlation key for 'missing_var': \
-            The value must be either a string or a number, but was NULL.""");
+            The value must be either a string or a number, but was 'NULL'. \
+            The evaluation reported the following warnings: \
+            [NO_VARIABLE_FOUND] No variable found with name 'missing_var'""");
   }
 }

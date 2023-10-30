@@ -822,6 +822,6 @@ public final class TimerCatchEventTest {
             """
             Expected result of the expression 'today() + duration("P1D")' \
             to be one of '[DURATION, PERIOD, STRING]', \
-            but was 'DATE'""");
+            but was 'DATE'.""");
   }
 }
