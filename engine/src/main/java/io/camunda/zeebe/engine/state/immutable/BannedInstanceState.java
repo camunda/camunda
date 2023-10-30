@@ -9,8 +9,12 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.List;
 
 public interface BannedInstanceState extends StreamProcessorLifecycleAware {
 
   boolean isBanned(final TypedRecord record);
+
+  /** Returns a list of keys of all banned process instances */
+  List<Long> getBannedProcessInstanceKeys();
 }
