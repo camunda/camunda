@@ -80,7 +80,7 @@ public final class StubBrokerRule extends ExternalResource {
             .build();
     cluster.start().join();
     final var transportFactory = new TransportFactory(scheduler);
-    serverTransport = transportFactory.createServerTransport(0, cluster.getMessagingService());
+    serverTransport = transportFactory.createServerTransport(nodeId, cluster.getMessagingService());
 
     channelHandler = new StubRequestHandler(msgPackHelper);
     serverTransport.subscribe(1, RequestType.COMMAND, channelHandler);
