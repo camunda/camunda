@@ -220,7 +220,13 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
           }
         }
         var response = openSearchClient.reindex(reindexRequest);
-        if(response.total().equals(srcCount)) return true;
+
+        if(response.total().equals(srcCount)) {
+          var taskId = response.task() != null ? response.task() : "task:unavailable";
+          logProgress(taskId, srcCount, srcCount);
+          return true;
+        }
+
         TimeUnit.of(ChronoUnit.MILLIS).sleep(2_000);
         return waitUntilTaskIsCompleted(response.task(), srcCount);
       },
@@ -237,6 +243,8 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
     final GetTasksResponse taskResponse = waitTaskCompletion(taskId);
 
     if (taskResponse != null) {
+      logProgress(taskId, taskResponse.response().total(), srcCount);
+
       final long total = taskResponse.response().total();
       logger.info("Source docs: {}, Migrated docs: {}", srcCount, total);
       return total == srcCount;
@@ -244,6 +252,11 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
       // need to reindex again
       return false;
     }
+  }
+
+  private void logProgress(String taskId, long processed, long srcCount) {
+    var progress = processed * 100.00 / srcCount;
+    logger.info("TaskId: {}, Progress: {}%", taskId, String.format("%.2f", progress));
   }
 
   public GetIndexResponse get(GetIndexRequest.Builder requestBuilder) {
