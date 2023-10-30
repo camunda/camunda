@@ -22,7 +22,6 @@ on:
       ADDITIONAL_DOCKER_TAG:
         required: false
         description: 'Any additional tag that should be added to the docker image.'
-        default: '0.0.0'
       DRY_RUN:
         required: true
         description: 'Check if this is an actual release or a dry run.'
@@ -189,18 +188,6 @@ jobs:
           git checkout master
           .github/scripts/update-previous-version.sh
 
-      - name: Trigger release examples repo
-        if: inputs.RELEASE_EXAMPLES == 'true'
-        env:
-          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
-          GITHUB_APP_ID: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
-          RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION }}
-          DEVELOPMENT_VERSION: ${{ github.event.inputs.DEVELOPMENT_VERSION }}
-          BRANCH: ${{ github.event.inputs.BRANCH }}
-        run: |
-          git checkout master
-          .github/scripts/update_example_repo.sh
-
       - name: Build Docker Image
         run: |
           git checkout master
@@ -239,3 +226,13 @@ jobs:
         uses: ./.github/actions/docker-logs
         with:
           archive_name: deploy-artifacts-docker
+
+      - name: Trigger release examples repo
+        if: inputs.RELEASE_EXAMPLES == 'true'
+        env:
+          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
+          GITHUB_APP_ID: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
+          RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION }}
+          DEVELOPMENT_VERSION: ${{ github.event.inputs.DEVELOPMENT_VERSION }}
+        run: |
+          .github/scripts/update_example_repo.sh

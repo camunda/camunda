@@ -5,7 +5,9 @@ git config user.name "github-actions[bot]"
 git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 git remote set-url origin https://$GITHUB_APP_ID:$GITHUB_TOKEN@github.com/camunda/camunda-optimize-examples.git
 git fetch
-git checkout $BRANCH
+git checkout $RELEASE_VERSION
+git reset --hard origin/$RELEASE_VERSION
+git pull
 
 ### adjust the readme and add the new version to the version overview
 # find line where the version overview starts
