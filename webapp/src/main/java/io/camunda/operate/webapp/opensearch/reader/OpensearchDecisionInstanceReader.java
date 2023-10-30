@@ -13,6 +13,7 @@ import io.camunda.operate.entities.dmn.DecisionInstanceState;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
+import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.reader.DecisionInstanceReader;
@@ -85,9 +86,13 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
                 term(DecisionInstanceTemplate.ID, decisionInstanceId))
             )));
 
-    return DtoCreator.create(
+    try {
+      return DtoCreator.create(
         richOpenSearchClient.doc().searchUnique(searchRequest, DecisionInstanceEntity.class, decisionInstanceId),
         DecisionInstanceDto.class);
+    } catch (NotFoundException e) {
+      throw new io.camunda.operate.webapp.rest.exception.NotFoundException(e.getMessage());
+    }
   }
 
   @Override
