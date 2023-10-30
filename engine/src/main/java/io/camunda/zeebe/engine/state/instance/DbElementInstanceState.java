@@ -358,13 +358,19 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public boolean hasActiveProcessInstances(final long processDefinitionKey) {
+  public boolean hasActiveProcessInstances(
+      final long processDefinitionKey, final List<Long> bannedInstances) {
     this.processDefinitionKey.wrapLong(processDefinitionKey);
     final AtomicBoolean hasActiveInstances = new AtomicBoolean(false);
 
     processInstanceKeyByProcessDefinitionKeyColumnFamily.whileEqualPrefix(
         this.processDefinitionKey,
         (key, value) -> {
+          // A banned instance should not be considered as active
+          if (bannedInstances.contains(key.second().getValue())) {
+            return true;
+          }
+
           hasActiveInstances.set(true);
           return false;
         });
