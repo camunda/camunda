@@ -60,4 +60,4 @@ mvn versions:set versions:commit -DnewVersion=$DEVELOPMENT_VERSION
 # push the changes
 git add -u
 git commit -m "chore(release): update pom to snapshot for next development version"
-git push origin $BRANCH
+git push origin $RELEASE_VERSION
