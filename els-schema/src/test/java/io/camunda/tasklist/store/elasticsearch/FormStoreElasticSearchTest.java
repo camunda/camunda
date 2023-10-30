@@ -18,6 +18,8 @@ import io.camunda.tasklist.entities.FormEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.FormIndex;
+import io.camunda.tasklist.schema.indices.ProcessIndex;
+import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import java.io.IOException;
 import org.apache.lucene.search.TotalHits;
@@ -39,6 +41,8 @@ class FormStoreElasticSearchTest {
 
   private static final String FORM_INDEX_NAME = "tasklist-form-x.0.0";
   @Mock private FormIndex formIndex = new FormIndex();
+  @Mock private TaskTemplate taskTemplate = new TaskTemplate();
+  @Mock private ProcessIndex processIndex = new ProcessIndex();
   @Mock private TenantAwareElasticsearchClient tenantAwareClient;
   @Spy private ObjectMapper objectMapper = CommonUtils.OBJECT_MAPPER;
   @InjectMocks private FormStoreElasticSearch instance;
@@ -53,15 +57,17 @@ class FormStoreElasticSearchTest {
     // given
     when(formIndex.getIndexName()).thenReturn(FormIndex.INDEX_NAME);
     final var response = mock(SearchResponse.class);
+    when(taskTemplate.getFullQualifiedName()).thenReturn("tasklist-task-x.0.0");
+    when(processIndex.getFullQualifiedName()).thenReturn("tasklist-task-x.0.0");
     when(tenantAwareClient.search(any(SearchRequest.class))).thenReturn(response);
     final var hits = mock(SearchHits.class);
     when(response.getHits()).thenReturn(hits);
     when(hits.getTotalHits()).thenReturn(new TotalHits(0L, TotalHits.Relation.EQUAL_TO));
 
     // when - then
-    assertThatThrownBy(() -> instance.getForm("id1", "processDefId1"))
+    assertThatThrownBy(() -> instance.getForm("id1", "processDefId1", null))
         .isInstanceOf(NotFoundException.class)
-        .hasMessage("form with id processDefId1_id1 was not found");
+        .hasMessage("form with id id1 was not found");
   }
 
   @Test
@@ -72,7 +78,7 @@ class FormStoreElasticSearchTest {
         .thenThrow(new IOException("some error"));
 
     // when - then
-    assertThatThrownBy(() -> instance.getForm("id2", "processDefId2"))
+    assertThatThrownBy(() -> instance.getForm("id2", "processDefId2", null))
         .isInstanceOf(TasklistRuntimeException.class)
         .hasMessage("some error")
         .hasCauseInstanceOf(IOException.class);
@@ -99,7 +105,7 @@ class FormStoreElasticSearchTest {
     when(hit.getSourceAsString()).thenReturn(responseAsstring);
 
     // when
-    final var result = instance.getForm("id3", "processDefId3");
+    final var result = instance.getForm("id3", "processDefId3", null);
 
     // then
     assertThat(result).isEqualTo(providedFormEntity);

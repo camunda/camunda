@@ -22,6 +22,9 @@ public class TaskResponse {
   private String assignee;
   private TaskState taskState;
   private String formKey;
+  private String formId;
+  private Long formVersion;
+  private Boolean isFormEmbedded;
   private String processDefinitionKey;
   private String processInstanceKey;
   private String tenantId;
@@ -111,6 +114,33 @@ public class TaskResponse {
     return this;
   }
 
+  public String getFormId() {
+    return formId;
+  }
+
+  public TaskResponse setFormId(String formId) {
+    this.formId = formId;
+    return this;
+  }
+
+  public Long getFormVersion() {
+    return formVersion;
+  }
+
+  public TaskResponse setFormVersion(Long formVersion) {
+    this.formVersion = formVersion;
+    return this;
+  }
+
+  public Boolean getIsFormEmbedded() {
+    return isFormEmbedded;
+  }
+
+  public TaskResponse setIsFormEmbedded(Boolean isFormEmbedded) {
+    this.isFormEmbedded = isFormEmbedded;
+    return this;
+  }
+
   public String getProcessDefinitionKey() {
     return processDefinitionKey;
   }
@@ -192,6 +222,9 @@ public class TaskResponse {
         && Objects.equals(assignee, that.assignee)
         && taskState == that.taskState
         && Objects.equals(formKey, that.formKey)
+        && Objects.equals(formId, that.formId)
+        && Objects.equals(formVersion, that.formVersion)
+        && Objects.equals(isFormEmbedded, that.isFormEmbedded)
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(tenantId, that.tenantId)
@@ -214,6 +247,9 @@ public class TaskResponse {
             assignee,
             taskState,
             formKey,
+            formId,
+            formVersion,
+            isFormEmbedded,
             processDefinitionKey,
             processInstanceKey,
             tenantId,
@@ -236,6 +272,9 @@ public class TaskResponse {
         .add("assignee='" + assignee + "'")
         .add("taskState=" + taskState)
         .add("formKey='" + formKey + "'")
+        .add("formId='" + formId + "'")
+        .add("formId='" + formVersion + "'")
+        .add("isFormEmbedded='" + isFormEmbedded + "'")
         .add("processDefinitionKey='" + processDefinitionKey + "'")
         .add("processInstanceKey='" + processInstanceKey + "'")
         .add("tenantId='" + tenantId + "'")

@@ -205,6 +205,22 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
   }
 
   private void deployProcesses() {
+    // Deploy Forms
+    zeebeClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("formDeployedV1.form")
+        .send()
+        .join();
+
+    zeebeClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("formDeployedV2.form")
+        .send()
+        .join();
+
+    // Deploy Processes
+    ZeebeTestUtil.deployProcess(zeebeClient, "startedByLinkedForm.bpmn");
+    ZeebeTestUtil.deployProcess(zeebeClient, "formIdProcessDeployed.bpmn");
     ZeebeTestUtil.deployProcess(zeebeClient, "orderProcess.bpmn");
     ZeebeTestUtil.deployProcess(zeebeClient, "registerPassenger.bpmn");
     ZeebeTestUtil.deployProcess(zeebeClient, "simpleProcess.bpmn");

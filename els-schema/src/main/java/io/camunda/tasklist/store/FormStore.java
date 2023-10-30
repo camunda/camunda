@@ -10,5 +10,5 @@ import io.camunda.tasklist.entities.FormEntity;
 
 public interface FormStore {
 
-  FormEntity getForm(final String id, final String processDefinitionId);
+  FormEntity getForm(final String id, final String processDefinitionId, final Long version);
 }

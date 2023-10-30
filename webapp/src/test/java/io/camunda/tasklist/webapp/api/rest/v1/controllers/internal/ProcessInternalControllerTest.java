@@ -99,7 +99,7 @@ class ProcessInternalControllerTest {
     when(processStore.getProcesses(
             query, identityAuthorizationService.getProcessDefinitionsFromAuthorization(), null))
         .thenReturn(List.of(providedProcessEntity));
-    when(formStore.getForm("userTaskForm_111", "2251799813685257"))
+    when(formStore.getForm("userTaskForm_111", "2251799813685257", null))
         .thenReturn(new FormEntity().setId("task").setBpmnId("task"));
 
     // when

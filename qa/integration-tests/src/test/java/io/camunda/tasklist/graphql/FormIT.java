@@ -55,9 +55,7 @@ public class FormIT extends TasklistZeebeIntegrationTest {
     final GraphQLResponse formResponse = tester.getForm(bpmnFormId);
 
     // then
-    final var expectedErrorMessage =
-        String.format(
-            "form with id %s_%s was not found", tester.getProcessDefinitionKey(), bpmnFormId);
+    final var expectedErrorMessage = String.format("form with id %s was not found", bpmnFormId);
     assertEquals(expectedErrorMessage, formResponse.get("$.errors[0].message"));
   }
 

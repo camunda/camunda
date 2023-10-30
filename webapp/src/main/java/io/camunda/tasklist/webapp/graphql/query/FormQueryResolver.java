@@ -18,6 +18,6 @@ public final class FormQueryResolver implements GraphQLQueryResolver {
   @Autowired private FormStore formStore;
 
   public FormDTO form(String id, String processDefinitionId) {
-    return FormDTO.createFrom(formStore.getForm(id, processDefinitionId));
+    return FormDTO.createFrom(formStore.getForm(id, processDefinitionId, null));
   }
 }

@@ -30,6 +30,7 @@ public class TaskTemplate extends AbstractTemplateDescriptor
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
   public static final String DUE_DATE = "dueDate";
+  public static final String FORM_ID = "formId";
   public static final String FOLLOW_UP_DATE = "followUpDate";
   public static final String TENANT_ID = "tenantId";
 

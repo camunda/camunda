@@ -18,6 +18,7 @@ public class FormEntity extends TenantAwareTasklistEntity<FormEntity> {
   private Long version;
   private String tenantId;
   private Boolean embedded;
+  private Boolean isDeleted;
 
   public FormEntity() {}
 
@@ -29,7 +30,8 @@ public class FormEntity extends TenantAwareTasklistEntity<FormEntity> {
       Long version,
       String tenantId,
       String formKey,
-      Boolean embedded) {
+      Boolean embedded,
+      Boolean isDeleted) {
     if (embedded) {
       setId(createId(processDefinitionId, bpmnId));
     } else {
@@ -41,6 +43,7 @@ public class FormEntity extends TenantAwareTasklistEntity<FormEntity> {
     this.version = version;
     this.tenantId = tenantId;
     this.embedded = embedded;
+    this.isDeleted = isDeleted;
   }
 
   /* This constructor is used for embedded forms. */
@@ -57,6 +60,7 @@ public class FormEntity extends TenantAwareTasklistEntity<FormEntity> {
     this.schema = schema;
     this.tenantId = tenantId;
     this.embedded = true;
+    this.isDeleted = false;
   }
 
   public Boolean getEmbedded() {
@@ -113,6 +117,15 @@ public class FormEntity extends TenantAwareTasklistEntity<FormEntity> {
     return this;
   }
 
+  public Boolean getIsDeleted() {
+    return isDeleted;
+  }
+
+  public FormEntity setIsDeleted(Boolean isDeleted) {
+    this.isDeleted = isDeleted;
+    return this;
+  }
+
   public static String createId(String processId, String formKey) {
     return String.format("%s_%s", processId, formKey);
   }
@@ -137,6 +150,9 @@ public class FormEntity extends TenantAwareTasklistEntity<FormEntity> {
     return Objects.equals(bpmnId, that.bpmnId)
         && Objects.equals(processDefinitionId, that.processDefinitionId)
         && Objects.equals(schema, that.schema)
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(embedded, that.embedded)
+        && Objects.equals(isDeleted, that.isDeleted)
         && Objects.equals(version, that.version);
   }
 
@@ -155,6 +171,8 @@ public class FormEntity extends TenantAwareTasklistEntity<FormEntity> {
         + ", version='"
         + version
         + '\''
+        + ", isDeleted="
+        + isDeleted
         + '}';
   }
 }

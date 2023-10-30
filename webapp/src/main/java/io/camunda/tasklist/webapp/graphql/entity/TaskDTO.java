@@ -42,6 +42,9 @@ public final class TaskDTO {
   private String[] sortValues;
   private boolean isFirst = false;
   private String formKey;
+  private String formId;
+  private Long formVersion;
+  private Boolean isFormEmbedded;
   private String tenantId;
   private OffsetDateTime dueDate;
   private OffsetDateTime followUpDate;
@@ -185,6 +188,33 @@ public final class TaskDTO {
     return this;
   }
 
+  public String getFormId() {
+    return formId;
+  }
+
+  public TaskDTO setFormId(String formId) {
+    this.formId = formId;
+    return this;
+  }
+
+  public Long getFormVersion() {
+    return formVersion;
+  }
+
+  public TaskDTO setFormVersion(Long formVersion) {
+    this.formVersion = formVersion;
+    return this;
+  }
+
+  public Boolean getIsFormEmbedded() {
+    return isFormEmbedded;
+  }
+
+  public TaskDTO setIsFormEmbedded(Boolean isFormEmbedded) {
+    this.isFormEmbedded = isFormEmbedded;
+    return this;
+  }
+
   public String getTenantId() {
     return tenantId;
   }
@@ -232,6 +262,9 @@ public final class TaskDTO {
             .setFlowNodeBpmnId(taskEntity.getFlowNodeBpmnId())
             .setFlowNodeInstanceId(taskEntity.getFlowNodeInstanceId())
             .setFormKey(taskEntity.getFormKey())
+            .setFormId(taskEntity.getFormId())
+            .setFormVersion(taskEntity.getFormVersion())
+            .setIsFormEmbedded(taskEntity.getIsFormEmbedded())
             .setTenantId(taskEntity.getTenantId())
             .setFollowUpDate(taskEntity.getFollowUpDate())
             .setDueDate(taskEntity.getDueDate())
@@ -257,6 +290,9 @@ public final class TaskDTO {
         .setFlowNodeBpmnId(taskSearchView.getFlowNodeBpmnId())
         .setFlowNodeInstanceId(taskSearchView.getFlowNodeInstanceId())
         .setFormKey(taskSearchView.getFormKey())
+        .setFormId(taskSearchView.getFormId())
+        .setFormVersion(taskSearchView.getFormVersion())
+        .setIsFormEmbedded(taskSearchView.getIsFormEmbedded())
         .setTenantId(taskSearchView.getTenantId())
         .setFollowUpDate(taskSearchView.getFollowUpDate())
         .setDueDate(taskSearchView.getDueDate())
@@ -284,6 +320,9 @@ public final class TaskDTO {
               .setFlowNodeBpmnId(taskDTO.getFlowNodeBpmnId())
               .setFlowNodeInstanceId(taskDTO.getFlowNodeInstanceId())
               .setFormKey(taskDTO.getFormKey())
+              .setFormId(taskDTO.getFormId())
+              .setFormVersion(taskDTO.getFormVersion())
+              .setIsFormEmbedded(taskDTO.getIsFormEmbedded())
               .setTenantId(taskDTO.getTenantId())
               .setFollowUpDate(taskDTO.getFollowUpDate())
               .setDueDate(taskDTO.getDueDate())
@@ -326,6 +365,9 @@ public final class TaskDTO {
         && taskState == taskDTO.taskState
         && Arrays.equals(sortValues, taskDTO.sortValues)
         && Objects.equals(formKey, taskDTO.formKey)
+        && Objects.equals(formId, taskDTO.formId)
+        && Objects.equals(formVersion, taskDTO.formVersion)
+        && Objects.equals(isFormEmbedded, taskDTO.isFormEmbedded)
         && Objects.equals(tenantId, taskDTO.tenantId)
         && Objects.equals(dueDate, taskDTO.dueDate)
         && Objects.equals(followUpDate, taskDTO.followUpDate);
@@ -347,6 +389,9 @@ public final class TaskDTO {
             taskState,
             isFirst,
             formKey,
+            formId,
+            formVersion,
+            isFormEmbedded,
             tenantId,
             dueDate,
             followUpDate);
@@ -374,6 +419,9 @@ public final class TaskDTO {
         .add("sortValues=" + Arrays.toString(sortValues))
         .add("isFirst=" + isFirst)
         .add("formKey='" + formKey + "'")
+        .add("formId='" + formId + "'")
+        .add("formVersion='" + formVersion + "'")
+        .add("isFormEmbedded='" + isFormEmbedded + "'")
         .add("tenantId='" + tenantId + "'")
         .add("dueDate=" + dueDate)
         .add("followUpDate=" + followUpDate)

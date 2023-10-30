@@ -38,7 +38,7 @@ public class FormControllerIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
-  public void getForm() {
+  public void getEmbeddedForm() {
     // given
     final var formId = "userTask:Form_1";
     final var bpmnProcessId = "userTaskFormProcess";
@@ -76,6 +76,133 @@ public class FormControllerIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
+  public void getLinkedFormHighestVersion() {
+    // given
+    final var formId = "Form_0mik7px";
+    final var bpmnProcessId = "Process_11hxie4";
+    final var flowNodeBpmnId = "taskA";
+
+    zeebeClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("formDeployedV1.form")
+        .send()
+        .join();
+    zeebeClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("formDeployedV2.form")
+        .send()
+        .join();
+
+    tester
+        .having()
+        .deployProcess("formIdProcessDeployed.bpmn")
+        .waitUntil()
+        .processIsDeployed()
+        .and()
+        .startProcessInstances(bpmnProcessId, 1)
+        .waitUntil()
+        .tasksAreCreated(flowNodeBpmnId, 1);
+
+    // when
+    final var result =
+        mockMvcHelper.doRequest(
+            get(TasklistURIs.FORMS_URL_V1.concat("/{formId}"), formId)
+                .param("processDefinitionKey", tester.getProcessDefinitionKey()));
+
+    // then
+    assertThat(result)
+        .hasOkHttpStatus()
+        .hasApplicationJsonContentType()
+        .extractingContent(objectMapper, FormResponse.class)
+        .satisfies(
+            form -> {
+              assertThat(form.getId()).isEqualTo(formId);
+              assertThat(form.getProcessDefinitionKey())
+                  .isEqualTo(tester.getProcessDefinitionKey());
+              assertThat(form.getSchema()).isNotBlank().contains("taglist");
+              assertThat(form.getTenantId()).isEqualTo(DEFAULT_TENANT_IDENTIFIER);
+            });
+  }
+
+  @Test
+  public void getLinkedFormHighestVersionV1() {
+    // given
+    final var formId = "Form_0mik7px";
+    final var bpmnProcessId = "Process_11hxie4";
+    final var flowNodeBpmnId = "taskA";
+
+    zeebeClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("formDeployedV1.form")
+        .send()
+        .join();
+    zeebeClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("formDeployedV2.form")
+        .send()
+        .join();
+
+    tester
+        .having()
+        .deployProcess("formIdProcessDeployed.bpmn")
+        .waitUntil()
+        .processIsDeployed()
+        .and()
+        .startProcessInstances(bpmnProcessId, 1)
+        .waitUntil()
+        .tasksAreCreated(flowNodeBpmnId, 1);
+
+    // when
+    final var result =
+        mockMvcHelper.doRequest(
+            get(TasklistURIs.FORMS_URL_V1.concat("/{formId}"), formId)
+                .param("processDefinitionKey", tester.getProcessDefinitionKey())
+                .param("version", String.valueOf(1L)));
+
+    // then
+    assertThat(result)
+        .hasOkHttpStatus()
+        .hasApplicationJsonContentType()
+        .extractingContent(objectMapper, FormResponse.class)
+        .satisfies(
+            form -> {
+              assertThat(form.getId()).isEqualTo(formId);
+              assertThat(form.getProcessDefinitionKey())
+                  .isEqualTo(tester.getProcessDefinitionKey());
+              assertThat(form.getSchema()).isNotBlank().doesNotContain("taglist");
+              assertThat(form.getTenantId()).isEqualTo(DEFAULT_TENANT_IDENTIFIER);
+            });
+  }
+
+  @Test
+  public void getEmbeddedFormReturns404IfVersionIsPassed() {
+    // given
+    final var formId = "userTask:Form_1";
+    final var bpmnProcessId = "userTaskFormProcess";
+    final var flowNodeBpmnId = "taskA";
+
+    tester
+        .having()
+        .deployProcess("userTaskForm.bpmn")
+        .waitUntil()
+        .processIsDeployed()
+        .and()
+        .startProcessInstances(bpmnProcessId, 1)
+        .waitUntil()
+        .tasksAreCreated(flowNodeBpmnId, 1);
+
+    // when
+    final var result =
+        mockMvcHelper.doRequest(
+            get(TasklistURIs.FORMS_URL_V1.concat("/{formId}"), formId)
+                .param("processDefinitionKey", tester.getProcessDefinitionKey())
+                .param("version", String.valueOf(1L)));
+
+    // then
+    assertThat(result).hasHttpStatus(HttpStatus.NOT_FOUND);
+  }
+
+  @Test
   public void getFormWhenFormIsNotFoundThen404ErrorExpected() {
     // given
     final var formId = "unknown:Form_404";
@@ -94,6 +221,6 @@ public class FormControllerIT extends TasklistZeebeIntegrationTest {
         .extractingErrorContent(objectMapper)
         .hasStatus(HttpStatus.NOT_FOUND)
         .hasInstanceId()
-        .hasMessage("form with id %s_%s was not found", processDefinitionKey, formId);
+        .hasMessage("form with id %s was not found", formId);
   }
 }

@@ -17,6 +17,8 @@ import io.camunda.tasklist.entities.FormEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.FormIndex;
+import io.camunda.tasklist.schema.indices.ProcessIndex;
+import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import java.io.IOException;
 import java.util.List;
@@ -35,6 +37,10 @@ import org.opensearch.client.opensearch.core.search.TotalHits;
 class FormStoreOpenSearchTest {
   @Mock private FormIndex formIndex = new FormIndex();
 
+  @Mock private TaskTemplate taskTemplate = new TaskTemplate();
+
+  @Mock private ProcessIndex processIndex = new ProcessIndex();
+
   @Mock private TenantAwareOpenSearchClient tenantAwareClient;
 
   @InjectMocks private FormStoreOpenSearch instance;
@@ -44,7 +50,10 @@ class FormStoreOpenSearchTest {
     when(formIndex.getIndexName()).thenReturn(FormIndex.INDEX_NAME);
 
     final var formSearchResponse = mock(SearchResponse.class);
-    when(tenantAwareClient.search(any(SearchRequest.Builder.class), eq(FormEntity.class)))
+    when(taskTemplate.getFullQualifiedName()).thenReturn("tasklist-task-x.0.0");
+    when(processIndex.getFullQualifiedName()).thenReturn("tasklist-process-x.0.0");
+    when(tenantAwareClient.search(
+            (SearchRequest.Builder) any(SearchRequest.Builder.class), (Class<Object>) any()))
         .thenReturn(formSearchResponse);
     final var hitsMetadata = mock(HitsMetadata.class);
     when(formSearchResponse.hits()).thenReturn(hitsMetadata);
@@ -53,9 +62,9 @@ class FormStoreOpenSearchTest {
     when(totalHits.value()).thenReturn(0L);
 
     // when - then
-    assertThatThrownBy(() -> instance.getForm("id1", "processDefId1"))
+    assertThatThrownBy(() -> instance.getForm("id1", "processDefId1", null))
         .isInstanceOf(NotFoundException.class)
-        .hasMessage("form with id processDefId1_id1 was not found");
+        .hasMessage("form with id id1 was not found");
   }
 
   @Test
@@ -64,7 +73,7 @@ class FormStoreOpenSearchTest {
         .thenThrow(new IOException("some IO exception"));
 
     // when - then
-    assertThatThrownBy(() -> instance.getForm("id1", "processDefId1"))
+    assertThatThrownBy(() -> instance.getForm("id1", "processDefId1", null))
         .isInstanceOf(TasklistRuntimeException.class)
         .hasMessage("some IO exception")
         .hasCauseInstanceOf(IOException.class);
@@ -91,7 +100,7 @@ class FormStoreOpenSearchTest {
     when(hit.source()).thenReturn(providedFormEntity);
 
     // when
-    final var result = instance.getForm("id1", "processDefId1");
+    final var result = instance.getForm("id1", "processDefId1", null);
 
     // then
     assertThat(result).isEqualTo(providedFormEntity);

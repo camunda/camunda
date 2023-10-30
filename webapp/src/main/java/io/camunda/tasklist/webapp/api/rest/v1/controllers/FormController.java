@@ -34,7 +34,7 @@ public class FormController extends ApiErrorController {
   @Operation(
       summary = "Get the form details by form id and processDefinitionKey.",
       description =
-          "Get the form details by `formId` and `processDefinitionKey` required query param.",
+          "Get the form details by `formId` and `processDefinitionKey` required query param. The `version` query param is optional and is used only for deployed forms (if empty, it retrieves the highest version).",
       responses = {
         @ApiResponse(
             description = "On success returned",
@@ -51,8 +51,16 @@ public class FormController extends ApiErrorController {
       })
   @GetMapping("{formId}")
   public ResponseEntity<FormResponse> getForm(
-      @PathVariable String formId, @RequestParam String processDefinitionKey) {
-    final var form = formStore.getForm(formId, processDefinitionKey);
+      @PathVariable String formId,
+      @RequestParam String processDefinitionKey,
+      @RequestParam(required = false) Long version) {
+    final var form = formStore.getForm(formId, processDefinitionKey, version);
+
+    // This is to set processDefinitionKey when the form is deployed
+    if (form.getProcessDefinitionId() == null) {
+      form.setProcessDefinitionId(processDefinitionKey);
+    }
+
     return ResponseEntity.ok(FormResponse.fromFormEntity(form));
   }
 }

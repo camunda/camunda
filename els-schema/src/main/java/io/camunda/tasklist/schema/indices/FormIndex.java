@@ -23,6 +23,7 @@ public class FormIndex extends AbstractIndexDescriptor implements Prio4Backup {
 
   public static final String VERSION = "version";
   public static final String EMBEDDED = "embedded";
+  public static final String IS_DELETED = "isDeleted";
 
   @Override
   public String getIndexName() {

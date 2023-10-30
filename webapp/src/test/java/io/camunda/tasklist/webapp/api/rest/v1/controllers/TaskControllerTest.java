@@ -196,10 +196,13 @@ class TaskControllerTest {
     final var assignRequest =
         new TaskAssignRequest().setAssignee("demo1").setAllowOverrideAssignment(true);
     final var mockedTask = mock(TaskDTO.class);
-    final var mappedTask = mock(TaskResponse.class);
+
+    final TaskResponse expectedTaskResponse = new TaskResponse();
+    expectedTaskResponse.setId("3333333");
+    expectedTaskResponse.setAssignee("demo1");
 
     when(taskService.assignTask(taskId, "demo1", true)).thenReturn(mockedTask);
-    when(taskMapper.toTaskResponse(mockedTask)).thenReturn(mappedTask);
+    when(taskMapper.toTaskResponse(mockedTask)).thenReturn(expectedTaskResponse);
 
     // When
     final var responseAsString =
@@ -219,7 +222,7 @@ class TaskControllerTest {
     final var result = CommonUtils.OBJECT_MAPPER.readValue(responseAsString, TaskResponse.class);
 
     // Then
-    assertThat(result).isEqualTo(mappedTask);
+    assertThat(result).isEqualTo(expectedTaskResponse);
   }
 
   @Test
@@ -227,10 +230,13 @@ class TaskControllerTest {
     // Given
     final var taskId = "44444444";
     final var mockedTask = mock(TaskDTO.class);
-    final var mappedTask = mock(TaskResponse.class);
+
+    final TaskResponse expectedTaskResponse = new TaskResponse();
+    expectedTaskResponse.setId("44444444");
+    expectedTaskResponse.setAssignee("");
 
     when(taskService.unassignTask(taskId)).thenReturn(mockedTask);
-    when(taskMapper.toTaskResponse(mockedTask)).thenReturn(mappedTask);
+    when(taskMapper.toTaskResponse(mockedTask)).thenReturn(expectedTaskResponse);
 
     // When
     final var responseAsString =
@@ -245,7 +251,7 @@ class TaskControllerTest {
     final var result = CommonUtils.OBJECT_MAPPER.readValue(responseAsString, TaskResponse.class);
 
     // Then
-    assertThat(result).isEqualTo(mappedTask);
+    assertThat(result).isEqualTo(expectedTaskResponse);
   }
 
   @Test
@@ -253,11 +259,15 @@ class TaskControllerTest {
     // Given
     final var taskId = "55555555";
     final var mockedTask = mock(TaskDTO.class);
-    final var mappedTask = mock(TaskResponse.class);
     final var variables = List.of(new VariableInputDTO().setName("var_a").setValue("val_a"));
     final var completeRequest = new TaskCompleteRequest().setVariables(variables);
+
+    final TaskResponse expectedTaskResponse = new TaskResponse();
+    expectedTaskResponse.setId("44444444");
+    expectedTaskResponse.setTaskState(TaskState.COMPLETED);
+
     when(taskService.completeTask(taskId, variables, true)).thenReturn(mockedTask);
-    when(taskMapper.toTaskResponse(mockedTask)).thenReturn(mappedTask);
+    when(taskMapper.toTaskResponse(mockedTask)).thenReturn(expectedTaskResponse);
 
     // When
     final var responseAsString =
@@ -277,7 +287,7 @@ class TaskControllerTest {
     final var result = CommonUtils.OBJECT_MAPPER.readValue(responseAsString, TaskResponse.class);
 
     // Then
-    assertThat(result).isEqualTo(mappedTask);
+    assertThat(result).isEqualTo(expectedTaskResponse);
   }
 
   @Test
@@ -285,9 +295,12 @@ class TaskControllerTest {
     // Given
     final var taskId = "55555555";
     final var mockedTask = mock(TaskDTO.class);
-    final var mappedTask = mock(TaskResponse.class);
+
+    final TaskResponse expectedTaskResponse = new TaskResponse();
+    expectedTaskResponse.setId("55555555");
+
     when(taskService.completeTask(taskId, List.of(), true)).thenReturn(mockedTask);
-    when(taskMapper.toTaskResponse(mockedTask)).thenReturn(mappedTask);
+    when(taskMapper.toTaskResponse(mockedTask)).thenReturn(expectedTaskResponse);
 
     // When
     final var responseAsString =
@@ -302,7 +315,7 @@ class TaskControllerTest {
     final var result = CommonUtils.OBJECT_MAPPER.readValue(responseAsString, TaskResponse.class);
 
     // Then
-    assertThat(result).isEqualTo(mappedTask);
+    assertThat(result).isEqualTo(expectedTaskResponse);
   }
 
   @Test

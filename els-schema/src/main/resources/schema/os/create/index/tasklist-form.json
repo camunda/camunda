@@ -19,6 +19,9 @@
     "tenantId": {
       "type": "keyword"
     },
+    "isDeleted": {
+      "type": "boolean"
+    },
     "schema": {
       "type": "text",
       "index": false

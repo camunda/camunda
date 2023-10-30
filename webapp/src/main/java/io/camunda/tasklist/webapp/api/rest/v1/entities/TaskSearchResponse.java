@@ -24,6 +24,9 @@ public class TaskSearchResponse {
   private String[] sortValues;
   private boolean isFirst;
   private String formKey;
+  private String formId;
+  private Long formVersion;
+  private Boolean isFormEmbedded;
   private String processDefinitionKey;
   private String processInstanceKey;
   private String tenantId;
@@ -131,6 +134,33 @@ public class TaskSearchResponse {
     return this;
   }
 
+  public String getFormId() {
+    return formId;
+  }
+
+  public TaskSearchResponse setFormId(String formId) {
+    this.formId = formId;
+    return this;
+  }
+
+  public Long getFormVersion() {
+    return formVersion;
+  }
+
+  public TaskSearchResponse setFormVersion(Long formVersion) {
+    this.formVersion = formVersion;
+    return this;
+  }
+
+  public Boolean getIsFormEmbedded() {
+    return isFormEmbedded;
+  }
+
+  public TaskSearchResponse setIsFormEmbedded(Boolean isFormEmbedded) {
+    this.isFormEmbedded = isFormEmbedded;
+    return this;
+  }
+
   public String getProcessDefinitionKey() {
     return processDefinitionKey;
   }
@@ -214,6 +244,9 @@ public class TaskSearchResponse {
         && taskState == that.taskState
         && Arrays.equals(sortValues, that.sortValues)
         && Objects.equals(formKey, that.formKey)
+        && Objects.equals(formId, that.formId)
+        && Objects.equals(formVersion, that.formVersion)
+        && Objects.equals(isFormEmbedded, that.isFormEmbedded)
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(tenantId, that.tenantId)
@@ -237,6 +270,9 @@ public class TaskSearchResponse {
             taskState,
             isFirst,
             formKey,
+            formId,
+            formVersion,
+            isFormEmbedded,
             processDefinitionKey,
             processInstanceKey,
             tenantId,
@@ -262,6 +298,9 @@ public class TaskSearchResponse {
         .add("sortValues=" + Arrays.toString(sortValues))
         .add("isFirst=" + isFirst)
         .add("formKey='" + formKey + "'")
+        .add("formId='" + formId + "'")
+        .add("formVersion='" + formVersion + "'")
+        .add("isFormEmbedded='" + isFormEmbedded + "'")
         .add("processDefinitionKey='" + processDefinitionKey + "'")
         .add("processInstanceKey='" + processInstanceKey + "'")
         .add("tenantId='" + tenantId + "'")

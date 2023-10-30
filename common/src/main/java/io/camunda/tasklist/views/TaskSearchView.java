@@ -30,6 +30,9 @@ public class TaskSearchView {
   private String[] candidateGroups;
   private String[] candidateUsers;
   private String formKey;
+  private String formId;
+  private Long formVersion;
+  private Boolean isFormEmbedded;
   private String tenantId;
   private OffsetDateTime followUpDate;
   private OffsetDateTime dueDate;
@@ -153,6 +156,33 @@ public class TaskSearchView {
     return this;
   }
 
+  public String getFormId() {
+    return formId;
+  }
+
+  public TaskSearchView setFormId(String formId) {
+    this.formId = formId;
+    return this;
+  }
+
+  public Long getFormVersion() {
+    return formVersion;
+  }
+
+  public TaskSearchView setFormVersion(Long formVersion) {
+    this.formVersion = formVersion;
+    return this;
+  }
+
+  public Boolean getIsFormEmbedded() {
+    return isFormEmbedded;
+  }
+
+  public TaskSearchView setIsFormEmbedded(Boolean isFormEmbedded) {
+    this.isFormEmbedded = isFormEmbedded;
+    return this;
+  }
+
   public String getTenantId() {
     return tenantId;
   }
@@ -224,6 +254,9 @@ public class TaskSearchView {
         && Arrays.equals(candidateGroups, that.candidateGroups)
         && Arrays.equals(candidateUsers, that.candidateUsers)
         && Objects.equals(formKey, that.formKey)
+        && Objects.equals(formId, that.formId)
+        && Objects.equals(formVersion, that.formVersion)
+        && Objects.equals(isFormEmbedded, that.isFormEmbedded)
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(followUpDate, that.followUpDate)
         && Objects.equals(dueDate, that.dueDate)
@@ -246,6 +279,9 @@ public class TaskSearchView {
             state,
             assignee,
             formKey,
+            formId,
+            formVersion,
+            isFormEmbedded,
             tenantId,
             followUpDate,
             dueDate,
@@ -272,6 +308,9 @@ public class TaskSearchView {
         .add("candidateGroups=" + Arrays.toString(candidateGroups))
         .add("candidateUsers=" + Arrays.toString(candidateUsers))
         .add("formKey='" + formKey + "'")
+        .add("formId='" + formId + "'")
+        .add("formVersion='" + formVersion + "'")
+        .add("isFormEmbedded=" + isFormEmbedded)
         .add("tenantId='" + tenantId + "'")
         .add("followUpDate=" + followUpDate)
         .add("dueDate=" + dueDate)
@@ -294,6 +333,9 @@ public class TaskSearchView {
             .setFlowNodeBpmnId(taskEntity.getFlowNodeBpmnId())
             .setFlowNodeInstanceId(taskEntity.getFlowNodeInstanceId())
             .setFormKey(taskEntity.getFormKey())
+            .setFormId(taskEntity.getFormId())
+            .setFormVersion(taskEntity.getFormVersion())
+            .setIsFormEmbedded(taskEntity.getIsFormEmbedded())
             .setTenantId(taskEntity.getTenantId())
             .setFollowUpDate(taskEntity.getFollowUpDate())
             .setDueDate(taskEntity.getDueDate())

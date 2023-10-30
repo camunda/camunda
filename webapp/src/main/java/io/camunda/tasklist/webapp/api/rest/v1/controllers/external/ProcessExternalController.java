@@ -84,9 +84,15 @@ public class ProcessExternalController extends ApiErrorController {
         throw new NotFoundApiException(
             String.format("The process with bpmnProcessId: '%s' is not found", bpmnProcessId));
       } else {
-        final String formId = StringUtils.substringAfterLast(process.getFormKey(), ":");
-        final var form = formStore.getForm(formId, process.getId());
-        return ResponseEntity.ok(FormResponse.fromFormEntity(form, process));
+        if (process.getIsFormEmbedded() != null && !process.getIsFormEmbedded()) {
+          final var form = formStore.getForm(process.getFormId(), process.getId(), null);
+          return ResponseEntity.ok(
+              FormResponse.fromFormEntity(form, process).setProcessDefinitionKey(process.getId()));
+        } else {
+          final String formId = StringUtils.substringAfterLast(process.getFormKey(), ":");
+          final var form = formStore.getForm(formId, process.getId(), null);
+          return ResponseEntity.ok(FormResponse.fromFormEntity(form, process));
+        }
       }
     } catch (TasklistRuntimeException e) {
       throw new NotFoundApiException("Not found");

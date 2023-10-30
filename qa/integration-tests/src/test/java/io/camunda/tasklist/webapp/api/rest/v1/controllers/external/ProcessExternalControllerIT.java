@@ -54,13 +54,12 @@ public class ProcessExternalControllerIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
-  public void getFormByProcessId() {
+  public void getEmbeddedFormByProcessId() {
     // given
-    final String processId1 = ZeebeTestUtil.deployProcess(zeebeClient, "startedByFormProcess.bpmn");
     final String bpmnProcessId = "startedByForm";
     final String formId = "testForm";
 
-    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+    tester.having().deployProcess("startedByFormProcess.bpmn").waitUntil().processIsDeployed();
 
     // when
     final var result =
@@ -81,24 +80,78 @@ public class ProcessExternalControllerIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
-  public void shouldReturn404ToProcessThatDoesntExist() {
-    final String bpmnProcessId = "processDoesntExist";
+  public void getLinkedFormByProcessIdV1() {
+    // given
+    final String bpmnProcessId = "startedByFormLinked";
+    final String formId = "Form_0mik7px";
+
+    zeebeClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("formDeployedV1.form")
+        .send()
+        .join();
+
+    tester.having().deployProcess("startedByLinkedForm.bpmn").waitUntil().processIsDeployed();
+
     // when
     final var result =
         mockMvcHelper.doRequest(
             get(
                 TasklistURIs.EXTERNAL_PROCESS_URL_V1.concat("/{bpmnProcessId}/form"),
                 bpmnProcessId));
+
     // then
-    assertThat(result).hasHttpStatus(HttpStatus.NOT_FOUND);
+    assertThat(result)
+        .hasOkHttpStatus()
+        .hasApplicationJsonContentType()
+        .extractingContent(objectMapper, FormResponse.class)
+        .satisfies(
+            form -> {
+              Assertions.assertThat(form.getId()).isEqualTo(formId);
+            });
+  }
+
+  @Test
+  public void getLinkedFormByProcessIdWithUpdatedForm() {
+    // given
+    final String bpmnProcessId = "startedByFormLinked";
+
+    zeebeClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("formDeployedV1.form")
+        .send()
+        .join();
+    zeebeClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("formDeployedV2.form")
+        .send()
+        .join();
+
+    tester.having().deployProcess("startedByLinkedForm.bpmn").waitUntil().processIsDeployed();
+
+    // when
+    final var result =
+        mockMvcHelper.doRequest(
+            get(
+                TasklistURIs.EXTERNAL_PROCESS_URL_V1.concat("/{bpmnProcessId}/form"),
+                bpmnProcessId));
+
+    // then
+    assertThat(result)
+        .hasOkHttpStatus()
+        .hasApplicationJsonContentType()
+        .extractingContent(objectMapper, FormResponse.class)
+        .satisfies(
+            form -> {
+              Assertions.assertThat(form.getSchema()).contains("taglist"); // Taglist is only in V2
+            });
   }
 
   @Test
   public void shouldReturn404ToProcessThatCannotBeStarted() {
-    final String processId1 = ZeebeTestUtil.deployProcess(zeebeClient, "simple_process.bpmn");
     final String bpmnProcessId = "Process_1g4wt4m";
 
-    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+    tester.having().deployProcess("simple_process.bpmn").waitUntil().processIsDeployed();
 
     // when
     final var result =

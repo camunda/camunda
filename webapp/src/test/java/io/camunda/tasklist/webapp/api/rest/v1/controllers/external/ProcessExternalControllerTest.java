@@ -95,12 +95,13 @@ public class ProcessExternalControllerTest {
         new FormEntity()
             .setId("2251799813686367_testForm")
             .setBpmnId("testForm")
+            .setEmbedded(true)
             .setProcessDefinitionId("2251799813686367")
             .setSchema("formSchema")
             .setTenantId(DEFAULT_TENANT_IDENTIFIER);
 
     when(processStore.getProcessByBpmnProcessId(bpmnProcessId)).thenReturn(processEntity);
-    when(formStore.getForm("testForm", processEntity.getId())).thenReturn(formEntity);
+    when(formStore.getForm("testForm", processEntity.getId(), null)).thenReturn(formEntity);
 
     final var responseAsString =
         mockMvc

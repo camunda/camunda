@@ -45,6 +45,7 @@ public class FormZeebeRecordProcessorElasticSearch {
         recordValue.getTenantId(),
         false,
         recordValue.getFormId(),
+        false,
         bulkRequest);
   }
 
@@ -55,10 +56,12 @@ public class FormZeebeRecordProcessorElasticSearch {
       String tenantId,
       boolean embeeded,
       String formId,
+      boolean isDeleted,
       BulkRequest bulkRequest)
       throws PersistenceException {
     final FormEntity formEntity =
-        new FormEntity(null, formId, schema, version, tenantId, formKey.toString(), embeeded);
+        new FormEntity(
+            null, formId, schema, version, tenantId, formKey.toString(), embeeded, isDeleted);
     LOGGER.debug("Form: key {}", formKey);
     try {
       bulkRequest.add(
