@@ -20,6 +20,7 @@ import io.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
+import org.apache.commons.lang3.ArrayUtils;
 import org.opensearch.client.opensearch._types.query_dsl.Operator;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
@@ -30,6 +31,8 @@ import org.springframework.util.StringUtils;
 
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.function.Supplier;
 
 import static io.camunda.operate.schema.templates.ListViewTemplate.*;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
@@ -80,7 +83,7 @@ public class OpenSearchQueryHelper {
       idsQuery(query),
       errorMessageQuery(query),
       dateRangeQuery(ListViewTemplate.START_DATE, query.getStartDateAfter(), query.getStartDateBefore()),
-      dateRangeQuery(END_DATE, query.getStartDateAfter(), query.getStartDateBefore()),
+      dateRangeQuery(END_DATE, query.getEndDateAfter(), query.getEndDateBefore()),
       processDefinitionKeysQuery(query),
       bpmnProcessIdQuery(query),
       excludeIdsQuery(query),
@@ -250,11 +253,14 @@ public class OpenSearchQueryHelper {
 
   private Query variablesQuery(ListViewQueryDto query) {
     VariablesQueryDto variablesQuery = query.getVariable();
-    if (variablesQuery != null) {
+    // We consider the query as non-empty if it is not null and has either a value or values
+    var nonEmptyQuery = variablesQuery != null && (StringUtils.hasLength(variablesQuery.getValue()) || !ArrayUtils.isEmpty(variablesQuery.getValues()));
+    if (nonEmptyQuery) {
       if (!StringUtils.hasLength(variablesQuery.getName())) {
         throw new InvalidRequestException("Variables query must provide not-null variable name.");
       }
-      return QueryDSL.hasChildQuery(VARIABLES_JOIN_RELATION, and(term(VAR_NAME, variablesQuery.getName()), term(VAR_VALUE, variablesQuery.getValue())));
+      Query valueQuery = variablesQuery.getValue() != null ? term(VAR_VALUE, variablesQuery.getValue()) : stringTerms(VAR_VALUE, Arrays.asList(variablesQuery.getValues()));
+      return QueryDSL.hasChildQuery(VARIABLES_JOIN_RELATION, and(term(VAR_NAME, variablesQuery.getName()), valueQuery));
     }
     return null;
   }

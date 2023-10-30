@@ -161,10 +161,8 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
 
   @Override
   public void finished(Description description) {
-    if (!failed) {
-      String indexPrefix = operateProperties.getOpensearch().getIndexPrefix();
-      TestUtil.removeAllIndices(richOpenSearchClient.index(), richOpenSearchClient.template(), indexPrefix);
-    }
+    String indexPrefix = operateProperties.getOpensearch().getIndexPrefix();
+    TestUtil.removeAllIndices(richOpenSearchClient.index(), richOpenSearchClient.template(), indexPrefix);
     operateProperties.getOpensearch().setIndexPrefix(OperateOpensearchProperties.DEFAULT_INDEX_PREFIX);
     zeebePostImporter.getPostImportActions().stream().forEach(PostImportAction::clearCache);
     assertMaxOpenScrollContexts(15);
@@ -346,8 +344,10 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
       if (alias == null) {
         throw new RuntimeException("Index not configured for " + entity.getClass().getName());
       }
-      if (entity instanceof FlowNodeInstanceForListViewEntity) {
-        batchRequest.addWithRouting(alias, entity, ((FlowNodeInstanceForListViewEntity) entity).getProcessInstanceKey().toString());
+      if (entity instanceof FlowNodeInstanceForListViewEntity flowNodeInstanceForListViewEntity) {
+        batchRequest.addWithRouting(alias, entity, flowNodeInstanceForListViewEntity.getProcessInstanceKey().toString());
+      } else if (entity instanceof VariableForListViewEntity variableForListViewEntity) {
+        batchRequest.addWithRouting(alias, entity, variableForListViewEntity.getProcessInstanceKey().toString());
       } else {
         batchRequest.add(alias, entity);
       }
