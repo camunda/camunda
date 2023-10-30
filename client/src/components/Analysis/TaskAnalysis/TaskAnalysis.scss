@@ -1,4 +1,4 @@
-.OutlierAnalysis {
+.TaskAnalysis {
   display: flex;
   flex-direction: column;
   flex-grow: 1;
@@ -16,7 +16,7 @@
     color: var(--grey-lighten-50);
   }
 
-  .OutlierAnalysis__diagram {
+  .TaskAnalysis__diagram {
     display: flex;
     flex-grow: 1;
 

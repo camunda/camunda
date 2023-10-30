@@ -957,8 +957,8 @@
   },
   "analysis": {
     "branchAnalysis": "Verlaufsanalyse",
-    "outlier": {
-      "label": "Ausreißeranalyse",
+    "task": {
+      "label": "Aufgabeanalyse",
       "totalInstances": "Instanzen insgesamt",
       "tooltip": {
         "outlier": {

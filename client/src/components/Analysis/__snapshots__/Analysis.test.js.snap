@@ -9,11 +9,11 @@ exports[`should render sub navigation 1`] = `
       active={
         Array [
           "/analysis",
-          "/analysis/outlierAnalysis",
+          "/analysis/taskAnalysis",
         ]
       }
-      linksTo="/analysis/outlierAnalysis"
-      name="Outlier Analysis"
+      linksTo="/analysis/taskAnalysis"
+      name="Task Analysis"
     />
     <SubNavItem
       active={
@@ -37,7 +37,7 @@ exports[`should render sub navigation 1`] = `
     />
     <Route
       component={[Function]}
-      path="/analysis/outlierAnalysis"
+      path="/analysis/taskAnalysis"
     />
     <Route
       component={[Function]}

@@ -957,8 +957,8 @@
   },
   "analysis": {
     "branchAnalysis": "Branch Analysis",
-    "outlier": {
-      "label": "Outlier Analysis",
+    "task": {
+      "label": "Task Analysis",
       "totalInstances": "Total Instances",
       "tooltip": {
         "outlier": {

@@ -21,9 +21,9 @@ import OutlierDetailsModal from './OutlierDetailsModal';
 import InstancesButton from './InstancesButton';
 import {loadNodesOutliers, loadDurationData} from './service';
 
-import './OutlierAnalysis.scss';
+import './TaskAnalysis.scss';
 
-export class OutlierAnalysis extends React.Component {
+export class TaskAnalysis extends React.Component {
   state = {
     config: {
       processDefinitionKey: '',
@@ -119,10 +119,10 @@ export class OutlierAnalysis extends React.Component {
     return (
       <div className="nodeTooltip">
         <div className="tooltipTitle">
-          <b>{flowNodeNames[id] || id} :</b> {t('analysis.outlier.totalInstances')} {totalCount}
+          <b>{flowNodeNames[id] || id} :</b> {t('analysis.task.totalInstances')} {totalCount}
         </div>
         <p className="description">
-          {t(`analysis.outlier.tooltipText.${count === 1 ? 'singular' : 'plural'}`, {
+          {t(`analysis.task.tooltipText.${count === 1 ? 'singular' : 'plural'}`, {
             count,
             percentage: Math.round(relation * 100),
           })}
@@ -168,10 +168,10 @@ export class OutlierAnalysis extends React.Component {
     const empty = xml && !loading && Object.keys(heatData).length === 0;
 
     return (
-      <div className="OutlierAnalysis">
-        <PageTitle pageName={t('analysis.outlier.label')} />
+      <div className="TaskAnalysis">
+        <PageTitle pageName={t('analysis.task.label')} />
         <OutlierControlPanel {...config} onChange={this.updateConfig} xml={xml} />
-        <div className={classnames('OutlierAnalysis__diagram', {empty})}>
+        <div className={classnames('TaskAnalysis__diagram', {empty})}>
           {xml && (
             <BPMNDiagram xml={xml} loading={loading}>
               <HeatmapOverlay
@@ -182,7 +182,7 @@ export class OutlierAnalysis extends React.Component {
               />
             </BPMNDiagram>
           )}
-          {empty && <div className="noOutliers">{t('analysis.outlier.notFound')}</div>}
+          {empty && <div className="noOutliers">{t('analysis.task.notFound')}</div>}
         </div>
         {this.state.selectedNode && (
           <OutlierDetailsModal
@@ -196,4 +196,4 @@ export class OutlierAnalysis extends React.Component {
   }
 }
 
-export default withErrorHandling(withUser(OutlierAnalysis));
+export default withErrorHandling(withUser(TaskAnalysis));

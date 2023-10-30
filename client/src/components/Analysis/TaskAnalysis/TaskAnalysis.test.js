@@ -12,7 +12,7 @@ import {loadProcessDefinitionXml, getFlowNodeNames} from 'services';
 import {track} from 'tracking';
 
 import {loadNodesOutliers, loadDurationData} from './service';
-import {OutlierAnalysis} from './OutlierAnalysis';
+import {TaskAnalysis} from './TaskAnalysis';
 import OutlierDetailsModal from './OutlierDetailsModal';
 import InstancesButton from './InstancesButton';
 
@@ -43,13 +43,13 @@ const props = {
 };
 
 it('should contain a control panel', () => {
-  const node = shallow(<OutlierAnalysis {...props} />);
+  const node = shallow(<TaskAnalysis {...props} />);
 
   expect(node.find('OutlierControlPanel')).toExist();
 });
 
 it('should load the process definition xml when the process definition id is updated', () => {
-  const node = shallow(<OutlierAnalysis {...props} />);
+  const node = shallow(<TaskAnalysis {...props} />);
 
   loadProcessDefinitionXml.mockClear();
   node.instance().updateConfig({
@@ -65,7 +65,7 @@ it('should load the process definition xml when the process definition id is upd
 it('should load outlier data and flownode names when the process definition version changes', async () => {
   loadNodesOutliers.mockClear();
   getFlowNodeNames.mockClear();
-  const node = shallow(<OutlierAnalysis {...props} />);
+  const node = shallow(<TaskAnalysis {...props} />);
   const prevConfig = {
     processDefinitionKey: 'someKey',
     processDefinitionVersions: ['someVersion'],
@@ -82,7 +82,7 @@ it('should not try to load outlier data if no process definition is selected', a
   loadNodesOutliers.mockClear();
   getFlowNodeNames.mockClear();
 
-  const node = shallow(<OutlierAnalysis {...props} />);
+  const node = shallow(<TaskAnalysis {...props} />);
 
   node.instance().updateConfig({});
 
@@ -93,7 +93,7 @@ it('should create correct flownodes higher outlier heat object', async () => {
   loadNodesOutliers.mockClear();
   getFlowNodeNames.mockClear();
 
-  const node = shallow(<OutlierAnalysis {...props} />);
+  const node = shallow(<TaskAnalysis {...props} />);
 
   await node.instance().updateConfig({
     processDefinitionKey: 'someKey',
@@ -108,7 +108,7 @@ it('display load chart data and display details modal when loadChartData is call
   loadNodesOutliers.mockClear();
   getFlowNodeNames.mockClear();
 
-  const node = shallow(<OutlierAnalysis {...props} />);
+  const node = shallow(<TaskAnalysis {...props} />);
 
   await node.instance().updateConfig({
     processDefinitionKey: 'someKey',
@@ -136,7 +136,7 @@ it('should display correct tooltip details', async () => {
   getFlowNodeNames.mockClear();
   loadProcessDefinitionXml.mockReturnValue('xml');
 
-  const node = shallow(<OutlierAnalysis {...props} />);
+  const node = shallow(<TaskAnalysis {...props} />);
 
   await node.instance().updateConfig({
     processDefinitionKey: 'someKey',
@@ -151,7 +151,7 @@ it('should display correct tooltip details', async () => {
 it('should display an empty state if no outliers found', async () => {
   loadNodesOutliers.mockReturnValueOnce({});
 
-  const node = shallow(<OutlierAnalysis {...props} />);
+  const node = shallow(<TaskAnalysis {...props} />);
 
   node.instance().updateConfig({
     processDefinitionKey: 'someKey',
@@ -168,7 +168,7 @@ it('should display download instances button if the user is authorized to export
   loadProcessDefinitionXml.mockReturnValue('xml');
   const user = {authorizations: ['csv_export']};
 
-  const node = shallow(<OutlierAnalysis {...props} user={user} />);
+  const node = shallow(<TaskAnalysis {...props} user={user} />);
 
   await node.instance().updateConfig({
     processDefinitionKey: 'someKey',

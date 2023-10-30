@@ -74,9 +74,9 @@ export function VariablesTable({selectedNode, config, totalCount, user}: Variabl
   if (data?.length) {
     tableData = {
       head: [
-        t('analysis.outlier.detailsModal.table.outliersNumber').toString(),
-        t('analysis.outlier.detailsModal.table.ofTotalPercentage').toString(),
-        t('analysis.outlier.detailsModal.table.ofOutliersPercentage').toString(),
+        t('analysis.task.detailsModal.table.outliersNumber').toString(),
+        t('analysis.task.detailsModal.table.ofTotalPercentage').toString(),
+        t('analysis.task.detailsModal.table.ofOutliersPercentage').toString(),
         t('report.variables.default').toString(),
       ],
       body: constructTableBody(data),
@@ -86,7 +86,7 @@ export function VariablesTable({selectedNode, config, totalCount, user}: Variabl
       head: [],
       body: [],
       noData: data ? (
-        <NoDataNotice>{t('analysis.outlier.detailsModal.table.emptyTableMessage')}</NoDataNotice>
+        <NoDataNotice>{t('analysis.task.detailsModal.table.emptyTableMessage')}</NoDataNotice>
       ) : (
         <LoadingIndicator />
       ),

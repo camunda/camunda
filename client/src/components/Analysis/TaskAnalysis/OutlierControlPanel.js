@@ -18,7 +18,7 @@ export default function OutlierControlPanel(props) {
         <li className="item">
           <DefinitionSelection
             type="process"
-            infoMessage={t('analysis.outlier.onlyCompletedHint')}
+            infoMessage={t('analysis.task.onlyCompletedHint')}
             definitionKey={props.processDefinitionKey}
             versions={props.processDefinitionVersions}
             tenants={props.tenantIds}
@@ -32,7 +32,7 @@ export default function OutlierControlPanel(props) {
             }
           />
         </li>
-        <li className="item">{t('analysis.outlier.info')}</li>
+        <li className="item">{t('analysis.task.info')}</li>
       </ul>
     </div>
   );

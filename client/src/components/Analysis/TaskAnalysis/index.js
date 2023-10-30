@@ -5,4 +5,4 @@
  * except in compliance with the proprietary license.
  */
 
-export {default as OutlierAnalysis} from './OutlierAnalysis';
+export {default as TaskAnalysis} from './TaskAnalysis';

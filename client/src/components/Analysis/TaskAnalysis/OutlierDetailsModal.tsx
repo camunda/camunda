@@ -31,18 +31,15 @@ export function OutlierDetailsModal({
 
   return (
     <Modal open onClose={onClose} className="OutlierDetailsModal" size="lg">
-      <Modal.Header>{t('analysis.outlier.detailsModal.title', {name})}</Modal.Header>
+      <Modal.Header>{t('analysis.task.detailsModal.title', {name})}</Modal.Header>
       <Modal.Content>
         <Tabs>
-          <Tabs.Tab title={t('analysis.outlier.detailsModal.durationChart')}>
+          <Tabs.Tab title={t('analysis.task.detailsModal.durationChart')}>
             <p className="description">
-              {t(
-                `analysis.outlier.tooltipText.${higherOutlier.count === 1 ? 'singular' : 'plural'}`,
-                {
-                  count: higherOutlier.count,
-                  percentage: Math.round(higherOutlier.relation * 100),
-                }
-              )}
+              {t(`analysis.task.tooltipText.${higherOutlier.count === 1 ? 'singular' : 'plural'}`, {
+                count: higherOutlier.count,
+                percentage: Math.round(higherOutlier.relation * 100),
+              })}
               <InstancesButton
                 id={id}
                 name={name}
@@ -57,9 +54,9 @@ export function OutlierDetailsModal({
               colors={data.map(({outlier}) => (outlier ? '#1991c8' : '#eeeeee'))}
             />
           </Tabs.Tab>
-          <Tabs.Tab title={t('analysis.outlier.detailsModal.variablesTable')}>
+          <Tabs.Tab title={t('analysis.task.detailsModal.variablesTable')}>
             <p className="description">
-              {t('analysis.outlier.totalInstances')}: {totalCount}
+              {t('analysis.task.totalInstances')}: {totalCount}
             </p>
             <VariablesTable config={config} selectedNode={selectedNode} totalCount={totalCount} />
           </Tabs.Tab>

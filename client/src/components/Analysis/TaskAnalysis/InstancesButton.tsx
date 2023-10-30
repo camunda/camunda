@@ -40,7 +40,7 @@ export function InstancesButton({id, name, config, value, totalCount, user}: Ins
       fileName={
         formatters.formatFileName(name || id) +
         '-' +
-        t('analysis.outlier.tooltip.outlier.label-plural') +
+        t('analysis.task.tooltip.outlier.label-plural') +
         '.csv'
       }
       totalCount={totalCount}
