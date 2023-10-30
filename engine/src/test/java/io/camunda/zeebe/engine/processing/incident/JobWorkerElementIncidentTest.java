@@ -95,7 +95,11 @@ public class JobWorkerElementIncidentTest {
 
     Assertions.assertThat(incidentCreated.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
-        .hasErrorMessage("Expected result of the expression 'x' to be 'STRING', but was 'NULL'.")
+        .hasErrorMessage(
+            """
+            Expected result of the expression 'x' to be 'STRING', but was 'NULL'. \
+            The evaluation reported the following warnings: \
+            [NO_VARIABLE_FOUND] No variable found with name 'x'""")
         .hasElementId(TASK_ELEMENT_ID)
         .hasElementInstanceKey(recordThatLeadsToIncident.getKey())
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
@@ -199,7 +203,11 @@ public class JobWorkerElementIncidentTest {
 
     Assertions.assertThat(incidentCreated.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
-        .hasErrorMessage("Expected result of the expression 'x' to be 'NUMBER', but was 'NULL'.")
+        .hasErrorMessage(
+            """
+            Expected result of the expression 'x' to be 'NUMBER', but was 'NULL'. \
+            The evaluation reported the following warnings: \
+            [NO_VARIABLE_FOUND] No variable found with name 'x'""")
         .hasElementId(TASK_ELEMENT_ID)
         .hasElementInstanceKey(recordThatLeadsToIncident.getKey())
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)

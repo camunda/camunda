@@ -288,7 +288,9 @@ public final class EventSubscriptionIncidentTest {
         .hasErrorMessage(
             """
             Failed to extract the correlation key for 'key2': \
-            The value must be either a string or a number, but was NULL.""")
+            The value must be either a string or a number, but was 'NULL'. \
+            The evaluation reported the following warnings: \
+            [NO_VARIABLE_FOUND] No variable found with name 'key2'""")
         .hasBpmnProcessId(processId)
         .hasProcessInstanceKey(processInstanceKey)
         .hasElementId(failureEvent.getValue().getElementId())
@@ -322,9 +324,9 @@ public final class EventSubscriptionIncidentTest {
     Assertions.assertThat(incidentRecord.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Failed to extract the correlation key for '"
-                + CORRELATION_VARIABLE_2
-                + "': The value must be either a string or a number, but was ARRAY.")
+            """
+            Failed to extract the correlation key for 'key2': \
+            The value must be either a string or a number, but was 'ARRAY'.""")
         .hasBpmnProcessId(processId)
         .hasProcessInstanceKey(processInstanceKey)
         .hasElementId(failureEvent.getValue().getElementId())

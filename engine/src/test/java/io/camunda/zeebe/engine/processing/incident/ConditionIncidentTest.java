@@ -114,7 +114,10 @@ public final class ConditionIncidentTest {
     Assertions.assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Expected result of the expression 'foo > 10' to be 'BOOLEAN', but was 'NULL'.")
+            """
+            Expected result of the expression 'foo > 10' to be 'BOOLEAN', but was 'NULL'. \
+            The evaluation reported the following warnings: \
+            [NOT_COMPARABLE] Can't compare '"bar"' with '10'""")
         .hasBpmnProcessId(failingEvent.getValue().getBpmnProcessId())
         .hasProcessInstanceKey(failingEvent.getValue().getProcessInstanceKey())
         .hasElementId(failingEvent.getValue().getElementId())
