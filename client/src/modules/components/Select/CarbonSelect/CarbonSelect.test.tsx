@@ -124,8 +124,6 @@ it('should allow a custom helper', () => {
     </CarbonSelect>
   );
 
-  console.log(node.debug());
-
   expect(node.find('div').at(1).text()).toBe('Custom Helper Text');
 });
 
