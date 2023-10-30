@@ -109,9 +109,9 @@ public class ClusterEndpoint {
   @DeleteOperation
   public WebEndpointResponse<PostOperationResponse> removeSubResource(
       @Selector final Resource resource,
-      @Selector final String resourceId,
+      @Selector final int resourceId,
       @Selector final Resource subResource,
-      @Selector final String subResourceId) {
+      @Selector final int subResourceId) {
     return switch (resource) {
       case BROKERS -> switch (subResource) {
         case PARTITIONS -> new WebEndpointResponse<>(
@@ -120,7 +120,7 @@ public class ClusterEndpoint {
                 requestSender
                     .leavePartition(
                         new LeavePartitionRequest(
-                            MemberId.from(resourceId), Integer.parseInt(subResourceId)))
+                            MemberId.from(String.valueOf(resourceId)), subResourceId))
                     .join()));
         case BROKERS -> new WebEndpointResponse<>(404);
       };
@@ -131,7 +131,7 @@ public class ClusterEndpoint {
                 requestSender
                     .leavePartition(
                         new LeavePartitionRequest(
-                            MemberId.from(subResourceId), Integer.parseInt(resourceId)))
+                            MemberId.from(String.valueOf(subResourceId)), resourceId))
                     .join()));
         case PARTITIONS -> new WebEndpointResponse<>(404);
       };
