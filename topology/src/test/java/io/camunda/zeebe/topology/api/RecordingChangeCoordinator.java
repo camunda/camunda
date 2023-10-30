@@ -8,7 +8,7 @@
 package io.camunda.zeebe.topology.api;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator;
 import io.camunda.zeebe.topology.state.ClusterChangePlan;
 import io.camunda.zeebe.topology.state.ClusterTopology;
@@ -26,10 +26,15 @@ final class RecordingChangeCoordinator implements TopologyChangeCoordinator {
   }
 
   @Override
+  public ActorFuture<ClusterTopology> getTopology() {
+    return TestActorFuture.completedFuture(currentTopology);
+  }
+
+  @Override
   public ActorFuture<TopologyChangeResult> applyOperations(final TopologyChangeRequest request) {
     final var operationsEither = request.operations(currentTopology);
     if (operationsEither.isLeft()) {
-      return CompletableActorFuture.completedExceptionally(operationsEither.getLeft());
+      return TestActorFuture.failedFuture(operationsEither.getLeft());
     }
 
     final var operations = operationsEither.get();
@@ -38,7 +43,7 @@ final class RecordingChangeCoordinator implements TopologyChangeCoordinator {
     final var newTopology =
         operations.isEmpty() ? currentTopology : currentTopology.startTopologyChange(operations);
 
-    return CompletableActorFuture.completed(
+    return TestActorFuture.completedFuture(
         new TopologyChangeResult(
             currentTopology,
             newTopology, // This is not correct, but enough for tests

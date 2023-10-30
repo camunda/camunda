@@ -32,6 +32,11 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
   }
 
   @Override
+  public ActorFuture<ClusterTopology> getTopology() {
+    return clusterTopologyManager.getClusterTopology();
+  }
+
+  @Override
   public ActorFuture<TopologyChangeResult> applyOperations(final TopologyChangeRequest request) {
     final ActorFuture<TopologyChangeResult> future = executor.createFuture();
     clusterTopologyManager
