@@ -140,7 +140,7 @@ public class ClusterEndpoint {
 
   private static PostOperationResponse mapResponseType(final TopologyChangeResponse response) {
     return new PostOperationResponse()
-        .changeId((int) response.changeId())
+        .changeId(response.changeId())
         .currentTopology(mapBrokerStates(response.currentTopology()))
         .expectedTopology(mapBrokerStates(response.expectedTopology()))
         .plannedChanges(mapOperations(response.plannedChanges()));
@@ -183,7 +183,7 @@ public class ClusterEndpoint {
                     .id(Integer.parseInt(entry.getKey().id()))
                     .state(mapBrokerState(entry.getValue().state()))
                     .lastUpdatedAt(entry.getValue().lastUpdated().atOffset(ZoneOffset.UTC))
-                    .version((int) entry.getValue().version())
+                    .version(entry.getValue().version())
                     .partitions(mapPartitionStates(entry.getValue().partitions())))
         .toList();
   }
