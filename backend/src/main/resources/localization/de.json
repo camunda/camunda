@@ -369,7 +369,7 @@
       "compareProcessesAndVersionsInABarChart-description": "Vergleiche Prozesse und Versionen in einem Balken Diagramm. (Wähle mindestens zwei Prozesse)",
       "correlateDurationAndCountInPieChart": "Korreliere Metriken in einem Kuchendiagram",
       "correlateDurationAndCountInPieChart-description": "Korreliere zeitliche und zählbare Metriken eines Prozesses, von Zwischenfällen, von Benutzeraufgaben und Prozessknoten.",
-      "correlateMetricsInLineBarChart": "Korreliere Metriken in einem Kuchendiagram",
+      "correlateMetricsInLineBarChart": "Korreliere Metriken in einem Linien / Balken Diagramm",
       "correlateMetricsInLineBarChart-description": "Korreliere zeitliche und zählbare Metriken eines Prozesses, von Zwischenfällen, von Benutzeraufgaben und Prozessknoten.",
       "listIncidentsAsTable": "Liste Zwischenfälle in einer Tabelle",
       "listIncidentsAsTable-description": "Liste Zwischenfälle pro Prozessknoten in einer Tabelle.",
