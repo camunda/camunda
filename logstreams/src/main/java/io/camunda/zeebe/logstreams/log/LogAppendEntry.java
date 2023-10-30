@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.logstreams.log;
 
+import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryProcessed;
+import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryUnprocessed;
 import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -66,7 +68,7 @@ public interface LogAppendEntry {
    */
   static LogAppendEntry of(
       final RecordMetadata recordMetadata, final UnifiedRecordValue recordValue) {
-    return new LogAppendEntryImpl(
+    return new LogAppendEntryUnprocessed(
         LogEntryDescriptor.KEY_NULL_VALUE,
         -1,
         Objects.requireNonNull(recordMetadata, "must specify metadata"),
@@ -85,7 +87,7 @@ public interface LogAppendEntry {
    */
   static LogAppendEntry of(
       final long key, final RecordMetadata recordMetadata, final UnifiedRecordValue recordValue) {
-    return new LogAppendEntryImpl(
+    return new LogAppendEntryUnprocessed(
         key,
         -1,
         Objects.requireNonNull(recordMetadata, "must specify metadata"),
@@ -100,6 +102,6 @@ public interface LogAppendEntry {
    * @return a simple value class implementation of a {@link LogAppendEntry} with the parameters
    */
   static LogAppendEntry ofProcessed(final LogAppendEntry entry) {
-    return new ProcessedLogAppendEntryImpl(entry);
+    return new LogAppendEntryProcessed(entry);
   }
 }

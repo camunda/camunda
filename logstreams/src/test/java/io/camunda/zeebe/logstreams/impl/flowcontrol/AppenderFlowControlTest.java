@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
+import io.camunda.zeebe.logstreams.impl.metrics.AppenderMetrics;
 import java.time.Duration;
 import java.util.LinkedList;
 import org.awaitility.Awaitility;

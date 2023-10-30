@@ -5,12 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.logstreams.impl.log;
+package io.camunda.zeebe.logstreams.impl.sequencer;
 
 import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.FRAME_ALIGNMENT;
 
 import io.camunda.zeebe.logstreams.impl.flowcontrol.AppendErrorHandler;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.AppenderFlowControl;
+import io.camunda.zeebe.logstreams.impl.metrics.SequencerMetrics;
 import io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
@@ -34,7 +35,7 @@ import org.slf4j.LoggerFactory;
  * consumer. The sequencer does not copy or serialize entries, it only keeps a reference to them
  * until they are handed off to the consumer.
  */
-final class Sequencer implements LogStreamWriter, Closeable {
+public final class Sequencer implements LogStreamWriter, Closeable {
   private static final Logger LOG = LoggerFactory.getLogger(Sequencer.class);
   private final int maxFragmentSize;
 
@@ -45,7 +46,7 @@ final class Sequencer implements LogStreamWriter, Closeable {
   private final LogStorage logStorage;
   private final AppenderFlowControl flowControl;
 
-  Sequencer(
+  public Sequencer(
       final LogStorage logStorage,
       final int partitionId,
       final long initialPosition,

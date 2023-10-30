@@ -9,6 +9,7 @@ package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import com.netflix.concurrency.limits.Limiter;
 import com.netflix.concurrency.limits.limit.WindowedLimit;
+import io.camunda.zeebe.logstreams.impl.metrics.AppenderMetrics;
 import io.camunda.zeebe.util.Environment;
 import java.util.Map;
 import java.util.Optional;

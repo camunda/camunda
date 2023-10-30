@@ -5,12 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.logstreams.log;
+package io.camunda.zeebe.logstreams.impl.log;
 
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 
-record ProcessedLogAppendEntryImpl(LogAppendEntry entry) implements LogAppendEntry {
+public record LogAppendEntryProcessed(LogAppendEntry entry) implements LogAppendEntry {
 
   @Override
   public long key() {

@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.logstreams.impl.log;
+package io.camunda.zeebe.logstreams.impl.metrics;
 
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
 
-final class SequencerMetrics {
+public final class SequencerMetrics {
   private static final Gauge QUEUE_SIZE =
       Gauge.build()
           .namespace("zeebe")
@@ -42,22 +42,22 @@ final class SequencerMetrics {
   private final Histogram.Child batchSize;
   private final Histogram.Child batchLengthBytes;
 
-  SequencerMetrics(final int partitionId) {
+  public SequencerMetrics(final int partitionId) {
     final var partitionLabel = String.valueOf(partitionId);
     queueSize = QUEUE_SIZE.labels(partitionLabel);
     batchSize = BATCH_SIZE.labels(partitionLabel);
     batchLengthBytes = BATCH_LENGTH_BYTES.labels(partitionLabel);
   }
 
-  void setQueueSize(final int length) {
+  public void setQueueSize(final int length) {
     queueSize.set(length);
   }
 
-  void observeBatchSize(final int size) {
+  public void observeBatchSize(final int size) {
     batchSize.observe(size);
   }
 
-  void observeBatchLengthBytes(final int lengthBytes) {
+  public void observeBatchLengthBytes(final int lengthBytes) {
     final int batchLengthKiloBytes = Math.floorDiv(lengthBytes, 1024);
     batchLengthBytes.observe(batchLengthKiloBytes);
   }

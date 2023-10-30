@@ -11,7 +11,7 @@ import static io.camunda.zeebe.logstreams.util.TestEntry.TestEntryAssert.assertT
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
-import io.camunda.zeebe.logstreams.impl.log.SequencedBatch;
+import io.camunda.zeebe.logstreams.impl.sequencer.SequencedBatch;
 import io.camunda.zeebe.logstreams.util.TestEntry;
 import java.util.List;
 import org.agrona.concurrent.UnsafeBuffer;

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.logstreams.impl.serializer;
 
-import io.camunda.zeebe.logstreams.impl.log.SequencedBatch;
+import io.camunda.zeebe.logstreams.impl.sequencer.SequencedBatch;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.protocol.Protocol;
 import java.nio.ByteBuffer;
