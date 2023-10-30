@@ -6,9 +6,9 @@
  */
 
 import {useState} from 'react';
-import {Button} from '@carbon/react';
+import {Button, Form, FormGroup, RadioButton, RadioButtonGroup} from '@carbon/react';
 
-import {Modal, Form, LabeledInput} from 'components';
+import {Modal} from 'components';
 import {t} from 'translation';
 import {Definition, FilterData} from 'types';
 
@@ -16,8 +16,6 @@ import FilterDefinitionSelection from '../FilterDefinitionSelection';
 import {FilterProps} from '../types';
 
 import getMapping from './options';
-
-import './StateFilter.scss';
 
 interface StateFilterProps extends FilterProps<FilterData | undefined> {
   filterType: 'instanceState' | 'incident' | 'incidentInstances' | 'flowNodeStatus';
@@ -48,19 +46,20 @@ export default function StateFilter({addFilter, close, filterType, definitions}:
           applyTo={applyTo}
           setApplyTo={setApplyTo}
         />
-        <p className="description">{options?.pretext}</p>
         <Form>
-          <fieldset>
-            {options?.mappings.map(({key, label}, idx) => (
-              <LabeledInput
-                key={key}
-                type="radio"
-                label={label}
-                checked={selectedOption === idx}
-                onChange={() => setSelectedOption(idx)}
-              />
-            ))}
-          </fieldset>
+          <FormGroup legendText={options?.pretext.toString()}>
+            <RadioButtonGroup name="instanceState" orientation="vertical">
+              {options?.mappings.map(({key, label}, idx) => (
+                <RadioButton
+                  key={key}
+                  value={idx}
+                  labelText={label}
+                  checked={selectedOption === idx}
+                  onClick={() => setSelectedOption(idx)}
+                />
+              ))}
+            </RadioButtonGroup>
+          </FormGroup>
         </Form>
       </Modal.Content>
       <Modal.Footer>
