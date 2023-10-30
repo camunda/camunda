@@ -16,7 +16,6 @@ import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorage.CommitListener;
 import io.camunda.zeebe.logstreams.storage.LogStorageReader;
 import io.camunda.zeebe.scheduler.Actor;
-import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
@@ -27,7 +26,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 
 public final class LogStreamImpl extends Actor
@@ -38,37 +36,26 @@ public final class LogStreamImpl extends Actor
   private final Set<LogRecordAwaiter> recordAwaiters = new HashSet<>();
   private final String logName;
   private final int partitionId;
-  private final ActorSchedulingService actorSchedulingService;
   private final List<LogStreamReader> readers;
-  private final int maxFragmentSize;
   private final LogStorage logStorage;
-  private final CompletableActorFuture<Void> closeFuture;
-  private final int nodeId;
   private final Set<FailureListener> failureListeners = new HashSet<>();
-  private ActorFuture<LogStorageAppender> appenderFuture;
-  private Sequencer sequencer;
-  private LogStorageAppender appender;
-  private Throwable closeError; // set if any error occurred during closeAsync
+  private final Sequencer sequencer;
   private final String actorName;
   private HealthReport healthReport = HealthReport.healthy(this);
 
   LogStreamImpl(
-      final ActorSchedulingService actorSchedulingService,
       final String logName,
       final int partitionId,
-      final int nodeId,
       final int maxFragmentSize,
       final LogStorage logStorage) {
-    this.actorSchedulingService = actorSchedulingService;
     this.logName = logName;
 
     this.partitionId = partitionId;
-    this.nodeId = nodeId;
     actorName = buildActorName("LogStream", partitionId);
 
-    this.maxFragmentSize = maxFragmentSize;
     this.logStorage = logStorage;
-    closeFuture = new CompletableActorFuture<>();
+    sequencer =
+        new Sequencer(logStorage, partitionId, getWriteBuffersInitialPosition(), maxFragmentSize);
 
     readers = new ArrayList<>();
   }
@@ -95,37 +82,7 @@ public final class LogStreamImpl extends Actor
     LOG.info("On closing logstream {} close {} readers", logName, readers.size());
     readers.forEach(LogStreamReader::close);
     logStorage.removeCommitListener(this);
-  }
-
-  @Override
-  protected void onActorClosed() {
-    if (closeError != null) {
-      closeFuture.completeExceptionally(closeError);
-    } else {
-      closeFuture.complete(null);
-    }
-  }
-
-  @Override
-  public void close() {
-    closeAsync().join();
-  }
-
-  @Override
-  public ActorFuture<Void> closeAsync() {
-    if (actor.isClosed()) {
-      return closeFuture;
-    }
-
-    actor.run(
-        () ->
-            closeAppender()
-                .onComplete(
-                    (nothing, appenderError) -> {
-                      closeError = appenderError;
-                      actor.close();
-                    }));
-    return closeFuture;
+    sequencer.close();
   }
 
   @Override
@@ -139,14 +96,6 @@ public final class LogStreamImpl extends Actor
         getName(),
         actor.getLifecyclePhase(),
         failure);
-
-    if (appenderFuture != null && !appenderFuture.isDone()) {
-      // the appender future is not done yet ->
-      // log stream was currently trying to
-      // open the log storage appender but did
-      // not succeed yet
-      appenderFuture.completeExceptionally(failure);
-    }
 
     if (failure instanceof UnrecoverableException) {
       onUnrecoverableFailure(HealthReport.dead(this).withIssue(failure));
@@ -191,9 +140,7 @@ public final class LogStreamImpl extends Actor
       return CompletableActorFuture.completedExceptionally(new RuntimeException("Actor is closed"));
     }
 
-    final var writerFuture = new CompletableActorFuture<LogStreamWriter>();
-    actor.run(() -> createWriter(writerFuture));
-    return writerFuture;
+    return CompletableActorFuture.completed(sequencer);
   }
 
   private void notifyRecordAwaiters() {
@@ -211,83 +158,6 @@ public final class LogStreamImpl extends Actor
     return newReader;
   }
 
-  private void createWriter(final CompletableActorFuture<LogStreamWriter> writerFuture) {
-
-    final var onOpenAppenderConsumer = onOpenAppender(writerFuture);
-
-    if (appender != null) {
-      onOpenAppenderConsumer.accept(appender, null);
-    } else {
-      openAppender().onComplete(onOpenAppenderConsumer);
-    }
-  }
-
-  private BiConsumer<LogStorageAppender, Throwable> onOpenAppender(
-      final CompletableActorFuture<LogStreamWriter> writerFuture) {
-    return (openedAppender, errorOnOpeningAppender) -> {
-      if (errorOnOpeningAppender == null) {
-        writerFuture.complete(sequencer);
-      } else {
-        writerFuture.completeExceptionally(errorOnOpeningAppender);
-      }
-    };
-  }
-
-  private ActorFuture<Void> closeAppender() {
-    final var closeAppenderFuture = new CompletableActorFuture<Void>();
-
-    LOG.info("Close appender for log stream {}", logName);
-
-    final var toCloseAppender = appender;
-    final var toCloseWriteBuffer = sequencer;
-    final var toCompleteExceptionallyAppenderFuture = appenderFuture;
-
-    appender = null;
-    sequencer = null;
-    appenderFuture = null;
-
-    if (toCompleteExceptionallyAppenderFuture != null
-        && !toCompleteExceptionallyAppenderFuture.isDone()) {
-      // while opening the appender, a close signal is received
-      toCompleteExceptionallyAppenderFuture.completeExceptionally(
-          new LogStorageAppenderClosedException());
-    }
-
-    if (toCloseAppender == null) {
-      closeAppenderFuture.complete(null);
-      return closeAppenderFuture;
-    }
-    toCloseWriteBuffer.close();
-    toCloseAppender.closeAsync().onComplete(closeAppenderFuture);
-
-    return closeAppenderFuture;
-  }
-
-  private ActorFuture<LogStorageAppender> openAppender() {
-    if (appenderFuture != null) {
-      return appenderFuture;
-    }
-
-    appenderFuture = new CompletableActorFuture<>();
-    actor.run(
-        () -> {
-          final var initialPosition = getWriteBuffersInitialPosition();
-          sequencer = createAndScheduleWriteBuffer(initialPosition);
-          createAndScheduleLogStorageAppender(sequencer)
-              .onComplete(
-                  (v, t) -> {
-                    if (t != null) {
-                      onFailure(t);
-                    } else {
-                      appenderFuture.complete(appender);
-                      appender.addFailureListener(this);
-                    }
-                  });
-        });
-
-    return appenderFuture;
-  }
-
   private long getWriteBuffersInitialPosition() {
     final var lastPosition = getLastCommittedPosition();
     long initialPosition = 1;
@@ -297,17 +167,6 @@ public final class LogStreamImpl extends Actor
     }
 
     return initialPosition;
-  }
-
-  private Sequencer createAndScheduleWriteBuffer(final long initialPosition) {
-    return new Sequencer(initialPosition, maxFragmentSize, new SequencerMetrics(partitionId));
-  }
-
-  private ActorFuture<Void> createAndScheduleLogStorageAppender(final Sequencer sequencer) {
-    appender =
-        new LogStorageAppender(
-            buildActorName("LogAppender", partitionId), partitionId, logStorage, sequencer);
-    return actorSchedulingService.submitActor(appender);
   }
 
   private long getLastCommittedPosition() {
@@ -359,11 +218,5 @@ public final class LogStreamImpl extends Actor
           failureListeners.forEach(l -> l.onUnrecoverableFailure(healthReport));
           closeAsync();
         });
-  }
-
-  private static final class LogStorageAppenderClosedException extends RuntimeException {
-    private LogStorageAppenderClosedException() {
-      super("LogStorageAppender was closed before opening succeeded");
-    }
   }
 }

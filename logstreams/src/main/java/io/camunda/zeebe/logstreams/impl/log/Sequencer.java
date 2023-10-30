@@ -9,17 +9,17 @@ package io.camunda.zeebe.logstreams.impl.log;
 
 import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.FRAME_ALIGNMENT;
 
+import io.camunda.zeebe.logstreams.impl.flowcontrol.AppendErrorHandler;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.AppenderFlowControl;
 import io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ActorCondition;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.Either;
 import java.io.Closeable;
 import java.util.List;
-import java.util.Objects;
-import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,16 +40,31 @@ final class Sequencer implements LogStreamWriter, Closeable {
 
   private volatile long position;
   private volatile boolean isClosed = false;
-  private volatile ActorCondition consumer;
-  private final Queue<SequencedBatch> queue = new ArrayBlockingQueue<>(128);
   private final ReentrantLock lock = new ReentrantLock();
   private final SequencerMetrics metrics;
+  private final LogStorage logStorage;
+  private final AppenderFlowControl flowControl;
 
-  Sequencer(final long initialPosition, final int maxFragmentSize, final SequencerMetrics metrics) {
+  Sequencer(
+      final LogStorage logStorage,
+      final int partitionId,
+      final long initialPosition,
+      final int maxFragmentSize) {
+    this.logStorage = logStorage;
     LOG.trace("Starting new sequencer at position {}", initialPosition);
     position = initialPosition;
     this.maxFragmentSize = maxFragmentSize;
-    this.metrics = Objects.requireNonNull(metrics, "must specify metrics");
+    metrics = new SequencerMetrics(partitionId);
+    flowControl =
+        new AppenderFlowControl(
+            new AppendErrorHandler() {
+              @Override
+              public void onCommitError(final Throwable error) {}
+
+              @Override
+              public void onWriteError(final Throwable error) {}
+            },
+            partitionId);
   }
 
   /** {@inheritDoc} */
@@ -82,43 +97,30 @@ final class Sequencer implements LogStreamWriter, Closeable {
       return Either.left(WriteFailure.INVALID_ARGUMENT);
     }
 
-    final long currentPosition;
-    final boolean isEnqueued;
+    final var permit = flowControl.tryAcquire();
+    if (permit.isEmpty()) {
+      return Either.left(WriteFailure.FULL);
+    }
+
+    final SequencedBatch sequenced;
+    final long lowestPosition;
+    final long highestPosition;
     lock.lock();
     try {
-      currentPosition = position;
-      final var sequencedBatch =
+      lowestPosition = position;
+      highestPosition = lowestPosition + batchSize - 1;
+      sequenced =
           new SequencedBatch(
-              ActorClock.currentTimeMillis(), currentPosition, sourcePosition, appendEntries);
-      isEnqueued = queue.offer(sequencedBatch);
-      if (isEnqueued) {
-        metrics.observeBatchLengthBytes(sequencedBatch.length());
-        position = currentPosition + batchSize;
-      }
+              ActorClock.currentTimeMillis(), lowestPosition, sourcePosition, appendEntries);
+      logStorage.append(
+          lowestPosition, highestPosition, sequenced, permit.get().start(highestPosition));
+      position = highestPosition + 1;
     } finally {
       lock.unlock();
     }
-
-    if (consumer != null) {
-      consumer.signal();
-    }
-    metrics.setQueueSize(queue.size());
-    if (isEnqueued) {
-      metrics.observeBatchSize(batchSize);
-      return Either.right(currentPosition + batchSize - 1);
-    } else {
-      LOG.trace("Rejecting write of {}, sequencer queue is full", appendEntries);
-      return Either.left(WriteFailure.FULL);
-    }
-  }
-
-  /**
-   * Retrieves, but does not remove, the first item in the sequenced batch queue.
-   *
-   * @return A {@link SequencedBatch} or null if none is available
-   */
-  SequencedBatch tryRead() {
-    return queue.poll();
+    metrics.observeBatchLengthBytes(sequenced.getLength());
+    metrics.observeBatchSize(batchSize);
+    return Either.right(highestPosition);
   }
 
   /**
@@ -129,10 +131,6 @@ final class Sequencer implements LogStreamWriter, Closeable {
   public void close() {
     LOG.info("Closing sequencer for writing");
     isClosed = true;
-  }
-
-  void registerConsumer(final ActorCondition consumer) {
-    this.consumer = consumer;
   }
 
   private boolean isEntryValid(final LogAppendEntry entry) {
