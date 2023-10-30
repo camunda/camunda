@@ -17,6 +17,7 @@ import io.camunda.zeebe.topology.api.TopologyManagementRequest.RemoveMembersRequ
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.ScaleRequest;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator.TopologyChangeRequest;
+import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.util.Either;
@@ -86,6 +87,11 @@ public final class TopologyManagementRequestsHandler implements TopologyManageme
   @Override
   public ActorFuture<TopologyChangeResponse> scaleMembers(final ScaleRequest scaleRequest) {
     return handleRequest(new ScaleRequestTransformer(scaleRequest.members()));
+  }
+
+  @Override
+  public ActorFuture<ClusterTopology> getTopology() {
+    return coordinator.getTopology();
   }
 
   private ActorFuture<TopologyChangeResponse> handleRequest(
