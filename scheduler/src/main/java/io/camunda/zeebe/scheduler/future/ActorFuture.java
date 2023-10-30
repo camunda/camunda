@@ -8,6 +8,7 @@
 package io.camunda.zeebe.scheduler.future;
 
 import io.camunda.zeebe.scheduler.ActorTask;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -76,5 +77,28 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
     } else {
       complete(value);
     }
+  }
+
+  /**
+   * Utility method to convert this future to a {@link CompletableFuture}. The returned future will
+   * be completed when this future is completed.
+   *
+   * @return a completable future
+   */
+  default CompletableFuture<V> toCompletableFuture() {
+    final var future = new CompletableFuture<V>();
+    onComplete(
+        (status, error) -> {
+          if (error == null) {
+            future.complete(status);
+          } else {
+            future.completeExceptionally(error);
+          }
+        },
+        // Since the caller is most likely not an actor, we have to pass an executor. We use
+        // Runnable, so it executes in the same actor that completes this future. This is ok because
+        // the consumer passed here is not doing much to block the actor.
+        Runnable::run);
+    return future;
   }
 }

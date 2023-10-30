@@ -9,9 +9,8 @@ package io.camunda.zeebe.topology.api;
 
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.topology.serializer.TopologyRequestsSerializer;
-import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 /** Server that receives the topology management requests */
@@ -40,6 +39,7 @@ public final class TopologyRequestServer implements AutoCloseable {
     registerLeavePartitionRequestsHandler();
     registerReassignPartitionRequestHandler();
     registerScaleRequestHandler();
+    registerGetTopologyQueryHandler();
   }
 
   @Override
@@ -53,64 +53,55 @@ public final class TopologyRequestServer implements AutoCloseable {
     communicationService.replyTo(
         TopologyRequestTopics.ADD_MEMBER.topic(),
         serializer::decodeAddMembersRequest,
-        request -> toCompletableFuture(topologyManagementApi.addMembers(request)),
-        serializer::encode);
+        request -> topologyManagementApi.addMembers(request).toCompletableFuture(),
+        serializer::encodeTopologyChangeResponse);
   }
 
   private void registerRemoveMemberRequestsHandler() {
     communicationService.replyTo(
         TopologyRequestTopics.REMOVE_MEMBER.topic(),
         serializer::decodeRemoveMembersRequest,
-        request -> toCompletableFuture(topologyManagementApi.removeMembers(request)),
-        serializer::encode);
+        request -> topologyManagementApi.removeMembers(request).toCompletableFuture(),
+        serializer::encodeTopologyChangeResponse);
   }
 
   private void registerJoinPartitionRequestsHandler() {
     communicationService.replyTo(
         TopologyRequestTopics.JOIN_PARTITION.topic(),
         serializer::decodeJoinPartitionRequest,
-        request -> toCompletableFuture(topologyManagementApi.joinPartition(request)),
-        serializer::encode);
+        request -> topologyManagementApi.joinPartition(request).toCompletableFuture(),
+        serializer::encodeTopologyChangeResponse);
   }
 
   private void registerLeavePartitionRequestsHandler() {
     communicationService.replyTo(
         TopologyRequestTopics.LEAVE_PARTITION.topic(),
         serializer::decodeLeavePartitionRequest,
-        request -> toCompletableFuture(topologyManagementApi.leavePartition(request)),
-        serializer::encode);
+        request -> topologyManagementApi.leavePartition(request).toCompletableFuture(),
+        serializer::encodeTopologyChangeResponse);
   }
 
   private void registerReassignPartitionRequestHandler() {
     communicationService.replyTo(
         TopologyRequestTopics.REASSIGN_PARTITIONS.topic(),
         serializer::decodeReassignPartitionsRequest,
-        request -> toCompletableFuture(topologyManagementApi.reassignPartitions(request)),
-        serializer::encode);
+        request -> topologyManagementApi.reassignPartitions(request).toCompletableFuture(),
+        serializer::encodeTopologyChangeResponse);
   }
 
   private void registerScaleRequestHandler() {
     communicationService.replyTo(
         TopologyRequestTopics.SCALE_MEMBERS.topic(),
         serializer::decodeScaleRequest,
-        request -> toCompletableFuture(topologyManagementApi.scaleMembers(request)),
-        serializer::encode);
+        request -> topologyManagementApi.scaleMembers(request).toCompletableFuture(),
+        serializer::encodeTopologyChangeResponse);
   }
 
-  private CompletableFuture<TopologyChangeResponse> toCompletableFuture(
-      final ActorFuture<TopologyChangeResponse> resultFuture) {
-    final var future = new CompletableFuture<TopologyChangeResponse>();
-    executor.run(
-        () ->
-            executor.runOnCompletion(
-                resultFuture,
-                (status, error) -> {
-                  if (error == null) {
-                    future.complete(status);
-                  } else {
-                    future.completeExceptionally(error);
-                  }
-                }));
-    return future;
+  private void registerGetTopologyQueryHandler() {
+    communicationService.replyTo(
+        TopologyRequestTopics.QUERY_TOPOLOGY.topic(),
+        Function.identity(),
+        request -> topologyManagementApi.getTopology().toCompletableFuture(),
+        serializer::encode);
   }
 }

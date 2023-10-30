@@ -156,7 +156,8 @@ final class ProtoBufSerializerTest {
                 new PartitionJoinOperation(MemberId.from("2"), 1, 2)));
 
     // when
-    final var encodedResponse = protoBufSerializer.encode(topologyChangeResponse);
+    final var encodedResponse =
+        protoBufSerializer.encodeTopologyChangeResponse(topologyChangeResponse);
 
     // then
     final var decodedResponse = protoBufSerializer.decodeTopologyChangeResponse(encodedResponse);

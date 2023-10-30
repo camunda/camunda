@@ -93,6 +93,20 @@ final class TopologyManagementApiTest {
   }
 
   @Test
+  void shouldGetCurrentTopology() {
+    // given
+    final var expectedTopology =
+        initialTopology.addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()));
+    recordingCoordinator.setCurrentTopology(expectedTopology);
+
+    // when
+    final var topology = clientApi.getTopology().join();
+
+    // then
+    assertThat(topology).isEqualTo(expectedTopology);
+  }
+
+  @Test
   void shouldAddMembers() {
     // given
     final var request = new TopologyManagementRequest.AddMembersRequest(Set.of(MemberId.from("1")));

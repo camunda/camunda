@@ -16,8 +16,10 @@ import io.camunda.zeebe.topology.api.TopologyManagementRequest.ReassignPartition
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.ScaleRequest;
 import io.camunda.zeebe.topology.serializer.TopologyRequestsSerializer;
+import io.camunda.zeebe.topology.state.ClusterTopology;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 /** Forwards all requests to the coordinator. */
 public final class TopologyManagementRequestSender {
@@ -96,6 +98,16 @@ public final class TopologyManagementRequestSender {
         scaleRequest,
         serializer::encodeScaleRequest,
         serializer::decodeTopologyChangeResponse,
+        coordinator,
+        TIMEOUT);
+  }
+
+  public CompletableFuture<ClusterTopology> getTopology() {
+    return communicationService.send(
+        TopologyRequestTopics.QUERY_TOPOLOGY.topic(),
+        new byte[0],
+        Function.identity(),
+        serializer::decodeClusterTopology,
         coordinator,
         TIMEOUT);
   }
