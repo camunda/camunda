@@ -10,17 +10,15 @@ package io.camunda.zeebe.topology.serializer;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Timestamp;
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.topology.api.TopologyChangeResponse;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.ScaleRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementResponse.StatusCode;
-import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossipState;
 import io.camunda.zeebe.topology.protocol.Requests;
-import io.camunda.zeebe.topology.protocol.Requests.ChangeStatus;
 import io.camunda.zeebe.topology.protocol.Topology;
 import io.camunda.zeebe.topology.protocol.Topology.CompletedChange;
 import io.camunda.zeebe.topology.protocol.Topology.MemberState;
@@ -93,10 +91,7 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
   private io.camunda.zeebe.topology.state.ClusterTopology decodeClusterTopology(
       final Topology.ClusterTopology encodedClusterTopology) {
 
-    final var members =
-        encodedClusterTopology.getMembersMap().entrySet().stream()
-            .map(e -> Map.entry(MemberId.from(e.getKey()), decodeMemberState(e.getValue())))
-            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    final var members = decodeMemberStateMap(encodedClusterTopology.getMembersMap());
 
     final Optional<io.camunda.zeebe.topology.state.CompletedChange> completedChange =
         encodedClusterTopology.hasLastChange()
@@ -111,11 +106,16 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
         encodedClusterTopology.getVersion(), members, completedChange, currentChange);
   }
 
+  private Map<MemberId, io.camunda.zeebe.topology.state.MemberState> decodeMemberStateMap(
+      final Map<String, MemberState> membersMap) {
+    return membersMap.entrySet().stream()
+        .map(e -> Map.entry(MemberId.from(e.getKey()), decodeMemberState(e.getValue())))
+        .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+  }
+
   private Topology.ClusterTopology encodeClusterTopology(
       final io.camunda.zeebe.topology.state.ClusterTopology clusterTopology) {
-    final var members =
-        clusterTopology.members().entrySet().stream()
-            .collect(Collectors.toMap(e -> e.getKey().id(), e -> encodeMemberState(e.getValue())));
+    final var members = encodeMemberStateMap(clusterTopology.members());
 
     final var builder =
         Topology.ClusterTopology.newBuilder()
@@ -502,43 +502,41 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
   }
 
   @Override
-  public byte[] encode(final TopologyChangeStatus topologyChangeStatus) {
-    return Requests.TopologyChangeStatus.newBuilder()
-        .setChangeId(topologyChangeStatus.changeId())
-        .setStatus(fromTopologyChangeStatus(topologyChangeStatus.status()))
-        .build()
-        .toByteArray();
+  public byte[] encode(final TopologyChangeResponse topologyChangeResponse) {
+    final var builder = Requests.TopologyChangeResponse.newBuilder();
+
+    builder
+        .setChangeId(topologyChangeResponse.changeId())
+        .addAllPlannedChanges(
+            topologyChangeResponse.plannedChanges().stream().map(this::encodeOperation).toList())
+        .putAllCurrentTopology(encodeMemberStateMap(topologyChangeResponse.currentTopology()))
+        .putAllExpectedTopology(encodeMemberStateMap(topologyChangeResponse.expectedTopology()));
+
+    return builder.build().toByteArray();
   }
 
   @Override
-  public TopologyChangeStatus decodeTopologyChangeStatus(final byte[] encodedTopologyChangeStatus) {
+  public TopologyChangeResponse decodeTopologyChangeResponse(
+      final byte[] encodedTopologyChangeResponse) {
     try {
-      final var topologyChangeStatus =
-          Requests.TopologyChangeStatus.parseFrom(encodedTopologyChangeStatus);
-      return new TopologyChangeStatus(
-          topologyChangeStatus.getChangeId(),
-          toTopologyChangeStatus(topologyChangeStatus.getStatus()));
+      final var topologyChangeResponse =
+          Requests.TopologyChangeResponse.parseFrom(encodedTopologyChangeResponse);
+      return new TopologyChangeResponse(
+          topologyChangeResponse.getChangeId(),
+          decodeMemberStateMap(topologyChangeResponse.getCurrentTopologyMap()),
+          decodeMemberStateMap(topologyChangeResponse.getExpectedTopologyMap()),
+          topologyChangeResponse.getPlannedChangesList().stream()
+              .map(this::decodeOperation)
+              .collect(Collectors.toList()));
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
   }
 
-  private StatusCode toTopologyChangeStatus(final ChangeStatus status) {
-    return switch (status) {
-      case IN_PROGRESS -> StatusCode.IN_PROGRESS;
-      case COMPLETED -> StatusCode.COMPLETED;
-      case FAILED -> StatusCode.FAILED;
-      case UNRECOGNIZED, STATUS_UNKNOWN -> throw new IllegalStateException(
-          "Unknown status: " + status);
-    };
-  }
-
-  private ChangeStatus fromTopologyChangeStatus(final StatusCode status) {
-    return switch (status) {
-      case IN_PROGRESS -> ChangeStatus.IN_PROGRESS;
-      case COMPLETED -> ChangeStatus.COMPLETED;
-      case FAILED -> ChangeStatus.FAILED;
-    };
+  private Map<String, MemberState> encodeMemberStateMap(
+      final Map<MemberId, io.camunda.zeebe.topology.state.MemberState> topologyChangeResponse) {
+    return topologyChangeResponse.entrySet().stream()
+        .collect(Collectors.toMap(e -> e.getKey().id(), e -> encodeMemberState(e.getValue())));
   }
 
   private Topology.ChangeStatus fromTopologyChangeStatus(final ClusterChangePlan.Status status) {

@@ -15,8 +15,6 @@ import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionReq
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.ScaleRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementResponse.StatusCode;
-import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator.TopologyChangeRequest;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
@@ -40,18 +38,18 @@ public final class TopologyManagementRequestsHandler implements TopologyManageme
   }
 
   @Override
-  public ActorFuture<TopologyChangeStatus> addMembers(final AddMembersRequest addMembersRequest) {
+  public ActorFuture<TopologyChangeResponse> addMembers(final AddMembersRequest addMembersRequest) {
     return handleRequest(new AddMembersTransformer(addMembersRequest.members()));
   }
 
   @Override
-  public ActorFuture<TopologyChangeStatus> removeMembers(
+  public ActorFuture<TopologyChangeResponse> removeMembers(
       final RemoveMembersRequest removeMembersRequest) {
     return handleRequest(new RemoveMembersTransformer(removeMembersRequest.members()));
   }
 
   @Override
-  public ActorFuture<TopologyChangeStatus> joinPartition(
+  public ActorFuture<TopologyChangeResponse> joinPartition(
       final JoinPartitionRequest joinPartitionRequest) {
     final TopologyChangeRequest requestTransformer =
         ignore ->
@@ -65,7 +63,7 @@ public final class TopologyManagementRequestsHandler implements TopologyManageme
   }
 
   @Override
-  public ActorFuture<TopologyChangeStatus> leavePartition(
+  public ActorFuture<TopologyChangeResponse> leavePartition(
       final LeavePartitionRequest leavePartitionRequest) {
 
     final TopologyChangeRequest requestTransformer =
@@ -78,7 +76,7 @@ public final class TopologyManagementRequestsHandler implements TopologyManageme
   }
 
   @Override
-  public ActorFuture<TopologyChangeStatus> reassignPartitions(
+  public ActorFuture<TopologyChangeResponse> reassignPartitions(
       final ReassignPartitionsRequest reassignPartitionsRequest) {
     final var transformer =
         new PartitionReassignRequestTransformer(reassignPartitionsRequest.members());
@@ -86,25 +84,24 @@ public final class TopologyManagementRequestsHandler implements TopologyManageme
   }
 
   @Override
-  public ActorFuture<TopologyChangeStatus> scaleMembers(final ScaleRequest scaleRequest) {
+  public ActorFuture<TopologyChangeResponse> scaleMembers(final ScaleRequest scaleRequest) {
     return handleRequest(new ScaleRequestTransformer(scaleRequest.members()));
   }
 
-  private ActorFuture<TopologyChangeStatus> handleRequest(final TopologyChangeRequest transformer) {
-    final ActorFuture<TopologyChangeStatus> responseFuture = executor.createFuture();
+  private ActorFuture<TopologyChangeResponse> handleRequest(
+      final TopologyChangeRequest transformer) {
+    final ActorFuture<TopologyChangeResponse> responseFuture = executor.createFuture();
     coordinator
         .applyOperations(transformer)
         .onComplete(
             (result, error) -> {
               if (error == null) {
-                // TODO: This must be return result directly
                 final var changeStatus =
-                    result.finalTopology().pendingChanges().isPresent()
-                        ? new TopologyChangeStatus(
-                            result.finalTopology().pendingChanges().get().id(),
-                            StatusCode.IN_PROGRESS)
-                        : new TopologyChangeStatus(
-                            result.finalTopology().version(), StatusCode.COMPLETED);
+                    new TopologyChangeResponse(
+                        result.changeId(),
+                        result.currentTopology().members(),
+                        result.finalTopology().members(),
+                        result.operations());
                 responseFuture.complete(changeStatus);
               } else {
                 responseFuture.completeExceptionally(error);

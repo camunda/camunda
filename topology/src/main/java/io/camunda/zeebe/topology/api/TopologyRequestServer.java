@@ -10,7 +10,6 @@ package io.camunda.zeebe.topology.api;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
 import io.camunda.zeebe.topology.serializer.TopologyRequestsSerializer;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
@@ -98,9 +97,9 @@ public final class TopologyRequestServer implements AutoCloseable {
         serializer::encode);
   }
 
-  private CompletableFuture<TopologyChangeStatus> toCompletableFuture(
-      final ActorFuture<TopologyChangeStatus> resultFuture) {
-    final var future = new CompletableFuture<TopologyChangeStatus>();
+  private CompletableFuture<TopologyChangeResponse> toCompletableFuture(
+      final ActorFuture<TopologyChangeResponse> resultFuture) {
+    final var future = new CompletableFuture<TopologyChangeResponse>();
     executor.run(
         () ->
             executor.runOnCompletion(

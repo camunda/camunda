@@ -14,21 +14,20 @@ import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionReq
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.ScaleRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
 
 /** Defines the API for the topology management requests. */
 public interface TopologyManagementApi {
 
-  ActorFuture<TopologyChangeStatus> addMembers(AddMembersRequest addMembersRequest);
+  ActorFuture<TopologyChangeResponse> addMembers(AddMembersRequest addMembersRequest);
 
-  ActorFuture<TopologyChangeStatus> removeMembers(RemoveMembersRequest removeMembersRequest);
+  ActorFuture<TopologyChangeResponse> removeMembers(RemoveMembersRequest removeMembersRequest);
 
-  ActorFuture<TopologyChangeStatus> joinPartition(JoinPartitionRequest joinPartitionRequest);
+  ActorFuture<TopologyChangeResponse> joinPartition(JoinPartitionRequest joinPartitionRequest);
 
-  ActorFuture<TopologyChangeStatus> leavePartition(LeavePartitionRequest leavePartitionRequest);
+  ActorFuture<TopologyChangeResponse> leavePartition(LeavePartitionRequest leavePartitionRequest);
 
-  ActorFuture<TopologyChangeStatus> reassignPartitions(
+  ActorFuture<TopologyChangeResponse> reassignPartitions(
       ReassignPartitionsRequest reassignPartitionsRequest);
 
-  ActorFuture<TopologyChangeStatus> scaleMembers(ScaleRequest scaleRequest);
+  ActorFuture<TopologyChangeResponse> scaleMembers(ScaleRequest scaleRequest);
 }

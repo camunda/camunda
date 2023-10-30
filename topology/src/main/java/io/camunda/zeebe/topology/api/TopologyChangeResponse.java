@@ -7,14 +7,14 @@
  */
 package io.camunda.zeebe.topology.api;
 
-public sealed interface TopologyManagementResponse {
+import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.topology.state.MemberState;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation;
+import java.util.List;
+import java.util.Map;
 
-  record TopologyChangeStatus(long changeId, StatusCode status)
-      implements TopologyManagementResponse {}
-
-  enum StatusCode {
-    IN_PROGRESS,
-    COMPLETED,
-    FAILED
-  }
-}
+public record TopologyChangeResponse(
+    long changeId,
+    Map<MemberId, MemberState> currentTopology,
+    Map<MemberId, MemberState> expectedTopology,
+    List<TopologyChangeOperation> plannedChanges) {}

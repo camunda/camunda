@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.topology.serializer;
 
+import io.camunda.zeebe.topology.api.TopologyChangeResponse;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
 
 public interface TopologyRequestsSerializer {
 
@@ -38,7 +38,7 @@ public interface TopologyRequestsSerializer {
 
   TopologyManagementRequest.ScaleRequest decodeScaleRequest(byte[] encodedState);
 
-  byte[] encode(TopologyChangeStatus topologyChangeStatus);
+  byte[] encode(TopologyChangeResponse topologyChangeResponse);
 
-  TopologyChangeStatus decodeTopologyChangeStatus(byte[] encodedTopologyChangeStatus);
+  TopologyChangeResponse decodeTopologyChangeResponse(byte[] encodedTopologyChangeResponse);
 }

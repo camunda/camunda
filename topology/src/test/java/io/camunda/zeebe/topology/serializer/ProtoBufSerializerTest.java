@@ -10,6 +10,7 @@ package io.camunda.zeebe.topology.serializer;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.topology.api.TopologyChangeResponse;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
@@ -136,6 +137,30 @@ final class ProtoBufSerializerTest {
     // then
     final var decodedRequest = protoBufSerializer.decodeLeavePartitionRequest(encodedRequest);
     assertThat(decodedRequest).isEqualTo(leavePartitionRequest);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeTopologyChangeResponse() {
+    // given
+    final var topologyChangeResponse =
+        new TopologyChangeResponse(
+            2,
+            Map.of(
+                MemberId.from("1"),
+                MemberState.initializeAsActive(Map.of()),
+                MemberId.from("2"),
+                MemberState.initializeAsActive(Map.of())),
+            Map.of(MemberId.from("2"), MemberState.initializeAsActive(Map.of())),
+            List.of(
+                new MemberLeaveOperation(MemberId.from("1")),
+                new PartitionJoinOperation(MemberId.from("2"), 1, 2)));
+
+    // when
+    final var encodedResponse = protoBufSerializer.encode(topologyChangeResponse);
+
+    // then
+    final var decodedResponse = protoBufSerializer.decodeTopologyChangeResponse(encodedResponse);
+    assertThat(decodedResponse).isEqualTo(topologyChangeResponse);
   }
 
   private static Stream<ClusterTopology> provideClusterTopologies() {

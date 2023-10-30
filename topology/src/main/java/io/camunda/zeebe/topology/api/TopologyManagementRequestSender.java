@@ -15,7 +15,6 @@ import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionReq
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.ScaleRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementResponse.TopologyChangeStatus;
 import io.camunda.zeebe.topology.serializer.TopologyRequestsSerializer;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -36,67 +35,67 @@ public final class TopologyManagementRequestSender {
     this.serializer = serializer;
   }
 
-  public CompletableFuture<TopologyChangeStatus> addMembers(
+  public CompletableFuture<TopologyChangeResponse> addMembers(
       final AddMembersRequest addMembersRequest) {
     return communicationService.send(
         TopologyRequestTopics.ADD_MEMBER.topic(),
         addMembersRequest,
         serializer::encodeAddMembersRequest,
-        serializer::decodeTopologyChangeStatus,
+        serializer::decodeTopologyChangeResponse,
         coordinator,
         TIMEOUT);
   }
 
-  public CompletableFuture<TopologyChangeStatus> removeMembers(
+  public CompletableFuture<TopologyChangeResponse> removeMembers(
       final RemoveMembersRequest removeMembersRequest) {
     return communicationService.send(
         TopologyRequestTopics.REMOVE_MEMBER.topic(),
         removeMembersRequest,
         serializer::encodeRemoveMembersRequest,
-        serializer::decodeTopologyChangeStatus,
+        serializer::decodeTopologyChangeResponse,
         coordinator,
         TIMEOUT);
   }
 
-  public CompletableFuture<TopologyChangeStatus> joinPartition(
+  public CompletableFuture<TopologyChangeResponse> joinPartition(
       final JoinPartitionRequest joinPartitionRequest) {
     return communicationService.send(
         TopologyRequestTopics.JOIN_PARTITION.topic(),
         joinPartitionRequest,
         serializer::encodeJoinPartitionRequest,
-        serializer::decodeTopologyChangeStatus,
+        serializer::decodeTopologyChangeResponse,
         coordinator,
         TIMEOUT);
   }
 
-  public CompletableFuture<TopologyChangeStatus> leavePartition(
+  public CompletableFuture<TopologyChangeResponse> leavePartition(
       final LeavePartitionRequest leavePartitionRequest) {
     return communicationService.send(
         TopologyRequestTopics.LEAVE_PARTITION.topic(),
         leavePartitionRequest,
         serializer::encodeLeavePartitionRequest,
-        serializer::decodeTopologyChangeStatus,
+        serializer::decodeTopologyChangeResponse,
         coordinator,
         TIMEOUT);
   }
 
-  public CompletableFuture<TopologyChangeStatus> reassignPartitions(
+  public CompletableFuture<TopologyChangeResponse> reassignPartitions(
       final ReassignPartitionsRequest reassignPartitionsRequest) {
     return communicationService.send(
         TopologyRequestTopics.REASSIGN_PARTITIONS.topic(),
         reassignPartitionsRequest,
         serializer::encodeReassignPartitionsRequest,
-        serializer::decodeTopologyChangeStatus,
+        serializer::decodeTopologyChangeResponse,
         coordinator,
         TIMEOUT);
   }
 
-  public CompletableFuture<TopologyChangeStatus> scaleMembers(final ScaleRequest scaleRequest) {
+  public CompletableFuture<TopologyChangeResponse> scaleMembers(final ScaleRequest scaleRequest) {
     return communicationService.send(
         TopologyRequestTopics.SCALE_MEMBERS.topic(),
         scaleRequest,
         serializer::encodeScaleRequest,
-        serializer::decodeTopologyChangeStatus,
+        serializer::decodeTopologyChangeResponse,
         coordinator,
         TIMEOUT);
   }

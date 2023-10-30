@@ -28,19 +28,14 @@ message ScaleRequest {
   repeated string memberIds = 1;
 }
 
-message TopologyChangeStatus {
-  int64 changeId = 1;
-  ChangeStatus status = 2;
-}
-
 message ReassignAllPartitionsRequest {
   // The ids of the brokers to which all partitions should be re-distributed
   repeated string memberIds = 1;
 }
 
-enum ChangeStatus {
-  STATUS_UNKNOWN = 0;
-  IN_PROGRESS = 1;
-  COMPLETED = 2;
-  FAILED = 3;
+message TopologyChangeResponse {
+  int64 changeId = 1;
+  map<string, topology_protocol.MemberState> currentTopology = 2;
+  map<string, topology_protocol.MemberState> expectedTopology = 3;
+  repeated topology_protocol.TopologyChangeOperation plannedChanges = 4;
 }

@@ -30,6 +30,7 @@ public interface TopologyChangeCoordinator {
       ClusterTopology currentTopology,
       // The expected final topology after applying the operations.
       ClusterTopology finalTopology,
+      long changeId,
       // The operations that wille be applied to the current topology.
       List<TopologyChangeOperation> operations) {}
 
