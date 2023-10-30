@@ -349,21 +349,21 @@ components:
 
     ChangeId:
       title: ChangeId
-      description: The ID of broker
+      description: The ID of a topology change operation
       type: integer
       format: int64
       example: 8
 
     BrokerId:
       title: BrokerId
-      description: The ID of broker
+      description: The ID of a broker, starting from 0
       type: integer
       format: int32
       example: 0
 
     PartitionId:
       title: PartitionId
-      description: The ID of broker
+      description: The ID of a partition, starting from 1
       type: integer
       format: int32
       example: 1
