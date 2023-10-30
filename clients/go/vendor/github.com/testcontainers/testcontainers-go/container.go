@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -16,6 +17,7 @@ import (
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/go-connections/nat"
 	"github.com/google/uuid"
+	"github.com/moby/patternmatcher/ignorefile"
 
 	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/internal/testcontainersdocker"
@@ -84,6 +86,10 @@ type FromDockerfile struct {
 	BuildArgs      map[string]*string             // enable user to pass build args to docker daemon
 	PrintBuildLog  bool                           // enable user to print build log
 	AuthConfigs    map[string]registry.AuthConfig // Deprecated. Testcontainers will detect registry credentials automatically. Enable auth configs to be able to pull from an authenticated docker registry
+	// KeepImage describes whether DockerContainer.Terminate should not delete the
+	// container image. Useful for images that are built from a Dockerfile and take a
+	// long time to build. Keeping the image also Docker to reuse it.
+	KeepImage bool
 }
 
 type ContainerFile struct {
@@ -96,6 +102,7 @@ type ContainerFile struct {
 type ContainerRequest struct {
 	FromDockerfile
 	Image                   string
+	ImageSubstitutors       []ImageSubstitutor
 	Entrypoint              []string
 	Env                     map[string]string
 	ExposedPorts            []string // allow specifying protocol info
@@ -188,12 +195,30 @@ func (c *ContainerRequest) GetContext() (io.Reader, error) {
 	}
 	c.Context = abs
 
-	buildContext, err := archive.TarWithOptions(c.Context, &archive.TarOptions{})
+	excluded, err := parseDockerIgnore(abs)
+	if err != nil {
+		return nil, err
+	}
+	buildContext, err := archive.TarWithOptions(c.Context, &archive.TarOptions{ExcludePatterns: excluded})
 	if err != nil {
 		return nil, err
 	}
 
 	return buildContext, nil
+}
+
+func parseDockerIgnore(targetDir string) ([]string, error) {
+	// based on https://github.com/docker/cli/blob/master/cli/command/image/build/dockerignore.go#L14
+	fileLocation := filepath.Join(targetDir, ".dockerignore")
+	var excluded []string
+	if f, openErr := os.Open(fileLocation); openErr == nil {
+		var err error
+		excluded, err = ignorefile.ReadAll(f)
+		if err != nil {
+			return excluded, fmt.Errorf("error reading .dockerignore: %w", err)
+		}
+	}
+	return excluded, nil
 }
 
 // GetBuildArgs returns the env args to be used when creating from Dockerfile
@@ -253,6 +278,10 @@ func (c *ContainerRequest) GetAuthConfigs() map[string]registry.AuthConfig {
 
 func (c *ContainerRequest) ShouldBuildImage() bool {
 	return c.FromDockerfile.Context != "" || c.FromDockerfile.ContextArchive != nil
+}
+
+func (c *ContainerRequest) ShouldKeepBuiltImage() bool {
+	return c.FromDockerfile.KeepImage
 }
 
 func (c *ContainerRequest) ShouldPrintBuildLog() bool {
