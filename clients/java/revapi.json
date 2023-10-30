@@ -32,9 +32,8 @@
         {
           "ignore": true,
           "code": "java.annotation.removed",
-          "old": "method java.lang.String io.camunda.zeebe.client.api.response.BroadcastSignalResponse::getTenantId()",
-          "new": "method java.lang.String io.camunda.zeebe.client.api.response.BroadcastSignalResponse::getTenantId()",
-          "justification": "The ExperimentalApi annotation was added to mark this method as 'in-development'. The functionality has since been implemented and the annotation isn't necessary."
+          "annotationType": "io.camunda.zeebe.client.api.ExperimentalApi",
+          "justification": "The ExperimentalApi annotation is used to mark methods as 'in-development'. It is okay to remove it after a feature is implemented"
         }
       ]
     }
