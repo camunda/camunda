@@ -18,6 +18,7 @@ import feign.Retryer;
 import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
+import io.camunda.zeebe.management.cluster.GetTopologyResponse;
 import io.camunda.zeebe.management.cluster.PostOperationResponse;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.zeebe.containers.ZeebeNode;
@@ -90,4 +91,13 @@ public interface ClusterActuator {
   @RequestLine("DELETE /brokers/{brokerId}/partitions/{partitionId}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   PostOperationResponse leavePartition(@Param final int brokerId, @Param final int partitionId);
+
+  /**
+   * Queries the current cluster topology
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("GET")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  GetTopologyResponse getTopology();
 }

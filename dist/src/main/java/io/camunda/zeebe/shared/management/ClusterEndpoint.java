@@ -7,18 +7,30 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import static org.springframework.boot.actuate.endpoint.web.WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.BrokerStateCode;
+import io.camunda.zeebe.management.cluster.Error;
+import io.camunda.zeebe.management.cluster.GetTopologyResponse;
 import io.camunda.zeebe.management.cluster.Operation;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
 import io.camunda.zeebe.management.cluster.PartitionState;
 import io.camunda.zeebe.management.cluster.PartitionStateCode;
 import io.camunda.zeebe.management.cluster.PostOperationResponse;
+import io.camunda.zeebe.management.cluster.TopologyChange;
+import io.camunda.zeebe.management.cluster.TopologyChange.StatusEnum;
+import io.camunda.zeebe.management.cluster.TopologyChangeCompletedInner;
 import io.camunda.zeebe.topology.api.TopologyChangeResponse;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequestSender;
+import io.camunda.zeebe.topology.state.ClusterChangePlan;
+import io.camunda.zeebe.topology.state.ClusterChangePlan.CompletedOperation;
+import io.camunda.zeebe.topology.state.ClusterChangePlan.Status;
+import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.state.CompletedChange;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.PartitionState.State;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
@@ -32,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation;
+import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
 import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
@@ -46,6 +59,23 @@ public class ClusterEndpoint {
   @Autowired
   public ClusterEndpoint(final TopologyManagementRequestSender requestSender) {
     this.requestSender = requestSender;
+  }
+
+  @ReadOperation
+  public WebEndpointResponse<?> clusterTopology() {
+    try {
+      final GetTopologyResponse response = mapClusterTopology(requestSender.getTopology().join());
+      return new WebEndpointResponse<>(response);
+    } catch (final Exception error) {
+      return mapError(error);
+    }
+  }
+
+  private WebEndpointResponse<?> mapError(final Exception error) {
+    // TODO: Map error to proper HTTP status code as defined in spec
+    final var errorResponse = new Error();
+    errorResponse.setMessage(error.getMessage());
+    return new WebEndpointResponse<>(errorResponse, STATUS_INTERNAL_SERVER_ERROR);
   }
 
   @WriteOperation
@@ -217,6 +247,85 @@ public class ClusterEndpoint {
       case LEAVING -> PartitionStateCode.LEAVING;
       case UNKNOWN -> PartitionStateCode.UNKNOWN;
     };
+  }
+
+  private static GetTopologyResponse mapClusterTopology(final ClusterTopology topology) {
+    final var response = new GetTopologyResponse();
+    final List<BrokerState> brokers = mapBrokerStates(topology.members());
+    final TopologyChange change;
+
+    if (topology.pendingChanges().isPresent()) {
+      change = mapOngoingChange(topology.pendingChanges().get());
+    } else if (topology.lastChange().isPresent()) {
+      change = mapCompletedChange(topology.lastChange().get());
+    } else {
+      change = new TopologyChange();
+    }
+
+    response.version(topology.version()).brokers(brokers).change(change);
+
+    return response;
+  }
+
+  private static TopologyChange mapCompletedChange(final CompletedChange completedChange) {
+    return new TopologyChange()
+        .id(completedChange.id())
+        .status(mapChangeStatus(completedChange.status()))
+        .startedAt(completedChange.startedAt().atOffset(ZoneOffset.UTC))
+        .completedAt(completedChange.completedAt().atOffset(ZoneOffset.UTC));
+  }
+
+  private static TopologyChange mapOngoingChange(final ClusterChangePlan clusterChangePlan) {
+    return new TopologyChange()
+        .id(clusterChangePlan.id())
+        .status(mapChangeStatus(clusterChangePlan.status()))
+        .pending(mapOperations(clusterChangePlan.pendingOperations()))
+        .completed(mapCompletedOperations(clusterChangePlan.completedOperations()));
+  }
+
+  private static StatusEnum mapChangeStatus(final Status status) {
+    return switch (status) {
+      case IN_PROGRESS -> StatusEnum.IN_PROGRESS;
+      case COMPLETED -> StatusEnum.COMPLETED;
+      case FAILED -> StatusEnum.FAILED;
+    };
+  }
+
+  private static List<TopologyChangeCompletedInner> mapCompletedOperations(
+      final List<CompletedOperation> completedOperations) {
+    return completedOperations.stream().map(ClusterEndpoint::mapCompletedOperation).toList();
+  }
+
+  private static TopologyChangeCompletedInner mapCompletedOperation(
+      final CompletedOperation operation) {
+    final var mappedOperation =
+        switch (operation.operation()) {
+          case final MemberJoinOperation join -> new TopologyChangeCompletedInner()
+              .operation(TopologyChangeCompletedInner.OperationEnum.BROKER_ADD)
+              .brokerId(Integer.parseInt(join.memberId().id()));
+          case final MemberLeaveOperation leave -> new TopologyChangeCompletedInner()
+              .operation(TopologyChangeCompletedInner.OperationEnum.BROKER_REMOVE)
+              .brokerId(Integer.parseInt(leave.memberId().id()));
+          case final PartitionJoinOperation join -> new TopologyChangeCompletedInner()
+              .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_JOIN)
+              .brokerId(Integer.parseInt(join.memberId().id()))
+              .partitionId(join.partitionId())
+              .priority(join.priority());
+          case final PartitionLeaveOperation leave -> new TopologyChangeCompletedInner()
+              .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_LEAVE)
+              .brokerId(Integer.parseInt(leave.memberId().id()))
+              .partitionId(leave.partitionId());
+          case final PartitionReconfigurePriorityOperation
+          reconfigure -> new TopologyChangeCompletedInner()
+              .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_RECONFIGURE_PRIORITY)
+              .brokerId(Integer.parseInt(reconfigure.memberId().id()))
+              .partitionId(reconfigure.partitionId())
+              .priority(reconfigure.priority());
+        };
+
+    mappedOperation.completedAt(operation.completedAt().atOffset(ZoneOffset.UTC));
+
+    return mappedOperation;
   }
 
   public enum Resource {
