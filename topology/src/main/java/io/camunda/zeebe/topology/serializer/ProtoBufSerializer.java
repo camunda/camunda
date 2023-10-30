@@ -502,7 +502,7 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
   }
 
   @Override
-  public byte[] encode(final TopologyChangeResponse topologyChangeResponse) {
+  public byte[] encodeTopologyChangeResponse(final TopologyChangeResponse topologyChangeResponse) {
     final var builder = Requests.TopologyChangeResponse.newBuilder();
 
     builder
