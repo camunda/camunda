@@ -51,6 +51,7 @@ public final class BroadcastSignalCommandImpl
     this.retryPredicate = retryPredicate;
     builder = BroadcastSignalRequest.newBuilder();
     requestTimeout = configuration.getDefaultRequestTimeout();
+    tenantId(configuration.getDefaultTenantId());
   }
 
   @Override
@@ -62,6 +63,12 @@ public final class BroadcastSignalCommandImpl
   @Override
   public BroadcastSignalCommandStep2 signalName(final String signalName) {
     builder.setSignalName(signalName);
+    return this;
+  }
+
+  @Override
+  public BroadcastSignalCommandStep2 tenantId(final String tenantId) {
+    builder.setTenantId(tenantId);
     return this;
   }
 
@@ -84,13 +91,6 @@ public final class BroadcastSignalCommandImpl
 
     send(request, future);
     return future;
-  }
-
-  @Override
-  public BroadcastSignalCommandStep2 tenantId(final String tenantId) {
-    throw new UnsupportedOperationException(
-        " Signals are not yet supported with multi-tenancy. "
-            + "See https://github.com/camunda/zeebe/issues/13336 for more details.");
   }
 
   private void send(

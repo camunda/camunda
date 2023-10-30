@@ -20,8 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1.BroadcastSignalCommandStep2;
 import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.response.BroadcastSignalResponse;
 import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
@@ -47,7 +47,7 @@ public final class BroadcastSignalTest extends ClientTest {
     final BroadcastSignalRequest request = gatewayService.getLastRequest();
     assertThat(request.getSignalName()).isEqualTo("name");
     assertThat(response.getKey()).isEqualTo(key);
-    assertThat(response.getTenantId()).isEqualTo("");
+    assertThat(response.getTenantId()).isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
 
     rule.verifyDefaultRequestTimeout();
   }
@@ -154,13 +154,12 @@ public final class BroadcastSignalTest extends ClientTest {
 
   @Test
   public void shouldAllowSpecifyingTenantIdBy() {
-    // given
-    final BroadcastSignalCommandStep2 builder = client.newBroadcastSignalCommand().signalName("");
+    // given/when
+    client.newBroadcastSignalCommand().signalName("").tenantId("custom-tenant").send().join();
 
-    // when/then
-    assertThatThrownBy(() -> builder.tenantId("custom tenant"))
-        .describedAs("tenantId not supported on broadcast signal yet")
-        .isInstanceOf(UnsupportedOperationException.class);
+    // then
+    final BroadcastSignalRequest request = gatewayService.getLastRequest();
+    assertThat(request.getTenantId()).isEqualTo("custom-tenant");
   }
 
   public static class Variables {

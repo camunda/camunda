@@ -15,8 +15,6 @@
  */
 package io.camunda.zeebe.client.api.response;
 
-import io.camunda.zeebe.client.api.ExperimentalApi;
-
 public interface BroadcastSignalResponse {
   /**
    * Returns the unique key of the signal that was broadcasted.
@@ -30,6 +28,5 @@ public interface BroadcastSignalResponse {
    *
    * @return the identifier of the tenant that owns the broadcasted signal.
    */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/13558")
   String getTenantId();
 }
