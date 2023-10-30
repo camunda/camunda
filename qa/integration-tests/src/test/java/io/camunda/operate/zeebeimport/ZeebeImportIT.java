@@ -518,7 +518,6 @@ public class ZeebeImportIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/operate/pull/5524")
   public void testDecisionInstanceEvaluatedWithBigInputAndOutput() throws Exception {
     //given
     final String bpmnProcessId = "process";
@@ -529,8 +528,8 @@ public class ZeebeImportIT extends OperateZeebeAbstractIT {
         .businessRuleTask(elementId, task -> task.zeebeCalledDecisionId(demoDecisionId2).zeebeResultVariable("result"))
         .done();
 
-    String bigJSONVariablePayload = payloadUtil.readStringFromClasspath("/large-payload.json");
-    String payload = "{\"value\": " + bigJSONVariablePayload + "}";
+    String bigJSONVariablePayload = payloadUtil.readStringFromClasspath("/large-payload.txt");
+    String payload = "{\"value\": \"" + bigJSONVariablePayload + "\"}";
     tester.deployProcess(instance, "test.bpmn").deployDecision("largeInputOutput.dmn").waitUntil().processIsDeployed()
         .and().decisionsAreDeployed(1)
         //when
@@ -544,9 +543,9 @@ public class ZeebeImportIT extends OperateZeebeAbstractIT {
 
     assertThat(decisionEntities).hasSize(1);
     assertThat(decisionEntities.get(0).getEvaluatedInputs()).hasSize(1);
-    JSONAssert.assertEquals(decisionEntities.get(0).getEvaluatedInputs().get(0).getValue(), bigJSONVariablePayload, JSONCompareMode.LENIENT);
+    assertThat(decisionEntities.get(0).getEvaluatedInputs().get(0).getValue()).contains(bigJSONVariablePayload);
     assertThat(decisionEntities.get(0).getEvaluatedOutputs()).hasSize(1);
-    JSONAssert.assertEquals(decisionEntities.get(0).getEvaluatedOutputs().get(0).getValue(), bigJSONVariablePayload, JSONCompareMode.LENIENT);
+    assertThat(decisionEntities.get(0).getEvaluatedOutputs().get(0).getValue()).contains(bigJSONVariablePayload);
   }
 
   @Test
