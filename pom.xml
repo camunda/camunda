@@ -470,9 +470,9 @@
     </repository>
 
     <repository>
-      <id>camunda-shared-services-snapshot</id>
-      <name>Shared services Snapshot Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/camunda-shared-services-snapshots/</url>
+      <id>camunda-identity-snapshot</id>
+      <name>Camunda Identity Snapshot Repository</name>
+      <url>https://artifacts.camunda.com/artifactory/camunda-identity-snapshots/</url>
       <releases>
         <enabled>false</enabled>
       </releases>
@@ -482,9 +482,9 @@
     </repository>
 
     <repository>
-      <id>camunda-shared-services</id>
-      <name>Shared services Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/camunda-shared-services/</url>
+      <id>camunda-identity-services</id>
+      <name>Camunda Identity Repository</name>
+      <url>https://artifacts.camunda.com/artifactory/camunda-identity/</url>
       <releases>
         <enabled>true</enabled>
       </releases>
