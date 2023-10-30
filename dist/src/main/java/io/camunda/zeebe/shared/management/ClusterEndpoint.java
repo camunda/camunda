@@ -7,9 +7,12 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import static org.springframework.boot.actuate.endpoint.web.WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.BrokerStateCode;
+import io.camunda.zeebe.management.cluster.Error;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
 import io.camunda.zeebe.management.cluster.Operation;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
@@ -60,7 +63,19 @@ public class ClusterEndpoint {
 
   @ReadOperation
   public WebEndpointResponse<?> clusterTopology() {
-    return new WebEndpointResponse<>(mapClusterTopology(requestSender.getTopology().join()));
+    try {
+      final GetTopologyResponse response = mapClusterTopology(requestSender.getTopology().join());
+      return new WebEndpointResponse<>(response);
+    } catch (final Exception error) {
+      return mapError(error);
+    }
+  }
+
+  private WebEndpointResponse<?> mapError(final Exception error) {
+    // TODO: Map error to proper HTTP status code as defined in spec
+    final var errorResponse = new Error();
+    errorResponse.setMessage(error.getMessage());
+    return new WebEndpointResponse<>(errorResponse, STATUS_INTERNAL_SERVER_ERROR);
   }
 
   @WriteOperation
