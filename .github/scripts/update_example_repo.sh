@@ -5,9 +5,8 @@ git config user.name "github-actions[bot]"
 git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 git remote set-url origin https://$GITHUB_APP_ID:$GITHUB_TOKEN@github.com/camunda/camunda-optimize-examples.git
 git fetch
-git checkout $RELEASE_VERSION
-git reset --hard origin/$RELEASE_VERSION
-git pull
+git checkout $BRANCH
+git reset --hard origin/$BRANCH
 
 ### adjust the readme and add the new version to the version overview
 # find line where the version overview starts
@@ -60,4 +59,4 @@ mvn versions:set versions:commit -DnewVersion=$DEVELOPMENT_VERSION
 # push the changes
 git add -u
 git commit -m "chore(release): update pom to snapshot for next development version"
-git push origin $RELEASE_VERSION
+git push origin $BRANCH

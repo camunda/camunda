@@ -66,7 +66,7 @@ jobs:
         uses: YunaBraska/java-info-action@main
 
       - name: Setup Maven
-        uses: ./.github/actions/setup-maven
+        uses: camunda/camunda-optimize/.github/actions/setup-maven@master
         with:
           secrets: ${{ toJSON(secrets) }}
 
@@ -86,11 +86,6 @@ jobs:
           fi
           echo "is_major_or_minor=$is_major_or_minor" >> "$GITHUB_OUTPUT"
           echo "is_patch=$is_patch" >> "$GITHUB_OUTPUT"
-
-      - name: Setup Maven
-        uses: camunda/camunda-optimize/.github/actions/setup-maven@master
-        with:
-          secrets: ${{ toJSON(secrets) }}
 
       - name: Is current release patch
         id: is-patch
@@ -227,12 +222,22 @@ jobs:
         with:
           archive_name: deploy-artifacts-docker
 
+      - name: Checkout Optimize examples
+        uses: actions/checkout@v3
+        with:
+          token: ${{ steps.github-token.outputs.token }}
+          repository: camunda/camunda-optimize-examples
+          path: camunda-optimize-examples
+          ref: master
+
       - name: Trigger release examples repo
         if: inputs.RELEASE_EXAMPLES == 'true'
+        working-directory: camunda-optimize-examples
         env:
           GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
           GITHUB_APP_ID: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
           RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION }}
           DEVELOPMENT_VERSION: ${{ github.event.inputs.DEVELOPMENT_VERSION }}
+          BRANCH: ${{ github.event.inputs.BRANCH }}
         run: |
           .github/scripts/update_example_repo.sh
