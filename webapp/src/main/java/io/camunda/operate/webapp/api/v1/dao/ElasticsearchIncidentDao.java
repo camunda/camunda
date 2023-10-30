@@ -51,6 +51,7 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
       queryBuilders.add(buildTermQuery(Incident.TYPE, filter.getType()));
       queryBuilders.add(buildMatchQuery(Incident.MESSAGE, filter.getMessage()));
       queryBuilders.add(buildTermQuery(Incident.STATE, filter.getState()));
+      queryBuilders.add(buildTermQuery(Incident.JOB_KEY, filter.getJobKey()));
       queryBuilders.add(buildTermQuery(Incident.TENANT_ID, filter.getTenantId()));
       queryBuilders.add(buildMatchDateQuery(Incident.CREATION_TIME, filter.getCreationTime()));
     }
@@ -126,6 +127,7 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
         .setMessage((String) searchHitAsMap.get(IncidentTemplate.ERROR_MSG))
         .setCreationTime((String) searchHitAsMap.get(Incident.CREATION_TIME))
         .setState((String) searchHitAsMap.get(Incident.STATE))
+        .setJobKey((Long) searchHitAsMap.get(Incident.JOB_KEY))
         .setTenantId((String) searchHitAsMap.get(Incident.TENANT_ID));
   }
 

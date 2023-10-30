@@ -28,6 +28,7 @@ public class Incident {
     MESSAGE = IncidentTemplate.ERROR_MSG,
     CREATION_TIME = IncidentTemplate.CREATION_TIME,
     STATE = IncidentTemplate.STATE,
+    JOB_KEY = IncidentTemplate.JOB_KEY,
     TENANT_ID = IncidentTemplate.TENANT_ID;
 
   public static final String MESSAGE_FIELD = "message";
@@ -43,6 +44,7 @@ public class Incident {
   private String creationTime;
   @Schema(implementation = IncidentState.class)
   private String state;
+  private Long jobKey;
   private String tenantId;
 
   public Long getKey() {
@@ -108,6 +110,15 @@ public class Incident {
     return this;
   }
 
+  public Long getJobKey() {
+    return jobKey;
+  }
+
+  public Incident setJobKey(final Long jobKey) {
+    this.jobKey = jobKey;
+    return this;
+  }
+
   public String getTenantId() {
     return tenantId;
   }
@@ -128,18 +139,18 @@ public class Incident {
         incident.processDefinitionKey) && Objects.equals(processInstanceKey,
         incident.processInstanceKey) && Objects.equals(type, incident.type) && Objects.equals(message,
         incident.message) && Objects.equals(creationTime, incident.creationTime) && Objects.equals(state,
-        incident.state) && Objects.equals(tenantId, incident.tenantId);
+        incident.state) && Objects.equals(jobKey, incident.jobKey) && Objects.equals(tenantId, incident.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, processDefinitionKey, processInstanceKey, type, message, creationTime, state, tenantId);
+    return Objects.hash(key, processDefinitionKey, processInstanceKey, type, message, creationTime, state, jobKey, tenantId);
   }
 
   @Override
   public String toString() {
     return "Incident{" + "key=" + key + ", processDefinitionKey=" + processDefinitionKey + ", processInstanceKey="
         + processInstanceKey + ", type='" + type + '\'' + ", message='" + message + '\'' + ", creationTime='" + creationTime
-        + '\'' + ", state='" + state + '\'' + ", tenantId='" + tenantId + '\'' + '}';
+        + '\'' + ", state='" + state + '\'' + ", jobKey='" + jobKey + '\'' + ", tenantId='" + tenantId + '\'' + '}';
   }
 }
