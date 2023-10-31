@@ -65,6 +65,7 @@ final class OpensearchExporterIT {
     config.index.setNumberOfReplicas(1);
     config.index.createTemplate = true;
     config.bulk.size = 1; // force flushing on the first record
+    config.retention.setEnabled(true);
     // here; enable all indexes that needed during the tests beforehand as they will be created once
     TestSupport.provideValueTypes()
         .forEach(valueType -> TestSupport.setIndexingForValueType(config.index, valueType, true));
@@ -193,5 +194,48 @@ final class OpensearchExporterIT {
         .get()
         .extracting(ComponentTemplateWrapper::name)
         .isEqualTo(config.index.prefix);
+  }
+
+  @Test
+  void shouldPutIndexStateManagementPolicy() {
+    // given
+    final var record = factory.generateRecord();
+
+    // when - export a single record to enforce creating the policy
+    exporter.export(record);
+
+    // then
+    final var policy = testClient.getIndexStateManagementPolicy().policy();
+    assertThat(policy.description())
+        .as("Uses configured description")
+        .isEqualTo(config.retention.getPolicyDescription());
+    assertThat(policy.defaultState()).as("Starts in initial state").isEqualTo("initial");
+
+    final var initialState = policy.states().getFirst();
+    assertThat(initialState.name()).isEqualTo("initial");
+    assertThat(initialState.actions()).as("Initial state has no actions").isEmpty();
+    assertThat(initialState.transitions()).as("Initial state has 1 transition").hasSize(1);
+
+    final var transition = initialState.transitions().getFirst();
+    assertThat(transition.stateName())
+        .as("Initial state transitions to delete state")
+        .isEqualTo("delete");
+    assertThat(transition.conditions().minIndexAge())
+        .as("Initial state transitions after configured minimum age")
+        .isEqualTo(config.retention.getMinimumAge());
+
+    final var deleteState = policy.states().getLast();
+    assertThat(deleteState.name()).isEqualTo("delete");
+    assertThat(deleteState.transitions()).as("Delete state has no transitions").isEmpty();
+    assertThat(deleteState.actions()).as("Delete state has 1 action").hasSize(1);
+
+    final var deleteAction = deleteState.actions().getFirst();
+    assertThat(deleteAction.delete()).as("Delete action deleted index").isNotNull();
+
+    final var ismTemplate = policy.ismTemplate().getFirst();
+    assertThat(ismTemplate.indexPatterns())
+        .as("Has 1 configured index pattern")
+        .containsOnly(config.index.prefix + "*");
+    assertThat(ismTemplate.priority()).as("Has low priority").isEqualTo(1);
   }
 }
