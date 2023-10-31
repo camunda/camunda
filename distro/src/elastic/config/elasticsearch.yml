@@ -98,3 +98,4 @@
 # Disable machine learning features as they are platform dependant
 # See https://stackoverflow.com/a/58327745
 xpack.ml.enabled: false
+xpack.security.enabled: false
