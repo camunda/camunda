@@ -197,7 +197,7 @@ final class OpensearchExporterIT {
   }
 
   @Test
-  void shouldPutIndexStateManagementPolicy() {
+  void shouldCreateIndexStateManagementPolicy() {
     // given
     final var record = factory.generateRecord();
 
@@ -237,5 +237,23 @@ final class OpensearchExporterIT {
         .as("Has 1 configured index pattern")
         .containsOnly(config.index.prefix + "*");
     assertThat(ismTemplate.priority()).as("Has low priority").isEqualTo(1);
+  }
+
+  @Test
+  void shouldUpdateIndexStateManagementPolicy() {
+    // given - Make sure we create the policy before the exporter does
+    final var initialMinimumAge = "100d";
+    assertThat(initialMinimumAge).isNotEqualTo(config.retention.getMinimumAge());
+    testClient.putIndexStateManagementPolicy(initialMinimumAge);
+    final var record = factory.generateRecord();
+
+    // when - export a single record to enforce creating the policy
+    exporter.export(record);
+
+    // then
+    final var updatedPolicy = testClient.getIndexStateManagementPolicy().policy();
+    final String updatedMinimumAge =
+        updatedPolicy.states().getFirst().transitions().getFirst().conditions().minIndexAge();
+    assertThat(updatedMinimumAge).isEqualTo(config.retention.getMinimumAge());
   }
 }
