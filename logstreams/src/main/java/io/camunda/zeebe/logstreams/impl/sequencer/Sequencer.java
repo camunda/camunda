@@ -22,6 +22,7 @@ import io.camunda.zeebe.scheduler.ActorCondition;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.Either;
 import java.io.Closeable;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
@@ -48,7 +49,7 @@ public final class Sequencer implements LogStreamWriter, Closeable {
   private final LogStorage logStorage;
   private final SequencerFlowControl flowControl =
       SequencerFlowControl.builder()
-          .limit(new StabilizingAIMDLimit(100, 10000, 1, 0.9, 1000))
+          .limit(new StabilizingAIMDLimit(100, 10000, 1, 0.9, Duration.ofSeconds(1).toNanos()))
           .build();
   private final AppendListener noopListener = new AppendListener() {};
 
