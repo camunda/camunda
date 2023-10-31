@@ -38,6 +38,38 @@ final class PartitionLeaveTest {
     }
   }
 
+  @ParameterizedTest
+  @MethodSource("testScenarios")
+  void canJoinPartitionAfterLeaving(final Scenario scenario) throws InterruptedException {
+    // given
+    try (final var cluster = setupCluster(scenario.initialClusterState())) {
+      final var leave = runOperation(cluster, scenario.operation());
+      assertChangeIsPlanned(leave);
+      Awaitility.await("Leaving is completed in time")
+          .untilAsserted(() -> assertChangeIsCompleted(cluster, leave));
+      assertChangeIsApplied(cluster, leave);
+
+      // when
+      final var join = revertOperation(cluster, scenario.operation());
+      // then
+      assertChangeIsPlanned(join);
+      Awaitility.await("Rejoining is completed in time")
+          .untilAsserted(() -> assertChangeIsCompleted(cluster, join));
+      assertChangeIsApplied(cluster, join);
+    }
+  }
+
+  PostOperationResponse runOperation(final TestCluster cluster, final Operation operation) {
+    final var actuator = ClusterActuator.of(cluster.availableGateway());
+    return actuator.leavePartition(operation.brokerId(), operation.partitionId());
+  }
+
+  private PostOperationResponse revertOperation(
+      final TestCluster cluster, final Operation operation) {
+    final var actuator = ClusterActuator.of(cluster.availableGateway());
+    return actuator.joinPartition(operation.brokerId(), operation.partitionId(), 1);
+  }
+
   static Stream<Scenario> testScenarios() {
     return Stream.of(
         new Scenario(new InitialClusterState(2, 2, 2), new Operation(1, 1)),
@@ -61,11 +93,6 @@ final class PartitionLeaveTest {
         .build()
         .start()
         .awaitCompleteTopology();
-  }
-
-  PostOperationResponse runOperation(final TestCluster cluster, final Operation operation) {
-    final var actuator = ClusterActuator.of(cluster.availableGateway());
-    return actuator.leavePartition(operation.brokerId(), operation.partitionId());
   }
 
   record Scenario(InitialClusterState initialClusterState, Operation operation) {}
