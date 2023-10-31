@@ -9,13 +9,15 @@ package io.camunda.zeebe.logstreams.impl.sequencer;
 
 import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.FRAME_ALIGNMENT;
 
-import io.camunda.zeebe.logstreams.impl.flowcontrol.AppendErrorHandler;
-import io.camunda.zeebe.logstreams.impl.flowcontrol.AppenderFlowControl;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.SequencerFlowControl;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.StabilizingAIMDLimit;
 import io.camunda.zeebe.logstreams.impl.metrics.SequencerMetrics;
 import io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
+import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.scheduler.ActorCondition;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.Either;
@@ -44,7 +46,11 @@ public final class Sequencer implements LogStreamWriter, Closeable {
   private final ReentrantLock lock = new ReentrantLock();
   private final SequencerMetrics metrics;
   private final LogStorage logStorage;
-  private final AppenderFlowControl flowControl;
+  private final SequencerFlowControl flowControl =
+      SequencerFlowControl.builder()
+          .limit(new StabilizingAIMDLimit(100, 10000, 1, 0.9, 1000))
+          .build();
+  private final AppendListener noopListener = new AppendListener() {};
 
   public Sequencer(
       final LogStorage logStorage,
@@ -56,16 +62,6 @@ public final class Sequencer implements LogStreamWriter, Closeable {
     position = initialPosition;
     this.maxFragmentSize = maxFragmentSize;
     metrics = new SequencerMetrics(partitionId);
-    flowControl =
-        new AppenderFlowControl(
-            new AppendErrorHandler() {
-              @Override
-              public void onCommitError(final Throwable error) {}
-
-              @Override
-              public void onWriteError(final Throwable error) {}
-            },
-            partitionId);
   }
 
   /** {@inheritDoc} */
@@ -98,11 +94,6 @@ public final class Sequencer implements LogStreamWriter, Closeable {
       return Either.left(WriteFailure.INVALID_ARGUMENT);
     }
 
-    final var permit = flowControl.tryAcquire();
-    if (permit.isEmpty()) {
-      return Either.left(WriteFailure.FULL);
-    }
-
     final SequencedBatch sequenced;
     final long lowestPosition;
     final long highestPosition;
@@ -110,11 +101,16 @@ public final class Sequencer implements LogStreamWriter, Closeable {
     try {
       lowestPosition = position;
       highestPosition = lowestPosition + batchSize - 1;
+      if (sourcePosition == -1
+          && !flowControl.tryAcquire(highestPosition, MessageSubscriptionIntent.CREATE)) {
+        // It's a user command and we can't get a permit, reject. Otherwise accept because it's
+        // follow up command or we have a permit
+        return Either.left(WriteFailure.FULL);
+      }
       sequenced =
           new SequencedBatch(
               ActorClock.currentTimeMillis(), lowestPosition, sourcePosition, appendEntries);
-      logStorage.append(
-          lowestPosition, highestPosition, sequenced, permit.get().start(highestPosition));
+      logStorage.append(lowestPosition, highestPosition, sequenced, noopListener);
       position = highestPosition + 1;
     } finally {
       lock.unlock();
@@ -122,6 +118,11 @@ public final class Sequencer implements LogStreamWriter, Closeable {
     metrics.observeBatchLengthBytes(sequenced.getLength());
     metrics.observeBatchSize(batchSize);
     return Either.right(highestPosition);
+  }
+
+  @Override
+  public void acknowledgePosition(final long position) {
+    flowControl.onResponse(position);
   }
 
   /**

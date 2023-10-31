@@ -599,6 +599,7 @@ public final class ProcessingStateMachine {
   private void notifyProcessedListener(final TypedRecord processedRecord) {
     try {
       streamProcessorListener.onProcessed(processedRecord);
+      logStreamWriter.acknowledgePosition(processedRecord.getPosition());
     } catch (final Exception e) {
       LOG.error(NOTIFY_PROCESSED_LISTENER_ERROR_MESSAGE, processedRecord, e);
     }

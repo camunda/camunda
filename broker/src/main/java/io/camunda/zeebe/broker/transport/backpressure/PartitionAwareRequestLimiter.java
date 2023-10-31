@@ -22,6 +22,7 @@ import io.camunda.zeebe.broker.system.configuration.backpressure.FixedCfg;
 import io.camunda.zeebe.broker.system.configuration.backpressure.Gradient2Cfg;
 import io.camunda.zeebe.broker.system.configuration.backpressure.GradientCfg;
 import io.camunda.zeebe.broker.system.configuration.backpressure.VegasCfg;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.StabilizingAIMDLimit;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

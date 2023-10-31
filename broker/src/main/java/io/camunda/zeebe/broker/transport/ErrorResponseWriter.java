@@ -133,7 +133,7 @@ public final class ErrorResponseWriter implements BufferWriter {
                       + " but the writer is closed. Most likely, this node is not the"
                       + " leader for this partition.")
                   .formatted(partitionId));
-      case FULL -> raiseInternalError("because the writer is full.", partitionId);
+      case FULL -> resourceExhausted();
       case INVALID_ARGUMENT -> raiseInternalError("due to invalid entry.", partitionId);
     };
   }

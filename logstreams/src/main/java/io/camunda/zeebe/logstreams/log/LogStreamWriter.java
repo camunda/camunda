@@ -68,6 +68,8 @@ public interface LogStreamWriter {
   Either<WriteFailure, Long> tryWrite(
       final List<LogAppendEntry> appendEntries, final long sourcePosition);
 
+  default void acknowledgePosition(final long position) {}
+
   enum WriteFailure {
     CLOSED,
     FULL,

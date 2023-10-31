@@ -11,7 +11,7 @@ import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 
 public final class BackpressureCfg implements ConfigurationEntry {
 
-  private boolean enabled = true;
+  private boolean enabled = false;
   private boolean useWindowed = true;
   private LimitAlgorithm algorithm = LimitAlgorithm.AIMD;
   private final AIMDCfg aimd = new AIMDCfg();
