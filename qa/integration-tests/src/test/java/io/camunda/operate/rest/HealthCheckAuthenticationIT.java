@@ -8,6 +8,7 @@ package io.camunda.operate.rest;
 
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.connect.ElasticsearchConnector;
+import io.camunda.operate.connect.OpensearchConnector;
 import io.camunda.operate.management.IndicesHealthIndicator;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.rest.HealthCheckIT.AddManagementPropertiesInitializer;
@@ -15,6 +16,8 @@ import io.camunda.operate.schema.indices.OperateWebSessionIndex;
 import io.camunda.operate.store.TaskStore;
 import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
+import io.camunda.operate.store.opensearch.OpensearchTaskStore;
+import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.security.SessionService;
 import io.camunda.operate.webapp.security.WebSecurityConfig;
@@ -24,6 +27,7 @@ import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.opensearch.client.opensearch.OpenSearchClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -59,7 +63,10 @@ import static org.mockito.BDDMockito.given;
       RetryElasticsearchClient.class,
       OperateWebSessionIndex.class,
       OperateProfileService.class,
-      ElasticsearchConnector.class
+      ElasticsearchConnector.class,
+      OpensearchTaskStore.class,
+      RichOpenSearchClient.class,
+      OpensearchConnector.class,
   },
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
