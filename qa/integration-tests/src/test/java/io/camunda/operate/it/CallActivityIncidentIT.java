@@ -141,6 +141,7 @@ public class CallActivityIncidentIT extends OperateZeebeAbstractIT {
   }
 
   @Test
+  // Fails for Opensearch due to a known issue #2 described in opensearch.md
   public void testStatistics() throws Exception {
     //statistics for parent process
     ListViewQueryDto queryRequest = createGetAllProcessInstancesQuery(parentProcessDefinitionKey);
