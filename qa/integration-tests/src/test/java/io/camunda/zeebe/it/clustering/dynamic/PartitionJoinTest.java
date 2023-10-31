@@ -38,6 +38,26 @@ final class PartitionJoinTest {
     }
   }
 
+  @ParameterizedTest
+  @MethodSource("testScenarios")
+  void canLeavePartitionAfterJoining(final Scenario scenario) {
+    // given
+    try (final var cluster = setupCluster(scenario.initialClusterState())) {
+      final var join = runOperation(cluster, scenario.operation());
+      assertChangeIsPlanned(join);
+      Awaitility.await("Requested change is completed in time")
+          .untilAsserted(() -> assertChangeIsCompleted(cluster, join));
+      assertChangeIsApplied(cluster, join);
+      // when
+      final var leave = revertOperation(cluster, scenario.operation);
+      // then
+      assertChangeIsPlanned(leave);
+      Awaitility.await("Requested change is completed in time")
+          .untilAsserted(() -> assertChangeIsCompleted(cluster, leave));
+      assertChangeIsApplied(cluster, leave);
+    }
+  }
+
   static Stream<Scenario> testScenarios() {
     return Stream.of(
         new Scenario(new InitialClusterState(3, 3, 1), new Operation(1, 1, 2)),
@@ -66,6 +86,11 @@ final class PartitionJoinTest {
     final var actuator = ClusterActuator.of(cluster.availableGateway());
     return actuator.joinPartition(
         operation.brokerId(), operation.partitionId(), operation.priority());
+  }
+
+  PostOperationResponse revertOperation(final TestCluster cluster, final Operation operation) {
+    final var actuator = ClusterActuator.of(cluster.availableGateway());
+    return actuator.leavePartition(operation.brokerId(), operation.partitionId());
   }
 
   record Scenario(InitialClusterState initialClusterState, Operation operation) {}
