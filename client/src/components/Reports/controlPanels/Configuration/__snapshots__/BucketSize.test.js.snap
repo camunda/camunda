@@ -3,6 +3,7 @@
 exports[`should render bucket options 1`] = `
 <fieldset
   className="BucketSize"
+  key="false"
 >
   <legend>
     <Switch

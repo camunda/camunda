@@ -65,7 +65,7 @@ export default function BucketSize({
     );
 
     return (
-      <fieldset className="BucketSize">
+      <fieldset className="BucketSize" key={active.toString()}>
         <legend>
           <Switch
             title={disabled ? t('report.updateReportPreview.cannotUpdate') : undefined}
@@ -165,7 +165,7 @@ export default function BucketSize({
 }
 
 function removeTrailingZeros(val) {
-  return val.replace(/\.0+$/, '');
+  return val.toString().replace(/\.0+$/, '');
 }
 
 function getValues(data, isNested = false) {
