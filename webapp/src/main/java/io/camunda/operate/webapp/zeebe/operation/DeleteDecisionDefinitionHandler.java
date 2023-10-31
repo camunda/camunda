@@ -59,11 +59,9 @@ public class DeleteDecisionDefinitionHandler extends AbstractOperationHandler im
     logger.info(String.format("Operation [%s]: Deleted %s decision instances", operation.getId(), deleted));
 
     deleted = decisionWriter.deleteDecisionDefinitionsFor(decisionRequirementsKey);
-    updateInstancesInBatchOperation(operation, deleted);
     logger.info(String.format("Operation [%s]: Deleted %s decision definitions", operation.getId(), deleted));
 
     deleted = decisionWriter.deleteDecisionRequirements(decisionRequirementsKey);
-    updateInstancesInBatchOperation(operation, deleted);
     completeOperation(operation);
     logger.info(String.format("Operation [%s]: Deleted %s decision requirements", operation.getId(), deleted));
   }

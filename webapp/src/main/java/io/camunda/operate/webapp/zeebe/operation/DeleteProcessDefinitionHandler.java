@@ -74,7 +74,6 @@ public class DeleteProcessDefinitionHandler extends AbstractOperationHandler imp
 
     long deleted = processStore.deleteProcessDefinitionsByKeys(processDefinitionKey);
     logger.info(String.format("Operation [%s]: Total process definitions deleted: %s", operation.getId(), deleted));
-    updateInstancesInBatchOperation(operation, deleted);
     completeOperation(operation);
     logger.info(String.format("Operation [%s]: Completed.", operation.getId()));
   }
