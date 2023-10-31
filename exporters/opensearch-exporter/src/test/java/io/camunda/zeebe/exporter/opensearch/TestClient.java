@@ -7,14 +7,13 @@
  */
 package io.camunda.zeebe.exporter.opensearch;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.opensearch.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
 import io.camunda.zeebe.exporter.opensearch.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
-import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy;
+import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
@@ -92,13 +91,13 @@ final class TestClient implements CloseableSilently {
     }
   }
 
-  IndexStateManagementPolicyDto getIndexStateManagementPolicy() {
+  GetIndexStateManagementPolicyResponse getIndexStateManagementPolicy() {
     try {
       final var request =
           new Request("GET", "_plugins/_ism/policies/" + config.retention.getPolicyName());
       final var response = restClient.performRequest(request);
       return MAPPER.readValue(
-          response.getEntity().getContent(), IndexStateManagementPolicyDto.class);
+          response.getEntity().getContent(), GetIndexStateManagementPolicyResponse.class);
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
@@ -132,37 +131,6 @@ final class TestClient implements CloseableSilently {
       @JsonProperty("component_templates") List<ComponentTemplateWrapper> wrappers) {
     record ComponentTemplateWrapper(
         String name, @JsonProperty("component_template") Template template) {}
-  }
-
-  @JsonIgnoreProperties(ignoreUnknown = true)
-  record IndexStateManagementPolicyDto(Policy policy) {
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public record Policy(
-        String description,
-        @JsonProperty("default_state") String defaultState,
-        List<State> states,
-        @JsonProperty("ism_template") List<IsmTemplate> ismTemplate) {
-
-      @JsonIgnoreProperties(ignoreUnknown = true)
-      public record State(String name, List<Action> actions, List<Transition> transitions) {
-
-        @JsonIgnoreProperties(ignoreUnknown = true)
-        public record Action(Object delete) {}
-
-        @JsonIgnoreProperties(ignoreUnknown = true)
-        public record Transition(
-            @JsonProperty("state_name") String stateName, Conditions conditions) {
-
-          @JsonIgnoreProperties(ignoreUnknown = true)
-          public record Conditions(@JsonProperty("min_index_age") String minIndexAge) {}
-        }
-      }
-
-      @JsonIgnoreProperties(ignoreUnknown = true)
-      public record IsmTemplate(
-          @JsonProperty("index_patterns") List<String> indexPatterns, Integer priority) {}
-    }
   }
 
   @JsonInclude(Include.NON_EMPTY)
