@@ -6,9 +6,6 @@
  */
 package io.camunda.operate.elasticsearch;
 
-import static io.camunda.operate.util.CollectionUtil.filter;
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.camunda.operate.management.IndicesCheck;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.indices.IndexDescriptor;
@@ -17,28 +14,27 @@ import io.camunda.operate.schema.indices.OperateWebSessionIndex;
 import io.camunda.operate.schema.migration.ProcessorStep;
 import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.schema.templates.IncidentTemplate;
-import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.OperateAbstractIT;
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.client.indices.GetIndexResponse;
-import org.elasticsearch.cluster.metadata.MappingMetadata;
+import io.camunda.operate.util.SearchTestRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
+
+import static io.camunda.operate.util.CollectionUtil.filter;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class SchemaCreationIT extends OperateAbstractIT {
 
   @Rule
   public SearchTestRule searchTestRule = new SearchTestRule();
   @Autowired
-  private RestHighLevelClient esClient;
+  private TestSearchRepository testSearchRepository;
   @Autowired
   private SchemaManager schemaManager;
   @Autowired
@@ -65,7 +61,7 @@ public class SchemaCreationIT extends OperateAbstractIT {
     IndexDescriptor migrationStepsIndexDescriptor = getIndexDescriptorBy(
         MigrationRepositoryIndex.INDEX_NAME);
     assertThat(migrationStepsIndexDescriptor.getVersion()).isEqualTo("1.1.0");
-    assertThat(getFieldDescriptions(migrationStepsIndexDescriptor).keySet())
+    assertThat(testSearchRepository.getFieldNames(migrationStepsIndexDescriptor.getFullQualifiedName()))
         .containsExactlyInAnyOrder(
             ProcessorStep.VERSION, "@type", "description",
             ProcessorStep.APPLIED, ProcessorStep.APPLIED_DATE,
@@ -78,25 +74,15 @@ public class SchemaCreationIT extends OperateAbstractIT {
     IndexDescriptor sessionIndex = indexDescriptors.stream()
         .filter(indexDescriptor -> indexDescriptor.getIndexName().equals(
             OperateWebSessionIndex.INDEX_NAME)).findFirst().orElseThrow();
-    assertThatIndexHasDynamicMappingOf(sessionIndex, "true");
+    assertThatIndexHasDynamicMappingOf(sessionIndex, TestSearchRepository.DynamicMappingType.True);
 
     List<IndexDescriptor> strictMappingIndices = indexDescriptors.stream()
         .filter(indexDescriptor -> !indexDescriptor.getIndexName()
             .equals(OperateWebSessionIndex.INDEX_NAME)).collect(Collectors.toList());
 
     for (IndexDescriptor indexDescriptor : strictMappingIndices) {
-      assertThatIndexHasDynamicMappingOf(indexDescriptor, "strict");
+      assertThatIndexHasDynamicMappingOf(indexDescriptor, TestSearchRepository.DynamicMappingType.Strict);
     }
-  }
-
-  private Map<String, Object> getFieldDescriptions(IndexDescriptor indexDescriptor)
-      throws IOException {
-    Map<String, MappingMetadata> mappings = esClient.indices().get(
-        new GetIndexRequest(indexDescriptor.getFullQualifiedName()), RequestOptions.DEFAULT)
-        .getMappings();
-    Map<String, Object> source = mappings.get(indexDescriptor.getFullQualifiedName())
-        .getSourceAsMap();
-    return (Map<String, Object>) source.get("properties");
   }
 
   private IndexDescriptor getIndexDescriptorBy(String name) {
@@ -104,22 +90,14 @@ public class SchemaCreationIT extends OperateAbstractIT {
         .get(0);
   }
 
-  private void assertThatIndexHasDynamicMappingOf(IndexDescriptor indexDescriptor,
-      String dynamicMapping)
-      throws IOException {
-    Map<String, MappingMetadata> mappings = esClient.indices()
-        .get(new GetIndexRequest(indexDescriptor.getFullQualifiedName()), RequestOptions.DEFAULT)
-        .getMappings();
-    MappingMetadata mappingMetadata = mappings.get(indexDescriptor.getFullQualifiedName());
-    assertThat(mappingMetadata.getSourceAsMap()).containsEntry("dynamic", dynamicMapping);
+  private void assertThatIndexHasDynamicMappingOf(IndexDescriptor indexDescriptor, TestSearchRepository.DynamicMappingType dynamicMappingType) throws IOException {
+    assertTrue(testSearchRepository.hasDynamicMapping(indexDescriptor.getFullQualifiedName(), dynamicMappingType));
   }
 
   private void assertIndexAndAlias(String indexName, String aliasName) throws IOException {
-    final GetIndexResponse getIndexResponse =
-        esClient.indices()
-            .get(new GetIndexRequest(indexName), RequestOptions.DEFAULT);
+    List<String> aliaseNames = testSearchRepository.getAliasNames(indexName);
 
-    assertThat(getIndexResponse.getAliases()).hasSize(1);
-    assertThat(getIndexResponse.getAliases().get(indexName).get(0).alias()).isEqualTo(aliasName);
+    assertThat(aliaseNames).hasSize(1);
+    assertThat(aliaseNames.get(0)).isEqualTo(aliasName);
   }
 }

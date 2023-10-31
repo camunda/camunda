@@ -9,8 +9,14 @@ package io.camunda.operate.elasticsearch;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface TestSearchRepository {
+  enum DynamicMappingType {
+    Strict,
+    True
+  }
+
   <R> List<R> searchAll(String index, Class<R> clazz) throws IOException;
 
   boolean isConnected();
@@ -20,4 +26,10 @@ public interface TestSearchRepository {
   boolean createIndex(String indexName, Map<String, ?> mapping) throws IOException, Exception;
 
   boolean createOrUpdateDocument(String indexName, String string, Map<String, String> doc) throws IOException;
+
+  Set<String> getFieldNames(String indexName) throws IOException;
+
+  boolean hasDynamicMapping(String indexName, DynamicMappingType dynamicMappingType) throws IOException;
+
+  List<String> getAliasNames(String indexName) throws IOException;
 }

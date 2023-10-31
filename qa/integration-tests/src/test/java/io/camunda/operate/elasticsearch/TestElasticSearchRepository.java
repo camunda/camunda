@@ -17,6 +17,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.xcontent.XContentType;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
@@ -74,5 +76,41 @@ public class TestElasticSearchRepository implements TestSearchRepository {
             .source(doc, XContentType.JSON), RequestOptions.DEFAULT);
     DocWriteResponse.Result result = response.getResult();
     return result.equals(DocWriteResponse.Result.CREATED) || result.equals(DocWriteResponse.Result.UPDATED);
+  }
+
+  @Override
+  public Set<String> getFieldNames(String indexName) throws IOException {
+    return ((Map<String, Object>) getMappingSource(indexName).get("properties")).keySet();
+  }
+
+  private Map<String, Object> getMappingSource(String indexName) throws IOException {
+    return esClient.indices()
+      .get(new GetIndexRequest(indexName), RequestOptions.DEFAULT)
+      .getMappings()
+      .get(indexName)
+      .getSourceAsMap();
+  }
+
+  @Override
+  public boolean hasDynamicMapping(String indexName, DynamicMappingType dynamicMappingType) throws IOException {
+    var esDynamicMappingType = switch(dynamicMappingType) {
+      case Strict -> "strict";
+      case True -> "true";
+    };
+
+    return getMappingSource(indexName)
+      .get("dynamic")
+      .equals(esDynamicMappingType);
+  }
+
+  @Override
+  public List<String> getAliasNames(String indexName) throws IOException {
+    return esClient.indices()
+      .get(new GetIndexRequest(indexName), RequestOptions.DEFAULT)
+      .getAliases()
+      .get(indexName)
+      .stream()
+      .map(aliasMetadata -> aliasMetadata.alias())
+      .toList();
   }
 }
