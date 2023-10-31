@@ -1321,7 +1321,6 @@
           <configuration>
             <configLocation>check/.checkstyle.xml</configLocation>
             <includeTestSourceDirectory>true</includeTestSourceDirectory>
-            <encoding>UTF-8</encoding>
             <failOnViolation>true</failOnViolation>
             <sourceDirectories>
               <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
