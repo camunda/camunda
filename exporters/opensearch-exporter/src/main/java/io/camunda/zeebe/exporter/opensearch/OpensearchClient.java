@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexResponse.Error;
+import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.IsmTemplate;
@@ -34,11 +35,10 @@ import org.apache.http.entity.EntityTemplate;
 import org.opensearch.client.Request;
 import org.opensearch.client.RestClient;
 
-class OpensearchClient implements AutoCloseable {
+public class OpensearchClient implements AutoCloseable {
+  public static final String ISM_INITIAL_STATE = "initial";
+  public static final String ISM_DELETE_STATE = "delete";
   private static final ObjectMapper MAPPER = new ObjectMapper();
-  private static final String ISM_INITIAL_STATE = "initial";
-  private static final String ISM_DELETE_STATE = "delete";
-
   private final RestClient client;
   private final OpensearchExporterConfiguration configuration;
   private final TemplateReader templateReader;
@@ -209,6 +209,16 @@ class OpensearchClient implements AutoCloseable {
       return response.acknowledged();
     } catch (final IOException e) {
       throw new OpensearchExporterException("Failed to put component template", e);
+    }
+  }
+
+  Optional<GetIndexStateManagementPolicyResponse> getIndexStateManagementPolicy() {
+    try {
+      final var request =
+          new Request("GET", "_plugins/_ism/policies/" + configuration.retention.getPolicyName());
+      return Optional.of(sendRequest(request, GetIndexStateManagementPolicyResponse.class));
+    } catch (final IOException e) {
+      return Optional.empty();
     }
   }
 

@@ -7,15 +7,48 @@
  */
 package io.camunda.zeebe.exporter.opensearch.dto;
 
+import static io.camunda.zeebe.exporter.opensearch.OpensearchClient.ISM_DELETE_STATE;
+import static io.camunda.zeebe.exporter.opensearch.OpensearchClient.ISM_INITIAL_STATE;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration;
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record GetIndexStateManagementPolicyResponse(Policy policy) {
 
+  @JsonIgnore
+  public boolean equalsConfiguration(final OpensearchExporterConfiguration configuration) {
+    final var nameEqual = policy.policyId.equals(configuration.retention.getPolicyName());
+    final var descriptionEqual =
+        policy.description.equals(configuration.retention.getPolicyDescription());
+
+    final var initialStateOptional =
+        policy.states.stream().filter(state -> state.name.equals(ISM_INITIAL_STATE)).findFirst();
+    if (initialStateOptional.isEmpty()) {
+      return false;
+    }
+
+    final var deleteTransitionOptional =
+        initialStateOptional.get().transitions.stream()
+            .filter(transition -> transition.stateName.equals(ISM_DELETE_STATE))
+            .findFirst();
+    if (deleteTransitionOptional.isEmpty()) {
+      return false;
+    }
+
+    final var deleteTransition = deleteTransitionOptional.get();
+    final var minIndexAgeEqual =
+        deleteTransition.conditions.minIndexAge.equals(configuration.retention.getMinimumAge());
+
+    return nameEqual && descriptionEqual && minIndexAgeEqual;
+  }
+
   @JsonIgnoreProperties(ignoreUnknown = true)
   public record Policy(
+      @JsonProperty("policy_id") String policyId,
       String description,
       @JsonProperty("default_state") String defaultState,
       List<State> states,
