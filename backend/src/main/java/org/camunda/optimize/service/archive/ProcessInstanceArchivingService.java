@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.AbstractScheduledService;
 import org.camunda.optimize.service.db.reader.ProcessInstanceReader;
-import org.camunda.optimize.service.es.writer.ArchiveProcessInstanceWriter;
+import org.camunda.optimize.service.db.writer.ArchiveProcessInstanceWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.context.ApplicationContext;

@@ -15,4 +15,5 @@ public interface CamundaActivityEventWriter {
    List<ImportRequestDto> generateImportRequests(List<CamundaActivityEventDto> camundaActivityEvents);
 
    void deleteByProcessInstanceIds(final String definitionKey, final List<String> processInstanceIds);
+
 }

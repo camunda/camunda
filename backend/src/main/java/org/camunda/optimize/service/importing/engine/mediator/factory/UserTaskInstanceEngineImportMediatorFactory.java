@@ -6,8 +6,8 @@
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.writer.usertask.CompletedUserTaskInstanceWriter;
-import org.camunda.optimize.service.es.writer.usertask.RunningUserTaskInstanceWriter;
+import org.camunda.optimize.service.db.writer.usertask.CompletedUserTaskInstanceWriter;
+import org.camunda.optimize.service.db.writer.usertask.RunningUserTaskInstanceWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.CompletedUserTaskInstanceFetcher;

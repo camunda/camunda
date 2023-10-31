@@ -8,8 +8,8 @@ package org.camunda.optimize.service.es.job.importing;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.UserOperationLogEntryDto;
 import org.camunda.optimize.dto.optimize.importing.UserOperationType;
+import org.camunda.optimize.service.db.writer.RunningProcessInstanceWriter;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
 
 import java.util.HashMap;
 import java.util.List;
@@ -23,6 +23,7 @@ import static org.camunda.optimize.dto.optimize.importing.UserOperationType.isSu
 import static org.camunda.optimize.dto.optimize.importing.UserOperationType.isSuspensionByInstanceIdOperation;
 
 public class UserOperationLogElasticsearchImportJob extends ElasticsearchImportJob<UserOperationLogEntryDto> {
+
   private final RunningProcessInstanceWriter runningProcessInstanceWriter;
 
   public UserOperationLogElasticsearchImportJob(final RunningProcessInstanceWriter runningProcessInstanceWriter,

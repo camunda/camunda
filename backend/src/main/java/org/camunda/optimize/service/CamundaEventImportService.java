@@ -16,8 +16,8 @@ import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEven
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.db.writer.BusinessKeyWriter;
+import org.camunda.optimize.service.db.writer.variable.VariableUpdateInstanceWriter;
 import org.camunda.optimize.service.db.writer.CamundaActivityEventWriter;
-import org.camunda.optimize.service.es.writer.variable.VariableUpdateInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeProcessDefinitionNotFoundException;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.EventDtoBuilderUtil;

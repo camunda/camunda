@@ -6,8 +6,8 @@
 package org.camunda.optimize.service.es.job.importing;
 
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.service.db.writer.ProcessDefinitionXmlWriter;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.ProcessDefinitionXmlWriter;
 
 import java.util.List;
 
@@ -25,4 +25,5 @@ public class ProcessDefinitionXmlElasticsearchImportJob extends ElasticsearchImp
   protected void persistEntities(List<ProcessDefinitionOptimizeDto> newOptimizeEntities) {
     processDefinitionXmlWriter.importProcessDefinitionXmls(newOptimizeEntities);
   }
+
 }
