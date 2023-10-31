@@ -29,13 +29,16 @@ import com.auth0.Tokens;
 
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.connect.ElasticsearchConnector;
+import io.camunda.operate.connect.OpensearchConnector;
 import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.management.IndicesCheck;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
+import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.elasticsearch.ElasticsearchSessionRepository;
+import io.camunda.operate.webapp.opensearch.OpensearchSessionRepository;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.SessionService;
@@ -105,7 +108,10 @@ import org.springframework.web.client.RestTemplate;
         ElasticsearchTaskStore.class,
         OperateProfileService.class,
         ElasticsearchConnector.class,
-        ElasticsearchSessionRepository.class
+        ElasticsearchSessionRepository.class,
+        OpensearchSessionRepository.class,
+        RichOpenSearchClient.class,
+        OpensearchConnector.class
     },
     properties = {
         "server.servlet.context-path=" + AuthenticationWithPersistentSessionsIT.CONTEXT_PATH,
