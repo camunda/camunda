@@ -11,6 +11,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexResponse.Error;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.IsmTemplate;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Action;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Transition;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Transition.Conditions;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexTemplateResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.record.Record;
@@ -18,6 +26,8 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.prometheus.client.Histogram;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.http.entity.EntityTemplate;
@@ -26,6 +36,8 @@ import org.opensearch.client.RestClient;
 
 class OpensearchClient implements AutoCloseable {
   private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final String ISM_INITIAL_STATE = "initial";
+  private static final String ISM_DELETE_STATE = "delete";
 
   private final RestClient client;
   private final OpensearchExporterConfiguration configuration;
@@ -198,6 +210,39 @@ class OpensearchClient implements AutoCloseable {
     } catch (final IOException e) {
       throw new OpensearchExporterException("Failed to put component template", e);
     }
+  }
+
+  public boolean putIndexStateManagementPolicy() {
+    try {
+      final var request =
+          new Request("PUT", "_plugins/_ism/policies/" + configuration.retention.getPolicyName());
+      final var requestEntity = createPutIndexManagementPolicyRequest();
+      request.setJsonEntity(MAPPER.writeValueAsString(requestEntity));
+      final var response = sendRequest(request, PutIndexStateManagementPolicyResponse.class);
+      return response.policy() != null;
+    } catch (final IOException e) {
+      throw new OpensearchExporterException("Failed to put index state management policy", e);
+    }
+  }
+
+  private PutIndexStateManagementPolicyRequest createPutIndexManagementPolicyRequest() {
+    final var initialState =
+        new State(
+            ISM_INITIAL_STATE,
+            Collections.emptyList(),
+            List.of(
+                new Transition(
+                    ISM_DELETE_STATE, new Conditions(configuration.retention.getMinimumAge()))));
+    final var deleteState =
+        new State(
+            ISM_DELETE_STATE, List.of(new Action(new ObjectMapper())), Collections.emptyList());
+    final var policy =
+        new Policy(
+            configuration.retention.getPolicyDescription(),
+            ISM_INITIAL_STATE,
+            List.of(initialState, deleteState),
+            new IsmTemplate(List.of(configuration.index.prefix + "*"), 1));
+    return new PutIndexStateManagementPolicyRequest(policy);
   }
 
   private <T> T sendRequest(final Request request, final Class<T> responseType) throws IOException {

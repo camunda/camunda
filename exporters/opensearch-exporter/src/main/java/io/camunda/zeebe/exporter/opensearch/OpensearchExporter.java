@@ -187,6 +187,10 @@ public class OpensearchExporter implements Exporter {
   }
 
   private void createIndexTemplates() {
+    if (configuration.retention.isEnabled()) {
+      createIndexStateManagementPolicy();
+    }
+
     final IndexConfiguration index = configuration.index;
 
     if (index.createTemplate) {
@@ -285,6 +289,15 @@ public class OpensearchExporter implements Exporter {
     }
 
     indexTemplatesCreated = true;
+  }
+
+  private void createIndexStateManagementPolicy() {
+    // TODO get policy
+    //  POST if not exists
+    //  Compare if exists, PUT if different
+    if (!client.putIndexStateManagementPolicy()) {
+      log.warn("Failed to acknowledge the creation or update of the Index State Management Policy");
+    }
   }
 
   private void createComponentTemplate() {
