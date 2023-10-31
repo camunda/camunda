@@ -7,12 +7,15 @@
  */
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
 import io.prometheus.client.Histogram.Timer;
 
-final class AppenderMetrics {
+public final class AppenderMetrics {
   private static final Counter TOTAL_DEFERRED_APPEND_COUNT =
       Counter.build()
           .namespace("zeebe")
@@ -76,6 +79,15 @@ final class AppenderMetrics {
           .labelNames("partition")
           .register();
 
+  private static final Counter RECORD_APPENDED =
+      Counter.build()
+          .namespace("zeebe")
+          .subsystem("log_appender")
+          .name("record_appended")
+          .labelNames("partition", "recordType", "valueType", "intent")
+          .help("Count of records appended per partition, record type, value type, and intent")
+          .register();
+
   private final Counter.Child deferredAppends;
   private final Counter.Child triedAppends;
   private final Gauge.Child inflightAppends;
@@ -84,17 +96,18 @@ final class AppenderMetrics {
   private final Gauge.Child lastWritten;
   private final Histogram.Child commitLatency;
   private final Histogram.Child appendLatency;
+  private final String partitionLabel;
 
   public AppenderMetrics(final int partitionId) {
-    final var partitionLabel = String.valueOf(partitionId);
-    this.deferredAppends = TOTAL_DEFERRED_APPEND_COUNT.labels(partitionLabel);
-    this.triedAppends = TOTAL_APPEND_TRY_COUNT.labels(partitionLabel);
-    this.inflightAppends = CURRENT_INFLIGHT.labels(partitionLabel);
-    this.inflightLimit = CURRENT_LIMIT.labels(partitionLabel);
-    this.lastCommitted = LAST_COMMITTED_POSITION.labels(partitionLabel);
-    this.lastWritten = LAST_WRITTEN_POSITION.labels(partitionLabel);
-    this.commitLatency = COMMIT_LATENCY.labels(partitionLabel);
-    this.appendLatency = WRITE_LATENCY.labels(partitionLabel);
+    partitionLabel = String.valueOf(partitionId);
+    deferredAppends = TOTAL_DEFERRED_APPEND_COUNT.labels(partitionLabel);
+    triedAppends = TOTAL_APPEND_TRY_COUNT.labels(partitionLabel);
+    inflightAppends = CURRENT_INFLIGHT.labels(partitionLabel);
+    inflightLimit = CURRENT_LIMIT.labels(partitionLabel);
+    lastCommitted = LAST_COMMITTED_POSITION.labels(partitionLabel);
+    lastWritten = LAST_WRITTEN_POSITION.labels(partitionLabel);
+    commitLatency = COMMIT_LATENCY.labels(partitionLabel);
+    appendLatency = WRITE_LATENCY.labels(partitionLabel);
   }
 
   public void increaseInflight() {
@@ -131,5 +144,15 @@ final class AppenderMetrics {
 
   public void setLastCommittedPosition(final long position) {
     lastCommitted.set(position);
+  }
+
+  public void recordAppendedEntry(
+      final int amount,
+      final RecordType recordType,
+      final ValueType valueType,
+      final Intent intent) {
+    RECORD_APPENDED
+        .labels(partitionLabel, recordType.name(), valueType.name(), intent.name())
+        .inc(amount);
   }
 }
