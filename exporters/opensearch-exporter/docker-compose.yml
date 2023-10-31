@@ -2,7 +2,7 @@ version: '3'
 
 services:
   opensearch:
-    image: opensearchproject/opensearch:2.6.0
+    image: opensearchproject/opensearch:2.5.0
     ports:
       - "9200:9200"
       - "9600:9600"
@@ -14,7 +14,7 @@ services:
       - opensearch-net
 
   opensearch-dashboards:
-    image: opensearchproject/opensearch-dashboards:2.6.0
+    image: opensearchproject/opensearch-dashboards:2.5.0
     ports:
       - "5601:5601"
     expose:
