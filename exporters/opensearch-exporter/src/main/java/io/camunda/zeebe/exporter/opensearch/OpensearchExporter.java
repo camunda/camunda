@@ -296,17 +296,18 @@ public class OpensearchExporter implements Exporter {
 
     // Create the policy if it doesn't exist yet
     if (policyOptional.isEmpty()) {
-      if (!client.putIndexStateManagementPolicy()) {
-        log.warn(
-            "Failed to acknowledge the creation or update of the Index State Management Policy");
-        return;
+      if (!client.createIndexStateManagementPolicy()) {
+        log.warn("Failed to acknowledge the creation of the Index State Management Policy");
       }
+      return;
     }
 
     // Update the policy if it exists and is different from the configuration
     final var policy = policyOptional.get();
     if (!policy.equalsConfiguration(configuration)) {
-      // TODO
+      if (!client.updateIndexStateManagementPolicy(policy.seqNo(), policy.primaryTerm())) {
+        log.warn("Failed to acknowledge the update of the Index State Management Policy");
+      }
     }
   }
 

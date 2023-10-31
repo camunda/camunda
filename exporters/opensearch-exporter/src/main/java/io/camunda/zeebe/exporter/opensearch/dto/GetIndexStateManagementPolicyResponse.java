@@ -17,7 +17,10 @@ import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration;
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record GetIndexStateManagementPolicyResponse(Policy policy) {
+public record GetIndexStateManagementPolicyResponse(
+    Policy policy,
+    @JsonProperty("_seq_no") Integer seqNo,
+    @JsonProperty("_primary_term") Integer primaryTerm) {
 
   @JsonIgnore
   public boolean equalsConfiguration(final OpensearchExporterConfiguration configuration) {

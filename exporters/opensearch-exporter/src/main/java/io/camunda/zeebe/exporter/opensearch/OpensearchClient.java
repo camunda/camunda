@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.http.entity.EntityTemplate;
@@ -222,12 +223,26 @@ public class OpensearchClient implements AutoCloseable {
     }
   }
 
-  public boolean putIndexStateManagementPolicy() {
+  public boolean createIndexStateManagementPolicy() {
+    return putIndexStateManagementPolicy(Collections.emptyMap());
+  }
+
+  public boolean updateIndexStateManagementPolicy(final Integer seqNo, final Integer primaryTerm) {
+    final var queryParameters =
+        Map.of("if_seq_no", seqNo.toString(), "if_primary_term", primaryTerm.toString());
+    return putIndexStateManagementPolicy(queryParameters);
+  }
+
+  private boolean putIndexStateManagementPolicy(final Map<String, String> queryParameters) {
     try {
       final var request =
           new Request("PUT", "_plugins/_ism/policies/" + configuration.retention.getPolicyName());
+
+      queryParameters.forEach(request::addParameter);
+
       final var requestEntity = createPutIndexManagementPolicyRequest();
       request.setJsonEntity(MAPPER.writeValueAsString(requestEntity));
+
       final var response = sendRequest(request, PutIndexStateManagementPolicyResponse.class);
       return response.policy() != null;
     } catch (final IOException e) {
