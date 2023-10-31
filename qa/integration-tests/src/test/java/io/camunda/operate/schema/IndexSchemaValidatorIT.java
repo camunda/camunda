@@ -6,14 +6,18 @@
  */
 package io.camunda.operate.schema;
 
-import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
+import io.camunda.operate.connect.OpensearchConnector;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.TestElasticsearchSchemaManager;
+import io.camunda.operate.qa.util.TestOpensearchSchemaManager;
 import io.camunda.operate.schema.indices.IndexDescriptor;
-import io.camunda.operate.schema.indices.UserIndex;
 import io.camunda.operate.schema.indices.ProcessIndex;
+import io.camunda.operate.schema.indices.UserIndex;
 import io.camunda.operate.schema.templates.IncidentTemplate;
+import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
+import io.camunda.operate.store.opensearch.client.sync.OpenSearchIndexOperations;
+import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,21 +27,25 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static io.camunda.operate.util.CollectionUtil.map;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static io.camunda.operate.util.CollectionUtil.map;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 @RunWith(SpringRunner.class) @SpringBootTest(classes = {
     TestApplicationWithNoBeans.class, OperateProperties.class,
     IndexSchemaValidator.class,
     TestElasticsearchSchemaManager.class,
+    TestOpensearchSchemaManager.class,
+    RichOpenSearchClient.class,
+    OpensearchConnector.class,
     IndexDescriptor.class,
     // Assume we have only 3 indices:
     ProcessIndex.class, UserIndex.class, IncidentTemplate.class
@@ -46,6 +54,9 @@ public class IndexSchemaValidatorIT {
 
   @MockBean
   RetryElasticsearchClient retryElasticsearchClient;
+
+  @MockBean
+  RichOpenSearchClient richOpenSearchClient;
 
   @Autowired
   List<IndexDescriptor> indexDescriptors;
@@ -172,6 +183,10 @@ public class IndexSchemaValidatorIT {
   private void whenELSClientReturnsIndexNames(List<String> givenIndexNames) {
     Set<String> returnValues = new HashSet<>(givenIndexNames);
     when(retryElasticsearchClient.getIndexNames(anyString())).thenReturn(returnValues);
+
+    OpenSearchIndexOperations indexMock = mock(OpenSearchIndexOperations.class);
+    when(indexMock.getIndexNamesWithRetries(anyString())).thenReturn(returnValues);
+    when(richOpenSearchClient.index()).thenReturn(indexMock);
   }
 
   private List<String> versionsOf(IndexDescriptor index, Set<String> versions) {
