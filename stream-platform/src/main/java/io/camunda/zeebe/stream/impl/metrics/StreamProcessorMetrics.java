@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.stream.impl.metrics;
 
-import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.prometheus.client.Counter;
@@ -17,7 +16,6 @@ import io.prometheus.client.Histogram;
 public final class StreamProcessorMetrics {
 
   private static final String LABEL_NAME_PARTITION = "partition";
-  private static final String LABEL_NAME_RECORD_TYPE = "recordType";
   private static final String LABEL_NAME_ACTION = "action";
 
   private static final String LABEL_WRITTEN = "written";
@@ -56,11 +54,7 @@ public final class StreamProcessorMetrics {
           .namespace(NAMESPACE)
           .name("stream_processor_processing_duration")
           .help("Time for processing a record (in seconds)")
-          .labelNames(
-              LABEL_NAME_RECORD_TYPE,
-              LABEL_NAME_PARTITION,
-              LABEL_NAME_VALUE_TYPE,
-              LABEL_NAME_INTENT)
+          .labelNames(LABEL_NAME_PARTITION, LABEL_NAME_VALUE_TYPE, LABEL_NAME_INTENT)
           .register();
 
   private static final Gauge STARTUP_RECOVERY_TIME =
@@ -85,9 +79,9 @@ public final class StreamProcessorMetrics {
   }
 
   public Histogram.Timer startProcessingDurationTimer(
-      final RecordType recordType, final ValueType valueType, final Intent intent) {
+      final ValueType valueType, final Intent intent) {
     return PROCESSING_DURATION
-        .labels(recordType.name(), partitionIdLabel, valueType.name(), intent.name())
+        .labels(partitionIdLabel, valueType.name(), intent.name())
         .startTimer();
   }
 
