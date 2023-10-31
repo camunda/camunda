@@ -14,6 +14,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration;
+import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse.Policy.IsmTemplate;
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -46,7 +47,20 @@ public record GetIndexStateManagementPolicyResponse(
     final var minIndexAgeEqual =
         deleteTransition.conditions.minIndexAge.equals(configuration.retention.getMinimumAge());
 
-    return nameEqual && descriptionEqual && minIndexAgeEqual;
+    final var ismTemplateOptional = policy.ismTemplate.stream().findFirst();
+    if (ismTemplateOptional.isEmpty()) {
+      return false;
+    }
+
+    final var indexPatternOptional = ismTemplateOptional.get().indexPatterns.stream().findFirst();
+    if (indexPatternOptional.isEmpty()) {
+      return false;
+    }
+
+    final var indexPatternEqual =
+        indexPatternOptional.get().equals(configuration.index.prefix + "*");
+
+    return nameEqual && descriptionEqual && minIndexAgeEqual && indexPatternEqual;
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)
