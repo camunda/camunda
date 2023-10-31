@@ -14,14 +14,14 @@ tags+=("camunda/optimize:${VERSION}")
 if [ "${MAJOR_OR_MINOR}" = true ] || [ "${DOCKER_LATEST}" = true ]; then
    echo "Tagging optimize release docker image with ${DOCKER_LATEST_TAG}"
    tags+=("${DOCKER_IMAGE_TEAM}:${DOCKER_LATEST_TAG}")
-   #tags+=("${DOCKER_IMAGE_DOCKER_HUB}:${DOCKER_LATEST_TAG}")
+   tags+=("${DOCKER_IMAGE_DOCKER_HUB}:${DOCKER_LATEST_TAG}")
 fi
 
 # Check if an additional Docker tag is provided and add it to the tags
 if [ ! -z "${ADDITIONAL_DOCKER_TAG}" ]; then
   echo "Tagging optimize release docker image with ${ADDITIONAL_DOCKER_TAG}"
-  tags+=("${DOCKER_IMAGE_TEAM}:${ADDITIONAL_DOCKER_TAG}") #TODO: change to registry.camunda.cloud after testing in master
-  #tags+=("${DOCKER_IMAGE_DOCKER_HUB}:${ADDITIONAL_DOCKER_TAG}")
+  tags+=("${DOCKER_IMAGE_TEAM}:${ADDITIONAL_DOCKER_TAG}")
+  tags+=("${DOCKER_IMAGE_DOCKER_HUB}:${ADDITIONAL_DOCKER_TAG}")
 fi
 
 printf -v tag_arguments -- "-t %s " "${tags[@]}"

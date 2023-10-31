@@ -36,7 +36,7 @@ jobs:
     name: Execute Release and Upload to Download Center
     runs-on: gcp-core-2-release
     env:
-      DOCKER_IMAGE_TEAM: dev.registry.camunda.cloud/team-optimize/optimize #TODO: change to registry.camunda.cloud after testing in master
+      DOCKER_IMAGE_TEAM: registry.camunda.cloud/team-optimize/optimize
       DOCKER_IMAGE_DOCKER_HUB: camunda/optimize
       DOCKER_LATEST_TAG: latest
     strategy:
@@ -129,14 +129,6 @@ jobs:
           echo "REVISION=${{ steps.define-values.outputs.git_commit_hash }}"
           } >> "$GITHUB_ENV"
 
-        #TODO This should be removed once the test has been successfully run on master
-      - name: Login to Harbor docker registry
-        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3
-        with:
-          registry: dev.registry.camunda.cloud
-          username: ${{ steps.secrets.outputs.CAMUNDA_NEXUS_USR }}
-          password: ${{ steps.secrets.outputs.CAMUNDA_NEXUS_PSW }}
-
       - name: Login to prod Harbor docker registry
         uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3
         with:
@@ -169,7 +161,7 @@ jobs:
         with:
           gcp_credentials: ${{ steps.secrets.outputs.GCP_CREDENTIALS_NAME }}
           ee: 'true'
-          env: 'dev'
+          env: 'prod'
           artifact_file: target/checkout/distro/target/*.{tar.gz,zip}
 
       - name: Auto-update previous version
