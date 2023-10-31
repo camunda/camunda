@@ -25,42 +25,46 @@ public record GetIndexStateManagementPolicyResponse(
 
   @JsonIgnore
   public boolean equalsConfiguration(final OpensearchExporterConfiguration configuration) {
-    final var nameEqual = policy.policyId.equals(configuration.retention.getPolicyName());
-    final var descriptionEqual =
+    final boolean hasEqualName = policy.policyId.equals(configuration.retention.getPolicyName());
+    final boolean hasEqualDescription =
         policy.description.equals(configuration.retention.getPolicyDescription());
 
-    final var initialStateOptional =
+    return hasEqualName
+        && hasEqualDescription
+        && hasEqualMinimumAge(configuration)
+        && hasEqualIndexPrefix(configuration);
+  }
+
+  private boolean hasEqualMinimumAge(final OpensearchExporterConfiguration configuration) {
+    final var initialState =
         policy.states.stream().filter(state -> state.name.equals(ISM_INITIAL_STATE)).findFirst();
-    if (initialStateOptional.isEmpty()) {
+
+    if (initialState.isEmpty()) {
       return false;
     }
 
-    final var deleteTransitionOptional =
-        initialStateOptional.get().transitions.stream()
+    final var deleteTransition =
+        initialState.get().transitions.stream()
             .filter(transition -> transition.stateName.equals(ISM_DELETE_STATE))
             .findFirst();
-    if (deleteTransitionOptional.isEmpty()) {
+
+    return deleteTransition
+        .filter(
+            transition ->
+                transition.conditions.minIndexAge.equals(configuration.retention.getMinimumAge()))
+        .isPresent();
+  }
+
+  private boolean hasEqualIndexPrefix(final OpensearchExporterConfiguration configuration) {
+    final var ismTemplate = policy.ismTemplate.stream().findFirst();
+
+    if (ismTemplate.isEmpty()) {
       return false;
     }
 
-    final var deleteTransition = deleteTransitionOptional.get();
-    final var minIndexAgeEqual =
-        deleteTransition.conditions.minIndexAge.equals(configuration.retention.getMinimumAge());
+    final var indexPattern = ismTemplate.get().indexPatterns.stream().findFirst();
 
-    final var ismTemplateOptional = policy.ismTemplate.stream().findFirst();
-    if (ismTemplateOptional.isEmpty()) {
-      return false;
-    }
-
-    final var indexPatternOptional = ismTemplateOptional.get().indexPatterns.stream().findFirst();
-    if (indexPatternOptional.isEmpty()) {
-      return false;
-    }
-
-    final var indexPatternEqual =
-        indexPatternOptional.get().equals(configuration.index.prefix + "*");
-
-    return nameEqual && descriptionEqual && minIndexAgeEqual && indexPatternEqual;
+    return indexPattern.map(s -> s.equals(configuration.index.prefix + "*")).orElse(false);
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)
