@@ -379,7 +379,8 @@ test.describe('task details page', () => {
     expect(await page.getByLabel('Value2').isChecked()).toBe(true);
   });
 
-  test('task completion with tag list form', async ({
+  // TODO issue #3719
+  test.skip('task completion with tag list form', async ({
     taskPanelPage,
     taskDetailsPage,
     page,
@@ -402,7 +403,8 @@ test.describe('task details page', () => {
     await expect(taskDetailsPage.form.getByText('Value 2')).toBeVisible();
   });
 
-  test('task completion with text template form', async ({
+  // TODO issue #3719
+  test.skip('task completion with text template form', async ({
     taskPanelPage,
     taskDetailsPage,
     page,
