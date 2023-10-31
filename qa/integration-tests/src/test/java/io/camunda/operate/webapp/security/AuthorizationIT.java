@@ -10,11 +10,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.when;
 
+import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.qa.util.TestElasticsearchSchemaManager;
+import io.camunda.operate.qa.util.TestSchemaManager;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
@@ -50,7 +51,7 @@ public class AuthorizationIT {
   private ProcessInstanceRestService processInstanceRestService;
 
   @Autowired
-  private TestElasticsearchSchemaManager elasticsearchSchemaManager;
+  private TestSchemaManager testSchemaManager;
 
   @Autowired
   private OperateProperties operateProperties;
@@ -58,12 +59,12 @@ public class AuthorizationIT {
   @Before
   public void before() {
     operateProperties.getElasticsearch().setIndexPrefix("test-probes-"+ TestUtil.createRandomString(5));
-    elasticsearchSchemaManager.createSchema();
+    testSchemaManager.createSchema();
   }
 
   @After
   public void after() {
-    elasticsearchSchemaManager.deleteSchemaQuietly();
+    testSchemaManager.deleteSchemaQuietly();
     operateProperties.getElasticsearch().setDefaultIndexPrefix();
   }
 
@@ -113,7 +114,8 @@ public class AuthorizationIT {
     //then
     Throwable cause = e.getCause();
     assertThat(cause).isInstanceOf(NotFoundException.class);
-    assertThat(cause.getMessage()).isEqualTo("Could not find process instance with id '23'.");
+    String errorMsg = DatabaseInfo.isOpensearch() ? "Process instances [23] doesn't exists." :  "Could not find process instance with id '23'.";
+    assertThat(cause.getMessage()).isEqualTo(errorMsg);
   }
 
   private void userHasPermission(Permission permission) {
