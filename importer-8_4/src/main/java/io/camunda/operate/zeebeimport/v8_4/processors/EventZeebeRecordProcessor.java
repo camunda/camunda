@@ -4,21 +4,10 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.zeebeimport.v8_2.processors;
-
-import static io.camunda.operate.entities.EventType.ELEMENT_ACTIVATING;
-import static io.camunda.operate.entities.EventType.ELEMENT_COMPLETING;
-import static io.camunda.operate.schema.templates.EventTemplate.METADATA;
-import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
+package io.camunda.operate.zeebeimport.v8_4.processors;
 
 import io.camunda.operate.entities.ErrorType;
-import io.camunda.operate.entities.EventEntity;
-import io.camunda.operate.entities.EventMetadataEntity;
-import io.camunda.operate.entities.EventSourceType;
-import io.camunda.operate.entities.EventType;
+import io.camunda.operate.entities.*;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.store.BatchRequest;
@@ -28,23 +17,23 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
-import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
+import io.camunda.zeebe.protocol.record.value.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+
+import java.time.Instant;
+import java.util.*;
+import java.util.function.Consumer;
+
+import static io.camunda.operate.entities.EventType.ELEMENT_ACTIVATING;
+import static io.camunda.operate.entities.EventType.ELEMENT_COMPLETING;
+import static io.camunda.operate.schema.templates.EventTemplate.METADATA;
+import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
+import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 
 @Component
 public class EventZeebeRecordProcessor {
@@ -143,15 +132,15 @@ public class EventZeebeRecordProcessor {
   private void processProcessInstance(Record record, ProcessInstanceRecordValue recordValue, BatchRequest batchRequest)
     throws PersistenceException {
     if (!isProcessEvent(recordValue)) {   //we do not need to store process level events
-      EventEntity eventEntity = new EventEntity();
-
-      eventEntity.setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), record.getKey()));
+      EventEntity eventEntity = new EventEntity()
+          .setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), record.getKey()));
 
       loadEventGeneralData(record, eventEntity);
 
-      eventEntity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
-      eventEntity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
-      eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
+      eventEntity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
+          .setProcessInstanceKey(recordValue.getProcessInstanceKey())
+          .setBpmnProcessId(recordValue.getBpmnProcessId())
+          .setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
       if (recordValue.getElementId() != null) {
         eventEntity.setFlowNodeId(recordValue.getElementId());
@@ -168,9 +157,8 @@ public class EventZeebeRecordProcessor {
   private void processMessage(final Record record,
       final ProcessMessageSubscriptionRecordValue recordValue, final BatchRequest batchRequest)
       throws PersistenceException {
-    EventEntity eventEntity = new EventEntity();
-
-    eventEntity.setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementInstanceKey()));
+    EventEntity eventEntity = new EventEntity()
+        .setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementInstanceKey()));
 
     loadEventGeneralData(record, eventEntity);
 
@@ -179,9 +167,9 @@ public class EventZeebeRecordProcessor {
       eventEntity.setProcessInstanceKey(processInstanceKey);
     }
 
-    eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
-
-    eventEntity.setFlowNodeId(recordValue.getElementId());
+    eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId())
+        .setFlowNodeId(recordValue.getElementId())
+        .setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
     final long activityInstanceKey = recordValue.getElementInstanceKey();
     if (activityInstanceKey > 0) {
@@ -199,9 +187,8 @@ public class EventZeebeRecordProcessor {
   }
 
   private void processJob(Record record, JobRecordValue recordValue, BatchRequest batchRequest) throws PersistenceException {
-    EventEntity eventEntity = new EventEntity();
-
-    eventEntity.setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementInstanceKey()));
+    EventEntity eventEntity = new EventEntity()
+        .setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementInstanceKey()));
 
     loadEventGeneralData(record, eventEntity);
 
@@ -215,9 +202,9 @@ public class EventZeebeRecordProcessor {
       eventEntity.setProcessInstanceKey(processInstanceKey);
     }
 
-    eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
-
-    eventEntity.setFlowNodeId(recordValue.getElementId());
+    eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId())
+        .setFlowNodeId(recordValue.getElementId())
+        .setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
     final long activityInstanceKey = recordValue.getElementInstanceKey();
     if (activityInstanceKey > 0) {
@@ -246,17 +233,16 @@ public class EventZeebeRecordProcessor {
   }
 
   private void processIncident(Record record, IncidentRecordValue recordValue, BatchRequest batchRequest) throws PersistenceException {
-    EventEntity eventEntity = new EventEntity();
-
-    eventEntity.setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementInstanceKey()));
-
+    EventEntity eventEntity = new EventEntity()
+        .setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementInstanceKey()));
     loadEventGeneralData(record, eventEntity);
 
     if (recordValue.getProcessInstanceKey() > 0) {
       eventEntity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
     }
-    eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
-    eventEntity.setFlowNodeId(recordValue.getElementId());
+    eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId())
+        .setFlowNodeId(recordValue.getElementId())
+        .setTenantId(tenantOrDefault(recordValue.getTenantId()));
     if (recordValue.getElementInstanceKey() > 0) {
       eventEntity.setFlowNodeInstanceKey(recordValue.getElementInstanceKey());
     }
@@ -324,7 +310,6 @@ public class EventZeebeRecordProcessor {
           jsonMap.put(METADATA, metadataMap);
         }
       }
-
       //write event
       batchRequest.upsert(eventTemplate.getFullQualifiedName(), entity.getId(), entity, jsonMap);
   }

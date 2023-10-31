@@ -4,12 +4,7 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.zeebeimport.v8_2.processors;
-
-import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
+package io.camunda.operate.zeebeimport.v8_4.processors;
 
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.entities.FlowNodeState;
@@ -19,43 +14,38 @@ import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
-import io.camunda.operate.store.MetricsStore;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.FlowNodeStore;
-import io.camunda.operate.util.ConversionUtils;
-import io.camunda.operate.util.DateUtil;
-import io.camunda.operate.util.OperationsManager;
-import io.camunda.operate.util.SoftHashMap;
-import io.camunda.operate.util.Tuple;
+import io.camunda.operate.store.ListViewStore;
+import io.camunda.operate.store.MetricsStore;
+import io.camunda.operate.util.*;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ImportBatch;
-import io.camunda.operate.util.TreePath;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.*;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.util.*;
+import java.util.function.Consumer;
+
+import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
+import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 
 @Component
 public class ListViewZeebeRecordProcessor {
@@ -64,7 +54,6 @@ public class ListViewZeebeRecordProcessor {
 
   private static final Set<String> PI_AND_AI_START_STATES = new HashSet<>();
   private static final Set<String> PI_AND_AI_FINISH_STATES = new HashSet<>();
-
   private final static Set<String> FAILED_JOB_EVENTS = new HashSet<>();
   protected static final int EMPTY_PARENT_PROCESS_INSTANCE_ID = -1;
 
@@ -87,7 +76,7 @@ public class ListViewZeebeRecordProcessor {
   private OperationsManager operationsManager;
 
   @Autowired
-  private FlowNodeStore flowNodeStore;
+  private ListViewStore listViewStore;
 
   @Autowired
   private OperateProperties operateProperties;
@@ -95,6 +84,8 @@ public class ListViewZeebeRecordProcessor {
   @Autowired
   private PartitionHolder partitionHolder;
 
+  @Autowired
+  private FlowNodeStore flowNodeStore;
 
   @Autowired
   private MetricsStore metricsStore;
@@ -133,6 +124,8 @@ public class ListViewZeebeRecordProcessor {
     entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
+    entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
+
     if (intentStr.equals(IncidentIntent.CREATED.name())) {
       entity.setErrorMessage(StringUtils.trimWhitespace(recordValue.getErrorMessage()));
     } else if (intentStr.equals(IncidentIntent.RESOLVED.name())) {
@@ -144,10 +137,10 @@ public class ListViewZeebeRecordProcessor {
     entity.getJoinRelation().setParent(processInstanceKey);
 
     logger.debug("Activity instance for list view: id {}", entity.getId());
-
     var updateFields = new HashMap<String,Object>();
     updateFields.put(ListViewTemplate.ERROR_MSG, entity.getErrorMessage());
-    batchRequest.upsertWithRouting(listViewTemplate.getFullQualifiedName(), entity.getId(), entity, updateFields, processInstanceKey.toString());
+    batchRequest.upsertWithRouting(listViewTemplate.getFullQualifiedName(), entity.getId(), entity,
+        updateFields, processInstanceKey.toString());
   }
 
   public void processVariableRecords(final Map<Long, List<Record<VariableRecordValue>>> variablesGroupedByScopeKey,
@@ -160,7 +153,9 @@ public class ListViewZeebeRecordProcessor {
         final var intent = scopedVariable.getIntent();
         final var variableValue = scopedVariable.getValue();
         final var variableName = variableValue.getName();
-        final var cachedVariable = temporaryVariableCache.computeIfAbsent(variableName, (k) -> Tuple.of(intent, new VariableForListViewEntity()));
+        final var cachedVariable = temporaryVariableCache.computeIfAbsent(variableName, (k) -> {
+          return Tuple.of(intent, new VariableForListViewEntity());
+        });
         final var variableEntity = cachedVariable.getRight();
         processVariableRecord(scopedVariable, variableEntity);
       }
@@ -170,16 +165,15 @@ public class ListViewZeebeRecordProcessor {
         final var variableEntity = cachedVariable.getRight();
 
         logger.debug("Variable for list view: id {}", variableEntity.getId());
-
         if (initialIntent == VariableIntent.CREATED) {
-            final var processInstanceKey = variableEntity.getProcessInstanceKey();
-            batchRequest.addWithRouting(listViewTemplate.getFullQualifiedName(), variableEntity, processInstanceKey.toString());
+          batchRequest.addWithRouting(listViewTemplate.getFullQualifiedName(), variableEntity,  variableEntity.getProcessInstanceKey().toString());
         } else {
-            final var processInstanceKey = variableEntity.getProcessInstanceKey();
-            Map<String, Object> updateFields = new HashMap<>();
-            updateFields.put(ListViewTemplate.VAR_NAME, variableEntity.getVarName());
-            updateFields.put(ListViewTemplate.VAR_VALUE, variableEntity.getVarValue());
-            batchRequest.upsertWithRouting(listViewTemplate.getFullQualifiedName(), variableEntity.getId(), variableEntity,updateFields, processInstanceKey.toString());
+          final var processInstanceKey = variableEntity.getProcessInstanceKey();
+
+          Map<String, Object> updateFields = new HashMap<>();
+          updateFields.put(ListViewTemplate.VAR_NAME, variableEntity.getVarName());
+          updateFields.put( ListViewTemplate.VAR_VALUE, variableEntity.getVarValue());
+          batchRequest.upsertWithRouting(listViewTemplate.getFullQualifiedName(), variableEntity.getId(), variableEntity, updateFields, processInstanceKey.toString());
         }
       }
     }
@@ -227,6 +221,7 @@ public class ListViewZeebeRecordProcessor {
           if (piEntity.getState() != null) {
             updateFields.put(ListViewTemplate.STATE, piEntity.getState());
           }
+
           batchRequest.upsert(listViewTemplate.getFullQualifiedName(), piEntity.getId(), piEntity, updateFields);
         }
       }
@@ -235,12 +230,13 @@ public class ListViewZeebeRecordProcessor {
         if (canOptimizeFlowNodeInstanceIndexing(actEntity)) {
           batchRequest.addWithRouting(listViewTemplate.getFullQualifiedName(), actEntity, processInstanceKey.toString());
         } else {
-            Map<String, Object> updateFields = new HashMap<>();
-            updateFields.put(ListViewTemplate.ID, actEntity.getId());
-            updateFields.put(ListViewTemplate.PARTITION_ID, actEntity.getPartitionId());
-            updateFields.put(ListViewTemplate.ACTIVITY_TYPE, actEntity.getActivityType());
-            updateFields.put(ListViewTemplate.ACTIVITY_STATE, actEntity.getActivityState());
-            batchRequest.upsertWithRouting(listViewTemplate.getFullQualifiedName(),actEntity.getId(),actEntity,updateFields, processInstanceKey.toString());
+          Map<String, Object> updateFields = new HashMap<>();
+          updateFields.put(ListViewTemplate.ID, actEntity.getId());
+          updateFields.put( ListViewTemplate.PARTITION_ID, actEntity.getPartitionId());
+          updateFields.put(  ListViewTemplate.ACTIVITY_TYPE, actEntity.getActivityType());
+          updateFields.put(  ListViewTemplate.ACTIVITY_STATE, actEntity.getActivityState());
+
+          batchRequest.upsertWithRouting(listViewTemplate.getFullQualifiedName(),actEntity.getId() , actEntity, updateFields, processInstanceKey.toString());
         }
       }
     }
@@ -283,16 +279,15 @@ public class ListViewZeebeRecordProcessor {
     final var recordValue = record.getValue();
     final var intentStr = record.getIntent().name();
 
-    piEntity.setId(String.valueOf(recordValue.getProcessInstanceKey()));
-    piEntity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
-    piEntity.setKey(recordValue.getProcessInstanceKey());
-
-    piEntity.setPartitionId(record.getPartitionId());
-    piEntity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
-    piEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
-    piEntity.setProcessVersion(recordValue.getVersion());
-
-    piEntity.setProcessName(processCache.getProcessNameOrDefaultValue(piEntity.getProcessDefinitionKey(), recordValue.getBpmnProcessId()));
+    piEntity.setId(String.valueOf(recordValue.getProcessInstanceKey()))
+        .setProcessInstanceKey(recordValue.getProcessInstanceKey())
+        .setKey(recordValue.getProcessInstanceKey())
+        .setTenantId(tenantOrDefault(recordValue.getTenantId()))
+        .setPartitionId(record.getPartitionId())
+        .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
+        .setBpmnProcessId(recordValue.getBpmnProcessId())
+        .setProcessVersion(recordValue.getVersion())
+        .setProcessName(processCache.getProcessNameOrDefaultValue(piEntity.getProcessDefinitionKey(), recordValue.getBpmnProcessId()));
 
     OffsetDateTime timestamp = DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
     final boolean isRootProcessInstance = recordValue.getParentProcessInstanceKey() == EMPTY_PARENT_PROCESS_INSTANCE_ID;
@@ -305,8 +300,8 @@ public class ListViewZeebeRecordProcessor {
         piEntity.setState(ProcessInstanceState.COMPLETED);
       }
     } else if (intentStr.equals(ELEMENT_ACTIVATING.name())) {
-      piEntity.setStartDate(timestamp);
-      piEntity.setState(ProcessInstanceState.ACTIVE);
+      piEntity.setStartDate(timestamp)
+          .setState(ProcessInstanceState.ACTIVE);
       if(isRootProcessInstance){
         registerStartedRootProcessInstance(piEntity, batchRequest, timestamp);
       }
@@ -316,8 +311,7 @@ public class ListViewZeebeRecordProcessor {
     //call activity related fields
     if (!isRootProcessInstance) {
       piEntity
-          .setParentProcessInstanceKey(recordValue.getParentProcessInstanceKey());
-      piEntity
+          .setParentProcessInstanceKey(recordValue.getParentProcessInstanceKey())
           .setParentFlowNodeInstanceKey(recordValue.getParentElementInstanceKey());
       if (piEntity.getTreePath() == null) {
         final String treePath = getTreePathForCalledProcess(recordValue);
@@ -352,8 +346,7 @@ public class ListViewZeebeRecordProcessor {
     }
     //query from ELS
     if (parentTreePath == null) {
-      parentTreePath = flowNodeStore.findParentTreePathFor(recordValue.getParentProcessInstanceKey());
-
+      parentTreePath = listViewStore.findProcessInstanceTreePathFor(recordValue.getParentProcessInstanceKey());
     }
     //still not found - smth is wrong
     if (parentTreePath == null) {
@@ -394,6 +387,7 @@ public class ListViewZeebeRecordProcessor {
     entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
+    entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
     entity.getJoinRelation().setParent(recordValue.getProcessInstanceKey());
 
     if (FAILED_JOB_EVENTS.contains(intentStr) && recordValue.getRetries() > 0) {
@@ -426,6 +420,7 @@ public class ListViewZeebeRecordProcessor {
     entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
+    entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
     if (PI_AND_AI_FINISH_STATES.contains(intentStr)) {
       entity.setEndTime(record.getTimestamp());
@@ -462,6 +457,7 @@ public class ListViewZeebeRecordProcessor {
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
     entity.setVarName(recordValue.getName());
     entity.setVarValue(recordValue.getValue());
+    entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
     //set parent
     Long processInstanceKey = recordValue.getProcessInstanceKey();

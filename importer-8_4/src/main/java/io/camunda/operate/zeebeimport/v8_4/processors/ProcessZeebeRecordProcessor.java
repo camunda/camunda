@@ -4,7 +4,7 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.zeebeimport.v8_2.processors;
+package io.camunda.operate.zeebeimport.v8_4.processors;
 
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.exceptions.PersistenceException;
@@ -18,19 +18,16 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+
+import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
 @Component
 public class ProcessZeebeRecordProcessor {
@@ -78,20 +75,19 @@ public class ProcessZeebeRecordProcessor {
     List<Long> processInstanceKeys = listViewStore.getProcessInstanceKeysWithEmptyProcessVersionFor(processEntity.getKey());
     for (Long processInstanceKey : processInstanceKeys) {
       Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(ListViewTemplate.PROCESS_NAME, processEntity.getName());
-      updateFields.put(ListViewTemplate.PROCESS_VERSION, processEntity.getVersion());
-
-      batchRequest.update(listViewTemplate.getFullQualifiedName(),processInstanceKey.toString(), updateFields);
+      updateFields.put( ListViewTemplate.PROCESS_NAME, processEntity.getName());
+      updateFields.put(  ListViewTemplate.PROCESS_VERSION, processEntity.getVersion());
+      batchRequest.update(listViewTemplate.getFullQualifiedName(), processInstanceKey.toString(), updateFields);
     }
   }
 
   private ProcessEntity createEntity(Process process) {
-    ProcessEntity processEntity = new ProcessEntity();
-
-    processEntity.setId(String.valueOf(process.getProcessDefinitionKey()));
-    processEntity.setKey(process.getProcessDefinitionKey());
-    processEntity.setBpmnProcessId(process.getBpmnProcessId());
-    processEntity.setVersion(process.getVersion());
+    ProcessEntity processEntity = new ProcessEntity()
+        .setId(String.valueOf(process.getProcessDefinitionKey()))
+        .setKey(process.getProcessDefinitionKey())
+        .setBpmnProcessId(process.getBpmnProcessId())
+        .setVersion(process.getVersion())
+        .setTenantId(tenantOrDefault(process.getTenantId()));
 
     byte[] byteArray = process.getResource();
 
@@ -103,10 +99,10 @@ public class ProcessZeebeRecordProcessor {
 
     final Optional<ProcessEntity> diagramData = xmlUtil.extractDiagramData(byteArray);
     if (diagramData.isPresent()) {
-      processEntity.setName(diagramData.get().getName());
-      processEntity.setFlowNodes(diagramData.get().getFlowNodes());
+      processEntity.setName(diagramData.get().getName())
+          .setFlowNodes(diagramData.get().getFlowNodes());
     }
-
     return processEntity;
   }
+
 }

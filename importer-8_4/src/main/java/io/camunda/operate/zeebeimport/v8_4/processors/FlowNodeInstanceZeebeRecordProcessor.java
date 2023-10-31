@@ -4,14 +4,8 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.zeebeimport.v8_2.processors;
+package io.camunda.operate.zeebeimport.v8_4.processors;
 
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
-import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
@@ -20,18 +14,21 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.store.BatchRequest;
+import io.camunda.operate.store.FlowNodeStore;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
-import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.operate.util.SoftHashMap;
-import io.camunda.operate.util.ThreadUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import java.io.IOException;
+import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
@@ -39,19 +36,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import jakarta.annotation.PostConstruct;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.stereotype.Component;
+import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 
-@Conditional(ElasticsearchCondition.class)
 @Component
 public class FlowNodeInstanceZeebeRecordProcessor {
 
@@ -64,7 +51,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
   private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
   @Autowired
-  protected RestHighLevelClient esClient;
+  protected FlowNodeStore flowNodeStore;
 
   @Autowired
   private OperateProperties operateProperties;
@@ -82,14 +69,15 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     IncidentRecordValue recordValue = (IncidentRecordValue)record.getValue();
 
     //update activity instance
-    FlowNodeInstanceEntity entity = new FlowNodeInstanceEntity();
-    entity.setId(ConversionUtils.toStringOrNull(recordValue.getElementInstanceKey()));
-    entity.setKey(recordValue.getElementInstanceKey());
-    entity.setPartitionId(record.getPartitionId());
-    entity.setFlowNodeId(recordValue.getElementId());
-    entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
-    entity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
-    entity.setBpmnProcessId(recordValue.getBpmnProcessId());
+    FlowNodeInstanceEntity entity = new FlowNodeInstanceEntity()
+        .setId(ConversionUtils.toStringOrNull(recordValue.getElementInstanceKey()))
+        .setKey(recordValue.getElementInstanceKey())
+        .setPartitionId(record.getPartitionId())
+        .setFlowNodeId(recordValue.getElementId())
+        .setProcessInstanceKey(recordValue.getProcessInstanceKey())
+        .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
+        .setBpmnProcessId(recordValue.getBpmnProcessId())
+        .setTenantId(tenantOrDefault(recordValue.getTenantId()));
     if (intentStr.equals(IncidentIntent.CREATED.name())) {
       entity.setIncidentKey(record.getKey());
     } else if (intentStr.equals(IncidentIntent.RESOLVED.name())) {
@@ -97,7 +85,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     }
 
     logger.debug("Flow node instance: id {}", entity.getId());
-    var updateFields = new HashMap<String,Object>();
+    Map<String,Object> updateFields = new HashMap<>();
     updateFields.put(FlowNodeInstanceTemplate.INCIDENT_KEY, entity.getIncidentKey());
     batchRequest.upsert(flowNodeInstanceTemplate.getFullQualifiedName(), entity.getId(), entity, updateFields);
   }
@@ -215,7 +203,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
       }
       //query from ELS
       if (parentTreePath == null) {
-        parentTreePath = findParentTreePath(recordValue.getFlowScopeKey());
+        parentTreePath = flowNodeStore.findParentTreePathFor(recordValue.getFlowScopeKey());
       }
       //still not found - smth is wrong
       if (parentTreePath == null) {
@@ -226,37 +214,6 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     treePathCache.put(ConversionUtils.toStringOrNull(record.getKey()),
         String.join("/", parentTreePath, ConversionUtils.toStringOrNull(record.getKey())));
     return parentTreePath;
-  }
-
-  private String findParentTreePath(final long parentFlowNodeInstanceKey) {
-    return findParentTreePath(parentFlowNodeInstanceKey, 0);
-  }
-
-  private String findParentTreePath(final long parentFlowNodeInstanceKey, int attemptCount) {
-    //TODO Elasticsearch changes
-    final QueryType queryType = operateProperties.getImporter().isReadArchivedParents() ? QueryType.ALL : QueryType.ONLY_RUNTIME;
-    final SearchRequest searchRequest = ElasticsearchUtil
-        .createSearchRequest(flowNodeInstanceTemplate, queryType)
-        .source(new SearchSourceBuilder()
-            .query(termQuery(FlowNodeInstanceTemplate.KEY, parentFlowNodeInstanceKey))
-            .fetchSource(FlowNodeInstanceTemplate.TREE_PATH, null));
-    try {
-      final SearchHits hits = esClient.search(searchRequest, RequestOptions.DEFAULT).getHits();
-      if (hits.getTotalHits().value > 0) {
-        return (String)hits.getHits()[0].getSourceAsMap().get(FlowNodeInstanceTemplate.TREE_PATH);
-      } else if (attemptCount < 1){
-        //retry for the case, when ELS has not yet refreshed the indices
-        ThreadUtil.sleepFor(2000L);
-        return findParentTreePath(parentFlowNodeInstanceKey, attemptCount + 1);
-      } else {
-        return null;
-      }
-    } catch (IOException e) {
-      final String message = String
-          .format("Exception occurred, while searching for parent flow node instance processes: %s",
-              e.getMessage());
-      throw new OperateRuntimeException(message, e);
-    }
   }
 
   private boolean canOptimizeFlowNodeInstanceIndexing(final FlowNodeInstanceEntity entity) {

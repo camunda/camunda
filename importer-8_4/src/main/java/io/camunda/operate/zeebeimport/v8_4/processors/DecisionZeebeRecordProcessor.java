@@ -4,8 +4,9 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.zeebeimport.v8_2.processors;
+package io.camunda.operate.zeebeimport.v8_4.processors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.indices.DecisionIndex;
@@ -14,12 +15,15 @@ import io.camunda.operate.util.ConversionUtils;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
-import java.util.HashSet;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
 @Component
 public class DecisionZeebeRecordProcessor {
@@ -31,6 +35,9 @@ public class DecisionZeebeRecordProcessor {
   static {
     STATES.add(ProcessIntent.CREATED.name());
   }
+
+  @Autowired
+  private ObjectMapper objectMapper;
 
   @Autowired
   private DecisionIndex decisionIndex;
@@ -49,7 +56,7 @@ public class DecisionZeebeRecordProcessor {
     final DecisionDefinitionEntity decisionEntity = createEntity(decision);
     logger.debug("Decision: key {}, decisionId {}", decisionEntity.getKey(),
         decisionEntity.getDecisionId());
-    batchRequest.addWithId(decisionIndex.getFullQualifiedName(),ConversionUtils.toStringOrNull(decisionEntity.getKey()), decisionEntity);
+    batchRequest.addWithId(decisionIndex.getFullQualifiedName(), ConversionUtils.toStringOrNull(decisionEntity.getKey()), decisionEntity);
   }
 
   private DecisionDefinitionEntity createEntity(DecisionRecordValue decision) {
@@ -60,7 +67,8 @@ public class DecisionZeebeRecordProcessor {
         .setVersion(decision.getVersion())
         .setDecisionId(decision.getDecisionId())
         .setDecisionRequirementsId(decision.getDecisionRequirementsId())
-        .setDecisionRequirementsKey(decision.getDecisionRequirementsKey());
+        .setDecisionRequirementsKey(decision.getDecisionRequirementsKey())
+        .setTenantId(tenantOrDefault(decision.getTenantId()));
   }
 
 }

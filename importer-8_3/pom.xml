@@ -22,7 +22,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol-jackson</artifactId>
-      <version>${version.zeebe}</version>
+      <version>8.3.0</version>
     </dependency>
 
     <!-- https://mvnrepository.com/artifact/org.glassfish/jakarta.json -->
@@ -62,7 +62,7 @@
           <relocations>
             <relocation>
               <pattern>io.camunda.zeebe.protocol</pattern>
-              <shadedPattern>io.camunda.zeebe.protocol.v820</shadedPattern>
+              <shadedPattern>io.camunda.zeebe.protocol.v830</shadedPattern>
             </relocation>
           </relocations>
         </configuration>

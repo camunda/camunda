@@ -4,45 +4,42 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.zeebeimport.v8_2.processors;
+package io.camunda.operate.zeebeimport.v8_4.processors;
 
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.SimpleType;
-
 import io.camunda.operate.Metrics;
-import io.camunda.operate.conditions.ElasticsearchCondition;
+import io.camunda.operate.entities.HitEntity;
+import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.CollectionUtil;
-import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.AbstractImportBatchProcessor;
 import io.camunda.operate.zeebeimport.ImportBatch;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
-import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
-import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.stereotype.Component;
 
-@Conditional(ElasticsearchCondition.class)
+import static io.camunda.operate.util.CollectionUtil.map;
+
 @Component
-public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
+public class ImportBulkProcessor extends AbstractImportBatchProcessor {
 
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchBulkProcessor.class);
+  private static final Logger logger = LoggerFactory.getLogger(ImportBulkProcessor.class);
 
   @Autowired
   private ListViewZeebeRecordProcessor listViewZeebeRecordProcessor;
@@ -85,13 +82,26 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
 
   private ObjectMapper localObjectMapper;
 
+  private static <T> T fromSearchHit(String searchHitString, ObjectMapper objectMapper, JavaType valueType) {
+    T entity;
+    try {
+      entity = objectMapper.readValue(searchHitString, valueType);
+    } catch (IOException e) {
+      logger.error(String.format("Error while reading entity of type %s from indices!", valueType.toString()), e);
+      throw new OperateRuntimeException(String.format("Error while reading entity of type %s from indices!", valueType), e);
+    }
+    return entity;
+  }
+
   @Override
   protected void processZeebeRecords(ImportBatch importBatch, BatchRequest batchRequest) throws PersistenceException {
-    final List<Record> zeebeRecords = ElasticsearchUtil
-        .mapSearchHits(importBatch.getHits(), getLocalObjectMapper(), SimpleType.constructUnsafe(Record.class));
+    final List<HitEntity> hits = importBatch.getHits();
+    final List<Record> zeebeRecords = map(hits, hit ->
+        fromSearchHit(hit.getSourceAsString(), getLocalObjectMapper() , SimpleType.constructUnsafe(Record.class))
+    );
 
     logger.debug(
-        "Writing {} Zeebe records to Elasticsearch, version={}, importValueType={}, partition={}",
+        "Writing {} Zeebe records to indices, version={}, importValueType={}, partition={}",
         zeebeRecords.size(), getZeebeVersion(), importBatch.getImportValueType(),
         importBatch.getPartitionId());
 
@@ -262,6 +272,6 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
 
   @Override
   public String getZeebeVersion() {
-    return "8.2";
+    return "8.4";
   }
 }

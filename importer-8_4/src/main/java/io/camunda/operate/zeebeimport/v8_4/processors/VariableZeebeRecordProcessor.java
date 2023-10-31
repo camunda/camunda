@@ -4,7 +4,7 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.zeebeimport.v8_2.processors;
+package io.camunda.operate.zeebeimport.v8_4.processors;
 
 import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
@@ -17,16 +17,14 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.*;
+
+import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
 @Component
 public class VariableZeebeRecordProcessor {
@@ -56,7 +54,9 @@ public class VariableZeebeRecordProcessor {
         final var intent = scopedVariable.getIntent();
         final var variableValue = scopedVariable.getValue();
         final var variableName = variableValue.getName();
-        final var cachedVariable = temporaryVariableCache.computeIfAbsent(variableName, (k) -> Tuple.of(intent, new VariableEntity()));
+        final var cachedVariable = temporaryVariableCache.computeIfAbsent(variableName, (k) -> {
+          return Tuple.of(intent, new VariableEntity());
+        });
         final var variableEntity = cachedVariable.getRight();
         processVariableRecord(scopedVariable, variableEntity);
       }
@@ -71,10 +71,10 @@ public class VariableZeebeRecordProcessor {
           batchRequest.add(variableTemplate.getFullQualifiedName(), variableEntity);
         } else {
           Map<String, Object> updateFields = new HashMap<>();
-          updateFields.put(VariableTemplate.VALUE, variableEntity.getValue());
-          updateFields.put(VariableTemplate.FULL_VALUE, variableEntity.getFullValue());
-          updateFields.put(VariableTemplate.IS_PREVIEW, variableEntity.getIsPreview());
-          batchRequest.upsert(variableTemplate.getFullQualifiedName(), variableEntity.getId(),variableEntity, updateFields);
+          updateFields.put( VariableTemplate.VALUE, variableEntity.getValue());
+          updateFields.put(    VariableTemplate.FULL_VALUE, variableEntity.getFullValue());
+          updateFields.put(  VariableTemplate.IS_PREVIEW, variableEntity.getIsPreview());
+          batchRequest.upsert(variableTemplate.getFullQualifiedName(), variableEntity.getId(), variableEntity, updateFields);
         }
       }
     }
@@ -83,14 +83,15 @@ public class VariableZeebeRecordProcessor {
   private void processVariableRecord(Record<VariableRecordValue> record, VariableEntity entity) {
     final var recordValue = record.getValue();
 
-    entity.setId(VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()));
-    entity.setKey(record.getKey());
-    entity.setPartitionId(record.getPartitionId());
-    entity.setScopeKey(recordValue.getScopeKey());
-    entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
-    entity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
-    entity.setBpmnProcessId(recordValue.getBpmnProcessId());
-    entity.setName(recordValue.getName());
+    entity.setId(VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()))
+        .setKey(record.getKey())
+        .setPartitionId(record.getPartitionId())
+        .setScopeKey(recordValue.getScopeKey())
+        .setProcessInstanceKey(recordValue.getProcessInstanceKey())
+        .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
+        .setBpmnProcessId(recordValue.getBpmnProcessId())
+        .setName(recordValue.getName())
+        .setTenantId(tenantOrDefault(recordValue.getTenantId()));
     if (recordValue.getValue().length() > operateProperties.getImporter().getVariableSizeThreshold()) {
       // store preview
       entity.setValue(

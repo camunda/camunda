@@ -4,17 +4,13 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.zeebeimport.v8_2.processors;
+package io.camunda.operate.zeebeimport.v8_4.processors;
 
-import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
-import io.camunda.operate.entities.dmn.DecisionInstanceInputEntity;
-import io.camunda.operate.entities.dmn.DecisionInstanceOutputEntity;
-import io.camunda.operate.entities.dmn.DecisionInstanceState;
-import io.camunda.operate.entities.dmn.DecisionType;
-import io.camunda.operate.store.MetricsStore;
+import io.camunda.operate.entities.dmn.*;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.store.BatchRequest;
+import io.camunda.operate.store.MetricsStore;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
@@ -22,15 +18,18 @@ import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedInputValue;
 import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+
+import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
 @Component
 public class DecisionEvaluationZeebeRecordProcessor {
@@ -58,11 +57,12 @@ public class DecisionEvaluationZeebeRecordProcessor {
     logger.debug("Decision evaluation: key {}, decisionId {}", record.getKey(),
         decisionEvaluation.getDecisionId());
 
-    OffsetDateTime timestamp = DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
-    for (DecisionInstanceEntity entity : decisionEntities) {
-      batchRequest.add(decisionInstanceTemplate.getFullQualifiedName(), entity);
-      metricsStore.registerDecisionInstanceCompleteEvent(entity.getId(), entity.getTenantId(), timestamp, batchRequest);
-    }
+      OffsetDateTime timestamp = DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
+      for (DecisionInstanceEntity entity : decisionEntities) {
+        batchRequest.add(decisionInstanceTemplate.getFullQualifiedName(), entity);
+        metricsStore.registerDecisionInstanceCompleteEvent(entity.getId(), decisionEvaluation.getTenantId(), timestamp, batchRequest);
+      }
+
   }
 
   private List<DecisionInstanceEntity> createEntities(final Record record,
@@ -73,6 +73,7 @@ public class DecisionEvaluationZeebeRecordProcessor {
           .getEvaluatedDecisions().get(i - 1);
       OffsetDateTime timestamp = DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
       final DecisionInstanceState state = getState(record, decisionEvaluation, i);
+
       final DecisionInstanceEntity entity = new DecisionInstanceEntity()
           .setId(record.getKey(), i)
           .setKey(record.getKey())
@@ -98,7 +99,8 @@ public class DecisionEvaluationZeebeRecordProcessor {
           .setState(state)
           .setResult(decision.getDecisionOutput())
           .setEvaluatedOutputs(createEvaluationOutputs(decision.getMatchedRules()))
-          .setEvaluatedInputs(createEvaluationInputs(decision.getEvaluatedInputs()));
+          .setEvaluatedInputs(createEvaluationInputs(decision.getEvaluatedInputs()))
+          .setTenantId(tenantOrDefault(decisionEvaluation.getTenantId()));
       if (state.equals(DecisionInstanceState.FAILED)) {
         entity.setEvaluationFailure(decisionEvaluation.getEvaluationFailureMessage());
       }

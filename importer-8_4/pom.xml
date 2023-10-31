@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
     <artifactId>operate-parent</artifactId>
     <groupId>io.camunda</groupId>
@@ -7,8 +9,8 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <name>Operate Importer 8.2</name>
-  <artifactId>operate-importer-8_2</artifactId>
+  <name>Operate Importer 8.4</name>
+  <artifactId>operate-importer-8_4</artifactId>
 
   <dependencies>
 
@@ -62,7 +64,7 @@
           <relocations>
             <relocation>
               <pattern>io.camunda.zeebe.protocol</pattern>
-              <shadedPattern>io.camunda.zeebe.protocol.v820</shadedPattern>
+              <shadedPattern>io.camunda.zeebe.protocol.v840</shadedPattern>
             </relocation>
           </relocations>
         </configuration>
@@ -77,6 +79,5 @@
       </plugin>
     </plugins>
   </build>
-
 
 </project>
