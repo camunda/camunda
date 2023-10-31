@@ -240,4 +240,4 @@ jobs:
           DEVELOPMENT_VERSION: ${{ github.event.inputs.DEVELOPMENT_VERSION }}
           BRANCH: ${{ github.event.inputs.BRANCH }}
         run: |
-          .github/scripts/update_example_repo.sh
+          ../.github/scripts/update_example_repo.sh
