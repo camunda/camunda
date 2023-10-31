@@ -10,6 +10,7 @@ import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
 import org.opensearch.client.opensearch._types.mapping.DynamicMapping;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -122,5 +123,24 @@ public class TestOpenSearchRepository implements TestSearchRepository {
       .stream()
       .map(map -> (Long) map.get(idFieldName))
       .toList();
+  }
+
+  @Override
+  public <A, R> List<R> searchTerm(String index, String field, A value, Class<R> clazz, int size) throws IOException {
+    Query query = null;
+
+    if (value instanceof Long l) {
+      query = term(field, l);
+    }
+
+    if(query == null) {
+      throw new UnsupportedOperationException(this.getClass().getName() + ".searchTearm is missing implementation for value type " + value.getClass().getName());
+    }
+
+    var requestBuilder = searchRequestBuilder(index)
+      .query(query)
+      .size(size);
+
+    return richOpenSearchClient.doc().searchValues(requestBuilder, clazz);
   }
 }

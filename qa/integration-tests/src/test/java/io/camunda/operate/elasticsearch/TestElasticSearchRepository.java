@@ -19,6 +19,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -143,5 +144,16 @@ public class TestElasticSearchRepository implements TestSearchRepository {
         .query(q)
         .size(size));
     return ElasticsearchUtil.scrollFieldToList(request, idFieldName, esClient);
+  }
+
+  @Override
+  public <A, R> List<R> searchTerm(String index, String field, A value, Class<R> clazz, int size) throws IOException {
+    var request = new SearchRequest(index).source(
+        new SearchSourceBuilder().query(QueryBuilders.termQuery(field, value))
+      );
+
+    var response = esClient.search(request, RequestOptions.DEFAULT);
+
+    return ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper, clazz);
   }
 }

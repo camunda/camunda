@@ -6,27 +6,23 @@
  */
 package io.camunda.operate.it;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-
+import io.camunda.operate.elasticsearch.TestSearchRepository;
 import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.schema.templates.ProcessInstanceDependant;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
-import io.camunda.operate.webapp.writer.ProcessInstanceWriter;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
+import io.camunda.operate.webapp.writer.ProcessInstanceWriter;
 import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
-import java.io.IOException;
-import java.util.List;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.io.IOException;
+import java.util.List;
+
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 public class ProcessInstanceWriterIT extends OperateZeebeAbstractIT {
 
@@ -37,7 +33,7 @@ public class ProcessInstanceWriterIT extends OperateZeebeAbstractIT {
   private List<ProcessInstanceDependant> processInstanceDependants;
 
   @Autowired
-  private RestHighLevelClient esClient;
+  private TestSearchRepository testSearchRepository;
 
   @Autowired
   private ProcessInstanceReader processInstanceReader;
@@ -126,26 +122,18 @@ public class ProcessInstanceWriterIT extends OperateZeebeAbstractIT {
 
   private void assertThatDependantsAreAlsoDeleted(final long finishedProcessInstanceKey) {
     processInstanceDependants.stream()
-        .filter(t -> !(t instanceof OperationTemplate))
-        .map(dependant -> buildSearchRequest(finishedProcessInstanceKey, dependant))
-        .map(this::esSearch)
-        .forEach(response -> assertThat(response.getHits().getTotalHits().value).isZero());
-  }
-
-
-  private SearchRequest buildSearchRequest(Long finishedProcessInstanceKey,
-      ProcessInstanceDependant dependant) {
-    return new SearchRequest(dependant.getFullQualifiedName() + "*").source(
-        new SearchSourceBuilder().query(
-            QueryBuilders.termQuery(ProcessInstanceDependant.PROCESS_INSTANCE_KEY, finishedProcessInstanceKey)));
-  }
-
-  private SearchResponse esSearch(SearchRequest searchRequest) {
-    try {
-      return esClient.search(searchRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      throw new RuntimeException("Test failed with exception");
-    }
+      .filter(t -> !(t instanceof OperationTemplate))
+      .forEach(dependant -> {
+        var index = dependant.getFullQualifiedName() + "*";
+        var field = ProcessInstanceDependant.PROCESS_INSTANCE_KEY;
+        var value = finishedProcessInstanceKey;
+        try {
+          var response = testSearchRepository.searchTerm(index, field, value, Object.class, 100);
+          assertThat(response.size()).isZero();
+        } catch (IOException e) {
+          throw new RuntimeException("Test failed with exception");
+        }
+      });
   }
 
 }

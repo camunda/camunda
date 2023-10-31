@@ -33,7 +33,9 @@ public interface TestSearchRepository {
 
   <R> List<R> searchAll(String index, Class<R> clazz) throws IOException;
 
-  <T> List<T> searchJoinRelation(String index, String joinRelation, Class<T> clazz, int size) throws IOException;
+  <R> List<R> searchJoinRelation(String index, String joinRelation, Class<R> clazz, int size) throws IOException;
+
+  <A, R> List<R> searchTerm(String index, String field, A value, Class<R> clazz, int size) throws IOException;
 
   List<Long> searchIds(String index, String idFieldName, List<Long> ids, int size) throws IOException;
 }
