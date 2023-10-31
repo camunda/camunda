@@ -61,13 +61,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     localMember =
         new DefaultRaftMember(localMemberId, RaftMember.Type.PASSIVE, time).setCluster(this);
     this.raft = checkNotNull(raft, "context cannot be null");
-
-    // If a configuration is stored, use the stored configuration, otherwise configure the server
-    // with the user provided configuration.
-    final var storedConfiguration = raft.getMetaStore().loadConfiguration();
-    if (storedConfiguration != null) {
-      updateConfiguration(storedConfiguration);
-    }
   }
 
   @Override
@@ -81,7 +74,13 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     raft.getThreadContext()
         .execute(
             () -> {
-              if (configuration == null) {
+              // If a configuration is stored, use the stored configuration, otherwise configure the
+              // server
+              // with the user provided configuration.
+              final var storedConfiguration = raft.getMetaStore().loadConfiguration();
+              if (storedConfiguration != null) {
+                updateConfiguration(storedConfiguration);
+              } else {
                 createInitialConfig(cluster);
               }
               raft.transition(localMember.getType());
