@@ -12,6 +12,8 @@ import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
+import java.time.Duration;
+
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ZeebeBpmnModels {
 
@@ -25,6 +27,21 @@ public class ZeebeBpmnModels {
   public static final String CATCH_EVENT = "catchEvent";
   public static final String CONVERGING_GATEWAY = "converging_gateway";
   public static final String DIVERGING_GATEWAY = "diverging_gateway";
+  public static final String SIGNAL_START_EVENT = "signalStartEvent";
+  public static final String SIGNAL_START_INT_SUB_PROCESS = "signalStartInterruptingSubProcessEvent";
+  public static final String SIGNAL_START_NON_INT_SUB_PROCESS = "signalStartNonInterruptingSubProcessEvent";
+  public static final String SIGNAL_GATEWAY_CATCH = "signalIntermediateCatchEventAttachedToEventBasedGateway";
+  public static final String SIGNAL_THROW = "signalIntermediateThrowEvent";
+  public static final String SIGNAL_CATCH = "signalIntermediateCatchEvent";
+  public static final String SIGNAL_INTERRUPTING_BOUNDARY = "signalIntermediateBoundaryInterruptingEvent";
+  public static final String SIGNAL_NON_INTERRUPTING_BOUNDARY = "signalIntermediateBoundaryNonInterruptingEvent";
+  public static final String SIGNAL_PROCESS_WAIT_FOR_FIRST_SIGNAL_TASK = "signalProcessServiceTask1";
+  public static final String SIGNAL_PROCESS_WAIT_FOR_SECOND_SIGNAL_TASK = "signalProcessServiceTask2";
+  public static final String SIGNAL_PROCESS_WAIT_FOR_THIRD_SIGNAL_GATEWAY = "eventBasedGateway";
+  public static final String SIGNAL_PROCESS_END= "signalEndEvent";
+  public static final String SIGNAL_PROCESS_FIRST_SIGNAL= "nonInterruptingBoundarySignal";
+  public static final String SIGNAL_PROCESS_SECOND_SIGNAL= "interruptingBoundarySignal";
+  public static final String SIGNAL_PROCESS_THIRD_SIGNAL= "eventBasedGatewaySignal";
 
   public static BpmnModelInstance createStartEndProcess(final String processName) {
     return createStartEndProcess(processName, null);
@@ -125,6 +142,69 @@ public class ZeebeBpmnModels {
       .startEvent(START_EVENT)
       .sendTask(SEND_TASK).zeebeJobType(SEND_TASK)
       .done();
+  }
+
+  public static BpmnModelInstance createProcessWith83SignalEvents(final String startSignalName) {
+    // @formatter:off
+    final ProcessBuilder processBuilder = Bpmn.createExecutableProcess("signalProcess");
+
+    processBuilder
+      .eventSubProcess("interruptingSubProcess")
+        .startEvent(
+          SIGNAL_START_INT_SUB_PROCESS,
+          s -> s.signal("signalToStartInterruptingSubProcess").interrupting(true)
+        )
+      .endEvent("interruptingSubProcessEnd");
+
+    processBuilder
+      .eventSubProcess("nonInterruptingSubProcess")
+        .startEvent(
+          SIGNAL_START_NON_INT_SUB_PROCESS,
+          s -> s.signal("signalToStartNonInterruptingSubProcess").interrupting(false)
+        )
+      .endEvent(
+        "nonInterruptingSubProcessEnd",
+        s -> s.signal("signalToContinueProcessAfterNonInterruptingSubProcess"));
+
+    return processBuilder
+      .startEvent(SIGNAL_START_EVENT)
+        .signal(startSignalName)
+      .intermediateThrowEvent(
+        SIGNAL_THROW,
+        t -> t.signal("signalToStartNonInterruptingSubProcess")
+      )
+      .intermediateCatchEvent(
+        SIGNAL_CATCH,
+        c -> c.signal("signalToContinueProcessAfterNonInterruptingSubProcess")
+      )
+      .serviceTask(SIGNAL_PROCESS_WAIT_FOR_FIRST_SIGNAL_TASK).zeebeJobType(SERVICE_TASK)
+      .boundaryEvent(
+        SIGNAL_NON_INTERRUPTING_BOUNDARY,
+        b -> b.signal(SIGNAL_PROCESS_FIRST_SIGNAL) // this signal needs thrown in test to continue
+      )
+        .cancelActivity(false) // make boundary event non interrupting
+      .serviceTask(SIGNAL_PROCESS_WAIT_FOR_SECOND_SIGNAL_TASK).zeebeJobType(SERVICE_TASK)
+      .boundaryEvent(
+        SIGNAL_INTERRUPTING_BOUNDARY,
+        b -> b.signal(SIGNAL_PROCESS_SECOND_SIGNAL) // this signal needs thrown in test to continue
+      )
+        .cancelActivity(true) // make boundary event interrupting
+      .eventBasedGateway(SIGNAL_PROCESS_WAIT_FOR_THIRD_SIGNAL_GATEWAY)
+      .intermediateCatchEvent(
+        "timerEvent",
+        t -> t.timerWithDuration(Duration.ofMinutes(1)) // timer required for event based gateway
+      )
+      .moveToLastGateway()
+      .intermediateCatchEvent(
+        SIGNAL_GATEWAY_CATCH,
+        c -> c.signal(SIGNAL_PROCESS_THIRD_SIGNAL) // this signal needs thrown in test to continue
+      )
+      .endEvent(
+        SIGNAL_PROCESS_END,
+        e -> e.signal("signalToStartInterruptingSubProcess")
+      )
+      .done();
+    // @formatter:on
   }
 
 }

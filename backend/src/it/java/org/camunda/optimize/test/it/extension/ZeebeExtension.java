@@ -105,6 +105,13 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
     return createProcessInstanceCommandStep3.send().join().getProcessInstanceKey();
   }
 
+  public void startProcessInstanceWithSignal(final String signalName) {
+    broadcastSignalWithName(signalName);
+  }
+
+  public void broadcastSignalWithName(final String signalName) {
+    zeebeClient.newBroadcastSignalCommand().signalName(signalName).send().join();
+  }
   public void startProcessInstanceBeforeElementWithIds(final String bpmnProcessId, final String... elementIds) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3 createProcessInstanceCommandStep3 =
       zeebeClient.newCreateInstanceCommand()

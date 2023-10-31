@@ -11,7 +11,7 @@
         <bpmn:targetRef>Property_0itlo47</bpmn:targetRef>
       </bpmn:dataInputAssociation>
     </bpmn:task>
-    <bpmn:sequenceFlow id="Flow_05fqeum" sourceRef="signalStartEventId" targetRef="undefinedTaskId" />
+    <bpmn:sequenceFlow id="Flow_05fqeum" sourceRef="startEventId" targetRef="undefinedTaskId" />
     <bpmn:dataStoreReference id="DataStoreReference_15x42f8" name="Load TARDIS translater database" />
     <bpmn:sequenceFlow id="Flow_1rt4mvs" sourceRef="undefinedTaskId" targetRef="Gateway_0xv5rrk" />
     <bpmn:sequenceFlow id="Flow_1jldlsm" name="In Time" sourceRef="Gateway_0xv5rrk" targetRef="linkIntermediateThrowEventId">
@@ -138,7 +138,7 @@
       <bpmn:outgoing>Flow_14fhjp1</bpmn:outgoing>
       <bpmn:outgoing>Flow_1jldlsm</bpmn:outgoing>
     </bpmn:inclusiveGateway>
-    <bpmn:startEvent id="signalStartEventId" name="Adventure awaits">
+    <bpmn:startEvent id="startEventId" name="Adventure awaits">
       <bpmn:outgoing>Flow_05fqeum</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:group id="Group_1vshba0" categoryValueRef="CategoryValue_14jnir5" />
@@ -174,7 +174,7 @@
           <dc:Bounds x="561" y="475" width="61" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1hafbnl_di" bpmnElement="signalStartEventId" bioc:stroke="#205022" bioc:fill="#c8e6c9" color:background-color="#c8e6c9" color:border-color="#205022">
+      <bpmndi:BPMNShape id="Event_1hafbnl_di" bpmnElement="startEventId" bioc:stroke="#205022" bioc:fill="#c8e6c9" color:background-color="#c8e6c9" color:border-color="#205022">
         <dc:Bounds x="492" y="292" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="468" y="335" width="84" height="14" />

@@ -195,10 +195,13 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     return zeebeVersionPreSequenceField.matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion()).matches();
   }
 
-  protected static boolean isZeebeVersionWithMultiTenancy() {
-    // multi tenancy is introduced with zeebe 8.3.0
+  protected static boolean isZeebeVersionPre83() {
     final Pattern zeebeVersionPattern = Pattern.compile("8.0.*|8.1.*|8.2.*");
-    return !zeebeVersionPattern.matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion()).matches();
+    return zeebeVersionPattern.matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion()).matches();
+  }
+
+  protected static boolean isZeebeVersionWithMultiTenancy() {
+    return !isZeebeVersionPre83();
   }
 
   @SneakyThrows
