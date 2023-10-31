@@ -8,6 +8,7 @@ package io.camunda.operate.elasticsearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
+import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.index.IndexRequest;
@@ -18,6 +19,8 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.xcontent.XContentType;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +33,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @Component
 @Conditional(ElasticsearchCondition.class)
@@ -112,5 +119,29 @@ public class TestElasticSearchRepository implements TestSearchRepository {
       .stream()
       .map(aliasMetadata -> aliasMetadata.alias())
       .toList();
+  }
+
+  @Override
+  public <T> List<T> searchJoinRelation(String index, String joinRelation, Class<T> clazz, int size) throws IOException {
+    final TermQueryBuilder isProcessInstanceQuery = termQuery(JOIN_RELATION, joinRelation);
+
+    final SearchRequest searchRequest = new SearchRequest(index)
+      .source(new SearchSourceBuilder()
+        .query(constantScoreQuery(isProcessInstanceQuery))
+        .size(size));
+
+    final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+
+    return ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper, clazz);
+  }
+
+  @Override
+  public List<Long> searchIds(String index, String idFieldName, List<Long> ids, int size) throws IOException {
+    final TermsQueryBuilder q = termsQuery(idFieldName, CollectionUtil.toSafeArrayOfStrings(ids));
+    final SearchRequest request = new SearchRequest(index)
+      .source(new SearchSourceBuilder()
+        .query(q)
+        .size(size));
+    return ElasticsearchUtil.scrollFieldToList(request, idFieldName, esClient);
   }
 }

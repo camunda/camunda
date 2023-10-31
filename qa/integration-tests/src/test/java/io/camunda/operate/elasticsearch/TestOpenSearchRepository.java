@@ -15,11 +15,16 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.constantScore;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.longTerms;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.matchAll;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.getIndexRequestBuilder;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.indexRequestBuilder;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
@@ -95,6 +100,27 @@ public class TestOpenSearchRepository implements TestSearchRepository {
       .aliases()
       .keySet()
       .stream()
+      .toList();
+  }
+
+  @Override
+  public <T> List<T> searchJoinRelation(String index, String joinRelation, Class<T> clazz, int size) throws IOException {
+    var searchRequestBuilder = searchRequestBuilder(index)
+        .query(constantScore(term(JOIN_RELATION, joinRelation)))
+        .size(size);
+
+    return richOpenSearchClient.doc().searchValues(searchRequestBuilder, clazz);
+  }
+
+  @Override
+  public List<Long> searchIds(String index, String idFieldName, List<Long> ids, int size) throws IOException {
+    var searchRequestBuilder = searchRequestBuilder(index)
+      .query(longTerms(idFieldName, ids))
+      .size(size);
+
+    return richOpenSearchClient.doc().scrollValues(searchRequestBuilder, HashMap.class)
+      .stream()
+      .map(map -> (Long) map.get(idFieldName))
       .toList();
   }
 }

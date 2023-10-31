@@ -17,8 +17,6 @@ public interface TestSearchRepository {
     True
   }
 
-  <R> List<R> searchAll(String index, Class<R> clazz) throws IOException;
-
   boolean isConnected();
 
   boolean isZeebeConnected();
@@ -32,4 +30,10 @@ public interface TestSearchRepository {
   boolean hasDynamicMapping(String indexName, DynamicMappingType dynamicMappingType) throws IOException;
 
   List<String> getAliasNames(String indexName) throws IOException;
+
+  <R> List<R> searchAll(String index, Class<R> clazz) throws IOException;
+
+  <T> List<T> searchJoinRelation(String index, String joinRelation, Class<T> clazz, int size) throws IOException;
+
+  List<Long> searchIds(String index, String idFieldName, List<Long> ids, int size) throws IOException;
 }

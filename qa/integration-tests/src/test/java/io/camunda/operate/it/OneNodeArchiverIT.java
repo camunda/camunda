@@ -9,6 +9,7 @@ package io.camunda.operate.it;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.archiver.Archiver;
 import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
+import io.camunda.operate.elasticsearch.TestSearchRepository;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.exceptions.ArchiverException;
@@ -18,18 +19,24 @@ import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.ProcessInstanceDependant;
 import io.camunda.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.operate.util.CollectionUtil;
-import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.reader.ListViewReader;
-import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
+import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import org.elasticsearch.ElasticsearchStatusException;
+import org.junit.Before;
+import org.junit.Test;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -40,26 +47,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Predicate;
-import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.index.query.TermsQueryBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.junit.Before;
-import org.junit.Test;
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.TestPropertySource;
 
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllFinishedRequest;
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesQuery;
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.elasticsearch.index.query.QueryBuilders.*;
 
 @TestPropertySource(properties = { OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
     OperateProperties.PREFIX + ".clusterNode.nodeCount = 2",
@@ -75,7 +67,7 @@ public class OneNodeArchiverIT extends OperateZeebeAbstractIT {
   private Archiver archiver;
 
   @Autowired
-  private RestHighLevelClient esClient;
+  private TestSearchRepository testSearchRepository;
 
   @Autowired
   private ListViewTemplate listViewTemplate;
@@ -181,17 +173,7 @@ public class OneNodeArchiverIT extends OperateZeebeAbstractIT {
 
   private List<Long> assertProcessInstanceIndex(int instancesCount, Instant endDate) throws IOException {
     final String destinationIndexName = archiver.getDestinationIndexName(listViewTemplate.getFullQualifiedName(), dateTimeFormatter.format(endDate));
-    final TermQueryBuilder isProcessInstanceQuery = termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION);
-
-    final SearchRequest searchRequest = new SearchRequest(destinationIndexName)
-        .source(new SearchSourceBuilder()
-            .query(constantScoreQuery(isProcessInstanceQuery))
-            .size(100));
-
-    final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-
-    final List<ProcessInstanceForListViewEntity> processInstances = ElasticsearchUtil
-        .mapSearchHits(response.getHits().getHits(), objectMapper, ProcessInstanceForListViewEntity.class);
+    final List<ProcessInstanceForListViewEntity> processInstances = testSearchRepository.searchJoinRelation(destinationIndexName, PROCESS_INSTANCE_JOIN_RELATION, ProcessInstanceForListViewEntity.class, 100);
     assertThat(processInstances.size()).isGreaterThanOrEqualTo(instancesCount);
     assertThat(processInstances.size()).isLessThanOrEqualTo(instancesCount + 1);
     if (endDate != null) {
@@ -213,13 +195,7 @@ public class OneNodeArchiverIT extends OperateZeebeAbstractIT {
       } else {
         destinationIndexName = archiver.getDestinationIndexName(mainIndexName, "");
       }
-      final TermsQueryBuilder q = termsQuery(idFieldName, CollectionUtil.toSafeArrayOfStrings(ids));
-      final SearchRequest request = new SearchRequest(destinationIndexName)
-          .source(new SearchSourceBuilder()
-              .query(q)
-              .size(100));
-      final List<Long> idsFromEls = ElasticsearchUtil
-          .scrollFieldToList(request, idFieldName, esClient);
+      final List<Long> idsFromEls = testSearchRepository.searchIds(destinationIndexName, idFieldName, ids, 100);
       assertThat(idsFromEls).as(mainIndexName).isSubsetOf(ids);
     } catch (ElasticsearchStatusException ex) {
       if (!ex.getMessage().contains("index_not_found_exception") || !ignoreAbsentIndex) {
