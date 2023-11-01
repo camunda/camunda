@@ -782,6 +782,12 @@
         #     size: 1000
         #     memoryLimit: 10485760
         #
+        #   retention:
+        #     enabled: false
+        #     minimumAge: 30d
+        #     policyName: zeebe-record-retention-policy
+        #     policyDecsription: Zeebe record retention policy
+        #
         #   authentication:
         #     username: opensearch
         #     password: changeme
