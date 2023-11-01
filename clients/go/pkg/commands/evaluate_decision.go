@@ -33,6 +33,7 @@ type EvaluateDecisionCommandStep1 interface {
 type EvaluateDecisionCommandStep2 interface {
 	DispatchEvaluateDecisionCommand
 
+	TenantId(string) EvaluateDecisionCommandStep2
 	// Expected to be valid JSON string
 	VariablesFromString(string) (EvaluateDecisionCommandStep2, error)
 
@@ -48,6 +49,12 @@ type EvaluateDecisionCommandStep2 interface {
 type EvaluateDecisionCommand struct {
 	Command
 	request pb.EvaluateDecisionRequest
+}
+
+//nolint:revive
+func (cmd *EvaluateDecisionCommand) TenantId(tenantId string) EvaluateDecisionCommandStep2 {
+	cmd.request.TenantId = tenantId
+	return cmd
 }
 
 func (cmd *EvaluateDecisionCommand) VariablesFromString(variables string) (EvaluateDecisionCommandStep2, error) {

@@ -372,6 +372,26 @@ func (mr *MockGatewayClientMockRecorder) SetVariables(ctx, in interface{}, opts 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetVariables", reflect.TypeOf((*MockGatewayClient)(nil).SetVariables), varargs...)
 }
 
+// StreamActivatedJobs mocks base method.
+func (m *MockGatewayClient) StreamActivatedJobs(ctx context.Context, in *pb.StreamActivatedJobsRequest, opts ...grpc.CallOption) (pb.Gateway_StreamActivatedJobsClient, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "StreamActivatedJobs", varargs...)
+	ret0, _ := ret[0].(pb.Gateway_StreamActivatedJobsClient)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StreamActivatedJobs indicates an expected call of StreamActivatedJobs.
+func (mr *MockGatewayClientMockRecorder) StreamActivatedJobs(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StreamActivatedJobs", reflect.TypeOf((*MockGatewayClient)(nil).StreamActivatedJobs), varargs...)
+}
+
 // ThrowError mocks base method.
 func (m *MockGatewayClient) ThrowError(ctx context.Context, in *pb.ThrowErrorRequest, opts ...grpc.CallOption) (*pb.ThrowErrorResponse, error) {
 	m.ctrl.T.Helper()
@@ -514,7 +534,7 @@ func (mr *MockGateway_ActivateJobsClientMockRecorder) Recv() *gomock.Call {
 }
 
 // RecvMsg mocks base method.
-func (m_2 *MockGateway_ActivateJobsClient) RecvMsg(m interface{}) error {
+func (m_2 *MockGateway_ActivateJobsClient) RecvMsg(m any) error {
 	m_2.ctrl.T.Helper()
 	ret := m_2.ctrl.Call(m_2, "RecvMsg", m)
 	ret0, _ := ret[0].(error)
@@ -528,7 +548,7 @@ func (mr *MockGateway_ActivateJobsClientMockRecorder) RecvMsg(m interface{}) *go
 }
 
 // SendMsg mocks base method.
-func (m_2 *MockGateway_ActivateJobsClient) SendMsg(m interface{}) error {
+func (m_2 *MockGateway_ActivateJobsClient) SendMsg(m any) error {
 	m_2.ctrl.T.Helper()
 	ret := m_2.ctrl.Call(m_2, "SendMsg", m)
 	ret0, _ := ret[0].(error)
@@ -553,6 +573,129 @@ func (m *MockGateway_ActivateJobsClient) Trailer() metadata.MD {
 func (mr *MockGateway_ActivateJobsClientMockRecorder) Trailer() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Trailer", reflect.TypeOf((*MockGateway_ActivateJobsClient)(nil).Trailer))
+}
+
+// MockGateway_StreamActivatedJobsClient is a mock of Gateway_StreamActivatedJobsClient interface.
+type MockGateway_StreamActivatedJobsClient struct {
+	ctrl     *gomock.Controller
+	recorder *MockGateway_StreamActivatedJobsClientMockRecorder
+}
+
+// MockGateway_StreamActivatedJobsClientMockRecorder is the mock recorder for MockGateway_StreamActivatedJobsClient.
+type MockGateway_StreamActivatedJobsClientMockRecorder struct {
+	mock *MockGateway_StreamActivatedJobsClient
+}
+
+// NewMockGateway_StreamActivatedJobsClient creates a new mock instance.
+func NewMockGateway_StreamActivatedJobsClient(ctrl *gomock.Controller) *MockGateway_StreamActivatedJobsClient {
+	mock := &MockGateway_StreamActivatedJobsClient{ctrl: ctrl}
+	mock.recorder = &MockGateway_StreamActivatedJobsClientMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockGateway_StreamActivatedJobsClient) EXPECT() *MockGateway_StreamActivatedJobsClientMockRecorder {
+	return m.recorder
+}
+
+// CloseSend mocks base method.
+func (m *MockGateway_StreamActivatedJobsClient) CloseSend() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CloseSend")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CloseSend indicates an expected call of CloseSend.
+func (mr *MockGateway_StreamActivatedJobsClientMockRecorder) CloseSend() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloseSend", reflect.TypeOf((*MockGateway_StreamActivatedJobsClient)(nil).CloseSend))
+}
+
+// Context mocks base method.
+func (m *MockGateway_StreamActivatedJobsClient) Context() context.Context {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Context")
+	ret0, _ := ret[0].(context.Context)
+	return ret0
+}
+
+// Context indicates an expected call of Context.
+func (mr *MockGateway_StreamActivatedJobsClientMockRecorder) Context() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockGateway_StreamActivatedJobsClient)(nil).Context))
+}
+
+// Header mocks base method.
+func (m *MockGateway_StreamActivatedJobsClient) Header() (metadata.MD, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Header")
+	ret0, _ := ret[0].(metadata.MD)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Header indicates an expected call of Header.
+func (mr *MockGateway_StreamActivatedJobsClientMockRecorder) Header() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Header", reflect.TypeOf((*MockGateway_StreamActivatedJobsClient)(nil).Header))
+}
+
+// Recv mocks base method.
+func (m *MockGateway_StreamActivatedJobsClient) Recv() (*pb.ActivatedJob, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Recv")
+	ret0, _ := ret[0].(*pb.ActivatedJob)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Recv indicates an expected call of Recv.
+func (mr *MockGateway_StreamActivatedJobsClientMockRecorder) Recv() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Recv", reflect.TypeOf((*MockGateway_StreamActivatedJobsClient)(nil).Recv))
+}
+
+// RecvMsg mocks base method.
+func (m_2 *MockGateway_StreamActivatedJobsClient) RecvMsg(m any) error {
+	m_2.ctrl.T.Helper()
+	ret := m_2.ctrl.Call(m_2, "RecvMsg", m)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RecvMsg indicates an expected call of RecvMsg.
+func (mr *MockGateway_StreamActivatedJobsClientMockRecorder) RecvMsg(m interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockGateway_StreamActivatedJobsClient)(nil).RecvMsg), m)
+}
+
+// SendMsg mocks base method.
+func (m_2 *MockGateway_StreamActivatedJobsClient) SendMsg(m any) error {
+	m_2.ctrl.T.Helper()
+	ret := m_2.ctrl.Call(m_2, "SendMsg", m)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendMsg indicates an expected call of SendMsg.
+func (mr *MockGateway_StreamActivatedJobsClientMockRecorder) SendMsg(m interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockGateway_StreamActivatedJobsClient)(nil).SendMsg), m)
+}
+
+// Trailer mocks base method.
+func (m *MockGateway_StreamActivatedJobsClient) Trailer() metadata.MD {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Trailer")
+	ret0, _ := ret[0].(metadata.MD)
+	return ret0
+}
+
+// Trailer indicates an expected call of Trailer.
+func (mr *MockGateway_StreamActivatedJobsClientMockRecorder) Trailer() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Trailer", reflect.TypeOf((*MockGateway_StreamActivatedJobsClient)(nil).Trailer))
 }
 
 // MockGatewayServer is a mock of GatewayServer interface.
@@ -802,6 +945,20 @@ func (mr *MockGatewayServerMockRecorder) SetVariables(arg0, arg1 interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetVariables", reflect.TypeOf((*MockGatewayServer)(nil).SetVariables), arg0, arg1)
 }
 
+// StreamActivatedJobs mocks base method.
+func (m *MockGatewayServer) StreamActivatedJobs(arg0 *pb.StreamActivatedJobsRequest, arg1 pb.Gateway_StreamActivatedJobsServer) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StreamActivatedJobs", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// StreamActivatedJobs indicates an expected call of StreamActivatedJobs.
+func (mr *MockGatewayServerMockRecorder) StreamActivatedJobs(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StreamActivatedJobs", reflect.TypeOf((*MockGatewayServer)(nil).StreamActivatedJobs), arg0, arg1)
+}
+
 // ThrowError mocks base method.
 func (m *MockGatewayServer) ThrowError(arg0 context.Context, arg1 *pb.ThrowErrorRequest) (*pb.ThrowErrorResponse, error) {
 	m.ctrl.T.Helper()
@@ -885,7 +1042,7 @@ func (mr *MockGateway_ActivateJobsServerMockRecorder) Context() *gomock.Call {
 }
 
 // RecvMsg mocks base method.
-func (m_2 *MockGateway_ActivateJobsServer) RecvMsg(m interface{}) error {
+func (m_2 *MockGateway_ActivateJobsServer) RecvMsg(m any) error {
 	m_2.ctrl.T.Helper()
 	ret := m_2.ctrl.Call(m_2, "RecvMsg", m)
 	ret0, _ := ret[0].(error)
@@ -927,7 +1084,7 @@ func (mr *MockGateway_ActivateJobsServerMockRecorder) SendHeader(arg0 interface{
 }
 
 // SendMsg mocks base method.
-func (m_2 *MockGateway_ActivateJobsServer) SendMsg(m interface{}) error {
+func (m_2 *MockGateway_ActivateJobsServer) SendMsg(m any) error {
 	m_2.ctrl.T.Helper()
 	ret := m_2.ctrl.Call(m_2, "SendMsg", m)
 	ret0, _ := ret[0].(error)
@@ -964,4 +1121,123 @@ func (m *MockGateway_ActivateJobsServer) SetTrailer(arg0 metadata.MD) {
 func (mr *MockGateway_ActivateJobsServerMockRecorder) SetTrailer(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTrailer", reflect.TypeOf((*MockGateway_ActivateJobsServer)(nil).SetTrailer), arg0)
+}
+
+// MockGateway_StreamActivatedJobsServer is a mock of Gateway_StreamActivatedJobsServer interface.
+type MockGateway_StreamActivatedJobsServer struct {
+	ctrl     *gomock.Controller
+	recorder *MockGateway_StreamActivatedJobsServerMockRecorder
+}
+
+// MockGateway_StreamActivatedJobsServerMockRecorder is the mock recorder for MockGateway_StreamActivatedJobsServer.
+type MockGateway_StreamActivatedJobsServerMockRecorder struct {
+	mock *MockGateway_StreamActivatedJobsServer
+}
+
+// NewMockGateway_StreamActivatedJobsServer creates a new mock instance.
+func NewMockGateway_StreamActivatedJobsServer(ctrl *gomock.Controller) *MockGateway_StreamActivatedJobsServer {
+	mock := &MockGateway_StreamActivatedJobsServer{ctrl: ctrl}
+	mock.recorder = &MockGateway_StreamActivatedJobsServerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockGateway_StreamActivatedJobsServer) EXPECT() *MockGateway_StreamActivatedJobsServerMockRecorder {
+	return m.recorder
+}
+
+// Context mocks base method.
+func (m *MockGateway_StreamActivatedJobsServer) Context() context.Context {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Context")
+	ret0, _ := ret[0].(context.Context)
+	return ret0
+}
+
+// Context indicates an expected call of Context.
+func (mr *MockGateway_StreamActivatedJobsServerMockRecorder) Context() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockGateway_StreamActivatedJobsServer)(nil).Context))
+}
+
+// RecvMsg mocks base method.
+func (m_2 *MockGateway_StreamActivatedJobsServer) RecvMsg(m any) error {
+	m_2.ctrl.T.Helper()
+	ret := m_2.ctrl.Call(m_2, "RecvMsg", m)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RecvMsg indicates an expected call of RecvMsg.
+func (mr *MockGateway_StreamActivatedJobsServerMockRecorder) RecvMsg(m interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockGateway_StreamActivatedJobsServer)(nil).RecvMsg), m)
+}
+
+// Send mocks base method.
+func (m *MockGateway_StreamActivatedJobsServer) Send(arg0 *pb.ActivatedJob) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Send", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Send indicates an expected call of Send.
+func (mr *MockGateway_StreamActivatedJobsServerMockRecorder) Send(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockGateway_StreamActivatedJobsServer)(nil).Send), arg0)
+}
+
+// SendHeader mocks base method.
+func (m *MockGateway_StreamActivatedJobsServer) SendHeader(arg0 metadata.MD) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SendHeader", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendHeader indicates an expected call of SendHeader.
+func (mr *MockGateway_StreamActivatedJobsServerMockRecorder) SendHeader(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendHeader", reflect.TypeOf((*MockGateway_StreamActivatedJobsServer)(nil).SendHeader), arg0)
+}
+
+// SendMsg mocks base method.
+func (m_2 *MockGateway_StreamActivatedJobsServer) SendMsg(m any) error {
+	m_2.ctrl.T.Helper()
+	ret := m_2.ctrl.Call(m_2, "SendMsg", m)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendMsg indicates an expected call of SendMsg.
+func (mr *MockGateway_StreamActivatedJobsServerMockRecorder) SendMsg(m interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockGateway_StreamActivatedJobsServer)(nil).SendMsg), m)
+}
+
+// SetHeader mocks base method.
+func (m *MockGateway_StreamActivatedJobsServer) SetHeader(arg0 metadata.MD) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetHeader", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetHeader indicates an expected call of SetHeader.
+func (mr *MockGateway_StreamActivatedJobsServerMockRecorder) SetHeader(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetHeader", reflect.TypeOf((*MockGateway_StreamActivatedJobsServer)(nil).SetHeader), arg0)
+}
+
+// SetTrailer mocks base method.
+func (m *MockGateway_StreamActivatedJobsServer) SetTrailer(arg0 metadata.MD) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetTrailer", arg0)
+}
+
+// SetTrailer indicates an expected call of SetTrailer.
+func (mr *MockGateway_StreamActivatedJobsServerMockRecorder) SetTrailer(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTrailer", reflect.TypeOf((*MockGateway_StreamActivatedJobsServer)(nil).SetTrailer), arg0)
 }

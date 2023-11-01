@@ -88,6 +88,37 @@ func TestPublishMessageCommandWithMessageId(t *testing.T) {
 	}
 }
 
+func TestPublishMessageCommandWithTenantId(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	request := &pb.PublishMessageRequest{
+		Name:           "foo",
+		CorrelationKey: "bar",
+		TenantId:       "1234",
+	}
+	stub := &pb.PublishMessageResponse{}
+
+	client.EXPECT().PublishMessage(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewPublishMessageCommand(client, func(context.Context, error) bool { return false })
+
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := command.MessageName("foo").CorrelationKey("bar").TenantId("1234").Send(ctx)
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
 func TestPublishMessageCommandWithTimeToLive(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

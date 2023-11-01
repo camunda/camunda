@@ -83,6 +83,37 @@ func TestEvaluateDecisionCommandByDecisionId(t *testing.T) {
 	}
 }
 
+func TestEvaluateDecisionCommandTenantId(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	request := &pb.EvaluateDecisionRequest{
+		DecisionId: "foo",
+		TenantId:   "123",
+	}
+	stub := &pb.EvaluateDecisionResponse{
+		DecisionKey:     123,
+		DecisionId:      "foo",
+		DecisionVersion: 4545,
+	}
+
+	client.EXPECT().EvaluateDecision(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewEvaluateDecisionCommand(client, func(context.Context, error) bool { return false })
+
+	response, err := command.DecisionId("foo").TenantId("123").Send(context.Background())
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
 func TestEvaluateDecisionCommandWithVariablesFromString(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

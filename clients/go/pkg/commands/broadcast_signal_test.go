@@ -55,6 +55,38 @@ func TestBroadcastSignalCommand(t *testing.T) {
 	}
 }
 
+func TestBroadcastSignalCommandWithTenantId(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	request := &pb.BroadcastSignalRequest{
+		SignalName: "foo",
+		TenantId:   "1234",
+	}
+	stub := &pb.BroadcastSignalResponse{}
+
+	client.EXPECT().BroadcastSignal(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewBroadcastSignalCommand(client, func(context.Context, error) bool { return false })
+
+	signalCmd := command.SignalName("foo").TenantId("1234")
+
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := signalCmd.Send(ctx)
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
 func TestBroadcastSignalCommandWithVariablesFromString(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

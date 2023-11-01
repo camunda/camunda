@@ -32,6 +32,7 @@ type BroadcastSignalCommandStep1 interface {
 type BroadcastSignalCommandStep2 interface {
 	DispatchBroadcastSignalCommand
 
+	TenantId(string) BroadcastSignalCommandStep2
 	// Expected to be valid JSON string
 	VariablesFromString(string) (BroadcastSignalCommandStep2, error)
 
@@ -47,6 +48,12 @@ type BroadcastSignalCommandStep2 interface {
 type BroadcastSignalCommand struct {
 	Command
 	request pb.BroadcastSignalRequest
+}
+
+//nolint:revive
+func (cmd *BroadcastSignalCommand) TenantId(tenantId string) BroadcastSignalCommandStep2 {
+	cmd.request.TenantId = tenantId
+	return cmd
 }
 
 func (cmd *BroadcastSignalCommand) VariablesFromString(variables string) (BroadcastSignalCommandStep2, error) {

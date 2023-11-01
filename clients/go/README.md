@@ -46,4 +46,3 @@ go mod vendor
 ```
 
 This command will also remove or download dependencies as needed. To do that without vendoring them, you can run `go mod tidy`.
-

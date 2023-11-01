@@ -48,6 +48,12 @@ func (cmd *DeployResourceCommand) Send(ctx context.Context) (*pb.DeployResourceR
 	return response, err
 }
 
+//nolint:revive
+func (cmd *DeployResourceCommand) TenantId(tenantId string) *DeployResourceCommand {
+	cmd.request.TenantId = tenantId
+	return cmd
+}
+
 func NewDeployResourceCommand(gateway pb.GatewayClient, pred retryPredicate) *DeployResourceCommand {
 	return &DeployResourceCommand{
 		Command: Command{

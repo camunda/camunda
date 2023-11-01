@@ -173,6 +173,42 @@ func TestActivateJobsCommandWithTimeout(t *testing.T) {
 	}
 }
 
+func TestActivateJobsCommandWithTenantIDs(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+	stream := mock_pb.NewMockGateway_ActivateJobsClient(ctrl)
+
+	request := &pb.ActivateJobsRequest{
+		Type:              "foo",
+		MaxJobsToActivate: 5,
+		Timeout:           DefaultJobTimeoutInMs,
+		Worker:            DefaultJobWorkerName,
+		RequestTimeout:    longPollMillis,
+		TenantIds:         []string{"1234", "5555"},
+	}
+
+	stream.EXPECT().Recv().Return(nil, io.EOF)
+	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stream, nil)
+
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	jobs, err := NewActivateJobsCommand(client, func(context.Context, error) bool {
+		return false
+	}).JobType("foo").MaxJobsToActivate(5).TenantIds("1234", "5555").Send(ctx)
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if len(jobs) != 0 {
+		t.Errorf("Failed to receive response")
+	}
+
+}
+
 func TestActivateJobsCommandWithWorkerName(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
