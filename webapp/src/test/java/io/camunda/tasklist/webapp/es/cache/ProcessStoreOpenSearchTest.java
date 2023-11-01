@@ -12,6 +12,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -26,9 +28,9 @@ import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.property.MultiTenancyProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.ProcessIndex;
-import io.camunda.tasklist.store.elasticsearch.ProcessStoreElasticSearch;
-import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
-import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.tasklist.store.opensearch.ProcessStoreOpenSearch;
+import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
+import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthentication;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorization;
@@ -37,14 +39,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.apache.lucene.search.TotalHits;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.bucket.composite.CompositeAggregation;
-import org.elasticsearch.search.aggregations.metrics.TopHits;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,16 +49,21 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.opensearch.client.opensearch._types.aggregations.Aggregate;
+import org.opensearch.client.opensearch._types.aggregations.CompositeBucket;
+import org.opensearch.client.opensearch._types.aggregations.TopHitsAggregate;
+import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.search.Hit;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-class ProcessStoreElasticSearchTest {
+class ProcessStoreOpenSearchTest {
   @Mock private ProcessIndex processIndex;
-  @Mock private TenantAwareElasticsearchClient tenantAwareClient;
-  @InjectMocks private ProcessStoreElasticSearch processStore;
+  @Mock private TenantAwareOpenSearchClient tenantAwareClient;
+  @InjectMocks private ProcessStoreOpenSearch processStore;
   @InjectMocks private IdentityAuthorizationService identityService;
   @Mock private ObjectMapper objectMapper;
   @InjectMocks private SpringContextHolder springContextHolder;
@@ -79,7 +79,7 @@ class ProcessStoreElasticSearchTest {
   @Test
   public void shouldReturnAProcessEntityWhenGetProcessByBpmnIdIsCalled() throws IOException {
     // given
-    mockElasticSearchSuccess();
+    mockOpenSearchSuccess();
 
     // when
     final ProcessEntity result = processStore.getProcessByBpmnProcessId("bpmnProcessId");
@@ -92,7 +92,7 @@ class ProcessStoreElasticSearchTest {
   @Test
   public void shouldReturnNotFoundWhenESReturnsZeroHits() throws IOException {
     // given
-    mockElasticSearchNotFound();
+    mockOpenSearchNotFound();
 
     // when and then
     assertThrows(
@@ -104,7 +104,7 @@ class ProcessStoreElasticSearchTest {
   public void shouldReturnIOExceptionForGetProcessByBpmnId() throws IOException {
     // given
     final IOException mockedException = new IOException("IO Exception during search");
-    when(tenantAwareClient.search(any(SearchRequest.class))).thenThrow(mockedException);
+    when(tenantAwareClient.search(any(), eq(ProcessEntity.class))).thenThrow(mockedException);
     when(processIndex.getAlias()).thenReturn("alias");
 
     // when
@@ -126,7 +126,7 @@ class ProcessStoreElasticSearchTest {
   @Test
   public void shouldGetProcessReturnAProcessById() throws IOException {
     // when
-    mockElasticSearchSuccess();
+    mockOpenSearchSuccess();
 
     // given
     final ProcessEntity result = processStore.getProcess("1");
@@ -138,7 +138,7 @@ class ProcessStoreElasticSearchTest {
   @Test
   public void shouldGetProcessReturnNotFound() throws IOException {
     // when
-    mockElasticSearchNotFound();
+    mockOpenSearchNotFound();
 
     // given and then
     assertThrows(TasklistRuntimeException.class, () -> processStore.getProcess("processId"));
@@ -151,7 +151,7 @@ class ProcessStoreElasticSearchTest {
     final String errorMessage = "IOException error message";
     final IOException exception = new IOException(errorMessage);
 
-    when(tenantAwareClient.search(any(SearchRequest.class))).thenThrow(exception);
+    when(tenantAwareClient.search(any(), eq(ProcessEntity.class))).thenThrow(exception);
     when(processIndex.getAlias()).thenReturn("index_alias");
 
     // given and then
@@ -170,13 +170,17 @@ class ProcessStoreElasticSearchTest {
     when(tasklistProperties.getIdentity().getBaseUrl()).thenReturn("baseUrl");
     mockAuthenticationOverIdentity(false);
     when(processIndex.getAlias()).thenReturn("index_alias");
-    final SearchResponse searchResponse = mock(SearchResponse.class);
-    when(tenantAwareClient.search(any(SearchRequest.class))).thenReturn(searchResponse);
-    final var aggregations = mock(Aggregations.class);
-    when(searchResponse.getAggregations()).thenReturn(aggregations);
-    final var compositeAggregation = mock(CompositeAggregation.class);
-    when(aggregations.get("bpmnProcessId_tenantId_buckets")).thenReturn(compositeAggregation);
-    when(compositeAggregation.getBuckets()).thenReturn(Collections.emptyList());
+    final SearchResponse<ProcessEntity> searchResponse = mock(SearchResponse.class);
+    when(tenantAwareClient.search(any(), eq(ProcessEntity.class))).thenReturn(searchResponse);
+
+    final var aggregations = mock(Aggregate.class, RETURNS_DEEP_STUBS);
+    when(searchResponse.aggregations())
+        .thenReturn(Map.of("bpmnProcessId_tenantId_buckets", aggregations));
+    final var bucket = mock(CompositeBucket.class);
+    when(aggregations.composite().buckets().array()).thenReturn(Collections.emptyList());
+    final var topHits = mock(TopHitsAggregate.class, RETURNS_DEEP_STUBS);
+    when(OpenSearchUtil.mapSearchHits(topHits.hits().hits(), objectMapper, ProcessEntity.class))
+        .thenReturn(List.of(mock(ProcessEntity.class)));
     final List<String> authorizations = identityService.getProcessDefinitionsFromAuthorization();
 
     // given
@@ -194,7 +198,7 @@ class ProcessStoreElasticSearchTest {
   public void shouldReturnProcessesWhenResourceAuthIsEnabledWithAuthorization() throws Exception {
     // when
     mockAuthenticationOverIdentity(true);
-    mockElasticSearchSuccessWithAggregatedResponse();
+    mockOpenSearchSuccessWithAggregatedResponse();
     final List<String> authorizations = identityService.getProcessDefinitionsFromAuthorization();
 
     // given
@@ -213,7 +217,7 @@ class ProcessStoreElasticSearchTest {
     // when
     when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
     when(tasklistProperties.getIdentity().isResourcePermissionsEnabled()).thenReturn(false);
-    mockElasticSearchSuccessWithAggregatedResponse();
+    mockOpenSearchSuccessWithAggregatedResponse();
 
     final List<String> authorizations = identityService.getProcessDefinitionsFromAuthorization();
 
@@ -266,56 +270,44 @@ class ProcessStoreElasticSearchTest {
     }
   }
 
-  private void mockElasticSearchSuccess() throws IOException {
-    final SearchResponse searchResponse = mock(SearchResponse.class);
-    final SearchHits searchHits = mock(SearchHits.class);
+  private void mockOpenSearchSuccess() throws IOException {
+    final SearchResponse searchResponse = mock(SearchResponse.class, RETURNS_DEEP_STUBS);
     final ProcessEntity processEntityMock = mock(ProcessEntity.class);
-    final TotalHits totalHits = new TotalHits(1L, TotalHits.Relation.EQUAL_TO);
-    final String jsonString = "any-json-string";
-
-    when(searchHits.getTotalHits()).thenReturn(totalHits);
-    when(searchHits.getHits()).thenReturn(new SearchHit[] {mock(SearchHit.class)});
-    when(searchHits.getHits()[0].getSourceAsString()).thenReturn(jsonString);
-    when(searchResponse.getHits()).thenReturn(searchHits);
+    final Hit hit = mock(Hit.class);
+    when(searchResponse.hits().total().value()).thenReturn(1L);
+    when(searchResponse.hits().hits()).thenReturn(List.of(hit));
+    when(hit.source()).thenReturn(processEntityMock);
     when(processEntityMock.getId()).thenReturn("1");
-    when(ElasticsearchUtil.fromSearchHit(jsonString, objectMapper, ProcessEntity.class))
-        .thenReturn(processEntityMock);
-    when(tenantAwareClient.search(any(SearchRequest.class))).thenReturn(searchResponse);
+    when(tenantAwareClient.search(any(), eq(ProcessEntity.class))).thenReturn(searchResponse);
     when(processIndex.getAlias()).thenReturn("index_alias");
   }
 
-  private void mockElasticSearchSuccessWithAggregatedResponse() throws IOException {
+  private void mockOpenSearchSuccessWithAggregatedResponse() throws IOException {
     final var mockedSearchResponse = mock(SearchResponse.class);
-    when(tenantAwareClient.search(any(SearchRequest.class))).thenReturn(mockedSearchResponse);
+    when(tenantAwareClient.search(any(), eq(ProcessEntity.class))).thenReturn(mockedSearchResponse);
     when(processIndex.getAlias()).thenReturn("index_alias");
 
-    final var aggregations = mock(Aggregations.class);
-    when(mockedSearchResponse.getAggregations()).thenReturn(aggregations);
-    final var compositeAggregation = mock(CompositeAggregation.class);
-    when(aggregations.get("bpmnProcessId_tenantId_buckets")).thenReturn(compositeAggregation);
-    final var bucket = mock(CompositeAggregation.Bucket.class);
-    when((List<CompositeAggregation.Bucket>) compositeAggregation.getBuckets())
-        .thenReturn(List.of(bucket));
-    final var topHits = mock(TopHits.class);
-    final var bucketAggregations = mock(Aggregations.class);
-    when(bucket.getAggregations()).thenReturn(bucketAggregations);
-    when(bucketAggregations.get("top_hit_doc")).thenReturn(topHits);
-    final var searchHits = mock(SearchHits.class);
-    when(topHits.getHits()).thenReturn(searchHits);
-    final var searchHit = mock(SearchHit.class);
-    when(searchHits.getHits()).thenReturn(new SearchHit[] {searchHit});
-    when(searchHit.getSourceAsString()).thenReturn("");
+    final var aggregations = mock(Aggregate.class, RETURNS_DEEP_STUBS);
+    when(mockedSearchResponse.aggregations())
+        .thenReturn(Map.of("bpmnProcessId_tenantId_buckets", aggregations));
+    final var bucket = mock(CompositeBucket.class);
+    when(aggregations.composite().buckets().array()).thenReturn(List.of(bucket));
+    final var topHitsAggregate = mock(Aggregate.class);
+    final var topHits = mock(TopHitsAggregate.class, RETURNS_DEEP_STUBS);
+    when(topHitsAggregate.topHits()).thenReturn(topHits);
+    final Hit hit = mock(Hit.class);
+    when(topHits.hits().hits()).thenReturn(List.of(hit));
+    when(hit.source()).thenReturn("some-json");
+    when(objectMapper.readValue("some-json", ProcessEntity.class))
+        .thenReturn(mock(ProcessEntity.class));
+    when(bucket.aggregations()).thenReturn(Map.of("top_hit_doc", topHitsAggregate));
   }
 
-  private void mockElasticSearchNotFound() throws IOException {
-    final SearchResponse searchResponse = mock(SearchResponse.class);
-    final SearchHits searchHits = mock(SearchHits.class);
-    final TotalHits totalHits = new TotalHits(0L, TotalHits.Relation.EQUAL_TO);
-
-    when(searchResponse.getHits()).thenReturn(searchHits);
-    when(searchHits.getTotalHits()).thenReturn(totalHits);
-    when(searchHits.getHits()).thenReturn(new SearchHit[] {mock(SearchHit.class)});
-    when(tenantAwareClient.search(any(SearchRequest.class))).thenReturn(searchResponse);
+  private void mockOpenSearchNotFound() throws IOException {
+    final SearchResponse searchResponse = mock(SearchResponse.class, RETURNS_DEEP_STUBS);
+    final Hit hit = mock(Hit.class);
+    when(searchResponse.hits().hits()).thenReturn(Collections.emptyList());
+    when(tenantAwareClient.search(any(), eq(ProcessEntity.class))).thenReturn(searchResponse);
     when(processIndex.getAlias()).thenReturn("index_alias");
   }
 }

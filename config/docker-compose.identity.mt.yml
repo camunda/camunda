@@ -36,6 +36,17 @@ services:
     volumes:
       - ./els-snapshots:/usr/local/els-snapshots
 
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.7.1
+    ports:
+      - 5601:5601
+    environment:
+      - elasticsearch.hosts=elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - identity-network
+
   keycloak:
     depends_on:
       - postgres

@@ -342,7 +342,7 @@ public abstract class OpenSearchUtil {
   }
 
   public static <T> List<T> mapSearchHits(
-      List<Hit> searchHits, ObjectMapper objectMapper, Class<T> clazz) {
+      List<? extends Hit<?>> searchHits, ObjectMapper objectMapper, Class<T> clazz) {
     return map(
         searchHits,
         (searchHit) -> fromSearchHit(searchHit.source().toString(), objectMapper, clazz));

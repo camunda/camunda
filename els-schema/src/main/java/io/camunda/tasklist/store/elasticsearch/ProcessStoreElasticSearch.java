@@ -27,7 +27,8 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.bucket.composite.CompositeAggregation;
+import org.elasticsearch.search.aggregations.bucket.composite.TermsValuesSourceBuilder;
 import org.elasticsearch.search.aggregations.metrics.TopHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.collapse.CollapseBuilder;
@@ -42,6 +43,10 @@ import org.springframework.stereotype.Component;
 public class ProcessStoreElasticSearch implements ProcessStore {
 
   private static final Boolean CASE_INSENSITIVE = true;
+  private static final String BPMN_PROCESS_ID_TENANT_ID_AGG_NAME = "bpmnProcessId_tenantId_buckets";
+  private static final String TOP_HITS_AGG_NAME = "top_hit_doc";
+  private static final String DEFINITION_ID_TERMS_SOURCE_NAME = "group_by_definition_id";
+  private static final String TENANT_ID_TERMS_SOURCE_NAME = "group_by_tenant_id";
 
   @Autowired private ProcessIndex processIndex;
 
@@ -262,22 +267,21 @@ public class ProcessStoreElasticSearch implements ProcessStore {
     final SearchSourceBuilder sourceBuilder =
         new SearchSourceBuilder()
             .query(qb)
-            .sort(SortBuilders.fieldSort(ProcessIndex.VERSION).order(SortOrder.DESC))
             .size(0) // Set size to 0 to retrieve only aggregation results
             .aggregation(
-                AggregationBuilders.terms("group_by_definition_id")
-                    .field(ProcessIndex.PROCESS_DEFINITION_ID)
+                AggregationBuilders.composite(
+                        BPMN_PROCESS_ID_TENANT_ID_AGG_NAME,
+                        List.of(
+                            new TermsValuesSourceBuilder(DEFINITION_ID_TERMS_SOURCE_NAME)
+                                .field(ProcessIndex.PROCESS_DEFINITION_ID),
+                            new TermsValuesSourceBuilder(TENANT_ID_TERMS_SOURCE_NAME)
+                                .field(ProcessIndex.TENANT_ID)))
                     .size(ElasticsearchUtil.QUERY_MAX_SIZE)
                     .subAggregation(
-                        AggregationBuilders.terms("group_by_tenant_id")
-                            .field(ProcessIndex.TENANT_ID)
-                            .size(ElasticsearchUtil.QUERY_MAX_SIZE)
-                            .subAggregation(
-                                AggregationBuilders.topHits("top_hit_doc")
-                                    .sort(
-                                        SortBuilders.fieldSort(ProcessIndex.VERSION)
-                                            .order(SortOrder.DESC))
-                                    .size(1))));
+                        AggregationBuilders.topHits(TOP_HITS_AGG_NAME)
+                            .sort(
+                                SortBuilders.fieldSort(ProcessIndex.VERSION).order(SortOrder.DESC))
+                            .size(1)));
 
     final SearchRequest searchRequest =
         new SearchRequest(processIndex.getAlias()).source(sourceBuilder);
@@ -286,18 +290,16 @@ public class ProcessStoreElasticSearch implements ProcessStore {
     try {
       response = tenantAwareClient.search(searchRequest);
 
-      final Terms definitionIdTerms = response.getAggregations().get("group_by_definition_id");
+      final CompositeAggregation compositeAggregation =
+          response.getAggregations().get(BPMN_PROCESS_ID_TENANT_ID_AGG_NAME);
       final List<ProcessEntity> results = new ArrayList<>();
-      for (final Terms.Bucket definitionIdBucket : definitionIdTerms.getBuckets()) {
-        final Terms tenantIdTerms = definitionIdBucket.getAggregations().get("group_by_tenant_id");
-        for (final Terms.Bucket tenantIdBucket : tenantIdTerms.getBuckets()) {
-          final TopHits topHits = tenantIdBucket.getAggregations().get("top_hit_doc");
-          for (final SearchHit hit : topHits.getHits().getHits()) {
-            final ProcessEntity entity =
-                ElasticsearchUtil.fromSearchHit(
-                    hit.getSourceAsString(), objectMapper, ProcessEntity.class);
-            results.add(entity);
-          }
+      for (final CompositeAggregation.Bucket bucket : compositeAggregation.getBuckets()) {
+        final TopHits topHits = bucket.getAggregations().get(TOP_HITS_AGG_NAME);
+        for (final SearchHit hit : topHits.getHits().getHits()) {
+          final ProcessEntity entity =
+              ElasticsearchUtil.fromSearchHit(
+                  hit.getSourceAsString(), objectMapper, ProcessEntity.class);
+          results.add(entity);
         }
       }
       return results;

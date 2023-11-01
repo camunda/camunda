@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.store.opensearch;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
@@ -19,6 +20,7 @@ import io.camunda.tasklist.util.OpenSearchUtil;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.opensearch.client.opensearch._types.FieldSort;
@@ -26,12 +28,19 @@ import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
+import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.aggregations.Buckets;
+import org.opensearch.client.opensearch._types.aggregations.CompositeAggregation;
+import org.opensearch.client.opensearch._types.aggregations.CompositeAggregationSource;
+import org.opensearch.client.opensearch._types.aggregations.CompositeBucket;
+import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
+import org.opensearch.client.opensearch._types.aggregations.TopHitsAggregate;
+import org.opensearch.client.opensearch._types.aggregations.TopHitsAggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.FieldCollapse;
-import org.opensearch.client.opensearch.core.search.Hit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -41,12 +50,18 @@ import org.springframework.stereotype.Component;
 public class ProcessStoreOpenSearch implements ProcessStore {
 
   private static final Boolean CASE_INSENSITIVE = true;
+  private static final String BPMN_PROCESS_ID_TENANT_ID_AGG_NAME = "bpmnProcessId_tenantId_buckets";
+  private static final String TOP_HITS_AGG_NAME = "top_hit_doc";
+  private static final String DEFINITION_ID_TERMS_SOURCE_NAME = "group_by_definition_id";
+  private static final String TENANT_ID_TERMS_SOURCE_NAME = "group_by_tenant_id";
 
   @Autowired private ProcessIndex processIndex;
 
   @Autowired private TenantAwareOpenSearchClient tenantAwareClient;
 
   @Autowired private TasklistProperties tasklistProperties;
+
+  @Autowired private ObjectMapper objectMapper;
 
   @Override
   public ProcessEntity getProcessByProcessDefinitionKey(String processDefinitionKey) {
@@ -78,7 +93,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
             String.format("Process with key %s not found", processDefinitionKey));
       }
     } catch (IOException | OpenSearchException e) {
-      throw new RuntimeException(e);
+      throw new TasklistRuntimeException(e);
     }
   }
 
@@ -161,7 +176,9 @@ public class ProcessStoreOpenSearch implements ProcessStore {
             String.format("Could not find process with id '%s'.", processId));
       }
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      final String message =
+          String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
+      throw new TasklistRuntimeException(message, e);
     }
   }
 
@@ -233,20 +250,8 @@ public class ProcessStoreOpenSearch implements ProcessStore {
               ._toQuery();
     }
 
-    try {
-      final SearchRequest.Builder searchRequest =
-          getSearchRequestUniqueByProcessDefinitionId(q, tenantId);
-
-      final SearchResponse<ProcessEntity> response =
-          tenantAwareClient.search(searchRequest, ProcessEntity.class);
-
-      return response.hits().hits().stream().map(Hit::source).collect(Collectors.toList());
-
-    } catch (IOException e) {
-      final String message =
-          String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
-      throw new TasklistRuntimeException(message, e);
-    }
+    return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(
+        addFilterOnTenantIdIfRequired(q, tenantId));
   }
 
   @Override
@@ -304,6 +309,18 @@ public class ProcessStoreOpenSearch implements ProcessStore {
                                     .field(ProcessIndex.PROCESS_DEFINITION_ID)
                                     .value(regexSearch)
                                     .caseInsensitive(CASE_INSENSITIVE)))
+                .must(
+                    m ->
+                        m.terms(
+                            terms ->
+                                terms
+                                    .field(ProcessIndex.PROCESS_DEFINITION_ID)
+                                    .terms(
+                                        v ->
+                                            v.value(
+                                                processDefinitions.stream()
+                                                    .map(pd -> FieldValue.of(pd))
+                                                    .collect(Collectors.toList())))))
                 .must(m -> m.exists(e -> e.field(ProcessIndex.PROCESS_DEFINITION_ID)))
                 .mustNot(
                     mn ->
@@ -345,15 +362,83 @@ public class ProcessStoreOpenSearch implements ProcessStore {
               ._toQuery();
     }
 
+    return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(
+        addFilterOnTenantIdIfRequired(query, tenantId));
+  }
+
+  private Query addFilterOnTenantIdIfRequired(final Query query, final String tenantId) {
+    if (tasklistProperties.getMultiTenancy().isEnabled() && StringUtils.isNotBlank(tenantId)) {
+      final Query tenantQuery =
+          new Query.Builder()
+              .term(term -> term.field(ProcessIndex.TENANT_ID).value(FieldValue.of(tenantId)))
+              .build();
+      return OpenSearchUtil.joinWithAnd(tenantQuery, query);
+    }
+    return query;
+  }
+
+  private List<ProcessEntity> getProcessEntityUniqueByProcessDefinitionIdAndTenantId(Query query) {
+    final SearchRequest.Builder searchRequest =
+        new SearchRequest.Builder()
+            .index(processIndex.getAlias())
+            .query(query)
+            .size(0) // Set size to 0 to retrieve only aggregation results
+            .aggregations(
+                BPMN_PROCESS_ID_TENANT_ID_AGG_NAME,
+                Aggregation.of(
+                    agg ->
+                        agg.composite(
+                                CompositeAggregation.of(
+                                    ca ->
+                                        ca.sources(
+                                                Map.of(
+                                                    DEFINITION_ID_TERMS_SOURCE_NAME,
+                                                    CompositeAggregationSource.of(
+                                                        cas ->
+                                                            cas.terms(
+                                                                TermsAggregation.of(
+                                                                    ta ->
+                                                                        ta.field(
+                                                                            ProcessIndex
+                                                                                .PROCESS_DEFINITION_ID))))),
+                                                Map.of(
+                                                    TENANT_ID_TERMS_SOURCE_NAME,
+                                                    CompositeAggregationSource.of(
+                                                        cas ->
+                                                            cas.terms(
+                                                                TermsAggregation.of(
+                                                                    ta ->
+                                                                        ta.field(
+                                                                            ProcessIndex
+                                                                                .TENANT_ID))))))
+                                            .size(OpenSearchUtil.QUERY_MAX_SIZE)))
+                            .aggregations(
+                                TOP_HITS_AGG_NAME,
+                                TopHitsAggregation.of(
+                                        ta ->
+                                            ta.sort(
+                                                    SortOptions.of(
+                                                        s ->
+                                                            s.field(
+                                                                f ->
+                                                                    f.field(ProcessIndex.VERSION)
+                                                                        .order(SortOrder.Desc))))
+                                                .size(1))
+                                    ._toAggregation())));
     try {
-
-      final SearchRequest.Builder searchRequest =
-          getSearchRequestUniqueByProcessDefinitionId(query, tenantId);
-
       final SearchResponse<ProcessEntity> response =
           tenantAwareClient.search(searchRequest, ProcessEntity.class);
 
-      return response.hits().hits().stream().map(h -> h.source()).collect(Collectors.toList());
+      final Buckets<CompositeBucket> buckets =
+          response.aggregations().get(BPMN_PROCESS_ID_TENANT_ID_AGG_NAME).composite().buckets();
+      final List<ProcessEntity> results = new ArrayList<>();
+      for (final CompositeBucket bucket : buckets.array()) {
+        final TopHitsAggregate topHits = bucket.aggregations().get(TOP_HITS_AGG_NAME).topHits();
+        results.addAll(
+            OpenSearchUtil.mapSearchHits(topHits.hits().hits(), objectMapper, ProcessEntity.class));
+      }
+
+      return results;
 
     } catch (IOException e) {
       final String message =
@@ -362,74 +447,19 @@ public class ProcessStoreOpenSearch implements ProcessStore {
     }
   }
 
-  private SearchRequest.Builder getSearchRequestUniqueByProcessDefinitionId(
-      Query query, final String tenantId) {
-    // TODO https://github.com/camunda/tasklist/issues/3580
-    // implement aggregation by `ProcessIndex.PROCESS_DEFINITION_ID` and
-    // `ProcessIndex.TENANT_ID`
-    // to get unique processes instead of collapse
-    final FieldCollapse keyCollapse =
-        new FieldCollapse.Builder().field(ProcessIndex.PROCESS_DEFINITION_ID).build();
-    final SortOptions sortOptions =
-        new SortOptions.Builder()
-            .field(FieldSort.of(f -> f.field(ProcessIndex.VERSION).order(SortOrder.Desc)))
-            .build();
-
-    final Query qbTenantCheck;
-    if (tasklistProperties.getMultiTenancy().isEnabled() && StringUtils.isNotBlank(tenantId)) {
-      final Query tenantQuery =
-          new Query.Builder()
-              .term(term -> term.field(ProcessIndex.TENANT_ID).value(FieldValue.of(tenantId)))
-              .build();
-      qbTenantCheck = OpenSearchUtil.joinWithAnd(tenantQuery, query);
-    } else {
-      qbTenantCheck = query;
-    }
-
-    return new SearchRequest.Builder()
-        .index(List.of(processIndex.getAlias()))
-        .query(qbTenantCheck)
-        .collapse(keyCollapse)
-        .sort(sortOptions)
-        .size(OpenSearchUtil.QUERY_MAX_SIZE);
-  }
-
   @Override
   public List<ProcessEntity> getProcessesStartedByForm() {
-    final FieldCollapse keyCollapse =
-        new FieldCollapse.Builder().field(ProcessIndex.PROCESS_DEFINITION_ID).build();
-    final SortOptions sortOptions =
-        new SortOptions.Builder()
-            .field(FieldSort.of(f -> f.field(ProcessIndex.VERSION).order(SortOrder.Desc)))
-            .build();
-
-    final SearchResponse<ProcessEntity> response;
-
-    try {
-      final SearchRequest.Builder searchRequest = new SearchRequest.Builder();
-      searchRequest
-          .index(processIndex.getAlias())
-          .query(
-              q ->
-                  q.bool(
-                      b ->
-                          b.must(m -> m.exists(e -> e.field(ProcessIndex.PROCESS_DEFINITION_ID)))
-                              .mustNot(
-                                  mn ->
-                                      mn.term(
-                                          t ->
-                                              t.field(ProcessIndex.PROCESS_DEFINITION_ID)
-                                                  .value(FieldValue.of(""))))))
-          .collapse(keyCollapse)
-          .sort(sortOptions);
-      response = tenantAwareClient.search(searchRequest, ProcessEntity.class);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-
-    return response.hits().hits().stream()
-        .map(h -> h.source())
-        .filter(p -> p.isStartedByForm())
-        .collect(Collectors.toList());
+    final Query query =
+        QueryBuilders.bool()
+            .must(m -> m.exists(e -> e.field(ProcessIndex.PROCESS_DEFINITION_ID)))
+            .mustNot(
+                mn ->
+                    mn.term(
+                        t -> t.field(ProcessIndex.PROCESS_DEFINITION_ID).value(FieldValue.of(""))))
+            .build()
+            ._toQuery();
+    return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(query).stream()
+        .filter(ProcessEntity::isStartedByForm)
+        .toList();
   }
 }
