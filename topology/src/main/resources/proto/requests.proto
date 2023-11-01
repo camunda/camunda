@@ -39,3 +39,22 @@ message TopologyChangeResponse {
   map<string, topology_protocol.MemberState> expectedTopology = 3;
   repeated topology_protocol.TopologyChangeOperation plannedChanges = 4;
 }
+
+message Response {
+  oneof response {
+    TopologyChangeResponse topologyChangeResponse = 2;
+    ErrorResponse error = 3;
+  }
+}
+
+message ErrorResponse {
+  ErrorCode errorCode = 1;
+  string errorMessage = 2;
+}
+
+enum ErrorCode {
+  INVALID_REQUEST = 0;
+  OPERATION_NOT_ALLOWED = 1;
+  CONCURRENT_MODIFICATION = 2;
+  INTERNAL_ERROR = 3;
+}
