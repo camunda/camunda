@@ -22,8 +22,10 @@ import io.camunda.zeebe.management.cluster.TopologyChange;
 import io.camunda.zeebe.management.cluster.TopologyChange.StatusEnum;
 import io.camunda.zeebe.management.cluster.TopologyChangeCompletedInner;
 import io.camunda.zeebe.topology.api.TopologyChangeResponse;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.ScaleRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequestSender;
 import io.camunda.zeebe.topology.state.ClusterChangePlan;
@@ -42,6 +44,7 @@ import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOp
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
@@ -83,26 +86,31 @@ public class ClusterEndpoint {
 
   @PostMapping(path = "/{resource}/{id}")
   public ResponseEntity<?> add(
-      @PathVariable("resource") final Resource resource, @PathVariable final String id) {
+      @PathVariable("resource") final Resource resource, @PathVariable final int id) {
     return switch (resource) {
-      case brokers -> ResponseEntity.status(501).body("Adding brokers is not supported");
+      case brokers -> mapOperationResponse(
+          requestSender
+              .addMembers(new AddMembersRequest(Set.of(new MemberId(String.valueOf(id)))))
+              .join());
       case partitions -> ResponseEntity.status(501).body("Adding partitions is not supported");
     };
   }
 
   @DeleteMapping(path = "/{resource}/{id}")
   public ResponseEntity<?> remove(
-      @PathVariable("resource") final Resource resource, @PathVariable final String id) {
+      @PathVariable("resource") final Resource resource, @PathVariable final int id) {
     return switch (resource) {
-      case brokers -> ResponseEntity.status(501).body("Removing brokers is not supported");
+      case brokers -> mapOperationResponse(
+          requestSender
+              .removeMembers(new RemoveMembersRequest(Set.of(new MemberId(String.valueOf(id)))))
+              .join());
       case partitions -> ResponseEntity.status(501).body("Removing partitions is not supported");
     };
   }
 
   @PostMapping(path = "/{resource}", consumes = "application/json")
   public ResponseEntity<?> scale(
-      @PathVariable("resource") final Resource resource,
-      @RequestBody final List<Integer> ids) {
+      @PathVariable("resource") final Resource resource, @RequestBody final List<Integer> ids) {
     return switch (resource) {
       case brokers -> scaleBrokers(ids);
       case partitions -> new ResponseEntity<>(
