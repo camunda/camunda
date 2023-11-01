@@ -18,10 +18,10 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import java.util.List;
 import java.util.function.Predicate;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 @ZeebeIntegration
 @Execution(ExecutionMode.CONCURRENT)
