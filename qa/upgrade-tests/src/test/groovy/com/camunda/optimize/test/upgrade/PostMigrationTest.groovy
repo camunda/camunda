@@ -51,6 +51,7 @@ import java.util.stream.Collectors
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.fail
 import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_PROFILE
 
 class PostMigrationTest {
   private static final String DEFAULT_USER = "demo";
@@ -70,7 +71,7 @@ class PostMigrationTest {
     def configurationService = ConfigurationServiceBuilder.createDefaultConfiguration()
     elasticsearchClient = new OptimizeElasticsearchClient(
       ElasticsearchHighLevelRestClientBuilder.build(configurationService),
-      new OptimizeIndexNameService(configurationService)
+      new OptimizeIndexNameService(configurationService, ELASTICSEARCH_PROFILE)
     );
 
     alertClient = new AlertClient(() -> requestExecutor);

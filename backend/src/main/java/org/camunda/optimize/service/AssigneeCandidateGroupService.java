@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service;
 
-
 import com.google.common.collect.Sets;
 import jakarta.ws.rs.ForbiddenException;
 import lombok.NonNull;

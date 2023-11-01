@@ -61,7 +61,7 @@ public class ZeebeProcessDefinitionImportService implements ImportService<ZeebeP
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
     return elasticsearchImportJobExecutor;
   }
 

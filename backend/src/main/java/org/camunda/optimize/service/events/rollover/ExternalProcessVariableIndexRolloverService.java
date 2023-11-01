@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.events.rollover;
 
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
@@ -19,9 +19,9 @@ public class ExternalProcessVariableIndexRolloverService extends AbstractIndexRo
 
   private final ConfigurationService configurationService;
 
-  public ExternalProcessVariableIndexRolloverService(final OptimizeElasticsearchClient esClient,
+  protected ExternalProcessVariableIndexRolloverService(final DatabaseClient databaseClient,
                                                      final ConfigurationService configurationService) {
-    super(esClient);
+    super(databaseClient);
     this.configurationService = configurationService;
   }
 
@@ -39,4 +39,5 @@ public class ExternalProcessVariableIndexRolloverService extends AbstractIndexRo
   protected int getScheduleIntervalInMinutes() {
     return configurationService.getVariableIndexRolloverConfiguration().getScheduleIntervalInMinutes();
   }
+
 }

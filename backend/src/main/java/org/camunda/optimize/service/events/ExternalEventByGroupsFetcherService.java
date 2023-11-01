@@ -8,6 +8,7 @@ package org.camunda.optimize.service.events;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
+import org.camunda.optimize.service.db.events.EventFetcherService;
 import org.camunda.optimize.service.db.reader.ExternalEventReader;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;

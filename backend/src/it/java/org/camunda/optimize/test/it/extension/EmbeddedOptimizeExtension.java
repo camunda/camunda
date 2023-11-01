@@ -119,6 +119,7 @@ public class EmbeddedOptimizeExtension
   private OptimizeRequestExecutor requestExecutor;
   private ObjectMapper objectMapper;
   private boolean resetImportOnStart = true;
+
   @Getter
   @Setter
   private boolean closeContextAfterTest = false;

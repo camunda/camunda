@@ -69,7 +69,7 @@ public class ProcessDefinitionImportService implements ImportService<ProcessDefi
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
     return elasticsearchImportJobExecutor;
   }
 

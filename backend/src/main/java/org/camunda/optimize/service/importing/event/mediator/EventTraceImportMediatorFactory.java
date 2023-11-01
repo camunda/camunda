@@ -6,21 +6,22 @@
 package org.camunda.optimize.service.importing.event.mediator;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.service.EventTraceStateServiceFactory;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.events.CamundaEventService;
 import org.camunda.optimize.service.events.CamundaTraceableEventFetcherService;
+import org.camunda.optimize.service.db.events.EventTraceStateServiceFactory;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.importing.event.handler.EventImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.event.service.EventTraceImportService;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.db.DatabaseConstants;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
 
 @AllArgsConstructor
 @Component
 public class EventTraceImportMediatorFactory {
+
   private final ConfigurationService configurationService;
   private final EventImportIndexHandlerRegistry eventImportIndexHandlerRegistry;
   private final EventTraceStateServiceFactory eventTraceStateServiceFactory;

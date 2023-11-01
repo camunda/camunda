@@ -7,6 +7,7 @@ package org.camunda.optimize.service.events;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.event.sequence.OrderedEventDto;
+import org.camunda.optimize.service.db.events.EventFetcherService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;

@@ -65,6 +65,7 @@ public class DefinitionService implements ConfigurationReloadable {
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final TenantService tenantService;
   private final CamundaActivityEventReader camundaActivityEventReader;
+
   private final LoadingCache<String, Map<String, DefinitionOptimizeResponseDto>> latestProcessDefinitionCache;
   private final LoadingCache<String, Map<String, DefinitionOptimizeResponseDto>> latestDecisionDefinitionCache;
 

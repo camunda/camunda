@@ -6,11 +6,8 @@
 package org.camunda.optimize.service.events.rollover;
 
 import lombok.SneakyThrows;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
-import org.elasticsearch.client.GetAliasesResponse;
-import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
@@ -25,9 +22,9 @@ public class EventIndexRolloverService extends AbstractIndexRolloverService {
 
   private final ConfigurationService configurationService;
 
-  public EventIndexRolloverService(final OptimizeElasticsearchClient esClient,
+  protected EventIndexRolloverService(final DatabaseClient databaseClient,
                                    final ConfigurationService configurationService) {
-    super(esClient);
+    super(databaseClient);
     this.configurationService = configurationService;
   }
 
@@ -44,6 +41,7 @@ public class EventIndexRolloverService extends AbstractIndexRolloverService {
     return configurationService.getEventIndexRolloverConfiguration().getMaxIndexSizeGB();
   }
 
+  // TODO change to configurationService.getIndexPrefix() with OPT-7349
   @Override
   protected int getScheduleIntervalInMinutes() {
     return configurationService.getEventIndexRolloverConfiguration().getScheduleIntervalInMinutes();
@@ -51,13 +49,11 @@ public class EventIndexRolloverService extends AbstractIndexRolloverService {
 
   @SneakyThrows
   private Set<String> getCamundaActivityEventsIndexAliases() {
-    final GetAliasesResponse aliases =
-      esClient.getAlias(new GetAliasesRequest(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*"));
-    return aliases.getAliases()
+    return databaseClient.getAliasesForIndex(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*")
       .values()
       .stream()
-      .flatMap(aliasMetaDataPerIndex -> aliasMetaDataPerIndex.stream().map(AliasMetadata::alias))
-      .map(alias -> alias.substring(configurationService.getEsIndexPrefix().length() + 1))
+      .flatMap(Set::stream)
+      .map(alias -> alias.substring(databaseClient.getIndexNameService().getIndexPrefix().length() + 1))
       .collect(Collectors.toSet());
   }
 

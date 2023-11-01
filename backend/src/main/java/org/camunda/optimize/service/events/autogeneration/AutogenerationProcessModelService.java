@@ -22,8 +22,8 @@ import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceE
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
-import org.camunda.optimize.service.EventTraceStateService;
-import org.camunda.optimize.service.EventTraceStateServiceFactory;
+import org.camunda.optimize.service.events.EventTraceStateService;
+import org.camunda.optimize.service.db.events.EventTraceStateServiceFactory;
 import org.camunda.optimize.service.util.EventModelBuilderUtil;
 import org.springframework.stereotype.Component;
 

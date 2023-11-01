@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.events;
+package org.camunda.optimize.service.db.events;
 
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessEventDto;
 

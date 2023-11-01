@@ -56,7 +56,7 @@ public abstract class AbstractEngineIncidentImportService implements ImportServi
     }
   }
 
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
     return elasticsearchImportJobExecutor;
   }
 

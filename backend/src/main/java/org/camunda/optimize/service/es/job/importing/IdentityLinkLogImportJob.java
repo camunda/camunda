@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
+
 public class IdentityLinkLogImportJob extends ElasticsearchImportJob<IdentityLinkLogEntryDto> {
 
   private final IdentityLinkLogWriter identityLinkLogWriter;

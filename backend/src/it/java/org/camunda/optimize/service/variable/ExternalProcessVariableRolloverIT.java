@@ -27,6 +27,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_PROCESS
 import static org.camunda.optimize.service.db.DatabaseConstants.INDEX_SUFFIX_PRE_ROLLOVER;
 
 public class ExternalProcessVariableRolloverIT extends AbstractPlatformIT {
+
   private static final int NUMBER_OF_VARIABLES_IN_BATCH = 10;
   private static final String EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER = "-000002";
   private static final String EXPECTED_SUFFIX_AFTER_SECOND_ROLLOVER = "-000003";

@@ -30,6 +30,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.RESOUR
 @Slf4j
 public class PlatformApplicationAuthorizationService extends AbstractCachingAuthorizationService<List<String>>
   implements ApplicationAuthorizationService {
+
   private static final List<String> RELEVANT_PERMISSIONS = List.of(ALL_PERMISSION, ACCESS_PERMISSION);
 
   public PlatformApplicationAuthorizationService(final EngineContextFactory engineContextFactory,

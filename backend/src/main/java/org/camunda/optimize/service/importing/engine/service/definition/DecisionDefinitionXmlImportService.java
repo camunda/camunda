@@ -62,7 +62,7 @@ public class DecisionDefinitionXmlImportService implements ImportService<Decisio
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
     return elasticsearchImportJobExecutor;
   }
 

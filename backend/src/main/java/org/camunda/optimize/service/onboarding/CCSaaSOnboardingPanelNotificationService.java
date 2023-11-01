@@ -41,6 +41,7 @@ import static org.camunda.optimize.service.util.PanelNotificationConstants.ORG_T
 @Slf4j
 @Conditional(CCSaaSCondition.class)
 public class CCSaaSOnboardingPanelNotificationService {
+
   public static final String INSTANT_DASHBOARD_LINK_TEMPLATE = "%s" + DASHBOARD_PATH + INSTANT_PREVIEW_PATH + "/%s";
   private final CCSaaSNotificationClient notificationClient;
   private final ConfigurationService configurationService;

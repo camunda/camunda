@@ -56,7 +56,7 @@ public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements I
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
     return elasticsearchImportJobExecutor;
   }
 

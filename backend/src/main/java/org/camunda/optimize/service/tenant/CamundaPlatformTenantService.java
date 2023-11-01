@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 @Component
 @Conditional(CamundaPlatformCondition.class)
 public class CamundaPlatformTenantService implements TenantService, ConfigurationReloadable {
+
   public static final TenantDto TENANT_NOT_DEFINED = new TenantDto(null, "Not defined", null);
 
   private final TenantReader tenantReader;

@@ -20,6 +20,7 @@ import java.util.List;
 @Component
 @Conditional(CCSMCondition.class)
 public class CamundaCCSMTenantService implements TenantService {
+
   private final CamundaCCSMTenantAuthorizationService tenantAuthorizationService;
   private final ConfigurationService configurationService;
 

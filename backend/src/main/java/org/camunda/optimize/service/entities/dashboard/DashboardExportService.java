@@ -44,7 +44,7 @@ public class DashboardExportService {
     final List<OptimizeEntityExportDto> exportDtos = reports.stream()
       .map(ReportDefinitionExportDto::mapReportDefinitionToExportDto)
       .collect(toList());
-    exportDtos.addAll(dashboards.stream().map(DashboardDefinitionExportDto::new).collect(toList()));
+    exportDtos.addAll(dashboards.stream().map(DashboardDefinitionExportDto::new).toList());
 
     return exportDtos;
   }
@@ -61,7 +61,7 @@ public class DashboardExportService {
     final List<OptimizeEntityExportDto> exportDtos = reports.stream()
       .map(ReportDefinitionExportDto::mapReportDefinitionToExportDto)
       .collect(toList());
-    exportDtos.addAll(dashboards.stream().map(DashboardDefinitionExportDto::new).collect(toList()));
+    exportDtos.addAll(dashboards.stream().map(DashboardDefinitionExportDto::new).toList());
 
     return exportDtos;
   }
@@ -120,4 +120,5 @@ public class DashboardExportService {
       );
     }
   }
+
 }

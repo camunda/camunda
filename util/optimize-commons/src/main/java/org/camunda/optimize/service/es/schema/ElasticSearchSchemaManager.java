@@ -9,6 +9,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Streams;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.service.db.schema.MappingMetadataUtil;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.AlertIndexES;
 import org.camunda.optimize.service.es.schema.index.BusinessKeyIndexES;
@@ -358,7 +359,7 @@ public class ElasticSearchSchemaManager {
         }
 
         final List<IndexMappingCreator<?>> allDynamicMappings =
-          new MappingMetadataUtilES(esClient).getAllDynamicMappings();
+          new MappingMetadataUtil(esClient).getAllDynamicMappings();
         for (IndexMappingCreator<?> mapping : allDynamicMappings) {
             updateDynamicSettingsAndMappings(esClient, mapping);
         }

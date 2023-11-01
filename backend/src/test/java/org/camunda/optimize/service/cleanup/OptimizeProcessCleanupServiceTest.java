@@ -53,6 +53,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class OptimizeProcessCleanupServiceTest {
+
   private static final List<String> INSTANCE_IDS = ImmutableList.of("1", "2");
   private static final PageResultDto<String> FIRST_PAGE = new PageResultDto<>("1", 1, INSTANCE_IDS.subList(0, 1));
   private static final PageResultDto<String> SECOND_PAGE = new PageResultDto<>("1", 1, INSTANCE_IDS.subList(1, 2));

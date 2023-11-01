@@ -28,6 +28,7 @@ import java.util.List;
 
 @Component
 public class DecisionDefinitionEngineImportMediatorFactory extends AbstractEngineImportMediatorFactory {
+
   private final DecisionDefinitionWriter decisionDefinitionWriter;
   private final DecisionDefinitionXmlWriter decisionDefinitionXmlWriter;
   private final DecisionDefinitionResolverService decisionDefinitionResolverService;

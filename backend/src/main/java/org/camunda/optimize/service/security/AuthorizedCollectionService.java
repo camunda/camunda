@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @Component
 public class AuthorizedCollectionService {
+
   private static final String VIEW_NOT_AUTHORIZED_MESSAGE = "User [%s] is not authorized to access collection [%s].";
   private static final String EDIT_NOT_AUTHORIZED_MESSAGE =
     "User [%s] is not authorized to edit/delete collection [%s].";

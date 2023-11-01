@@ -26,6 +26,7 @@ import java.time.ZoneId;
 @Component
 @Slf4j
 public class JsonReportResultExportService {
+
   private final PlainReportEvaluationHandler reportEvaluationHandler;
   private final ReportService reportService;
 
@@ -63,4 +64,5 @@ public class JsonReportResultExportService {
       throw new BadRequestException("Combined reports cannot be exported as Json");
     }
   }
+
 }

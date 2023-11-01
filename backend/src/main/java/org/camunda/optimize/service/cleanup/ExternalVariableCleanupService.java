@@ -35,7 +35,6 @@ public class ExternalVariableCleanupService implements CleanupService {
     log.info("Finished cleanup on external variables with a timestamp older than {}", endDate);
   }
 
-
   private CleanupConfiguration getCleanupConfiguration() {
     return this.configurationService.getCleanupServiceConfiguration();
   }

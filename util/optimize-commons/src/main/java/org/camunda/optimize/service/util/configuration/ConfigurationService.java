@@ -45,6 +45,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationParse
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ANALYTICS_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.AVAILABLE_LOCALES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CACHES_CONFIGURATION;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_PROFILE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.EVENT_BASED_PROCESS_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.EXTERNAL_VARIABLE_CONFIGURATION;
@@ -53,6 +54,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IMPORT_USER_TASK_IDENTITY_META_DATA;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.M2M_CLIENT_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ONBOARDING_CONFIGURATION;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPENSEARCH_PROFILE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPTIMIZE_API_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PANEL_NOTIFICATION_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.TELEMETRY_CONFIGURATION;
@@ -65,6 +67,7 @@ import static org.camunda.optimize.util.SuppressionConstants.OPTIONAL_FIELD_OR_P
 
 @Setter
 public class ConfigurationService {
+
   private static final String ERROR_NO_ENGINE_WITH_ALIAS = "No Engine configured with alias ";
 
   // @formatter:off
@@ -115,6 +118,9 @@ public class ConfigurationService {
   private String esRefreshInterval;
   private String esIndexPrefix;
   private Integer esNestedDocumentsLimit;
+
+  // opensearch cluster settings
+  private String osIndexPrefix;
 
   // elasticsearch snapshot settings
   private String esSnapshotRepositoryName;
@@ -545,6 +551,21 @@ public class ConfigurationService {
       esIndexPrefix = configJsonContext.read(ConfigurationServiceConstants.ES_INDEX_PREFIX, String.class);
     }
     return esIndexPrefix;
+  }
+
+  // TODO change to configurationService.getIndexPrefix() with OPT-7349
+  public String getOsIndexPrefix() {
+    if (osIndexPrefix == null) {
+      osIndexPrefix = configJsonContext.read(ConfigurationServiceConstants.OS_INDEX_PREFIX, String.class);
+    }
+    return osIndexPrefix;
+  }
+
+  public String getIndexPrefix(final String dbProfile) {
+    if (dbProfile.equals(OPENSEARCH_PROFILE)) {
+      return this.getOsIndexPrefix();
+    }
+    return this.getEsIndexPrefix();
   }
 
   public int getEsNestedDocumentsLimit() {

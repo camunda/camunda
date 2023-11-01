@@ -11,7 +11,9 @@ import java.time.OffsetDateTime;
 import java.util.Set;
 
 public interface CleanupService {
+
   boolean isEnabled();
+
   void doCleanup(final OffsetDateTime startTime);
 
   static void enforceAllSpecificDefinitionKeyConfigurationsHaveMatchInKnown(final Set<String> knownDefinitionKeys,
@@ -25,4 +27,5 @@ public interface CleanupService {
       throw new OptimizeConfigurationException(message);
     }
   }
+
 }

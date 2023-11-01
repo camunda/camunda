@@ -84,6 +84,7 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockserver.integration.ClientAndServer;
+import org.springframework.core.env.Environment;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 import java.io.IOException;
@@ -113,6 +114,7 @@ import static org.camunda.optimize.service.es.OptimizeElasticsearchClient.INDICE
 import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.mapHits;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_PROFILE;
 import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
 import static org.camunda.optimize.service.db.DatabaseConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
@@ -162,6 +164,9 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   private final String customIndexPrefix;
 
   private OptimizeElasticsearchClient prefixAwareRestHighLevelClient;
+
+  private Environment environment;
+
   private boolean haveToClean;
 
   public ElasticSearchIntegrationTestExtension() {
@@ -213,7 +218,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
         configurationService.getFirstElasticsearchConnectionNode();
       esConfig.setHost(MockServerUtil.MOCKSERVER_HOST);
       esConfig.setHttpPort(mockServerClient.getLocalPort());
-      createClientAndAddToCache(MOCKSERVER_CLIENT_KEY, configurationService);
+      createClientAndAddToCache(MOCKSERVER_CLIENT_KEY, configurationService, environment);
     }
     return mockServerClient;
   }
@@ -749,7 +754,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     if (CLIENT_CACHE.containsKey(customIndexPrefix)) {
       prefixAwareRestHighLevelClient = CLIENT_CACHE.get(customIndexPrefix);
     } else {
-      createClientAndAddToCache(customIndexPrefix, createConfigurationService());
+      createClientAndAddToCache(customIndexPrefix, createConfigurationService(), environment);
     }
   }
 
@@ -764,13 +769,13 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     );
   }
 
-  private void createClientAndAddToCache(String clientKey, ConfigurationService configurationService) {
+  private void createClientAndAddToCache(String clientKey, ConfigurationService configurationService, Environment environment) {
     final DatabaseConnectionNodeConfiguration esConfig =
       configurationService.getFirstElasticsearchConnectionNode();
     log.info("Creating ES Client with host {} and port {}", esConfig.getHost(), esConfig.getHttpPort());
     prefixAwareRestHighLevelClient = new OptimizeElasticsearchClient(
       ElasticsearchHighLevelRestClientBuilder.build(configurationService),
-      new OptimizeIndexNameService(configurationService)
+      new OptimizeIndexNameService(configurationService, ELASTICSEARCH_PROFILE)
     );
     adjustClusterSettings();
     CLIENT_CACHE.put(clientKey, prefixAwareRestHighLevelClient);

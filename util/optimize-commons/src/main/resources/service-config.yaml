@@ -338,13 +338,19 @@ import:
 
 # everything that is related with configuring OpenSearch or creating
 # a connection to it.
-opensearch:
+os:
   connection:
     nodes:
       # the address/hostname under which the OpenSearch node is available.
       - host: '${CAMUNDA_OPTIMIZE_OPENSEARCH_HOST:localhost}'
         # A port number used by OpenSearch to accept HTTP connections.
         httpPort: ${CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT:9205}
+
+  settings:
+    index:
+      # the prefix prepended to all Optimize index and alias names
+      # NOTE: Changing this after Optimize was already run before, will create new empty indexes
+      prefix: 'optimize'
 
 # everything that is related with configuring Elasticsearch or creating
 # a connection to it.

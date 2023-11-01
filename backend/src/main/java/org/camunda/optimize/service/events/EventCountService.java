@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.events;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.ws.rs.BadRequestException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -24,12 +23,10 @@ import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestD
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.service.EventProcessService;
+import org.camunda.optimize.service.db.events.EventSequenceCountReaderFactory;
 import org.camunda.optimize.service.db.reader.EventSequenceCountReader;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.reader.EventSequenceCountReaderES;
 import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.camunda.optimize.service.util.EventDtoBuilderUtil;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -45,11 +42,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 import static org.camunda.optimize.service.util.BpmnModelUtil.extractFlowNodeData;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceEndEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceStartEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.fromEventCountDto;
-import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
 @Slf4j
 @Component
@@ -61,18 +58,10 @@ public class EventCountService {
 
   public EventCountService(final CamundaEventService camundaEventService,
                            final EventProcessService eventProcessService,
-                           final OptimizeElasticsearchClient esClient,
-                           final ObjectMapper objectMapper,
-                           final ConfigurationService configurationService) {
+                           final EventSequenceCountReaderFactory eventSequenceCountReaderFactory) {
     this.camundaEventService = camundaEventService;
     this.eventProcessService = eventProcessService;
-    //TODO decouple this from ElasticSearch dependency, will be dealt with OPT-7246
-    this.eventSequenceCountReader = new EventSequenceCountReaderES(
-      EXTERNAL_EVENTS_INDEX_SUFFIX,
-      esClient,
-      objectMapper,
-      configurationService
-    );
+    this.eventSequenceCountReader = eventSequenceCountReaderFactory.createEventSequenceCountReader(EXTERNAL_EVENTS_INDEX_SUFFIX);
   }
 
   public List<EventCountResponseDto> getEventCounts(final String userId,
@@ -107,8 +96,7 @@ public class EventCountService {
                                                              final Map<EventSourceType, List<EventSourceEntryDto<?>>> sourcesByType) {
     final List<CamundaEventSourceEntryDto> camundaSources = sourcesByType.get(EventSourceType.CAMUNDA)
       .stream()
-      .map(CamundaEventSourceEntryDto.class::cast)
-      .collect(Collectors.toList());
+      .map(CamundaEventSourceEntryDto.class::cast).toList();
     final List<CamundaEventSourceEntryDto> sourcesWithSequenceIndex = camundaSources.stream()
       .filter(source -> sequenceCountIndexSuffixes.contains(source.getConfiguration().getProcessDefinitionKey()))
       .collect(Collectors.toList());
@@ -148,10 +136,15 @@ public class EventCountService {
       .collect(Collectors.toList());
     if (includeAllGroups.get()) {
       matchingExternalEvents.addAll(
-        eventSequenceCountReader.getEventCountsForAllExternalEventsUsingSearchTerm(searchTerm));
+        eventSequenceCountReader.getEventCountsForAllExternalEventsUsingSearchTerm(
+          searchTerm
+        ));
     } else {
       matchingExternalEvents.addAll(
-        eventSequenceCountReader.getEventCountsForExternalGroupsUsingSearchTerm(externalGroups, searchTerm));
+        eventSequenceCountReader.getEventCountsForExternalGroupsUsingSearchTerm(
+          externalGroups,
+          searchTerm
+        ));
     }
     if (eligibleForEventSuggestions(sourcesByType)) {
       addSuggestionsForExternalEventCounts(eventCountRequestDto, matchingExternalEvents);

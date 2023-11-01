@@ -18,8 +18,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-import static java.util.stream.Collectors.toList;
-
 public abstract class AbstractProcessInstanceImportService implements ImportService<HistoricProcessInstanceDto> {
   protected final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -65,7 +63,7 @@ public abstract class AbstractProcessInstanceImportService implements ImportServ
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
     return elasticsearchImportJobExecutor;
   }
 

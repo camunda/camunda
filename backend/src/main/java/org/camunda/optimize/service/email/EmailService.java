@@ -39,7 +39,9 @@ import java.util.Properties;
 @Component
 @Slf4j
 public class EmailService {
+
   private final ConfigurationService configurationService;
+
   @Autowired
   private final FreeMarkerConfigurer freemarkerConfigurer;
 

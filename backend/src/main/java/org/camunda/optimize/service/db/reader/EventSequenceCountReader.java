@@ -24,7 +24,8 @@ public interface EventSequenceCountReader {
   String KEYWORD_ANALYZER = "keyword";
 
   List<EventSequenceCountDto> getEventSequencesWithSourceInIncomingOrTargetInOutgoing(
-    final List<EventTypeDto> incomingEvents, final List<EventTypeDto> outgoingEvents);
+    final List<EventTypeDto> incomingEvents,
+    final List<EventTypeDto> outgoingEvents);
 
   List<EventCountResponseDto> getEventCountsForAllExternalEventsUsingSearchTerm(final String searchTerm);
 
@@ -39,4 +40,5 @@ public interface EventSequenceCountReader {
                                                                         final EventTypeDto secondEventTypeDto);
 
   List<EventSequenceCountDto> getAllSequenceCounts();
+
 }

@@ -14,10 +14,9 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.rest.ImportIndexMismatchDto;
 import org.camunda.optimize.dto.optimize.rest.export.dashboard.DashboardDefinitionExportDto;
 import org.camunda.optimize.service.dashboard.DashboardService;
+import org.camunda.optimize.service.db.schema.index.DashboardIndex;
 import org.camunda.optimize.service.db.writer.DashboardWriter;
-import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.index.DashboardIndexES;
 import org.camunda.optimize.service.exceptions.OptimizeImportFileInvalidException;
 import org.camunda.optimize.service.exceptions.OptimizeImportIncorrectIndexVersionException;
 import org.camunda.optimize.service.util.IdGenerator;
@@ -31,15 +30,16 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.API_IMPORT_OWNER_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
 
 @AllArgsConstructor
 @Component
 @Slf4j
 public class DashboardImportService {
 
-  private final OptimizeIndexNameService optimizeIndexNameService;
   private final DashboardWriter dashboardWriter;
   private final DashboardService dashboardService;
+  private final OptimizeIndexNameService optimizeIndexNameService;
 
   public void validateAllDashboardsOrFail(final List<DashboardDefinitionExportDto> dashboardsToImport) {
     validateAllDashboardsOrFail(null, dashboardsToImport);
@@ -112,15 +112,18 @@ public class DashboardImportService {
   }
 
   private void validateIndexVersionOrFail(final Integer sourceIndexVersion) {
-    final IndexMappingCreator targetIndex = new DashboardIndexES();
-    if (targetIndex.getVersion() != sourceIndexVersion) {
+    final int targetIndexVersion = DashboardIndex.VERSION;
+    if (targetIndexVersion != sourceIndexVersion) {
       throw new OptimizeImportIncorrectIndexVersionException(
         "Could not import because source and target index versions do not match",
         Sets.newHashSet(
           ImportIndexMismatchDto.builder()
-            .indexName(optimizeIndexNameService.getOptimizeIndexNameWithVersion(targetIndex))
+            .indexName(OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion(
+              optimizeIndexNameService.getOptimizeIndexAliasForIndex(DASHBOARD_INDEX_NAME),
+              String.valueOf(targetIndexVersion)
+            ))
             .sourceIndexVersion(sourceIndexVersion)
-            .targetIndexVersion(targetIndex.getVersion())
+            .targetIndexVersion(targetIndexVersion)
             .build()
         )
       );

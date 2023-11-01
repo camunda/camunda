@@ -8,7 +8,6 @@ package org.camunda.optimize.service.alert;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 
-
 public class AlertUtil {
 
   public static void mapBasicFields(AlertCreationRequestDto toCreate, AlertDefinitionDto result) {

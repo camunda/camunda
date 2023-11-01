@@ -40,7 +40,7 @@ public class StoreIndexesEngineImportService implements ImportService<EngineImpo
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
     return elasticsearchImportJobExecutor;
   }
 

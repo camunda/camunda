@@ -36,6 +36,7 @@ import org.elasticsearch.search.aggregations.metrics.Sum;
 import org.elasticsearch.search.aggregations.metrics.SumAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -66,7 +67,6 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.sum;
 
 @AllArgsConstructor
 @Slf4j
-@Conditional(ElasticSearchCondition.class)
 public class EventSequenceCountReaderES implements EventSequenceCountReader {
 
   private final String indexKey;

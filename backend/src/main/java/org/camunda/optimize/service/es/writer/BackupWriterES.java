@@ -7,9 +7,9 @@ package org.camunda.optimize.service.es.writer;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.service.db.schema.MappingMetadataUtil;
 import org.camunda.optimize.service.db.writer.BackupWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.MappingMetadataUtilES;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
@@ -152,7 +152,7 @@ public class BackupWriterES implements BackupWriter {
   }
 
   private String[] getIndexAliasesWithImportIndexFlag(final boolean isImportIndex) {
-    MappingMetadataUtilES mappingUtil = new MappingMetadataUtilES(esClient);
+    MappingMetadataUtil mappingUtil = new MappingMetadataUtil(esClient);
     return mappingUtil.getAllMappings()
       .stream()
       .filter(mapping -> isImportIndex == mapping.isImportIndex())

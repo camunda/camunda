@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service;
+package org.camunda.optimize.service.events;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
@@ -44,7 +44,11 @@ public class EventTraceStateService {
   public List<EventTraceStateDto> getTracesContainingAtLeastOneEventFromEach(final List<EventTypeDto> startEvents,
                                                                              final List<EventTypeDto> endEvents,
                                                                              final int maxResultsSize) {
-    return eventTraceStateReader.getTracesContainingAtLeastOneEventFromEach(startEvents, endEvents, maxResultsSize);
+    return eventTraceStateReader.getTracesContainingAtLeastOneEventFromEach(
+      startEvents,
+      endEvents,
+      maxResultsSize
+    );
   }
 
   public void updateTracesAndCountsForEvents(final List<EventDto> eventsToProcess) {
@@ -123,7 +127,10 @@ public class EventTraceStateService {
         return 0;
       }
       final List<EventSequenceCountDto> eventSequencesContainingEventTypes =
-        eventSequenceCountReader.getEventSequencesContainingBothEventTypes(eventATypeDto, eventBTypeDto);
+        eventSequenceCountReader.getEventSequencesContainingBothEventTypes(
+          eventATypeDto,
+          eventBTypeDto
+        );
       if (eventSequencesContainingEventTypes.isEmpty()) {
         return 0;
       }

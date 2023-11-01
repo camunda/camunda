@@ -80,7 +80,7 @@ public class ConfigurationServiceConstants {
   public static final String ELASTICSEARCH_SECURITY_SSL_CERTIFICATE = "$.es.security.ssl.certificate";
   public static final String ELASTICSEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES = "$.es.security.ssl.certificate_authorities";
 
-  public static final String OPENSEARCH_CONNECTION_NODES = "$.opensearch.connection.nodes";
+  public static final String OPENSEARCH_CONNECTION_NODES = "$.os.connection.nodes";
 
 
   public static final String IMPORT_INDEX_AUTO_STORAGE_INTERVAL = "$.import.importIndexStorageIntervalInSec";
@@ -96,6 +96,8 @@ public class ConfigurationServiceConstants {
   public static final String ES_NUMBER_OF_SHARDS = "$.es.settings.index.number_of_shards";
   public static final String ES_INDEX_PREFIX = "$.es.settings.index.prefix";
   public static final String ES_INDEX_NESTED_DOCUMENTS_LIMIT = "$.es.settings.index.nested_documents_limit";
+
+  public static final String OS_INDEX_PREFIX = "$.os.settings.index.prefix";
 
   public static final String ENGINE_DATE_FORMAT = "$.serialization.engineDateFormat";
   public static final String CONTAINER_HOST = "$.container.host";

@@ -19,6 +19,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_DATA_SOURC
 @Component
 @Conditional(CCSaaSCondition.class)
 public class CamundaSaaSTenantService implements TenantService {
+
   @Override
   public boolean isAuthorizedToSeeTenant(final String userId, final String tenantId) {
     return true;
@@ -33,4 +34,5 @@ public class CamundaSaaSTenantService implements TenantService {
   public boolean isMultiTenantEnvironment() {
     return false;
   }
+
 }

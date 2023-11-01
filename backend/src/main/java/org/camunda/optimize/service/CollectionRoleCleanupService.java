@@ -29,6 +29,7 @@ import java.util.Set;
 @Component
 @Conditional(CamundaPlatformCondition.class)
 public class CollectionRoleCleanupService implements IdentityCacheSyncListener {
+
   private final CollectionReader collectionReader;
   private final CollectionWriter collectionWriter;
   private final ConfigurationService configurationService;

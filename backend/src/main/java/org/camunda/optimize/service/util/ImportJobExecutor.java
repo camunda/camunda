@@ -35,15 +35,15 @@ public abstract class ImportJobExecutor {
     return importExecutor.getActiveCount() > 0 || !importExecutor.getQueue().isEmpty();
   }
 
-  public void executeImportJob(final Runnable elasticsearchImportJob) {
+  public void executeImportJob(final Runnable dbImportJob) {
     logger.debug(
       "{}: Currently active [{}] jobs and [{}] in queue of job type [{}]",
       getClass().getSimpleName(),
       importExecutor.getActiveCount(),
       importExecutor.getQueue().size(),
-      elasticsearchImportJob.getClass().getSimpleName()
+      dbImportJob.getClass().getSimpleName()
     );
-    importExecutor.execute(elasticsearchImportJob);
+    importExecutor.execute(dbImportJob);
   }
 
   public void startExecutingImportJobs() {

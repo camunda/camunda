@@ -54,6 +54,8 @@ public class ProcessVariableUpdateWriterES extends AbstractProcessInstanceDataWr
     MessageFormat.format("ctx._source.{0} = new ArrayList();\n", VARIABLES)
   );
 
+  private static final String VARIABLE_UPDATES_FROM_ENGINE = "variableUpdatesFromEngine";
+
   private final ObjectMapper objectMapper;
 
   public ProcessVariableUpdateWriterES(final OptimizeElasticsearchClient esClient,
@@ -62,7 +64,6 @@ public class ProcessVariableUpdateWriterES extends AbstractProcessInstanceDataWr
     super(esClient, elasticSearchSchemaManager);
     this.objectMapper = objectMapper;
   }
-
 
   @Override
   public List<ImportRequestDto> generateVariableUpdateImports(List<ProcessVariableDto> variables) {

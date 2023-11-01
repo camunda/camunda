@@ -72,6 +72,27 @@ public abstract class AbstractActivityInstanceWriterES extends AbstractProcessIn
       .collect(Collectors.toList());
   }
 
+  @Override
+  public FlowNodeInstanceDto fromActivityInstance(final FlowNodeEventDto activityInstance) {
+    return new FlowNodeInstanceDto(
+      activityInstance.getProcessDefinitionKey(),
+      activityInstance.getProcessDefinitionVersion(),
+      activityInstance.getTenantId(),
+      activityInstance.getEngineAlias(),
+      activityInstance.getProcessInstanceId(),
+      activityInstance.getActivityId(),
+      activityInstance.getActivityType(),
+      activityInstance.getId(),
+      activityInstance.getTaskId()
+    )
+      .setTotalDurationInMs(activityInstance.getDurationInMs())
+      .setStartDate(activityInstance.getStartDate())
+      .setEndDate(activityInstance.getEndDate())
+      .setCanceled(activityInstance.getCanceled());
+  }
+
+  protected abstract String createInlineUpdateScript();
+
   private UpdateRequest createImportRequestForActivityInstance(Map.Entry<String, List<FlowNodeEventDto>> activitiesByProcessInstance) {
     final List<FlowNodeEventDto> activityInstances = activitiesByProcessInstance.getValue();
     final String processInstanceId = activitiesByProcessInstance.getKey();
@@ -109,29 +130,8 @@ public abstract class AbstractActivityInstanceWriterES extends AbstractProcessIn
     }
   }
 
-  protected abstract String createInlineUpdateScript();
-
   private List<FlowNodeInstanceDto> convertToFlowNodeInstanceDtos(List<FlowNodeEventDto> activityInstances) {
     return activityInstances.stream().map(this::fromActivityInstance).collect(Collectors.toList());
-  }
-
-  @Override
-  public FlowNodeInstanceDto fromActivityInstance(final FlowNodeEventDto activityInstance) {
-    return new FlowNodeInstanceDto(
-      activityInstance.getProcessDefinitionKey(),
-      activityInstance.getProcessDefinitionVersion(),
-      activityInstance.getTenantId(),
-      activityInstance.getEngineAlias(),
-      activityInstance.getProcessInstanceId(),
-      activityInstance.getActivityId(),
-      activityInstance.getActivityType(),
-      activityInstance.getId(),
-      activityInstance.getTaskId()
-    )
-      .setTotalDurationInMs(activityInstance.getDurationInMs())
-      .setStartDate(activityInstance.getStartDate())
-      .setEndDate(activityInstance.getEndDate())
-      .setCanceled(activityInstance.getCanceled());
   }
 
 }

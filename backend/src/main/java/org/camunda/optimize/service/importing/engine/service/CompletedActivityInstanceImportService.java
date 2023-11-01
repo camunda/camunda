@@ -61,7 +61,7 @@ public class CompletedActivityInstanceImportService implements ImportService<His
     }
   }
 
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
     return elasticsearchImportJobExecutor;
   }
 

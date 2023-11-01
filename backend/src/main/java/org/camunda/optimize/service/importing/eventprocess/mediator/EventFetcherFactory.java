@@ -14,7 +14,7 @@ import org.camunda.optimize.service.db.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.db.reader.ExternalEventReader;
 import org.camunda.optimize.service.db.reader.importindex.TimestampBasedImportIndexReader;
 import org.camunda.optimize.service.events.CamundaActivityEventFetcherService;
-import org.camunda.optimize.service.events.EventFetcherService;
+import org.camunda.optimize.service.db.events.EventFetcherService;
 import org.camunda.optimize.service.events.ExternalEventByGroupsFetcherService;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;

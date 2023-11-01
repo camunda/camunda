@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.writer.usertask;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
@@ -35,6 +36,7 @@ import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInst
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 
 @Conditional(ElasticSearchCondition.class)
+@Slf4j
 public abstract class AbstractUserTaskWriterES extends AbstractProcessInstanceDataWriterES<FlowNodeInstanceDto>
   implements AbstractUserTaskWriter {
 

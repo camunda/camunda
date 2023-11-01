@@ -42,6 +42,7 @@ import static org.camunda.optimize.dto.optimize.alert.AlertNotificationType.RESO
 @Slf4j
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class AlertJob implements Job {
+
   private static final String HTTP_PREFIX = "http://";
   private static final String HTTPS_PREFIX = "https://";
 

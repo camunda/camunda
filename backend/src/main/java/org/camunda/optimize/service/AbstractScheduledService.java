@@ -11,6 +11,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import java.util.concurrent.ScheduledFuture;
 
 public abstract class AbstractScheduledService {
+
   protected ThreadPoolTaskScheduler taskScheduler;
   private ScheduledFuture<?> scheduledTrigger;
 

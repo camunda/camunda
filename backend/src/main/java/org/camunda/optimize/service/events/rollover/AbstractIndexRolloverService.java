@@ -7,8 +7,7 @@ package org.camunda.optimize.service.events.rollover;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.AbstractScheduledService;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 
@@ -16,14 +15,14 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public abstract class AbstractIndexRolloverService extends AbstractScheduledService {
-  protected final OptimizeElasticsearchClient esClient;
 
-  protected AbstractIndexRolloverService(final OptimizeElasticsearchClient esClient) {
-    this.esClient = esClient;
+  protected final DatabaseClient databaseClient;
+
+  protected AbstractIndexRolloverService(final DatabaseClient databaseClient) {
+    this.databaseClient = databaseClient;
   }
 
   public List<String> triggerRollover() {
@@ -31,11 +30,7 @@ public abstract class AbstractIndexRolloverService extends AbstractScheduledServ
     getAliasesToConsiderRolling()
       .forEach(indexAlias -> {
         try {
-          boolean isRolledOver = ElasticsearchWriterUtil.triggerRollover(
-            esClient,
-            indexAlias,
-            getMaxIndexSizeGB()
-          );
+          boolean isRolledOver = databaseClient.triggerRollover(indexAlias, getMaxIndexSizeGB());
           if (isRolledOver) {
             rolledOverIndexAliases.add(indexAlias);
           }

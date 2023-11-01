@@ -62,8 +62,8 @@ public class CustomTracedEventProcessInstanceImportService implements ImportServ
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
-    return eventProcessInstanceImportService.getElasticsearchImportJobExecutor();
+  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
+    return eventProcessInstanceImportService.getDatabaseImportJobExecutor();
   }
 
   private List<CamundaActivityEventDto> filterForConfiguredTenantsAndVersions(final List<CamundaActivityEventDto> camundaActivities) {

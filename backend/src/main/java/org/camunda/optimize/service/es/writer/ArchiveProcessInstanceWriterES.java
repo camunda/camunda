@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 
-
 @AllArgsConstructor
 @Component
 @Slf4j

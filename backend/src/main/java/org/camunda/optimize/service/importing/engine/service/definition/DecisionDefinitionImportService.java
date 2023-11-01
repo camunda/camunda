@@ -27,7 +27,7 @@ import static java.util.stream.Collectors.groupingBy;
 @Slf4j
 public class DecisionDefinitionImportService implements ImportService<DecisionDefinitionEngineDto> {
 
-  private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  private final ElasticsearchImportJobExecutor databaseImportJobExecutor;
   private final EngineContext engineContext;
   private final DecisionDefinitionWriter decisionDefinitionWriter;
   private final DecisionDefinitionResolverService decisionDefinitionResolverService;
@@ -36,7 +36,7 @@ public class DecisionDefinitionImportService implements ImportService<DecisionDe
                                          final EngineContext engineContext,
                                          final DecisionDefinitionWriter decisionDefinitionWriter,
                                          final DecisionDefinitionResolverService decisionDefinitionResolverService) {
-    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+    this.databaseImportJobExecutor = new ElasticsearchImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.engineContext = engineContext;
@@ -57,7 +57,7 @@ public class DecisionDefinitionImportService implements ImportService<DecisionDe
       final ElasticsearchImportJob<DecisionDefinitionOptimizeDto> elasticsearchImportJob = createElasticsearchImportJob(
         optimizeDtos, importCompleteCallback
       );
-      elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
+      databaseImportJobExecutor.executeImportJob(elasticsearchImportJob);
     }
   }
 
@@ -70,8 +70,8 @@ public class DecisionDefinitionImportService implements ImportService<DecisionDe
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
-    return elasticsearchImportJobExecutor;
+  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
+    return databaseImportJobExecutor;
   }
 
   private List<DecisionDefinitionOptimizeDto> mapEngineEntitiesToOptimizeEntities(

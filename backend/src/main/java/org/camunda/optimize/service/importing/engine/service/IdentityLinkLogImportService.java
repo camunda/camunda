@@ -68,7 +68,7 @@ public class IdentityLinkLogImportService implements ImportService<HistoricIdent
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
     return elasticsearchImportJobExecutor;
   }
 

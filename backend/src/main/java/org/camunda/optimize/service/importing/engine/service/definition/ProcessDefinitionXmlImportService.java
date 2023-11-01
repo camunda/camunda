@@ -58,7 +58,7 @@ public class ProcessDefinitionXmlImportService implements ImportService<ProcessD
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
     return elasticsearchImportJobExecutor;
   }
 

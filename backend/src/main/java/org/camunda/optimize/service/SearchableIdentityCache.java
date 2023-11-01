@@ -47,6 +47,7 @@ import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
+import org.camunda.optimize.service.exceptions.MaxEntryLimitHitException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 import java.io.IOException;
@@ -68,6 +69,7 @@ import static org.apache.lucene.search.SortField.STRING_LAST;
 
 @Slf4j
 public class SearchableIdentityCache implements AutoCloseable {
+
   private final Supplier<Long> maxEntryLimitSupplier;
   private final ByteBuffersDirectory memoryDirectory;
   private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock(true);
