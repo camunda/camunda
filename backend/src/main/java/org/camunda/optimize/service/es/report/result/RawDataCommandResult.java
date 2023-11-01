@@ -39,11 +39,17 @@ public class RawDataCommandResult<T extends RawDataInstanceDto> extends CommandE
   @Override
   @SuppressWarnings(UNCHECKED_CAST)
   public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone) {
+    return getResultAsCsv(limit, offset, timezone, true);
+  }
+
+  @SuppressWarnings(UNCHECKED_CAST)
+  public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone,
+                                       final boolean includeNewVariables) {
     final SingleReportDataDto singleReportData = getReportDataAs(SingleReportDataDto.class);
     final List<? extends RawDataInstanceDto> rawData = getFirstMeasureData();
     if (rawData.isEmpty()) {
       return CSVUtils.mapRawProcessReportInstances(
-        Collections.emptyList(), limit, offset, singleReportData.getConfiguration().getTableColumns()
+        Collections.emptyList(), limit, offset, singleReportData.getConfiguration().getTableColumns(), true
       );
     } else if (rawData.get(0) instanceof RawDataProcessInstanceDto) {
       List<RawDataProcessInstanceDto> rawProcessData = (List<RawDataProcessInstanceDto>) rawData;
@@ -52,7 +58,7 @@ public class RawDataCommandResult<T extends RawDataInstanceDto> extends CommandE
         raw.setEndDate(atSameTimezoneOffsetDateTime(raw.getEndDate(), timezone));
       });
       return CSVUtils.mapRawProcessReportInstances(
-        rawProcessData, limit, offset, singleReportData.getConfiguration().getTableColumns()
+        rawProcessData, limit, offset, singleReportData.getConfiguration().getTableColumns(), includeNewVariables
       );
     } else {
       List<RawDataDecisionInstanceDto> rawDecisionData = (List<RawDataDecisionInstanceDto>) rawData;

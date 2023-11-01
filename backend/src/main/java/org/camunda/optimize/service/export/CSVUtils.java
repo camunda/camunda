@@ -78,12 +78,14 @@ public class CSVUtils {
   public static List<String[]> mapRawProcessReportInstances(final List<RawDataProcessInstanceDto> rawData,
                                                             final Integer limit,
                                                             final Integer offset,
-                                                            final TableColumnDto tableColumns) {
+                                                            final TableColumnDto tableColumns,
+                                                            final boolean includeNewVariables) {
     final List<String[]> result = new ArrayList<>();
     final List<String> allCountKeys = extractAllPrefixedCountKeys();
     final List<String> allFlowNodeDurationKeys = extractAllPrefixedFlowNodeKeys(rawData);
     final List<String> allVariableKeys = extractAllPrefixedVariableKeys(rawData);
     // Ensure all fields are taken into account by tableColumns
+    tableColumns.setIncludeNewVariables(includeNewVariables);
     tableColumns.addDtoColumns(extractAllProcessInstanceDtoFieldKeys());
     tableColumns.addCountColumns(allCountKeys);
     tableColumns.addNewAndRemoveUnexpectedFlowNodeDurationColumns(allFlowNodeDurationKeys);
@@ -229,7 +231,7 @@ public class CSVUtils {
     return variableKeys.stream().map(key -> VARIABLE_PREFIX + key).collect(toList());
   }
 
-  private static List<String> extractAllPrefixedFlowNodeKeys(List<RawDataProcessInstanceDto> rawData) {
+  public static List<String> extractAllPrefixedFlowNodeKeys(List<RawDataProcessInstanceDto> rawData) {
     List<String> flowNodeKeys = new ArrayList<>();
     for (RawDataProcessInstanceDto currentInstanceDataDto : rawData) {
       final Optional<Map<String, FlowNodeTotalDurationDataDto>> flowNodeDurations = Optional.ofNullable(

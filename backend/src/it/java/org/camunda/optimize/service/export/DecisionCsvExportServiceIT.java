@@ -180,6 +180,7 @@ public class DecisionCsvExportServiceIT extends AbstractPlatformIT {
     singleDecisionReportDefinitionDto.setCreated(someDate);
     singleDecisionReportDefinitionDto.setLastModified(someDate);
     singleDecisionReportDefinitionDto.setOwner("something");
+    singleDecisionReportDefinitionDto.getData().getConfiguration().getTableColumns().setIncludeNewVariables(true);
     return reportClient.createSingleDecisionReport(singleDecisionReportDefinitionDto);
   }
 

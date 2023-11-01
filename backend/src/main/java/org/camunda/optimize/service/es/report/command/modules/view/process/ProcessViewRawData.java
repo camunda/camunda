@@ -18,15 +18,15 @@ import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.service.DefinitionService;
-import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.db.reader.ProcessVariableReader;
+import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import org.camunda.optimize.service.es.report.command.process.mapping.RawProcessDataResultDtoMapper;
-
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.export.CSVUtils;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
@@ -57,6 +57,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
@@ -64,8 +66,6 @@ import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.cre
 import static org.camunda.optimize.service.export.CSVUtils.extractAllProcessInstanceDtoFieldKeys;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueField;
-import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
-import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -328,7 +328,9 @@ public class ProcessViewRawData extends ProcessViewPart {
       .toList();
 
     TableColumnDto tableColumns = context.getReportConfiguration().getTableColumns();
+    tableColumns.addCountColumns(CSVUtils.extractAllPrefixedCountKeys());
     tableColumns.addNewAndRemoveUnexpectedVariableColumns(variableNames);
+    tableColumns.addNewAndRemoveUnexpectedFlowNodeDurationColumns(CSVUtils.extractAllPrefixedFlowNodeKeys(rawData));
     tableColumns.addDtoColumns(extractAllProcessInstanceDtoFieldKeys());
   }
 }

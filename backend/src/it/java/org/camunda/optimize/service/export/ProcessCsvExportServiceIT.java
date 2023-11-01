@@ -32,6 +32,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -494,6 +495,12 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
     singleProcessReportDefinitionDto.setCreated(someDate);
     singleProcessReportDefinitionDto.setLastModified(someDate);
     singleProcessReportDefinitionDto.setOwner("something");
+    singleProcessReportDefinitionDto.getData().getConfiguration().getTableColumns().setIncludeNewVariables(true);
+    singleProcessReportDefinitionDto.getData()
+      .getConfiguration()
+      .getTableColumns()
+      .getIncludedColumns()
+      .addAll(CSVUtils.extractAllPrefixedCountKeys());
     return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
@@ -504,6 +511,11 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
     singleProcessReportDefinitionDto.setData(reportData);
     singleProcessReportDefinitionDto.setId("something");
     singleProcessReportDefinitionDto.getData().getConfiguration().setSorting(order);
+    singleProcessReportDefinitionDto.getData().getConfiguration().getTableColumns().setIncludeNewVariables(true);
+    singleProcessReportDefinitionDto.getData()
+      .getConfiguration()
+      .getTableColumns()
+      .setIncludedColumns(new ArrayList<>(CSVUtils.extractAllPrefixedCountKeys()));
     return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 

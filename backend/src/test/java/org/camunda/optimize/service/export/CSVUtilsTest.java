@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.INPUT_PREFIX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.OUTPUT_PREFIX;
@@ -39,23 +38,46 @@ import static org.camunda.optimize.service.export.RawDataHelper.NUMBER_OF_RAW_PR
 public class CSVUtilsTest {
 
   @Test
-  public void testRawProcessResultMapping_newVariablesAndDtoFieldsAreIncludedByDefault() {
+  public void testRawProcessResultMapping_newVariablesAndDtoFieldsAreExcludedWhenSetInReportConfig() {
     // given
     List<RawDataProcessInstanceDto> toMap = RawDataHelper.getRawDataProcessInstanceDtos();
-    List<String> expectedVariableColumns = toMap.get(0).getVariables().keySet()
+    List<String> unexpectedVariableColumns = toMap.get(0).getVariables().keySet()
       .stream()
       .map(varName -> VARIABLE_PREFIX + varName)
       .toList();
     List<String> expectedDtoFieldColumns = extractAllProcessInstanceDtoFieldKeys();
 
     // when
-    List<String[]> result = mapRawProcessReportInstances(toMap);
+    List<String[]> result = mapRawProcessReportInstances(toMap, true);
 
     // then
     assertThat(result)
       .hasSize(4);
     assertThat(result.get(0))
       .hasSize(NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS)
+      .doesNotContainAnyElementsOf(unexpectedVariableColumns)
+      .containsAll(expectedDtoFieldColumns);
+  }
+
+  @Test
+  public void testRawProcessResultMapping_newVariablesAndDtoFieldsAreIncludedWhenSet() {
+    // given
+    List<RawDataProcessInstanceDto> toMap = RawDataHelper.getRawDataProcessInstanceDtos();
+    List<String> expectedVariableColumns = toMap.stream()
+      .filter(instance -> instance.getVariables() != null)
+      .flatMap(instance -> instance.getVariables().keySet().stream())
+      .map(varName -> VARIABLE_PREFIX + varName)
+      .toList();
+    List<String> expectedDtoFieldColumns = extractAllProcessInstanceDtoFieldKeys();
+
+    // when
+    List<String[]> result = mapRawProcessReportInstances(toMap, true);
+
+    // then
+    assertThat(result)
+      .hasSize(4);
+    assertThat(result.get(0))
+      .hasSize(NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS + expectedVariableColumns.size())
       .containsAll(expectedVariableColumns)
       .containsAll(expectedDtoFieldColumns);
   }
@@ -68,13 +90,13 @@ public class CSVUtilsTest {
     final List<RawDataProcessInstanceDto> toMap = RawDataHelper.getRawDataProcessInstanceDtoWithVariables(variables);
     final String expectedString =
       "\"processDefinitionKey\",\"processDefinitionId\",\"processInstanceId\",\"businessKey\",\"startDate\"," +
-        "\"endDate\",\"duration\",\"engineName\",\"tenantId\",\"count:incidents\",\"count:openIncidents\",\"count:userTasks\"," +
+        "\"endDate\",\"duration\",\"engineName\",\"tenantId\"," +
         "\"variable:\"\"1\"\"\"\r\n" +
         "\"test_key\",\"test_id\",,\"aBusinessKey\",\"2018-02-23T14:31:08.048+01:00\",\"2018-02-23T14:31:08" +
-        ".048+01:00\",\"0\",\"engine\",\"tenant\",\"0\",\"0\",\"0\",\"test\"\r\n";
+        ".048+01:00\",\"0\",\"engine\",\"tenant\",\"test\"\r\n";
 
     // when
-    final String resultString = new String(mapCsvLinesToCsvBytes(mapRawProcessReportInstances(toMap), ','));
+    final String resultString = new String(mapCsvLinesToCsvBytes(mapRawProcessReportInstances(toMap, true), ','));
 
     // then
     assertThat(resultString).isEqualTo(expectedString);
@@ -89,7 +111,7 @@ public class CSVUtilsTest {
     final List<RawDataProcessInstanceDto> toMap = RawDataHelper.getRawDataProcessInstanceDtoWithVariables(variables);
 
     // when
-    final String resultString = new String(mapCsvLinesToCsvBytes(mapRawProcessReportInstances(toMap), delimiter));
+    final String resultString = new String(mapCsvLinesToCsvBytes(mapRawProcessReportInstances(toMap, true), delimiter));
 
     // then
     assertThat(resultString).isEqualTo(expectedString);
@@ -163,12 +185,12 @@ public class CSVUtilsTest {
     // when
     RawDataCommandResult rawDataReportResult =
       new RawDataCommandResult(toMap, reportDefinition.getData());
-    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
+    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault(), false);
 
     // then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
-      .hasSize(NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS - excludedColumns.size())
+      .hasSize(NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS)
       .doesNotContainAnyElementsOf(excludedColumns);
   }
 
@@ -187,12 +209,12 @@ public class CSVUtilsTest {
     // when
     RawDataCommandResult rawDataReportResult =
       new RawDataCommandResult(toMap, reportDefinition.getData());
-    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
+    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault(), false);
 
     // then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
-      .hasSize(includedColumns.size() + RawDataCountDto.Fields.values().length);
+      .hasSize(includedColumns.size());
   }
 
   @Test
@@ -215,26 +237,25 @@ public class CSVUtilsTest {
     reportDefinition.getData().getConfiguration().getTableColumns().getExcludedColumns().addAll(excludedColumns);
 
     // when
-    RawDataCommandResult rawDataReportResult =
-      new RawDataCommandResult(toMap, reportDefinition.getData());
-    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
+    RawDataCommandResult rawDataReportResult = new RawDataCommandResult(toMap, reportDefinition.getData());
+    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault(), false);
 
     // then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
-      .hasSize(NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS - excludedColumns.size())
+      .hasSize(NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS)
       .doesNotContainAnyElementsOf(excludedColumns);
   }
 
   @Test
-  public void testRawDecisionResultMapping_newVariablesAndDtoFieldsAreIncludedByDefault() {
+  public void testRawDecisionResultMapping_newVariablesAreExcludedAndDtoFieldsAreIncludedByDefault() {
     // given
     List<RawDataDecisionInstanceDto> toMap = RawDataHelper.getRawDataDecisionInstanceDtos();
-    List<String> expectedInputVariableColumns = toMap.get(0).getInputVariables().keySet()
+    List<String> unexpectedInputVariableColumns = toMap.get(0).getInputVariables().keySet()
       .stream()
       .map(varName -> INPUT_PREFIX + varName)
       .toList();
-    List<String> expectedOutputVariableColumns = toMap.get(0).getOutputVariables().keySet()
+    List<String> unexpectedOutputVariableColumns = toMap.get(0).getOutputVariables().keySet()
       .stream()
       .map(varName -> OUTPUT_PREFIX + varName)
       .toList();
@@ -248,8 +269,8 @@ public class CSVUtilsTest {
     assertThat(result.get(0))
       .hasSize(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS)
       .containsAll(expectedDtoFieldColumns)
-      .containsAll(expectedInputVariableColumns)
-      .containsAll(expectedOutputVariableColumns);
+      .doesNotContainAnyElementsOf(unexpectedInputVariableColumns)
+      .doesNotContainAnyElementsOf(unexpectedOutputVariableColumns);
   }
 
   @Test
@@ -326,7 +347,7 @@ public class CSVUtilsTest {
     // then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
-      .hasSize(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS - excludedColumns.size())
+      .hasSize(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS)
       .doesNotContainAnyElementsOf(excludedColumns);
   }
 
@@ -377,7 +398,7 @@ public class CSVUtilsTest {
     // then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
-      .hasSize(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS - excludedColumns.size())
+      .hasSize(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS)
       .doesNotContainAnyElementsOf(excludedColumns);
   }
 
@@ -400,7 +421,7 @@ public class CSVUtilsTest {
     // then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
-      .hasSize(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS - excludedColumns.size())
+      .hasSize(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS)
       .doesNotContainAnyElementsOf(excludedColumns);
   }
 
@@ -452,16 +473,18 @@ public class CSVUtilsTest {
     // then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
-      .hasSize(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS - excludedColumns.size())
+      .hasSize(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS)
       .doesNotContainAnyElementsOf(excludedColumns);
   }
 
-  private static List<String[]> mapRawProcessReportInstances(List<RawDataProcessInstanceDto> rawData) {
+  private static List<String[]> mapRawProcessReportInstances(List<RawDataProcessInstanceDto> rawData,
+                                                             final boolean includeNewVariables) {
     return CSVUtils.mapRawProcessReportInstances(
       rawData,
       null,
       null,
-      new TableColumnDto()
+      new TableColumnDto(),
+      includeNewVariables
     );
   }
 
@@ -478,42 +501,37 @@ public class CSVUtilsTest {
     return Stream.of(
       Arguments.of(
         "\"processDefinitionKey\",\"processDefinitionId\",\"processInstanceId\",\"businessKey\",\"startDate\"," +
-          "\"endDate\",\"duration\",\"engineName\",\"tenantId\",\"count:incidents\",\"count:openIncidents\"," +
-          "\"count:userTasks\",\"variable:\"\"1\"\"\"\r\n" +
+          "\"endDate\",\"duration\",\"engineName\",\"tenantId\",\"variable:\"\"1\"\"\"\r\n" +
           "\"test_key\",\"test_id\",,\"aBusinessKey\",\"2018-02-23T14:31:08.048+01:00\",\"2018-02-23T14:31:08" +
-          ".048+01:00\",\"0\",\"engine\",\"tenant\",\"0\",\"0\",\"0\",\"test\"\r\n",
+          ".048+01:00\",\"0\",\"engine\",\"tenant\",\"test\"\r\n",
         ','
       ),
       Arguments.of(
         "\"processDefinitionKey\";\"processDefinitionId\";\"processInstanceId\";\"businessKey\";\"startDate\";" +
-          "\"endDate\";\"duration\";\"engineName\";\"tenantId\";\"count:incidents\";" +
-          "\"count:openIncidents\";\"count:userTasks\";\"variable:\"\"1\"\"\"\r\n" +
+          "\"endDate\";\"duration\";\"engineName\";\"tenantId\";\"variable:\"\"1\"\"\"\r\n" +
           "\"test_key\";\"test_id\";;\"aBusinessKey\";\"2018-02-23T14:31:08.048+01:00\";\"2018-02-23T14:31:08" +
-          ".048+01:00\";\"0\";\"engine\";\"tenant\";\"0\";\"0\";\"0\";\"test\"\r\n",
+          ".048+01:00\";\"0\";\"engine\";\"tenant\";\"test\"\r\n",
         ';'
       ),
       Arguments.of(
         "\"processDefinitionKey\"\t\"processDefinitionId\"\t\"processInstanceId\"\t\"businessKey\"\t\"startDate\"" +
-          "\t\"endDate\"\t\"duration\"\t\"engineName\"\t\"tenantId\"\t\"count:incidents\"" +
-          "\t\"count:openIncidents\"\t\"count:userTasks\"\t\"variable:\"\"1\"\"\"\r\n" +
+          "\t\"endDate\"\t\"duration\"\t\"engineName\"\t\"tenantId\"\t\"variable:\"\"1\"\"\"\r\n" +
           "\"test_key\"\t\"test_id\"\t\t\"aBusinessKey\"\t\"2018-02-23T14:31:08.048+01:00\"\t" +
-          "\"2018-02-23T14:31:08.048+01:00\"\t\"0\"\t\"engine\"\t\"tenant\"\t\"0\"\t\"0\"\t\"0\"\t\"test\"\r\n",
+          "\"2018-02-23T14:31:08.048+01:00\"\t\"0\"\t\"engine\"\t\"tenant\"\t\"test\"\r\n",
         '\t'
       ),
       Arguments.of(
         "\"processDefinitionKey\"|\"processDefinitionId\"|\"processInstanceId\"|\"businessKey\"|\"startDate\"|" +
-          "\"endDate\"|\"duration\"|\"engineName\"|\"tenantId\"|\"count:incidents\"|\"count:openIncidents" +
-          "\"|\"count:userTasks\"|\"variable:\"\"1\"\"\"\r\n" +
+          "\"endDate\"|\"duration\"|\"engineName\"|\"tenantId\"|\"variable:\"\"1\"\"\"\r\n" +
           "\"test_key\"|\"test_id\"||\"aBusinessKey\"|\"2018-02-23T14:31:08.048+01:00\"|\"2018-02-23T14:31:08" +
-          ".048+01:00\"|\"0\"|\"engine\"|\"tenant\"|\"0\"|\"0\"|\"0\"|\"test\"\r\n",
+          ".048+01:00\"|\"0\"|\"engine\"|\"tenant\"|\"test\"\r\n",
         '|'
       ),
       Arguments.of(
         "\"processDefinitionKey\" \"processDefinitionId\" \"processInstanceId\" \"businessKey\" \"startDate\" " +
-          "\"endDate\" \"duration\" \"engineName\" \"tenantId\" \"count:incidents\" \"count:openIncidents\" " +
-          "\"count:userTasks\" \"variable:\"\"1\"\"\"\r\n" +
+          "\"endDate\" \"duration\" \"engineName\" \"tenantId\" \"variable:\"\"1\"\"\"\r\n" +
           "\"test_key\" \"test_id\"  \"aBusinessKey\" \"2018-02-23T14:31:08.048+01:00\" \"2018-02-23T14:31:08" +
-          ".048+01:00\" \"0\" \"engine\" \"tenant\" \"0\" \"0\" \"0\" \"test\"\r\n",
+          ".048+01:00\" \"0\" \"engine\" \"tenant\" \"test\"\r\n",
         ' '
       )
     );
