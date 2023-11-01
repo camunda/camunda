@@ -256,7 +256,7 @@ public class ConfigurationValidatorTest {
     ConfigurationService configurationService = createConfiguration();
     ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
     Map<String, WebhookConfiguration> webhooks = createSingleWebhookConfiguration(
-      "myWeebhook", "someurl", new HashMap<>(), "POST", "aPayloadWithoutPlaceholder"
+      "myWebhook", "someurl", new HashMap<>(), "POST", "aPayloadWithoutPlaceholder"
     );
     configurationService.setConfiguredWebhooks(webhooks);
 
@@ -266,12 +266,7 @@ public class ConfigurationValidatorTest {
       .hasMessage(
         "At least one alert placeholder [{{ALERT_MESSAGE}}, {{ALERT_NAME}}, {{ALERT_REPORT_LINK}}, " +
           "{{ALERT_CURRENT_VALUE}}, {{ALERT_THRESHOLD_VALUE}}, {{ALERT_THRESHOLD_OPERATOR}}, {{ALERT_TYPE}}, " +
-          "{{ALERT_INTERVAL}}, {{ALERT_INTERVAL_UNIT}}] must be used in the following webhooks: [myWeebhook]");
-  }
-
-  private String createAbsolutePath(final String relativePathToLogo) {
-    return Objects.requireNonNull(ConfigurationValidatorTest.class.getClassLoader().getResource(relativePathToLogo))
-      .getPath();
+          "{{ALERT_INTERVAL}}, {{ALERT_INTERVAL_UNIT}}] must be used in the following webhooks: [myWebhook]");
   }
 
   private HashMap<String, WebhookConfiguration> createSingleWebhookConfiguration(final String name,
