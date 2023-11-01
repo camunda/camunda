@@ -1104,15 +1104,15 @@
     "@codemirror/language" "^6.8.0"
     lezer-feel "^1.2.0"
 
-"@bpmn-io/form-js-carbon-styles@1.3.3":
-  version "1.3.3"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.3.3.tgz#aa9a1b155c5bd0d6c1e25efeb0f1b380579a962a"
-  integrity sha512-5H1EkPVs+ACXbnkyLnWIt4UXMI/kI5OUZC0ODqwXA2s5wp0kmUITjRNQvxDpSYRIgU5XeidvInmarwecS9Obig==
+"@bpmn-io/form-js-carbon-styles@1.4.0":
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.4.0.tgz#fbd70abbb32a092569747e869bd82fab7c009e54"
+  integrity sha512-Hbi9rWms+WyUTUqzntuffIKfvVtk2NBD5bQI34BJy7Bpjuv+bpxEUBZjdB+CXHSh0Tqd3zT56Z7ziLn7eCSOhA==
 
-"@bpmn-io/form-js-viewer@1.3.3":
-  version "1.3.3"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.3.3.tgz#695758ffc9985e23aba6a995376ac95e6255113a"
-  integrity sha512-r8lyjblLXXpjjQTMi6cDLPtwI4HiJ5sgGXO6mCdkC+vZKH7x73Nr+G5znztwbYvQOACXHO3DvjpDVF25LAV0iA==
+"@bpmn-io/form-js-viewer@1.4.0":
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.4.0.tgz#4c42af5494afcf5dd7e0f48ab4086669a6333ca8"
+  integrity sha512-t7ybv1NnW9dAnlyKVgFd7UfiTFHKniR1GXkrGMihXJwIWpOEhM3G6aUwj47AFtNyHV0QuAbGBer8EzXg8obRqw==
   dependencies:
     "@carbon/grid" "^11.11.0"
     big.js "^6.2.1"
@@ -2131,14 +2131,7 @@
   resolved "https://registry.yarnpkg.com/@types/ms/-/ms-0.7.32.tgz#f6cd08939ae3ad886fcc92ef7f0109dacddf61ab"
   integrity sha512-xPSg0jm4mqgEkNhowKgZFBNtwoEwF6gJ4Dhww+GFpm3IgtNseHQZ5IqdNwnquZEoANxyDAKDRAdVo4Z72VvD/g==
 
-"@types/node@*", "@types/node@>=12.12.47", "@types/node@>=13.7.0":
-  version "20.8.7"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.8.7.tgz#ad23827850843de973096edfc5abc9e922492a25"
-  integrity sha512-21TKHHh3eUHIi2MloeptJWALuCu5H7HQTdTrWIFReA8ad+aggoX+lRes3ex7/FtpC+sVUpFMQ+QTfYr74mruiQ==
-  dependencies:
-    undici-types "~5.25.1"
-
-"@types/node@20.8.9":
+"@types/node@*", "@types/node@20.8.9", "@types/node@>=12.12.47", "@types/node@>=13.7.0":
   version "20.8.9"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-20.8.9.tgz#646390b4fab269abce59c308fc286dcd818a2b08"
   integrity sha512-UzykFsT3FhHb1h7yD4CA4YhBHq545JC0YnEz41xkipN88eKQtL6rSgocL5tbAP6Ola9Izm/Aw4Ora8He4x0BHg==
@@ -2164,16 +2157,7 @@
   dependencies:
     "@types/react" "*"
 
-"@types/react@*":
-  version "18.2.31"
-  resolved "https://registry.yarnpkg.com/@types/react/-/react-18.2.31.tgz#74ae2630e4aa9af599584157abd3b95d96fb9b40"
-  integrity sha512-c2UnPv548q+5DFh03y8lEDeMfDwBn9G3dRwfkrxQMo/dOtRHUUO57k6pHvBIfH/VF4Nh+98mZ5aaSe+2echD5g==
-  dependencies:
-    "@types/prop-types" "*"
-    "@types/scheduler" "*"
-    csstype "^3.0.2"
-
-"@types/react@18.2.33":
+"@types/react@*", "@types/react@18.2.33":
   version "18.2.33"
   resolved "https://registry.yarnpkg.com/@types/react/-/react-18.2.33.tgz#055356243dc4350a9ee6c6a2c07c5cae12e38877"
   integrity sha512-v+I7S+hu3PIBoVkKGpSYYpiBT1ijqEzWpzQD62/jm4K74hPpSP7FF9BnKG6+fg2+62weJYkkBWDJlZt5JO/9hg==
@@ -6949,11 +6933,6 @@ ufo@^1.3.0:
   resolved "https://registry.yarnpkg.com/ufo/-/ufo-1.3.1.tgz#e085842f4627c41d4c1b60ebea1f75cdab4ce86b"
   integrity sha512-uY/99gMLIOlJPwATcMVYfqDSxUR9//AUcgZMzwfSTJPDKzA1S8mX4VLqa+fiAtveraQUBCz4FFcwVZBGbwBXIw==
 
-undici-types@~5.25.1:
-  version "5.25.3"
-  resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-5.25.3.tgz#e044115914c85f0bcbb229f346ab739f064998c3"
-  integrity sha512-Ga1jfYwRn7+cP9v8auvEXN1rX3sWqlayd4HP7OKk4mZWylEmu3KzXDUGrQUN6Ol7qo1gPvB2e5gX6udnyEPgdA==
-
 undici-types@~5.26.4:
   version "5.26.5"
   resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-5.26.5.tgz#bcd539893d00b56e964fd2657a4866b221a65617"
@@ -7175,21 +7154,10 @@ vite-tsconfig-paths@4.2.1:
     globrex "^0.1.2"
     tsconfck "^2.1.0"
 
-vite@5.0.0-beta.14:
+vite@5.0.0-beta.14, "vite@^3.0.0 || ^4.0.0 || ^5.0.0-0", "vite@^3.1.0 || ^4.0.0 || ^5.0.0-0":
   version "5.0.0-beta.14"
   resolved "https://registry.yarnpkg.com/vite/-/vite-5.0.0-beta.14.tgz#e3af9bc4791d3463fbcc88634bb499c038e704b1"
   integrity sha512-xM9D009kzWpFYyj3EkW47txW/xxjD4lKOnaH4EKa9dGqfsyyLVP45m62n/Q3jKArSKuHj56N6vhe9AFN5OSH9w==
-  dependencies:
-    esbuild "^0.19.3"
-    postcss "^8.4.31"
-    rollup "^4.1.4"
-  optionalDependencies:
-    fsevents "~2.3.3"
-
-"vite@^3.0.0 || ^4.0.0 || ^5.0.0-0", "vite@^3.1.0 || ^4.0.0 || ^5.0.0-0":
-  version "5.0.0-beta.11"
-  resolved "https://registry.yarnpkg.com/vite/-/vite-5.0.0-beta.11.tgz#898f58cd9dbb666153c20fc206d3b55273f6cb69"
-  integrity sha512-pL2775onOwQgBjzMDEiwiVuxttLRFNFPTeQYtNtN+CdyHIdU28CidHtG+4db/PZKx6x5vjz5at/l4gjDLBXI+w==
   dependencies:
     esbuild "^0.19.3"
     postcss "^8.4.31"
