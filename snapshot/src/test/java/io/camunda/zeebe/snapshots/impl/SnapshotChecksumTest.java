@@ -23,13 +23,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Duration;
 import java.util.zip.CRC32C;
 import java.util.zip.Checksum;
 import org.agrona.IoUtil;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledOnOs;
-import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.io.TempDir;
 
 public final class SnapshotChecksumTest {
@@ -129,27 +130,36 @@ public final class SnapshotChecksumTest {
     assertThat(actual.getCombinedValue()).isEqualTo(expectedChecksum.getCombinedValue());
   }
 
-  @EnabledOnOs(OS.LINUX)
+  /**
+   * This test is only enabled on CI as it relies on strace. You can run it manually directly if
+   * your system supports strace. See {@link io.camunda.zeebe.test.util.STracer} for more.
+   */
+  @EnabledIfEnvironmentVariable(named = "CI", matches = "true")
   @Test
   void shouldFlushOnPersist() throws Exception {
     // given
     final var traceFile = temporaryFolder.resolve("traceFile");
     final var expectedChecksum = SnapshotChecksum.calculate(multipleFileSnapshot);
     final var checksumPath = multipleFileSnapshot.resolveSibling("checksum");
-    final var tracer = STracer.traceFor(Syscall.FSYNC, traceFile);
+    final var tracer = STracer.tracerFor(Syscall.FSYNC, traceFile);
 
     // when
     try (tracer) {
       SnapshotChecksum.persist(checksumPath, expectedChecksum);
-    }
 
-    // then
-    STracerAssert.assertThat(tracer)
-        .fsyncTraces()
-        .hasSize(1)
-        .first(FSyncTraceAssert.factory())
-        .hasPath(checksumPath)
-        .isSuccessful();
+      // then
+      Awaitility.await("until fsync was called for our checksum file")
+          .pollInSameThread()
+          .pollInterval(Duration.ofMillis(50))
+          .untilAsserted(
+              () ->
+                  STracerAssert.assertThat(tracer)
+                      .fsyncTraces()
+                      .hasSize(1)
+                      .first(FSyncTraceAssert.factory())
+                      .hasPath(checksumPath)
+                      .isSuccessful());
+    }
   }
 
   @Test
