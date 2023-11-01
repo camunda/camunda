@@ -13,7 +13,7 @@ exports[`should match snapshot 1`] = `
               ariaLabel="OrderProcessed"
               checked={true}
               disabled={false}
-              id="OrderProcessed"
+              id="OrderProcessed-eventGroup-order-service"
               name="OrderProcessed"
               onSelect={[Function]}
             />,
@@ -50,7 +50,7 @@ exports[`should match snapshot 1`] = `
               ariaLabel="OrderAccepted"
               checked={false}
               disabled={true}
-              id="OrderAccepted"
+              id="OrderAccepted-eventGroup-order-service"
               name="OrderAccepted"
               onSelect={[Function]}
             />,
