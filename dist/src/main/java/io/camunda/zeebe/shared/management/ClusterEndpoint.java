@@ -7,8 +7,7 @@
  */
 package io.camunda.zeebe.shared.management;
 
-import static org.springframework.boot.actuate.endpoint.web.WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR;
-
+import com.google.api.client.http.HttpStatusCodes;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.BrokerStateCode;
@@ -43,16 +42,18 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation;
-import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
-import org.springframework.boot.actuate.endpoint.annotation.Selector;
-import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
-import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
-import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
+import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @Component
-@WebEndpoint(id = "cluster")
+@RestControllerEndpoint(id = "cluster")
 public class ClusterEndpoint {
   private final TopologyManagementRequestSender requestSender;
 
@@ -61,111 +62,109 @@ public class ClusterEndpoint {
     this.requestSender = requestSender;
   }
 
-  @ReadOperation
-  public WebEndpointResponse<?> clusterTopology() {
+  @GetMapping(produces = "application/json")
+  public ResponseEntity<?> clusterTopology() {
     try {
       final GetTopologyResponse response = mapClusterTopology(requestSender.getTopology().join());
-      return new WebEndpointResponse<>(response);
+      return new ResponseEntity<>(response, HttpStatusCode.valueOf(HttpStatusCodes.STATUS_CODE_OK));
     } catch (final Exception error) {
       return mapError(error);
     }
   }
 
-  private WebEndpointResponse<?> mapError(final Exception error) {
+  private ResponseEntity<Error> mapError(final Exception error) {
     // TODO: Map error to proper HTTP status code as defined in spec
     final var errorResponse = new Error();
     errorResponse.setMessage(error.getMessage());
-    return new WebEndpointResponse<>(errorResponse, STATUS_INTERNAL_SERVER_ERROR);
+    return ResponseEntity.status(HttpStatusCodes.STATUS_CODE_SERVER_ERROR).body(errorResponse);
   }
 
-  @WriteOperation
-  public WebEndpointResponse<?> scale(@Selector final Resource resource, final List<String> ids) {
+  @PostMapping(path = "/{resource}/{id}")
+  public ResponseEntity<?> add(
+      @PathVariable("resource") final Resource resource, @PathVariable final String id) {
     return switch (resource) {
-      case BROKERS -> new WebEndpointResponse<>("Scaling brokers is not supported", 501);
-      case PARTITIONS -> new WebEndpointResponse<>("Scaling partitions is not supported", 501);
+      case brokers -> ResponseEntity.status(501).body("Adding brokers is not supported");
+      case partitions -> ResponseEntity.status(501).body("Adding partitions is not supported");
     };
   }
 
-  @WriteOperation
-  public WebEndpointResponse<?> add(@Selector final Resource resource, @Selector final String id) {
+  @DeleteMapping(path = "/{resource}/{id}")
+  public ResponseEntity<?> remove(
+      @PathVariable("resource") final Resource resource, @PathVariable final String id) {
     return switch (resource) {
-      case BROKERS -> new WebEndpointResponse<>("Adding brokers is not supported", 501);
-      case PARTITIONS -> new WebEndpointResponse<>("Adding partitions is not supported", 501);
+      case brokers -> ResponseEntity.status(501).body("Removing brokers is not supported");
+      case partitions -> ResponseEntity.status(501).body("Removing partitions is not supported");
     };
   }
 
-  @DeleteOperation
-  public WebEndpointResponse<?> remove(
-      @Selector final Resource resource, @Selector final String id) {
+  @PostMapping(
+      path = "/{resource}/{resourceId}/{subResource}/{subResourceId}",
+      consumes = "application/json")
+  public ResponseEntity<?> addSubResource(
+      @PathVariable("resource") final Resource resource,
+      @PathVariable final String resourceId,
+      @PathVariable("subResource") final Resource subResource,
+      @PathVariable final String subResourceId,
+      @RequestBody final PartitionAddRequest request) {
+    final int priority = request.priority();
     return switch (resource) {
-      case BROKERS -> new WebEndpointResponse<>("Removing brokers is not supported", 501);
-      case PARTITIONS -> new WebEndpointResponse<>("Removing partitions is not supported", 501);
-    };
-  }
-
-  @WriteOperation
-  public WebEndpointResponse<PostOperationResponse> addSubResource(
-      @Selector final Resource resource,
-      @Selector final String resourceId,
-      @Selector final Resource subResource,
-      @Selector final String subResourceId,
-      final int priority) {
-    return switch (resource) {
-      case BROKERS -> switch (subResource) {
-        case PARTITIONS -> new WebEndpointResponse<>(
-            // POST /cluster/brokers/1/partitions/2
-            mapResponseType(
-                requestSender
-                    .joinPartition(
-                        new JoinPartitionRequest(
-                            MemberId.from(resourceId), Integer.parseInt(subResourceId), priority))
-                    .join()));
-        case BROKERS -> new WebEndpointResponse<>(404);
+      case brokers -> switch (subResource) {
+          // POST /cluster/brokers/1/partitions/2
+        case partitions -> mapOperationResponse(
+            requestSender
+                .joinPartition(
+                    new JoinPartitionRequest(
+                        MemberId.from(resourceId), Integer.parseInt(subResourceId), priority))
+                .join());
+        case brokers -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
       };
-      case PARTITIONS -> switch (subResource) {
-        case BROKERS -> new WebEndpointResponse<>(
-            // POST /cluster/partitions/1/brokers/2
-            mapResponseType(
-                requestSender
-                    .joinPartition(
-                        new JoinPartitionRequest(
-                            MemberId.from(subResourceId), Integer.parseInt(resourceId), priority))
-                    .join()));
-        case PARTITIONS -> new WebEndpointResponse<>(404);
+      case partitions -> switch (subResource) {
+          // POST /cluster/partitions/2/brokers/1
+        case brokers -> mapOperationResponse(
+            requestSender
+                .joinPartition(
+                    new JoinPartitionRequest(
+                        MemberId.from(subResourceId), Integer.parseInt(resourceId), priority))
+                .join());
+        case partitions -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
       };
     };
   }
 
-  @DeleteOperation
-  public WebEndpointResponse<PostOperationResponse> removeSubResource(
-      @Selector final Resource resource,
-      @Selector final int resourceId,
-      @Selector final Resource subResource,
-      @Selector final int subResourceId) {
+  @DeleteMapping(
+      path = "/{resource}/{resourceId}/{subResource}/{subResourceId}",
+      consumes = "application/json")
+  public ResponseEntity<?> removeSubResource(
+      @PathVariable("resource") final Resource resource,
+      @PathVariable final int resourceId,
+      @PathVariable("subResource") final Resource subResource,
+      @PathVariable final int subResourceId) {
     return switch (resource) {
-      case BROKERS -> switch (subResource) {
-        case PARTITIONS -> new WebEndpointResponse<>(
-            // DELETE /cluster/brokers/1/partitions/2
-            mapResponseType(
-                requestSender
-                    .leavePartition(
-                        new LeavePartitionRequest(
-                            MemberId.from(String.valueOf(resourceId)), subResourceId))
-                    .join()));
-        case BROKERS -> new WebEndpointResponse<>(404);
+      case brokers -> switch (subResource) {
+        case partitions -> mapOperationResponse(
+            requestSender
+                .leavePartition(
+                    new LeavePartitionRequest(
+                        MemberId.from(String.valueOf(resourceId)), subResourceId))
+                .join());
+        case brokers -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
       };
-      case PARTITIONS -> switch (subResource) {
-        case BROKERS -> new WebEndpointResponse<>(
-            // DELETE /cluster/partitions/1/brokers/2
-            mapResponseType(
-                requestSender
-                    .leavePartition(
-                        new LeavePartitionRequest(
-                            MemberId.from(String.valueOf(subResourceId)), resourceId))
-                    .join()));
-        case PARTITIONS -> new WebEndpointResponse<>(404);
+      case partitions -> switch (subResource) {
+        case brokers -> mapOperationResponse(
+            requestSender
+                .leavePartition(
+                    new LeavePartitionRequest(
+                        MemberId.from(String.valueOf(subResourceId)), resourceId))
+                .join());
+        case partitions -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
       };
     };
+  }
+
+  private ResponseEntity<PostOperationResponse> mapOperationResponse(
+      final TopologyChangeResponse requestSender) {
+    return ResponseEntity.status(HttpStatusCodes.STATUS_CODE_ACCEPTED)
+        .body(mapResponseType(requestSender));
   }
 
   private static PostOperationResponse mapResponseType(final TopologyChangeResponse response) {
@@ -328,8 +327,10 @@ public class ClusterEndpoint {
     return mappedOperation;
   }
 
+  public record PartitionAddRequest(int priority) {}
+
   public enum Resource {
-    BROKERS,
-    PARTITIONS,
+    brokers,
+    partitions;
   }
 }
