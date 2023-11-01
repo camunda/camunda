@@ -140,9 +140,9 @@ public class ClusterEndpoint {
       consumes = "application/json")
   public ResponseEntity<?> addSubResource(
       @PathVariable("resource") final Resource resource,
-      @PathVariable final String resourceId,
+      @PathVariable final int resourceId,
       @PathVariable("subResource") final Resource subResource,
-      @PathVariable final String subResourceId,
+      @PathVariable final int subResourceId,
       @RequestBody final PartitionAddRequest request) {
     final int priority = request.priority();
     return switch (resource) {
@@ -152,7 +152,7 @@ public class ClusterEndpoint {
             requestSender
                 .joinPartition(
                     new JoinPartitionRequest(
-                        MemberId.from(resourceId), Integer.parseInt(subResourceId), priority))
+                        MemberId.from(String.valueOf(resourceId)), subResourceId, priority))
                 .join());
         case brokers -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
       };
@@ -162,7 +162,7 @@ public class ClusterEndpoint {
             requestSender
                 .joinPartition(
                     new JoinPartitionRequest(
-                        MemberId.from(subResourceId), Integer.parseInt(resourceId), priority))
+                        MemberId.from(String.valueOf(subResourceId)), resourceId, priority))
                 .join());
         case partitions -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
       };
