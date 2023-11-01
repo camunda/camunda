@@ -144,6 +144,7 @@ public class ResourceDeletionProcessor
           Optional.ofNullable(
               processState.getProcessByKeyAndTenant(value.getResourceKey(), tenantId));
       if (processOptional.isPresent()) {
+        setTenantId(command, tenantId);
         deleteProcess(processOptional.get());
         return;
       }
@@ -151,12 +152,14 @@ public class ResourceDeletionProcessor
       final var drgOptional =
           decisionState.findDecisionRequirementsByTenantAndKey(tenantId, value.getResourceKey());
       if (drgOptional.isPresent()) {
+        setTenantId(command, tenantId);
         deleteDecisionRequirements(drgOptional.get());
         return;
       }
 
       final var formOptional = formState.findFormByKey(value.getResourceKey(), tenantId);
       if (formOptional.isPresent()) {
+        setTenantId(command, tenantId);
         deleteForm(formOptional.get());
         return;
       }
@@ -306,6 +309,11 @@ public class ResourceDeletionProcessor
   private List<String> getAuthorizedTenants(final TypedRecord<ResourceDeletionRecord> command) {
     return (List)
         command.getAuthorizations().getOrDefault(Authorization.AUTHORIZED_TENANTS, List.of());
+  }
+
+  private void setTenantId(
+      final TypedRecord<ResourceDeletionRecord> command, final String tenantId) {
+    command.getValue().setTenantId(tenantId);
   }
 
   private static final class NoSuchResourceException extends IllegalStateException {
