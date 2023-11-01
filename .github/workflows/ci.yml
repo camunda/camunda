@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-    - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
     - name: "Read Java / Version Info"
       id: pom-info
       uses: YunaBraska/java-info-action@eee73ae36952eafc3520d2714562f3e1e7a13407 # 1.12.0
