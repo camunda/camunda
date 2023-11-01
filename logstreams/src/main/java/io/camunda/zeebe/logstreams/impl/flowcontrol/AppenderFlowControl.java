@@ -24,9 +24,9 @@ public final class AppenderFlowControl {
   private final Limiter<Void> limiter;
   private final AppenderMetrics metrics;
 
-  public AppenderFlowControl(final AppendErrorHandler errorHandler, final int partitionId) {
+  public AppenderFlowControl(final AppendErrorHandler errorHandler, final AppenderMetrics metrics) {
     this.errorHandler = errorHandler;
-    metrics = new AppenderMetrics(partitionId);
+    this.metrics = metrics;
     limiter = configureLimiter();
   }
 

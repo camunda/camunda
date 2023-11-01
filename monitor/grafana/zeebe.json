@@ -42,6 +42,12 @@
       "version": ""
     },
     {
+      "type": "panel",
+      "id": "piechart",
+      "name": "Pie chart",
+      "version": ""
+    },
+    {
       "type": "datasource",
       "id": "prometheus",
       "name": "Prometheus",
@@ -2877,7 +2883,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "pointradius": 5,
           "points": false,
           "renderer": "flot",
@@ -2978,7 +2984,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "pointradius": 5,
           "points": false,
           "renderer": "flot",
@@ -3081,7 +3087,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "pointradius": 5,
           "points": false,
           "renderer": "flot",
@@ -3175,7 +3181,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "pointradius": 5,
           "points": false,
           "renderer": "flot",
@@ -3270,7 +3276,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "pointradius": 5,
           "points": false,
           "renderer": "flot",
@@ -3359,7 +3365,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3446,7 +3452,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3513,7 +3519,7 @@
             "h": 8,
             "w": 6,
             "x": 12,
-            "y": 53
+            "y": 74
           },
           "hiddenSeries": false,
           "id": 288,
@@ -3533,7 +3539,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3600,7 +3606,7 @@
             "h": 8,
             "w": 6,
             "x": 18,
-            "y": 53
+            "y": 74
           },
           "hiddenSeries": false,
           "id": 289,
@@ -3620,7 +3626,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -4646,33 +4652,7 @@
               },
               "unit": "bytes"
             },
-            "overrides": [
-              {
-                "__systemRef": "hideSeriesFrom",
-                "matcher": {
-                  "id": "byNames",
-                  "options": {
-                    "mode": "exclude",
-                    "names": [
-                      "np-metrics-zeebe-gateway-648d886fdb-4gkc5",
-                      "np-metrics-zeebe-gateway-648d886fdb-r74d5"
-                    ],
-                    "prefix": "All except:",
-                    "readOnly": true
-                  }
-                },
-                "properties": [
-                  {
-                    "id": "custom.hideFrom",
-                    "value": {
-                      "legend": false,
-                      "tooltip": false,
-                      "viz": true
-                    }
-                  }
-                ]
-              }
-            ]
+            "overrides": []
           },
           "gridPos": {
             "h": 8,
@@ -4762,33 +4742,7 @@
               },
               "unit": "bytes"
             },
-            "overrides": [
-              {
-                "__systemRef": "hideSeriesFrom",
-                "matcher": {
-                  "id": "byNames",
-                  "options": {
-                    "mode": "exclude",
-                    "names": [
-                      "np-metrics-zeebe-gateway-648d886fdb-4gkc5",
-                      "np-metrics-zeebe-gateway-648d886fdb-r74d5"
-                    ],
-                    "prefix": "All except:",
-                    "readOnly": true
-                  }
-                },
-                "properties": [
-                  {
-                    "id": "custom.hideFrom",
-                    "value": {
-                      "legend": false,
-                      "tooltip": false,
-                      "viz": true
-                    }
-                  }
-                ]
-              }
-            ]
+            "overrides": []
           },
           "gridPos": {
             "h": 8,
@@ -7080,7 +7034,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 34
+            "y": 9
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7127,7 +7081,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "reverseYBuckets": false,
           "targets": [
             {
@@ -7180,7 +7134,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 34
+            "y": 9
           },
           "hiddenSeries": false,
           "id": 222,
@@ -7201,7 +7155,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -7299,7 +7253,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 42
+            "y": 17
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7346,7 +7300,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "reverseYBuckets": false,
           "targets": [
             {
@@ -7410,7 +7364,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 42
+            "y": 17
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7457,7 +7411,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "reverseYBuckets": false,
           "targets": [
             {
@@ -7522,7 +7476,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 50
+            "y": 25
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7569,7 +7523,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "reverseYBuckets": false,
           "targets": [
             {
@@ -7601,6 +7555,131 @@
             "show": true
           },
           "yBucketBound": "auto"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$DS_PROMETHEUS"
+          },
+          "description": "Time taken to process a record",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 32
+          },
+          "id": 593,
+          "links": [],
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "9.5.2",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "histogram_quantile(0.50, sum(increase(zeebe_stream_processor_processing_duration_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (le, valueType, intent))",
+              "format": "time_series",
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "p50 {{valueType}}.{{intent}}",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "histogram_quantile(0.90, sum(increase(zeebe_stream_processor_processing_duration_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (le, valueType, intent))",
+              "format": "time_series",
+              "hide": false,
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "p90 {{valueType}}.{{intent}}",
+              "range": true,
+              "refId": "B"
+            },
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "histogram_quantile(0.99, sum(increase(zeebe_stream_processor_processing_duration_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (le, valueType, intent))",
+              "format": "time_series",
+              "hide": false,
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "p99 {{valueType}}.{{intent}}",
+              "range": true,
+              "refId": "C"
+            }
+          ],
+          "title": "Record Processing Duration",
+          "type": "timeseries"
         },
         {
           "cards": {},
@@ -7636,7 +7715,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 57
+            "y": 42
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7683,7 +7762,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "reverseYBuckets": false,
           "targets": [
             {
@@ -7749,7 +7828,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 57
+            "y": 42
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7796,7 +7875,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "reverseYBuckets": false,
           "targets": [
             {
@@ -7852,7 +7931,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 64
+            "y": 49
           },
           "id": 420,
           "options": {
@@ -7889,7 +7968,7 @@
               "unit": "s"
             }
           },
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "targets": [
             {
               "datasource": {
@@ -7933,7 +8012,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 64
+            "y": 49
           },
           "id": 419,
           "options": {
@@ -7970,7 +8049,7 @@
               "unit": "s"
             }
           },
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "targets": [
             {
               "datasource": {
@@ -8004,7 +8083,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 71
+            "y": 56
           },
           "hiddenSeries": false,
           "id": 310,
@@ -8025,7 +8104,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -8121,7 +8200,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 71
+            "y": 56
           },
           "hiddenSeries": false,
           "id": 311,
@@ -8142,7 +8221,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -8256,7 +8335,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 78
+            "y": 63
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8303,7 +8382,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "reverseYBuckets": false,
           "targets": [
             {
@@ -8367,7 +8446,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 78
+            "y": 63
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -8414,7 +8493,7 @@
               "unit": "dtdurations"
             }
           },
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "reverseYBuckets": false,
           "targets": [
             {
@@ -12380,7 +12459,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   }
                 ]
               },
@@ -12392,7 +12472,7 @@
             "h": 6,
             "w": 24,
             "x": 0,
-            "y": 173
+            "y": 14
           },
           "id": 356,
           "links": [],
@@ -12462,7 +12542,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 179
+            "y": 20
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -12508,7 +12588,7 @@
               "reverse": false
             }
           },
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "reverseYBuckets": false,
           "targets": [
             {
@@ -12575,7 +12655,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 179
+            "y": 20
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -12622,7 +12702,7 @@
               "unit": "kbytes"
             }
           },
-          "pluginVersion": "9.3.6",
+          "pluginVersion": "9.5.2",
           "reverseYBuckets": false,
           "targets": [
             {
@@ -12654,6 +12734,508 @@
             "show": true
           },
           "yBucketBound": "auto"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$DS_PROMETHEUS"
+          },
+          "description": "Rate of commands written per second by the log storage appender on the leader",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [],
+              "mappings": [],
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 8,
+            "x": 0,
+            "y": 28
+          },
+          "id": 586,
+          "links": [],
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "9.5.2",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(zeebe_log_appender_record_appended_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", recordType=\"COMMAND\"}[$__rate_interval])) by (valueType, intent)",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{valueType}}.{{intent}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Written commands",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$DS_PROMETHEUS"
+          },
+          "description": "Rate of events written per second by the log storage appender on the leader",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [],
+              "mappings": [],
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 8,
+            "x": 8,
+            "y": 28
+          },
+          "id": 589,
+          "links": [],
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "9.5.2",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(zeebe_log_appender_record_appended_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", recordType=\"EVENT\"}[$__rate_interval])) by (valueType, intent)",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{valueType}}.{{intent}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Written events",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$DS_PROMETHEUS"
+          },
+          "description": "Rate of written rejections per second by the log storage appender on the leader",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [],
+              "mappings": [],
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 8,
+            "x": 16,
+            "y": 28
+          },
+          "id": 590,
+          "links": [],
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "9.5.2",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(zeebe_log_appender_record_appended_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", recordType=\"COMMAND_REJECTION\"}[$__rate_interval])) by (valueType, intent)",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{valueType}}.{{intent}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Written rejections",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$DS_PROMETHEUS"
+          },
+          "description": "Distribution of written commands by the leading log storage appender",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                }
+              },
+              "links": [],
+              "mappings": [],
+              "min": 0,
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 8,
+            "x": 0,
+            "y": 37
+          },
+          "id": 588,
+          "links": [],
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "pieType": "pie",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "9.5.2",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(zeebe_log_appender_record_appended_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", recordType=\"COMMAND\"}[$__rate_interval])) by (recordType, valueType, intent)",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{valueType}}.{{intent}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Written commands",
+          "type": "piechart"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$DS_PROMETHEUS"
+          },
+          "description": "Distribution of written events by the leading log storage appender",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                }
+              },
+              "links": [],
+              "mappings": [],
+              "min": 0,
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 8,
+            "x": 8,
+            "y": 37
+          },
+          "id": 591,
+          "links": [],
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "pieType": "pie",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "9.5.2",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(zeebe_log_appender_record_appended_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", recordType=\"EVENT\"}[$__rate_interval])) by (valueType, intent)",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{valueType}}.{{intent}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Written events",
+          "type": "piechart"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$DS_PROMETHEUS"
+          },
+          "description": "Distribution of written rejections by the leading log storage appender",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                }
+              },
+              "links": [],
+              "mappings": [],
+              "min": 0,
+              "noValue": "0",
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 8,
+            "x": 16,
+            "y": 37
+          },
+          "id": 592,
+          "links": [],
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "pieType": "pie",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "9.5.2",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(zeebe_log_appender_record_appended_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", recordType=\"COMMAND_REJECTION\"}[$__rate_interval])) by (valueType, intent)",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{valueType}}.{{intent}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Written rejections",
+          "type": "piechart"
         }
       ],
       "title": "Logstream",

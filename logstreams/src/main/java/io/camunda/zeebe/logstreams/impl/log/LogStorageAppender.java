@@ -10,8 +10,11 @@ package io.camunda.zeebe.logstreams.impl.log;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.AppendErrorHandler;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.AppenderFlowControl;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.AppenderMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.InFlightAppend;
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
+import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -32,6 +35,7 @@ final class LogStorageAppender extends Actor implements HealthMonitorable, Appen
   private final LogStorage logStorage;
   private final Set<FailureListener> failureListeners = new HashSet<>();
   private final ActorFuture<Void> closeFuture;
+  private final AppenderMetrics metrics;
   private final int partitionId;
 
   LogStorageAppender(
@@ -43,7 +47,8 @@ final class LogStorageAppender extends Actor implements HealthMonitorable, Appen
     this.partitionId = partitionId;
     this.logStorage = logStorage;
     this.sequencer = sequencer;
-    flowControl = new AppenderFlowControl(this, partitionId);
+    metrics = new AppenderMetrics(partitionId);
+    flowControl = new AppenderFlowControl(this, metrics);
     closeFuture = new CompletableActorFuture<>();
   }
 
@@ -126,7 +131,11 @@ final class LogStorageAppender extends Actor implements HealthMonitorable, Appen
     final var highestPosition =
         sequencedBatch.firstPosition() + sequencedBatch.entries().size() - 1;
     append.start(highestPosition);
-    logStorage.append(lowestPosition, highestPosition, sequencedBatch, append);
+    logStorage.append(
+        lowestPosition,
+        highestPosition,
+        sequencedBatch,
+        new InstrumentedAppendListener(append, sequencedBatch, metrics));
     actor.submit(this::tryWriteBatch);
   }
 
@@ -138,12 +147,44 @@ final class LogStorageAppender extends Actor implements HealthMonitorable, Appen
   }
 
   @Override
-  public void onWriteError(final Throwable error) {
+  public void onCommitError(final Throwable error) {
     actor.run(() -> onFailure(error));
   }
 
   @Override
-  public void onCommitError(final Throwable error) {
+  public void onWriteError(final Throwable error) {
     actor.run(() -> onFailure(error));
+  }
+
+  private record InstrumentedAppendListener(
+      AppendListener delegate, SequencedBatch batch, AppenderMetrics metrics)
+      implements AppendListener {
+
+    @Override
+    public void onWrite(final long address) {
+      delegate.onWrite(address);
+      batch.entries().forEach(this::recordWrite);
+    }
+
+    @Override
+    public void onWriteError(final Throwable error) {
+      delegate.onWriteError(error);
+    }
+
+    @Override
+    public void onCommit(final long address) {
+      delegate.onCommit(address);
+    }
+
+    @Override
+    public void onCommitError(final long address, final Throwable error) {
+      delegate.onCommitError(address, error);
+    }
+
+    private void recordWrite(final LogAppendEntry entry) {
+      final var metadata = entry.recordMetadata();
+      metrics.recordAppendedEntry(
+          1, metadata.getRecordType(), metadata.getValueType(), metadata.getIntent());
+    }
   }
 }

@@ -21,7 +21,7 @@ final class AppenderFlowControlTest {
   void callsErrorHandlerOnWriteError() {
     // given
     final var errorHandler = Mockito.mock(AppendErrorHandler.class);
-    final var flow = new AppenderFlowControl(errorHandler, 1);
+    final var flow = new AppenderFlowControl(errorHandler, new AppenderMetrics(1));
     final var error = new RuntimeException();
     // when
     final var inFlight = flow.tryAcquire().orElseThrow();
@@ -34,7 +34,7 @@ final class AppenderFlowControlTest {
   void callsErrorHandlerOnCommitError() {
     // given
     final var errorHandler = Mockito.mock(AppendErrorHandler.class);
-    final var flow = new AppenderFlowControl(errorHandler, 1);
+    final var flow = new AppenderFlowControl(errorHandler, new AppenderMetrics(1));
     final var error = new RuntimeException();
     // when
     final var inFlight = flow.tryAcquire().orElseThrow();
@@ -47,7 +47,7 @@ final class AppenderFlowControlTest {
   void eventuallyRejects() {
     // given
     final var errorHandler = Mockito.mock(AppendErrorHandler.class);
-    final var flow = new AppenderFlowControl(errorHandler, 1);
+    final var flow = new AppenderFlowControl(errorHandler, new AppenderMetrics(1));
 
     // when - then
     Awaitility.await("Rejects new appends")
@@ -60,7 +60,7 @@ final class AppenderFlowControlTest {
   void recoversWhenCompletingAppends() {
     // given
     final var errorHandler = Mockito.mock(AppendErrorHandler.class);
-    final var flow = new AppenderFlowControl(errorHandler, 1);
+    final var flow = new AppenderFlowControl(errorHandler, new AppenderMetrics(1));
     // when
     boolean rejecting = false;
     final var inFlight = new LinkedList<InFlightAppend>();
