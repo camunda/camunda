@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.shared.management;
 
-import com.google.api.client.http.HttpStatusCodes;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.BrokerStateCode;
@@ -71,7 +70,7 @@ public class ClusterEndpoint {
   public ResponseEntity<?> clusterTopology() {
     try {
       final GetTopologyResponse response = mapClusterTopology(requestSender.getTopology().join());
-      return new ResponseEntity<>(response, HttpStatusCode.valueOf(HttpStatusCodes.STATUS_CODE_OK));
+      return new ResponseEntity<>(response, HttpStatusCode.valueOf(200));
     } catch (final Exception error) {
       return mapError(error);
     }
@@ -81,7 +80,7 @@ public class ClusterEndpoint {
     // TODO: Map error to proper HTTP status code as defined in spec
     final var errorResponse = new Error();
     errorResponse.setMessage(error.getMessage());
-    return ResponseEntity.status(HttpStatusCodes.STATUS_CODE_SERVER_ERROR).body(errorResponse);
+    return ResponseEntity.status(500).body(errorResponse);
   }
 
   @PostMapping(path = "/{resource}/{id}")
@@ -201,8 +200,7 @@ public class ClusterEndpoint {
 
   private ResponseEntity<PostOperationResponse> mapOperationResponse(
       final TopologyChangeResponse requestSender) {
-    return ResponseEntity.status(HttpStatusCodes.STATUS_CODE_ACCEPTED)
-        .body(mapResponseType(requestSender));
+    return ResponseEntity.status(202).body(mapResponseType(requestSender));
   }
 
   private static PostOperationResponse mapResponseType(final TopologyChangeResponse response) {
@@ -366,8 +364,6 @@ public class ClusterEndpoint {
   }
 
   public record PartitionAddRequest(int priority) {}
-
-  public record ResourceScaleRequest(List<Integer> ids) {}
 
   public enum Resource {
     brokers,
