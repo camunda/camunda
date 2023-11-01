@@ -7,7 +7,7 @@
 
 import {render, screen} from 'modules/testing-library';
 import {authenticationStore} from 'modules/stores/authentication';
-import {Processes} from '..';
+import {ListView} from '..';
 import {createWrapper} from './mocks';
 import {
   groupedProcessesMock,
@@ -20,7 +20,7 @@ import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 
-describe('<Processes /> - operations', () => {
+describe('<ListView /> - operations', () => {
   beforeEach(() => {
     mockFetchProcessInstances().withSuccess({
       processInstances: [],
@@ -37,7 +37,7 @@ describe('<Processes /> - operations', () => {
   });
 
   it('should show delete button when version is selected', async () => {
-    render(<Processes />, {
+    render(<ListView />, {
       wrapper: createWrapper('/processes?process=demoProcess&version=1'),
     });
 
@@ -58,7 +58,7 @@ describe('<Processes /> - operations', () => {
   });
 
   it('should not show delete button when no process is selected', async () => {
-    render(<Processes />, {
+    render(<ListView />, {
       wrapper: createWrapper('/processes'),
     });
 
@@ -78,7 +78,7 @@ describe('<Processes /> - operations', () => {
   });
 
   it('should not show delete button when no version is selected', async () => {
-    render(<Processes />, {
+    render(<ListView />, {
       wrapper: createWrapper('/processes?process=demoProcess'),
     });
 
@@ -109,7 +109,7 @@ describe('<Processes /> - operations', () => {
       tenants: [],
     });
 
-    render(<Processes />, {
+    render(<ListView />, {
       wrapper: createWrapper('/processes?process=demoProcess&version=1'),
     });
 
@@ -140,7 +140,7 @@ describe('<Processes /> - operations', () => {
       tenants: [],
     });
 
-    const {rerender} = render(<Processes />, {
+    const {rerender} = render(<ListView />, {
       wrapper: createWrapper('/processes?process=demoProcess&version=1'),
     });
 
@@ -155,7 +155,7 @@ describe('<Processes /> - operations', () => {
       resourcePermissionsEnabled: true,
     };
 
-    rerender(<Processes />);
+    rerender(<ListView />);
 
     expect(
       screen.queryByRole('button', {

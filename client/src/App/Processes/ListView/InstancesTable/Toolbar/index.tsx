@@ -13,6 +13,8 @@ import useOperationApply from './useOperationApply';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {RetryFailed, Error} from '@carbon/react/icons';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
+import {IS_INSTANCE_MIGRATION_ENABLED} from 'modules/feature-flags';
 
 type Props = {
   selectedInstancesCount: number;
@@ -81,6 +83,13 @@ const Toolbar: React.FC<Props> = ({selectedInstancesCount}) => {
             }
           }}
         >
+          {IS_INSTANCE_MIGRATION_ENABLED && (
+            // TODO: https://github.com/camunda/operate/issues/5727
+            <TableBatchAction onClick={processInstanceMigrationStore.enable}>
+              Migrate
+            </TableBatchAction>
+          )}
+
           <TableBatchAction
             renderIcon={Error}
             onClick={() => setModalMode('CANCEL_PROCESS_INSTANCE')}

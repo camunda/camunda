@@ -12,16 +12,17 @@ import {
 import {Container} from './styled';
 import {observer} from 'mobx-react';
 import {useEffect, useRef, useState} from 'react';
-import {OperationsPanel} from 'modules/components/OperationsPanel';
 
 type Props = {
-  filters: React.ReactNode;
-  diagram: React.ReactNode;
-  instances: React.ReactNode;
-  type: 'process' | 'decision';
+  leftPanel?: React.ReactNode;
+  topPanel: React.ReactNode;
+  bottomPanel: React.ReactNode;
+  footer?: React.ReactNode;
+  rightPanel?: React.ReactNode;
+  type: 'process' | 'decision' | 'migrate';
 };
 const InstancesList: React.FC<Props> = observer(
-  ({filters, diagram, instances, type}) => {
+  ({leftPanel, topPanel, bottomPanel, rightPanel, footer, type}) => {
     const [clientHeight, setClientHeight] = useState(0);
     const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -32,19 +33,24 @@ const InstancesList: React.FC<Props> = observer(
     const panelMinHeight = clientHeight / 4;
 
     return (
-      <Container>
-        <section>{filters}</section>
+      <Container
+        $hasLeftPanel={leftPanel !== undefined}
+        $hasRightPanel={rightPanel !== undefined}
+        $hasFooter={footer !== undefined}
+      >
+        {leftPanel && <section>{leftPanel}</section>}
         <div ref={containerRef}>
           <ResizablePanel
             panelId={`${type}-instances-vertical-panel`}
             direction={SplitDirection.Vertical}
             minHeights={[panelMinHeight, panelMinHeight]}
           >
-            {diagram}
-            {instances}
+            {topPanel}
+            {bottomPanel}
           </ResizablePanel>
         </div>
-        <OperationsPanel />
+        {rightPanel}
+        {footer}
       </Container>
     );
   },

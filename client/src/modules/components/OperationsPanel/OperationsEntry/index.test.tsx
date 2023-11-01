@@ -18,7 +18,7 @@ import OperationsEntry from './index';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {LocationLog} from 'modules/utils/LocationLog';
-import {Filters} from 'App/Processes/Filters';
+import {Filters} from 'App/Processes/ListView/Filters';
 
 function createWrapper() {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {

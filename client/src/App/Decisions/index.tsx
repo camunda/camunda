@@ -14,6 +14,7 @@ import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {Filters} from './Filters';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {useLocation, Location} from 'react-router-dom';
+import {OperationsPanel} from 'modules/components/OperationsPanel';
 
 type LocationType = Omit<Location, 'state'> & {
   state: {refreshContent?: boolean};
@@ -41,9 +42,10 @@ const Decisions: React.FC = () => {
       <VisuallyHiddenH1>Operate Decision Instances</VisuallyHiddenH1>
       <InstancesList
         type="decision"
-        filters={<Filters />}
-        diagram={<Decision />}
-        instances={<InstancesTable />}
+        leftPanel={<Filters />}
+        topPanel={<Decision />}
+        rightPanel={<OperationsPanel />}
+        bottomPanel={<InstancesTable />}
       />
     </>
   );

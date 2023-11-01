@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import useOperationApply from './';
+import useOperationApply from '.';
 import {renderHook} from '@testing-library/react-hooks';
 import {waitFor} from 'modules/testing-library';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';

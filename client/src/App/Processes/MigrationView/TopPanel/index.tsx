@@ -5,10 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-const IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED = false;
-const IS_INSTANCE_MIGRATION_ENABLED = false;
-
-export {
-  IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED,
-  IS_INSTANCE_MIGRATION_ENABLED,
+const TopPanel: React.FC = () => {
+  return <div>Top Panel</div>;
 };
+
+export {TopPanel};

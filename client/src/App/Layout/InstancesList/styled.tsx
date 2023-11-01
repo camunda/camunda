@@ -8,15 +8,47 @@
 import styled, {css} from 'styled-components';
 import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/constants';
 
-const Container = styled.div`
-  ${() => {
+type ContainerProps = {
+  $hasLeftPanel?: boolean;
+  $hasRightPanel?: boolean;
+  $hasFooter?: boolean;
+};
+
+const gridColumnLayout = css<ContainerProps>`
+  ${({$hasLeftPanel = false, $hasRightPanel = false}) => {
+    if ($hasLeftPanel && $hasRightPanel) {
+      return css`
+        grid-template-columns: auto minmax(0, 1fr) ${COLLAPSABLE_PANEL_MIN_WIDTH};
+      `;
+    }
+
     return css`
-      display: grid;
-      height: 100%;
-      grid-template-columns: auto minmax(0, 1fr) ${COLLAPSABLE_PANEL_MIN_WIDTH};
-      position: relative;
+      grid-template-columns: 1fr;
     `;
   }}
+`;
+
+const gridRowLayout = css<ContainerProps>`
+  ${({$hasFooter = false}) => {
+    if ($hasFooter) {
+      return css`
+        grid-template-rows: 1fr var(--cds-spacing-09);
+      `;
+    }
+
+    return css`
+      grid-template-rows: 1fr;
+    `;
+  }}
+`;
+
+const Container = styled.div<ContainerProps>`
+  display: grid;
+  height: 100%;
+  position: relative;
+
+  ${gridColumnLayout}
+  ${gridRowLayout}
 `;
 
 export {Container};

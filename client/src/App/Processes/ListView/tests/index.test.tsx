@@ -13,7 +13,7 @@ import {
   within,
 } from 'modules/testing-library';
 import {Route, MemoryRouter, Routes, Link} from 'react-router-dom';
-import {Processes} from '../index';
+import {ListView} from '../index';
 import {
   groupedProcessesMock,
   mockProcessStatistics,
@@ -85,7 +85,7 @@ describe('Instances', () => {
   });
 
   it('should render title and document title', async () => {
-    render(<Processes />, {
+    render(<ListView />, {
       wrapper: getWrapper(`${Paths.processes()}?incidents=true&active=true`),
     });
 
@@ -102,7 +102,7 @@ describe('Instances', () => {
   });
 
   it('should render page components', async () => {
-    render(<Processes />, {
+    render(<ListView />, {
       wrapper: getWrapper(`${Paths.processes()}?active=true&incidents=true`),
     });
 
@@ -139,7 +139,7 @@ describe('Instances', () => {
   it('should reset selected instances when filters change', async () => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
 
-    const {user} = render(<Processes />, {
+    const {user} = render(<ListView />, {
       wrapper: getWrapper(`${Paths.processes()}?active=true&incidents=true`),
     });
 
@@ -170,7 +170,7 @@ describe('Instances', () => {
   });
 
   it('should not reset selected instances when table is sorted', async () => {
-    const {user} = render(<Processes />, {
+    const {user} = render(<ListView />, {
       wrapper: getWrapper(`${Paths.processes()}?active=true&incidents=true`),
     });
 
@@ -217,7 +217,7 @@ describe('Instances', () => {
       firstProcessStatisticsResponse,
     );
 
-    render(<Processes />, {
+    render(<ListView />, {
       wrapper: getWrapper(
         `${Paths.processes()}?process=bigVarProcess&version=1`,
       ),
@@ -238,7 +238,7 @@ describe('Instances', () => {
     const {user} = render(
       <>
         <AppHeader />
-        <Processes />
+        <ListView />
       </>,
       {
         wrapper: getWrapper(`${Paths.processes()}?active=true&incidents=true`),
@@ -290,7 +290,7 @@ describe('Instances', () => {
       search: queryString,
     }));
 
-    render(<Processes />, {
+    render(<ListView />, {
       wrapper: getWrapper(`${Paths.processes()}${queryString}`),
     });
 
