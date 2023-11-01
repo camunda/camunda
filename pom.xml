@@ -60,6 +60,7 @@
     <module>backup-stores/gcs</module>
     <module>restore</module>
     <module>topology</module>
+    <module>backup-stores/azure</module>
   </modules>
 
   <scm>
