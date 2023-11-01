@@ -9,7 +9,12 @@ package io.camunda.zeebe.topology.api;
 
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.topology.api.ErrorResponse.ErrorCode;
+import io.camunda.zeebe.topology.api.TopologyRequestFailedException.ConcurrentModificationException;
 import io.camunda.zeebe.topology.serializer.TopologyRequestsSerializer;
+import io.camunda.zeebe.util.Either;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -53,48 +58,56 @@ public final class TopologyRequestServer implements AutoCloseable {
     communicationService.replyTo(
         TopologyRequestTopics.ADD_MEMBER.topic(),
         serializer::decodeAddMembersRequest,
-        request -> topologyManagementApi.addMembers(request).toCompletableFuture(),
-        serializer::encodeTopologyChangeResponse);
+        request -> mapResponse(topologyManagementApi.addMembers(request)),
+        this::encodeResponse);
+  }
+
+  byte[] encodeResponse(final Either<ErrorResponse, TopologyChangeResponse> response) {
+    if (response.isLeft()) {
+      return serializer.encodeResponse(response.getLeft());
+    } else {
+      return serializer.encodeResponse(response.get());
+    }
   }
 
   private void registerRemoveMemberRequestsHandler() {
     communicationService.replyTo(
         TopologyRequestTopics.REMOVE_MEMBER.topic(),
         serializer::decodeRemoveMembersRequest,
-        request -> topologyManagementApi.removeMembers(request).toCompletableFuture(),
-        serializer::encodeTopologyChangeResponse);
+        request -> mapResponse(topologyManagementApi.removeMembers(request)),
+        this::encodeResponse);
   }
 
   private void registerJoinPartitionRequestsHandler() {
     communicationService.replyTo(
         TopologyRequestTopics.JOIN_PARTITION.topic(),
         serializer::decodeJoinPartitionRequest,
-        request -> topologyManagementApi.joinPartition(request).toCompletableFuture(),
-        serializer::encodeTopologyChangeResponse);
+        request -> mapResponse(topologyManagementApi.joinPartition(request)),
+        this::encodeResponse);
   }
 
   private void registerLeavePartitionRequestsHandler() {
     communicationService.replyTo(
         TopologyRequestTopics.LEAVE_PARTITION.topic(),
         serializer::decodeLeavePartitionRequest,
-        request -> topologyManagementApi.leavePartition(request).toCompletableFuture(),
-        serializer::encodeTopologyChangeResponse);
+        request -> mapResponse(topologyManagementApi.leavePartition(request)),
+        this::encodeResponse);
   }
 
   private void registerReassignPartitionRequestHandler() {
     communicationService.replyTo(
         TopologyRequestTopics.REASSIGN_PARTITIONS.topic(),
         serializer::decodeReassignPartitionsRequest,
-        request -> topologyManagementApi.reassignPartitions(request).toCompletableFuture(),
-        serializer::encodeTopologyChangeResponse);
+        request -> mapResponse(topologyManagementApi.reassignPartitions(request)),
+        this::encodeResponse);
   }
 
   private void registerScaleRequestHandler() {
     communicationService.replyTo(
         TopologyRequestTopics.SCALE_MEMBERS.topic(),
         serializer::decodeScaleRequest,
-        request -> topologyManagementApi.scaleMembers(request).toCompletableFuture(),
-        serializer::encodeTopologyChangeResponse);
+        request -> mapResponse(topologyManagementApi.scaleMembers(request)),
+        this::encodeResponse);
   }
 
   private void registerGetTopologyQueryHandler() {
@@ -103,5 +116,27 @@ public final class TopologyRequestServer implements AutoCloseable {
         Function.identity(),
         request -> topologyManagementApi.getTopology().toCompletableFuture(),
         serializer::encode);
+  }
+
+  private CompletableFuture<Either<ErrorResponse, TopologyChangeResponse>> mapResponse(
+      final ActorFuture<TopologyChangeResponse> topologyManagementApi) {
+    return topologyManagementApi
+        .toCompletableFuture()
+        .thenApply(Either::<ErrorResponse, TopologyChangeResponse>right)
+        .exceptionally(this::mapError);
+  }
+
+  private Either<ErrorResponse, TopologyChangeResponse> mapError(final Throwable throwable) {
+    return switch (throwable) {
+      case final TopologyRequestFailedException.OperationNotAllowed operationNotAllowed -> Either
+          .left(
+              new ErrorResponse(ErrorCode.OPERATION_NOT_ALLOWED, operationNotAllowed.getMessage()));
+      case final TopologyRequestFailedException.InvalidRequest invalidRequest -> Either.left(
+          new ErrorResponse(ErrorCode.INVALID_REQUEST, invalidRequest.getMessage()));
+      case final ConcurrentModificationException concurrentModificationException -> Either.left(
+          new ErrorResponse(
+              ErrorCode.INVALID_REQUEST, concurrentModificationException.getMessage()));
+      default -> Either.left(new ErrorResponse(ErrorCode.INTERNAL_ERROR, throwable.getMessage()));
+    };
   }
 }

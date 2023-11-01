@@ -10,6 +10,7 @@ package io.camunda.zeebe.topology.serializer;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Timestamp;
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.topology.api.ErrorResponse;
 import io.camunda.zeebe.topology.api.TopologyChangeResponse;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
@@ -19,6 +20,9 @@ import io.camunda.zeebe.topology.api.TopologyManagementRequest.RemoveMembersRequ
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.ScaleRequest;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossipState;
 import io.camunda.zeebe.topology.protocol.Requests;
+import io.camunda.zeebe.topology.protocol.Requests.ErrorCode;
+import io.camunda.zeebe.topology.protocol.Requests.Response;
+import io.camunda.zeebe.topology.protocol.Requests.TopologyChangeResponse.Builder;
 import io.camunda.zeebe.topology.protocol.Topology;
 import io.camunda.zeebe.topology.protocol.Topology.CompletedChange;
 import io.camunda.zeebe.topology.protocol.Topology.MemberState;
@@ -32,6 +36,7 @@ import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberLeaveOperat
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.util.Either;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -502,7 +507,44 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
   }
 
   @Override
-  public byte[] encodeTopologyChangeResponse(final TopologyChangeResponse topologyChangeResponse) {
+  public byte[] encodeResponse(final TopologyChangeResponse response) {
+    return Response.newBuilder()
+        .setTopologyChangeResponse(encodeTopologyChangeResponse(response))
+        .build()
+        .toByteArray();
+  }
+
+  @Override
+  public byte[] encodeResponse(final ErrorResponse response) {
+    return Response.newBuilder()
+        .setError(
+            Requests.ErrorResponse.newBuilder()
+                .setErrorCode(encodeErrorCode(response.code()))
+                .setErrorMessage(response.message()))
+        .build()
+        .toByteArray();
+  }
+
+  @Override
+  public Either<ErrorResponse, TopologyChangeResponse> decodeResponse(
+      final byte[] encodedResponse) {
+    try {
+      final var response = Response.parseFrom(encodedResponse);
+      if (response.hasError()) {
+        return Either.left(
+            new ErrorResponse(
+                decodeErrorCode(response.getError().getErrorCode()),
+                response.getError().getErrorMessage()));
+      } else {
+        return Either.right(decodeTopologyChangeResponse(response.getTopologyChangeResponse()));
+      }
+
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  public Builder encodeTopologyChangeResponse(final TopologyChangeResponse topologyChangeResponse) {
     final var builder = Requests.TopologyChangeResponse.newBuilder();
 
     builder
@@ -512,25 +554,36 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
         .putAllCurrentTopology(encodeMemberStateMap(topologyChangeResponse.currentTopology()))
         .putAllExpectedTopology(encodeMemberStateMap(topologyChangeResponse.expectedTopology()));
 
-    return builder.build().toByteArray();
+    return builder;
   }
 
-  @Override
   public TopologyChangeResponse decodeTopologyChangeResponse(
-      final byte[] encodedTopologyChangeResponse) {
-    try {
-      final var topologyChangeResponse =
-          Requests.TopologyChangeResponse.parseFrom(encodedTopologyChangeResponse);
-      return new TopologyChangeResponse(
-          topologyChangeResponse.getChangeId(),
-          decodeMemberStateMap(topologyChangeResponse.getCurrentTopologyMap()),
-          decodeMemberStateMap(topologyChangeResponse.getExpectedTopologyMap()),
-          topologyChangeResponse.getPlannedChangesList().stream()
-              .map(this::decodeOperation)
-              .collect(Collectors.toList()));
-    } catch (final InvalidProtocolBufferException e) {
-      throw new DecodingFailed(e);
-    }
+      final Requests.TopologyChangeResponse topologyChangeResponse) {
+    return new TopologyChangeResponse(
+        topologyChangeResponse.getChangeId(),
+        decodeMemberStateMap(topologyChangeResponse.getCurrentTopologyMap()),
+        decodeMemberStateMap(topologyChangeResponse.getExpectedTopologyMap()),
+        topologyChangeResponse.getPlannedChangesList().stream()
+            .map(this::decodeOperation)
+            .collect(Collectors.toList()));
+  }
+
+  private ErrorCode encodeErrorCode(final ErrorResponse.ErrorCode status) {
+    return switch (status) {
+      case INVALID_REQUEST -> ErrorCode.INVALID_REQUEST;
+      case OPERATION_NOT_ALLOWED -> ErrorCode.OPERATION_NOT_ALLOWED;
+      case CONCURRENT_MODIFICATION -> ErrorCode.CONCURRENT_MODIFICATION;
+      case INTERNAL_ERROR -> ErrorCode.INTERNAL_ERROR;
+    };
+  }
+
+  private ErrorResponse.ErrorCode decodeErrorCode(final ErrorCode status) {
+    return switch (status) {
+      case INVALID_REQUEST -> ErrorResponse.ErrorCode.INVALID_REQUEST;
+      case OPERATION_NOT_ALLOWED -> ErrorResponse.ErrorCode.OPERATION_NOT_ALLOWED;
+      case CONCURRENT_MODIFICATION -> ErrorResponse.ErrorCode.CONCURRENT_MODIFICATION;
+      case INTERNAL_ERROR, UNRECOGNIZED -> ErrorResponse.ErrorCode.INTERNAL_ERROR;
+    };
   }
 
   private Map<String, MemberState> encodeMemberStateMap(

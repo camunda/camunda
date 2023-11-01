@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.topology.serializer;
 
+import io.camunda.zeebe.topology.api.ErrorResponse;
 import io.camunda.zeebe.topology.api.TopologyChangeResponse;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest;
 import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.util.Either;
 
 public interface TopologyRequestsSerializer {
 
@@ -39,9 +41,11 @@ public interface TopologyRequestsSerializer {
 
   TopologyManagementRequest.ScaleRequest decodeScaleRequest(byte[] encodedState);
 
-  byte[] encodeTopologyChangeResponse(TopologyChangeResponse topologyChangeResponse);
+  byte[] encodeResponse(TopologyChangeResponse response);
 
-  TopologyChangeResponse decodeTopologyChangeResponse(byte[] encodedTopologyChangeResponse);
+  byte[] encodeResponse(ErrorResponse response);
+
+  Either<ErrorResponse, TopologyChangeResponse> decodeResponse(byte[] encodedResponse);
 
   byte[] encode(ClusterTopology clusterTopology);
 
