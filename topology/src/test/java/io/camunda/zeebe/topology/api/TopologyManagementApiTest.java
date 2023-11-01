@@ -112,7 +112,7 @@ final class TopologyManagementApiTest {
     final var request = new TopologyManagementRequest.AddMembersRequest(Set.of(MemberId.from("1")));
 
     // when
-    final var changeStatus = clientApi.addMembers(request).join();
+    final var changeStatus = clientApi.addMembers(request).join().get();
 
     // then
     final var expected = new MemberJoinOperation(MemberId.from("1"));
@@ -131,7 +131,7 @@ final class TopologyManagementApiTest {
             Set.of(MemberId.from("1"), MemberId.from("2")));
 
     // when
-    final var changeStatus = clientApi.removeMembers(request).join();
+    final var changeStatus = clientApi.removeMembers(request).join().get();
 
     // then
     final List<TopologyChangeOperation> expected =
@@ -148,7 +148,7 @@ final class TopologyManagementApiTest {
         new TopologyManagementRequest.JoinPartitionRequest(MemberId.from("1"), 1, 3);
 
     // when
-    final var changeStatus = clientApi.joinPartition(request).join();
+    final var changeStatus = clientApi.joinPartition(request).join().get();
 
     // then
     assertThat(changeStatus.plannedChanges())
@@ -161,7 +161,7 @@ final class TopologyManagementApiTest {
     final var request = new TopologyManagementRequest.LeavePartitionRequest(MemberId.from("1"), 1);
 
     // when
-    final var changeStatus = clientApi.leavePartition(request).join();
+    final var changeStatus = clientApi.leavePartition(request).join().get();
 
     // then
     assertThat(changeStatus.plannedChanges())
@@ -184,7 +184,7 @@ final class TopologyManagementApiTest {
     recordingCoordinator.setCurrentTopology(currentTopology);
 
     // when
-    final var changeStatus = clientApi.reassignPartitions(request).join();
+    final var changeStatus = clientApi.reassignPartitions(request).join().get();
 
     // then
     assertThat(changeStatus.plannedChanges())
@@ -207,7 +207,7 @@ final class TopologyManagementApiTest {
     recordingCoordinator.setCurrentTopology(currentTopology);
 
     // when
-    final var changeStatus = clientApi.scaleMembers(request).join();
+    final var changeStatus = clientApi.scaleMembers(request).join().get();
 
     // then
     assertThat(changeStatus.plannedChanges())
