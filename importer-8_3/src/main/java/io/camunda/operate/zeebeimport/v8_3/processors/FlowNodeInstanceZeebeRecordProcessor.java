@@ -155,6 +155,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
     entity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
     entity.setBpmnProcessId(recordValue.getBpmnProcessId());
+    entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
     if (entity.getTreePath() == null) {
 
