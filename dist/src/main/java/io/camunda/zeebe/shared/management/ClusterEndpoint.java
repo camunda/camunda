@@ -24,6 +24,7 @@ import io.camunda.zeebe.management.cluster.TopologyChangeCompletedInner;
 import io.camunda.zeebe.topology.api.TopologyChangeResponse;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.ScaleRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequestSender;
 import io.camunda.zeebe.topology.state.ClusterChangePlan;
 import io.camunda.zeebe.topology.state.ClusterChangePlan.CompletedOperation;
@@ -41,6 +42,7 @@ import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOp
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
 import org.springframework.http.HttpStatusCode;
@@ -95,6 +97,34 @@ public class ClusterEndpoint {
       case brokers -> ResponseEntity.status(501).body("Removing brokers is not supported");
       case partitions -> ResponseEntity.status(501).body("Removing partitions is not supported");
     };
+  }
+
+  @PostMapping(path = "/{resource}", consumes = "application/json")
+  public ResponseEntity<?> scale(
+      @PathVariable("resource") final Resource resource,
+      @RequestBody final List<Integer> ids) {
+    return switch (resource) {
+      case brokers -> scaleBrokers(ids);
+      case partitions -> new ResponseEntity<>(
+          "Scaling partitions is not supported", HttpStatusCode.valueOf(501));
+    };
+  }
+
+  private ResponseEntity<?> scaleBrokers(final List<Integer> ids) {
+    try {
+      final var response =
+          requestSender
+              .scaleMembers(
+                  new ScaleRequest(
+                      ids.stream()
+                          .map(String::valueOf)
+                          .map(MemberId::from)
+                          .collect(Collectors.toSet())))
+              .join();
+      return mapOperationResponse(response);
+    } catch (final Exception error) {
+      return mapError(error);
+    }
   }
 
   @PostMapping(
@@ -328,6 +358,8 @@ public class ClusterEndpoint {
   }
 
   public record PartitionAddRequest(int priority) {}
+
+  public record ResourceScaleRequest(List<Integer> ids) {}
 
   public enum Resource {
     brokers,

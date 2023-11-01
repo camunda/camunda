@@ -14,6 +14,7 @@ import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import java.util.List;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -86,6 +87,21 @@ final class ClusterEndpointIT {
           .returns(0, Operation::getBrokerId)
           .returns(2, Operation::getPartitionId)
           .returns(3, Operation::getPriority);
+    }
+  }
+
+  @Test
+  void shouldRequestScaleBrokers() {
+    try (final var cluster = createCluster(1)) {
+      // given
+      cluster.awaitCompleteTopology();
+      final var actuator = ClusterActuator.of(cluster.availableGateway());
+
+      // when
+      final var response = actuator.scaleBrokers(List.of(0, 1, 2));
+
+      // then
+      assertThat(response.getExpectedTopology()).hasSize(3);
     }
   }
 

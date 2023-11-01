@@ -21,6 +21,7 @@ import feign.jackson.JacksonEncoder;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
 import io.camunda.zeebe.management.cluster.PostOperationResponse;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.zeebe.containers.ZeebeNode;
 import java.util.List;
 
@@ -100,4 +101,8 @@ public interface ClusterActuator {
   @RequestLine("GET")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   GetTopologyResponse getTopology();
+
+  @RequestLine("POST /brokers")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PostOperationResponse scaleBrokers(@RequestBody List<Integer> ids);
 }
