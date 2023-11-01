@@ -9,15 +9,14 @@ package io.camunda.zeebe.test.util.asserts.strace;
 
 import io.camunda.zeebe.test.util.STracer;
 import io.camunda.zeebe.test.util.STracer.FSyncTrace;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.List;
 import org.assertj.core.api.AbstractObjectAssert;
-import org.assertj.core.api.Assertions;
 import org.assertj.core.api.ListAssert;
 
 /**
  * Convenience class to assert values obtained through a {@link io.camunda.zeebe.test.util.STracer}.
+ *
+ * <p>NOTE: since strace and the Java program interact asynchronously over file I/O, you will likely
+ * need to wrap your assertion in an {@link org.awaitility.Awaitility} block.
  */
 public final class STracerAssert extends AbstractObjectAssert<STracerAssert, STracer> {
   /**
@@ -40,14 +39,6 @@ public final class STracerAssert extends AbstractObjectAssert<STracerAssert, STr
   /** Returns collection assertions on the underlying `fsync` traces */
   public ListAssert<FSyncTrace> fsyncTraces() {
     isNotNull();
-
-    final List<FSyncTrace> traces;
-    try {
-      traces = actual.fSyncTraces();
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
-
-    return Assertions.assertThat(traces);
+    return ListAssert.assertThatStream(actual.fSyncTraces());
   }
 }
