@@ -49,6 +49,18 @@ test.beforeAll(async ({request}) => {
     expect
       .poll(
         async () => {
+          const response = await request.get(
+            `${config.endpoint}/v1/process-instances/${initialData.collapsedSubProcessInstance.processInstanceKey}`,
+          );
+
+          return response.status();
+        },
+        {timeout: SETUP_WAITING_TIME},
+      )
+      .toBe(200),
+    expect
+      .poll(
+        async () => {
           const response = await request.post(
             `${config.endpoint}/v1/incidents/search`,
             {
@@ -232,5 +244,68 @@ test.describe('Process Instance', () => {
         .getByTestId('end-date')
         .innerText(),
     ).toMatch(DATE_REGEX);
+  });
+
+  test('Should render collapsed sub process and navigate between planes', async ({
+    page,
+    processInstancePage,
+  }) => {
+    const {instanceHistory, popover, diagram} = processInstancePage;
+
+    await processInstancePage.navigateToProcessInstance({
+      id: initialData.collapsedSubProcessInstance.processInstanceKey,
+    });
+
+    await page.getByRole('treeitem', {name: 'startEvent'}).click();
+    await expect(page.getByText(/execution duration/i)).toBeVisible();
+
+    await instanceHistory
+      .locator(
+        page.getByRole('treeitem', {
+          name: /submit application/i,
+        }),
+      )
+      .click();
+
+    await expect(popover.getByText(/flow node instance key/i)).toBeVisible();
+    await expect(diagram.getByText(/submit application/i)).toBeVisible();
+
+    await page.keyboard.press('ArrowRight');
+    await instanceHistory
+      .getByRole('treeitem', {
+        name: /fill form/i,
+      })
+      .click();
+
+    await expect(diagram.getByText(/fill form/i)).toBeVisible();
+    await expect(popover.getByText(/retries left/i)).toBeVisible();
+
+    await diagram.getByText(/collapsedSubProcess/i).click();
+
+    await expect(
+      popover.getByText(/flow node instance key/i),
+    ).not.toBeVisible();
+    await expect(diagram.getByText(/submit application/i)).toBeVisible();
+    await expect(diagram.getByText(/fill form/i)).not.toBeVisible();
+
+    await instanceHistory
+      .locator(
+        page.getByRole('treeitem', {
+          name: 'startEvent',
+          exact: true,
+        }),
+      )
+      .click();
+
+    await expect(popover.getByText(/flow node instance key/i)).toBeVisible();
+    await expect(diagram.getByText(/submit application/i)).toBeVisible();
+
+    const drilldownButton = await page.$('.bjs-drilldown');
+    await drilldownButton?.click();
+
+    await expect(
+      popover.getByText(/flow node instance key/i),
+    ).not.toBeVisible();
+    await expect(diagram.getByText(/fill form/i)).toBeVisible();
   });
 });

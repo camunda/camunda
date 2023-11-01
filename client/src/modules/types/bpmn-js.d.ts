@@ -133,6 +133,9 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
       getGraphics(elementId: BpmnElement['id']): SVGGraphicsElement;
     };
     get(module: 'canvas'): {
+      getRootElement(): BpmnElement;
+      findRoot(elementId: BpmnElement['id']): BpmnElement | undefined;
+      setRootElement(element: BpmnElement): void;
       removeMarker(elementId: BpmnElement['id'], className: string): void;
       addMarker(elementId: BpmnElement['id'], className: string): void;
       resized(): void;
@@ -155,6 +158,7 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
         },
       );
       clear(): void;
+      remove({element, type}: {element?: string; type?: string}): void;
     };
     get(module: 'zoomScroll'): {
       stepZoom(step: number): void;

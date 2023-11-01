@@ -11,6 +11,7 @@ export async function setup() {
   await deployProcess([
     'processWithAnIncident.bpmn',
     'processWithMultiIncidents.bpmn',
+    'collapsedSubprocess.bpmn',
   ]);
 
   const instanceWithIncidentToCancel = await createSingleInstance(
@@ -24,8 +25,14 @@ export async function setup() {
     {goUp: 3},
   );
 
+  const collapsedSubProcessInstance = await createSingleInstance(
+    'collapsedSubProcess',
+    1,
+  );
+
   return {
     instanceWithIncidentToCancel,
     instanceWithIncidentToResolve,
+    collapsedSubProcessInstance,
   };
 }

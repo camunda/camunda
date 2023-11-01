@@ -14,7 +14,7 @@ function isNonSelectableFlowNode(
 ) {
   return (
     selectableFlowNodes !== undefined &&
-    !selectableFlowNodes.includes(bpmnElement.id) &&
+    !selectableFlowNodes.includes(bpmnElement.businessObject.id) &&
     bpmnElement.type !== 'label' &&
     isFlowNode(bpmnElement.businessObject)
   );

@@ -6,6 +6,7 @@
  */
 
 import NavigatedViewer, {
+  BpmnElement,
   Event,
   OverlayPosition,
 } from 'bpmn-js/lib/NavigatedViewer';
@@ -53,8 +54,10 @@ class BpmnJS {
   selectedFlowNode?: SVGGraphicsElement;
   onFlowNodeSelection?: OnFlowNodeSelection;
   onViewboxChange?: (isChanging: boolean) => void;
+  onRootChange?: (rootElementId: string) => void;
   #overlaysData: OverlayData[] = [];
   #hasOuterBorderOnSelection = false;
+  #rootElement?: BpmnElement;
 
   import = async (xml: string) => {
     // Cleanup before importing
@@ -65,10 +68,13 @@ class BpmnJS {
     this.#navigatedViewer!.off('canvas.viewbox.changed', () => {
       this.onViewboxChange?.(false);
     });
+    this.#navigatedViewer!.off('root.set', this.#handleRootChange);
+
     this.#overlaysData = [];
     this.#selectableFlowNodes = [];
     this.#selectedFlowNodeId = undefined;
     this.#hasOuterBorderOnSelection = false;
+    this.#rootElement = undefined;
 
     await this.#navigatedViewer!.importXML(xml);
 
@@ -81,6 +87,9 @@ class BpmnJS {
     this.#navigatedViewer!.on('canvas.viewbox.changed', () => {
       this.onViewboxChange?.(false);
     });
+    this.#navigatedViewer!.on('root.set', this.#handleRootChange);
+
+    this.#rootElement = this.#navigatedViewer?.get('canvas')?.getRootElement();
   };
 
   render = async (options: RenderOptions) => {
@@ -151,6 +160,20 @@ class BpmnJS {
         const elementRegistry = this.#navigatedViewer?.get('elementRegistry');
         this.selectedFlowNode =
           elementRegistry?.getGraphics(selectedFlowNodeId);
+
+        const canvas = this.#navigatedViewer?.get('canvas');
+
+        if (canvas !== undefined) {
+          const selectedFlowNodeIdRootElement =
+            canvas.findRoot(selectedFlowNodeId);
+
+          if (
+            selectedFlowNodeIdRootElement !== undefined &&
+            this.#rootElement?.id !== selectedFlowNodeIdRootElement.id
+          ) {
+            canvas.setRootElement(selectedFlowNodeIdRootElement);
+          }
+        }
       }
 
       this.#selectedFlowNodeId = selectedFlowNodeId;
@@ -172,7 +195,10 @@ class BpmnJS {
     if (!isEqual(this.#overlaysData, overlaysData)) {
       this.#overlaysData = overlaysData;
       diagramOverlaysStore.reset();
-      this.#removeOverlays();
+
+      [...new Set(overlaysData.map(({type}) => type))].forEach(
+        this.#removeOverlays,
+      );
 
       overlaysData.forEach(
         ({payload, flowNodeId, position, type, isZoomFixed}) => {
@@ -295,8 +321,8 @@ class BpmnJS {
     });
   };
 
-  #removeOverlays = () => {
-    this.#navigatedViewer?.get('overlays')?.clear();
+  #removeOverlays = (type: string) => {
+    this.#navigatedViewer?.get('overlays')?.remove({type});
   };
 
   #removeMarker = (elementId: string, className: string) => {
@@ -326,6 +352,14 @@ class BpmnJS {
       );
     } else if (this.#selectedFlowNodeId !== undefined) {
       this.onFlowNodeSelection?.(undefined);
+    }
+  };
+
+  #handleRootChange = () => {
+    this.#rootElement = this.#navigatedViewer?.get('canvas')?.getRootElement();
+
+    if (this.#rootElement !== undefined) {
+      this.onRootChange?.(this.#rootElement.businessObject.id);
     }
   };
 
@@ -362,6 +396,11 @@ class BpmnJS {
       canvas.resized();
       canvas.zoom('fit-viewport', 'auto');
     }
+  };
+
+  findRootId = (selectedFlowNodeId: string) => {
+    return this.#navigatedViewer?.get('canvas')?.findRoot(selectedFlowNodeId)
+      ?.businessObject.id;
   };
 }
 

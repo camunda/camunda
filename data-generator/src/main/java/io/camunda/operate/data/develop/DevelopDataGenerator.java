@@ -372,6 +372,8 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
     ZeebeTestUtil.deployProcess(true, client, getTenant(TENANT_A), "develop/signalEvent.bpmn");
 
+    ZeebeTestUtil.deployProcess(true, client, getTenant(TENANT_A), "develop/collapsedSubProcess.bpmn");
+
     // reverted in Zeebe https://github.com/camunda/zeebe/issues/13640
     // ZeebeTestUtil.deployProcess(true, client, getTenant(TENANT_A), "develop/inclusiveGateway.bpmn");
   }
@@ -405,6 +407,8 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
             .startProcessInstance(true, client, getTenant(TENANT_A), "errorProcess", "{\"errorCode\": \"unknown\"}"));
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(true, client, getTenant(TENANT_A), "error-end-process", null));
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(true, client, getTenant(TENANT_A), "terminateEndEvent", null));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(true, client, getTenant(TENANT_A), "collapsedSubProcess", null));
+
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(true, client, getTenant(TENANT_A), "dataStoreProcess", null));
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(true, client, getTenant(TENANT_A), "linkEventProcess", null));
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(true, client, getTenant(TENANT_A), "escalationEvents", null));

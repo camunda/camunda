@@ -94,6 +94,22 @@ const Diagram: React.FC<Props> = observer(
       if (onFlowNodeSelection !== undefined) {
         viewer.onFlowNodeSelection = onFlowNodeSelection;
         viewer.onViewboxChange = setIsViewboxChanging;
+
+        viewer.onRootChange = (rootElementId) => {
+          if (
+            flowNodeSelectionStore.state.selection?.flowNodeId === undefined
+          ) {
+            return;
+          }
+
+          const currentSelectionRootId = viewer.findRootId(
+            flowNodeSelectionStore.state.selection?.flowNodeId,
+          );
+
+          if (rootElementId !== currentSelectionRootId) {
+            flowNodeSelectionStore.clearSelection();
+          }
+        };
       }
     }, [viewer, onFlowNodeSelection]);
 

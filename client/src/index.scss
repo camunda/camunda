@@ -71,6 +71,27 @@ svg {
   display: none;
 }
 
+.bjs-breadcrumbs {
+  display: flex;
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 8px !important;
+  padding-bottom: 4px !important;
+  top: 16px !important;
+  left: 16px !important;
+  font-size: 14px !important;
+}
+
+.bjs-breadcrumbs li:last-of-type a {
+  color: #161616 !important;
+}
+
+.bjs-container {
+  --breadcrumbs-item-color: var(--cds-background-brand) !important;
+  --breadcrumbs-font-family: 'IBM Plex Sans', 'Helvetica Neue', Arial,
+    sans-serif;
+}
+
 .cds--modal {
   p {
     @include type-style('body-01');
