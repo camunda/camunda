@@ -89,9 +89,7 @@ public class ReindexPlanOpenSearch {
     final var reindexRequestBuilder =
         new org.opensearch.client.opensearch.core.ReindexRequest.Builder()
             .source(s -> s.index(srcIndex + "_*").size(reindexBatchSize))
-            // TODO https://github.com/opensearch-project/opensearch-java/pull/538/files there is a
-            // bug on slices
-            // .slices((long) slices) // Useful if there more than 1 shard per index
+            .slices((long) slices) // Useful if there more than 1 shard per index
             .waitForCompletion(false)
             .dest(
                 d -> {
@@ -146,7 +144,7 @@ public class ReindexPlanOpenSearch {
   }
 
   public ReindexPlanOpenSearch setSlices(int slices) {
-    this.slices = slices == 0 ? 1 : slices;
+    this.slices = slices;
     return this;
   }
 

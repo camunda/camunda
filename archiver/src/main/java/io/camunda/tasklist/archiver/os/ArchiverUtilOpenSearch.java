@@ -6,6 +6,8 @@
  */
 package io.camunda.tasklist.archiver.os;
 
+import static org.elasticsearch.index.reindex.AbstractBulkByScrollRequest.AUTO_SLICES;
+
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.archiver.ArchiverUtilAbstract;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
@@ -144,20 +146,15 @@ public class ArchiverUtilOpenSearch extends ArchiverUtilAbstract {
     final var reindexRequest = new ReindexRequest.Builder();
     return reindexRequest
         .scroll(Time.of(t -> t.time(OpenSearchUtil.INTERNAL_SCROLL_KEEP_ALIVE_MS)))
-        .conflicts(Conflicts.Proceed);
-    // TODO https://github.com/opensearch-project/opensearch-java/pull/538/files there is a
-    // unreleased fix to set slices to auto using 0l
-    // slices(0l);
+        .conflicts(Conflicts.Proceed)
+        .slices((long) AUTO_SLICES);
   }
 
   private DeleteByQueryRequest.Builder createDeleteByQueryRequestWithDefaults(final String index) {
     final var deleteRequest = new DeleteByQueryRequest.Builder().index(index);
     return deleteRequest
         .scroll(Time.of(t -> t.time(OpenSearchUtil.INTERNAL_SCROLL_KEEP_ALIVE_MS)))
-        // TODO https://github.com/opensearch-project/opensearch-java/pull/538/files there is a bug
-        // on slices
-        // unreleased fix to set slices to auto using 0l
-        // slices(0l)
+        .slices((long) AUTO_SLICES)
         .conflicts(Conflicts.Proceed);
   }
 

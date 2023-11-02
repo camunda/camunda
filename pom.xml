@@ -33,7 +33,7 @@
     <version.identity>8.3.0</version.identity>
     <version.elasticsearch>7.17.10</version.elasticsearch>
     <version.elasticsearch-client>8.7.1</version.elasticsearch-client>
-    <version.opensearch>2.6.0</version.opensearch>
+    <version.opensearch>2.7.0</version.opensearch>
     <version.spring.boot>3.1.5</version.spring.boot>
     <version.log4j>2.19.0</version.log4j>
     <version.junit>4.13.2</version.junit>
