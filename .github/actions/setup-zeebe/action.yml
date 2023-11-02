@@ -80,7 +80,7 @@ runs:
         java-version: ${{ inputs.java-version }}
     # Logging into Docker Hub will help prevent us being rate limited when using an anonymous account
     - name: Login to Docker Hub
-      uses: docker/login-action@v2
+      uses: docker/login-action@v3
       if: |
         inputs.docker == 'true'
         && inputs.secret_vault_address != ''
