@@ -75,7 +75,7 @@ runs:
       shell: bash
       run: echo "result=$(realpath --relative-to="${PWD}" ${{ inputs.distball }})" >> $GITHUB_OUTPUT
     - name: Build Docker image
-      uses: docker/build-push-action@v3
+      uses: docker/build-push-action@v5
       with:
         context: .
         tags: ${{ steps.get-image.outputs.result }}
