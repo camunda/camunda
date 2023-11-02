@@ -17,6 +17,7 @@ import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.topology.changes.NoopTopologyChangeAppliers;
 import io.camunda.zeebe.topology.changes.TopologyChangeAppliers;
+import io.camunda.zeebe.topology.changes.TopologyChangeAppliers.OperationApplier;
 import io.camunda.zeebe.topology.serializer.ClusterTopologySerializer;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
@@ -88,7 +89,10 @@ final class ClusterTopologyManagerTest {
   private ClusterTopologyManagerImpl createTopologyManager() {
     final ClusterTopologyManagerImpl clusterTopologyManager =
         new ClusterTopologyManagerImpl(
-            new TestConcurrencyControl(), localMemberId, persistedClusterTopology);
+            new TestConcurrencyControl(),
+            localMemberId,
+            persistedClusterTopology,
+            Duration.ofMillis(100));
     clusterTopologyManager.setTopologyGossiper(gossipHandler);
     return clusterTopologyManager;
   }
@@ -210,23 +214,69 @@ final class ClusterTopologyManagerTest {
         .isEqualTo(clusterTopologyManager.getClusterTopology().join());
   }
 
+  @Test
+  void shouldRetryClusterTopologyChangeOperationOnFailure() {
+    // given
+    final FailingLeaveApplier failingLeaveApplier = new FailingLeaveApplier(1);
+    final ClusterTopologyManagerImpl clusterTopologyManager =
+        startTopologyManager(successInitializer, o -> failingLeaveApplier).join();
+
+    // when
+    final ClusterTopology topologyFromOtherMember =
+        initialTopology.startTopologyChange(List.of(new PartitionLeaveOperation(localMemberId, 1)));
+    clusterTopologyManager.onGossipReceived(topologyFromOtherMember).join();
+
+    // then
+    Awaitility.await("ClusterTopology is updated after applying topology change operation.")
+        .untilAsserted(
+            () ->
+                ClusterTopologyAssert.assertThatClusterTopology(
+                        clusterTopologyManager.getClusterTopology().join())
+                    .hasPendingOperationsWithSize(0)
+                    .doesNotHaveMember(1));
+    assertThat(gossipState.get())
+        .describedAs("Updated topology is gossiped")
+        .isEqualTo(clusterTopologyManager.getClusterTopology().join());
+  }
+
   private static final class TestMemberLeaver implements TopologyChangeAppliers {
 
     @Override
     public OperationApplier getApplier(final TopologyChangeOperation operation) {
       // ignore type of operation and always apply member leave operation
-      return new OperationApplier() {
-        @Override
-        public Either<Exception, UnaryOperator<MemberState>> init(
-            final ClusterTopology currentClusterTopology) {
-          return Either.right(MemberState::toLeaving);
-        }
+      return new LeaveOperationApplier();
+    }
+  }
 
-        @Override
-        public ActorFuture<UnaryOperator<MemberState>> apply() {
-          return CompletableActorFuture.completed(MemberState::toLeft);
-        }
-      };
+  private static class LeaveOperationApplier implements OperationApplier {
+
+    @Override
+    public Either<Exception, UnaryOperator<MemberState>> init(
+        final ClusterTopology currentClusterTopology) {
+      return Either.right(MemberState::toLeaving);
+    }
+
+    @Override
+    public ActorFuture<UnaryOperator<MemberState>> apply() {
+      return CompletableActorFuture.completed(MemberState::toLeft);
+    }
+  }
+
+  private static final class FailingLeaveApplier extends LeaveOperationApplier {
+    int numFailures;
+
+    private FailingLeaveApplier(final int numFailures) {
+      this.numFailures = numFailures;
+    }
+
+    @Override
+    public ActorFuture<UnaryOperator<MemberState>> apply() {
+      if (numFailures > 0) {
+        numFailures--;
+        return CompletableActorFuture.completedExceptionally(new RuntimeException("Expected"));
+      } else {
+        return super.apply();
+      }
     }
   }
 }

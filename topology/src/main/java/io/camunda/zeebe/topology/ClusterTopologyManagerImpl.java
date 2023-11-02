@@ -15,7 +15,9 @@ import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import org.slf4j.Logger;
@@ -44,18 +46,17 @@ import org.slf4j.LoggerFactory;
  */
 public final class ClusterTopologyManagerImpl implements ClusterTopologyManager {
   private static final Logger LOG = LoggerFactory.getLogger(ClusterTopologyManagerImpl.class);
-
+  private static final Duration DEFAULT_RETRY_DELAY = Duration.ofSeconds(10);
   private final ConcurrencyControl executor;
   private final PersistedClusterTopology persistedClusterTopology;
-
   private Consumer<ClusterTopology> topologyGossiper;
   private final ActorFuture<Void> startFuture;
-
   private TopologyChangeAppliers changeAppliers;
   private final MemberId localMemberId;
-
   // Indicates whether there is a topology change operation in progress on this member.
   private boolean onGoingTopologyChangeOperation = false;
+  private boolean shouldRetry = false;
+  private final Duration retryDelay;
 
   ClusterTopologyManagerImpl(
       final ConcurrencyControl executor,
@@ -65,6 +66,20 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
     this.persistedClusterTopology = persistedClusterTopology;
     startFuture = executor.createFuture();
     this.localMemberId = localMemberId;
+    retryDelay = DEFAULT_RETRY_DELAY;
+  }
+
+  @VisibleForTesting
+  ClusterTopologyManagerImpl(
+      final ConcurrencyControl executor,
+      final MemberId localMemberId,
+      final PersistedClusterTopology persistedClusterTopology,
+      final Duration retryDelay) {
+    this.executor = executor;
+    this.persistedClusterTopology = persistedClusterTopology;
+    startFuture = executor.createFuture();
+    this.localMemberId = localMemberId;
+    this.retryDelay = retryDelay;
   }
 
   @Override
@@ -183,7 +198,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
     // operation is triggered locally only when the local topology is changes. However, as
     // an extra precaution we check if there is an ongoing operation before applying
     // one.
-    return !onGoingTopologyChangeOperation
+    return (!onGoingTopologyChangeOperation || shouldRetry)
         && mergedTopology.pendingChangesFor(localMemberId).isPresent()
         // changeApplier is registered only after PartitionManager in the Broker is started.
         && changeAppliers != null;
@@ -195,6 +210,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
     }
 
     onGoingTopologyChangeOperation = true;
+    shouldRetry = false;
     final var operation = mergedTopology.pendingChangesFor(localMemberId).orElseThrow();
     LOG.info("Applying topology change operation {}", operation);
     final var operationApplier = changeAppliers.getApplier(operation);
@@ -214,6 +230,16 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
     operationApplier
         .apply()
         .onComplete((transformer, error) -> onOperationApplied(operation, transformer, error));
+  }
+
+  private void retryLastAppliedOperation() {
+    shouldRetry = true;
+    executor.schedule(
+        retryDelay,
+        () -> {
+          LOG.debug("Retrying last applied operation");
+          applyTopologyChangeOperation(persistedClusterTopology.getTopology());
+        });
   }
 
   private void onOperationApplied(
@@ -237,7 +263,12 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
     } else {
       // TODO: Retry after a fixed delay. The failure is most likely due to timeouts such
       // as when joining a raft partition.
-      LOG.error("Failed to apply topology change operation {}", operation, error);
+      LOG.error(
+          "Failed to apply topology change operation {}. Will be retried in {}.",
+          operation,
+          retryDelay,
+          error);
+      retryLastAppliedOperation();
     }
   }
 

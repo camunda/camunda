@@ -14,7 +14,7 @@ import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
-/** */
+@FunctionalInterface
 public interface TopologyChangeAppliers {
 
   /**
