@@ -272,7 +272,7 @@ it('should allow to remove an alert from inside the modal if onRemove prop is pr
   const spy = jest.fn();
   const node = shallow(<AlertModal {...props} onRemove={spy} />);
 
-  node.find('.deleteButton').simulate('click');
+  node.find('.deleteAlertButton').simulate('click');
 
   expect(spy).toHaveBeenCalled();
 });

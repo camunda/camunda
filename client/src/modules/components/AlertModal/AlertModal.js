@@ -473,7 +473,7 @@ export class AlertModal extends React.Component {
         </Modal.Content>
         <Modal.Footer>
           {onRemove && (
-            <Button kind="danger--ghost" className="deleteButton" onClick={onRemove}>
+            <Button kind="danger--ghost" className="deleteAlertButton" onClick={onRemove}>
               {t('common.delete')}
             </Button>
           )}
