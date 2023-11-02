@@ -193,6 +193,38 @@ class ClusterTopologyManagementIntegrationTest {
         .hasMemberWithPartitions(1, Set.of());
   }
 
+  @Test
+  void shouldApplyConsecutiveTopologyChangeOnSameMember() {
+    // given - all members have partition 1
+    final var startFutures = nodes.values().stream().map(this::startNode).toList();
+    startFutures.forEach(ActorFuture::join);
+
+    // when
+    final ClusterTopologyManagerService service = nodes.get(0).service();
+    final TopologyChangeCoordinator coordinator =
+        service.getTopologyChangeCoordinator().orElseThrow();
+    coordinator
+        .applyOperations(
+            ignore ->
+                Either.right(
+                    List.of(
+                        new PartitionJoinOperation(MemberId.from("0"), 2, 1),
+                        new PartitionLeaveOperation(MemberId.from("1"), 1),
+                        new PartitionJoinOperation(MemberId.from("1"), 1, 1))))
+        .join();
+
+    // then
+    Awaitility.await("The topology change should complete.")
+        .untilAsserted(
+            () ->
+                ClusterTopologyAssert.assertThatClusterTopology(service.getClusterTopology().join())
+                    .hasPendingOperationsWithSize(0));
+    ClusterTopologyAssert.assertThatClusterTopology(service.getClusterTopology().join())
+        .describedAs("The cluster must have the expected topology after change.")
+        .hasMemberWithPartitions(0, Set.of(1, 2))
+        .hasMemberWithPartitions(1, Set.of(1));
+  }
+
   private Node createNode(final String id) {
     return Node.builder().withId(id).withPort(SocketUtil.getNextAddress().getPort()).build();
   }

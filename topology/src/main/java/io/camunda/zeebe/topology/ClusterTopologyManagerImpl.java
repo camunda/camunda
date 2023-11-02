@@ -228,6 +228,12 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
           "Operation {} applied. Updated local topology to {}",
           operation,
           persistedClusterTopology.getTopology());
+
+      executor.run(
+          () -> {
+            // Continue applying topology change, if the next operation is for the local member
+            applyTopologyChangeOperation(persistedClusterTopology.getTopology());
+          });
     } else {
       // TODO: Retry after a fixed delay. The failure is most likely due to timeouts such
       // as when joining a raft partition.
