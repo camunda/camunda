@@ -9,6 +9,7 @@ package io.camunda.zeebe.it.management;
 
 import static org.assertj.core.api.Assertions.*;
 
+import feign.FeignException;
 import io.camunda.zeebe.management.cluster.Operation;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
 import io.camunda.zeebe.management.cluster.TopologyChange.StatusEnum;
@@ -90,6 +91,20 @@ final class ClusterEndpointIT {
           .returns(0, Operation::getBrokerId)
           .returns(2, Operation::getPartitionId)
           .returns(3, Operation::getPriority);
+    }
+  }
+
+  @Test
+  void shouldRejectJoinOnNonExistingPartition() {
+    try (final var cluster = createCluster(1)) {
+      // given
+      cluster.awaitCompleteTopology();
+      final var actuator = ClusterActuator.of(cluster.availableGateway());
+      // when -- request a join
+      assertThatCode(() -> actuator.joinPartition(0, 3, 3))
+          .describedAs("Joining a non-existing partition should fail with 400 Bad Request")
+          .isInstanceOf(FeignException.BadRequest.class)
+          .hasMessageContaining("partition has no active members");
     }
   }
 
