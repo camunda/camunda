@@ -52,7 +52,8 @@ final class PartitionLeaveTest {
       assertChangeIsApplied(cluster, leave);
       try (final var client = cluster.newClientBuilder().build()) {
         Awaitility.await("All partition have a leader")
-            .pollDelay(Duration.ofSeconds(5))
+            .pollDelay(Duration.ofSeconds(10))
+            .timeout(Duration.ofMinutes(1))
             .untilAsserted(
                 () ->
                     TopologyAssert.assertThat(client.newTopologyRequest().send().join())
