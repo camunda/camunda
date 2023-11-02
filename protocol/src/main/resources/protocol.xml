@@ -51,6 +51,7 @@
       <validValue name="PROCESS_INSTANCE_BATCH">34</validValue>
       <validValue name="MESSAGE_BATCH">35</validValue>
       <validValue name="FORM">36</validValue>
+      <validValue name="PROCESS_INSTANCE_MIGRATION">37</validValue>
 
       <!-- Management records / record not related to process automation -->
       <validValue name="CHECKPOINT">254</validValue>

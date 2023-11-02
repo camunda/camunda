@@ -47,6 +47,7 @@ import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecor
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
@@ -317,6 +318,11 @@ public final class RecordingExporter implements Exporter {
     return new ProcessInstanceModificationRecordStream(
         records(
             ValueType.PROCESS_INSTANCE_MODIFICATION, ProcessInstanceModificationRecordValue.class));
+  }
+
+  public static ProcessInstanceMigrationRecordStream processInstanceMigrationRecords() {
+    return new ProcessInstanceMigrationRecordStream(
+        records(ValueType.PROCESS_INSTANCE_MIGRATION, ProcessInstanceMigrationRecordValue.class));
   }
 
   public static ProcessInstanceModificationRecordStream processInstanceModificationRecords(

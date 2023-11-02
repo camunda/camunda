@@ -13,6 +13,7 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
@@ -22,9 +23,11 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -268,6 +271,53 @@ public final class ProcessInstanceClient {
 
     public ProcessInstanceModificationClient modification() {
       return new ProcessInstanceModificationClient(writer, processInstanceKey, authorizedTenants);
+    }
+
+    public ProcessInstanceMigrationClient migration() {
+      return new ProcessInstanceMigrationClient(writer, processInstanceKey);
+    }
+  }
+
+  public static class ProcessInstanceMigrationClient {
+    private static final Function<Long, Record<ProcessInstanceMigrationRecordValue>>
+        SUCCESS_EXPECTATION =
+            (position) ->
+                RecordingExporter.processInstanceMigrationRecords()
+                    .withIntent(ProcessInstanceMigrationIntent.MIGRATED)
+                    .withSourceRecordPosition(position)
+                    .getFirst();
+    private final Function<Long, Record<ProcessInstanceMigrationRecordValue>> expectation =
+        SUCCESS_EXPECTATION;
+
+    private final CommandWriter writer;
+    private final long processInstanceKey;
+    private long targetProcessDefinitionKey;
+    private final ProcessInstanceMigrationRecord record;
+
+    public ProcessInstanceMigrationClient(
+        final CommandWriter writer, final long processInstanceKey) {
+      this.writer = writer;
+      this.processInstanceKey = processInstanceKey;
+      record = new ProcessInstanceMigrationRecord();
+    }
+
+    public Record<ProcessInstanceMigrationRecordValue> migrate() {
+      record.setTargetProcessDefinitionKeyProperty(targetProcessDefinitionKey);
+
+      final var position =
+          writer.writeCommand(
+              processInstanceKey,
+              ProcessInstanceMigrationIntent.MIGRATE,
+              record,
+              TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+      return expectation.apply(position);
+    }
+
+    public ProcessInstanceMigrationClient withTargetProcessDefinitionKey(
+        final long targetProcessDefinitionKey) {
+      this.targetProcessDefinitionKey = targetProcessDefinitionKey;
+      return this;
     }
   }
 
