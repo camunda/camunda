@@ -654,7 +654,7 @@ public class OpensearchFlowNodeInstanceReader extends OpensearchAbstractReader i
 
       if(!hits.isEmpty()) {
         var hit = hits.get(0);
-        if (hit.source().decisionDefinitionId.equals(hit.source().decisionDefinitionId)) {
+        if (hit.source().rootDecisionDefinitionId.equals(hit.source().decisionDefinitionId)) {
           //this is our instance, we will show the link
           calledDecisionInstanceId[0] = hit.id();
           calledDecisionDefinitionName[0] = hit.source().decisionName() != null ? hit.source().decisionName() : hit.source().decisionId();
