@@ -307,8 +307,13 @@ public class ResourceDeletionProcessor
   }
 
   private List<String> getAuthorizedTenants(final TypedRecord<ResourceDeletionRecord> command) {
-    return (List)
-        command.getAuthorizations().getOrDefault(Authorization.AUTHORIZED_TENANTS, List.of());
+    final String tenantId = command.getValue().getTenantId();
+    if (tenantId.isEmpty()) {
+      return (List)
+          command.getAuthorizations().getOrDefault(Authorization.AUTHORIZED_TENANTS, List.of());
+    }
+
+    return List.of(tenantId);
   }
 
   private void setTenantId(
