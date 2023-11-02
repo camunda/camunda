@@ -111,6 +111,23 @@ final class PartitionJoinApplierTest {
   }
 
   @Test
+  void shouldRejectJoinIfPartitionDoesNotHaveActiveMembers() {
+    // given
+    final var topologyWithoutActiveMembers =
+        ClusterTopology.init().addMember(localMemberId, MemberState.initializeAsActive(Map.of()));
+
+    // when
+    final var result = partitionJoinApplier.init(topologyWithoutActiveMembers);
+
+    // then
+    assertThat(result).isLeft();
+
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("partition has no active members");
+  }
+
+  @Test
   void shouldInitializeStateToJoining() {
     // when
     final var updater = partitionJoinApplier.init(initialClusterTopology).get();
