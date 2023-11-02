@@ -203,8 +203,7 @@ public class ClusterEndpoint {
   private ResponseEntity<?> mapOperationResponse(
       final Either<ErrorResponse, TopologyChangeResponse> response) {
     if (response.isRight()) {
-      return ResponseEntity.status(202)
-          .body(mapResponseType(response.get()));
+      return ResponseEntity.status(202).body(mapResponseType(response.get()));
     } else {
       final var errorCode =
           switch (response.getLeft().code()) {
