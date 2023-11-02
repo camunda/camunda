@@ -2208,10 +2208,19 @@
   dependencies:
     "@types/react" "*"
 
-"@types/react@*", "@types/react@18.2.33":
+"@types/react@*":
   version "18.2.33"
   resolved "https://registry.yarnpkg.com/@types/react/-/react-18.2.33.tgz#055356243dc4350a9ee6c6a2c07c5cae12e38877"
   integrity sha512-v+I7S+hu3PIBoVkKGpSYYpiBT1ijqEzWpzQD62/jm4K74hPpSP7FF9BnKG6+fg2+62weJYkkBWDJlZt5JO/9hg==
+  dependencies:
+    "@types/prop-types" "*"
+    "@types/scheduler" "*"
+    csstype "^3.0.2"
+
+"@types/react@18.2.34":
+  version "18.2.34"
+  resolved "https://registry.yarnpkg.com/@types/react/-/react-18.2.34.tgz#aed20f19473721ba328feb99d1ec3307ebc1a8dd"
+  integrity sha512-U6eW/alrRk37FU/MS2RYMjx0Va2JGIVXELTODaTIYgvWGCV4Y4TfTUzG8DdmpDNIT0Xpj/R7GfyHOJJrDttcvg==
   dependencies:
     "@types/prop-types" "*"
     "@types/scheduler" "*"
@@ -7516,10 +7525,10 @@ yocto-queue@^1.0.0:
   resolved "https://registry.yarnpkg.com/yocto-queue/-/yocto-queue-1.0.0.tgz#7f816433fb2cbc511ec8bf7d263c3b58a1a3c251"
   integrity sha512-9bnSc/HEW2uRy67wc+T8UwauLuPJVn28jb+GtJY16iiKWyvmYJRXVT4UamsAEGQfPohgr2q4Tq0sQbQlxTfi1g==
 
-zeebe-node@8.3.0:
-  version "8.3.0"
-  resolved "https://registry.yarnpkg.com/zeebe-node/-/zeebe-node-8.3.0.tgz#e98f74748b905e37b6fb7351cad5b17408e84909"
-  integrity sha512-PKebZokoQEBzlDzis4/4zz+cCLuOcQ+QkW8v+N6CCZGPgmPtMfUq9ibZGCQJ511uR81otUvDL5rAwNxI6PYBpA==
+zeebe-node@8.3.1:
+  version "8.3.1"
+  resolved "https://registry.yarnpkg.com/zeebe-node/-/zeebe-node-8.3.1.tgz#e100bf3708464e305305b4efa1ffde53f9786c45"
+  integrity sha512-68ascWO3g7g+9WwDzvfa3I9TkLKHku5auEgSINP+k5ktNfsfGW68ELDmEJA+XHZgzvGsdGILZqGRzVd5SC8aaQ==
   dependencies:
     "@grpc/grpc-js" "1.9.7"
     "@grpc/proto-loader" "0.7.10"

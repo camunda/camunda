@@ -67,7 +67,7 @@
     "@types/lodash": "4.14.200",
     "@types/mixpanel-browser": "2.47.4",
     "@types/node": "20.8.10",
-    "@types/react": "18.2.33",
+    "@types/react": "18.2.34",
     "@types/react-dom": "18.2.14",
     "@types/react-transition-group": "4.4.8",
     "@typescript-eslint/eslint-plugin": "6.9.1",
@@ -99,7 +99,7 @@
     "vite-plugin-svgr": "4.1.0",
     "vite-tsconfig-paths": "4.2.1",
     "vitest": "1.0.0-beta.3",
-    "zeebe-node": "8.3.0"
+    "zeebe-node": "8.3.1"
   },
   "lint-staged": {
     "*": [
