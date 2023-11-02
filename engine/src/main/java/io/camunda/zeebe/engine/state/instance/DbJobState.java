@@ -250,6 +250,11 @@ public final class DbJobState implements JobState, MutableJobState {
         });
   }
 
+  @Override
+  public void update(final long key, final JobRecord value) {
+    updateJobRecord(key, value);
+  }
+
   private void createJob(final long key, final JobRecord record, final DirectBuffer type) {
     createJobRecord(key, record);
     initializeJobState();

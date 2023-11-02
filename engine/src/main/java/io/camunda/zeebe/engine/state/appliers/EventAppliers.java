@@ -154,6 +154,9 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN,
         new ProcessInstanceSequenceFlowTakenApplier(elementInstanceState, processState));
+    register(
+        ProcessInstanceIntent.ELEMENT_MIGRATED,
+        new ProcessInstanceElementMigratedApplier(elementInstanceState));
   }
 
   private void registerProcessInstanceCreationAppliers(final MutableProcessingState state) {
@@ -182,6 +185,7 @@ public final class EventAppliers implements EventApplier {
     register(JobIntent.RETRIES_UPDATED, new JobRetriesUpdatedApplier(state));
     register(JobIntent.TIMED_OUT, new JobTimedOutApplier(state));
     register(JobIntent.RECURRED_AFTER_BACKOFF, new JobRecurredApplier(state));
+    register(JobIntent.MIGRATED, new JobMigratedApplier(state));
   }
 
   private void registerMessageAppliers(final MutableProcessingState state) {

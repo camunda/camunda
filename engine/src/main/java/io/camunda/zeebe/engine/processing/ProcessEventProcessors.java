@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.processinstance.ActivateProcessInstanc
 import io.camunda.zeebe.engine.processing.processinstance.CreateProcessInstanceProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.CreateProcessInstanceWithResultProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCommandProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.TerminateProcessInstanceBatchProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -39,6 +40,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
@@ -225,6 +227,15 @@ public final class ProcessEventProcessors {
         ValueType.PROCESS_INSTANCE_MODIFICATION,
         ProcessInstanceModificationIntent.MODIFY,
         modificationProcessor);
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_INSTANCE_MIGRATION,
+        ProcessInstanceMigrationIntent.MIGRATE,
+        new ProcessInstanceMigrationProcessor(
+            writers,
+            processingState.getElementInstanceState(),
+            processingState.getProcessState(),
+            processingState.getJobState(),
+            bpmnBehaviors));
   }
 
   private static void addProcessInstanceBatchStreamProcessors(

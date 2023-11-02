@@ -44,7 +44,8 @@ public enum JobIntent implements ProcessInstanceRelatedIntent {
   RECURRED_AFTER_BACKOFF((short) 14),
 
   YIELD((short) 15),
-  YIELDED((short) 16);
+  YIELDED((short) 16),
+  MIGRATED((short) 17);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -98,6 +99,8 @@ public enum JobIntent implements ProcessInstanceRelatedIntent {
         return YIELD;
       case 16:
         return YIELDED;
+      case 17:
+        return MIGRATED;
       default:
         return UNKNOWN;
     }

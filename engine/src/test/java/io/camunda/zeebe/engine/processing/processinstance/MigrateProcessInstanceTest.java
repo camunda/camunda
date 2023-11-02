@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
@@ -54,7 +55,7 @@ public final class MigrateProcessInstanceTest {
     // Target process
     final String serviceTaskElementId2 = "serviceTask2";
     final var targetProcess =
-        Bpmn.createExecutableProcess(bpmnProcessId)
+        Bpmn.createExecutableProcess("targetProcess")
             .startEvent()
             .serviceTask(serviceTaskElementId, b -> b.zeebeJobType("task"))
             .serviceTask(serviceTaskElementId2, b -> b.zeebeJobType("task"))
@@ -64,15 +65,23 @@ public final class MigrateProcessInstanceTest {
     final Record<DeploymentRecordValue> deployment =
         ENGINE.deployment().withXmlResource(targetProcess).deploy();
 
+    final long targetProcDefKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
     ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
-        .withTargetProcessDefinitionKey(
-            deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey())
+        .withTargetProcessDefinitionKey(targetProcDefKey)
         .migrate();
 
     ENGINE.job().ofInstance(processInstanceKey).withType("task").complete();
+
+    Assertions.assertThat(
+            RecordingExporter.jobRecords(JobIntent.COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasProcessDefinitionKey(targetProcDefKey);
 
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -80,5 +89,13 @@ public final class MigrateProcessInstanceTest {
                 .withElementId(serviceTaskElementId2)
                 .getFirst())
         .isNotNull();
+
+    Assertions.assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(serviceTaskElementId2)
+                .getFirst()
+                .getValue())
+        .hasProcessDefinitionKey(targetProcDefKey);
   }
 }
