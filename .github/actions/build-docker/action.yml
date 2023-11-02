@@ -44,7 +44,7 @@ runs:
   using: composite
   steps:
     - name: Set up multi-platform support
-      uses: docker/setup-qemu-action@v2
+      uses: docker/setup-qemu-action@v3
     # Creating a context is required when installing buildx on self-hosted runners
     - name: Create context
       shell: bash
