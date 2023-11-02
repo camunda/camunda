@@ -51,10 +51,23 @@ public class DbSignalSubscriptionMigrationState {
 
               to.signalNameAndSubscriptionKeyColumnFamily.insert(
                   to.tenantAwareSignalNameAndSubscriptionKey, value);
+
+              from.getSignalNameAndSubscriptionKeyColumnFamily().deleteExisting(key);
+            });
+
+    from.getSubscriptionKeyAndSignalNameColumnFamily()
+        .forEach(
+            (key, dbNil) -> {
+              final var subscriptionKey = key.first().getValue();
+              final var signalName = key.second().getBuffer();
+
+              to.subscriptionKey.wrapLong(subscriptionKey);
+              to.signalName.wrapBuffer(signalName);
+
               to.subscriptionKeyAndSignalNameColumnFamily.insert(
                   to.tenantAwareSubscriptionKeyAndSignalName, DbNil.INSTANCE);
 
-              from.remove(subscriptionKey, signalName);
+              from.getSubscriptionKeyAndSignalNameColumnFamily().deleteExisting(key);
             });
   }
 

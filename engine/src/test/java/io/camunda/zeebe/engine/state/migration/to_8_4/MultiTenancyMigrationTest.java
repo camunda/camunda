@@ -87,6 +87,7 @@ public class MultiTenancyMigrationTest {
             subscriptionCounter.incrementAndGet();
           });
       assertThat(subscriptionCounter).hasValue(1);
+      assertThat(legacyState.getSignalNameAndSubscriptionKeyColumnFamily().isEmpty()).isTrue();
     }
 
     @Test
@@ -126,6 +127,7 @@ public class MultiTenancyMigrationTest {
             subscriptionCounter.incrementAndGet();
           });
       assertThat(subscriptionCounter).hasValue(1);
+      assertThat(legacyState.getSubscriptionKeyAndSignalNameColumnFamily().isEmpty()).isTrue();
     }
 
     @Test
@@ -165,6 +167,7 @@ public class MultiTenancyMigrationTest {
             subscriptionCounter.incrementAndGet();
           });
       assertThat(subscriptionCounter).hasValue(1);
+      assertThat(legacyState.getSubscriptionKeyAndSignalNameColumnFamily().isEmpty()).isTrue();
     }
   }
 }

@@ -14,7 +14,6 @@ import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.engine.state.immutable.SignalSubscriptionState.SignalSubscriptionVisitor;
 import io.camunda.zeebe.engine.state.signal.SignalSubscription;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
@@ -44,7 +43,7 @@ public class LegacySignalSubscriptionState {
     signalNameAndSubscriptionKey = new DbCompositeKey<>(signalName, subscriptionKey);
     signalNameAndSubscriptionKeyColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.SIGNAL_SUBSCRIPTION_BY_NAME_AND_KEY,
+            ZbColumnFamilies.DEPRECATED_SIGNAL_SUBSCRIPTION_BY_NAME_AND_KEY,
             transactionContext,
             signalNameAndSubscriptionKey,
             signalSubscription);
@@ -52,7 +51,7 @@ public class LegacySignalSubscriptionState {
     subscriptionKeyAndSignalName = new DbCompositeKey<>(subscriptionKey, signalName);
     subscriptionKeyAndSignalNameColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.SIGNAL_SUBSCRIPTION_BY_KEY_AND_NAME,
+            ZbColumnFamilies.DEPRECATED_SIGNAL_SUBSCRIPTION_BY_KEY_AND_NAME,
             transactionContext,
             subscriptionKeyAndSignalName,
             DbNil.INSTANCE);
@@ -68,39 +67,14 @@ public class LegacySignalSubscriptionState {
     subscriptionKeyAndSignalNameColumnFamily.upsert(subscriptionKeyAndSignalName, DbNil.INSTANCE);
   }
 
-  public void remove(final long subscriptionKey, final DirectBuffer signalName) {
-    wrapSubscriptionKeys(subscriptionKey, signalName);
-
-    signalNameAndSubscriptionKeyColumnFamily.deleteExisting(signalNameAndSubscriptionKey);
-    subscriptionKeyAndSignalNameColumnFamily.deleteExisting(subscriptionKeyAndSignalName);
-  }
-
-  public void visitBySignalName(
-      final DirectBuffer signalName, final SignalSubscriptionVisitor visitor) {
-    this.signalName.wrapBuffer(signalName);
-    signalNameAndSubscriptionKeyColumnFamily.whileEqualPrefix(
-        this.signalName,
-        (key, value) -> {
-          visitor.visit(value);
-        });
-  }
-
   public ColumnFamily<DbCompositeKey<DbString, DbLong>, SignalSubscription>
       getSignalNameAndSubscriptionKeyColumnFamily() {
     return signalNameAndSubscriptionKeyColumnFamily;
   }
 
-  private void visitSubscriptions(final SignalSubscriptionVisitor visitor) {
-    subscriptionKeyAndSignalNameColumnFamily.whileEqualPrefix(
-        subscriptionKey,
-        (key, value) -> {
-          final var subscription =
-              signalNameAndSubscriptionKeyColumnFamily.get(signalNameAndSubscriptionKey);
-
-          if (subscription != null) {
-            visitor.visit(subscription);
-          }
-        });
+  public ColumnFamily<DbCompositeKey<DbLong, DbString>, DbNil>
+      getSubscriptionKeyAndSignalNameColumnFamily() {
+    return subscriptionKeyAndSignalNameColumnFamily;
   }
 
   private void wrapSubscriptionKeys(final SignalSubscriptionRecord subscription) {
