@@ -275,6 +275,29 @@ public final class UserTaskTest {
   }
 
   @Test
+  public void shouldCreateJobWithStaticNumberValueAssigneeHeader() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeAssignee("1234567891011121314")))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<JobRecordValue> job =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Map<String, String> customHeaders = job.getValue().getCustomHeaders();
+    assertThat(customHeaders)
+        .hasSize(1)
+        .containsEntry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "1234567891011121314");
+  }
+
+  @Test
   public void shouldCreateJobWithEvaluatedAssigneeExpressionHeader() {
     // given
     ENGINE.deployment().withXmlResource(process(t -> t.zeebeAssigneeExpression("user"))).deploy();
