@@ -31,7 +31,7 @@ final class Utils {
     final var currentTopology = actuator.getTopology().getBrokers();
     assertThat(currentTopology)
         .usingRecursiveComparison()
-        .ignoringFields("lastUpdatedAt")
+        .ignoringFieldsOfTypes(OffsetDateTime.class)
         .isEqualTo(expectedTopology);
   }
 
