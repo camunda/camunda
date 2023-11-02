@@ -93,36 +93,31 @@ camunda-platform:
   # in order to avoid being too wasteful.
   # Feel free to enable persistence and adjust storage on a per-branch level whenever needed.
   elasticsearch:
-    # https://github.com/elastic/helm-charts/blob/main/elasticsearch/values.yaml
+    # https://github.com/bitnami/charts/blob/main/bitnami/elasticsearch/values.yaml
 
     # will be set by the "deploy-preview-env" action
-    imageTag: 7.17.13
+    image:
+      tag: 7.17.14
 
-    replicas: 1
-    maxUnavailable: ""
-    minimumMasterNodes: 1
+    master:
+      replicaCount: 1
+      podSecurityContext:
+        capabilities:
+          add:
+          - IPC_LOCK
+      persistence:
+        # Disable the creation of persistent volumes.
+        # Feel free to enable persistence and adjust storage on a per-branch level whenever needed.
+        enabled: false
+        # Defines a reasonable default for the `elasticsearch` StatefulSet, for when persistence is enabled.
+        size: 2Gi
 
-    securityContext:
-      capabilities:
-        add:
-        - IPC_LOCK
-
-    # Disable the creation of persistent volumes.
-    # Feel free to enable persistence and adjust storage on a per-branch level whenever needed.
-    persistence:
-      enabled: false
-    # Defines a reasonable default for the `elasticsearch` StatefulSet, for when persistence is enabled.
-    volumeClaimTemplate:
-      resources:
-        requests:
-          storage: 2Gi
-
-    nodeSelector:
-      cloud.google.com/gke-nodepool: previews
-    tolerations:
-    - key: "previews"
-      operator: "Exists"
-      effect: "NoSchedule"
+      nodeSelector:
+        cloud.google.com/gke-nodepool: previews
+      tolerations:
+      - key: "previews"
+        operator: "Exists"
+        effect: "NoSchedule"
 
   zeebe:
     fullnameOverride: zeebe
