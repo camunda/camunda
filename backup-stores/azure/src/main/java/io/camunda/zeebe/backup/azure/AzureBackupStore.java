@@ -1,0 +1,382 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
+ */
+package io.camunda.zeebe.backup.s3;
+
+import com.azure.storage.file.share.ShareClient;
+import com.azure.storage.file.share.ShareClientBuilder;
+import com.azure.storage.file.share.ShareFileClient;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.camunda.zeebe.backup.api.Backup;
+import io.camunda.zeebe.backup.api.BackupIdentifier;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
+import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
+import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.azure.AzureBackupConfig;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupImpl;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * {@link BackupStore} for Azure. Stores all backups in a given bucket.
+ *
+ * <p>All created object keys are prefixed by the {@link BackupIdentifier}, with the following
+ * scheme: {@code basePath/partitionId/checkpointId/nodeId}.
+ */
+public final class AzureBackupStore implements BackupStore {
+  static final ObjectMapper MAPPER =
+      new ObjectMapper().registerModule(new Jdk8Module()).registerModule(new JavaTimeModule());
+  static final String SNAPSHOT_PREFIX = "snapshot/";
+  static final String SEGMENTS_PREFIX = "segments/";
+  static final String MANIFEST_OBJECT_KEY = "manifest.json";
+  private static final Logger LOG = LoggerFactory.getLogger(AzureBackupStore.class);
+  private static final int SCAN_PARALLELISM = 16;
+  private final Pattern backupIdentifierPattern;
+  private final AzureBackupConfig config;
+  private final ShareClient shareClient;
+  private final ShareFileClient fileSetManager;
+
+  public AzureBackupStore(final AzureBackupConfig config) {
+    this(config, buildClient(config));
+  }
+
+  public AzureBackupStore(final AzureBackupConfig config, final ShareClient client) {
+    this.config = config;
+    shareClient = client;
+    fileSetManager = new FileSetManager(client, config);
+    final var basePath = config.basePath();
+    backupIdentifierPattern =
+        Pattern.compile(
+            "^"
+                + basePath.map(base -> base + "/").map(Pattern::quote).orElse("")
+                + "(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<nodeId>\\d+).*");
+  }
+
+  private Optional<BackupIdentifier> tryParseKeyAsId(final String key) {
+    final var matcher = backupIdentifierPattern.matcher(key);
+    if (matcher.matches()) {
+      try {
+        final var nodeId = Integer.parseInt(matcher.group("nodeId"));
+        final var partitionId = Integer.parseInt(matcher.group("partitionId"));
+        final var checkpointId = Long.parseLong(matcher.group("checkpointId"));
+        return Optional.of(new BackupIdentifierImpl(nodeId, partitionId, checkpointId));
+      } catch (final NumberFormatException e) {
+        LOG.warn("Tried interpreting key {} as a BackupIdentifier but failed", key, e);
+      }
+    }
+    return Optional.empty();
+  }
+
+  /**
+   * Tries to build the longest possible prefix based on the given wildcard. If the first component
+   * of prefix is not present in the wildcard, the prefix will be empty. If the second component of
+   * the prefix is empty, the prefix will only contain the first prefix component and so forth.
+   *
+   * <p>Using the resulting prefix to list objects does not guarantee that returned objects actually
+   * match the wildcard, use {@link AzureBackupStore#tryParseKeyAsId(String objectKey)} and {@link
+   * BackupIdentifierWildcard#matches(BackupIdentifier id)} to ensure that the listed object
+   * matches.
+   */
+  private String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
+    //noinspection OptionalGetWithoutIsPresent -- checked by takeWhile
+    return Stream.of(wildcard.partitionId(), wildcard.checkpointId(), wildcard.nodeId())
+        .takeWhile(Optional::isPresent)
+        .map(Optional::get)
+        .map(Number::toString)
+        .collect(Collectors.joining("/", config.basePath().map(base -> base + "/").orElse(""), ""));
+  }
+
+  public String objectPrefix(final BackupIdentifier id) {
+    final var base = config.basePath();
+    if (base.isPresent()) {
+      return "%s/%s/%s/%s/".formatted(base.get(), id.partitionId(), id.checkpointId(), id.nodeId());
+    }
+    return "%s/%s/%s/".formatted(id.partitionId(), id.checkpointId(), id.nodeId());
+  }
+
+  public static void validateConfig(final AzureBackupConfig config) {
+    if (config.bucketName() == null || config.bucketName().isEmpty()) {
+      throw new IllegalArgumentException(
+          "Configuration for Azure backup store is incomplete. bucketName must not be empty.");
+    }
+    if (config.region().isEmpty()) {
+      LOG.warn(
+          "No region configured for Azure backup store. Region will be determined from environment (see https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/region-selection.html#automatically-determine-the-aws-region-from-the-environment)");
+    }
+    if (config.endpoint().isEmpty()) {
+      LOG.warn(
+          "No endpoint configured for Azure backup store. Endpoint will be determined from the region");
+    }
+    if (config.credentials().isEmpty()) {
+      LOG.warn(
+          "Access credentials (accessKey, secretKey) not configured for Azure backup store. Credentials will be determined from environment (see https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials.html#credentials-chain)");
+    }
+    // Create a throw away client to verify if all configurations are available. This will throw an
+    // exception, if any of the required configuration is not available.
+    buildClient(config).close();
+  }
+
+  @Override
+  public CompletableFuture<Void> save(final Backup backup) {
+    LOG.info("Saving {}", backup.id());
+    return updateManifestObject(
+        backup.id(), Manifest::expectNoBackup, manifest -> manifest.asInProgress(backup))
+        .thenComposeAsync(
+            status -> {
+              final var snapshot = saveSnapshotFiles(backup);
+              final var segments = saveSegmentFiles(backup);
+
+              return CompletableFuture.allOf(snapshot, segments)
+                  .thenComposeAsync(
+                      ignored ->
+                          updateManifestObject(
+                              backup.id(),
+                              Manifest::expectInProgress,
+                              inProgress ->
+                                  inProgress.asCompleted(snapshot.join(), segments.join())))
+                  .exceptionallyComposeAsync(
+                      throwable ->
+                          updateManifestObject(
+                              backup.id(), manifest -> manifest.asFailed(throwable))
+                              // Mark the returned future as failed.
+                              .thenCompose(ignore -> CompletableFuture.failedStage(throwable)));
+            })
+        // Discard status, it's either COMPLETED or the future is completed exceptionally
+        .thenApply(ignored -> null);
+  }
+
+  @Override
+  public CompletableFuture<BackupStatus> getStatus(final BackupIdentifier id) {
+    LOG.info("Querying status of {}", id);
+    return readManifestObject(id).thenApply(Manifest::toStatus);
+  }
+
+  /**
+   * @implNote Even if Azure is unavailable, the returned future may complete successfully.
+   */
+  @Override
+  public CompletableFuture<Collection<BackupStatus>> list(final BackupIdentifierWildcard wildcard) {
+    LOG.info("Querying status of {}", wildcard);
+    return readManifestObjects(wildcard)
+        .thenApplyAsync(manifests -> manifests.stream().map(Manifest::toStatus).toList());
+  }
+
+  @Override
+  public CompletableFuture<Void> delete(final BackupIdentifier id) {
+    LOG.info("Deleting {}", id);
+    return readManifestObject(id)
+        .thenApply(
+            manifest -> {
+              if (manifest.statusCode() == BackupStatusCode.IN_PROGRESS) {
+                throw new BackupInInvalidStateException(
+                    "Can't delete in-progress backup %s, must be marked as failed first"
+                        .formatted(manifest.id()));
+              } else {
+                return manifest.id();
+              }
+            })
+        .thenComposeAsync(this::listBackupObjects)
+        .thenComposeAsync(this::deleteBackupObjects);
+  }
+
+  @Override
+  public CompletableFuture<Backup> restore(final BackupIdentifier id, final Path targetFolder) {
+    LOG.info("Restoring {} to {}", id, targetFolder);
+    final var backupPrefix = objectPrefix(id);
+    return readManifestObject(id)
+        .thenApply(Manifest::expectCompleted)
+        .thenComposeAsync(
+            manifest ->
+                fileSetManager
+                    .restore(backupPrefix + SEGMENTS_PREFIX, manifest.segmentFiles(), targetFolder)
+                    .thenCombineAsync(
+                        fileSetManager.restore(
+                            backupPrefix + SNAPSHOT_PREFIX, manifest.snapshotFiles(), targetFolder),
+                        (segments, snapshot) ->
+                            new BackupImpl(id, manifest.descriptor(), snapshot, segments)));
+  }
+
+  @Override
+  public CompletableFuture<BackupStatusCode> markFailed(
+      final BackupIdentifier id, final String failureReason) {
+    LOG.info("Marking {} as failed", id);
+    return updateManifestObject(id, manifest -> manifest.asFailed(failureReason))
+        .thenApply(Manifest::statusCode);
+  }
+
+  @Override
+  public CompletableFuture<Void> closeAsync() {
+    shareClient.close();
+    return CompletableFuture.completedFuture(null);
+  }
+
+  private CompletableFuture<List<ObjectIdentifier>> listBackupObjects(final BackupIdentifier id) {
+    LOG.debug("Listing objects of {}", id);
+    return shareClient
+        .listObjectsV2(req -> req.bucket(config.bucketName()).prefix(objectPrefix(id)))
+        .thenApplyAsync(
+            objects ->
+                objects.contents().stream()
+                    .map(AzureObject::key)
+                    .map(key -> ObjectIdentifier.builder().key(key).build())
+                    .toList());
+  }
+
+  private CompletableFuture<Void> deleteBackupObjects(
+      final Collection<ObjectIdentifier> objectIdentifiers) {
+    LOG.debug("Deleting {} objects", objectIdentifiers.size());
+    if (objectIdentifiers.isEmpty()) {
+      // Nothing to delete, which we must handle because the delete request would be invalid
+      return CompletableFuture.completedFuture(null);
+    }
+    return shareClient
+        .deleteObjects(
+            req ->
+                req.bucket(config.bucketName())
+                    .delete(delete -> delete.objects(objectIdentifiers).quiet(true)))
+        .thenApplyAsync(
+            response -> {
+              if (!response.errors().isEmpty()) {
+                throw new BackupDeletionIncomplete(
+                    "Not all objects belonging to the backup were deleted successfully: "
+                        + response.errors());
+              }
+              return null;
+            });
+  }
+
+  private SdkPublisher<BackupIdentifier> findBackupIds(final BackupIdentifierWildcard wildcard) {
+    final var prefix = wildcardPrefix(wildcard);
+    LOG.debug("Using prefix {} to search for manifest files matching {}", prefix, wildcard);
+    return shareClient
+        .listObjectsV2Paginator(cfg -> cfg.bucket(config.bucketName()).prefix(prefix))
+        .contents()
+        .filter(obj -> obj.key().endsWith(MANIFEST_OBJECT_KEY))
+        .map(AzureObject::key)
+        .map(this::tryParseKeyAsId)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .filter(wildcard::matches);
+  }
+
+  private CompletableFuture<Collection<Manifest>> readManifestObjects(
+      final BackupIdentifierWildcard wildcard) {
+    final var aggregator = new AsyncAggregatingSubscriber<Manifest>(SCAN_PARALLELISM);
+    final var publisher = findBackupIds(wildcard).map(this::readManifestObject);
+    publisher.subscribe(aggregator);
+
+    return aggregator.result();
+  }
+
+  CompletableFuture<Manifest> readManifestObject(final BackupIdentifier id) {
+    LOG.debug("Reading manifest object of {}", id);
+    return shareClient
+        .getObject(
+            req -> req.bucket(config.bucketName()).key(objectPrefix(id) + MANIFEST_OBJECT_KEY),
+            AsyncResponseTransformer.toBytes())
+        .thenApply(
+            response -> {
+              try {
+                return (Manifest)
+                    MAPPER.readValue(response.asInputStream(), ValidBackupManifest.class);
+              } catch (final IOException e) {
+                throw new ManifestParseException(
+                    "Failed to read manifest object: %s".formatted(response.asUtf8String()), e);
+              }
+            })
+        .exceptionally(
+            throwable -> {
+              // throwable is a `CompletionException`, `getCause` to handle the underlying exception
+              if (throwable.getCause() instanceof NoSuchKeyException) {
+                LOG.debug("Found no manifest for backup {}", id);
+                return new NoBackupManifest(BackupIdentifierImpl.from(id));
+              } else if (throwable.getCause() instanceof final AzureBackupStoreException e) {
+                // Exception was already wrapped, no need to re-wrap
+                throw e;
+              } else {
+                throw new BackupReadException(
+                    "Failed to read manifest of %s".formatted(id), throwable);
+              }
+            });
+  }
+
+  <T> CompletableFuture<ValidBackupManifest> updateManifestObject(
+      final BackupIdentifier id,
+      final Function<Manifest, T> typeExpectation,
+      final Function<T, ValidBackupManifest> update) {
+    return updateManifestObject(id, manifest -> update.apply(typeExpectation.apply(manifest)));
+  }
+
+  CompletableFuture<ValidBackupManifest> updateManifestObject(
+      final BackupIdentifier id, final Function<Manifest, ValidBackupManifest> update) {
+    return readManifestObject(id).thenApply(update).thenComposeAsync(this::writeManifestObject);
+  }
+
+  CompletableFuture<ValidBackupManifest> writeManifestObject(final ValidBackupManifest manifest) {
+    LOG.debug("Updating manifest of {} to {}", manifest.id(), manifest);
+    final AsyncRequestBody body;
+    try {
+      body = AsyncRequestBody.fromBytes(MAPPER.writeValueAsBytes(manifest));
+    } catch (final JsonProcessingException e) {
+      return CompletableFuture.failedFuture(e);
+    }
+
+    return shareClient
+        .putObject(
+            request ->
+                request
+                    .bucket(config.bucketName())
+                    .key(objectPrefix(manifest.id()) + MANIFEST_OBJECT_KEY)
+                    .build(),
+            body)
+        .thenApply(resp -> manifest);
+  }
+
+  private CompletableFuture<FileSet> saveSnapshotFiles(final Backup backup) {
+    LOG.debug("Saving snapshot files for {}", backup.id());
+    final var prefix = objectPrefix(backup.id()) + SNAPSHOT_PREFIX;
+    return fileSetManager.save(prefix, backup.snapshot());
+  }
+
+  private CompletableFuture<FileSet> saveSegmentFiles(final Backup backup) {
+    LOG.debug("Saving segment files for {}", backup.id());
+    final var prefix = objectPrefix(backup.id()) + SEGMENTS_PREFIX;
+    return fileSetManager.save(prefix, backup.segments());
+  }
+
+  public static ShareClient buildClient(final AzureBackupConfig config) {
+    try
+    {
+      final ShareClient shareClient = new ShareClientBuilder()
+          .connectionString("").shareName("")
+          .buildClient();
+
+      shareClient.delete();
+      return shareClient;
+    }
+    catch (final Exception e)
+    {
+      System.out.println("deleteFileShare exception: " + e.getMessage());
+      return null;
+    }
+  }
+}

@@ -5,9 +5,8 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-import com.ctc.wstx.util.StringUtil;
-import org.junit.Test;
 import com.azure.storage.file.share.*;
+import org.junit.Test;
 
 public final class PrototypeTest {
   public static final String connectStr =
@@ -17,57 +16,53 @@ public final class PrototypeTest {
           + "EndpointSuffix=core.windows.net";
   @Test
   public void startTest() {
-    String shareName = "test1";
-
-//    ShareClient shareClient = new ShareClientBuilder()
-//        .connectionString(connectStr).shareName(shareName)
-//        .buildClient();
+    final String shareName = "test3";
 
     createFileShare(connectStr, shareName);
   }
 
-  public static Boolean createFileShare(String connectStr, String shareName)
+  public static Boolean createFileShare(final String connectStr, final String shareName)
   {
     try
     {
-      ShareClient shareClient = new ShareClientBuilder()
+      final ShareClient shareClient = new ShareClientBuilder()
           .connectionString(connectStr).shareName(shareName)
           .buildClient();
 
       shareClient.create();
       return true;
     }
-    catch (Exception e)
+    catch (final Exception e)
     {
       System.out.println("createFileShare exception: " + e.getMessage());
       return false;
     }
   }
 
-  public static Boolean deleteFileShare(String connectStr, String shareName)
+  public static Boolean deleteFileShare(final String connectStr, final String shareName)
   {
     try
     {
-      ShareClient shareClient = new ShareClientBuilder()
+      final ShareClient shareClient = new ShareClientBuilder()
           .connectionString(connectStr).shareName(shareName)
           .buildClient();
 
       shareClient.delete();
       return true;
     }
-    catch (Exception e)
+    catch (final Exception e)
     {
       System.out.println("deleteFileShare exception: " + e.getMessage());
       return false;
     }
   }
 
-  public static Boolean createDirectory(String connectStr, String shareName,
-      String dirName)
+  public static Boolean createDirectory(final String connectStr, final String shareName,
+      final String dirName)
   {
     try
     {
-      ShareDirectoryClient dirClient = new ShareFileClientBuilder()
+      final ShareDirectoryClient dirClient = new ShareFileClientBuilder()
           .connectionString(connectStr).shareName(shareName)
           .resourcePath(dirName)
           .buildDirectoryClient();
@@ -75,19 +70,19 @@ public final class PrototypeTest {
       dirClient.create();
       return true;
     }
-    catch (Exception e)
+    catch (final Exception e)
     {
       System.out.println("createDirectory exception: " + e.getMessage());
       return false;
     }
   }
 
-  public static Boolean deleteDirectory(String connectStr, String shareName,
-      String dirName)
+  public static Boolean deleteDirectory(final String connectStr, final String shareName,
+      final String dirName)
   {
     try
     {
-      ShareDirectoryClient dirClient = new ShareFileClientBuilder()
+      final ShareDirectoryClient dirClient = new ShareFileClientBuilder()
           .connectionString(connectStr).shareName(shareName)
           .resourcePath(dirName)
           .buildDirectoryClient();
@@ -95,19 +90,19 @@ public final class PrototypeTest {
       dirClient.delete();
       return true;
     }
-    catch (Exception e)
+    catch (final Exception e)
     {
       System.out.println("deleteDirectory exception: " + e.getMessage());
       return false;
     }
   }
 
-  public static Boolean enumerateFilesAndDirs(String connectStr, String shareName,
-      String dirName)
+  public static Boolean enumerateFilesAndDirs(final String connectStr, final String shareName,
+      final String dirName)
   {
     try
     {
-      ShareDirectoryClient dirClient = new ShareFileClientBuilder()
+      final ShareDirectoryClient dirClient = new ShareFileClientBuilder()
           .connectionString(connectStr).shareName(shareName)
           .resourcePath(dirName)
           .buildDirectoryClient();
@@ -119,77 +114,77 @@ public final class PrototypeTest {
 
       return true;
     }
-    catch (Exception e)
+    catch (final Exception e)
     {
       System.out.println("enumerateFilesAndDirs exception: " + e.getMessage());
       return false;
     }
   }
 
-  public static Boolean uploadFile(String connectStr, String shareName,
-      String dirName, String fileName)
+  public static Boolean uploadFile(final String connectStr, final String shareName,
+      final String dirName, final String fileName)
   {
     try
     {
-      ShareDirectoryClient dirClient = new ShareFileClientBuilder()
+      final ShareDirectoryClient dirClient = new ShareFileClientBuilder()
           .connectionString(connectStr).shareName(shareName)
           .resourcePath(dirName)
           .buildDirectoryClient();
 
-      ShareFileClient fileClient = dirClient.getFileClient(fileName);
+      final ShareFileClient fileClient = dirClient.getFileClient(fileName);
       fileClient.create(1024);
       fileClient.uploadFromFile(fileName);
       return true;
     }
-    catch (Exception e)
+    catch (final Exception e)
     {
       System.out.println("uploadFile exception: " + e.getMessage());
       return false;
     }
   }
 
-  public static Boolean downloadFile(String connectStr, String shareName,
-      String dirName, String destDir,
-      String fileName)
+  public static Boolean downloadFile(final String connectStr, final String shareName,
+      final String dirName, final String destDir,
+      final String fileName)
   {
     try
     {
-      ShareDirectoryClient dirClient = new ShareFileClientBuilder()
+      final ShareDirectoryClient dirClient = new ShareFileClientBuilder()
           .connectionString(connectStr).shareName(shareName)
           .resourcePath(dirName)
           .buildDirectoryClient();
 
-      ShareFileClient fileClient = dirClient.getFileClient(fileName);
+      final ShareFileClient fileClient = dirClient.getFileClient(fileName);
 
       // Create a unique file name
-      String date = new java.text.SimpleDateFormat("yyyyMMdd-HHmmss").format(new java.util.Date());
-      String destPath = destDir + "/"+ date + "_" + fileName;
+      final String date = new java.text.SimpleDateFormat("yyyyMMdd-HHmmss").format(new java.util.Date());
+      final String destPath = destDir + "/"+ date + "_" + fileName;
 
       fileClient.downloadToFile(destPath);
       return true;
     }
-    catch (Exception e)
+    catch (final Exception e)
     {
       System.out.println("downloadFile exception: " + e.getMessage());
       return false;
     }
   }
 
-  public static Boolean deleteFile(String connectStr, String shareName,
-      String dirName, String fileName)
+  public static Boolean deleteFile(final String connectStr, final String shareName,
+      final String dirName, final String fileName)
   {
     try
     {
-      ShareDirectoryClient dirClient = new ShareFileClientBuilder()
+      final ShareDirectoryClient dirClient = new ShareFileClientBuilder()
           .connectionString(connectStr).shareName(shareName)
           .resourcePath(dirName)
           .buildDirectoryClient();
 
-      ShareFileClient fileClient = dirClient.getFileClient(fileName);
+      final ShareFileClient fileClient = dirClient.getFileClient(fileName);
       fileClient.delete();
       return true;
     }
-    catch (Exception e)
+    catch (final Exception e)
     {
       System.out.println("deleteFile exception: " + e.getMessage());
       return false;
