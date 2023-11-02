@@ -11,6 +11,7 @@ import static io.camunda.zeebe.it.clustering.dynamic.Utils.assertBrokerHasPartit
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.assertChangeIsApplied;
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.assertChangeIsCompleted;
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.assertChangeIsPlanned;
+import static io.camunda.zeebe.it.clustering.dynamic.Utils.assertClusterBecomesHealthy;
 
 import io.camunda.zeebe.management.cluster.PostOperationResponse;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
@@ -35,6 +36,10 @@ final class PartitionJoinTest {
       assertChangeIsApplied(cluster, response);
       assertBrokerHasPartition(
           cluster, scenario.operation().brokerId(), scenario.operation().partitionId());
+      assertClusterBecomesHealthy(
+          cluster,
+          scenario.initialClusterState().clusterSize(),
+          scenario.initialClusterState().partitionCount());
     }
   }
 
@@ -55,6 +60,10 @@ final class PartitionJoinTest {
       Awaitility.await("Requested change is completed in time")
           .untilAsserted(() -> assertChangeIsCompleted(cluster, leave));
       assertChangeIsApplied(cluster, leave);
+      assertClusterBecomesHealthy(
+          cluster,
+          scenario.initialClusterState().clusterSize(),
+          scenario.initialClusterState().partitionCount());
     }
   }
 

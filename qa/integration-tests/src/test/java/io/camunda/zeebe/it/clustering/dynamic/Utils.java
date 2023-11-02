@@ -13,7 +13,9 @@ import io.camunda.zeebe.management.cluster.PostOperationResponse;
 import io.camunda.zeebe.management.cluster.TopologyChange.StatusEnum;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import java.time.OffsetDateTime;
+import org.awaitility.Awaitility;
 
 final class Utils {
   public static void assertChangeIsPlanned(final PostOperationResponse response) {
@@ -62,5 +64,18 @@ final class Utils {
         .matches(
             b -> b.getPartitions().stream().noneMatch(p -> p.getId() == partitionId),
             "Broker %d does not have partition %d".formatted(brokerId, partitionId));
+  }
+
+  public static void assertClusterBecomesHealthy(
+      final TestCluster cluster, final int brokerCount, final int partitionCount) {
+    try (final var client = cluster.newClientBuilder().build()) {
+      Awaitility.await("Cluster is healthy")
+          .untilAsserted(
+              () ->
+                  TopologyAssert.assertThat(client.newTopologyRequest().send().join())
+                      .hasLeaderForEachPartition(partitionCount)
+                      .hasBrokersCount(brokerCount)
+                      .isHealthy());
+    }
   }
 }
