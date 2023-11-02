@@ -11,6 +11,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexResponse.Error;
+import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.IsmTemplate;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Action;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Transition;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Transition.Conditions;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexTemplateResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.record.Record;
@@ -18,15 +27,19 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.prometheus.client.Histogram;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.http.entity.EntityTemplate;
 import org.opensearch.client.Request;
 import org.opensearch.client.RestClient;
 
-class OpensearchClient implements AutoCloseable {
+public class OpensearchClient implements AutoCloseable {
+  public static final String ISM_INITIAL_STATE = "initial";
+  public static final String ISM_DELETE_STATE = "delete";
   private static final ObjectMapper MAPPER = new ObjectMapper();
-
   private final RestClient client;
   private final OpensearchExporterConfiguration configuration;
   private final TemplateReader templateReader;
@@ -198,6 +211,63 @@ class OpensearchClient implements AutoCloseable {
     } catch (final IOException e) {
       throw new OpensearchExporterException("Failed to put component template", e);
     }
+  }
+
+  Optional<GetIndexStateManagementPolicyResponse> getIndexStateManagementPolicy() {
+    try {
+      final var request =
+          new Request("GET", "_plugins/_ism/policies/" + configuration.retention.getPolicyName());
+      return Optional.of(sendRequest(request, GetIndexStateManagementPolicyResponse.class));
+    } catch (final IOException e) {
+      return Optional.empty();
+    }
+  }
+
+  public boolean createIndexStateManagementPolicy() {
+    return putIndexStateManagementPolicy(Collections.emptyMap());
+  }
+
+  public boolean updateIndexStateManagementPolicy(final Integer seqNo, final Integer primaryTerm) {
+    final var queryParameters =
+        Map.of("if_seq_no", seqNo.toString(), "if_primary_term", primaryTerm.toString());
+    return putIndexStateManagementPolicy(queryParameters);
+  }
+
+  private boolean putIndexStateManagementPolicy(final Map<String, String> queryParameters) {
+    try {
+      final var request =
+          new Request("PUT", "_plugins/_ism/policies/" + configuration.retention.getPolicyName());
+
+      queryParameters.forEach(request::addParameter);
+
+      final var requestEntity = createPutIndexManagementPolicyRequest();
+      request.setJsonEntity(MAPPER.writeValueAsString(requestEntity));
+
+      final var response = sendRequest(request, PutIndexStateManagementPolicyResponse.class);
+      return response.policy() != null;
+    } catch (final IOException e) {
+      throw new OpensearchExporterException("Failed to put index state management policy", e);
+    }
+  }
+
+  private PutIndexStateManagementPolicyRequest createPutIndexManagementPolicyRequest() {
+    final var initialState =
+        new State(
+            ISM_INITIAL_STATE,
+            Collections.emptyList(),
+            List.of(
+                new Transition(
+                    ISM_DELETE_STATE, new Conditions(configuration.retention.getMinimumAge()))));
+    final var deleteState =
+        new State(
+            ISM_DELETE_STATE, List.of(new Action(new ObjectMapper())), Collections.emptyList());
+    final var policy =
+        new Policy(
+            configuration.retention.getPolicyDescription(),
+            ISM_INITIAL_STATE,
+            List.of(initialState, deleteState),
+            new IsmTemplate(List.of(configuration.index.prefix + "*"), 1));
+    return new PutIndexStateManagementPolicyRequest(policy);
   }
 
   private <T> T sendRequest(final Request request, final Class<T> responseType) throws IOException {
