@@ -48,7 +48,7 @@ public class CSVUtilsTest {
     List<String> expectedDtoFieldColumns = extractAllProcessInstanceDtoFieldKeys();
 
     // when
-    List<String[]> result = mapRawProcessReportInstances(toMap, true);
+    List<String[]> result = mapRawProcessReportInstances(toMap, false);
 
     // then
     assertThat(result)
