@@ -18,6 +18,7 @@ public class FormResponse {
   private String title;
   private String schema;
   private String tenantId;
+  private Long version;
 
   public String getId() {
     return id;
@@ -56,6 +57,15 @@ public class FormResponse {
     return this;
   }
 
+  public Long getVersion() {
+    return version;
+  }
+
+  public FormResponse setVersion(Long version) {
+    this.version = version;
+    return this;
+  }
+
   public String getTenantId() {
     return tenantId;
   }
@@ -72,6 +82,7 @@ public class FormResponse {
         .add("processDefinitionKey='" + processDefinitionKey + "'")
         .add("title='" + title + "'")
         .add("schema='" + schema + "'")
+        .add("version='" + version + "'")
         .add("tenantId='" + tenantId + "'")
         .toString();
   }
@@ -89,12 +100,13 @@ public class FormResponse {
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(title, that.title)
         && Objects.equals(schema, that.schema)
+        && Objects.equals(version, that.version)
         && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, processDefinitionKey, title, schema, tenantId);
+    return Objects.hash(id, processDefinitionKey, title, schema, version, tenantId);
   }
 
   public static FormResponse fromFormEntity(FormEntity form) {
@@ -102,6 +114,7 @@ public class FormResponse {
         .setId(form.getBpmnId())
         .setProcessDefinitionKey(form.getProcessDefinitionId())
         .setSchema(form.getSchema())
+        .setVersion(form.getVersion())
         .setTenantId(form.getTenantId());
   }
 
@@ -114,6 +127,7 @@ public class FormResponse {
                 ? processEntity.getName()
                 : processEntity.getBpmnProcessId())
         .setSchema(form.getSchema())
+        .setVersion(form.getVersion())
         .setTenantId(form.getTenantId());
   }
 }

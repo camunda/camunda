@@ -122,6 +122,7 @@ class FormControllerTest {
         new FormResponse()
             .setId(formId)
             .setProcessDefinitionKey(processDefinitionKey)
+            .setVersion(version)
             .setSchema("{}")
             .setTenantId(DEFAULT_TENANT_IDENTIFIER);
     when(formStore.getForm(formId, processDefinitionKey, version)).thenReturn(formEntity);
@@ -164,6 +165,7 @@ class FormControllerTest {
         new FormResponse()
             .setId(formId)
             .setProcessDefinitionKey(processDefinitionKey)
+            .setVersion(version)
             .setSchema("{}")
             .setTenantId(DEFAULT_TENANT_IDENTIFIER);
     when(formStore.getForm(formId, processDefinitionKey, null)).thenReturn(formEntity);
