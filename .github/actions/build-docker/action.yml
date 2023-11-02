@@ -51,7 +51,7 @@ runs:
       run: |
         docker context create zeebe-context
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      uses: docker/setup-buildx-action@v3
       with:
         # to be able to push to local registry, which we use in our tests, we need to use host network
         driver-opts: network=host
