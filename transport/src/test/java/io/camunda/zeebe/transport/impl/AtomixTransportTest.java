@@ -368,6 +368,29 @@ public class AtomixTransportTest {
     assertThat(response.byteArray()).isEqualTo("messageABC".getBytes());
   }
 
+  @Test
+  public void shouldCreateUniqueRequestsIds() {
+    final DirectlyResponder directlyResponder = new DirectlyResponder();
+
+    serverTransport.subscribe(0, RequestType.COMMAND, directlyResponder).join();
+
+    // when
+    final var requestFuture1 =
+        clientTransport.sendRequestWithRetry(
+            nodeAddressSupplier, new Request("messageABC"), REQUEST_TIMEOUT);
+    requestFuture1.join();
+    final long requestId1 = directlyResponder.serverResponse.getRequestId();
+
+    final var requestFuture2 =
+        clientTransport.sendRequestWithRetry(
+            nodeAddressSupplier, new Request("messageABC"), REQUEST_TIMEOUT);
+    requestFuture2.join();
+    final long requestId2 = directlyResponder.serverResponse.getRequestId();
+
+    // then
+    assertThat(requestId1).isNotEqualByComparingTo(requestId2);
+  }
+
   private static final class Request implements ClientRequest {
 
     private final String msg;
@@ -400,9 +423,10 @@ public class AtomixTransportTest {
   private static class DirectlyResponder implements RequestHandler {
 
     private final Consumer<byte[]> requestConsumer;
+    private ServerResponseImpl serverResponse;
 
     DirectlyResponder() {
-      this(bytes -> {});
+      this.requestConsumer = (bytes -> {});
     }
 
     DirectlyResponder(final Consumer<byte[]> requestConsumer) {
@@ -417,7 +441,7 @@ public class AtomixTransportTest {
         final DirectBuffer buffer,
         final int offset,
         final int length) {
-      final var serverResponse =
+      serverResponse =
           new ServerResponseImpl()
               .buffer(buffer, 0, length)
               .setRequestId(requestId)
