@@ -135,7 +135,7 @@ public class TenantAwareSignalEventTest {
                 .withElementId("signal-catch")
                 .withTenantId(tenantId)
                 .getFirst())
-        .describedAs("Expect that process instance was created")
+        .describedAs("Expect that a signal catch event was activated")
         .isNotNull();
   }
 
@@ -176,7 +176,7 @@ public class TenantAwareSignalEventTest {
                 .withElementId("signal-catch-attached")
                 .withTenantId(tenantId)
                 .getFirst())
-        .describedAs("Expect that process instance was created")
+        .describedAs("Expect that a signal catch event was activated")
         .isNotNull();
   }
 
@@ -214,7 +214,7 @@ public class TenantAwareSignalEventTest {
                 .withElementId("signal-start-event-sub")
                 .withTenantId(tenantId)
                 .getFirst())
-        .describedAs("Expect that process instance was created")
+        .describedAs("Expect that an event sub-process was activated")
         .isNotNull();
   }
 
@@ -251,7 +251,7 @@ public class TenantAwareSignalEventTest {
                 .withElementId("signal-boundary")
                 .withTenantId(tenantId)
                 .getFirst())
-        .describedAs("Expect that process instance was created")
+        .describedAs("Expect that a signal boundary event was activated")
         .isNotNull();
   }
 
@@ -281,7 +281,7 @@ public class TenantAwareSignalEventTest {
                 .withElementId("signal-throw")
                 .withTenantId(tenantId)
                 .getFirst())
-        .describedAs("Expect that process instance was created")
+        .describedAs("Expect that a signal throw event was activated")
         .isNotNull();
     assertThat(
             RecordingExporter.signalRecords()
@@ -318,7 +318,7 @@ public class TenantAwareSignalEventTest {
                 .withElementId("signal-throw-end")
                 .withTenantId(tenantId)
                 .getFirst())
-        .describedAs("Expect that process instance was created")
+        .describedAs("Expect that a signal end event was activated")
         .isNotNull();
     assertThat(
             RecordingExporter.signalRecords()
