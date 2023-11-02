@@ -1,6 +1,8 @@
 name: Release Camunda Optimize to Camunda Nexus, DockerHub and internal Harbor registry.
 
 on:
+  schedule:
+    - cron: "0 0 * * 1-5"
   workflow_dispatch:
     inputs:
       RELEASE_VERSION:
@@ -73,7 +75,7 @@ jobs:
       - name: Is current release major or manor.
         id: is-major-or-minor
         env:
-          RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION }}
+          RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION || '0.0.0' }}
         run: |
           is_major_or_minor="false"
           is_patch="true"
@@ -85,19 +87,6 @@ jobs:
             echo "is_major_or_minor=$is_major_or_minor"
           fi
           echo "is_major_or_minor=$is_major_or_minor" >> "$GITHUB_OUTPUT"
-          echo "is_patch=$is_patch" >> "$GITHUB_OUTPUT"
-
-      - name: Is current release patch
-        id: is-patch
-        env:
-          RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION }}
-        run: |
-          is_patch="true"
-          patch_version=$(echo "$RELEASE_VERSION" | cut -d. -f3)
-          if [[ ! "$patch_version" == *"-"* ]] && [[ "$patch_version" == "0" ]]; then
-            is_patch="false"
-          fi
-          echo "$is_patch"
           echo "is_patch=$is_patch" >> "$GITHUB_OUTPUT"
 
       - name: Generate a GitHub token
@@ -122,7 +111,7 @@ jobs:
 
       - name: Expose common variables as Env
         env:
-          RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION }}
+          RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION || '0.0.0' }}
         run: |
           {
           echo "VERSION=$RELEASE_VERSION"
@@ -145,18 +134,18 @@ jobs:
       - name: Run Maven
         shell: bash
         env:
-          RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION }}
-          DEVELOPMENT_VERSION: ${{ github.event.inputs.DEVELOPMENT_VERSION }}
-          BRANCH: ${{ github.event.inputs.BRANCH }}
+          RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION || '0.0.0' }}
+          DEVELOPMENT_VERSION: ${{ github.event.inputs.DEVELOPMENT_VERSION || '0.1.0-SNAPSHOT' }}
+          BRANCH: ${{ github.event.inputs.BRANCH || 'master' }}
           GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
           GITHUB_APP_ID: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
-          DRY_RUN: ${{ github.event.inputs.DRY_RUN }}
+          DRY_RUN: ${{ github.event.inputs.DRY_RUN || 'true' }}
         run: |
           .github/scripts/execute-release.sh
 
       # This still needs changing once we are on prod
       - name: Upload artifact to Camunda Download Center
-        if: inputs.DRY_RUN != 'true'
+        if: inputs.DRY_RUN == 'false'
         uses: camunda/infra-global-github-actions/download-center-upload@main
         with:
           gcp_credentials: ${{ steps.secrets.outputs.GCP_CREDENTIALS_NAME }}
@@ -168,9 +157,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
           GITHUB_APP_ID: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
-          IS_PATCH: ${{ steps.is-patch.outputs.is_patch }}
-          RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION }}
+          IS_PATCH: ${{ steps.is-major-or-minor.outputs.is_patch }}
+          RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION || '0.0.0' }}
           BRANCH: ${{ github.event.inputs.BRANCH }}
+          DRY_RUN: ${{ github.event.inputs.DRY_RUN || 'true'}}
         run: |
           git checkout master
           .github/scripts/update-previous-version.sh
@@ -183,7 +173,7 @@ jobs:
           MAJOR_OR_MINOR:  ${{ steps.is-major-or-minor.outputs.is_major_or_minor }}
           DOCKER_LATEST: ${{ github.event.inputs.DOCKER_LATEST }}
           ADDITIONAL_DOCKER_TAG: ${{ github.event.inputs.ADDITIONAL_DOCKER_TAG }}
-          DRY_RUN: ${{ github.event.inputs.DRY_RUN }}
+          DRY_RUN: ${{ github.event.inputs.DRY_RUN || 'true' }}
 
       - name: Start Smoketest
         uses: ./.github/actions/compose
@@ -207,7 +197,7 @@ jobs:
           date: ${{ env.DATE }}
           revision:  ${{ env.REVISION }}
         env:
-          DRY_RUN: ${{ github.event.inputs.DRY_RUN }}
+          DRY_RUN: ${{ github.event.inputs.DRY_RUN || 'true' }}
 
       - name: Docker log dump
         uses: ./.github/actions/docker-logs
