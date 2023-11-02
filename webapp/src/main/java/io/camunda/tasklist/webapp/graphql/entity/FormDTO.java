@@ -17,6 +17,8 @@ public class FormDTO {
 
   private String schema;
 
+  private boolean isDeleted;
+
   public String getId() {
     return id;
   }
@@ -44,11 +46,21 @@ public class FormDTO {
     return this;
   }
 
+  public boolean getIsDeleted() {
+    return isDeleted;
+  }
+
+  public FormDTO setIsDeleted(final boolean isDeleted) {
+    this.isDeleted = isDeleted;
+    return this;
+  }
+
   public static FormDTO createFrom(FormEntity formEntity) {
     return new FormDTO()
         .setId(formEntity.getBpmnId())
         .setProcessDefinitionId(formEntity.getProcessDefinitionId())
-        .setSchema(formEntity.getSchema());
+        .setSchema(formEntity.getSchema())
+        .setIsDeleted(formEntity.getIsDeleted());
   }
 
   @Override
@@ -62,11 +74,12 @@ public class FormDTO {
     final FormDTO formDTO = (FormDTO) o;
     return Objects.equals(id, formDTO.id)
         && Objects.equals(processDefinitionId, formDTO.processDefinitionId)
-        && Objects.equals(schema, formDTO.schema);
+        && Objects.equals(schema, formDTO.schema)
+        && Objects.equals(isDeleted, formDTO.isDeleted);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, processDefinitionId, schema);
+    return Objects.hash(id, processDefinitionId, schema, isDeleted);
   }
 }

@@ -128,7 +128,7 @@ public class JobZeebeRecordProcessorElasticSearch {
               entity.setIsFormEmbedded(false);
             },
             () -> {
-              entity.setIsFormEmbedded(true);
+              entity.setIsFormEmbedded(formKey != null ? true : null);
               entity.setFormVersion(null);
               entity.setFormId(null);
             });

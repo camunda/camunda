@@ -71,7 +71,7 @@ public class ProcessExternalControllerTest {
   }
 
   @Test
-  void getForm() throws Exception {
+  void getFormEmbedded() throws Exception {
     final var bpmnProcessId = "hello";
     final var processEntity =
         new ProcessEntity()
@@ -87,6 +87,7 @@ public class ProcessExternalControllerTest {
             .setId("testForm")
             .setProcessDefinitionKey("hello")
             .setSchema("formSchema")
+            .setIsDeleted(false)
             .setProcessDefinitionKey("2251799813686367")
             .setTitle("Process Name")
             .setTenantId(DEFAULT_TENANT_IDENTIFIER);
@@ -96,8 +97,63 @@ public class ProcessExternalControllerTest {
             .setId("2251799813686367_testForm")
             .setBpmnId("testForm")
             .setEmbedded(true)
+            .setIsDeleted(false)
             .setProcessDefinitionId("2251799813686367")
             .setSchema("formSchema")
+            .setTenantId(DEFAULT_TENANT_IDENTIFIER);
+
+    when(processStore.getProcessByBpmnProcessId(bpmnProcessId)).thenReturn(processEntity);
+    when(formStore.getForm("testForm", processEntity.getId(), null)).thenReturn(formEntity);
+
+    final var responseAsString =
+        mockMvc
+            .perform(
+                get(
+                    TasklistURIs.EXTERNAL_PROCESS_URL_V1.concat("/{bpmnProcessId}/form"),
+                    bpmnProcessId))
+            .andDo(print())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    final var result = CommonUtils.OBJECT_MAPPER.readValue(responseAsString, FormResponse.class);
+
+    // then
+    assertThat(result).isEqualTo(expectedFormResponse);
+  }
+
+  @Test
+  void getFormLinked() throws Exception {
+    final var bpmnProcessId = "hello";
+    final var processEntity =
+        new ProcessEntity()
+            .setId("2251799813686367")
+            .setBpmnProcessId("hello")
+            .setName("Process Name")
+            .setVersion(1)
+            .setFormId("testForm")
+            .setIsFormEmbedded(false)
+            .setStartedByForm(true)
+            .setTenantId(DEFAULT_TENANT_IDENTIFIER);
+    final var expectedFormResponse =
+        new FormResponse()
+            .setId("testForm")
+            .setProcessDefinitionKey("hello")
+            .setSchema("formSchema")
+            .setProcessDefinitionKey("2251799813686367")
+            .setTitle("Process Name")
+            .setIsDeleted(false)
+            .setTenantId(DEFAULT_TENANT_IDENTIFIER);
+
+    final var formEntity =
+        new FormEntity()
+            .setId("2251799813686367")
+            .setBpmnId("testForm")
+            .setEmbedded(true)
+            .setProcessDefinitionId(null)
+            .setSchema("formSchema")
+            .setIsDeleted(false)
             .setTenantId(DEFAULT_TENANT_IDENTIFIER);
 
     when(processStore.getProcessByBpmnProcessId(bpmnProcessId)).thenReturn(processEntity);
@@ -162,7 +218,7 @@ public class ProcessExternalControllerTest {
         .getContentAsString();
   }
 
-  private static Stream<Arguments> startProcessByForm() {
+  private static Stream<Arguments> startProcessByFormEmbedded() {
     final String bpmnProcessId = "StartProcessByForm";
     final ProcessEntity providedProcessEntity =
         new ProcessEntity()
@@ -180,7 +236,26 @@ public class ProcessExternalControllerTest {
         Arguments.of(HttpStatus.OK, bpmnProcessId, providedProcessEntity, processInstanceDTO));
   }
 
-  private static Stream<Arguments> startProcessThatCannotBeStartedByForm() {
+  private static Stream<Arguments> startProcessByFormLinked() {
+    final String bpmnProcessId = "StartProcessByForm";
+    final ProcessEntity providedProcessEntity =
+        new ProcessEntity()
+            .setBpmnProcessId(bpmnProcessId)
+            .setId("1")
+            .setStartedByForm(true)
+            .setName("StartFormProcess")
+            .setVersion(1)
+            .setFormId("startForm")
+            .setIsFormEmbedded(false)
+            .setTenantId(DEFAULT_TENANT_IDENTIFIER);
+    final Long processInstanceId = RandomUtils.nextLong();
+    final ProcessInstanceDTO processInstanceDTO = new ProcessInstanceDTO().setId(processInstanceId);
+
+    return Stream.of(
+        Arguments.of(HttpStatus.OK, bpmnProcessId, providedProcessEntity, processInstanceDTO));
+  }
+
+  private static Stream<Arguments> startProcessThatCannotBeStartedByFormEmbedded() {
     final String bpmnProcessId = "StartProcessByForm";
     final ProcessEntity processEntity =
         new ProcessEntity()
@@ -189,7 +264,23 @@ public class ProcessExternalControllerTest {
             .setStartedByForm(false)
             .setName("StartFormProcess")
             .setVersion(1)
-            .setFormKey("camundaForm:bpmn:startForm");
+            .setFormKey("camundaForm:bpmn:startForm")
+            .setIsFormEmbedded(true);
+
+    return Stream.of(Arguments.of(HttpStatus.NOT_FOUND, bpmnProcessId, processEntity, null));
+  }
+
+  private static Stream<Arguments> startProcessThatCannotBeStartedByFormLinked() {
+    final String bpmnProcessId = "StartProcessByForm";
+    final ProcessEntity processEntity =
+        new ProcessEntity()
+            .setBpmnProcessId(bpmnProcessId)
+            .setId("1")
+            .setStartedByForm(false)
+            .setName("StartFormProcess")
+            .setVersion(1)
+            .setFormId("startForm")
+            .setIsFormEmbedded(false);
 
     return Stream.of(Arguments.of(HttpStatus.NOT_FOUND, bpmnProcessId, processEntity, null));
   }
@@ -200,11 +291,74 @@ public class ProcessExternalControllerTest {
 
   @ParameterizedTest
   @MethodSource({
-    "startProcessByForm",
-    "startProcessThatCannotBeStartedByForm",
+    "startProcessByFormEmbedded",
+    "startProcessThatCannotBeStartedByFormEmbedded",
     "startProcessThatDoesNotExist"
   })
-  public void startProcess(
+  public void startProcessWithEmbeddedForm(
+      final HttpStatus expectedHttpStatus,
+      final String bpmnProcessId,
+      final ProcessEntity processEntity,
+      final ProcessInstanceDTO providedProcessInstanceDTO)
+      throws Exception {
+    final boolean isProcessThatDoesNotExist = processEntity == null;
+
+    final List<VariableInputDTO> variables = new ArrayList<VariableInputDTO>();
+    variables.add(new VariableInputDTO().setName("testVar").setValue("testValue"));
+    variables.add(new VariableInputDTO().setName("testVar2").setValue("testValue2"));
+
+    final StartProcessRequest startProcessRequest =
+        new StartProcessRequest().setVariables(variables);
+
+    if (isProcessThatDoesNotExist) {
+      when(processStore.getProcessByBpmnProcessId(bpmnProcessId, null))
+          .thenThrow(new NotFoundApiException("Could not find process with id."));
+    } else {
+      when(processStore.getProcessByBpmnProcessId(processEntity.getBpmnProcessId(), null))
+          .thenReturn(processEntity);
+    }
+
+    if (providedProcessInstanceDTO != null) {
+      when(processService.startProcessInstance(bpmnProcessId, variables, null))
+          .thenReturn(providedProcessInstanceDTO);
+    }
+
+    final String responseAsString =
+        mockMvc
+            .perform(
+                patch(
+                        TasklistURIs.EXTERNAL_PROCESS_URL_V1.concat("/{bpmnProcessId}/start"),
+                        bpmnProcessId)
+                    .content(CommonUtils.OBJECT_MAPPER.writeValueAsString(startProcessRequest))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .characterEncoding(StandardCharsets.UTF_8.name()))
+            .andDo(print())
+            .andExpect(
+                expectedHttpStatus.is2xxSuccessful()
+                    ? status().isOk()
+                    : status().is4xxClientError())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    if (expectedHttpStatus.is2xxSuccessful()) {
+      final var result =
+          CommonUtils.OBJECT_MAPPER.readValue(responseAsString, ProcessInstanceDTO.class);
+      assertThat(result).isEqualTo(providedProcessInstanceDTO);
+    } else {
+      final var result = CommonUtils.OBJECT_MAPPER.readValue(responseAsString, Error.class);
+      assertThat(result.getStatus()).isEqualTo(expectedHttpStatus.value());
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource({
+    "startProcessByFormLinked",
+    "startProcessThatCannotBeStartedByFormLinked",
+    "startProcessThatDoesNotExist"
+  })
+  public void startProcessWithLinkedForm(
       final HttpStatus expectedHttpStatus,
       final String bpmnProcessId,
       final ProcessEntity processEntity,

@@ -68,6 +68,7 @@ public class FormControllerIT extends TasklistZeebeIntegrationTest {
         .satisfies(
             form -> {
               assertThat(form.getId()).isEqualTo(formId);
+              assertThat(form.getIsDeleted()).isEqualTo(false);
               assertThat(form.getProcessDefinitionKey())
                   .isEqualTo(tester.getProcessDefinitionKey());
               assertThat(form.getSchema()).isNotBlank();
@@ -117,6 +118,7 @@ public class FormControllerIT extends TasklistZeebeIntegrationTest {
         .satisfies(
             form -> {
               assertThat(form.getId()).isEqualTo(formId);
+              assertThat(form.getIsDeleted()).isEqualTo(false);
               assertThat(form.getProcessDefinitionKey())
                   .isEqualTo(tester.getProcessDefinitionKey());
               assertThat(form.getSchema()).isNotBlank().contains("taglist");
@@ -167,6 +169,7 @@ public class FormControllerIT extends TasklistZeebeIntegrationTest {
         .satisfies(
             form -> {
               assertThat(form.getId()).isEqualTo(formId);
+              assertThat(form.getIsDeleted()).isEqualTo(false);
               assertThat(form.getProcessDefinitionKey())
                   .isEqualTo(tester.getProcessDefinitionKey());
               assertThat(form.getSchema()).isNotBlank().doesNotContain("taglist");

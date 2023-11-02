@@ -17,8 +17,9 @@ public class FormResponse {
   private String processDefinitionKey;
   private String title;
   private String schema;
-  private String tenantId;
   private Long version;
+  private String tenantId;
+  private Boolean isDeleted;
 
   public String getId() {
     return id;
@@ -75,6 +76,15 @@ public class FormResponse {
     return this;
   }
 
+  public Boolean getIsDeleted() {
+    return isDeleted;
+  }
+
+  public FormResponse setIsDeleted(Boolean isDeleted) {
+    this.isDeleted = isDeleted;
+    return this;
+  }
+
   @Override
   public String toString() {
     return new StringJoiner(", ", FormResponse.class.getSimpleName() + "[", "]")
@@ -84,6 +94,7 @@ public class FormResponse {
         .add("schema='" + schema + "'")
         .add("version='" + version + "'")
         .add("tenantId='" + tenantId + "'")
+        .add("isDeleted='" + isDeleted + "'")
         .toString();
   }
 
@@ -101,12 +112,13 @@ public class FormResponse {
         && Objects.equals(title, that.title)
         && Objects.equals(schema, that.schema)
         && Objects.equals(version, that.version)
-        && Objects.equals(tenantId, that.tenantId);
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(isDeleted, that.isDeleted);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, processDefinitionKey, title, schema, version, tenantId);
+    return Objects.hash(id, processDefinitionKey, title, schema, version, tenantId, isDeleted);
   }
 
   public static FormResponse fromFormEntity(FormEntity form) {
@@ -115,7 +127,8 @@ public class FormResponse {
         .setProcessDefinitionKey(form.getProcessDefinitionId())
         .setSchema(form.getSchema())
         .setVersion(form.getVersion())
-        .setTenantId(form.getTenantId());
+        .setTenantId(form.getTenantId())
+        .setIsDeleted(form.getIsDeleted());
   }
 
   public static FormResponse fromFormEntity(FormEntity form, ProcessEntity processEntity) {
@@ -128,6 +141,7 @@ public class FormResponse {
                 : processEntity.getBpmnProcessId())
         .setSchema(form.getSchema())
         .setVersion(form.getVersion())
-        .setTenantId(form.getTenantId());
+        .setTenantId(form.getTenantId())
+        .setIsDeleted(form.getIsDeleted());
   }
 }

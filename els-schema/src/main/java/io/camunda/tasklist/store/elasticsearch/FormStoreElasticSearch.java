@@ -83,9 +83,13 @@ public class FormStoreElasticSearch implements FormStore {
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(QueryBuilders.termQuery(FormIndex.BPMN_ID, formId));
     if (formVersion != null) {
+      // with the version set, you can return the form that was deleted, because of backward
+      // compatibility
       searchSourceBuilder.query(QueryBuilders.termQuery(FormIndex.VERSION, formVersion));
     } else {
+      // get the latest version where isDeleted is false (highest active version)
       searchSourceBuilder.sort(FormIndex.VERSION, SortOrder.DESC);
+      searchSourceBuilder.query(QueryBuilders.termQuery(FormIndex.IS_DELETED, false));
       searchSourceBuilder.size(1);
     }
 
@@ -103,6 +107,7 @@ public class FormStoreElasticSearch implements FormStore {
         formEntity.setEmbedded((Boolean) sourceAsMap.get(FormIndex.EMBEDDED));
         formEntity.setSchema((String) sourceAsMap.get(FormIndex.SCHEMA));
         formEntity.setTenantId((String) sourceAsMap.get(FormIndex.TENANT_ID));
+        formEntity.setIsDeleted((Boolean) sourceAsMap.get(FormIndex.IS_DELETED));
         return formEntity;
       }
     } catch (IOException e) {

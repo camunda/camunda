@@ -140,8 +140,13 @@ public class FormStoreOpenSearch implements FormStore {
               .size(1);
 
       if (formVersion == null) {
+        // get the latest version where isDeleted is false (highest active version)
+        searchRequest.query(
+            q -> q.term(t -> t.field(FormIndex.IS_DELETED).value(FieldValue.of(false))));
         searchRequest.sort(s -> s.field(f -> f.field(FormIndex.VERSION).order(SortOrder.Desc)));
       } else {
+        // with the version set, you can return the form that was deleted, because of backward
+        // compatibility
         searchRequest.query(
             q -> q.term(t -> t.field(FormIndex.VERSION).value(FieldValue.of(formVersion))));
       }
