@@ -18,6 +18,7 @@ import io.camunda.zeebe.topology.state.PartitionState;
 import io.camunda.zeebe.util.Either;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.function.UnaryOperator;
 
 /**
@@ -53,6 +54,22 @@ final class PartitionJoinApplier implements OperationApplier {
       return Either.left(
           new IllegalStateException(
               "Expected to join partition, but the local member is not active"));
+    }
+
+    final var partitionHasActiveMember =
+        currentClusterTopology.members().values().stream()
+            .flatMap(
+                memberState ->
+                    memberState.partitions().entrySet().stream()
+                        .filter(partitionState -> partitionState.getKey() == partitionId)
+                        .map(Entry::getValue))
+            .anyMatch(partitionState -> partitionState.state() == PartitionState.State.ACTIVE);
+    if (!partitionHasActiveMember) {
+      return Either.left(
+          new IllegalStateException(
+              String.format(
+                  "Expected to join partition %s, but partition has no active members",
+                  partitionId)));
     }
 
     final MemberState localMemberState = currentClusterTopology.getMember(localMemberId);
