@@ -43,4 +43,24 @@ final class Utils {
     assertThat(currentChange.getId()).isEqualTo(response.getChangeId());
     assertThat(currentChange.getStatus()).isEqualTo(StatusEnum.COMPLETED);
   }
+
+  public static void assertBrokerHasPartition(
+      final TestCluster cluster, final int brokerId, final int partitionId) {
+    assertThat(ClusterActuator.of(cluster.availableGateway()).getTopology().getBrokers())
+        .filteredOn(b -> b.getId() == brokerId)
+        .singleElement()
+        .matches(
+            b -> b.getPartitions().stream().anyMatch(p -> p.getId() == partitionId),
+            "Broker %d has partition %d".formatted(brokerId, partitionId));
+  }
+
+  public static void assertBrokerDoesNotHavePartition(
+      final TestCluster cluster, final int brokerId, final int partitionId) {
+    assertThat(ClusterActuator.of(cluster.availableGateway()).getTopology().getBrokers())
+        .filteredOn(b -> b.getId() == brokerId)
+        .singleElement()
+        .matches(
+            b -> b.getPartitions().stream().noneMatch(p -> p.getId() == partitionId),
+            "Broker %d does not have partition %d".formatted(brokerId, partitionId));
+  }
 }
