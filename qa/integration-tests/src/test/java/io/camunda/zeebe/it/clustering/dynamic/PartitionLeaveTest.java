@@ -15,6 +15,8 @@ import static io.camunda.zeebe.it.clustering.dynamic.Utils.assertChangeIsPlanned
 import io.camunda.zeebe.management.cluster.PostOperationResponse;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.test.util.asserts.TopologyAssert;
+import java.time.Duration;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -48,7 +50,15 @@ final class PartitionLeaveTest {
       Awaitility.await("Leaving is completed in time")
           .untilAsserted(() -> assertChangeIsCompleted(cluster, leave));
       assertChangeIsApplied(cluster, leave);
-
+      try (final var client = cluster.newClientBuilder().build()) {
+        Awaitility.await("All partition have a leader")
+            .pollDelay(Duration.ofSeconds(5))
+            .untilAsserted(
+                () ->
+                    TopologyAssert.assertThat(client.newTopologyRequest().send().join())
+                        .hasLeaderForEachPartition(
+                            scenario.initialClusterState().partitionCount()));
+      }
       // when
       final var join = revertOperation(cluster, scenario.operation());
       // then
