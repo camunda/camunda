@@ -13,9 +13,11 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftRule.Configurator;
 import io.atomix.raft.RaftServer.Builder;
+import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
 import io.atomix.raft.snapshot.TestSnapshotStore;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -133,5 +135,49 @@ public class RaftStartupConsistencyCheckTest {
     // then -- rejoined follower should catch up
     raftRule.allNodesHaveSnapshotWithIndex(snapshotIndex);
     raftRule.awaitSameLogSizeOnAllNodes(lastIndex);
+  }
+
+  @Test // Regression https://github.com/camunda/zeebe/issues/13790
+  public void shouldNotTruncateCommittedEntriesAfterDataLossQuorum() throws Exception {
+    // given
+    final var nodeWithOldData = raftRule.getLeader().orElseThrow();
+    final var commitIndex = raftRule.appendEntries(100);
+    raftRule.awaitCommit(commitIndex);
+    raftRule.shutdownServer(nodeWithOldData.name());
+
+    // shutdown follower nodes
+    final var followerIds =
+        raftRule.getServers().stream()
+            .filter(s -> s != nodeWithOldData)
+            .map(RaftServer::name)
+            .toList();
+
+    // when - data loss occurs on the followers and they form quorum
+    for (final var id : followerIds) {
+      raftRule.shutdownServer(id);
+      raftRule.triggerDataLossOnNode(id);
+    }
+
+    // followers must start asynchronously, otherwise they will never start
+    final var asyncBootstraps = followerIds.stream().map(raftRule::bootstrapNodeAsync).toList();
+    for (final var asyncBootstrap : asyncBootstraps) {
+      asyncBootstrap.join(Duration.ofSeconds(30));
+    }
+
+    // wait until they connect, then append some entries; force an election for now to test truncate
+    // TODO: should not need to force an election/term change!
+    raftRule.awaitNewLeader();
+    raftRule.restartLeader();
+    raftRule.awaitNewLeader();
+    final var newCommitIndex = raftRule.appendEntries(10);
+    raftRule.awaitCommit(newCommitIndex);
+
+    // reconnect the old node
+    raftRule.bootstrapNode(nodeWithOldData.name());
+    raftRule.appendEntries(5);
+
+    // then
+    Awaitility.await("until node is inactive")
+        .untilAsserted(() -> assertThat(nodeWithOldData.getRole()).isEqualTo(Role.INACTIVE));
   }
 }

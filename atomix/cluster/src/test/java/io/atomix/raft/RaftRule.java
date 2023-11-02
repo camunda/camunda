@@ -70,6 +70,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.agrona.LangUtil;
 import org.awaitility.Awaitility;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
@@ -233,6 +234,17 @@ public final class RaftRule extends ExternalResource {
 
   public void bootstrapNode(final String nodeId) throws Exception {
     bootstrapNode(nodeId, configurator);
+  }
+
+  public Thread bootstrapNodeAsync(final String nodeId) {
+    return Thread.startVirtualThread(
+        () -> {
+          try {
+            bootstrapNode(nodeId, configurator);
+          } catch (final Exception e) {
+            LangUtil.rethrowUnchecked(e);
+          }
+        });
   }
 
   public void bootstrapNode(final String nodeId, final Configurator configurator) throws Exception {
@@ -535,6 +547,10 @@ public final class RaftRule extends ExternalResource {
 
   private File getMemberDirectory(final Path directory, final String s) {
     return new File(directory.toFile(), s);
+  }
+
+  public Optional<RaftServer> getServer(final String id) {
+    return Optional.ofNullable(servers.get(id));
   }
 
   public Optional<RaftServer> getLeader() {
