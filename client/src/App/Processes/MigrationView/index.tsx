@@ -6,15 +6,14 @@
  */
 
 import {useEffect} from 'react';
-import {Button} from '@carbon/react';
-import {observer} from 'mobx-react';
 import {InstancesList} from 'App/Layout/InstancesList';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {TopPanel} from './TopPanel';
 import {BottomPanel} from './BottomPanel';
+import {Footer} from './Footer';
 
-const MigrationView: React.FC = observer(() => {
+const MigrationView: React.FC = () => {
   useEffect(() => {
     return processInstanceMigrationStore.reset;
   }, []);
@@ -29,43 +28,10 @@ const MigrationView: React.FC = observer(() => {
         type="migrate"
         topPanel={<TopPanel />}
         bottomPanel={<BottomPanel />}
-        footer={
-          <div>
-            {processInstanceMigrationStore.state.currentStep ===
-              'elementMapping' && (
-              <Button
-                onClick={() =>
-                  processInstanceMigrationStore.setCurrentStep('summary')
-                }
-              >
-                Next
-              </Button>
-            )}
-            {processInstanceMigrationStore.state.currentStep === 'summary' && (
-              <>
-                <Button
-                  kind="secondary"
-                  onClick={() =>
-                    processInstanceMigrationStore.setCurrentStep(
-                      'elementMapping',
-                    )
-                  }
-                >
-                  Back
-                </Button>
-                <Button
-                  aria-label="Confirm"
-                  onClick={processInstanceMigrationStore.reset}
-                >
-                  Confirm
-                </Button>
-              </>
-            )}
-          </div>
-        }
+        footer={<Footer />}
       />
     </>
   );
-});
+};
 
 export {MigrationView};

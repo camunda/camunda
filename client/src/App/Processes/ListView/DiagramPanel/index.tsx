@@ -23,8 +23,8 @@ import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {observer} from 'mobx-react';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {processXmlStore} from 'modules/stores/processXml';
-import {CopiableContent} from 'modules/components/PanelHeader/CopiableContent';
 import {processStatisticsStore} from 'modules/stores/processStatistics';
+import {CopiableProcessID} from 'App/Processes/CopiableProcessID';
 
 function setSearchParam(
   location: Location,
@@ -118,12 +118,7 @@ const DiagramPanel: React.FC = observer(() => {
     <Section>
       <PanelHeader title={processName} ref={panelHeaderRef}>
         <>
-          {bpmnProcessId !== undefined && (
-            <CopiableContent
-              copyButtonDescription="Process ID / Click to copy"
-              content={bpmnProcessId}
-            />
-          )}
+          <CopiableProcessID bpmnProcessId={bpmnProcessId} />
           {isVersionSelected && processId !== undefined && (
             <Restricted
               scopes={['write']}

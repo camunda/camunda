@@ -5,16 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import {Diagrams} from './Diagrams';
-import {Header} from './Header';
-
-const TopPanel: React.FC = () => {
-  return (
-    <section>
-      <Header />
-      <Diagrams />
-    </section>
-  );
+const Diagrams: React.FC = () => {
+  return <div>Diagrams</div>;
 };
 
-export {TopPanel};
+export {Diagrams};

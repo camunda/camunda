@@ -7,6 +7,17 @@
 
 import {makeAutoObservable} from 'mobx';
 
+const STEPS = {
+  elementMapping: {
+    stepNumber: 1,
+    stepDescription: 'Mapping elements',
+  },
+  summary: {
+    stepNumber: 2,
+    stepDescription: 'Confirm',
+  },
+};
+
 type State = {
   currentStep: 'elementMapping' | 'summary' | null;
 };
@@ -25,6 +36,14 @@ class ProcessInstanceMigration {
   setCurrentStep = (step: State['currentStep']) => {
     this.state.currentStep = step;
   };
+
+  get currentStep() {
+    if (this.state.currentStep === null) {
+      return null;
+    }
+
+    return STEPS[this.state.currentStep];
+  }
 
   enable = () => {
     this.state.currentStep = 'elementMapping';

@@ -5,16 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import {Diagrams} from './Diagrams';
-import {Header} from './Header';
+import styled from 'styled-components';
+import {styles} from '@carbon/elements';
 
-const TopPanel: React.FC = () => {
-  return (
-    <section>
-      <Header />
-      <Diagrams />
-    </section>
-  );
-};
+const MigrationStep = styled.div`
+  margin-left: auto;
+  ${styles.headingCompact01};
+`;
 
-export {TopPanel};
+export {MigrationStep};
