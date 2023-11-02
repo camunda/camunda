@@ -96,6 +96,7 @@
         "io.camunda:identity-sdk",
         "io.camunda:zeebe-client-java",
         "io.camunda:zeebe-protocol",
+        "ant-contrib:ant-contrib"
       ],
       "enabled": false
     },
