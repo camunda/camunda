@@ -40,7 +40,7 @@ public final class PartitionRegistrationStep implements StartupStep<PartitionSta
     final var partitionId = context.partitionMetadata().id().id();
     context.diskSpaceUsageMonitor().removeDiskUsageListener(context.zeebePartition());
     context.brokerHealthCheckService().removeMonitoredPartition(partitionId);
-    // TODO: Find a way to remove the partition from the topology manager
+    context.topologyManager().removePartition(partitionId);
 
     result.complete(context);
     return result;
