@@ -2,7 +2,7 @@ version: "3.9"
 services:
   elasticsearch:
     container_name: elasticsearch-${ELASTIC_HTTP_PORT:-9200}
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION:-8.7.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION:-8.8.0}
     environment:
       - TZ=Europe/Berlin
       - xpack.security.enabled=false

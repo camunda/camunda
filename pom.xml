@@ -45,7 +45,7 @@
     <apache.http5-client.version>5.2.1</apache.http5-client.version>
     <apache.http5-core.version>5.2.3</apache.http5-core.version>
     <!-- The default es 8 version we are going to be testing with-->
-    <elasticsearch8.test.version>8.7.0</elasticsearch8.test.version>
+    <elasticsearch8.test.version>8.8.0</elasticsearch8.test.version>
     <!--The least supported elasticsearch version we should test against-->
     <elasticsearch.test.version>7.10.0</elasticsearch.test.version>
     <!--the ElasticSearch version of the previous Optimize version -->

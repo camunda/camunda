@@ -195,7 +195,7 @@ pipeline {
           env.CAMBPM_7_18_VERSION = getCamBpmVersion('engine-7.18')
           env.CAMBPM_7_19_VERSION = getCamBpmVersion('engine-7.19')
           env.CAMBPM_7_20_VERSION = getCamBpmVersion('engine-7.20')
-          env.ES8_VERSION = '8.7.0'
+          env.ES8_VERSION = '8.8.0'
         }
       }
     }

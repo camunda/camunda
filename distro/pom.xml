@@ -14,7 +14,7 @@
   <properties>
     <exclude.from.config>OptimizeLicense.txt</exclude.from.config>
     <sonar.skip>true</sonar.skip>
-    <elasticsearch.demo.version>8.7.0</elasticsearch.demo.version>
+    <elasticsearch.demo.version>8.8.0</elasticsearch.demo.version>
   </properties>
 
   <dependencies>
