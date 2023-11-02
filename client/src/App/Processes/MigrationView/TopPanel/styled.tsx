@@ -5,17 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import {Diagrams} from './Diagrams';
-import {Header} from './Header';
-import {Section} from './styled';
+import styled from 'styled-components';
 
-const TopPanel: React.FC = () => {
-  return (
-    <Section>
-      <Header />
-      <Diagrams />
-    </Section>
-  );
-};
+const Section = styled.section`
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+`;
 
-export {TopPanel};
+export {Section};

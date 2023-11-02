@@ -5,8 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-const Diagrams: React.FC = () => {
-  return <div>Diagrams</div>;
+import {DiagramWrapper} from './styled';
+
+const TargetDiagram: React.FC = () => {
+  return <DiagramWrapper>Target Diagram</DiagramWrapper>;
 };
 
-export {Diagrams};
+export {TargetDiagram};

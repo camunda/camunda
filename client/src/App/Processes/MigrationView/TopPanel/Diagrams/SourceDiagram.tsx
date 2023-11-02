@@ -5,17 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import {Diagrams} from './Diagrams';
-import {Header} from './Header';
-import {Section} from './styled';
+import {DiagramWrapper} from './styled';
 
-const TopPanel: React.FC = () => {
-  return (
-    <Section>
-      <Header />
-      <Diagrams />
-    </Section>
-  );
+const SourceDiagram: React.FC = () => {
+  return <DiagramWrapper>Source Diagram</DiagramWrapper>;
 };
 
-export {TopPanel};
+export {SourceDiagram};
