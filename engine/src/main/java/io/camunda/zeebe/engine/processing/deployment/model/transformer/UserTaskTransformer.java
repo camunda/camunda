@@ -73,7 +73,15 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     }
     final var assignee = assignmentDefinition.getAssignee();
     if (assignee != null && !assignee.isBlank()) {
-      jobWorkerProperties.setAssignee(expressionLanguage.parseExpression(assignee));
+      var assigneeExpression = expressionLanguage.parseExpression(assignee);
+      if (assigneeExpression.isStatic()) {
+        // static assignee values are always treated as string literals
+        assigneeExpression =
+            expressionLanguage.parseExpression(
+                ExpressionTransformer.asFeelExpressionString(
+                    ExpressionTransformer.asStringLiteral(assignee)));
+      }
+      jobWorkerProperties.setAssignee(assigneeExpression);
     }
     final var candidateGroups = assignmentDefinition.getCandidateGroups();
     if (candidateGroups != null && !candidateGroups.isBlank()) {
