@@ -198,7 +198,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     // Load meta store information
     term = meta.loadTerm();
     lastVotedFor = meta.loadVote();
-    commitIndex = meta.loadCommitIndex();
+    firstCommitIndex = meta.loadCommitIndex();
+    commitIndex = firstCommitIndex;
 
     // Construct the core log, reader, writer, and compactor.
     raftLog =
@@ -207,6 +208,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
             () ->
                 createThreadContext(
                     "raft-log", partitionId, threadContextFactory, localMemberId.id()));
+    raftLog.setCommitIndex(Math.min(commitIndex, raftLog.getLastIndex()));
 
     // Open the snapshot store.
     persistedSnapshotStore = storage.getPersistedSnapshotStore();
@@ -494,7 +496,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   public long setCommitIndex(final long commitIndex) {
     checkArgument(commitIndex >= 0, "commitIndex must be positive");
     final long previousCommitIndex = this.commitIndex;
-    if (commitIndex > previousCommitIndex) {
+    if ((state == State.READY && commitIndex > previousCommitIndex)
+        || (state == State.ACTIVE && commitIndex >= previousCommitIndex)) {
       this.commitIndex = commitIndex;
       raftLog.setCommitIndex(Math.min(commitIndex, raftLog.getLastIndex()));
       meta.storeCommitIndex(commitIndex);
@@ -1002,6 +1005,15 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    * @param firstCommitIndex The first commit index.
    */
   public void setFirstCommitIndex(final long firstCommitIndex) {
+    if (state == State.READY) {
+      return;
+    }
+
+    if (commitIndex >= firstCommitIndex) {
+      transitionToReady();
+      return;
+    }
+
     if (this.firstCommitIndex == 0) {
       this.firstCommitIndex = firstCommitIndex;
       log.info(
@@ -1331,6 +1343,12 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     return partitionId;
   }
 
+  private void transitionToReady() {
+    state = State.READY;
+    log.info("Commit index is {}. RaftServer is ready", commitIndex);
+    stateChangeListeners.forEach(l -> l.accept(state));
+  }
+
   /** Raft server state. */
   public enum State {
     ACTIVE,
@@ -1353,13 +1371,15 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
     @Override
     public void onCommit(final long index) {
-      setFirstCommitIndex(index);
+      if (state == State.READY) {
+        removeCommitListener(this);
+        return;
+      }
+
       // On start up, set the state to READY after the follower has caught up with the leader
       // https://github.com/zeebe-io/zeebe/issues/4877
       if (index >= firstCommitIndex) {
-        state = State.READY;
-        log.info("Commit index is {}. RaftServer is ready", index);
-        stateChangeListeners.forEach(l -> l.accept(state));
+        transitionToReady();
         removeCommitListener(this);
       } else {
         throttledLogger.info(
