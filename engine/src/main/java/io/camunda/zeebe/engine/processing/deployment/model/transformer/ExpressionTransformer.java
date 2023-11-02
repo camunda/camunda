@@ -64,7 +64,13 @@ public final class ExpressionTransformer {
         .collect(Collectors.joining(",", "[", "]"));
   }
 
-  private static String asStringLiteral(final String value) {
+  /**
+   * Transforms a string value to a string literal, e.g. {@code "a" => "\"a\""}.
+   *
+   * @param value the string value to transform
+   * @return a string representation of the string literal
+   */
+  public static String asStringLiteral(final String value) {
     return String.format("\"%s\"", value);
   }
 
