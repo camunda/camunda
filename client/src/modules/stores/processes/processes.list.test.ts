@@ -5,13 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import {processesStore} from './processes';
+import {processesStore} from './processes.list';
 import {waitFor} from 'modules/testing-library';
 import {groupedProcessesMock} from 'modules/testUtils';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {generateProcessKey} from 'modules/utils/generateProcessKey';
 
-describe('stores/processes', () => {
+describe('stores/processes/processes.list', () => {
   afterEach(() => {
     processesStore.reset();
   });

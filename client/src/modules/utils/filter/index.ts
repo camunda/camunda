@@ -6,7 +6,7 @@
  */
 
 import {parse, isValid} from 'date-fns';
-import {processesStore} from 'modules/stores/processes';
+import {processesStore} from 'modules/stores/processes/processes.list';
 import {getSearchString} from 'modules/utils/getSearchString';
 import {Location} from 'react-router-dom';
 import {
@@ -16,27 +16,12 @@ import {
 import {getValidVariableValues} from './getValidVariableValues';
 import {variableFilterStore} from 'modules/stores/variableFilter';
 import {generateProcessKey} from '../generateProcessKey';
-
-type ProcessInstanceFilterField =
-  | 'process'
-  | 'version'
-  | 'ids'
-  | 'parentInstanceId'
-  | 'errorMessage'
-  | 'flowNodeId'
-  | 'variableName'
-  | 'variableValues'
-  | 'operationId'
-  | 'active'
-  | 'incidents'
-  | 'completed'
-  | 'canceled'
-  | 'startDateAfter'
-  | 'startDateBefore'
-  | 'endDateAfter'
-  | 'endDateBefore'
-  | 'tenant'
-  | 'retriesLeft';
+import {getProcessInstanceFilters} from './getProcessInstanceFilters';
+import {
+  ProcessInstanceFilters,
+  PROCESS_INSTANCE_FILTER_FIELDS,
+  BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS,
+} from './shared';
 
 type DecisionInstanceFilterField =
   | 'tenant'
@@ -48,28 +33,6 @@ type DecisionInstanceFilterField =
   | 'processInstanceId'
   | 'evaluationDateBefore'
   | 'evaluationDateAfter';
-
-type ProcessInstanceFilters = {
-  process?: string;
-  version?: string;
-  ids?: string;
-  parentInstanceId?: string;
-  errorMessage?: string;
-  flowNodeId?: string;
-  variableName?: string;
-  variableValues?: string;
-  operationId?: string;
-  active?: boolean;
-  incidents?: boolean;
-  completed?: boolean;
-  canceled?: boolean;
-  startDateAfter?: string;
-  startDateBefore?: string;
-  endDateAfter?: string;
-  endDateBefore?: string;
-  tenant?: string;
-  retriesLeft?: boolean;
-};
 
 type DecisionInstanceFilters = {
   name?: string;
@@ -119,27 +82,6 @@ type DecisionRequestFilters = {
   tenantId?: string;
 };
 
-const PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
-  'process',
-  'version',
-  'ids',
-  'parentInstanceId',
-  'errorMessage',
-  'flowNodeId',
-  'variableName',
-  'variableValues',
-  'operationId',
-  'active',
-  'incidents',
-  'completed',
-  'canceled',
-  'startDateAfter',
-  'startDateBefore',
-  'endDateAfter',
-  'endDateBefore',
-  'tenant',
-  'retriesLeft',
-];
 const DECISION_INSTANCE_FILTER_FIELDS: DecisionInstanceFilterField[] = [
   'name',
   'version',
@@ -150,14 +92,6 @@ const DECISION_INSTANCE_FILTER_FIELDS: DecisionInstanceFilterField[] = [
   'evaluationDateAfter',
   'evaluationDateBefore',
   'tenant',
-];
-
-const BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
-  'active',
-  'incidents',
-  'completed',
-  'canceled',
-  'retriesLeft',
 ];
 
 const BOOLEAN_DECISION_INSTANCE_FILTER_FIELDS: DecisionInstanceFilterField[] = [
@@ -190,20 +124,6 @@ function getFilters<Fields extends string, Filters>(
     },
     {},
   ) as Filters;
-}
-
-function getProcessInstanceFilters(
-  searchParams: string,
-): ProcessInstanceFilters {
-  const {variableName, variableValues, ...filters} = getFilters<
-    ProcessInstanceFilterField,
-    ProcessInstanceFilters
-  >(
-    searchParams,
-    PROCESS_INSTANCE_FILTER_FIELDS,
-    BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS,
-  );
-  return filters;
 }
 
 function getDecisionInstanceFilters(
@@ -598,8 +518,6 @@ export {
   getDecisionInstanceFilters,
 };
 export type {
-  ProcessInstanceFilters,
-  ProcessInstanceFilterField,
   RequestFilters,
   DecisionRequestFilters,
   DecisionInstanceFilters,

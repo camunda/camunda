@@ -8,7 +8,7 @@
 import React from 'react';
 import {Field, useField, useForm} from 'react-final-form';
 import {observer} from 'mobx-react';
-import {processesStore} from 'modules/stores/processes';
+import {processesStore} from 'modules/stores/processes/processes.list';
 import {ComboBox} from 'modules/components/ComboBox';
 import {authenticationStore} from 'modules/stores/authentication';
 

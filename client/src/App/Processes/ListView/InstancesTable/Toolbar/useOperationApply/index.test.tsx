@@ -11,7 +11,7 @@ import {waitFor} from 'modules/testing-library';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {operationsStore} from 'modules/stores/operations';
 import {processInstancesStore} from 'modules/stores/processInstances';
-import {processesStore} from 'modules/stores/processes';
+import {processesStore} from 'modules/stores/processes/processes.list';
 import {mockData} from './index.setup';
 import {
   groupedProcessesMock,

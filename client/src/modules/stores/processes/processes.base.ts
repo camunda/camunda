@@ -12,9 +12,9 @@ import {
   ProcessDto,
   ProcessVersionDto,
 } from 'modules/api/processes/fetchGroupedProcesses';
-import {getProcessInstanceFilters} from 'modules/utils/filter';
+import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {getSearchString} from 'modules/utils/getSearchString';
-import {NetworkReconnectionHandler} from './networkReconnectionHandler';
+import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
 import {sortOptions} from 'modules/utils/sortOptions';
 import {DEFAULT_TENANT, PERMISSIONS} from 'modules/constants';
 import {generateProcessKey} from 'modules/utils/generateProcessKey';
@@ -30,7 +30,7 @@ const INITIAL_STATE: State = {
   status: 'initial',
 };
 
-class Processes extends NetworkReconnectionHandler {
+class ProcessesBase extends NetworkReconnectionHandler {
   state: State = INITIAL_STATE;
   retryCount: number = 0;
   retryProcessesFetchTimeout: NodeJS.Timeout | null = null;
@@ -211,6 +211,21 @@ class Processes extends NetworkReconnectionHandler {
     return this.getProcess({bpmnProcessId: processId, tenantId})?.permissions;
   };
 
+  // This can't be a computed value, because it depends on window.location
+  getSelectedProcessDetails = () => {
+    const {process, tenant} = getProcessInstanceFilters(getSearchString());
+
+    const selectedProcess = this.getProcess({
+      bpmnProcessId: process,
+      tenantId: tenant,
+    });
+
+    const bpmnProcessId = selectedProcess?.bpmnProcessId;
+    const processName = selectedProcess?.name ?? bpmnProcessId ?? 'Process';
+
+    return {bpmnProcessId, processName};
+  };
+
   reset() {
     super.reset();
     this.state = INITIAL_STATE;
@@ -218,6 +233,4 @@ class Processes extends NetworkReconnectionHandler {
   }
 }
 
-const processesStore = new Processes();
-
-export {processesStore};
+export {ProcessesBase};

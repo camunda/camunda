@@ -11,7 +11,7 @@ import {Stack} from '@carbon/react';
 import {Error} from '@carbon/react/icons';
 import {Form} from 'react-final-form';
 import isEqual from 'lodash/isEqual';
-import {ProcessInstanceFilters} from 'modules/utils/filter';
+import {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 import {AutoSubmit} from 'modules/components/AutoSubmit';
 import {useFilters} from 'modules/hooks/useFilters';
 import {ProcessField} from './ProcessField';
@@ -34,7 +34,7 @@ import {
   OptionalFiltersFormGroup,
 } from './OptionalFiltersFormGroup';
 import {TenantField} from 'modules/components/TenantField';
-import {processesStore} from 'modules/stores/processes';
+import {processesStore} from 'modules/stores/processes/processes.list';
 
 const initialValues: ProcessInstanceFilters = {
   active: true,

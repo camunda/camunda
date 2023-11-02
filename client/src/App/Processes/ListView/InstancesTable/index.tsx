@@ -23,9 +23,9 @@ import {getProcessName} from 'modules/utils/instance';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {authenticationStore} from 'modules/stores/authentication';
 import {Toolbar} from './Toolbar';
-import {getProcessInstanceFilters} from 'modules/utils/filter';
+import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {useLocation} from 'react-router-dom';
-import {processesStore} from 'modules/stores/processes';
+import {processesStore} from 'modules/stores/processes/processes.list';
 import {Operations} from 'modules/components/Operations';
 import {notificationsStore} from 'modules/stores/notifications';
 

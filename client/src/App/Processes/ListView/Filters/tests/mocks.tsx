@@ -8,7 +8,7 @@
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {useEffect} from 'react';
-import {processesStore} from 'modules/stores/processes';
+import {processesStore} from 'modules/stores/processes/processes.list';
 import {processXmlStore} from 'modules/stores/processXml';
 import {Paths} from 'modules/Routes';
 

@@ -12,7 +12,7 @@ import {
   mockProcessStatistics,
   mockProcessXML,
 } from 'modules/testUtils';
-import {processesStore} from 'modules/stores/processes';
+import {processesStore} from 'modules/stores/processes/processes.list';
 import {processXmlStore} from 'modules/stores/processXml';
 
 import {Filters} from '../index';

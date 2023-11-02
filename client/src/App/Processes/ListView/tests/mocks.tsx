@@ -11,7 +11,7 @@ import {processInstancesSelectionStore} from 'modules/stores/processInstancesSel
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {processXmlStore} from 'modules/stores/processXml';
 import {operationsStore} from 'modules/stores/operations';
-import {processesStore} from 'modules/stores/processes';
+import {processesStore} from 'modules/stores/processes/processes.list';
 import {processStatisticsStore} from 'modules/stores/processStatistics';
 import {Paths} from 'modules/Routes';
 

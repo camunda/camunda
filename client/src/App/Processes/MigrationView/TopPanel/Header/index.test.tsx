@@ -10,26 +10,52 @@ import {Header} from '.';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {act} from 'react-dom/test-utils';
 import {useEffect} from 'react';
+import {MemoryRouter} from 'react-router-dom';
+import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
+import {groupedProcessesMock} from 'modules/testUtils';
+import {processesStore} from 'modules/stores/processes/processes.migration';
 
 type Props = {
   children?: React.ReactNode;
 };
 
 const Wrapper = ({children}: Props) => {
-  useEffect(() => processInstanceMigrationStore.reset);
-  return <>{children}</>;
+  useEffect(() => {
+    return () => {
+      processInstanceMigrationStore.reset();
+      processesStore.reset();
+    };
+  });
+
+  return <MemoryRouter>{children}</MemoryRouter>;
 };
 
 describe('PanelHeader', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     processInstanceMigrationStore.setCurrentStep('elementMapping');
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
   });
 
   it('should render process name and id', async () => {
+    const queryString =
+      '?active=true&incidents=true&process=demoProcess&version=3';
+
+    const originalWindow = {...window};
+
+    const locationSpy = jest.spyOn(window, 'location', 'get');
+
+    locationSpy.mockImplementation(() => ({
+      ...originalWindow.location,
+      search: queryString,
+    }));
+
+    processesStore.fetchProcesses();
     render(<Header />, {wrapper: Wrapper});
 
-    expect(screen.getByText('mock process name')).toBeInTheDocument();
-    expect(screen.getByText('mock process id')).toBeInTheDocument();
+    expect(await screen.findByText('New demo process')).toBeInTheDocument();
+    expect(screen.getByText('demoProcess')).toBeInTheDocument();
+
+    locationSpy.mockRestore();
   });
 
   it('should render current step and update step details on change', async () => {

@@ -9,10 +9,10 @@ import {FieldValidator} from 'final-form';
 import {isValidJSON} from 'modules/utils';
 import {
   parseIds,
-  ProcessInstanceFilters,
   DecisionInstanceFilters,
   parseFilterTime,
 } from 'modules/utils/filter';
+import {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 import {promisifyValidator} from 'modules/utils/validators/promisifyValidator';
 import {isValid} from 'date-fns';
 import {parseDate} from '../utils/date/formatDate';

@@ -11,7 +11,7 @@ import {getWrapper} from './mocks';
 import {Filters} from '../index';
 
 import {groupedProcessesMock, mockProcessXML} from 'modules/testUtils';
-import {processesStore} from 'modules/stores/processes';
+import {processesStore} from 'modules/stores/processes/processes.list';
 import {processXmlStore} from 'modules/stores/processXml';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';

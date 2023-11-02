@@ -21,6 +21,9 @@ import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInst
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 
 describe('<ListView /> - operations', () => {
+  const originalWindow = {...window};
+  const locationSpy = jest.spyOn(window, 'location', 'get');
+
   beforeEach(() => {
     mockFetchProcessInstances().withSuccess({
       processInstances: [],
@@ -36,9 +39,20 @@ describe('<ListView /> - operations', () => {
     mockFetchBatchOperations().withSuccess(operations);
   });
 
+  afterEach(() => {
+    locationSpy.mockClear();
+  });
+
   it('should show delete button when version is selected', async () => {
+    const queryString = '?process=demoProcess&version=1';
+
+    locationSpy.mockImplementation(() => ({
+      ...originalWindow.location,
+      search: queryString,
+    }));
+
     render(<ListView />, {
-      wrapper: createWrapper('/processes?process=demoProcess&version=1'),
+      wrapper: createWrapper(`/processes${queryString}`),
     });
 
     expect(
@@ -78,8 +92,15 @@ describe('<ListView /> - operations', () => {
   });
 
   it('should not show delete button when no version is selected', async () => {
+    const queryString = '?process=demoProcess';
+
+    locationSpy.mockImplementation(() => ({
+      ...originalWindow.location,
+      search: queryString,
+    }));
+
     render(<ListView />, {
-      wrapper: createWrapper('/processes?process=demoProcess'),
+      wrapper: createWrapper(`/processes${queryString}`),
     });
 
     expect(
@@ -98,6 +119,13 @@ describe('<ListView /> - operations', () => {
   });
 
   it('should not show delete button when user has no permissions', async () => {
+    const queryString = '?process=demoProcess';
+
+    locationSpy.mockImplementation(() => ({
+      ...originalWindow.location,
+      search: queryString,
+    }));
+
     authenticationStore.setUser({
       displayName: 'demo',
       permissions: ['read'],
@@ -110,7 +138,7 @@ describe('<ListView /> - operations', () => {
     });
 
     render(<ListView />, {
-      wrapper: createWrapper('/processes?process=demoProcess&version=1'),
+      wrapper: createWrapper(`/processes${queryString}`),
     });
 
     expect(
@@ -129,6 +157,13 @@ describe('<ListView /> - operations', () => {
   });
 
   it('should not show delete button when user has no resource based permissions', async () => {
+    const queryString = '?process=demoProcess&version=1';
+
+    locationSpy.mockImplementation(() => ({
+      ...originalWindow.location,
+      search: queryString,
+    }));
+
     authenticationStore.setUser({
       displayName: 'demo',
       permissions: ['write'],
@@ -141,7 +176,7 @@ describe('<ListView /> - operations', () => {
     });
 
     const {rerender} = render(<ListView />, {
-      wrapper: createWrapper('/processes?process=demoProcess&version=1'),
+      wrapper: createWrapper(`/processes${queryString}`),
     });
 
     expect(

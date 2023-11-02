@@ -6,10 +6,8 @@
  */
 
 import {To} from 'react-router-dom';
-import {
-  DecisionInstanceFilters,
-  ProcessInstanceFilters,
-} from 'modules/utils/filter';
+import {DecisionInstanceFilters} from 'modules/utils/filter';
+import {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 
 type RouterState = {
   referrer?: string;

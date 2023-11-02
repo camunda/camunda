@@ -8,10 +8,11 @@
 import {useNavigate, useLocation} from 'react-router-dom';
 import {
   updateProcessFiltersSearchString,
-  getProcessInstanceFilters,
-  ProcessInstanceFilters,
   getDecisionInstanceFilters,
 } from 'modules/utils/filter';
+import {ProcessInstanceFilters} from 'modules/utils/filter/shared';
+import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
+
 import {variableFilterStore} from 'modules/stores/variableFilter';
 
 const useFilters = () => {

@@ -10,11 +10,15 @@ import {PanelHeader} from 'modules/components/PanelHeader';
 import {MigrationStep} from './styled';
 import {CopiableProcessID} from 'App/Processes/CopiableProcessID';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
+import {processesStore} from 'modules/stores/processes/processes.migration';
 
 const Header: React.FC = observer(() => {
+  const {bpmnProcessId, processName} =
+    processesStore.getSelectedProcessDetails();
+
   return (
-    <PanelHeader title="mock process name">
-      <CopiableProcessID bpmnProcessId="mock process id" />
+    <PanelHeader title={processName}>
+      <CopiableProcessID bpmnProcessId={bpmnProcessId} />
       <MigrationStep>
         {`Migration Step ${processInstanceMigrationStore.currentStep?.stepNumber} - ${processInstanceMigrationStore.currentStep?.stepDescription}`}
       </MigrationStep>

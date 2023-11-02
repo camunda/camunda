@@ -11,10 +11,8 @@ import {useLocation, Location} from 'react-router-dom';
 import {FieldValidator} from 'final-form';
 import {Close} from '@carbon/react/icons';
 import intersection from 'lodash/intersection';
-import {
-  ProcessInstanceFilterField,
-  getProcessInstanceFilters,
-} from 'modules/utils/filter';
+import {ProcessInstanceFilterField} from 'modules/utils/filter/shared';
+import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {
   validateIdsCharacters,
   validateIdsLength,

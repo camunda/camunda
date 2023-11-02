@@ -12,7 +12,7 @@ import {useEffect} from 'react';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {groupedProcessesMock} from 'modules/testUtils';
-import {processesStore} from 'modules/stores/processes';
+import {processesStore} from 'modules/stores/processes/processes.list';
 import {Paths} from 'modules/Routes';
 
 const createWrapper = (initialPath: string = Paths.processes()) => {

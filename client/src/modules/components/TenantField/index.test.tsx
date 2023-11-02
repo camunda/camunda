@@ -14,7 +14,7 @@ import {useEffect} from 'react';
 import {TenantField} from '.';
 import {Form} from 'react-final-form';
 import arrayMutators from 'final-form-arrays';
-import {ProcessInstanceFilters} from 'modules/utils/filter';
+import {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 
 function getWrapper(initialValues?: ProcessInstanceFilters) {
   const Wrapper: React.FC<{

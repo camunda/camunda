@@ -18,7 +18,7 @@ import {
   mockProcessInstances,
 } from 'modules/testUtils';
 import {DiagramPanel} from './index';
-import {processesStore} from 'modules/stores/processes';
+import {processesStore} from 'modules/stores/processes/processes.list';
 import {processXmlStore} from 'modules/stores/processXml';
 import {processStatisticsStore} from 'modules/stores/processStatistics';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
@@ -50,6 +50,9 @@ function getWrapper(initialPath: string = Paths.dashboard()) {
 }
 
 describe('DiagramPanel', () => {
+  const originalWindow = {...window};
+  const locationSpy = jest.spyOn(window, 'location', 'get');
+
   beforeEach(() => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
@@ -59,14 +62,23 @@ describe('DiagramPanel', () => {
     processesStore.fetchProcesses();
   });
 
+  afterEach(() => {
+    locationSpy.mockClear();
+  });
+
   it('should render header', async () => {
     const originalWindowPrompt = window.prompt;
     window.prompt = jest.fn();
 
+    const queryString = '?process=bigVarProcess&version=1';
+
+    locationSpy.mockImplementation(() => ({
+      ...originalWindow.location,
+      search: queryString,
+    }));
+
     const {user} = render(<DiagramPanel />, {
-      wrapper: getWrapper(
-        `${Paths.processes()}?process=bigVarProcess&version=1`,
-      ),
+      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
     });
 
     expect(await screen.findByText('Big variable process')).toBeInTheDocument();
@@ -83,10 +95,15 @@ describe('DiagramPanel', () => {
   });
 
   it('should show the loading indicator, when diagram is loading', async () => {
+    const queryString = '?process=bigVarProcess&version=1';
+
+    locationSpy.mockImplementation(() => ({
+      ...originalWindow.location,
+      search: queryString,
+    }));
+
     render(<DiagramPanel />, {
-      wrapper: getWrapper(
-        `${Paths.processes()}?process=bigVarProcess&version=1`,
-      ),
+      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
     });
 
     expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
@@ -113,10 +130,15 @@ describe('DiagramPanel', () => {
   });
 
   it('should show a message when no process version is selected', async () => {
+    const queryString = '?process=bigVarProcess&version=all';
+
+    locationSpy.mockImplementation(() => ({
+      ...originalWindow.location,
+      search: queryString,
+    }));
+
     render(<DiagramPanel />, {
-      wrapper: getWrapper(
-        `${Paths.processes()}?process=bigVarProcess&version=all`,
-      ),
+      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
     });
 
     expect(
@@ -132,10 +154,15 @@ describe('DiagramPanel', () => {
   });
 
   it('should display bpmnProcessId as process name in the message when no process version is selected', async () => {
+    const queryString = '?process=eventBasedGatewayProcess&version=all';
+
+    locationSpy.mockImplementation(() => ({
+      ...originalWindow.location,
+      search: queryString,
+    }));
+
     render(<DiagramPanel />, {
-      wrapper: getWrapper(
-        `${Paths.processes()}?process=eventBasedGatewayProcess&version=all`,
-      ),
+      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
     });
 
     expect(
@@ -196,6 +223,13 @@ describe('DiagramPanel', () => {
   });
 
   it('should render diagram when statistics endpoint fails', async () => {
+    const queryString = '?process=bigVarProcess&version=1';
+
+    locationSpy.mockImplementation(() => ({
+      ...originalWindow.location,
+      search: queryString,
+    }));
+
     const handleFetchErrorSpy = jest.spyOn(
       processStatisticsStore,
       'handleFetchError',
@@ -205,9 +239,7 @@ describe('DiagramPanel', () => {
     mockFetchProcessXML().withSuccess('');
 
     render(<DiagramPanel />, {
-      wrapper: getWrapper(
-        `${Paths.processes()}?process=bigVarProcess&version=1`,
-      ),
+      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
     });
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
@@ -216,13 +248,18 @@ describe('DiagramPanel', () => {
   });
 
   it('should render statistics', async () => {
+    const queryString = '?process=bigVarProcess&version=1';
+
+    locationSpy.mockImplementation(() => ({
+      ...originalWindow.location,
+      search: queryString,
+    }));
+
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessXML().withSuccess('');
 
     render(<DiagramPanel />, {
-      wrapper: getWrapper(
-        `${Paths.processes()}?process=bigVarProcess&version=1`,
-      ),
+      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
     });
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
@@ -230,13 +267,18 @@ describe('DiagramPanel', () => {
   });
 
   it('should clear statistics before fetching new statistics', async () => {
+    const queryString = '?process=bigVarProcess&version=1';
+
+    locationSpy.mockImplementation(() => ({
+      ...originalWindow.location,
+      search: queryString,
+    }));
+
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessXML().withSuccess('');
 
     render(<DiagramPanel />, {
-      wrapper: getWrapper(
-        `${Paths.processes()}?process=bigVarProcess&version=1`,
-      ),
+      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
     });
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();

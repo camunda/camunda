@@ -8,13 +8,12 @@
 import {useOperationsPanelResize} from 'modules/hooks/useOperationsPanelResize';
 import {useEffect, useRef} from 'react';
 import {useLocation, useNavigate, Location} from 'react-router-dom';
-import {
-  deleteSearchParams,
-  getProcessInstanceFilters,
-} from 'modules/utils/filter';
+import {deleteSearchParams} from 'modules/utils/filter';
+import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
+
 import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/constants';
 import {Restricted} from 'modules/components/Restricted';
-import {processesStore} from 'modules/stores/processes';
+import {processesStore} from 'modules/stores/processes/processes.list';
 import {ProcessOperations} from '../ProcessOperations';
 import {PanelHeader, Section} from './styled';
 import {DiagramShell} from 'modules/components/DiagramShell';
@@ -49,13 +48,9 @@ const DiagramPanel: React.FC = observer(() => {
 
   const isVersionSelected = version !== undefined && version !== 'all';
 
-  const selectedProcess = processesStore.getProcess({
-    bpmnProcessId: process,
-    tenantId: tenant,
-  });
+  const {bpmnProcessId, processName} =
+    processesStore.getSelectedProcessDetails();
 
-  const bpmnProcessId = selectedProcess?.bpmnProcessId;
-  const processName = selectedProcess?.name ?? bpmnProcessId ?? 'Process';
   const isDiagramLoading =
     processXmlStore.state.status === 'fetching' ||
     !processesStore.isInitialLoadComplete ||
