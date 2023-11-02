@@ -56,8 +56,9 @@ class UserTaskTransformerTest {
             Arguments.of(null, null),
             Arguments.of("", null),
             Arguments.of(" ", null),
-            Arguments.of("frodo", "frodo"),
-            Arguments.of("=ring.bearer", "ring.bearer"));
+            Arguments.of("frodo", "\"frodo\""),
+            Arguments.of("=ring.bearer", "ring.bearer"),
+            Arguments.of("12345678", "\"12345678\""));
       }
 
       @DisplayName("Should transform user task with assignee")
