@@ -188,7 +188,20 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
       if (error instanceof StartupProcessShutdownException) {
         LOGGER.warn("Aborting startup of partition {}", partitionId, error);
       } else {
-        LOGGER.error("Failed to start partition {}", partitionId, error);
+        LOGGER.error(
+            "Failed to start partition {}, removing partition and shutting down already started steps",
+            partitionId,
+            error);
+        concurrencyControl.runOnCompletion(
+            partitions.remove(partitionId).stop(),
+            (stopped, stopError) -> {
+              if (stopError != null) {
+                LOGGER.error(
+                    "Partition {} already failed during startup, now shutdown failed too",
+                    partitionId,
+                    error);
+              }
+            });
       }
 
       topologyManager.onHealthChanged(partitionId, HealthStatus.DEAD);
