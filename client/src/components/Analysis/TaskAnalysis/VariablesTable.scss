@@ -1,11 +1,5 @@
-.VariablesTable {
-  .Table {
-    height: 500px;
-  }
-
-  .outliersCount {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-  }
+.VariablesTable .outliersCount {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
 }

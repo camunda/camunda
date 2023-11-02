@@ -93,11 +93,7 @@ export function VariablesTable({selectedNode, config, totalCount, user}: Variabl
     };
   }
 
-  return (
-    <div className="VariablesTable">
-      <Table {...tableData} disablePagination />
-    </div>
-  );
+  return <Table {...tableData} disablePagination className="VariablesTable" />;
 }
 
 export default withUser(VariablesTable);

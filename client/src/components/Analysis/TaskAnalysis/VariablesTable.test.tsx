@@ -8,6 +8,8 @@
 import {runLastEffect} from '__mocks__/react';
 import {shallow} from 'enzyme';
 
+import {LoadingIndicator} from 'components';
+
 import {VariablesTable} from './VariablesTable';
 import {SelectedNode, loadCommonOutliersVariables} from './service';
 
@@ -56,11 +58,18 @@ it('should render a table with correct data', async () => {
   runLastEffect();
   await node.update();
 
-  expect(node).toMatchSnapshot();
+  const tableBody = node.find('Table').prop<(string | JSX.Element)[][]>('body');
+
+  expect(tableBody.length).toBe(1);
+  const outlierCount = shallow(tableBody[0]?.[0] as JSX.Element);
+  expect(outlierCount.text()).toContain('50 instances');
+  expect(tableBody[0]?.[1]).toEqual('1');
+  expect(tableBody[0]?.[2]).toEqual('10');
+  expect(tableBody[0]?.[3]).toEqual('department=engineering');
 });
 
 it('should render a loading indicator while loading the data', async () => {
   const node = shallow(<VariablesTable {...props} />);
 
-  expect(node).toMatchSnapshot();
+  expect(node.find('Table').prop('noData')).toEqual(<LoadingIndicator />);
 });

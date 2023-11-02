@@ -5,6 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
+import {t} from 'translation';
 import {post, formatQuery} from 'request';
 import {AnalysisDurationChartEntry} from 'types';
 
@@ -60,4 +61,11 @@ export async function loadDurationData(
 ): Promise<AnalysisDurationChartEntry[]> {
   const response = await post('api/analysis/durationChart', params);
   return await response.json();
+}
+
+export function getOutlierSummary(count: number, relation: number): string {
+  return t(`analysis.task.tooltipText.${count === 1 ? 'singular' : 'plural'}`, {
+    count,
+    percentage: Math.round(relation * 100),
+  }).toString();
 }

@@ -114,8 +114,6 @@ test('should show common outliers variables as a table', async (t) => {
 
   await t.click(Analysis.flowNode('AE0010P0030'));
 
-  await t.click(Analysis.commonVariablesButton);
-
   await t
     .resizeWindow(1600, 800)
     .takeElementScreenshot(

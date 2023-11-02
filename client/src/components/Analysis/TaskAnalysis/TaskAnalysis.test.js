@@ -18,7 +18,12 @@ import OutlierDetailsModal from './OutlierDetailsModal';
 jest.mock('./service', () => {
   return {
     loadNodesOutliers: jest.fn().mockReturnValue({
-      nodeKey: {heat: 50, higherOutlierHeat: 20, higherOutlier: {count: 20, relation: 1.3}},
+      nodeKey: {
+        heat: 50,
+        higherOutlierHeat: 20,
+        higherOutlier: {count: 20, relation: 1.3},
+        totalCount: 123,
+      },
     }),
     loadDurationData: jest.fn().mockReturnValue([{key: 'test', value: 'testVal', outlier: false}]),
   };

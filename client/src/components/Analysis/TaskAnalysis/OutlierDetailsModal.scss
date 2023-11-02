@@ -1,11 +1,31 @@
 .OutlierDetailsModal {
-  .description {
-    font-weight: bold;
-    padding-bottom: 20px;
-    margin: 16px 0;
+  .cds--modal-container {
+    min-height: 90%;
+  }
 
+  .cds--modal-content {
+    display: flex;
+    flex-direction: column;
+  }
+
+  h2 {
+    margin-bottom: 1rem;
+    font-weight: bold;
+  }
+
+  .description {
+    span,
     .Button {
-      margin-left: 20px;
+      margin-left: 1.5rem;
     }
+  }
+
+  .DurationChart {
+    flex: 1 0 30%;
+  }
+
+  .VariablesTable {
+    max-height: 30%;
+    flex: 1;
   }
 }

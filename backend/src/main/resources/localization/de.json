@@ -959,7 +959,7 @@
     "branchAnalysis": "Verlaufsanalyse",
     "task": {
       "label": "Aufgabeanalyse",
-      "totalInstances": "Instanzen insgesamt",
+      "totalTaskInstances": "Aufgabeninstanzen insgesamt: {count}",
       "tooltip": {
         "outlier": {
           "label": "Ausreißer",
@@ -978,7 +978,7 @@
         "plural": "{count} Instanzen haben {percentage}% länger gedauert als der Durchschnitt."
       },
       "detailsModal": {
-        "title": "Ausreißer von {name} Prozessknoten",
+        "title": "Ergebnisse für Aufgabe \"{name}\"",
         "durationChart": "Laufzeitverteilungsdiagramm",
         "variablesTable": "Tabelle der signifikanten Variablenwerte",
         "axisLabels": {

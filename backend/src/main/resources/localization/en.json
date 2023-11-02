@@ -959,7 +959,7 @@
     "branchAnalysis": "Branch Analysis",
     "task": {
       "label": "Task Analysis",
-      "totalInstances": "Total Instances",
+      "totalTaskInstances": "Total task instances: {count}",
       "tooltip": {
         "outlier": {
           "label": "Outlier",
@@ -978,7 +978,7 @@
         "plural": "{count} instances took {percentage}% longer than average."
       },
       "detailsModal": {
-        "title": "Outliers of {name} Flow Node",
+        "title": "Results for task \"{name}\"",
         "durationChart": "Duration Distribution chart",
         "variablesTable": "Common Significant Variables Table",
         "axisLabels": {
