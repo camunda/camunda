@@ -10,12 +10,15 @@ package io.camunda.zeebe.topology.changes;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.topology.ClusterTopologyManager;
+import io.camunda.zeebe.topology.api.TopologyRequestFailedException;
+import io.camunda.zeebe.topology.api.TopologyRequestFailedException.ConcurrentModificationException;
+import io.camunda.zeebe.topology.api.TopologyRequestFailedException.InvalidRequest;
+import io.camunda.zeebe.topology.api.TopologyRequestFailedException.OperationNotAllowed;
 import io.camunda.zeebe.topology.changes.TopologyChangeAppliers.OperationApplier;
 import io.camunda.zeebe.topology.state.ClusterChangePlan;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.CompletedChange;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
-import java.util.ConcurrentModificationException;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,13 +47,13 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
         .onComplete(
             (currentClusterTopology, errorOnGettingTopology) -> {
               if (errorOnGettingTopology != null) {
-                future.completeExceptionally(errorOnGettingTopology);
+                failFuture(future, errorOnGettingTopology);
                 return;
               }
 
               final var operationsEither = request.operations(currentClusterTopology);
               if (operationsEither.isLeft()) {
-                future.completeExceptionally(operationsEither.getLeft());
+                failFuture(future, operationsEither.getLeft());
                 return;
               }
               final var operations = operationsEither.get();
@@ -71,7 +74,7 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
               validation.onComplete(
                   (simulatedFinalTopology, validationError) -> {
                     if (validationError != null) {
-                      future.completeExceptionally(validationError);
+                      failFuture(future, validationError);
                       return;
                     }
 
@@ -97,7 +100,7 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
                                     changeId,
                                     operations));
                           } else {
-                            future.completeExceptionally(error);
+                            failFuture(future, error);
                           }
                         });
                   });
@@ -112,11 +115,13 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
     final ActorFuture<ClusterTopology> validationFuture = executor.createFuture();
 
     if (currentClusterTopology.isUninitialized()) {
-      validationFuture.completeExceptionally(
+      failFuture(
+          validationFuture,
           new OperationNotAllowed(
               "Cannot apply topology change. The topology is not initialized."));
     } else if (currentClusterTopology.hasPendingChanges()) {
-      validationFuture.completeExceptionally(
+      failFuture(
+          validationFuture,
           new OperationNotAllowed(
               String.format(
                   "Cannot apply topology change. Another topology change [%s] is in progress.",
@@ -154,7 +159,7 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
         .onComplete(
             (topologyWithPendingOperations, errorOnUpdatingTopology) -> {
               if (errorOnUpdatingTopology != null) {
-                future.completeExceptionally(errorOnUpdatingTopology);
+                failFuture(future, errorOnUpdatingTopology);
                 return;
               }
               LOG.debug(
@@ -177,8 +182,7 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
     final OperationApplier applier = topologyChangeSimulator.getApplier(operation);
     final var result = applier.init(updatedTopology);
     if (result.isLeft()) {
-      simulationCompleted.completeExceptionally(
-          new InvalidTopologyChangeException(result.getLeft()));
+      failFuture(simulationCompleted, new InvalidRequest(result.getLeft()));
       return;
     }
 
@@ -189,8 +193,7 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
         .onComplete(
             (stateUpdater, error) -> {
               if (error != null) {
-                simulationCompleted.completeExceptionally(
-                    new InvalidTopologyChangeException(error));
+                failFuture(simulationCompleted, new InvalidRequest(error));
                 return;
               }
               final var newTopology =
@@ -200,15 +203,12 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
             });
   }
 
-  static class InvalidTopologyChangeException extends RuntimeException {
-    public InvalidTopologyChangeException(final Throwable cause) {
-      super(cause);
-    }
-  }
-
-  static class OperationNotAllowed extends RuntimeException {
-    public OperationNotAllowed(final String message) {
-      super(message);
+  private void failFuture(final ActorFuture<?> future, final Throwable error) {
+    if (error instanceof TopologyRequestFailedException) {
+      future.completeExceptionally(error);
+    } else {
+      future.completeExceptionally(
+          new TopologyRequestFailedException.InternalError(error.getMessage()));
     }
   }
 }
