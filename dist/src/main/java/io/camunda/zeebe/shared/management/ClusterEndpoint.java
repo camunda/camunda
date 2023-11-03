@@ -20,6 +20,7 @@ import io.camunda.zeebe.management.cluster.PostOperationResponse;
 import io.camunda.zeebe.management.cluster.TopologyChange;
 import io.camunda.zeebe.management.cluster.TopologyChange.StatusEnum;
 import io.camunda.zeebe.management.cluster.TopologyChangeCompletedInner;
+import io.camunda.zeebe.topology.api.ErrorResponse;
 import io.camunda.zeebe.topology.api.TopologyChangeResponse;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
@@ -40,6 +41,7 @@ import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberLeaveOperat
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.util.Either;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
@@ -198,9 +200,21 @@ public class ClusterEndpoint {
     };
   }
 
-  private ResponseEntity<PostOperationResponse> mapOperationResponse(
-      final TopologyChangeResponse requestSender) {
-    return ResponseEntity.status(202).body(mapResponseType(requestSender));
+  private ResponseEntity<?> mapOperationResponse(
+      final Either<ErrorResponse, TopologyChangeResponse> response) {
+    if (response.isRight()) {
+      return ResponseEntity.status(202).body(mapResponseType(response.get()));
+    } else {
+      final var errorCode =
+          switch (response.getLeft().code()) {
+            case INVALID_REQUEST, OPERATION_NOT_ALLOWED -> 400;
+            case CONCURRENT_MODIFICATION -> 409;
+            case INTERNAL_ERROR -> 500;
+          };
+      final var error = new Error();
+      error.setMessage(response.getLeft().message());
+      return ResponseEntity.status(errorCode).body(error);
+    }
   }
 
   private static PostOperationResponse mapResponseType(final TopologyChangeResponse response) {
