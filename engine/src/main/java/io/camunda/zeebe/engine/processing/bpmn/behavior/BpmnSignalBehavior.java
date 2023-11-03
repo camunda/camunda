@@ -53,7 +53,7 @@ public final class BpmnSignalBehavior {
     return evaluateSignalName(signal, context)
         .map(
             signalName -> {
-              triggerSignalBroadcast(signalName, variables);
+              triggerSignalBroadcast(signalName, context.getTenantId(), variables);
               return null;
             });
   }
@@ -71,13 +71,13 @@ public final class BpmnSignalBehavior {
     return Either.right(signal.getSignalName().get());
   }
 
-  private void triggerSignalBroadcast(final String signalName, final DirectBuffer variables) {
+  private void triggerSignalBroadcast(
+      final String signalName, final String tenantId, final DirectBuffer variables) {
 
     ensureNotNullOrEmpty("signalName", signalName);
 
     signalRecord.reset();
-    signalRecord.setSignalName(signalName);
-    signalRecord.setVariables(variables);
+    signalRecord.setSignalName(signalName).setVariables(variables).setTenantId(tenantId);
 
     final var key = keyGenerator.nextKey();
     commandWriter.appendFollowUpCommand(key, SignalIntent.BROADCAST, signalRecord);

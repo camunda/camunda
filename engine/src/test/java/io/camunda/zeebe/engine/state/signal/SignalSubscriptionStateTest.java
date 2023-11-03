@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.engine.state.mutable.MutableSignalSubscriptionState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
@@ -65,7 +66,8 @@ public final class SignalSubscriptionStateTest {
 
     // when
     final var storedSubscription = new MutableReference<SignalSubscription>();
-    state.visitBySignalName(subscription.getSignalNameBuffer(), storedSubscription::set);
+    state.visitBySignalName(
+        subscription.getSignalNameBuffer(), subscription.getTenantId(), storedSubscription::set);
 
     assertThat(storedSubscription).isNotNull();
     assertThat(storedSubscription.get().getKey()).isEqualTo(1L);
@@ -93,6 +95,7 @@ public final class SignalSubscriptionStateTest {
 
     state.visitBySignalName(
         wrapString("signal"),
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
         subscription ->
             visitedStartEvents.add(
                 bufferAsString(subscription.getRecord().getCatchEventIdBuffer())));
@@ -136,8 +139,8 @@ public final class SignalSubscriptionStateTest {
     final SignalSubscriptionRecord subscription2 = createSubscription("signal2", "startEvent2", 2);
     state.put(2L, subscription2);
 
-    state.remove(1L, wrapString("signal1"));
-    state.remove(2L, wrapString("signal2"));
+    state.remove(1L, wrapString("signal1"), TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    state.remove(2L, wrapString("signal2"), TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     assertThat(state.exists(subscription1)).isFalse();
     assertThat(state.exists(subscription2)).isFalse();
@@ -154,7 +157,7 @@ public final class SignalSubscriptionStateTest {
     final SignalSubscriptionRecord subscription3 = createSubscription("signal1", "startEvent1", 2);
     state.put(3L, subscription3);
 
-    state.remove(1L, wrapString("signal1"));
+    state.remove(1L, wrapString("signal1"), TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     assertThat(state.exists(subscription1)).isFalse();
     assertThat(state.exists(subscription2)).isTrue();
@@ -174,6 +177,7 @@ public final class SignalSubscriptionStateTest {
     // then
     state.visitBySignalName(
         BufferUtil.wrapString("signal"),
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
         readRecord -> {
           assertThat(readRecord.getRecord().getSignalNameBuffer())
               .isNotEqualTo(writtenRecord.getSignalNameBuffer());

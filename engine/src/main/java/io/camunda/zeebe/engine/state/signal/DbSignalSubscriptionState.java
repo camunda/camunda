@@ -14,6 +14,8 @@ import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.state.mutable.MutableSignalSubscriptionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
@@ -25,35 +27,44 @@ public final class DbSignalSubscriptionState implements MutableSignalSubscriptio
   // processDefinitionKey or elementInstanceKey
   private final DbLong subscriptionKey;
 
-  // (signalName, subscriptionKey => SignalSubscription)
-  private final DbCompositeKey<DbString, DbLong> signalNameAndSubscriptionKey;
-  private final ColumnFamily<DbCompositeKey<DbString, DbLong>, SignalSubscription>
+  // [[tenant_id, signalName], subscriptionKey] => SignalSubscription
+  private final DbString tenantIdKey;
+  private final DbTenantAwareKey<DbString> tenantAwareSignalName;
+  private final DbCompositeKey<DbTenantAwareKey<DbString>, DbLong>
+      tenantAwareSignalNameAndSubscriptionKey;
+  private final ColumnFamily<DbCompositeKey<DbTenantAwareKey<DbString>, DbLong>, SignalSubscription>
       signalNameAndSubscriptionKeyColumnFamily;
   private final SignalSubscription signalSubscription = new SignalSubscription();
 
-  // (subscriptionKey, signalName) => \0  : to find existing subscriptions of a process or element
-  private final DbCompositeKey<DbLong, DbString> subscriptionKeyAndSignalName;
-  private final ColumnFamily<DbCompositeKey<DbLong, DbString>, DbNil>
+  // [subscriptionKey, [tenantId, signalName]] => \0  : to find existing subscriptions of a process
+  // or element
+  private final DbCompositeKey<DbLong, DbTenantAwareKey<DbString>>
+      subscriptionKeyAndTenantAwareSignalName;
+  private final ColumnFamily<DbCompositeKey<DbLong, DbTenantAwareKey<DbString>>, DbNil>
       subscriptionKeyAndSignalNameColumnFamily;
 
   public DbSignalSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     signalName = new DbString();
     subscriptionKey = new DbLong();
-    signalNameAndSubscriptionKey = new DbCompositeKey<>(signalName, subscriptionKey);
+    tenantIdKey = new DbString();
+    tenantAwareSignalName = new DbTenantAwareKey<>(tenantIdKey, signalName, PlacementType.PREFIX);
+    tenantAwareSignalNameAndSubscriptionKey =
+        new DbCompositeKey<>(tenantAwareSignalName, subscriptionKey);
     signalNameAndSubscriptionKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.SIGNAL_SUBSCRIPTION_BY_NAME_AND_KEY,
             transactionContext,
-            signalNameAndSubscriptionKey,
+            tenantAwareSignalNameAndSubscriptionKey,
             signalSubscription);
 
-    subscriptionKeyAndSignalName = new DbCompositeKey<>(subscriptionKey, signalName);
+    subscriptionKeyAndTenantAwareSignalName =
+        new DbCompositeKey<>(subscriptionKey, tenantAwareSignalName);
     subscriptionKeyAndSignalNameColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.SIGNAL_SUBSCRIPTION_BY_KEY_AND_NAME,
             transactionContext,
-            subscriptionKeyAndSignalName,
+            subscriptionKeyAndTenantAwareSignalName,
             DbNil.INSTANCE);
   }
 
@@ -64,30 +75,37 @@ public final class DbSignalSubscriptionState implements MutableSignalSubscriptio
     wrapSubscriptionKeys(subscription);
 
     signalNameAndSubscriptionKeyColumnFamily.upsert(
-        signalNameAndSubscriptionKey, signalSubscription);
-    subscriptionKeyAndSignalNameColumnFamily.upsert(subscriptionKeyAndSignalName, DbNil.INSTANCE);
+        tenantAwareSignalNameAndSubscriptionKey, signalSubscription);
+    subscriptionKeyAndSignalNameColumnFamily.upsert(
+        subscriptionKeyAndTenantAwareSignalName, DbNil.INSTANCE);
   }
 
   @Override
-  public void remove(final long subscriptionKey, final DirectBuffer signalName) {
-    wrapSubscriptionKeys(subscriptionKey, signalName);
+  public void remove(
+      final long subscriptionKey, final DirectBuffer signalName, final String tenantId) {
+    wrapSubscriptionKeys(subscriptionKey, signalName, tenantId);
 
-    signalNameAndSubscriptionKeyColumnFamily.deleteExisting(signalNameAndSubscriptionKey);
-    subscriptionKeyAndSignalNameColumnFamily.deleteExisting(subscriptionKeyAndSignalName);
+    signalNameAndSubscriptionKeyColumnFamily.deleteExisting(
+        tenantAwareSignalNameAndSubscriptionKey);
+    subscriptionKeyAndSignalNameColumnFamily.deleteExisting(
+        subscriptionKeyAndTenantAwareSignalName);
   }
 
   @Override
   public boolean exists(final SignalSubscriptionRecord subscription) {
     wrapSubscriptionKeys(subscription);
-    return signalNameAndSubscriptionKeyColumnFamily.exists(signalNameAndSubscriptionKey);
+    return signalNameAndSubscriptionKeyColumnFamily.exists(tenantAwareSignalNameAndSubscriptionKey);
   }
 
   @Override
   public void visitBySignalName(
-      final DirectBuffer signalName, final SignalSubscriptionVisitor visitor) {
+      final DirectBuffer signalName,
+      final String tenantId,
+      final SignalSubscriptionVisitor visitor) {
+    tenantIdKey.wrapString(tenantId);
     this.signalName.wrapBuffer(signalName);
     signalNameAndSubscriptionKeyColumnFamily.whileEqualPrefix(
-        this.signalName,
+        tenantAwareSignalName,
         (key, value) -> {
           visitor.visit(value);
         });
@@ -96,23 +114,25 @@ public final class DbSignalSubscriptionState implements MutableSignalSubscriptio
   @Override
   public void visitStartEventSubscriptionsByProcessDefinitionKey(
       final long processDefinitionKey, final SignalSubscriptionVisitor visitor) {
-    this.subscriptionKey.wrapLong(processDefinitionKey);
+    subscriptionKey.wrapLong(processDefinitionKey);
     visitSubscriptions(visitor);
   }
 
   @Override
   public void visitByElementInstanceKey(
       final long elementInstanceKey, final SignalSubscriptionVisitor visitor) {
-    this.subscriptionKey.wrapLong(elementInstanceKey);
+    subscriptionKey.wrapLong(elementInstanceKey);
     visitSubscriptions(visitor);
   }
 
   private void visitSubscriptions(final SignalSubscriptionVisitor visitor) {
     subscriptionKeyAndSignalNameColumnFamily.whileEqualPrefix(
-        this.subscriptionKey,
+        subscriptionKey,
         (key, value) -> {
+          signalName.wrapBuffer(key.second().wrappedKey().getBuffer());
+          tenantIdKey.wrapBuffer(key.second().tenantKey().getBuffer());
           final var subscription =
-              signalNameAndSubscriptionKeyColumnFamily.get(signalNameAndSubscriptionKey);
+              signalNameAndSubscriptionKeyColumnFamily.get(tenantAwareSignalNameAndSubscriptionKey);
 
           if (subscription != null) {
             visitor.visit(subscription);
@@ -122,11 +142,13 @@ public final class DbSignalSubscriptionState implements MutableSignalSubscriptio
 
   private void wrapSubscriptionKeys(final SignalSubscriptionRecord subscription) {
     final var key = subscription.getSubscriptionKey();
-    wrapSubscriptionKeys(key, subscription.getSignalNameBuffer());
+    wrapSubscriptionKeys(key, subscription.getSignalNameBuffer(), subscription.getTenantId());
   }
 
-  private void wrapSubscriptionKeys(final long key, final DirectBuffer signalName) {
-    this.subscriptionKey.wrapLong(key);
+  private void wrapSubscriptionKeys(
+      final long key, final DirectBuffer signalName, final String tenantId) {
+    subscriptionKey.wrapLong(key);
     this.signalName.wrapBuffer(signalName);
+    tenantIdKey.wrapString(tenantId);
   }
 }

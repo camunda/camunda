@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyMessageSubscri
 import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyProcessMessageSubscriptionStateMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyProcessStateMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_3.ProcessInstanceByProcessDefinitionMigration;
+import io.camunda.zeebe.engine.state.migration.to_8_4.MultiTenancySignalSubscriptionStateMigration;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,7 +49,8 @@ public class DbMigratorImpl implements DbMigrator {
           new MultiTenancyMessageStartEventSubscriptionStateMigration(),
           new MultiTenancyMessageSubscriptionStateMigration(),
           new MultiTenancyProcessMessageSubscriptionStateMigration(),
-          new MultiTenancyJobStateMigration());
+          new MultiTenancyJobStateMigration(),
+          new MultiTenancySignalSubscriptionStateMigration());
   // Be mindful of https://github.com/camunda/zeebe/issues/7248. In particular, that issue
   // should be solved first, before adding any migration that can take a long time
 

@@ -61,6 +61,11 @@ public class SignalClient {
     return this;
   }
 
+  public SignalClient withTenantId(final String tenantId) {
+    signalRecord.setTenantId(tenantId);
+    return this;
+  }
+
   public Record<SignalRecordValue> broadcast() {
     final long position = writer.writeCommand(SignalIntent.BROADCAST, signalRecord);
     return expectation.apply(position);

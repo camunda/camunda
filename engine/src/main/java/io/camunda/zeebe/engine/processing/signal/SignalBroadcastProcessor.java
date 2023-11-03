@@ -72,6 +72,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
 
     signalSubscriptionState.visitBySignalName(
         signalRecord.getSignalNameBuffer(),
+        signalRecord.getTenantId(),
         subscription -> {
           final var subscriptionRecord = subscription.getRecord();
           if (subscriptionRecord.getCatchEventInstanceKey() == -1) {
@@ -94,6 +95,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     final var value = command.getValue();
     signalSubscriptionState.visitBySignalName(
         value.getSignalNameBuffer(),
+        value.getTenantId(),
         subscription -> activateElement(subscription.getRecord(), value.getVariablesBuffer()));
 
     stateWriter.appendFollowUpEvent(command.getKey(), SignalIntent.BROADCASTED, command.getValue());
