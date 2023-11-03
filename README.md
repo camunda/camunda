@@ -64,3 +64,31 @@ If you made feature changes and want to purposely wants to update the UI baselin
 Sometimes the visual regression tests might fail in the CI and you want to check why. To achieve that you can download the Playwright report assets (like in the image below), unzip the folder and then run `npx @playwright/test show-report folder-with-unzipped-assets/`.
 
 <img src="/docs_assets/playwright_report.png" alt="Playwright report artifact download" width="500"/>
+
+## Backporting changes
+
+Some changes need to be copied to older versions. We use the
+[backport](https://github.com/zeebe-io/backport-action) Github Action to automate this process.
+Please follow these steps to backport your changes:
+
+1. **Label the pull request** with a backport label (e.g. the label `backport stable/8.3` indicates
+   that we want to backport this pull request to the `stable/8.3` branch). It will be automatically 
+   backported when bors has finished merging the pull request.
+2. The Github Actions bot comments on the pull request once it finishes:
+    - When _successful_, a new backport pull request was automatically created. Simply **approve and
+      merge it** by adding a review with a `bors merge` comment.
+    - If it _failed_, please follow these **manual steps**:
+        1. Locally checkout the target branch (e.g. `stable/8.3`).
+        2. Make sure it's up to date with origin (i.e. `git pull`).
+        3. Checkout a new branch for your backported changes (e.g. `git checkout -b
+           backport-123-to-stable/8.3`).
+        4. Cherry pick your changes `git cherry-pick -x <sha-1>...<sha-n>`. You may need to resolve
+           conflicts.
+        5. Push your cherry-picked changes `git push`.
+        6. Create a pull request for your backport branch:
+            - Make sure it is clear that this backports in the title (e.g. `[Backport stable/8.3] Title
+              of the original PR`).
+            - Make sure to change the target of the pull request to the correct branch (e.g.
+              `stable/8.3`).
+            - Refer to the pull request in the description to link it (e.g. `backports #123`)
+            - Refer to any issues that were referenced in the original pull request (e.g. `relates to #99`).
