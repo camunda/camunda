@@ -11,6 +11,7 @@ const form: Form = {
   id: 'camunda-forms:bpmn:form-0',
   processDefinitionKey: 'process',
   title: 'A form',
+  version: null,
   schema: JSON.stringify({
     components: [
       {
@@ -44,6 +45,7 @@ const invalidForm: Form = {
   id: 'camunda-forms:bpmn:form-0',
   processDefinitionKey: 'process',
   title: 'A form',
+  version: null,
   schema: `
     {
       components: [
@@ -70,6 +72,7 @@ const dynamicForm: Form = {
   id: 'camunda-forms:bpmn:form-0',
   processDefinitionKey: 'process',
   title: 'A form',
+  version: null,
   schema: JSON.stringify({
     components: [
       {

@@ -13,7 +13,13 @@ import {Form} from 'modules/types';
 type QueryData = Form | {schema: null};
 
 function useForm(
-  {id, processDefinitionKey}: Pick<Form, 'id' | 'processDefinitionKey'>,
+  {
+    id,
+    processDefinitionKey,
+    version,
+  }: Pick<Form, 'id' | 'processDefinitionKey'> & {
+    version: Form['version'] | 'latest';
+  },
   options: Pick<
     UseQueryOptions<QueryData, RequestError | Error>,
     'refetchOnWindowFocus' | 'refetchOnReconnect' | 'enabled'
@@ -21,11 +27,23 @@ function useForm(
 ) {
   return useQuery<QueryData, RequestError | Error>({
     ...options,
-    queryKey: ['form', id, processDefinitionKey],
+    queryKey: ['form', id, processDefinitionKey, version],
     queryFn: async () => {
-      const {response, error} = await request(
-        api.getForm({id, processDefinitionKey}),
-      );
+      const {response, error} =
+        version === null
+          ? await request(
+              api.getEmbeddedForm({
+                id,
+                processDefinitionKey,
+              }),
+            )
+          : await request(
+              api.getDeployedForm({
+                id,
+                processDefinitionKey,
+                version,
+              }),
+            );
 
       if (response !== null) {
         return response.json();

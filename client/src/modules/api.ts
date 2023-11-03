@@ -109,7 +109,7 @@ const api = {
         'Content-Type': 'application/json',
       },
     }),
-  getForm: ({
+  getEmbeddedForm: ({
     id,
     processDefinitionKey,
   }: Pick<Form, 'id' | 'processDefinitionKey'>) => {
@@ -125,6 +125,30 @@ const api = {
       },
     });
   },
+  getDeployedForm: ({
+    id,
+    processDefinitionKey,
+    version,
+  }: Pick<Form, 'id' | 'processDefinitionKey'> & {
+    version: NonNullable<Form['version']> | 'latest';
+  }) => {
+    const url = getFullURL(`/v1/forms/${id}`);
+
+    url.searchParams.set('processDefinitionKey', processDefinitionKey);
+
+    if (version !== 'latest') {
+      url.searchParams.set('version', version.toString());
+    }
+
+    return new Request(url, {
+      ...BASE_REQUEST_OPTIONS,
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  },
+
   getFullVariable: (variableId: Variable['id']) => {
     return new Request(getFullURL(`/v1/variables/${variableId}`), {
       ...BASE_REQUEST_OPTIONS,

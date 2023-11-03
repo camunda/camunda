@@ -59,6 +59,9 @@ type Task = {
   sortValues: [string, string];
   isFirst: boolean;
   formKey: string | null;
+  formVersion: number | null | undefined;
+  formId: string | null;
+  isFormEmbedded: boolean | null;
   processInstanceKey: string;
   processDefinitionKey: string;
   candidateGroups: string[];
@@ -71,6 +74,7 @@ type Form = {
   processDefinitionKey: string;
   schema: string;
   title: string;
+  version: number | null;
 };
 
 type Process = {

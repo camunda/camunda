@@ -72,11 +72,12 @@ const FormJS: React.FC<Props> = ({
   const formManagerRef = useRef<FormManager | null>(null);
   const [submissionState, setSubmissionState] =
     useState<InlineLoadingStatus>('inactive');
-  const {assignee, taskState} = task;
+  const {assignee, taskState, formVersion} = task;
   const {data, isInitialLoading} = useForm(
     {
       id,
       processDefinitionKey,
+      version: formVersion ?? null,
     },
     {
       refetchOnReconnect: false,

@@ -115,6 +115,40 @@ describe('<Task />', () => {
     ).toBeInTheDocument();
   });
 
+  it('should render created task with deployed form', async () => {
+    nodeMockServer.use(
+      rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
+        return res.once(ctx.json(taskMocks.assignedTaskWithFormDeployed()));
+      }),
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
+      }),
+      rest.get('/v1/forms/:formId', (_, res, ctx) => {
+        return res.once(ctx.json(formMocks.form));
+      }),
+      rest.post('/v1/tasks/:taskId/variables/search', async (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
+      }),
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
+      }),
+    );
+
+    render(<Task hasRemainingTasks />, {
+      wrapper: getWrapper(['/0']),
+    });
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('details-skeleton'),
+    );
+
+    expect(screen.getByTestId('details-info')).toBeInTheDocument();
+    expect(screen.getByTestId('embedded-form')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', {name: /complete task/i}),
+    ).toBeInTheDocument();
+  });
+
   it('should render completed task', async () => {
     nodeMockServer.use(
       rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
@@ -144,6 +178,32 @@ describe('<Task />', () => {
     nodeMockServer.use(
       rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
         return res.once(ctx.json(taskMocks.completedTaskWithForm()));
+      }),
+      rest.get('/v1/internal/users/current', (_, res, ctx) => {
+        return res.once(ctx.json(userMocks.currentUser));
+      }),
+      rest.get('/v1/forms/:formId', (_, res, ctx) => {
+        return res.once(ctx.json(formMocks.form));
+      }),
+      rest.post('/v1/tasks/:taskId/variables/search', async (_, res, ctx) => {
+        return res.once(ctx.json(variableMocks.variables));
+      }),
+    );
+
+    render(<Task hasRemainingTasks />, {
+      wrapper: getWrapper(['/0']),
+    });
+
+    expect(await screen.findByTestId('details-info')).toBeInTheDocument();
+    expect(await screen.findByTestId('embedded-form')).toBeInTheDocument();
+    // jest-dom is not parsing the visibility properly so need to check the class
+    expect(screen.queryByText(/complete task/i)).toHaveClass('hide');
+  });
+
+  it('should render completed task with deployed form', async () => {
+    nodeMockServer.use(
+      rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
+        return res.once(ctx.json(taskMocks.completedTaskWithFormDeployed()));
       }),
       rest.get('/v1/internal/users/current', (_, res, ctx) => {
         return res.once(ctx.json(userMocks.currentUser));
@@ -316,7 +376,7 @@ describe('<Task />', () => {
     expect(screen.getByText(/task has no variables/i)).toBeInTheDocument();
   });
 
-  it('should render created task with variables form', async () => {
+  it('should render created task with variables in embedded form', async () => {
     nodeMockServer.use(
       rest.get('/v1/internal/users/current', (_, res, ctx) => {
         return res.once(ctx.json(userMocks.currentUser));

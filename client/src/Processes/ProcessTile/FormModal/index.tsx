@@ -43,6 +43,7 @@ const FormModal: React.FC<Props> = ({
     {
       id: process.startEventFormId!,
       processDefinitionKey: process.id,
+      version: 'latest',
     },
     {
       enabled: isOpen && process.startEventFormId !== null,

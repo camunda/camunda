@@ -50,11 +50,7 @@ const Task: React.FC<Props> = ({hasRemainingTasks, onCompleted}) => {
   const {data: currentUser} = useCurrentUser();
   const {mutateAsync: completeTask} = useCompleteTask();
   const {filter} = useTaskFilters();
-  const {formKey, processDefinitionKey, id: taskId} = task ?? {id};
-  const isFormAvailable =
-    typeof formKey === 'string' &&
-    typeof processDefinitionKey === 'string' &&
-    isCamundaForms(formKey);
+  const {formKey, processDefinitionKey, formId, id: taskId} = task ?? {id};
 
   useEffect(() => {
     tracking.track({
@@ -116,18 +112,21 @@ const Task: React.FC<Props> = ({hasRemainingTasks, onCompleted}) => {
     return <DetailsSkeleton data-testid="details-skeleton" />;
   }
 
+  const isDeployedForm = typeof formId === 'string';
+  const isEmbeddedForm = typeof formKey === 'string' && !isDeployedForm;
+
   return (
     <Details task={task} user={currentUser} onAssignmentError={refetch}>
-      {isFormAvailable ? (
+      {isEmbeddedForm || isDeployedForm ? (
         <FormJS
           key={task.id}
           task={task}
-          id={getFormId(formKey)}
+          id={isEmbeddedForm ? getFormId(formKey) : formId!}
           user={currentUser}
           onSubmit={handleSubmission}
           onSubmitSuccess={handleSubmissionSuccess}
           onSubmitFailure={handleSubmissionFailure}
-          processDefinitionKey={processDefinitionKey}
+          processDefinitionKey={processDefinitionKey!}
         />
       ) : (
         <Variables

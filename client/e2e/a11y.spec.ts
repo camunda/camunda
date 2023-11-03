@@ -17,6 +17,9 @@ const MOCK_TENANT = {
 const MOCK_TASK = {
   id: 'task123',
   formKey: 'camunda-forms:bpmn:userTaskForm_1',
+  formId: null,
+  formVersion: null,
+  isFormEmbedded: true,
   processDefinitionKey: '2251799813685255',
   assignee: 'demo',
   name: 'Big form task',

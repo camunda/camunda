@@ -49,6 +49,9 @@ function useRemoveFormReference(task: Task) {
       return {
         ...cachedTask,
         formKey: null,
+        isFormEmbedded: null,
+        formId: null,
+        formVersion: null,
       };
     });
   }
