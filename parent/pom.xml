@@ -119,7 +119,7 @@
     <version.spotbugs>4.5.3</version.spotbugs>
     <version.archunit>0.23.0</version.archunit>
     <version.jcip>1.0</version.jcip>
-    <version.jnr-posix>3.1.15</version.jnr-posix>
+    <version.jnr-posix>3.1.18</version.jnr-posix>
     <version.feign>11.9.1</version.feign>
 
     <!-- maven plugins -->
