@@ -7,7 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -31,6 +34,7 @@ public final class ProcessInstanceMigrationProcessor
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
   private final JobState jobState;
+  private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
 
   public ProcessInstanceMigrationProcessor(
       final Writers writers,
@@ -42,6 +46,7 @@ public final class ProcessInstanceMigrationProcessor
     this.elementInstanceState = elementInstanceState;
     this.processState = processState;
     this.jobState = jobState;
+    eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
   }
 
   @Override
@@ -89,6 +94,24 @@ public final class ProcessInstanceMigrationProcessor
                 // .setElementId(targetProcess.getBpmnProcessId()) // todo id may change
                 );
           }
+
+          final ExecutableCatchEventSupplier element =
+              processState.getFlowElement(
+                  targetProcess.getKey(), TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+                  instance.getValue().getElementIdBuffer(), ExecutableCatchEventSupplier.class);
+
+          final var context = new BpmnElementContextImpl();
+          context.init(
+              key,
+              instance
+                  .getValue()
+                  .setProcessDefinitionKey(targetProcess.getKey())
+                  .setBpmnProcessId(targetProcess.getBpmnProcessId())
+                  .setVersion(targetProcess.getVersion()),
+              instance.getState());
+
+          // eventSubscriptionBehavior.unsubscribeFromEvents(context);
+          eventSubscriptionBehavior.subscribeToEvents(element, context);
 
           return true;
         });

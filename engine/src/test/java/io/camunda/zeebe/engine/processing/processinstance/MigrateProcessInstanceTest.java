@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -97,5 +98,83 @@ public final class MigrateProcessInstanceTest {
                 .getFirst()
                 .getValue())
         .hasProcessDefinitionKey(targetProcDefKey);
+  }
+
+  @Test
+  public void shouldMigrateProcessToAWithBoundaryEvent() {
+    // Source process
+    final String bpmnProcessId = "sourceProcess";
+    final String serviceTaskElementId = "serviceTask1";
+    final var sourceProcess =
+        Bpmn.createExecutableProcess(bpmnProcessId)
+            .startEvent()
+            .serviceTask(serviceTaskElementId, b -> b.zeebeJobType("task"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(sourceProcess).deploy();
+
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(bpmnProcessId).create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId(serviceTaskElementId)
+        .await();
+
+    // Target process
+    final String serviceTaskElementId2 = "serviceTask2";
+    final var targetProcess =
+        Bpmn.createExecutableProcess("targetProcess")
+            .startEvent()
+            .serviceTask(
+                serviceTaskElementId,
+                s ->
+                    s.zeebeJobType("task")
+                        .boundaryEvent(
+                            "boundaryEvent",
+                            t ->
+                                t.timerWithDuration(Duration.ofMinutes(5))
+                                    .userTask("userTask")
+                                    .endEvent()))
+            .serviceTask(serviceTaskElementId2, b -> b.zeebeJobType("task"))
+            .endEvent()
+            .done();
+
+    final Record<DeploymentRecordValue> deployment =
+        ENGINE.deployment().withXmlResource(targetProcess).deploy();
+
+    final long targetProcDefKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcDefKey)
+        .migrate();
+
+    ENGINE.increaseTime(Duration.ofMinutes(5));
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("boundaryEvent")
+                .getFirst())
+        .isNotNull();
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("userTask")
+                .getFirst())
+        .isNotNull();
+
+    Assertions.assertThat(
+            RecordingExporter.jobRecords(JobIntent.CANCELED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasProcessDefinitionKey(targetProcDefKey);
+
+    assert false;
   }
 }
