@@ -85,7 +85,7 @@
     <version.slf4j>2.0.9</version.slf4j>
     <version.snakeyaml>2.0</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
-    <version.wiremock>2.35.0</version.wiremock>
+    <version.wiremock>2.35.1</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
     <version.testcontainers>1.18.3</version.testcontainers>
@@ -108,7 +108,7 @@
     <version.commons-io>2.11.0</version.commons-io>
     <version.immutables>2.9.3</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
-    <version.classgraph>4.8.157</version.classgraph>
+    <version.classgraph>4.8.164</version.classgraph>
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
