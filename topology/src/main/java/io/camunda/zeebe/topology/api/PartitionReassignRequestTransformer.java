@@ -59,7 +59,7 @@ public class PartitionReassignRequestTransformer implements TopologyChangeReques
 
     if (brokers.size() < replicationFactor) {
       return Either.left(
-          new IllegalArgumentException(
+          new TopologyRequestFailedException.InvalidRequest(
               String.format(
                   "Number of brokers [%d] is less than the replication factor [%d]",
                   brokers.size(), replicationFactor)));
