@@ -105,6 +105,12 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     partitionHealthStatuses.clear();
   }
 
+  public void removePartition(final int partitionId) {
+    partitionRoles.remove(partitionId);
+    partitionLeaderTerms.remove(partitionId);
+    partitionHealthStatuses.remove(partitionId);
+  }
+
   public int getNodeId() {
     return nodeId;
   }

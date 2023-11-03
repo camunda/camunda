@@ -35,6 +35,7 @@ final class PartitionJoinTest {
       assertChangeIsApplied(cluster, response);
       assertBrokerHasPartition(
           cluster, scenario.operation().brokerId(), scenario.operation().partitionId());
+      cluster.awaitHealthyTopology();
     }
   }
 
@@ -55,6 +56,7 @@ final class PartitionJoinTest {
       Awaitility.await("Requested change is completed in time")
           .untilAsserted(() -> assertChangeIsCompleted(cluster, leave));
       assertChangeIsApplied(cluster, leave);
+      cluster.awaitHealthyTopology();
     }
   }
 

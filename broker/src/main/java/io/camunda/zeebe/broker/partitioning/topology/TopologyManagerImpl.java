@@ -235,6 +235,11 @@ public final class TopologyManagerImpl extends Actor
         });
   }
 
+  @Override
+  public void removePartition(final int partitionId) {
+    actor.run(() -> localBroker.removePartition(partitionId));
+  }
+
   private void notifyPartitionLeaderUpdated(final int partitionId, final BrokerInfo member) {
     for (final TopologyPartitionListener listener : topologyPartitionListeners) {
       LogUtil.catchAndLog(LOG, () -> listener.onPartitionLeaderUpdated(partitionId, member));

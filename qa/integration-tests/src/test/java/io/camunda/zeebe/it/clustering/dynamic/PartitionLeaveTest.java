@@ -36,12 +36,13 @@ final class PartitionLeaveTest {
       assertChangeIsApplied(cluster, response);
       assertBrokerDoesNotHavePartition(
           cluster, scenario.operation().brokerId(), scenario.operation().partitionId());
+      cluster.awaitHealthyTopology();
     }
   }
 
   @ParameterizedTest
   @MethodSource("testScenarios")
-  void canJoinPartitionAfterLeaving(final Scenario scenario) throws InterruptedException {
+  void canJoinPartitionAfterLeaving(final Scenario scenario) {
     // given
     try (final var cluster = setupCluster(scenario.initialClusterState())) {
       final var leave = runOperation(cluster, scenario.operation());
@@ -57,6 +58,7 @@ final class PartitionLeaveTest {
           .timeout(Duration.ofMinutes(1))
           .untilAsserted(() -> assertChangeIsCompleted(cluster, join));
       assertChangeIsApplied(cluster, join);
+      cluster.awaitHealthyTopology();
     }
   }
 

@@ -24,4 +24,6 @@ public interface TopologyManager {
   void addTopologyPartitionListener(TopologyPartitionListener listener);
 
   void onHealthChanged(int partitionId, HealthStatus status);
+
+  void removePartition(int partitionId);
 }
