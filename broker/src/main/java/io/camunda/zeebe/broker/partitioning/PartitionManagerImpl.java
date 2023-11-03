@@ -195,6 +195,7 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
         concurrencyControl.runOnCompletion(
             partitions.remove(partitionId).stop(),
             (stopped, stopError) -> {
+              topologyManager.onHealthChanged(partitionId, HealthStatus.DEAD);
               if (stopError != null) {
                 LOGGER.error(
                     "Partition {} already failed during startup, now shutdown failed too",
@@ -204,7 +205,6 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
             });
       }
 
-      topologyManager.onHealthChanged(partitionId, HealthStatus.DEAD);
       future.completeExceptionally(error);
       return;
     }
