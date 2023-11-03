@@ -6,6 +6,8 @@
  */
 
 import styled from 'styled-components';
+import {Stack} from '@carbon/react';
+import {styles} from '@carbon/elements';
 
 const DiagramContainer = styled.div`
   display: flex;
@@ -15,6 +17,17 @@ const DiagramContainer = styled.div`
   }
 `;
 
+const Container = styled(Stack)`
+  background-color: var(--cds-layer-accent);
+  padding: 0 var(--cds-spacing-05);
+  display: flex;
+  align-items: center;
+  min-height: var(--cds-spacing-08);
+  height: var(--cds-spacing-08);
+  ${styles.bodyCompact01};
+  color: var(--cds-text-primary);
+`;
+
 const DiagramWrapper = styled.section`
   height: 100%;
   width: 100%;
@@ -22,4 +35,9 @@ const DiagramWrapper = styled.section`
   flex-direction: column;
 `;
 
-export {DiagramContainer, DiagramWrapper};
+const Label = styled.label`
+  ${styles.headingCompact01};
+  color: var(--cds-text-secondary);
+`;
+
+export {DiagramContainer, DiagramWrapper, Label, Container};

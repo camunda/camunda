@@ -5,10 +5,25 @@
  * except in compliance with the proprietary license.
  */
 
+import {processesStore} from 'modules/stores/processes/processes.migration';
+import {Header} from './Header';
 import {DiagramWrapper} from './styled';
+import {observer} from 'mobx-react';
 
-const SourceDiagram: React.FC = () => {
-  return <DiagramWrapper>Source Diagram</DiagramWrapper>;
-};
+const SourceDiagram: React.FC = observer(() => {
+  const {processName, version} = processesStore.getSelectedProcessDetails();
+
+  return (
+    <DiagramWrapper>
+      <Header
+        mode="view"
+        label="Source"
+        processName={processName}
+        processVersion={version ?? ''}
+      />
+      Source Diagram
+    </DiagramWrapper>
+  );
+});
 
 export {SourceDiagram};

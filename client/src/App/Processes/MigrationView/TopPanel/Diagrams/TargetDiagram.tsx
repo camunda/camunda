@@ -5,10 +5,25 @@
  * except in compliance with the proprietary license.
  */
 
+import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
+import {Header} from './Header';
 import {DiagramWrapper} from './styled';
+import {observer} from 'mobx-react';
 
-const TargetDiagram: React.FC = () => {
-  return <DiagramWrapper>Target Diagram</DiagramWrapper>;
-};
+const TargetDiagram: React.FC = observer(() => {
+  return (
+    <DiagramWrapper>
+      <Header
+        mode={processInstanceMigrationStore.isSummaryStep ? 'view' : 'edit'}
+        label="Target"
+        processName="target process name"
+        processVersion="target process version"
+      >
+        <div>dropdowns</div>
+      </Header>
+      Target Diagram
+    </DiagramWrapper>
+  );
+});
 
 export {TargetDiagram};

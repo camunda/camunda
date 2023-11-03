@@ -53,6 +53,10 @@ class ProcessInstanceMigration {
     this.state = {...DEFAULT_STATE};
   };
 
+  get isSummaryStep() {
+    return this.state.currentStep === 'summary';
+  }
+
   get isEnabled() {
     return this.state.currentStep !== null;
   }

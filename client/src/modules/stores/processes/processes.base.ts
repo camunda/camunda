@@ -213,7 +213,9 @@ class ProcessesBase extends NetworkReconnectionHandler {
 
   // This can't be a computed value, because it depends on window.location
   getSelectedProcessDetails = () => {
-    const {process, tenant} = getProcessInstanceFilters(getSearchString());
+    const {process, tenant, version} = getProcessInstanceFilters(
+      getSearchString(),
+    );
 
     const selectedProcess = this.getProcess({
       bpmnProcessId: process,
@@ -223,7 +225,7 @@ class ProcessesBase extends NetworkReconnectionHandler {
     const bpmnProcessId = selectedProcess?.bpmnProcessId;
     const processName = selectedProcess?.name ?? bpmnProcessId ?? 'Process';
 
-    return {bpmnProcessId, processName};
+    return {bpmnProcessId, processName, version};
   };
 
   reset() {
@@ -234,3 +236,4 @@ class ProcessesBase extends NetworkReconnectionHandler {
 }
 
 export {ProcessesBase};
+export type {Process};
