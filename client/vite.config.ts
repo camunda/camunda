@@ -14,7 +14,7 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 import svgr from 'vite-plugin-svgr';
 import browserslistToEsbuild from 'browserslist-to-esbuild';
 
-export default defineConfig(async ({mode}) => ({
+export default defineConfig(({mode}) => ({
   base: mode === 'production' ? './' : undefined,
   plugins: [react(), tsconfigPaths(), svgr()],
   server: {
