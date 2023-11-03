@@ -8,6 +8,8 @@
   border-bottom: 1px solid var(--silver-darken-87);
   font-size: 15px;
   display: flex;
+  background-color: var(--white);
+  z-index: 1;
 
   .NavItem:first-child {
     border-left: none;
