@@ -73,34 +73,43 @@ public final class MessageCorrelationReliabilityTest {
     // when - A message is published and some time passes
     engine.message().withName(messageName).withCorrelationKey(correlationKey).publish();
     engine.increaseTime(Duration.ofMinutes(10));
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.REJECT)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
 
     // then - the message correlation is not acknowledged and at least once rejected
+    final long lastPosition = getLastPosition();
     assertThat(
-            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATE)
+            RecordingExporter.records()
+                .between(0, lastPosition)
+                .messageSubscriptionRecords()
+                .withIntent(MessageSubscriptionIntent.CORRELATE)
                 .withProcessInstanceKey(processInstanceKey)
                 .withMessageName(messageName)
                 .withPartitionId(messageSubscriptionPartitionId)
-                .limit(1)
                 .count())
         .isZero();
     // then - the message is correlated once to the process instance on partition 1
     assertThat(
-            RecordingExporter.processMessageSubscriptionRecords(
-                    ProcessMessageSubscriptionIntent.CORRELATED)
+            RecordingExporter.records()
+                .between(0, lastPosition)
+                .processMessageSubscriptionRecords()
+                .withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
                 .withPartitionId(processInstancePartitionId)
                 .withProcessInstanceKey(processInstanceKey)
                 .withMessageName(messageName)
-                .limit(10)
                 .count())
         .isOne();
 
     // then - the correlation is not acknowledged on partition 2
     assertThat(
-            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATE)
+            RecordingExporter.records()
+                .between(0, lastPosition)
+                .messageSubscriptionRecords()
+                .withIntent(MessageSubscriptionIntent.CORRELATE)
                 .withProcessInstanceKey(processInstanceKey)
                 .withMessageName(messageName)
                 .withPartitionId(messageSubscriptionPartitionId)
-                .limit(1)
                 .count())
         .isZero();
 
@@ -108,23 +117,26 @@ public final class MessageCorrelationReliabilityTest {
     engine.increaseTime(Duration.ofMinutes(10));
 
     assertThat(
-            RecordingExporter.processMessageSubscriptionRecords(
-                    ProcessMessageSubscriptionIntent.CORRELATE)
+            RecordingExporter.records()
+                .between(0, lastPosition)
+                .processMessageSubscriptionRecords()
+                .withIntent(ProcessMessageSubscriptionIntent.CORRELATE)
                 .withRecordType(RecordType.COMMAND)
                 .withProcessInstanceKey(processInstanceKey)
                 .withPartitionId(processInstancePartitionId)
                 .withMessageName(messageName)
-                .limit(10)
                 .count())
         .isEqualTo(messageSubscriptionPartitionId);
 
     // then - The correlation is rejected once on partition 1
     assertThat(
-            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.REJECT)
+            RecordingExporter.records()
+                .between(0, lastPosition)
+                .messageSubscriptionRecords()
+                .withIntent(MessageSubscriptionIntent.REJECT)
                 .withProcessInstanceKey(processInstanceKey)
                 .withPartitionId(messageSubscriptionPartitionId)
                 .withMessageName(messageName)
-                .limit(10)
                 .count())
         .isOne();
   }
@@ -174,6 +186,10 @@ public final class MessageCorrelationReliabilityTest {
       correlationKey = "test-" + ThreadLocalRandom.current().nextInt();
     } while (getPartitionId(correlationKey) != partitionId);
     return correlationKey;
+  }
+
+  private long getLastPosition() {
+    return engine.decision().ofDecisionId("noop").expectRejection().evaluate().getPosition();
   }
 
   record ProcessInstanceWaitingForMessage(
