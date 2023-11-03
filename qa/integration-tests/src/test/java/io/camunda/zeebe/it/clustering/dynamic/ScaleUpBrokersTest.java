@@ -23,6 +23,7 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -31,19 +32,26 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
+@AutoCloseResources
 class ScaleUpBrokersTest {
 
   private static final int PARTITIONS_COUNT = 3;
+  private static final String JOB_TYPE = "job";
+  @AutoCloseResource ZeebeClient zeebeClient;
+
+  private final List<TestStandaloneBroker> newBrokers = new ArrayList<>();
 
   @TestZeebe
-  private static final TestCluster CLUSTER =
+  private final TestCluster CLUSTER =
       TestCluster.builder()
           .useRecordingExporter(true)
           .withEmbeddedGateway(true)
-          .withBrokersCount(2)
+          .withBrokersCount(1)
           .withPartitionsCount(PARTITIONS_COUNT)
           .withReplicationFactor(1)
           .withBrokerConfig(
@@ -54,10 +62,16 @@ class ScaleUpBrokersTest {
                       .setEnableDynamicClusterTopology(true))
           .build();
 
-  private static final String JOB_TYPE = "job";
+  @BeforeEach
+  void createClient() {
+    zeebeClient = CLUSTER.availableGateway().newClientBuilder().build();
+  }
 
-  @AutoCloseResource
-  final ZeebeClient zeebeClient = CLUSTER.availableGateway().newClientBuilder().build();
+  @AfterEach
+  void shutdownBrokers() {
+    newBrokers.forEach(TestStandaloneBroker::close);
+    newBrokers.clear();
+  }
 
   @Test
   void shouldScaleClusterByAddingOneBroker() {
@@ -68,32 +82,59 @@ class ScaleUpBrokersTest {
 
     final var processInstanceKeys = createInstanceWithAJobOnAllPartitions();
 
-    try (final var newBroker = createNewBroker(newClusterSize, newBrokerId).start()) {
+    // when
+    createNewBroker(newClusterSize, newBrokerId);
+    scale(newClusterSize);
 
-      final var actuator = ClusterActuator.of(CLUSTER.availableGateway());
-      final var newBrokerSet = IntStream.range(0, currentClusterSize + 1).boxed().toList();
+    // then
+    // verify partition 2 is moved from broker 0 to 1
+    assertBrokerHasPartition(CLUSTER, newBrokerId, 2);
+    assertBrokerDoesNotHavePartition(CLUSTER, 0, 2);
+    assertBrokerHasPartition(CLUSTER, 0, 1);
 
-      // when
-      final var response = actuator.scaleBrokers(newBrokerSet);
-      assertChangeIsPlanned(response);
+    // Changes are reflected in the topology returned by grpc query
+    CLUSTER.awaitCompleteTopology(newClusterSize, 3, 1, Duration.ofSeconds(10));
 
-      // then - verify topology changes are completed
-      Awaitility.await()
-          .timeout(Duration.ofMinutes(2))
-          .untilAsserted(() -> assertChangeIsApplied(CLUSTER, response));
+    // then - verify the cluster can still process
+    assertThatAllJobsCanBeCompleted(processInstanceKeys);
+  }
 
-      // verify partition 3 is moved from broker 0 to 2
-      assertBrokerHasPartition(CLUSTER, newBrokerId, 3);
-      assertBrokerDoesNotHavePartition(CLUSTER, 0, 3);
-      // verify partition 2 remains in broker 1
-      assertBrokerHasPartition(CLUSTER, 1, 2);
+  private void scale(final int newClusterSize) {
+    final var actuator = ClusterActuator.of(CLUSTER.availableGateway());
+    final var newBrokerSet = IntStream.range(0, newClusterSize).boxed().toList();
 
-      // Changes are reflected in the topology returned by grpc query
-      CLUSTER.awaitCompleteTopology(newClusterSize, 3, 1, Duration.ofSeconds(10));
+    // when
+    final var response = actuator.scaleBrokers(newBrokerSet);
+    assertChangeIsPlanned(response);
 
-      // then - verify the cluster can still process
-      assertThatAllJobsCanBeCompleted(processInstanceKeys);
-    }
+    // then - verify topology changes are completed
+    Awaitility.await()
+        .timeout(Duration.ofMinutes(2))
+        .untilAsserted(() -> assertChangeIsApplied(CLUSTER, response));
+  }
+
+  @Test
+  void shouldScaleUpAgain() {
+    // given
+    final int currentClusterSize = CLUSTER.brokers().size();
+    final int clusterSize2 = currentClusterSize + 1;
+    final int broker2 = clusterSize2 - 1;
+
+    // scale to clusterSize 2
+    createNewBroker(clusterSize2, broker2);
+    scale(clusterSize2);
+
+    // when - scale to clusterSize 3
+    final int broker3 = broker2 + 1;
+    final int finalClusterSize = clusterSize2 + 1;
+    createNewBroker(finalClusterSize, broker3);
+    scale(finalClusterSize);
+
+    // then -- partition 3 must be moved to new broker
+    assertBrokerHasPartition(CLUSTER, broker3, 3);
+
+    // Changes are reflected in the topology returned by grpc query
+    CLUSTER.awaitCompleteTopology(finalClusterSize, 3, 1, Duration.ofSeconds(10));
   }
 
   private void assertThatAllJobsCanBeCompleted(final List<Long> processInstanceKeys) {
@@ -152,21 +193,23 @@ class ScaleUpBrokersTest {
     return createdProcessInstances;
   }
 
-  private static TestStandaloneBroker createNewBroker(
-      final int newClusterSize, final int newBrokerId) {
-    return new TestStandaloneBroker()
-        .withBrokerConfig(
-            b -> {
-              b.getExperimental().getFeatures().setEnableDynamicClusterTopology(true);
-              b.getCluster().setClusterSize(newClusterSize);
-              b.getCluster().setNodeId(newBrokerId);
-              b.getCluster()
-                  .setInitialContactPoints(
-                      List.of(
-                          CLUSTER
-                              .brokers()
-                              .get(MemberId.from("0"))
-                              .address(TestZeebePort.CLUSTER)));
-            });
+  private void createNewBroker(final int newClusterSize, final int newBrokerId) {
+    final var newBroker =
+        new TestStandaloneBroker()
+            .withBrokerConfig(
+                b -> {
+                  b.getExperimental().getFeatures().setEnableDynamicClusterTopology(true);
+                  b.getCluster().setClusterSize(newClusterSize);
+                  b.getCluster().setNodeId(newBrokerId);
+                  b.getCluster()
+                      .setInitialContactPoints(
+                          List.of(
+                              CLUSTER
+                                  .brokers()
+                                  .get(MemberId.from("0"))
+                                  .address(TestZeebePort.CLUSTER)));
+                });
+    newBrokers.add(newBroker);
+    newBroker.start();
   }
 }
