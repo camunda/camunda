@@ -15,7 +15,9 @@ import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.impl.DiscoveryMembershipProtocol;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.topology.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
@@ -215,5 +217,23 @@ final class TopologyManagementApiTest {
             new MemberJoinOperation(MemberId.from("2")),
             new PartitionJoinOperation(MemberId.from("2"), 2, 1),
             new PartitionLeaveOperation(MemberId.from("1"), 2));
+  }
+
+  @Test
+  void shouldReturnInvalidErrorForInvalidRequests() {
+    // given
+    final var request =
+        new TopologyManagementRequest.ScaleRequest(Set.of()); // invalid request when no brokers
+    recordingCoordinator.setCurrentTopology(initialTopology);
+
+    // when
+    final var changeStatus = clientApi.scaleMembers(request).join();
+
+    // then
+    EitherAssert.assertThat(changeStatus)
+        .isLeft()
+        .left()
+        .extracting(ErrorResponse::code)
+        .isEqualTo(ErrorCode.INVALID_REQUEST);
   }
 }
