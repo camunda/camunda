@@ -17,12 +17,9 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,7 +28,7 @@ public final class MessageCorrelationReliabilityTest {
   @Rule public final EngineRule engine = EngineRule.multiplePartition(2);
 
   @Test
-  public void shouldCleanupSubscriptionAfterRejection() throws InterruptedException {
+  public void shouldCleanupSubscriptionAfterRejection() {
     // given - a process instance on partition 1 that waits for a message published on 2
     final var processInstancePartitionId = 1;
     final var messageSubscriptionPartitionId = 2;
@@ -141,57 +138,7 @@ public final class MessageCorrelationReliabilityTest {
         .isOne();
   }
 
-  private int getPartitionId(final String correlationKey) {
-    final List<Integer> partitionIds = engine.getPartitionIds();
-    return SubscriptionUtil.getSubscriptionPartitionId(
-        BufferUtil.wrapString(correlationKey), partitionIds.size());
-  }
-
-  private ProcessInstanceWaitingForMessage waitingProcessInstance(
-      final int processInstancePartitionId, final int messageSubscriptionPartitionId) {
-    final var processId = "process-" + UUID.randomUUID();
-    final var correlationKey = correlationKeyWithSubscriptionOn(messageSubscriptionPartitionId);
-
-    final var messageName = "message-" + UUID.randomUUID();
-    final var process =
-        Bpmn.createExecutableProcess(processId)
-            .id(processId)
-            .startEvent()
-            .intermediateCatchEvent("receive-message")
-            .message(m -> m.name(messageName).zeebeCorrelationKeyExpression("key"))
-            .endEvent("end")
-            .done();
-
-    engine.deployment().withXmlResource(process).deploy();
-    long processInstance = -1;
-    do {
-      if (processInstance != -1) {
-        engine.processInstance().withInstanceKey(processInstance).cancel();
-      }
-
-      processInstance =
-          engine
-              .processInstance()
-              .ofBpmnProcessId(processId)
-              .withVariable("key", correlationKey)
-              .create();
-    } while (Protocol.decodePartitionId(processInstance) != processInstancePartitionId);
-
-    return new ProcessInstanceWaitingForMessage(processInstance, messageName, correlationKey);
-  }
-
-  private String correlationKeyWithSubscriptionOn(final int partitionId) {
-    String correlationKey;
-    do {
-      correlationKey = "test-" + ThreadLocalRandom.current().nextInt();
-    } while (getPartitionId(correlationKey) != partitionId);
-    return correlationKey;
-  }
-
   private long getLastPosition() {
     return engine.decision().ofDecisionId("noop").expectRejection().evaluate().getPosition();
   }
-
-  record ProcessInstanceWaitingForMessage(
-      long processInstanceKey, String messagename, String correlationKey) {}
 }
