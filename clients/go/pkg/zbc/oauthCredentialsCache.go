@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/oauth2"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 	"log"
 	"os"
 	"path"
