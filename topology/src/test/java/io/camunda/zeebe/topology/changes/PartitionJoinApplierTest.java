@@ -35,21 +35,19 @@ final class PartitionJoinApplierTest {
   private final PartitionChangeExecutor partitionChangeExecutor =
       mock(PartitionChangeExecutor.class);
   private final MemberId localMemberId = MemberId.from("1");
-  final ClusterTopology initialClusterTopology =
-      ClusterTopology.init().addMember(localMemberId, MemberState.initializeAsActive(Map.of()));
-  final PartitionJoinApplier partitionJoinApplier =
-      new PartitionJoinApplier(1, 1, localMemberId, partitionChangeExecutor);
 
   @Test
   void shouldRejectJoinIfPartitionIsAlreadyJoined() {
     // given
     final ClusterTopology topologyWithPartitionJoined =
-        initialClusterTopology.updateMember(
-            localMemberId, m -> m.addPartition(1, PartitionState.active(1)));
+        ClusterTopology.init()
+            .addMember(localMemberId, MemberState.initializeAsActive(Map.of()))
+            .updateMember(localMemberId, m -> m.addPartition(1, PartitionState.active(1)));
 
     // when
     final Either<Exception, UnaryOperator<MemberState>> result =
-        partitionJoinApplier.init(topologyWithPartitionJoined);
+        new PartitionJoinApplier(1, 1, localMemberId, partitionChangeExecutor)
+            .init(topologyWithPartitionJoined);
 
     // then
     assertThat(result).isLeft();
@@ -63,12 +61,18 @@ final class PartitionJoinApplierTest {
   void shouldRejectJoinIfPartitionIsAlreadyLeaving() {
     // given
     final ClusterTopology topologyWithPartitionLeaving =
-        initialClusterTopology.updateMember(
-            localMemberId, m -> m.addPartition(1, PartitionState.active(1).toLeaving()));
+        ClusterTopology.init()
+            .addMember(
+                localMemberId,
+                MemberState.initializeAsActive(Map.of(1, PartitionState.active(1).toLeaving())))
+            .addMember(
+                MemberId.from("2"),
+                MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))));
 
     // when - then
     final Either<Exception, UnaryOperator<MemberState>> result =
-        partitionJoinApplier.init(topologyWithPartitionLeaving);
+        new PartitionJoinApplier(1, 1, localMemberId, partitionChangeExecutor)
+            .init(topologyWithPartitionLeaving);
     assertThat(result).isLeft();
 
     Assertions.assertThat(result.getLeft())
@@ -80,11 +84,14 @@ final class PartitionJoinApplierTest {
   void shouldRejectJoinIfMemberIsNotActive() {
     // given
     final ClusterTopology topologyWithMemberNotActive =
-        initialClusterTopology.updateMember(localMemberId, MemberState::toLeaving);
+        ClusterTopology.init()
+            .addMember(localMemberId, MemberState.initializeAsActive(Map.of()))
+            .updateMember(localMemberId, MemberState::toLeaving);
 
     // when
     final Either<Exception, UnaryOperator<MemberState>> result =
-        partitionJoinApplier.init(topologyWithMemberNotActive);
+        new PartitionJoinApplier(1, 1, localMemberId, partitionChangeExecutor)
+            .init(topologyWithMemberNotActive);
 
     // then
     assertThat(result).isLeft();
@@ -100,7 +107,8 @@ final class PartitionJoinApplierTest {
     final ClusterTopology topologyWithoutMember = ClusterTopology.init();
     // when
     final Either<Exception, UnaryOperator<MemberState>> result =
-        partitionJoinApplier.init(topologyWithoutMember);
+        new PartitionJoinApplier(1, 1, localMemberId, partitionChangeExecutor)
+            .init(topologyWithoutMember);
 
     // then
     assertThat(result).isLeft();
@@ -117,7 +125,9 @@ final class PartitionJoinApplierTest {
         ClusterTopology.init().addMember(localMemberId, MemberState.initializeAsActive(Map.of()));
 
     // when
-    final var result = partitionJoinApplier.init(topologyWithoutActiveMembers);
+    final var result =
+        new PartitionJoinApplier(1, 1, localMemberId, partitionChangeExecutor)
+            .init(topologyWithoutActiveMembers);
 
     // then
     assertThat(result).isLeft();
@@ -130,8 +140,17 @@ final class PartitionJoinApplierTest {
   @Test
   void shouldInitializeStateToJoining() {
     // when
-    final var updater = partitionJoinApplier.init(initialClusterTopology).get();
-    final var resultingTopology = initialClusterTopology.updateMember(localMemberId, updater);
+    final var initialTopology =
+        ClusterTopology.init()
+            .addMember(localMemberId, MemberState.initializeAsActive(Map.of()))
+            .addMember(
+                new MemberId("2"),
+                MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))));
+    final var updater =
+        new PartitionJoinApplier(1, 1, localMemberId, partitionChangeExecutor)
+            .init(initialTopology)
+            .get();
+    final var resultingTopology = initialTopology.updateMember(localMemberId, updater);
 
     // then
     ClusterTopologyAssert.assertThatClusterTopology(resultingTopology)
@@ -143,9 +162,17 @@ final class PartitionJoinApplierTest {
   @Test
   void shouldExecuteJoinCallBack() {
     // given
+    final var initialTopology =
+        ClusterTopology.init()
+            .addMember(localMemberId, MemberState.initializeAsActive(Map.of()))
+            .addMember(
+                new MemberId("2"),
+                MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))));
+    final var partitionJoinApplier =
+        new PartitionJoinApplier(1, 1, localMemberId, partitionChangeExecutor);
     final var updatedTopology =
-        initialClusterTopology.updateMember(
-            localMemberId, partitionJoinApplier.init(initialClusterTopology).get());
+        initialTopology.updateMember(
+            localMemberId, partitionJoinApplier.init(initialTopology).get());
     when(partitionChangeExecutor.join(anyInt(), any()))
         .thenReturn(CompletableActorFuture.completed(null));
 
@@ -169,7 +196,8 @@ final class PartitionJoinApplierTest {
             CompletableActorFuture.completedExceptionally(new RuntimeException("Expected")));
 
     // when
-    final var joinFuture = partitionJoinApplier.apply();
+    final var joinFuture =
+        new PartitionJoinApplier(1, 1, localMemberId, partitionChangeExecutor).apply();
 
     // then
     Assertions.assertThat(joinFuture)
