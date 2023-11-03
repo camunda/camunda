@@ -265,6 +265,12 @@ class ClusterTopologyManagementIntegrationTest {
             Set.of(MemberId.from("0"), MemberId.from("1"), MemberId.from("2")),
             Map.of(MemberId.from("0"), 1, MemberId.from("1"), 2, MemberId.from("2"), 3),
             3,
+            MemberId.from("2")),
+        new PartitionMetadata(
+            PartitionId.from("test", 2),
+            Set.of(MemberId.from("2")),
+            Map.of(MemberId.from("2"), 1),
+            1,
             MemberId.from("2")));
   }
 
