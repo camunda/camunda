@@ -4,5 +4,5 @@
   "indexName": "task",
   "version": "8.4.0",
   "order": 5,
-  "content": "{\"set\": {\"field\": \"isFormEmbedded\", \"value\": \"true\"}}"
+  "content": "{\"script\": {\"lang\": \"painless\",\"source\": \"if (ctx.formKey != null) { ctx.isFormEmbedded = true; } else { ctx.isFormEmbedded = null; } \"}}"
 }
