@@ -117,7 +117,10 @@ final class TopologyChangeCoordinatorImplTest {
     // given
     final ClusterTopology initialTopology =
         ClusterTopology.init()
-            .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()));
+            .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
+            .addMember(
+                MemberId.from("2"),
+                MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))));
     clusterTopologyManager.setClusterTopology(initialTopology);
 
     final List<TopologyChangeOperation> operations =
