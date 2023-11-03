@@ -127,7 +127,8 @@ public final class TopologyRequestServer implements AutoCloseable {
   }
 
   private Either<ErrorResponse, TopologyChangeResponse> mapError(final Throwable throwable) {
-    return switch (throwable) {
+    // throwable is always CompletionException
+    return switch (throwable.getCause()) {
       case final TopologyRequestFailedException.OperationNotAllowed operationNotAllowed -> Either
           .left(
               new ErrorResponse(ErrorCode.OPERATION_NOT_ALLOWED, operationNotAllowed.getMessage()));
