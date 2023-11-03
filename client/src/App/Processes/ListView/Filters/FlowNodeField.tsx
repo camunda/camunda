@@ -8,7 +8,7 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import {Field} from 'react-final-form';
-import {processXmlStore} from 'modules/stores/processXml';
+import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {ComboBox} from 'modules/components/ComboBox';
 
 const FlowNodeField: React.FC = observer(() => {

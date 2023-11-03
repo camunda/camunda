@@ -8,7 +8,7 @@
 import {render, screen, waitFor} from 'modules/testing-library';
 import {getWrapper} from './mocks';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {processXmlStore} from 'modules/stores/processXml';
+import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {
   createUser,
   groupedProcessesMock,

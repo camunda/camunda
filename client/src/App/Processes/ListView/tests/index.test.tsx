@@ -22,7 +22,7 @@ import {
 } from 'modules/testUtils';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processInstancesStore} from 'modules/stores/processInstances';
-import {processXmlStore} from 'modules/stores/processXml';
+import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {AppHeader} from 'App/Layout/AppHeader';

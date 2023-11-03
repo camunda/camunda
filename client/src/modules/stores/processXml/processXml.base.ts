@@ -8,7 +8,7 @@
 import {makeObservable, action, observable, override, computed} from 'mobx';
 import {DiagramModel} from 'bpmn-moddle';
 import {logger} from 'modules/logger';
-import {NetworkReconnectionHandler} from './networkReconnectionHandler';
+import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
 import {fetchProcessXML} from 'modules/api/processes/fetchProcessXML';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {getFlowNodes} from 'modules/utils/flowNodes';
@@ -25,7 +25,7 @@ const DEFAULT_STATE: State = {
   status: 'initial',
 };
 
-class ProcessXml extends NetworkReconnectionHandler {
+class ProcessXmlBase extends NetworkReconnectionHandler {
   state: State = {...DEFAULT_STATE};
   processId: ProcessInstanceEntity['processId'] | null = null;
 
@@ -124,4 +124,4 @@ class ProcessXml extends NetworkReconnectionHandler {
   }
 }
 
-export const processXmlStore = new ProcessXml();
+export {ProcessXmlBase};

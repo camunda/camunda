@@ -15,6 +15,8 @@ import {RetryFailed, Error} from '@carbon/react/icons';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {IS_INSTANCE_MIGRATION_ENABLED} from 'modules/feature-flags';
+import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/processXml/processXml.migration.source';
+import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 
 type Props = {
   selectedInstancesCount: number;
@@ -85,7 +87,14 @@ const Toolbar: React.FC<Props> = ({selectedInstancesCount}) => {
         >
           {IS_INSTANCE_MIGRATION_ENABLED && (
             // TODO: https://github.com/camunda/operate/issues/5727
-            <TableBatchAction onClick={processInstanceMigrationStore.enable}>
+            <TableBatchAction
+              onClick={() => {
+                processXmlMigrationSourceStore.setProcessXml(
+                  processXmlStore.state.xml,
+                );
+                processInstanceMigrationStore.enable();
+              }}
+            >
               Migrate
             </TableBatchAction>
           )}

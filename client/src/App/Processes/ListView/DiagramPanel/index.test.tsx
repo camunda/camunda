@@ -19,7 +19,7 @@ import {
 } from 'modules/testUtils';
 import {DiagramPanel} from './index';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {processXmlStore} from 'modules/stores/processXml';
+import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {processStatisticsStore} from 'modules/stores/processStatistics';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';

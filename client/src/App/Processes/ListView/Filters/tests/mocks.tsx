@@ -9,7 +9,7 @@ import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {useEffect} from 'react';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {processXmlStore} from 'modules/stores/processXml';
+import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {Paths} from 'modules/Routes';
 
 const GROUPED_BIG_VARIABLE_PROCESS = {

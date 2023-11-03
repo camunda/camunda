@@ -9,7 +9,7 @@ import {MemoryRouter} from 'react-router-dom';
 import {useEffect} from 'react';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processInstancesStore} from 'modules/stores/processInstances';
-import {processXmlStore} from 'modules/stores/processXml';
+import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {operationsStore} from 'modules/stores/operations';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {processStatisticsStore} from 'modules/stores/processStatistics';

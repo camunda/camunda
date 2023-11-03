@@ -14,6 +14,8 @@ import {TopPanel} from './TopPanel';
 import {BottomPanel} from './BottomPanel';
 import {Footer} from './Footer';
 import {PAGE_TITLE} from 'modules/constants';
+import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/processXml/processXml.migration.source';
+import {processXmlStore as processXmlMigrationTargetStore} from 'modules/stores/processXml/processXml.migration.target';
 
 const MigrationView: React.FC = () => {
   useEffect(() => {
@@ -26,6 +28,8 @@ const MigrationView: React.FC = () => {
     return () => {
       processInstanceMigrationStore.reset();
       processesStore.reset();
+      processXmlMigrationSourceStore.reset();
+      processXmlMigrationTargetStore.reset();
     };
   }, []);
 

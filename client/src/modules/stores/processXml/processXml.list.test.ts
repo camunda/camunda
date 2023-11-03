@@ -7,10 +7,10 @@
 
 import {waitFor} from '@testing-library/react';
 import {mockProcessXml} from 'modules/mocks/mockProcessXml';
-import {processXmlStore} from './processXml';
+import {processXmlStore} from './processXml.list';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
-describe('stores/processXml', () => {
+describe('stores/processXml/processXml.list', () => {
   afterEach(() => {
     processXmlStore.reset();
   });
