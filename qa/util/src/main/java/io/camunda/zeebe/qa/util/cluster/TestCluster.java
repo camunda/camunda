@@ -297,6 +297,18 @@ public final class TestCluster implements CloseableSilently {
     return this;
   }
 
+  public TestCluster awaitHealthyTopology() {
+    awaitHealthyTopology(Duration.ofMinutes(brokers.size()));
+    return this;
+  }
+
+  public TestCluster awaitHealthyTopology(final Duration timeout) {
+    Awaitility.await("until cluster topology is complete")
+        .atMost(timeout)
+        .untilAsserted(() -> assertThat(allGateways()).allSatisfy(this::assertHealthyTopology));
+    return this;
+  }
+
   /**
    * Convenience method for {@link #await(TestHealthProbe, Duration)} with a default timeout of 1
    * minute per node in the cluster.
@@ -355,6 +367,15 @@ public final class TestCluster implements CloseableSilently {
     try (final var client = node.newClientBuilder().build()) {
       TopologyAssert.assertThat(client.newTopologyRequest().send().join())
           .isComplete(clusterSize, partitionsCount, replicationFactor);
+    }
+  }
+
+  private void assertHealthyTopology(final TestGateway<?> node) {
+    assertThatCode(() -> node.probe(TestHealthProbe.READY))
+        .as("gateway '%s' is ready", node.nodeId())
+        .doesNotThrowAnyException();
+    try (final var client = node.newClientBuilder().build()) {
+      TopologyAssert.assertThat(client.newTopologyRequest().send().join()).isHealthy();
     }
   }
 
