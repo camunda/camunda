@@ -33,7 +33,7 @@ jobs:
         run: |
           cd ${{ github.workspace }}/.github/scripts/healthStatusReport
           yarn
-          npx ts-node createHealtStatusConfig.ts
+          npx ts-node createHealthStatusConfig.ts
           cat config.json
 
         env:

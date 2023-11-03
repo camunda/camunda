@@ -60,9 +60,9 @@ type SnykProjectsResponse = {
   projects: SnykProject[];
 };
 
-async function createHealtStatusConfig() {
+async function createHealthStatusConfig() {
   const ciBranches = (await getCiBranches()).filter(branch=>!branch.includes('3.8'));
-  const snykProjects = await fetchSnykProjects();
+  const snykProjects = (await fetchSnykProjects()).filter(project=>!project.name.includes('3.8'));
 
   const config: Partial<Config> = {
     argoCd: {
@@ -221,4 +221,4 @@ function getHighestProjectVersions(projectVersions: string[]) {
   return result;
 }
 
-createHealtStatusConfig();
+createHealthStatusConfig();
