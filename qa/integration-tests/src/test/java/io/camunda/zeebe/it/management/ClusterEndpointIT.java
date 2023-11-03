@@ -15,7 +15,6 @@ import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
 import io.camunda.zeebe.management.cluster.TopologyChange.StatusEnum;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import java.util.List;
 import java.util.function.Predicate;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -23,7 +22,6 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-@ZeebeIntegration
 @Timeout(2 * 60) // 2 minutes
 final class ClusterEndpointIT {
   private static final int BROKER_COUNT = 2;
