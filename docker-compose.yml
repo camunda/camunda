@@ -2,7 +2,7 @@ version: '2.4'
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-7.13.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.8.0}
 #    profiles: ["elasticsearch"] TODO leaving this commented out for now so that elastic search boots by default.
 #   This needs to be commented in with ticket OPT-7311
     container_name: elasticsearch
@@ -10,6 +10,8 @@ services:
       - cluster.name=elasticsearch
       - bootstrap.memory_lock=true
       - discovery.type=single-node
+      - xpack.security.enabled=false
+      - action.destructive_requires_name=false
       - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
     ulimits:
       memlock:

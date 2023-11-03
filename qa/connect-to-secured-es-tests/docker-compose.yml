@@ -2,7 +2,7 @@ version: '2.4'
 
 services:
   cambpm:
-    image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${CAMBPM_VERSION:-7.17.0}
+    image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${CAMBPM_VERSION:-7.18.0}
     container_name: cambpm
     environment:
       - TZ=Europe/Berlin
@@ -58,13 +58,15 @@ services:
       - HTPASSWD=elastic:$$apr1$$rAPWdsDW$$/7taaK2oH4AwXgLTbYSpa0
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-7.10.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.8.0}
     container_name: elasticsearch
     environment:
       - cluster.name=elasticsearch
       - http.port=9203
       - bootstrap.memory_lock=true
       - discovery.type=single-node
+      - xpack.security.enabled=false
+      - action.destructive_requires_name=false
       - "ES_JAVA_OPTS=-Xms500m -Xmx500m"
     ulimits:
       memlock:

@@ -2,7 +2,7 @@ version: '2.4'
 
 services:
   cambpm:
-    image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${CAMBPM_VERSION:-7.17.0}
+    image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${CAMBPM_VERSION:-7.18.0}
     container_name: cambpm
     environment:
       - TZ=Europe/Berlin
@@ -38,7 +38,7 @@ services:
       timeout: 5s
       retries: 10
   elasticsearch-new:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${NEW_ES_VERSION:-7.10.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${NEW_ES_VERSION:-8.8.0}
     container_name: upgrade-schema-tests-new-elasticsearch-version
     volumes:
       - essnapshot:/var/tmp:rw
@@ -47,6 +47,8 @@ services:
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - discovery.type=single-node
       - path.repo=/var/tmp
+      - xpack.security.enabled=false
+      - action.destructive_requires_name=false
     ulimits:
       memlock:
         soft: -1
