@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -171,6 +172,98 @@ public final class MigrateProcessInstanceTest {
     Assertions.assertThat(
             RecordingExporter.jobRecords(JobIntent.CANCELED)
                 .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasProcessDefinitionKey(targetProcDefKey);
+
+    assert false;
+  }
+
+  @Test
+  public void shouldMigrateProcessToNestingSubprocess() {
+    // Source process
+    final String bpmnProcessId = "sourceProcess";
+    final String serviceTaskElementId = "serviceTask1";
+    final var sourceProcess =
+        Bpmn.createExecutableProcess(bpmnProcessId)
+            .startEvent()
+            .serviceTask(serviceTaskElementId, b -> b.zeebeJobType("task"))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(sourceProcess).deploy();
+
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(bpmnProcessId).create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId(serviceTaskElementId)
+        .await();
+
+    // Target process
+    final String serviceTaskElementId2 = "serviceTask2";
+    final var targetProcess =
+        Bpmn.createExecutableProcess("targetProcess")
+            .startEvent()
+            .subProcess(
+                "subProcess",
+                sp ->
+                    sp.embeddedSubProcess()
+                        .startEvent()
+                        .serviceTask(serviceTaskElementId, b -> b.zeebeJobType("task"))
+                        .endEvent())
+            .serviceTask(serviceTaskElementId2, b -> b.zeebeJobType("task"))
+            .endEvent()
+            .done();
+
+    final Record<DeploymentRecordValue> deployment =
+        ENGINE.deployment().withXmlResource(targetProcess).deploy();
+
+    final long targetProcDefKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcDefKey)
+        .migrate();
+
+    final Record<ProcessInstanceRecordValue> subProcessInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("subProcess")
+            .getFirst();
+    Assertions.assertThat(subProcessInstance.getValue()).hasFlowScopeKey(processInstanceKey);
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(serviceTaskElementId)
+                .getFirst()
+                .getValue())
+        .hasFlowScopeKey(subProcessInstance.getKey());
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("task").complete();
+
+    Assertions.assertThat(
+            RecordingExporter.jobRecords(JobIntent.COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasProcessDefinitionKey(targetProcDefKey);
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("subProcess")
+                .withRecordKey(subProcessInstance.getKey())
+                .getFirst())
+        .isNotNull();
+
+    Assertions.assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(serviceTaskElementId2)
                 .getFirst()
                 .getValue())
         .hasProcessDefinitionKey(targetProcDefKey);

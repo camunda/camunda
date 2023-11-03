@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -21,11 +22,14 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public final class ProcessInstanceMigrationProcessor
     implements TypedRecordProcessor<ProcessInstanceMigrationRecord> {
@@ -35,18 +39,21 @@ public final class ProcessInstanceMigrationProcessor
   private final ProcessState processState;
   private final JobState jobState;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
+  private final KeyGenerator keyGenerator;
 
   public ProcessInstanceMigrationProcessor(
       final Writers writers,
       final ElementInstanceState elementInstanceState,
       final ProcessState processState,
       final JobState jobState,
-      final BpmnBehaviors bpmnBehaviors) {
+      final BpmnBehaviors bpmnBehaviors,
+      final KeyGenerator keyGenerator) {
     stateWriter = writers.state();
     this.elementInstanceState = elementInstanceState;
     this.processState = processState;
     this.jobState = jobState;
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
+    this.keyGenerator = keyGenerator;
   }
 
   @Override
@@ -71,6 +78,52 @@ public final class ProcessInstanceMigrationProcessor
         processInstance.getKey(),
         processInstance.getKey(),
         (key, instance) -> {
+          final ExecutableFlowElement targetElement =
+              processState.getFlowElement(
+                  targetProcess.getKey(), TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+                  instance.getValue().getElementIdBuffer(), ExecutableFlowElement.class);
+
+          final ExecutableFlowElement sourceElement =
+              processState.getFlowElement(
+                  instance.getValue().getProcessDefinitionKey(),
+                      TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+                  instance.getValue().getElementIdBuffer(), ExecutableFlowElement.class);
+
+          long instanceFlowScopeKey = instance.getValue().getFlowScopeKey();
+
+          final String sourceFlowScopeId =
+              BufferUtil.bufferAsString(sourceElement.getFlowScope().getId());
+          final String targetFlowScopeId =
+              BufferUtil.bufferAsString(targetElement.getFlowScope().getId());
+          if (!sourceFlowScopeId.equals(targetFlowScopeId)) {
+            final long subProcessInstanceKey = keyGenerator.nextKey();
+            final ProcessInstanceRecord subProcessInstanceRecord = new ProcessInstanceRecord();
+            subProcessInstanceRecord
+                .setBpmnElementType(targetElement.getFlowScope().getElementType())
+                .setElementId(targetElement.getFlowScope().getId())
+                .setBpmnProcessId(targetProcess.getBpmnProcessId())
+                .setVersion(targetProcess.getVersion())
+                .setProcessDefinitionKey(targetProcess.getKey())
+                .setProcessInstanceKey(processInstance.getKey())
+                .setFlowScopeKey(processInstance.getKey())
+                .setBpmnEventType(targetElement.getFlowScope().getEventType())
+                .setParentProcessInstanceKey(instance.getValue().getParentProcessInstanceKey())
+                .setParentElementInstanceKey(instance.getValue().getParentElementInstanceKey())
+                .setTenantId(instance.getValue().getTenantId());
+
+            stateWriter.appendFollowUpEvent(
+                subProcessInstanceKey,
+                ProcessInstanceIntent.ELEMENT_ACTIVATING,
+                subProcessInstanceRecord);
+
+            stateWriter.appendFollowUpEvent(
+                subProcessInstanceKey,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                subProcessInstanceRecord);
+
+            instanceFlowScopeKey = subProcessInstanceKey;
+          }
+
           stateWriter.appendFollowUpEvent(
               key,
               ProcessInstanceIntent.ELEMENT_MIGRATED,
@@ -79,6 +132,7 @@ public final class ProcessInstanceMigrationProcessor
                   .setProcessDefinitionKey(targetProcess.getKey())
                   .setBpmnProcessId(targetProcess.getBpmnProcessId())
                   .setVersion(targetProcess.getVersion())
+                  .setFlowScopeKey(instanceFlowScopeKey)
               // .setElementId(targetProcess.getBpmnProcessId()) // todo id may change
               );
 
@@ -95,11 +149,6 @@ public final class ProcessInstanceMigrationProcessor
                 );
           }
 
-          final ExecutableCatchEventSupplier element =
-              processState.getFlowElement(
-                  targetProcess.getKey(), TenantOwned.DEFAULT_TENANT_IDENTIFIER,
-                  instance.getValue().getElementIdBuffer(), ExecutableCatchEventSupplier.class);
-
           final var context = new BpmnElementContextImpl();
           context.init(
               key,
@@ -111,7 +160,8 @@ public final class ProcessInstanceMigrationProcessor
               instance.getState());
 
           // eventSubscriptionBehavior.unsubscribeFromEvents(context);
-          eventSubscriptionBehavior.subscribeToEvents(element, context);
+          eventSubscriptionBehavior.subscribeToEvents(
+              (ExecutableCatchEventSupplier) targetElement, context);
 
           return true;
         });

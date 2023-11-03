@@ -30,7 +30,6 @@ import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.timer.TriggerTimerProcessor;
 import io.camunda.zeebe.engine.processing.variable.UpdateVariableDocumentProcessor;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
@@ -214,7 +213,7 @@ public final class ProcessEventProcessors {
 
   private static void addProcessInstanceModificationStreamProcessors(
       final TypedRecordProcessors typedRecordProcessors,
-      final ProcessingState processingState,
+      final MutableProcessingState processingState,
       final Writers writers,
       final BpmnBehaviors bpmnBehaviors) {
     final ProcessInstanceModificationProcessor modificationProcessor =
@@ -235,7 +234,8 @@ public final class ProcessEventProcessors {
             processingState.getElementInstanceState(),
             processingState.getProcessState(),
             processingState.getJobState(),
-            bpmnBehaviors));
+            bpmnBehaviors,
+            processingState.getKeyGenerator()));
   }
 
   private static void addProcessInstanceBatchStreamProcessors(
