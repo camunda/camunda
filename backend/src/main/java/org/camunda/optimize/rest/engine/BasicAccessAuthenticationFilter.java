@@ -5,12 +5,17 @@
  */
 package org.camunda.optimize.rest.engine;
 
+import jakarta.annotation.Priority;
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.core.MultivaluedMap;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
+import static jakarta.ws.rs.Priorities.AUTHENTICATION;
+
+@Priority(AUTHENTICATION)
 public class BasicAccessAuthenticationFilter implements ClientRequestFilter {
   private String defaultEngineAuthenticationUser;
   private String defaultEngineAuthenticationPassword;

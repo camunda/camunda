@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest.engine;
 
+import jakarta.annotation.Priority;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.plugin.EngineRestFilterProvider;
@@ -22,6 +23,7 @@ import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientRequestFilter;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -94,6 +96,7 @@ public class PlatformEngineContextFactory implements EngineContextFactory {
     return client;
   }
 
+  @Priority(Integer.MAX_VALUE)
   private static class LoggingFilter implements ClientRequestFilter {
     @Override
     public void filter(ClientRequestContext requestContext) {
