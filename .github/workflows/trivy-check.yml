@@ -122,6 +122,7 @@ jobs:
           severity: "CRITICAL,HIGH"
           format: table
           output: ${{ steps.pom-info.outputs.project_version }}-amd64-trivy-log.txt
+          trivyignores: ".github/workflows/.trivyignore"
 
       - name: Run Trivy vulnerability scanner ARM
         if: always()
@@ -134,6 +135,7 @@ jobs:
           severity: "CRITICAL,HIGH"
           format: table
           output: ${{ steps.pom-info.outputs.project_version }}-arm64-trivy-log.txt
+          trivyignores: ".github/workflows/.trivyignore"
 
       - name: Print Test Results
         if: always()
