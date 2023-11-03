@@ -11,7 +11,9 @@ import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionReco
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.List;
 import java.util.function.Function;
 
 public class ResourceDeletionClient {
@@ -32,6 +34,7 @@ public class ResourceDeletionClient {
   private final CommandWriter writer;
   private final ResourceDeletionRecord resourceDeletionRecord = new ResourceDeletionRecord();
   private Function<Long, Record<ResourceDeletionRecordValue>> expectation = SUCCESS_EXPECTATION;
+  private List<String> authorizedTenantIds = List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public ResourceDeletionClient(final CommandWriter writer) {
     this.writer = writer;
@@ -42,9 +45,17 @@ public class ResourceDeletionClient {
     return this;
   }
 
+  public ResourceDeletionClient withAuthorizedTenantIds(final String... tenantIds) {
+    authorizedTenantIds = List.of(tenantIds);
+    return this;
+  }
+
   public Record<ResourceDeletionRecordValue> delete() {
     final long position =
-        writer.writeCommand(ResourceDeletionIntent.DELETE, resourceDeletionRecord);
+        writer.writeCommand(
+            ResourceDeletionIntent.DELETE,
+            resourceDeletionRecord,
+            authorizedTenantIds.toArray(new String[0]));
     return expectation.apply(position);
   }
 

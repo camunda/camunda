@@ -24,7 +24,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.function.Consumer;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -167,7 +166,6 @@ public class TenantAwareTimerStartEventTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/zeebe/issues/14279")
   public void shouldCancelTimerWhenDeletingProcessDefinition() {
     // given
     assertThat(
@@ -177,7 +175,11 @@ public class TenantAwareTimerStartEventTest {
         .isTrue();
 
     // when
-    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+    engine
+        .resourceDeletion()
+        .withResourceKey(processDefinitionKey)
+        .withAuthorizedTenantIds(TENANT)
+        .delete();
 
     // then
     final var canceledEvent =
@@ -188,7 +190,6 @@ public class TenantAwareTimerStartEventTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/zeebe/issues/14279")
   public void shouldRecreateTimerWhenDeletingLatestProcessDefinition() {
     // given
     assertThat(
@@ -204,7 +205,11 @@ public class TenantAwareTimerStartEventTest {
         deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
 
     // when
-    engine.resourceDeletion().withResourceKey(latestProcessDefinitionKey).delete();
+    engine
+        .resourceDeletion()
+        .withResourceKey(latestProcessDefinitionKey)
+        .withAuthorizedTenantIds(TENANT)
+        .delete();
 
     // then
     final var canceledEvent =

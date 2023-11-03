@@ -8,17 +8,19 @@
 package io.camunda.zeebe.protocol.impl.record.value.resource;
 
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public class ResourceDeletionRecord extends UnifiedRecordValue
     implements ResourceDeletionRecordValue {
 
   private final LongProperty resourceKeyProp = new LongProperty("resourceKey");
+  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
 
   public ResourceDeletionRecord() {
-    declareProperty(resourceKeyProp);
+    declareProperty(resourceKeyProp).declareProperty(tenantIdProp);
   }
 
   public void wrap(final ResourceDeletionRecord record) {
@@ -37,7 +39,11 @@ public class ResourceDeletionRecord extends UnifiedRecordValue
 
   @Override
   public String getTenantId() {
-    // todo(#13238): replace dummy implementation
-    return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+  }
+
+  public ResourceDeletionRecord setTenantId(final String tenantId) {
+    tenantIdProp.setValue(tenantId);
+    return this;
   }
 }
