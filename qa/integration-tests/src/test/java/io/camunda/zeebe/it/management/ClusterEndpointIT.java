@@ -21,11 +21,13 @@ import java.util.function.Predicate;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @ZeebeIntegration
 @Execution(ExecutionMode.CONCURRENT)
+@Timeout(2 * 60) // 2 minutes
 final class ClusterEndpointIT {
   private static final int BROKER_COUNT = 2;
   private static final int PARTITION_COUNT = 2;
