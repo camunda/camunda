@@ -71,10 +71,32 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     if (assignmentDefinition == null) {
       return;
     }
+    transformAssignee(jobWorkerProperties, assignmentDefinition);
+    transformCandidateGroups(jobWorkerProperties, assignmentDefinition);
+    transformCandidateUsers(jobWorkerProperties, assignmentDefinition);
+  }
+
+  private void transformAssignee(
+      final JobWorkerProperties jobWorkerProperties,
+      final ZeebeAssignmentDefinition assignmentDefinition) {
     final var assignee = assignmentDefinition.getAssignee();
     if (assignee != null && !assignee.isBlank()) {
-      jobWorkerProperties.setAssignee(expressionLanguage.parseExpression(assignee));
+      final var assigneeExpression = expressionLanguage.parseExpression(assignee);
+      if (assigneeExpression.isStatic()) {
+        // static assignee values are always treated as string literals
+        jobWorkerProperties.setAssignee(
+            expressionLanguage.parseExpression(
+                ExpressionTransformer.asFeelExpressionString(
+                    ExpressionTransformer.asStringLiteral(assignee))));
+      } else {
+        jobWorkerProperties.setAssignee(assigneeExpression);
+      }
     }
+  }
+
+  private void transformCandidateGroups(
+      final JobWorkerProperties jobWorkerProperties,
+      final ZeebeAssignmentDefinition assignmentDefinition) {
     final var candidateGroups = assignmentDefinition.getCandidateGroups();
     if (candidateGroups != null && !candidateGroups.isBlank()) {
       final var candidateGroupsExpression = expressionLanguage.parseExpression(candidateGroups);
@@ -90,6 +112,11 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
         jobWorkerProperties.setCandidateGroups(candidateGroupsExpression);
       }
     }
+  }
+
+  private void transformCandidateUsers(
+      final JobWorkerProperties jobWorkerProperties,
+      final ZeebeAssignmentDefinition assignmentDefinition) {
     final var candidateUsers = assignmentDefinition.getCandidateUsers();
     if (candidateUsers != null && !candidateUsers.isBlank()) {
       final var candidateUsersExpression = expressionLanguage.parseExpression(candidateUsers);
