@@ -93,7 +93,7 @@ public class RemoteStreamServiceImpl<M, P extends BufferWriter>
     if (type == Type.MEMBER_REMOVED) {
       apiServer.removeAll(event.subject().id());
     } else if (type == Type.MEMBER_ADDED) {
-      apiServer.recreateStreams(event.subject().id());
+      apiServer.restartStreams(event.subject().id());
     }
   }
 }
