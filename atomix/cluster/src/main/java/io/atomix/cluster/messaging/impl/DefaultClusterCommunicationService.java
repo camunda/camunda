@@ -26,10 +26,10 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.ManagedClusterCommunicationService;
 import io.atomix.cluster.messaging.MessagingException;
+import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.cluster.messaging.UnicastService;
 import io.atomix.utils.net.Address;
-import java.net.ConnectException;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
@@ -212,7 +212,7 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
         String.format(
             "Expected to send a message with subject '%s' to member '%s', but member is not known. Known members are '%s'.",
             subject, toMemberId, membershipService.getMembers());
-    return CompletableFuture.failedFuture(new ConnectException(errorMessage));
+    return CompletableFuture.failedFuture(new NoSuchMemberException(errorMessage));
   }
 
   @Override
@@ -302,7 +302,7 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
 
     InternalMessageBiResponder(
         final Function<byte[], M> decoder,
-        Function<R, byte[]> encoder,
+        final Function<R, byte[]> encoder,
         final BiFunction<MemberId, M, R> handler,
         final Executor executor) {
       this.decoder = decoder;
