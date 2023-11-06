@@ -11,6 +11,8 @@ import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupe
 import {groupedProcessesMock} from 'modules/testUtils';
 import {processesStore} from 'modules/stores/processes/processes.migration';
 import {SourceDiagram} from '../SourceDiagram';
+import {processXmlStore} from 'modules/stores/processXml/processXml.migration.source';
+import {mockProcessXml} from 'modules/mocks/mockProcessXml';
 
 type Props = {
   children?: React.ReactNode;
@@ -45,5 +47,16 @@ describe('Source Diagram', () => {
     expect(screen.getByText('Version')).toBeInTheDocument();
 
     locationSpy.mockRestore();
+  });
+
+  it('should render xml', async () => {
+    processXmlStore.setProcessXml(mockProcessXml);
+
+    render(<SourceDiagram />, {wrapper: Wrapper});
+
+    expect(await screen.findByTestId('diagram')).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /reset diagram zoom/i}));
+    expect(screen.getByRole('button', {name: /zoom in diagram/i}));
+    expect(screen.getByRole('button', {name: /zoom out diagram/i}));
   });
 });
