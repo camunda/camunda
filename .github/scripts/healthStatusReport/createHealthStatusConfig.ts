@@ -85,10 +85,7 @@ async function createHealthStatusConfig() {
         'java-compatibility',
         'import-dynamic-data-performance',
         'e2e-tests',
-        {
-          name:'release-optimize',
-          branches:ciBranches
-        }
+        'release-optimize',
       ],
     },
     snyk: {
