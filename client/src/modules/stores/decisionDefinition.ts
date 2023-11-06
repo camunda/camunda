@@ -27,7 +27,9 @@ class DecisionDefinition {
   };
 
   get name() {
-    return this.state.definition?.name ?? this.state.definition?.id;
+    return (
+      this.state.definition?.name ?? this.state.definition?.id ?? 'drdName'
+    );
   }
 
   reset = () => {

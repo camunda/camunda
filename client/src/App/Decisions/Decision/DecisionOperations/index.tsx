@@ -95,7 +95,7 @@ const DecisionOperations: React.FC<Props> = ({
             ]}
             rows={[
               {
-                key: decisionDefinitionStore.name ?? 'drdName',
+                key: decisionDefinitionStore.name,
                 columns: [
                   {
                     cellContent: decisionDefinitionStore.name,
