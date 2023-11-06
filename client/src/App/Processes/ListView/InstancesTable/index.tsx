@@ -83,7 +83,9 @@ const InstancesTable: React.FC = observer(() => {
       />
 
       <Toolbar
-        selectedInstancesCount={processInstancesSelectionStore.getSelectedProcessInstanceCount()}
+        selectedInstancesCount={
+          processInstancesSelectionStore.selectedProcessInstanceCount
+        }
       />
       <SortableTable
         state={getTableState()}
@@ -104,7 +106,7 @@ const InstancesTable: React.FC = observer(() => {
         }
         checkIsIndeterminate={() =>
           !processInstancesSelectionStore.state.isAllChecked &&
-          processInstancesSelectionStore.getSelectedProcessInstanceCount() > 0
+          processInstancesSelectionStore.selectedProcessInstanceCount > 0
         }
         checkIsRowSelected={(rowId) => {
           return processInstancesSelectionStore.isProcessInstanceChecked(rowId);

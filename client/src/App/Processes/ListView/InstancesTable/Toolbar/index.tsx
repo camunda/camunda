@@ -13,10 +13,8 @@ import useOperationApply from './useOperationApply';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {RetryFailed, Error} from '@carbon/react/icons';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {IS_INSTANCE_MIGRATION_ENABLED} from 'modules/feature-flags';
-import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/processXml/processXml.migration.source';
-import {processXmlStore} from 'modules/stores/processXml/processXml.list';
+import {MigrateAction} from './MigrateAction';
 
 type Props = {
   selectedInstancesCount: number;
@@ -85,20 +83,7 @@ const Toolbar: React.FC<Props> = ({selectedInstancesCount}) => {
             }
           }}
         >
-          {IS_INSTANCE_MIGRATION_ENABLED && (
-            // TODO: https://github.com/camunda/operate/issues/5727
-            <TableBatchAction
-              onClick={() => {
-                processXmlMigrationSourceStore.setProcessXml(
-                  processXmlStore.state.xml,
-                );
-                processInstanceMigrationStore.enable();
-              }}
-            >
-              Migrate
-            </TableBatchAction>
-          )}
-
+          {IS_INSTANCE_MIGRATION_ENABLED && <MigrateAction />}
           <TableBatchAction
             renderIcon={Error}
             onClick={() => setModalMode('CANCEL_PROCESS_INSTANCE')}

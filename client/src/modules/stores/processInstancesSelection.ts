@@ -101,7 +101,7 @@ class ProcessInstancesSelection {
   selectAllProcessInstancesCarbon = () => {
     if (
       this.state.selectionMode === 'INCLUDE' &&
-      this.getSelectedProcessInstanceCount() === 0
+      this.selectedProcessInstanceCount === 0
     ) {
       this.setMode('ALL');
       this.setAllChecked(true);
@@ -150,7 +150,7 @@ class ProcessInstancesSelection {
     }
   };
 
-  getSelectedProcessInstanceCount = () => {
+  get selectedProcessInstanceCount() {
     const {selectionMode, selectedProcessInstanceIds} = this.state;
     const {filteredProcessInstancesCount} = processInstancesStore.state;
 
@@ -165,7 +165,7 @@ class ProcessInstancesSelection {
       default:
         return filteredProcessInstancesCount;
     }
-  };
+  }
 
   get selectedProcessInstanceIds() {
     const {selectionMode, selectedProcessInstanceIds} = this.state;
