@@ -18,12 +18,15 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.connect.ElasticsearchConnector;
+import io.camunda.operate.connect.OpensearchConnector;
 import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
+import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.elasticsearch.ElasticsearchSessionRepository;
+import io.camunda.operate.webapp.opensearch.OpensearchSessionRepository;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.SessionService;
 import io.camunda.operate.webapp.security.SessionRepositoryConfig;
@@ -78,6 +81,9 @@ import org.springframework.test.context.junit4.SpringRunner;
                 SameSiteCookieTomcatContextCustomizer.class,
                 ElasticsearchConnector.class,
                 ElasticsearchSessionRepository.class,
+                OpensearchSessionRepository.class,
+                RichOpenSearchClient.class,
+                OpensearchConnector.class,
                 PermissionConverter.class
         },
         properties = {
