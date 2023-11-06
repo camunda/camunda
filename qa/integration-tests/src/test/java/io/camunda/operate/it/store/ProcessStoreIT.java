@@ -6,7 +6,7 @@
  */
 package io.camunda.operate.it.store;
 
-import io.camunda.operate.elasticsearch.TestSearchRepository;
+import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.schema.indices.ProcessIndex;
@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 

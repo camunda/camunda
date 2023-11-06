@@ -6,7 +6,7 @@
  */
 package io.camunda.operate.it;
 
-import io.camunda.operate.elasticsearch.TestSearchRepository;
+import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.schema.templates.ProcessInstanceDependant;
 import io.camunda.operate.store.NotFoundException;

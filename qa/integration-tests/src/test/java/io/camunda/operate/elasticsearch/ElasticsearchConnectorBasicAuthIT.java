@@ -11,20 +11,17 @@ import io.camunda.operate.connect.OpensearchConnector;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
+import io.camunda.operate.util.searchrepository.TestElasticSearchRepository;
+import io.camunda.operate.util.searchrepository.TestOpenSearchRepository;
+import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.util.testcontainers.ContainerApplicationContextInitializer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.util.TestPropertyValues;
-import org.springframework.context.ApplicationContextInitializer;
-import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
-
-import java.util.Map;
 
 import static org.junit.Assert.assertTrue;
 

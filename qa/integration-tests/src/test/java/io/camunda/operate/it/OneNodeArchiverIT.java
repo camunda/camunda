@@ -9,7 +9,7 @@ package io.camunda.operate.it;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.archiver.Archiver;
 import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
-import io.camunda.operate.elasticsearch.TestSearchRepository;
+import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.exceptions.ArchiverException;

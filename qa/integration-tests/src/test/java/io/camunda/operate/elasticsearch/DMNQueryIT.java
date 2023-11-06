@@ -15,6 +15,7 @@ import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.OperateAbstractIT;
 import java.util.List;
 
+import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;

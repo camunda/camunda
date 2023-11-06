@@ -4,17 +4,19 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.elasticsearch;
+package io.camunda.operate.util.searchrepository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.DocWriteResponse;
+import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
@@ -38,7 +40,6 @@ import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @Component
 @Conditional(ElasticsearchCondition.class)
@@ -138,7 +139,7 @@ public class TestElasticSearchRepository implements TestSearchRepository {
 
   @Override
   public List<Long> searchIds(String index, String idFieldName, List<Long> ids, int size) throws IOException {
-    final TermsQueryBuilder q = termsQuery(idFieldName, CollectionUtil.toSafeArrayOfStrings(ids));
+    final TermsQueryBuilder q = QueryBuilders.termsQuery(idFieldName, CollectionUtil.toSafeArrayOfStrings(ids));
     final SearchRequest request = new SearchRequest(index)
       .source(new SearchSourceBuilder()
         .query(q)
@@ -155,5 +156,17 @@ public class TestElasticSearchRepository implements TestSearchRepository {
     var response = esClient.search(request, RequestOptions.DEFAULT);
 
     return ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper, clazz);
+  }
+
+  @Override
+  public void deleteById(String index, String id) throws IOException {
+    DeleteRequest request = new DeleteRequest().index(index).id(id);
+    esClient.delete(request, RequestOptions.DEFAULT);
+  }
+
+  @Override
+  public void update(String index, String id, Map<String, Object> fields) throws IOException {
+    UpdateRequest request = new UpdateRequest().index(index).id(id).doc(fields);
+    esClient.update(request, RequestOptions.DEFAULT);
   }
 }

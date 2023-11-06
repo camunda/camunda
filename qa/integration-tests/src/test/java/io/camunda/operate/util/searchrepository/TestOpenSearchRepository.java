@@ -4,11 +4,12 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.elasticsearch;
+package io.camunda.operate.util.searchrepository;
 
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
+import io.camunda.operate.store.opensearch.dsl.RequestDSL;
 import org.opensearch.client.opensearch._types.mapping.DynamicMapping;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,11 +21,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.constantScore;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.longTerms;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.matchAll;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.script;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.getIndexRequestBuilder;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.indexRequestBuilder;
@@ -142,5 +146,28 @@ public class TestOpenSearchRepository implements TestSearchRepository {
       .size(size);
 
     return richOpenSearchClient.doc().searchValues(requestBuilder, clazz);
+  }
+
+  @Override
+  public void deleteById(String index, String id) throws IOException {
+    richOpenSearchClient.doc().delete(index, id);
+  }
+
+  @Override
+  public void update(String index, String id, Map<String, Object> fields) throws IOException {
+    final Function<Exception, String> errorMessageSupplier = e -> String.format(
+      "Exception occurred, while executing update request with script for index %s [id=%s]", index, id
+    );
+
+    final String script = fields.keySet()
+      .stream()
+      .map(key -> "ctx._source." + key + " = params." + key + ";\n")
+      .collect(Collectors.joining());
+
+    var updateRequestBuilder = RequestDSL.<Void, Void>updateRequestBuilder(index)
+      .id(id)
+      .script(script(script, fields));
+
+    richOpenSearchClient.doc().update(updateRequestBuilder, errorMessageSupplier);
   }
 }

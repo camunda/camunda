@@ -4,7 +4,7 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.elasticsearch;
+package io.camunda.operate.util.searchrepository;
 
 import java.io.IOException;
 import java.util.List;
@@ -25,6 +25,8 @@ public interface TestSearchRepository {
 
   boolean createOrUpdateDocument(String indexName, String string, Map<String, String> doc) throws IOException;
 
+  void deleteById(String index, String id) throws IOException;
+
   Set<String> getFieldNames(String indexName) throws IOException;
 
   boolean hasDynamicMapping(String indexName, DynamicMappingType dynamicMappingType) throws IOException;
@@ -38,4 +40,6 @@ public interface TestSearchRepository {
   <A, R> List<R> searchTerm(String index, String field, A value, Class<R> clazz, int size) throws IOException;
 
   List<Long> searchIds(String index, String idFieldName, List<Long> ids, int size) throws IOException;
+
+  void update(String index, String id, Map<String, Object> fields) throws IOException;
 }

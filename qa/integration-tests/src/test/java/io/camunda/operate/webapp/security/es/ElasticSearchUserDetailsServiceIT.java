@@ -6,20 +6,14 @@
  */
 package io.camunda.operate.webapp.security.es;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.UserIndex;
-import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.OperateAbstractIT;
+import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.TestApplication;
+import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.webapp.security.auth.OperateUserDetailsService;
 import io.camunda.operate.webapp.security.auth.User;
-import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -27,6 +21,10 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.io.IOException;
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -54,7 +52,7 @@ public class ElasticSearchUserDetailsServiceIT extends OperateAbstractIT {
   private OperateUserDetailsService userDetailsService;
 
   @Autowired
-  private RestHighLevelClient esClient;
+  private TestSearchRepository testSearchRepository;
 
   @Autowired
   private UserIndex userIndex;
@@ -93,12 +91,8 @@ public class ElasticSearchUserDetailsServiceIT extends OperateAbstractIT {
 
   private void updateUserRealName() {
     try {
-      Map<String, Object> jsonMap = new HashMap<>();
-      jsonMap.put(UserIndex.DISPLAY_NAME, TEST_USER_DISPLAYNAME);
-      UpdateRequest request = new UpdateRequest().index(userIndex.getFullQualifiedName()).id(
-              TEST_USER_ID)
-          .doc(jsonMap);
-      esClient.update(request, RequestOptions.DEFAULT);
+      Map<String, Object> jsonMap = Map.of(UserIndex.DISPLAY_NAME, TEST_USER_DISPLAYNAME);
+      testSearchRepository.update(userIndex.getFullQualifiedName(), TEST_USER_ID, jsonMap);
       searchTestRule.refreshOperateSearchIndices();
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -107,11 +101,8 @@ public class ElasticSearchUserDetailsServiceIT extends OperateAbstractIT {
 
   public void deleteById(String id) {
     try {
-      DeleteRequest request = new DeleteRequest().index(userIndex.getFullQualifiedName()).id(id);
-      esClient.delete(request, RequestOptions.DEFAULT);
-    } catch (IOException ex) {
-      //
-    }
+      testSearchRepository.deleteById(userIndex.getFullQualifiedName(), id);
+    } catch (IOException ex) {}
   }
 
 }
