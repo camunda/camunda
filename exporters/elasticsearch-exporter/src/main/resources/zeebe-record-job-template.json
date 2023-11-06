@@ -58,6 +58,9 @@
             "deadline": {
               "type": "long"
             },
+            "timeout": {
+              "type": "long"
+            },
             "variables": {
               "enabled": false
             },
