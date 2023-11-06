@@ -182,6 +182,7 @@ public final class EventAppliers implements EventApplier {
     register(JobIntent.RETRIES_UPDATED, new JobRetriesUpdatedApplier(state));
     register(JobIntent.TIMED_OUT, new JobTimedOutApplier(state));
     register(JobIntent.RECURRED_AFTER_BACKOFF, new JobRecurredApplier(state));
+    register(JobIntent.TIMEOUT_UPDATED, new JobTimeoutUpdatedApplier(state));
   }
 
   private void registerMessageAppliers(final MutableProcessingState state) {
