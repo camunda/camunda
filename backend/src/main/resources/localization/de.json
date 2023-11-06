@@ -24,7 +24,7 @@
       "modeler": "Modeler"
     },
     "privacyPolicy": "Datenschutzerklärung",
-    "termsOfUse": "Bedingungen für die Nutzung",
+    "termsOfUse": "Nutzungsbedingungen",
     "imprint": "Impressum",
     "academy": "Camunda Academy",
     "feedback": "Feedback und Support",
@@ -39,7 +39,7 @@
     "errorMessage": "Bei der Anmeldung ist ein Fehler aufgetreten.",
     "closeError": "Login-Fehlermeldung schließen",
     "timeout": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an, um die Aktion abzuschließen.",
-    "telemetry": "Durch Anmelden akzeptieren Sie unsere <a href=\"https://camunda.com/legal/terms/\" target=\"_blank\" rel=\"noopener noreferrer\">AGB</a> und <a href=\"https://camunda.com/legal/privacy/\" target=\"_blank\" rel=\"noopener noreferrer\">Datenschutzerklärung</a>"
+    "telemetry": "Durch die Anmeldung akzeptieren Sie unsere <a href=\"https://camunda.com/legal/terms/\" target=\"_blank\" rel=\"noopener noreferrer\">AGB</a> und <a href=\"https://camunda.com/legal/privacy/\" target=\"_blank\" rel=\"noopener noreferrer\">Datenschutzerklärung</a>"
   },
   "footer": {
     "importing": "wird importiert ...",
@@ -76,7 +76,7 @@
   "telemetry": {
     "updated": "Telemetrie-Einstellungen aktualisiert.",
     "header": "Telemetrie-Einstellungen",
-    "text": "Um die Benutzererfahrung zu verbessern, kann Camunda Optimize mit der Camunda Services GmbH kommunizieren, was externe Netzwerkanfragen erfordert. Bitte wählen Sie aus der untenstehenden Einstellung.",
+    "text": "Um die Benutzererfahrung zu verbessern, kann Camunda Optimize mit der Camunda Services GmbH kommunizieren, was externe Netzwerkanfragen erfordert. Bitte wählen Sie aus den untenstehenden Einstellungen.",
     "enable": "Nutzungsstatistiken aktivieren",
     "info": "Erlauben Sie Camunda Optimize, anonyme Nutzungsstatistiken zu senden. Wir verwenden diese Informationen, um Ihnen eine stabile und verbesserte Produkterfahrung in der von Ihnen verwendeten Umgebung zu bieten. Auf diese Weise kann Camunda Informationen über die Produktversion und die technische Umgebung, die Sie verwenden, und darüber, wie Sie diese verwenden, sammeln.",
     "respectPrivacy": "Wir respektieren Ihre Privatsphäre.",
@@ -90,7 +90,7 @@
     "blankSlate": {
       "selectProcess": "Wählen Sie bis zu 10 Prozessdefinitionen aus",
       "selectTemplate": "Wählen Sie eine Vorlage aus",
-      "review": "Überprüfen Sie Ihr Dashboardentwurf und entfernen Sie unerwünschte Berichte",
+      "review": "Überprüfen Sie Ihren Dashboardentwurf und entfernen Sie unerwünschte Berichte",
       "refine": "Verfeinern Sie Ihr Dashboard und Ihre Berichte"
     },
     "disabledMessage": {
@@ -136,7 +136,7 @@
       "moveLabel": "Verschiebe Kopie nach …",
       "noCollections": "Es wurden keine Sammlungen erstellt",
       "pleaseSelect": "Bitte auswählen",
-      "gotoNew": "Gehe zu Zielort",
+      "gotoNew": "Gehe zum Zielort",
       "copyCollectionInfo": "Alle Elemente und Benutzer werden kopiert."
     },
     "types": {
@@ -165,7 +165,7 @@
       "decision": "Entscheidungstabelle",
       "process": "Prozess",
       "notCreated": "Es wurden noch keine Quellen hinzugefügt",
-      "contactManager": "Bitte wenden Sie sich an den Sammelmanager, um neue Quellen hinzuzufügen",
+      "contactManager": "Bitte wenden Sie sich an den Manager der Sammlung, um neue Quellen hinzuzufügen",
       "add": "Quelle hinzufügen",
       "definitionName": "Definitionsname",
       "deleteWarning": "Die '{name}' Datenquelle wird von der Sammlung entfernt.",
@@ -208,7 +208,7 @@
     "configureProcess": "Prozess konfigurieren",
     "createDefaultDashboard": "Neues Standard Dashboard Erstellen",
     "createDashboardMessage": "Für diesen Prozess gibt es noch kein Dashboard. Möchten Sie, dass Optimize automatisch ein Dashboard basierend auf einer Prozessvorlage für Sie erstellt?",
-    "emailDigest": "Email Digest",
+    "emailDigest": "E-Mail Digest",
     "digestInfo": "Der Prozess Digest sendet regelmäßige E-Mails mit dem KPI-Status an den Prozesseigentümer. Standardmäßig wird der Digest jeden Montag um 9:00 Uhr versendet (wenn Sie die Standardversandzeit ändern möchten, wenden Sie sich bitte an Ihren Administrator).",
     "digestConfigured": "Ihr Prozess Digest wurde erfolgreich konfiguriert. Eine E-Mail wurde an {name} gesendet.",
     "configureKpis": "Erfahren Sie mehr über KPIs",
@@ -241,7 +241,7 @@
     "new": "Neuer Prozess",
     "autogenerate": "Autogenerieren",
     "generate": "Generieren",
-    "addedSources": "Added sources",
+    "addedSources": "Hinzugefügte Quellen",
     "modelProcess": "Prozess modellieren",
     "upload": ".bpmn hochladen",
     "empty": "Es wurden noch keine Eventbasierten Prozesse erstellt",
@@ -274,7 +274,7 @@
       "head": "Prozess Veröffentlichen",
       "republishHead": "Prozess Neu-Veröffentlichen",
       "republishText": "Neu-Veröffentlichung wird Daten in allen assoziierten Berichten aktualisieren.",
-      "text": "Veröffentlichte Eventbasierte Prozesse werden von ausgewählten Benutzern in Reports zur Verfügung stehen."
+      "text": "Veröffentlichte Eventbasierte Prozesse werden von ausgewählten Benutzern in Berichten zur Verfügung stehen."
     },
     "state": {
       "unmapped": "Unzugeordnet",
@@ -307,7 +307,7 @@
       "deleteWarning": "Durch das Entfernen der Events aus dieser Eventquelle werden alle erstellten Mappings gelöscht.",
       "camundaEvents": "Camunda Events",
       "empty": "Es wurden keine Eventquellen hinzugefügt",
-      "selectExternal": "Wählen Sie Externe Events aus",
+      "selectExternal": "Wählen Sie externe Events aus",
       "allExternal": "Alle Events",
       "hide": "In Tabelle ausblenden",
       "show": "In Tabelle anzeigen",
@@ -332,7 +332,7 @@
       "traceId": "Trace ID",
       "group": "Gruppe",
       "source": "Quelle",
-      "eventName": "Type",
+      "eventName": "Typ",
       "timestamp": "Timestamp",
       "eventSources": "Externe Events",
       "search": "Suche nach Werten",
@@ -374,7 +374,7 @@
       "listIncidentsAsTable": "Liste Zwischenfälle in einer Tabelle",
       "listIncidentsAsTable-description": "Liste Zwischenfälle pro Prozessknoten in einer Tabelle.",
       "locateBottlenecsOnAHitmap": "Finde Engstellen auf einer Heatmap.",
-      "locateBottlenecsOnAHitmap-description": "Find zeitliche oder zahlbare Engstellen visualisiert als Heatmap für Prozessknoten.",
+      "locateBottlenecsOnAHitmap-description": "Find zeitliche oder zählbare Engstellen visualisiert als Heatmap für Prozessknoten.",
       "localeIncidentHotspotsOnAHeatmap": "Finde Fehlerhäufungen auf einer Heatmap.",
       "localeIncidentHotspotsOnAHeatmap-description": "Finde Fehlerhäufungen im Prozess, visualisiert als Heatmap für Zwischenfälle.",
       "monitorTargetAsKpi": "Messe Ziele für KPIs.",
@@ -486,7 +486,7 @@
         "max": "Maximale Dauer: ",
         "percentile": "P{value} Dauer: "
       },
-      "exceededInstances": "Uberschrittene-Instanzen-{name}",
+      "exceededInstances": "Überschrittene-Instanzen-{name}",
       "noValueAvailable": "Kein aktueller Wert verfügbar.<br/>Soll- und Istwert können nicht verglichen werden."
     },
     "updateReportPreview": {
@@ -727,13 +727,13 @@
       "productivity_currentlyInProgress": "Anfragen aktuell in Arbeit (KPI)",
       "productivity_currentlyInProgress-description": "Dieser Bericht zeigt die aktuell in Arbeit befindlichen Anfragen. Dieser Bericht ist als KPI markiert.",
       "productivity_maxNumberOfItemsInProgress": "Max Anzahl von Prozessen in Arbeit pro Tag",
-      "productivity_maxNumberOfItemsInProgress-description": "DIeser Bericht zeigt die Anzahl von Anfrag die maximal in Arbeit sein sollten pro Tag.",
+      "productivity_maxNumberOfItemsInProgress-description": "Dieser Bericht zeigt die Anzahl von Anfragen, die maximal in Arbeit sein sollten, pro Tag.",
       "productivity_finishedYesterday": "Gestern beendet",
       "productivity_finishedYesterday-description": "Dieser Bericht zeigt die gestern fertiggestellten Anfragen.",
-      "productivity_finishedThisWeek": "In diese Woche beended (KPI)",
+      "productivity_finishedThisWeek": "In dieser Woche beended (KPI)",
       "productivity_finishedThisWeek-description": "Dieser Bericht zeigt die Anazhl der diese Woche fertiggestellten Anfragen. Dieser Bericht ist als KPI markiert.",
       "productivity_finishedInLast2Weeks": "In den letzten 2 Wochen beendet",
-      "productivity_finishedInLast2Weeks-description": "Dieser Bericht zeigt die Rate der in den letzten 2 Wochen fertiggestellten Artikel.",
+      "productivity_finishedInLast2Weeks-description": "Dieser Bericht zeigt die Rate der in den letzten 2 Wochen fertiggestellten Anfragen.",
       "productivity_text1_line1": "Wie viele eingehende Anfragen haben einen Prozess gestartet?",
       "productivity_text1_line2": " Ziel",
       "productivity_text1_line3": "Reagiere frühzeitig auf unerwartete Lasten, um definierte Ziele erreichen zu können.",
@@ -742,8 +742,8 @@
       "productivity_text1_line6": "Ziel",
       "productivity_text1_line7": "- Kennzeichne den Bericht als ",
       "productivity_text1_line8": "Key Performance Indicator (KPI)",
-      "productivity_text1_line9": " und mache sie zu einem Teil einer ",
-      "productivity_text1_line10": "E-Mail Zusammenfassung",
+      "productivity_text1_line9": " und mache ihn zu einem Teil eines ",
+      "productivity_text1_line10": "E-Mail Digests",
       "productivity_text2_line1": "Wie viele Anfragen laufen?",
       "productivity_text2_line2": " Ziel",
       "productivity_text2_line3": "Stimmen Sie die Anzahl der laufenden Arbeiten auf die verfügbaren Ressourcen ab.",
@@ -756,10 +756,10 @@
       "productivity_text2_line10": "E-Mail-Digest zu überwachen",
       "productivity_text3_line1": "Wie viele Anfragen sind fertig?",
       "productivity_text3_line2": " Ziel",
-      "productivity_text3_line3": "Stelle eine kontinuierlichen Fluss durch das System sicher.",
+      "productivity_text3_line3": "Stelle einen kontinuierlichen Fluss durch das System sicher.",
       "productivity_text3_line4": " Anpassen",
       "productivity_text3_line5": "- Lege als Ziel",
-      "productivity_text3_line6": " die geplant Anzahl von finalisierten Anfragen fest",
+      "productivity_text3_line6": " die geplante Anzahl von finalisierten Anfragen fest",
       "productivity_text3_line7": "- Kennzeichne den Bericht als ",
       "productivity_text3_line8": "KPI",
       "productivity_text3_line9": ", um ihn in einem ",
@@ -774,10 +774,10 @@
       "efficiency_unwantedOutcomeThisWeek-description": "Dieser Bericht misst die unerwünschten Ergebnisse dieser Woche.",
       "efficiency_unwantedOutcomeLastWeek": "Unerwünschte Ergebnisse letzte Woche (KPI)",
       "efficiency_unwantedOutcomeLastWeek-description": "Dieser Bericht zeigt das unerwünschte Ergebnis der letzten Woche. Der Bericht ist als KPI gekennzeichnet.",
-      "efficiency_outcomeInLast4Weeks": "Erwünschte Ergenisses in den letzten 4 Wochen",
+      "efficiency_outcomeInLast4Weeks": "Erwünschte Ergebnisse in den letzten 4 Wochen",
       "efficiency_outcomeInLast4Weeks-description": "Dieser Bericht gibt einen Überblick über die positiven Ergebnisse der letzten 4 Wochen.",
-      "efficiency_incidentFreeRateInLast3Months": "Fehlerfrei Rate in den letzten 3 Monaten",
-      "efficiency_incidentFreeRateInLast3Months-description": "Dieser Bericht misst die Rate der Prozesse, die ohne einen Zwischenfall enden.",
+      "efficiency_incidentFreeRateInLast3Months": "Fehlerfreie Rate in den letzten 3 Monaten",
+      "efficiency_incidentFreeRateInLast3Months-description": "Dieser Bericht misst die Rate der Prozesse, die ohne einen Zwischenfall endeten.",
       "efficiency_incidentsInLast3Months": "Zwischenfälle in den letzten 3 Monaten",
       "efficiency_incidentsInLast3Months-description": "Dieser Bericht listet alle Zwischenfälle auf, die in den letzten 3 Monaten aufgetreten sind.",
       "efficiency_nodesCausingIncidentsInLast3Months": "Prozessknoten, die in den letzten 3 Monaten Vorfälle verursacht haben",
@@ -805,7 +805,7 @@
       "efficiency_text3_line5": "- Ändere die ",
       "efficiency_text3_line6": "Prozessknoten Auswahl",
       "efficiency_text3_line7": ", um gewünschte und unerwünschte Prozessergebnisse zu filtern",
-      "acceleration": "Erhöhe die Beschleunigung",
+      "acceleration": "Beschleunige die Ausführungszeit",
       "acceleration-description": "Optimiere die Ausführungszeit von Aufgaben im Prozess und überwache Service Level Agreements für den Prozess.",
       "acceleration_cycleTimeLast7Days": "Durchlaufzeit in den letzten 7 Tagen (KPI)",
       "acceleration_cycleTimeLast7Days-description": "Dieser Bericht zeigt die durchschnittliche Durchlaufzeit der letzten 7 Tage. Der Bericht ist als KPI gekennzeichnet.",
@@ -827,7 +827,7 @@
       "acceleration_text1_line6": " für die geplante ",
       "acceleration_text1_line7": "Durchlaufzeit fest",
       "acceleration_text1_line8": "- Ändere den ",
-      "acceleration_text1_line9": "Fluss Knoten Auswahlfilter",
+      "acceleration_text1_line9": "Prozessknoten Auswahlfilter",
       "acceleration_text1_line10": " für gewünschte und unerwünschte Prozessergebnisse",
       "acceleration_text2_line1": "Wie lange hat eine Aufgabe gedauert?",
       "acceleration_text2_line2": " Ziel",
@@ -836,7 +836,7 @@
       "acceleration_text3_line2": " Anpassen",
       "acceleration_text3_line3": "- Definieren ",
       "acceleration_text3_line4": "Zielzeiten für Aufgaben",
-      "processDashboard": "Process Übersicht",
+      "processDashboard": "Prozess Übersicht",
       "processDashboard-description": "Dieses Dashboard bietet eine Übersicht der Metriken und Anwendungsfälle, die mit Optimize abgedeckt werden können.",
       "portfolioPerformance": "Portfolio-Performance-Übersicht",
       "portfolioPerformance_subTitle": "Eine Zusammenfassung von bis zu 10 Prozessen anzeigen",
@@ -862,10 +862,10 @@
     },
     "addButton": {
       "addTile": "Einen Kachel hinzufügen",
-      "optimizeReport": "Optimize Report",
-      "addReportLabel": "Report hinzufügen",
+      "optimizeReport": "Optimize Bericht",
+      "addReportLabel": "Bericht hinzufügen",
       "addTileLabel": "Kachel hinzufügen",
-      "selectReportPlaceholder": "Einen Report auswählen",
+      "selectReportPlaceholder": "Einen Bericht auswählen",
       "noReports": "Es wurden noch keine Berichte erstellt",
       "externalWebsite": "Externe Webseite",
       "newReport": "Neuer Bericht aus einer Vorlage",
@@ -873,13 +873,13 @@
     },
     "textReportEditNotification": "Dies ist eine Funktion, die wir zu bauen planen",
     "noAuthorization": "Fehlende Berechtigung",
-    "noReportAccess": "Kein Zugriff auf Report",
+    "noReportAccess": "Kein Zugriff auf Bericht",
     "filter": {
       "viewButtonText": "Berichtsfilter",
       "label": "Berichtsfilter hinzufügen",
       "viewLabel": "Berichtsdaten filtern",
       "disabledVariable": "Variablenfilter sind nur für Dashboards mit mindestens einem Bericht verfügbar.",
-      "disabledAssignee": "Bearbeiter- und Potenzielle Gruppen-Filter sind nur für Dashboards mit mindestens einem Bericht verfügbar.",
+      "disabledAssignee": "Bearbeiter- und potenzielle Gruppen-Filter sind nur für Dashboards mit mindestens einem Bericht verfügbar.",
       "resetAll": "Alle zurücksetzen",
       "operatorLink": "Werte werden durch {operator} verknüpft",
       "multiple": "mehrere",
@@ -901,9 +901,9 @@
         "runningInstancesOnly": "Laufend",
         "completedInstancesOnly": "Abgeschlossen",
         "canceledInstancesOnly": "Abgebrochen",
-        "nonCanceledInstancesOnly": "Nicht Abgebrochen",
+        "nonCanceledInstancesOnly": "Nicht abgebrochen",
         "suspendedInstancesOnly": "Suspendiert",
-        "nonSuspendedInstancesOnly": "Nicht Suspendiert"
+        "nonSuspendedInstancesOnly": "Nicht suspendiert"
       },
       "date": {
         "last": "Letzte(n/s)",
@@ -949,7 +949,7 @@
     "apply": "Änderungen übernehmen",
     "create": "Alarm erstellen",
     "notCreated": "Es wurden noch keine Alarme erstellt",
-    "contactManager": "Bitte wenden Sie sich an den Sammelmanager, um neue Alarme zu erstellen",
+    "contactManager": "Bitte wenden Sie sich an den manager der Sammlung, um neue Alarme zu erstellen",
     "inactiveStatus": "Alarm inaktiv",
     "activateInfo": "Zum Aktivieren fügen Sie eine E-Mail oder ein Zielsystem hinzu",
     "updated": "\"{name}\" aktualisiert.",
@@ -1000,9 +1000,9 @@
       "gateway": "Gateway auswählen",
       "endEvent": "Endereignis auswählen"
     },
-    "instructionMessage": "Bitte wählen Sie eine Prozessdefinition, ein Gateway und ein Endereignis aus, um die Analyse durchzuführen.",
-    "noInstances": "Keine Instanzen im aktuellen Filter haben das ausgewählte Gateway passiert.",
-    "gatewayInstances": "<b>{totalGateway} Instanzen</b> haben das Gateway <i class=\"gatewayName\"></i> passiert",
+    "instructionMessage": "Bitte wählen Sie eine Prozessdefinition, einen Gateway und ein Endereignis aus, um die Analyse durchzuführen.",
+    "noInstances": "Keine Instanzen im aktuellen Filter haben den ausgewählten Gateway passiert.",
+    "gatewayInstances": "<b>{totalGateway} Instanzen</b> haben den Gateway <i class=\"gatewayName\"></i> passiert",
     "branchDistribution": "<b>{count}</b> ({branchPercentage}%) nahmen den <i class=\"branchName\"></i> Verlauf, <b>{reached}</b> ({reachedEndPercentage}%) von denen erreichten dann das Endereignis <i class=\"endEventName\"></i>",
     "gatewayDistribution": "Verteilung von Instanzen am Gateway <i class=\"gatewayName\"></i>:",
     "endEventProbability": "Wahrscheinlichkeit, das Endereignis <i class=\"endEventName\"></i> zu erreichen bei diesem Verlauf:",
@@ -1182,7 +1182,7 @@
         "inputLabel": "Name der Sammlung",
         "defaultName": "Neue Sammlung",
         "addDataSources": "Datenquellen hinzufügen",
-        "info": "Mit einer Sammlung können Sie den Zugriff auf Daten einschränken, Benutzer hinzufügen und Alarme auf Zahlenberichten erstellen.",
+        "info": "Mit einer Sammlung können Sie den Zugriff auf Daten einschränken, Benutzer hinzufügen und Alarme für Zahlenberichte erstellen.",
         "allTenants": "Alle Mandanten"
       },
       "addUserModal": {
@@ -1198,7 +1198,7 @@
       "filtersLabel": "Mit aktuellen Filtern teilen",
       "copyLabel": "Link kopieren",
       "embedLabel": "Link einbetten",
-      "openInOptimize": "In Optimize Öffnen"
+      "openInOptimize": "In Optimize öffnen"
     },
     "filter": {
       "label": "Filter",
@@ -1213,7 +1213,7 @@
         "modalPretext": {
           "instanceState": "Nur Instanzen mit diesem Status anzeigen:",
           "incidentInstances": "Nur Instanzen anzeigen mit…",
-          "incident": "Nur Daten von Prozessknotenanzeigen mit…",
+          "incident": "Nur Daten von Prozessknoten anzeigen mit…",
           "flowNodeStatus": "Nur Prozessknoten mit diesem Status anzeigen:"
         },
         "instancesOnly": "Nur <b>{type}</b> Instanzen",
@@ -1385,12 +1385,12 @@
         "lessThan": "weniger als"
       },
       "nodeModal": {
-        "executedFlowNodes": "Laufend, Abgebrochen oder Beendet",
+        "executedFlowNodes": "Laufend, abgebrochen oder beendet",
         "notExecutedFlowNodes": "Nicht ausgeführt",
         "canceledFlowNodes": "Abgebrochen",
         "executingFlowNodes": "Laufend",
         "preview": {
-          "executedFlowNodes": "Laufende, Abgebrochene oder Beendete Prozessknoten",
+          "executedFlowNodes": "Laufende, abgebrochene oder beendete Prozessknoten",
           "notExecutedFlowNodes": "Nicht ausgeführte Prozessknoten",
           "canceledFlowNodes": "Abgebrochene Prozessknoten",
           "executingFlowNodes": "Laufende Prozessknoten"
@@ -1517,7 +1517,7 @@
     },
     "csvLimit": {
       "Warning": "Warnung: CSV wird nicht alle angeforderten Daten enthalten",
-      "info": "Dieser Download enthält die ersten {exportLimit} von {totalCount} Datensätze. Filtern Sie Ihre Daten, oder bitten Sie Ihren Administrator, das Systemlimit zu erhöhen, um dieses Problem zu beheben",
+      "info": "Dieser Download enthält die ersten {exportLimit} von {totalCount} Datensätzen. Filtern Sie Ihre Daten, oder bitten Sie Ihren Administrator, das Systemlimit zu erhöhen, um dieses Problem zu beheben",
       "exportApi": "Sie können auch die <a href='{docsLink}'>Datenexport-API</a> verwenden, um größere Datenmengen aus Optimize zu exportieren."
     },
     "unit": {
@@ -1600,13 +1600,13 @@
     "notFoundError": "Der Server konnte die angeforderte Seite oder Datei nicht finden.",
     "badRequestError": "Der Server konnte Ihre Anfrage nicht verarbeiten.",
     "elasticsearchConnectionError": "Der Server konnte keine Verbindung zu Elasticsearch herstellen.",
-    "nonTenantScopeCompliantConflict": "Die Aktion konnte auf Grund von Konflikten mit der Datenquelle der zugehörigen Sammlung nicht durchgeführt werden. Die Definition des Berichts ist in der Datenquelle definiert, jedoch ist mindestens ein Mandant des Berichts nicht in der Datenquelle vorhanden.",
-    "nonDefinitionScopeCompliantConflict": "Die Aktion konnte auf Grund von Konflikten mit der Datenquelle der zugehörigen Sammlung nicht durchgeführt werden. Die Definition des Berichts ist nicht in der Datenquelle der Sammlung vorhanden.",
+    "nonTenantScopeCompliantConflict": "Die Aktion konnte aufgrund von Konflikten mit der Datenquelle der zugehörigen Sammlung nicht durchgeführt werden. Die Definition des Berichts ist in der Datenquelle definiert, jedoch ist mindestens ein Mandant des Berichts nicht in der Datenquelle vorhanden.",
+    "nonDefinitionScopeCompliantConflict": "Die Aktion konnte aufgrund von Konflikten mit der Datenquelle der zugehörigen Sammlung nicht durchgeführt werden. Die Definition des Berichts ist nicht in der Datenquelle der Sammlung vorhanden.",
     "invalidLicenseError": "Die gegebene Lizenz ist ungültig.",
     "noLicenseStoredError": "Derzeit ist keine Lizenz in Optimize vorhanden. Bitte fügen Sie eine gültige Lizenz hinzu.",
     "invalidEventProcessState": "Diese Aktion kann im aktuellen Zustand des Eventbasierten Prozesses nicht ausgeführt werden.",
     "userOrGroupIdNotFound": "Die gegebene Benutzer- oder Gruppen-ID konnte nicht in Optimize gefunden werden.",
-    "tooManyBuckets": "Der Bericht konnte nicht evaluiert werden, da das Ergebnis mehr als 10.000 Datenpunkte enthält. Bitte nutzen Sie Filter oder änderen Sie die konfigurierte Bucket Größe, um die Anzahl der Datenpunkte des Ergebnisses zu verringern.",
+    "tooManyBuckets": "Der Bericht konnte nicht evaluiert werden, da das Ergebnis mehr als 10.000 Datenpunkte enthält. Bitte nutzen Sie Filter oder ändern Sie die konfigurierte Bucket Größe, um die Anzahl der Datenpunkte des Ergebnisses zu verringern.",
     "elasticsearchError": "Es ist ein Fehler in Elasticsearch aufgetreten. Bitte kontaktieren Sie einen Administrator falls dieses Problem längerfristig besteht.",
     "importDefinitionDoesNotExist": "Import fehlgeschlagen, weil die zu importierende Entität auf Definitionen basiert, die nicht existieren.",
     "importIndexVersionMismatch": "Import fehlgeschlagen, weil die Datenstruktur der zu importierenden Entität nicht mit der aktuellen Datenstruktur übereinstimmt. Bitte migrieren Sie die Daten vor dem Export, um sicher zu stellen, dass die Optimize Version übereinstimmt.",
@@ -1657,10 +1657,10 @@
         "urlLabel": "Bild URL",
         "urlPlaceholder": "https://picture/some-picture.jpg",
         "altTextLabel": "Bildname (optional)",
-        "altTextPlaceholder": "Etwas Bild"
+        "altTextPlaceholder": "Ein Bild"
       },
       "link": {
-        "title": "Einfügung Link",
+        "title": "Link einfügen",
         "urlLabel": "Link URL",
         "urlPlaceholder": "https://example.com",
         "altTextLabel": "Text anzeigen (optional)",
@@ -1674,7 +1674,7 @@
       "instancesCurrentlyInProgressName": "Aktuell laufende Prozesse",
       "instancesCurrentlyInProgressDescription": "Dieser Bericht zeigt, wie stark der Cluster aktuell genutzt wird.",
       "instancesStartedInLastSixMonthsName": "In den letzten 6 Monaten gestartete Prozesse",
-      "instancesStartedInLastSixMonthsDescription": "Dieser Bericht gibt Aufschluss über Status der Einfürhung von Prozess Orchestrierung.",
+      "instancesStartedInLastSixMonthsDescription": "Dieser Bericht gibt Aufschluss über den Status der Einführung der Prozessorchestrierung.",
       "instancesEndedInLastSixMonthsName": "In den letzten 6 Monaten beendete Prozesse",
       "instancesEndedInLastSixMonthsDescription": "Dieser Bericht zeigt die Anzahl der beendeten Prozess Instanzen."
     }
@@ -1682,20 +1682,20 @@
   "instantDashboard": {
     "IP_DashboardName": "Instant Preview Dashboard",
     "IP_KpiDashboardName": "KPI Dashboard",
-    "processDashboard": "Instant Process Übersicht",
+    "processDashboard": "Instant Prozess Übersicht",
     "processDashboard-description": "Dieses Dashboard bietet eine Übersicht der Metriken und Anwendungsfälle, die mit Optimize abgedeckt werden können.",
     "processDashboard_text1_line1": "Melde Geschäftskennzahlen",
-    "processDashboard_text1_line2": "Aggregiere und gruppiere Prozessausführung Daten in Tagen, Wochen und Monaten um Metriken und Key Performance Indicator (KPI) zu monitoren und zu melden.",
-    "processDashboard_text1_line3": "Abonniere eine wöchentliche Email-Zusammenfassung der Prozessmetriken und KPIs",
+    "processDashboard_text1_line2": "Aggregiere und gruppiere Prozessausführungsdaten in Tagen, Wochen und Monaten um Metriken und Key Performance Indikatoren (KPI) zu überwachen und zu melden.",
+    "processDashboard_text1_line3": "Abonniere einen wöchentlichen E-Mail Digest der Prozessmetriken und KPIs",
     "processDashboard_text2_line1": "Analysiere Probleme und finde Verbesserungen",
-    "processDashboard_text2_line2": "Nutze alle gesammelten Prozessausführung Daten, um Probleme zu untersuchen oder neue Prozessverbesserungen einzuleiten.",
+    "processDashboard_text2_line2": "Nutze alle gesammelten Prozessausführungsdaten, um Probleme zu untersuchen oder neue Prozessverbesserungen einzuleiten.",
     "processDashboard_text2_line3": "Nutze die Optimize Ausreißeranalyse, um Verbesserungspotenzial im Prozess zu finden",
-    "processDashboard_text3_line1": "Echtzeitnahe Überwache der Prozess Gesundheit",
-    "processDashboard_text3_line2": "Monitore Prozessausführung Daten der letzten Minuten, Stunden und Tage echtzeitnah, um korrektiv eingreifen zu können.",
-    "processDashboard_text3_line3": "Erstelle eine Kopie dieses Dashboards und passe es deinen Bedürfnissen an",
+    "processDashboard_text3_line1": "Echtzeitnahe Überwachung der Prozess Gesundheit",
+    "processDashboard_text3_line2": "Überwache Prozessausführungsdaten der letzten Minuten, Stunden und Tage echtzeitnah, um korrektiv eingreifen zu können.",
+    "processDashboard_text3_line3": "Erstellen Sie eine Kopie dieses Dashboards und passen Sie es Ihren Bedürfnissen an",
     "report": {
       "processDashboard_currentlyRunningProcesses": "Aktuell laufend",
-      "processDashboard_currentlyRunningProcesses-description": "Dieser Bericht zeigt den fortschritt aller laufenden Prozesses an.",
+      "processDashboard_currentlyRunningProcesses-description": "Dieser Bericht zeigt den Fortschritt aller laufenden Prozesse an.",
       "processDashboard_incomingInLast7Days": "In den letzten 7 Tagen eingegangene",
       "processDashboard_incomingInLast7Days-description": "Dieser Bericht zeigt die in den letzten 7 Tagen eingegangenen Anfragen die einen Prozess gestartet haben.",
       "processDashboard_currentlyInProgress": "Aktuell laufende Prozesse",
