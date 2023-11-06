@@ -163,10 +163,8 @@ public final class RemoteStreamTransport<M> extends Actor {
         completed.complete(null);
       }
         // this error means the remote member is not handling requests of this type; either it's not
-        // a
-        // gateway, or it's still starting up or shutting down. in either case, restarting streams
-        // makes
-        // no sense
+        // a gateway, or it's still starting up or shutting down. in either case, restarting streams
+        // makes no sense
       case final NoRemoteHandler e -> {
         LOG.trace(
             """
