@@ -613,7 +613,7 @@ message ModifyProcessInstanceResponse {
 
 message DeleteResourceRequest {
   // The key of the resource that should be deleted. This can either be the key
-  // of a process definition, or the key of a decision requirements definition.
+  // of a process definition, the key of a decision requirements definition or the key of a form.
   int64 resourceKey = 1;
 }
 
