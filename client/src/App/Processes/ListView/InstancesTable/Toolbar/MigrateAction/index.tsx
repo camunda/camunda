@@ -12,7 +12,7 @@ import {MigrateAlt} from '@carbon/react/icons';
 import {Restricted} from 'modules/components/Restricted';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processInstancesStore} from 'modules/stores/processInstances';
-import {getProcessInstanceFilters} from 'modules/utils/filter';
+import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/processXml/processXml.migration.source';
 import {processXmlStore} from 'modules/stores/processXml/processXml.list';
