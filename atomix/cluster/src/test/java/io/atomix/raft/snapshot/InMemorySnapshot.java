@@ -254,4 +254,19 @@ public final class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapsh
         && id.equals(that.id)
         && chunks.equals(that.chunks);
   }
+
+  @Override
+  public String toString() {
+    return "InMemorySnapshot{"
+        + "index="
+        + index
+        + ", term="
+        + term
+        + ", id='"
+        + id
+        + '\''
+        + ", checksum="
+        + checksum
+        + '}';
+  }
 }
