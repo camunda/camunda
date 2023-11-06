@@ -40,6 +40,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   private final StringProperty workerProp = new StringProperty("worker", EMPTY_STRING);
   private final LongProperty deadlineProp = new LongProperty("deadline", -1);
+  private final LongProperty timeoutProp = new LongProperty("timeout", -1);
   private final IntegerProperty retriesProp = new IntegerProperty(RETRIES, -1);
   private final LongProperty retryBackoffProp = new LongProperty("retryBackoff", 0);
   private final LongProperty recurringTimeProp = new LongProperty("recurringTime", -1);
@@ -65,6 +66,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   public JobRecord() {
     declareProperty(deadlineProp)
+        .declareProperty(timeoutProp)
         .declareProperty(workerProp)
         .declareProperty(retriesProp)
         .declareProperty(retryBackoffProp)
@@ -85,6 +87,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   public void wrapWithoutVariables(final JobRecord record) {
     deadlineProp.setValue(record.getDeadline());
+    timeoutProp.setValue(record.getTimeout());
     workerProp.setValue(record.getWorkerBuffer());
     retriesProp.setValue(record.getRetries());
     retryBackoffProp.setValue(record.getRetryBackoff());
@@ -161,6 +164,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   @Override
   public long getDeadline() {
     return deadlineProp.getValue();
+  }
+
+  @Override
+  public long getTimeout() {
+    return timeoutProp.getValue();
   }
 
   @Override
@@ -244,6 +252,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   public JobRecord setErrorMessage(final DirectBuffer buf) {
     return setErrorMessage(buf, 0, buf.capacity());
+  }
+
+  public JobRecord setTimeout(final long val) {
+    timeoutProp.setValue(val);
+    return this;
   }
 
   public JobRecord setDeadline(final long val) {
