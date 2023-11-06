@@ -34,7 +34,7 @@ import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
 import {notificationsStore} from 'modules/stores/notifications';
-import {processStatisticsStore} from 'modules/stores/processStatistics';
+import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.list';
 
 jest.mock('modules/utils/bpmn');
 const handleRefetchSpy = jest.spyOn(processesStore, 'handleRefetch');

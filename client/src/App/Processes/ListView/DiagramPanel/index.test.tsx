@@ -20,7 +20,7 @@ import {
 import {DiagramPanel} from './index';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {processXmlStore} from 'modules/stores/processXml/processXml.list';
-import {processStatisticsStore} from 'modules/stores/processStatistics';
+import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.list';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';

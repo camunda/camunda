@@ -22,7 +22,7 @@ import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {observer} from 'mobx-react';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {processXmlStore} from 'modules/stores/processXml/processXml.list';
-import {processStatisticsStore} from 'modules/stores/processStatistics';
+import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.list';
 import {CopiableProcessID} from 'App/Processes/CopiableProcessID';
 
 function setSearchParam(

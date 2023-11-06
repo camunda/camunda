@@ -9,8 +9,8 @@ import {waitFor} from '@testing-library/react';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockProcessInstances} from 'modules/testUtils';
 import {mockProcessStatistics} from 'modules/mocks/mockProcessStatistics';
-import {processInstancesStore} from './processInstances';
-import {processStatisticsStore} from './processStatistics';
+import {processInstancesStore} from '../processInstances';
+import {processStatisticsStore} from './processStatistics.list';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 
 describe('stores/processStatistics', () => {

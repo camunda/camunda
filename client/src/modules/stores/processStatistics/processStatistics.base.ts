@@ -12,8 +12,7 @@ import {
 } from 'modules/api/processInstances/fetchProcessInstancesStatistics';
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {logger} from 'modules/logger';
-import {NetworkReconnectionHandler} from './networkReconnectionHandler';
-import {processInstancesStore} from './processInstances';
+import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
 import {
   ACTIVE_BADGE,
   CANCELED_BADGE,
@@ -38,8 +37,6 @@ const overlayPositions = {
 
 class ProcessStatistics extends NetworkReconnectionHandler {
   state: State = {...DEFAULT_STATE};
-  processId: ProcessInstanceEntity['processId'] | null = null;
-
   constructor() {
     super();
     makeObservable(this, {
@@ -52,16 +49,6 @@ class ProcessStatistics extends NetworkReconnectionHandler {
       overlaysData: computed,
     });
   }
-
-  init = () => {
-    processInstancesStore.addCompletedOperationsHandler(() => {
-      const filters = getProcessInstancesRequestFilters();
-      const processIds = filters?.processIds ?? [];
-      if (processIds.length > 0) {
-        this.fetchProcessStatistics();
-      }
-    });
-  };
 
   fetchProcessStatistics = this.retryOnConnectionLost(async () => {
     this.startFetching();
@@ -135,10 +122,9 @@ class ProcessStatistics extends NetworkReconnectionHandler {
   };
 
   reset() {
-    this.processId = null;
     super.reset();
     this.resetState();
   }
 }
 
-export const processStatisticsStore = new ProcessStatistics();
+export {ProcessStatistics};
