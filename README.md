@@ -73,10 +73,10 @@ Please follow these steps to backport your changes:
 
 1. **Label the pull request** with a backport label (e.g. the label `backport stable/8.3` indicates
    that we want to backport this pull request to the `stable/8.3` branch). It will be automatically 
-   backported when bors has finished merging the pull request.
+   backported when the pull request is merged.
 2. The Github Actions bot comments on the pull request once it finishes:
     - When _successful_, a new backport pull request was automatically created. Simply **approve and
-      merge it** by adding a review with a `bors merge` comment.
+      merge it**
     - If it _failed_, please follow these **manual steps**:
         1. Locally checkout the target branch (e.g. `stable/8.3`).
         2. Make sure it's up to date with origin (i.e. `git pull`).
