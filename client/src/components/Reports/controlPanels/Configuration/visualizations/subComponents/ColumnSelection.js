@@ -26,7 +26,7 @@ const labels = {
   flowNodeDurations: 'flowNodeDuration',
 };
 
-export default function ColumnSelection({report, onChange}) {
+export default function ColumnSelection({report, onChange, disabled}) {
   const {data} = report;
   const [isSectionOpen, setIsSectionOpen] = useState(
     Object.keys(labels).reduce((prev, key) => ({...prev, [key]: false}), {})
@@ -52,96 +52,101 @@ export default function ColumnSelection({report, onChange}) {
   return (
     <fieldset className="ColumnSelection">
       <legend>{t('report.config.includeTableColumn')}</legend>
-      <AllColumnsButtons
-        enableAll={() =>
-          onChange({
-            tableColumns: {excludedColumns: {$set: []}, includedColumns: {$set: columnNames}},
-          })
-        }
-        disableAll={() =>
-          onChange({
-            tableColumns: {excludedColumns: {$set: columnNames}, includedColumns: {$set: []}},
-          })
-        }
-      />
-      <LabeledInput
-        className="includeNew"
-        type="checkbox"
-        checked={includeNewVariables}
-        label={t('report.config.includeNewVariables')}
-        onChange={({target: {checked}}) =>
-          onChange({tableColumns: {includeNewVariables: {$set: checked}}})
-        }
-      />
-      {groupedColumns.map(({key: groupKey, value: groupValue}) => {
-        const isSection = typeof groupValue === 'object' && groupValue !== null;
-
-        if (isSection && Object.keys(groupValue).length === 0) {
-          return null;
-        }
-
-        if (isSection) {
-          let sectionType = 'variable';
-          switch (groupKey) {
-            case 'inputVariables':
-              sectionType = 'inputVariable';
-              break;
-            case 'outputVariables':
-              sectionType = 'outputVariable';
-              break;
-            case 'flowNodeDurations':
-              sectionType = 'flowNodeDuration';
-              break;
-            case 'counts':
-              sectionType = 'count';
-              break;
-            default:
-              break;
-          }
-
-          const sectionTitle = `${t(`common.filter.types.${sectionType}-plural`)}:`;
-          const sectionKey = labels[groupKey] || groupKey;
-
-          return (
-            <CollapsibleSection
-              key={groupKey}
-              sectionKey={groupKey}
-              isSectionOpen={isSectionOpen[groupKey]}
-              sectionTitle={sectionTitle}
-              toggleSectionOpen={() => toggleSectionOpen(groupKey)}
-            >
-              {Object.entries(groupValue).map(([sectionEntryKey, sectionEntryValue]) => {
-                const label = getSwitchLabel(sectionEntryKey, sectionEntryValue, sectionType);
-                const columnId = `${sectionKey}:${sectionEntryKey}`;
-
-                return (
-                  <ColumnSwitch
-                    key={columnId}
-                    switchId={columnId}
-                    excludedColumns={excludedColumns}
-                    includedColumns={includedColumns}
-                    label={label}
-                    onChange={onChange}
-                  />
-                );
-              })}
-            </CollapsibleSection>
-          );
-        }
-
-        const label = t('report.table.rawData.' + groupKey);
-
-        return (
-          <ColumnSwitch
-            key={groupKey}
-            switchId={groupKey}
-            excludedColumns={excludedColumns}
-            includedColumns={includedColumns}
-            label={label}
-            onChange={onChange}
+      {disabled ? (
+        t('report.updateReportPreview.cannotUpdate')
+      ) : (
+        <>
+          <AllColumnsButtons
+            enableAll={() =>
+              onChange({
+                tableColumns: {excludedColumns: {$set: []}, includedColumns: {$set: columnNames}},
+              })
+            }
+            disableAll={() =>
+              onChange({
+                tableColumns: {excludedColumns: {$set: columnNames}, includedColumns: {$set: []}},
+              })
+            }
           />
-        );
-      })}
+          <LabeledInput
+            className="includeNew"
+            type="checkbox"
+            checked={includeNewVariables}
+            label={t('report.config.includeNewVariables')}
+            onChange={({target: {checked}}) =>
+              onChange({tableColumns: {includeNewVariables: {$set: checked}}})
+            }
+          />
+          {groupedColumns.map(({key: groupKey, value: groupValue}) => {
+            const isSection = typeof groupValue === 'object' && groupValue !== null;
+
+            if (isSection && Object.keys(groupValue).length === 0) {
+              return null;
+            }
+
+            if (isSection) {
+              let sectionType = 'variable';
+              switch (groupKey) {
+                case 'inputVariables':
+                  sectionType = 'inputVariable';
+                  break;
+                case 'outputVariables':
+                  sectionType = 'outputVariable';
+                  break;
+                case 'flowNodeDurations':
+                  sectionType = 'flowNodeDuration';
+                  break;
+                case 'counts':
+                  sectionType = 'count';
+                  break;
+                default:
+                  break;
+              }
+
+              const sectionTitle = `${t(`common.filter.types.${sectionType}-plural`)}:`;
+              const sectionKey = labels[groupKey] || groupKey;
+
+              return (
+                <CollapsibleSection
+                  key={groupKey}
+                  sectionKey={groupKey}
+                  isSectionOpen={isSectionOpen[groupKey]}
+                  sectionTitle={sectionTitle}
+                  toggleSectionOpen={() => toggleSectionOpen(groupKey)}
+                >
+                  {Object.entries(groupValue).map(([sectionEntryKey, sectionEntryValue]) => {
+                    const label = getSwitchLabel(sectionEntryKey, sectionEntryValue, sectionType);
+                    const columnId = `${sectionKey}:${sectionEntryKey}`;
+
+                    return (
+                      <ColumnSwitch
+                        key={columnId}
+                        switchId={columnId}
+                        excludedColumns={excludedColumns}
+                        includedColumns={includedColumns}
+                        label={label}
+                        onChange={onChange}
+                      />
+                    );
+                  })}
+                </CollapsibleSection>
+              );
+            }
+            const label = t('report.table.rawData.' + groupKey);
+
+            return (
+              <ColumnSwitch
+                key={groupKey}
+                switchId={groupKey}
+                excludedColumns={excludedColumns}
+                includedColumns={includedColumns}
+                label={label}
+                onChange={onChange}
+              />
+            );
+          })}
+        </>
+      )}
     </fieldset>
   );
 }

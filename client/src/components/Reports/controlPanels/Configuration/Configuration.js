@@ -149,7 +149,13 @@ export default class Configuration extends React.Component {
               report={report}
               onChange={this.updateConfiguration}
             />
-            {Component && <Component report={report} onChange={this.updateConfiguration} />}
+            {Component && (
+              <Component
+                report={report}
+                onChange={this.updateConfiguration}
+                autoPreviewDisabled={autoPreviewDisabled}
+              />
+            )}
             {(configuration.showInstanceCount || (!isPercentageOnly && !isRawDataReport)) && (
               <PrecisionConfig
                 configuration={configuration}

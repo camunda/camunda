@@ -185,3 +185,20 @@ it('should disable the bucket size component when automatic preview is off', () 
 
   expect(node.find('BucketSize').prop('disabled')).toBe(true);
 });
+
+it('should pass the auto preview switch state to config component', () => {
+  const node = shallow(
+    <Configuration
+      report={{
+        data: {
+          configuration: {tableColumns: {columnOrder: ['test']}},
+          view: {properties: ['rawData']},
+        },
+      }}
+      type="typeA"
+      autoPreviewDisabled
+    />
+  );
+
+  expect(node.find('typeA').prop('autoPreviewDisabled')).toBe(true);
+});
