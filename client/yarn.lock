@@ -3784,17 +3784,17 @@ bplist-parser@^0.2.0:
   dependencies:
     big-integer "^1.6.44"
 
-bpmn-js@14.1.3:
-  version "14.1.3"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-14.1.3.tgz#0862124b739a190a6613742cfc281de766c2c29f"
-  integrity sha512-tVdWhDSkfs6REpRZteRDVhE6x3wlDdt4tDdkTnhp6EcaktHC2pC1jjn425sfRNYez5nnx4a6rypvI9zPIJkv5g==
+bpmn-js@15.1.2:
+  version "15.1.2"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-15.1.2.tgz#a151f7bc3464bb19178660f706efe59e66579e97"
+  integrity sha512-6VVBQnz+WRuJqz7UJ8cBi7Twu5UF8gGKuF/RO51/f9NjNTy62S7Ro606TT6jhNs74Drhsk6SPiBJakv6UzuHwQ==
   dependencies:
     bpmn-moddle "^8.0.1"
-    diagram-js "^12.4.0"
+    diagram-js "^12.7.1"
     diagram-js-direct-editing "^2.0.0"
-    ids "^1.0.3"
+    ids "^1.0.5"
     inherits-browser "^0.1.0"
-    min-dash "^4.0.0"
+    min-dash "^4.1.1"
     min-dom "^4.0.3"
     object-refs "^0.3.0"
     tiny-svg "^3.0.0"
@@ -4941,10 +4941,10 @@ diagram-js@^12.0.0:
     path-intersection "^2.2.1"
     tiny-svg "^3.0.1"
 
-diagram-js@^12.4.0:
-  version "12.5.0"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-12.5.0.tgz#b4de7f906f9b15acf9614e27a0a73216fcd12203"
-  integrity sha512-jrX+NFUPVcCdrUD11Fo1frwWHF9FWys4r/lhi8M4CBuQ8eSePkOq5osFhc6tUoXZawS3sjhbNvd2AYAZZBUjnQ==
+diagram-js@^12.7.1:
+  version "12.7.1"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-12.7.1.tgz#8cf8f1b1e265256855dfa5d51831a659eda067b7"
+  integrity sha512-g5TqtbrTTIMepyrIXuRy7xS6paHnvnQajclm/rMJxGZp7/9kAK5zxELmvS0r+Z2S18h17eaDRxtsmosBVuOTcQ==
   dependencies:
     "@bpmn-io/diagram-js-ui" "^0.2.2"
     clsx "^2.0.0"
@@ -6633,7 +6633,7 @@ ids@^1.0.0:
   resolved "https://registry.yarnpkg.com/ids/-/ids-1.0.0.tgz#df67f2d37b81d7c2effc87e03d17ebff95a58c05"
   integrity sha512-Zvtq1xUto4LttpstyOlFum8lKx+i1OmRfg+6A9drFS9iSZsDPMHG4Sof/qwNR4kCU7jBeWFPrY2ocHxiz7cCRw==
 
-ids@^1.0.3:
+ids@^1.0.5:
   version "1.0.5"
   resolved "https://registry.yarnpkg.com/ids/-/ids-1.0.5.tgz#0aeb4777e77e0017a983c9f7b0ca0cccf352afe4"
   integrity sha512-XQ0yom/4KWTL29sLG+tyuycy7UmeaM/79GRtSJq6IG9cJGIPeBz5kwDCguie3TwxaMNIc3WtPi0cTa1XYHicpw==
@@ -8482,7 +8482,7 @@ min-dash@^4.0.0:
   resolved "https://registry.yarnpkg.com/min-dash/-/min-dash-4.0.0.tgz#4a1afec4c4d70f510b6e241d0550493d4ac0f161"
   integrity sha512-piIvVJ/nxuA4+LpnYIzF6oCtRvdtDvQJteSC+H768H2UvPKFKIt5oiJnUVtr0ZdchneXTcvUZ91vIrvWVIN0AA==
 
-min-dash@^4.1.0:
+min-dash@^4.1.0, min-dash@^4.1.1:
   version "4.1.1"
   resolved "https://registry.yarnpkg.com/min-dash/-/min-dash-4.1.1.tgz#09b85a5e1d0189ce02a4ec416180aa85db06451b"
   integrity sha512-r+Z6vxXLSGr+otyCPx9NKPCSixw7LdfZREPTmqfd2a/d5D6w4NCdOxRJs+HyFO6v2pQkyHroGSiINWECK+OWPg==
