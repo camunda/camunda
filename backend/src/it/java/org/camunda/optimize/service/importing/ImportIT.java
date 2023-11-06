@@ -133,7 +133,7 @@ public class ImportIT extends AbstractImportIT {
     embeddedOptimizeExtension.reloadConfiguration();
 
     final ProcessInstanceEngineDto instanceFromDeletedProcess =
-      engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram("deletedProcess"));
+      engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram(PROC_DEF_KEY));
 
     // relevant data that could block import: flownodes, userOperationsLog, incidents
     engineIntegrationExtension.suspendProcessInstanceByInstanceId(instanceFromDeletedProcess.getId());
