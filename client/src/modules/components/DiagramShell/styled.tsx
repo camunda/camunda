@@ -24,15 +24,37 @@ const Container = styled.div`
   }
 `;
 
-const messageStyles = css`
-  margin-top: var(--cds-spacing-08);
-`;
-const EmptyMessage = styled(BaseEmptyMessage)`
-  ${messageStyles}
+const getMessageStyles = ($position: 'center' | 'top' = 'top') => {
+  return css`
+    ${$position === 'center' &&
+    css`
+      align-self: center;
+    `}
+    ${$position === 'top' &&
+    css`
+      margin-top: var(--cds-spacing-08);
+    `}
+  `;
+};
+
+type MessageProps = {
+  $position?: 'center' | 'top';
+};
+
+const EmptyMessage = styled(BaseEmptyMessage)<MessageProps>`
+  ${({$position}) => {
+    return css`
+      ${getMessageStyles($position)}
+    `;
+  }}
 `;
 
-const ErrorMessage = styled(BaseErrorMessage)`
-  ${messageStyles}
+const ErrorMessage = styled(BaseErrorMessage)<MessageProps>`
+  ${({$position}) => {
+    return css`
+      ${getMessageStyles($position)}
+    `;
+  }}
 `;
 
 export {Container, EmptyMessage, ErrorMessage};

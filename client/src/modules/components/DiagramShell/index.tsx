@@ -18,6 +18,7 @@ type WithEmptyMessageProps = {
   children: React.ReactNode;
   status: 'error' | 'empty' | 'loading' | 'content';
   emptyMessage: React.ComponentProps<typeof BaseEmptyMessage>;
+  messagePosition?: 'top' | 'center';
 };
 
 const DiagramShell: React.FC<DefaultProps | WithEmptyMessageProps> = ({
@@ -41,11 +42,18 @@ const DiagramShell: React.FC<DefaultProps | WithEmptyMessageProps> = ({
       }
 
       if (status === 'empty' && 'emptyMessage' in props) {
-        return <EmptyMessage {...props.emptyMessage} />;
+        return (
+          <EmptyMessage
+            $position={props.messagePosition}
+            {...props.emptyMessage}
+          />
+        );
       }
 
       if (status === 'error') {
-        return <ErrorMessage />;
+        const position =
+          'messagePosition' in props ? props.messagePosition : 'top';
+        return <ErrorMessage $position={position} />;
       }
 
       return null;

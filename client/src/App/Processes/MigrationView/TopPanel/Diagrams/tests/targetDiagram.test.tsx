@@ -5,14 +5,24 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {
+  render,
+  screen,
+  waitForElementToBeRemoved,
+} from 'modules/testing-library';
 import {useEffect} from 'react';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
-import {groupedProcessesMock} from 'modules/testUtils';
+import {
+  groupedProcessesMock,
+  mockProcessWithInputOutputMappingsXML,
+  mockProcessXML,
+} from 'modules/testUtils';
 import {processesStore} from 'modules/stores/processes/processes.migration';
 import {TargetDiagram} from '../TargetDiagram';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {act} from 'react-dom/test-utils';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {processXmlStore} from 'modules/stores/processXml/processXml.migration.target';
 
 type Props = {
   children?: React.ReactNode;
@@ -23,6 +33,7 @@ const Wrapper = ({children}: Props) => {
     return () => {
       processesStore.reset();
       processInstanceMigrationStore.reset();
+      processXmlStore.reset();
     };
   });
 
@@ -30,7 +41,7 @@ const Wrapper = ({children}: Props) => {
 };
 
 describe('Target Diagram', () => {
-  it('should have initial values in the diagram header', async () => {
+  it('should display initial state in the diagram header and diagram panel', async () => {
     processInstanceMigrationStore.setCurrentStep('elementMapping');
 
     render(<TargetDiagram />, {wrapper: Wrapper});
@@ -52,10 +63,15 @@ describe('Target Diagram', () => {
         name: /target version/i,
       }),
     ).toHaveTextContent('-');
+
+    expect(
+      screen.getByText('Select a target process and version'),
+    ).toBeInTheDocument();
   });
 
   it('should render process and version components according to the step number', async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockFetchProcessXML().withSuccess(mockProcessXML);
 
     processInstanceMigrationStore.setCurrentStep('elementMapping');
 
@@ -81,6 +97,7 @@ describe('Target Diagram', () => {
       }),
     ).toBeEnabled();
 
+    expect(await screen.findByTestId('diagram')).toBeInTheDocument();
     act(() => processInstanceMigrationStore.setCurrentStep('summary'));
 
     expect(
@@ -109,5 +126,53 @@ describe('Target Diagram', () => {
         name: /target version/i,
       }),
     ).toHaveTextContent('3');
+  });
+
+  it('should render diagram on selection and re-render on version change', async () => {
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockFetchProcessXML().withSuccess(mockProcessXML);
+
+    processInstanceMigrationStore.setCurrentStep('elementMapping');
+
+    await processesStore.fetchProcesses();
+
+    const {user} = render(<TargetDiagram />, {wrapper: Wrapper});
+
+    await user.click(screen.getByRole('combobox', {name: 'Target Process'}));
+    await user.click(screen.getByRole('option', {name: 'New demo process'}));
+
+    expect(await screen.findByTestId('diagram')).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /reset diagram zoom/i}));
+    expect(screen.getByRole('button', {name: /zoom in diagram/i}));
+    expect(screen.getByRole('button', {name: /zoom out diagram/i}));
+
+    mockFetchProcessXML().withDelay(mockProcessWithInputOutputMappingsXML);
+
+    await user.click(screen.getByRole('combobox', {name: 'Target Version'}));
+    await user.click(screen.getByRole('option', {name: '2'}));
+
+    expect(await screen.findByTestId('diagram-spinner')).toBeInTheDocument();
+
+    await waitForElementToBeRemoved(() =>
+      screen.getByTestId('diagram-spinner'),
+    );
+  });
+
+  it('should display error message on selection if diagram could not be fetched', async () => {
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockFetchProcessXML().withServerError();
+
+    processInstanceMigrationStore.setCurrentStep('elementMapping');
+
+    await processesStore.fetchProcesses();
+
+    const {user} = render(<TargetDiagram />, {wrapper: Wrapper});
+
+    await user.click(screen.getByRole('combobox', {name: 'Target Process'}));
+    await user.click(screen.getByRole('option', {name: 'New demo process'}));
+
+    expect(
+      await screen.findByText('Data could not be fetched'),
+    ).toBeInTheDocument();
   });
 });

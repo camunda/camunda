@@ -139,7 +139,7 @@ const mockXmlGetRequest = (url: string) => {
     },
     withDelay: (initialValue: string) => {
       mockServer.use(
-        rest.post(url, (_, res, ctx) =>
+        rest.get(url, (_, res, ctx) =>
           res.once(ctx.delay(100), ctx.text(initialValue)),
         ),
       );
