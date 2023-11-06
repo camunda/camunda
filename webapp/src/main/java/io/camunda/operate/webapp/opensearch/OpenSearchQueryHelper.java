@@ -209,7 +209,7 @@ public class OpenSearchQueryHelper {
     String errorMessage = query.getErrorMessage();
     if (StringUtils.hasLength(errorMessage)) {
       if(errorMessage.contains(WILD_CARD)) {
-        return QueryDSL.hasChildQuery(ACTIVITIES_JOIN_RELATION, wildcardQuery(ERROR_MSG, errorMessage));
+        return QueryDSL.hasChildQuery(ACTIVITIES_JOIN_RELATION, wildcardQuery(ERROR_MSG, errorMessage.toLowerCase()));
       } else {
         return QueryDSL.hasChildQuery(ACTIVITIES_JOIN_RELATION, match(ERROR_MSG, errorMessage, Operator.And));
       }
