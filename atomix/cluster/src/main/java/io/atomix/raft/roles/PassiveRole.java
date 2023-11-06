@@ -48,6 +48,7 @@ import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -187,8 +188,16 @@ public class PassiveRole extends InactiveRole {
                     .build()));
       }
 
-      pendingSnapshot =
-          raft.getPersistedSnapshotStore().newReceivedSnapshot(snapshotChunk.getSnapshotId());
+      try {
+        pendingSnapshot =
+            raft.getPersistedSnapshotStore().newReceivedSnapshot(snapshotChunk.getSnapshotId());
+      } catch (final SnapshotAlreadyExistsException snapshotAlreadyExists) {
+        // This should not happen because we previously check for the latest snapshot. But, if it
+        // happens, instead of crashing raft thread, we respond with success because we already have
+        // the snapshot.
+        return CompletableFuture.completedFuture(
+            logResponse(InstallResponse.builder().withStatus(RaftResponse.Status.OK).build()));
+      }
       log.info("Started receiving new snapshot {} from {}", pendingSnapshot, request.leader());
       pendingSnapshotStartTimestamp = System.currentTimeMillis();
       snapshotReplicationMetrics.incrementCount();
