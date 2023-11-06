@@ -7,9 +7,17 @@
 package io.camunda.operate.util.searchrepository;
 
 import io.camunda.operate.conditions.OpensearchCondition;
+import io.camunda.operate.entities.VariableEntity;
+import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
 import io.camunda.operate.store.opensearch.dsl.RequestDSL;
+import io.camunda.operate.util.ElasticsearchUtil;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
+import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.opensearch.client.opensearch._types.mapping.DynamicMapping;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +41,8 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.getIndexRequestBuilder;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.indexRequestBuilder;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
+import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Component
 @Conditional(OpensearchCondition.class)
@@ -169,5 +179,13 @@ public class TestOpenSearchRepository implements TestSearchRepository {
       .script(script(script, fields));
 
     richOpenSearchClient.doc().update(updateRequestBuilder, errorMessageSupplier);
+  }
+
+  @Override
+  public List<VariableEntity> getVariablesByProcessInstanceKey(String index, Long processInstanceKey) {
+    var requestBuilder = searchRequestBuilder(index)
+      .query(constantScore(term(VariableTemplate.PROCESS_INSTANCE_KEY, processInstanceKey)));
+
+    return richOpenSearchClient.doc().scrollValues(requestBuilder, VariableEntity.class);
   }
 }

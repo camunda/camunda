@@ -8,6 +8,9 @@ package io.camunda.operate.util.searchrepository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
+import io.camunda.operate.entities.VariableEntity;
+import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.DocWriteResponse;
@@ -21,6 +24,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
@@ -168,5 +172,19 @@ public class TestElasticSearchRepository implements TestSearchRepository {
   public void update(String index, String id, Map<String, Object> fields) throws IOException {
     UpdateRequest request = new UpdateRequest().index(index).id(id).doc(fields);
     esClient.update(request, RequestOptions.DEFAULT);
+  }
+
+  @Override
+  public List<VariableEntity> getVariablesByProcessInstanceKey(String index, Long processInstanceKey) {
+    final TermQueryBuilder processInstanceKeyQuery = termQuery(VariableTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
+    final ConstantScoreQueryBuilder query = constantScoreQuery(processInstanceKeyQuery);
+    final SearchRequest searchRequest = new SearchRequest(index).source(new SearchSourceBuilder().query(query));
+    try {
+      return ElasticsearchUtil.scroll(searchRequest, VariableEntity.class, objectMapper, esClient);
+    } catch (IOException e) {
+      final String message = String.format("Exception occurred, while obtaining variables: %s for processInstanceKey %s",
+        e.getMessage(), processInstanceKey);
+      throw new OperateRuntimeException(message, e);
+    }
   }
 }
