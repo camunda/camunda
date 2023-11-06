@@ -14,7 +14,6 @@ import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.job.importing.VariableUpdateElasticsearchImportJob;
-
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
@@ -34,6 +33,7 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.es.schema.IndexSettingsBuilderES.buildDynamicSettings;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public class ImportIT extends AbstractImportIT {
 
@@ -123,6 +123,31 @@ public class ImportIT extends AbstractImportIT {
     assertThat(getProcessInstanceForId(secondInstance.getId()).getFlowNodeInstances())
       .extracting(FlowNodeInstanceDto::getFlowNodeId)
       .containsExactlyInAnyOrder(START_EVENT, USER_TASK_1);
+  }
+
+  @Test
+  public void importIsNotBlockedIfDefinitionDeletedAndNotImported() {
+    // given a definition that was deleted in engine before it could be imported, but instance data remains in engine
+    embeddedOptimizeExtension.getConfigurationService().getConfiguredEngines().values()
+      .forEach(engineConfiguration -> engineConfiguration.setImportEnabled(false));
+    embeddedOptimizeExtension.reloadConfiguration();
+
+    final ProcessInstanceEngineDto instanceFromDeletedProcess =
+      engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram("deletedProcess"));
+
+    // relevant data that could block import: flownodes, userOperationsLog, incidents
+    engineIntegrationExtension.suspendProcessInstanceByInstanceId(instanceFromDeletedProcess.getId());
+    engineIntegrationExtension.unsuspendProcessInstanceByInstanceId(instanceFromDeletedProcess.getId());
+    incidentClient.createOpenIncidentForInstancesWithBusinessKey(instanceFromDeletedProcess.getBusinessKey());
+    // need to complete usertasks because definitions with running instances cannot be deleted without cascade
+    engineIntegrationExtension.completeUserTaskWithoutClaim(instanceFromDeletedProcess.getId());
+    engineIntegrationExtension.deleteProcessDefinition(instanceFromDeletedProcess.getDefinitionId());
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then no exceptions occur during import
+    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances()).hasSize(1);
   }
 
   private int getNestedDocumentCountForProcessInstance(final ProcessInstanceDto instance) {

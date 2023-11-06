@@ -9,6 +9,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionFetchException;
+import org.camunda.optimize.service.exceptions.OptimizeProcessDefinitionFetchException;
 
 import java.util.Map;
 import java.util.Optional;
@@ -44,7 +46,12 @@ public abstract class AbstractDefinitionResolverService<T extends DefinitionOpti
           "Trying to directly fetch the definition from the engine.",
         definitionId
       );
-      value = fetchFromEngine(definitionId, engineContext);
+      try {
+        value = fetchFromEngine(definitionId, engineContext);
+      } catch (OptimizeDecisionDefinitionFetchException | OptimizeProcessDefinitionFetchException e) {
+        log.info("Could not retrieve definition with ID {} from the engine.", definitionId);
+        return Optional.empty();
+      }
       addToCacheIfNotNull(value);
     }
 
