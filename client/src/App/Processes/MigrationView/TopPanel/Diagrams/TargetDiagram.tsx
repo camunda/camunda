@@ -9,17 +9,25 @@ import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigra
 import {Header} from './Header';
 import {DiagramWrapper} from './styled';
 import {observer} from 'mobx-react';
+import {TargetProcessField} from './TargetProcessField';
+import {TargetVersionField} from './TargetVersionField';
+import {processesStore} from 'modules/stores/processes/processes.migration';
 
 const TargetDiagram: React.FC = observer(() => {
+  const {
+    migrationState: {selectedTargetProcess, selectedTargetVersion},
+  } = processesStore;
+
   return (
     <DiagramWrapper>
       <Header
         mode={processInstanceMigrationStore.isSummaryStep ? 'view' : 'edit'}
         label="Target"
-        processName="target process name"
-        processVersion="target process version"
+        processName={selectedTargetProcess?.name ?? ''}
+        processVersion={selectedTargetVersion?.toString() ?? ''}
       >
-        <div>dropdowns</div>
+        <TargetProcessField />
+        <TargetVersionField />
       </Header>
       Target Diagram
     </DiagramWrapper>

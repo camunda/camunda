@@ -40,4 +40,9 @@ const Label = styled.label`
   color: var(--cds-text-secondary);
 `;
 
-export {DiagramContainer, DiagramWrapper, Label, Container};
+const FieldContainer = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
+export {DiagramContainer, DiagramWrapper, Container, FieldContainer, Label};
