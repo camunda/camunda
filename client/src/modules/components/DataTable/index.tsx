@@ -21,6 +21,7 @@ import {
 } from '@carbon/react';
 
 type Props = {
+  size?: React.ComponentProps<typeof CarbonDataTable>['size'];
   headers: {key: string; header: string; width?: string}[];
   rows: React.ComponentProps<typeof CarbonDataTable>['rows'];
   className?: string;
@@ -53,6 +54,7 @@ const TableCells: React.FC<{
 const DataTable = React.forwardRef<HTMLDivElement, Props>(
   (
     {
+      size = 'sm',
       headers,
       rows,
       className,
@@ -66,7 +68,7 @@ const DataTable = React.forwardRef<HTMLDivElement, Props>(
     return (
       <Container className={className} ref={ref}>
         <CarbonDataTable
-          size="sm"
+          size={size}
           headers={headers}
           rows={rows}
           render={({

@@ -20,10 +20,12 @@ const STEPS = {
 
 type State = {
   currentStep: 'elementMapping' | 'summary' | null;
+  flowNodeMapping: {[sourceId: string]: string};
 };
 
 const DEFAULT_STATE: State = {
   currentStep: null,
+  flowNodeMapping: {},
 };
 
 class ProcessInstanceMigration {
@@ -60,6 +62,20 @@ class ProcessInstanceMigration {
   get isEnabled() {
     return this.state.currentStep !== null;
   }
+
+  updateFlowNodeMapping = ({
+    sourceId,
+    targetId,
+  }: {
+    sourceId: string;
+    targetId?: string;
+  }) => {
+    if (targetId === undefined) {
+      delete this.state.flowNodeMapping[sourceId];
+    } else {
+      this.state.flowNodeMapping[sourceId] = targetId;
+    }
+  };
 }
 
 export const processInstanceMigrationStore = new ProcessInstanceMigration();
