@@ -14,7 +14,6 @@ import {track} from 'tracking';
 import {loadNodesOutliers, loadDurationData} from './service';
 import {TaskAnalysis} from './TaskAnalysis';
 import OutlierDetailsModal from './OutlierDetailsModal';
-import InstancesButton from './InstancesButton';
 
 jest.mock('./service', () => {
   return {
@@ -131,7 +130,7 @@ it('display load chart data and display details modal when loadChartData is call
   });
 });
 
-it('should display correct tooltip details', async () => {
+it('should open details modal on node click', async () => {
   loadNodesOutliers.mockClear();
   getFlowNodeNames.mockClear();
   loadProcessDefinitionXml.mockReturnValue('xml');
@@ -144,8 +143,9 @@ it('should display correct tooltip details', async () => {
     tenantIds: ['a', 'b'],
   });
 
-  const tooltipNode = node.find('HeatmapOverlay').renderProp('formatter')({}, 'nodeKey');
-  expect(tooltipNode).toMatchSnapshot();
+  node.find('HeatmapOverlay').prop('onNodeClick')({element: {id: 'nodeKey'}});
+
+  expect(node.find(OutlierDetailsModal)).toExist();
 });
 
 it('should display an empty state if no outliers found', async () => {
@@ -160,22 +160,4 @@ it('should display an empty state if no outliers found', async () => {
   });
 
   expect(node.find('.noOutliers')).toExist();
-});
-
-it('should display download instances button if the user is authorized to export csv files', async () => {
-  loadNodesOutliers.mockClear();
-  getFlowNodeNames.mockClear();
-  loadProcessDefinitionXml.mockReturnValue('xml');
-  const user = {authorizations: ['csv_export']};
-
-  const node = shallow(<TaskAnalysis {...props} user={user} />);
-
-  await node.instance().updateConfig({
-    processDefinitionKey: 'someKey',
-    processDefinitionVersions: ['someVersion'],
-    tenantIds: ['a', 'b'],
-  });
-
-  const tooltipNode = node.find('HeatmapOverlay').renderProp('formatter')({}, 'nodeKey');
-  expect(tooltipNode.find(InstancesButton)).toExist();
 });
