@@ -12,7 +12,9 @@ import {getProcessDisplayName} from 'modules/utils/getProcessDisplayName';
 import {useRef, useState} from 'react';
 import {
   FormContainer,
+  FormScrollContainer,
   FormSkeletonContainer,
+  InlineErrorContainer,
   InlineNotification,
 } from './styled';
 import {TextInputSkeleton, Loading, Modal} from '@carbon/react';
@@ -58,6 +60,13 @@ const FormModal: React.FC<Props> = ({
   const prioritizeTenantValidation =
     isMultiTenancyEnabled && tenantId === undefined;
 
+  const handleClose = () => {
+    onClose();
+    setIsSubmitting(false);
+    setHasSubmissionFailed(false);
+    setIsFormSchemaValid(true);
+  };
+
   return createPortal(
     <>
       <Modal
@@ -77,24 +86,24 @@ const FormModal: React.FC<Props> = ({
           </>
         }
         open={isOpen}
-        onRequestClose={onClose}
+        onRequestClose={handleClose}
         onRequestSubmit={() => {
           formManagerRef.current?.submit();
         }}
-        onSecondarySubmit={onClose}
+        onSecondarySubmit={handleClose}
         preventCloseOnClickOutside
         primaryButtonDisabled={
           status !== 'success' || !isFormSchemaValid || isSubmitting
         }
         size="lg"
       >
-        {match({
-          status,
-          fetchStatus,
-          isFormSchemaValid,
-        })
-          .with({fetchStatus: 'fetching'}, () => (
-            <FormContainer>
+        <FormContainer>
+          {match({
+            status,
+            fetchStatus,
+            isFormSchemaValid,
+          })
+            .with({fetchStatus: 'fetching'}, () => (
               <FormSkeletonContainer data-testid="form-skeleton">
                 <TextInputSkeleton />
                 <TextInputSkeleton />
@@ -103,106 +112,110 @@ const FormModal: React.FC<Props> = ({
                 <TextInputSkeleton />
                 <TextInputSkeleton />
               </FormSkeletonContainer>
-            </FormContainer>
-          ))
-          .with(
-            {
-              status: 'success',
-              isFormSchemaValid: true,
-            },
-            () => (
-              <FormContainer>
-                <FormJSRenderer
-                  schema={schema!}
-                  handleSubmit={onSubmit}
-                  onMount={(formManager) => {
-                    formManagerRef.current = formManager;
-                  }}
-                  onSubmitStart={() => {
-                    setIsSubmitting(true);
-                  }}
-                  onImportError={() => {
-                    setIsFormSchemaValid(false);
-                  }}
-                  onSubmitError={() => {
-                    setHasSubmissionFailed(true);
-                    setIsSubmitting(false);
-                  }}
-                  onSubmitSuccess={() => {
-                    setIsSubmitting(false);
-                  }}
-                  onValidationError={() => {
-                    setIsSubmitting(false);
-                  }}
-                />
-                {match({
-                  hasSubmissionFailed,
-                  prioritizeTenantValidation,
-                })
-                  .with(
-                    {
-                      hasSubmissionFailed: true,
-                      prioritizeTenantValidation: true,
-                    },
-                    () => (
-                      <InlineNotification
-                        kind="error"
-                        role="alert"
-                        hideCloseButton
-                        lowContrast
-                        title="Something went wrong"
-                        subtitle="You must first select a tenant to start a process."
-                      />
-                    ),
-                  )
-                  .with(
-                    {
-                      hasSubmissionFailed: true,
-                      prioritizeTenantValidation: false,
-                    },
-                    () => (
-                      <InlineNotification
-                        kind="error"
-                        role="alert"
-                        hideCloseButton
-                        lowContrast
-                        title="Something went wrong"
-                        subtitle="Form could not be submitted. Please try again later."
-                      />
-                    ),
-                  )
-                  .with(
-                    {
-                      hasSubmissionFailed: false,
-                    },
-                    () => null,
-                  )
-                  .exhaustive()}
-              </FormContainer>
-            ),
-          )
-          .with({status: 'success', isFormSchemaValid: false}, () => (
-            <InlineNotification
-              kind="error"
-              role="alert"
-              hideCloseButton
-              lowContrast
-              title="Something went wrong"
-              subtitle="We were not able to render the form. Please contact your process administrator to fix the form schema."
-            />
-          ))
-          .with({status: 'error'}, () => (
-            <InlineNotification
-              kind="error"
-              role="alert"
-              hideCloseButton
-              lowContrast
-              title="Something went wrong"
-              subtitle="We were not able to load the form. Please check your connection
+            ))
+            .with(
+              {
+                status: 'success',
+                isFormSchemaValid: true,
+              },
+              () => (
+                <>
+                  <FormScrollContainer>
+                    <FormJSRenderer
+                      schema={schema!}
+                      handleSubmit={onSubmit}
+                      onMount={(formManager) => {
+                        formManagerRef.current = formManager;
+                      }}
+                      onSubmitStart={() => {
+                        setIsSubmitting(true);
+                      }}
+                      onImportError={() => {
+                        setIsFormSchemaValid(false);
+                      }}
+                      onSubmitError={() => {
+                        setHasSubmissionFailed(true);
+                        setIsSubmitting(false);
+                      }}
+                      onSubmitSuccess={() => {
+                        setIsSubmitting(false);
+                      }}
+                      onValidationError={() => {
+                        setIsSubmitting(false);
+                      }}
+                    />
+                  </FormScrollContainer>
+                  <InlineErrorContainer>
+                    {match({
+                      hasSubmissionFailed,
+                      prioritizeTenantValidation,
+                    })
+                      .with(
+                        {
+                          hasSubmissionFailed: true,
+                          prioritizeTenantValidation: true,
+                        },
+                        () => (
+                          <InlineNotification
+                            kind="error"
+                            role="alert"
+                            hideCloseButton
+                            lowContrast
+                            title="Something went wrong"
+                            subtitle="You must first select a tenant to start a process."
+                          />
+                        ),
+                      )
+                      .with(
+                        {
+                          hasSubmissionFailed: true,
+                          prioritizeTenantValidation: false,
+                        },
+                        () => (
+                          <InlineNotification
+                            kind="error"
+                            role="alert"
+                            hideCloseButton
+                            lowContrast
+                            title="Something went wrong"
+                            subtitle="Form could not be submitted. Please try again later."
+                          />
+                        ),
+                      )
+                      .with(
+                        {
+                          hasSubmissionFailed: false,
+                        },
+                        () => null,
+                      )
+                      .exhaustive()}
+                  </InlineErrorContainer>
+                </>
+              ),
+            )
+            .with({status: 'success', isFormSchemaValid: false}, () => (
+              <InlineNotification
+                kind="error"
+                role="alert"
+                hideCloseButton
+                lowContrast
+                title="Something went wrong"
+                subtitle="We were not able to render the form. Please contact your process administrator to fix the form schema."
+              />
+            ))
+            .with({status: 'error'}, () => (
+              <InlineNotification
+                kind="error"
+                role="alert"
+                hideCloseButton
+                lowContrast
+                title="Something went wrong"
+                subtitle="We were not able to load the form. Please check your connection
               and try again later."
-            />
-          ))
-          .exhaustive()}
+              />
+            ))
+            .exhaustive()}
+        </FormContainer>
       </Modal>
     </>,
     document.body,

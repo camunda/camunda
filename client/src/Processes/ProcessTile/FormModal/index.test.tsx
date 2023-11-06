@@ -338,4 +338,85 @@ describe('<FormModal />', () => {
 
     await waitForElementToBeRemoved(screen.queryByTestId('loading-spinner'));
   });
+
+  it('should hide submission when reopening modal', async () => {
+    nodeMockServer.use(
+      rest.get('/v1/forms/:formId', (_, res, ctx) => {
+        return res(ctx.json(formMocks.form));
+      }),
+    );
+
+    const mockOnSubmit = vi.fn(() => {
+      throw new Error('Mock error');
+    });
+
+    const {rerender, user} = render(
+      <FormModal
+        process={createMockProcess('process-0')}
+        isOpen
+        onClose={() => Promise.resolve()}
+        onSubmit={mockOnSubmit}
+        isMultiTenancyEnabled={false}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    await waitForElementToBeRemoved(screen.queryByTestId('form-skeleton'));
+
+    await user.type(
+      screen.getByRole('textbox', {name: /my variable \*/i}),
+      'var1',
+    );
+    await user.type(
+      screen.getByRole('textbox', {
+        name: /is cool\?/i,
+      }),
+      'Yes',
+    );
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /start process/i,
+      }),
+    );
+
+    expect(
+      within(screen.getByRole('alert')).getByText('Something went wrong'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('alert')).getByText(
+        'Form could not be submitted. Please try again later.',
+      ),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', {name: /close/i}));
+
+    rerender(
+      <FormModal
+        process={createMockProcess('process-0')}
+        isOpen={false}
+        onClose={() => Promise.resolve()}
+        onSubmit={mockOnSubmit}
+        isMultiTenancyEnabled={false}
+      />,
+    );
+
+    // we need to check the class because Carbon never stops rendering the dialog
+    expect(screen.getByRole('dialog')).not.toHaveClass('is-visible');
+
+    rerender(
+      <FormModal
+        process={createMockProcess('process-0')}
+        isOpen
+        onClose={() => Promise.resolve()}
+        onSubmit={mockOnSubmit}
+        isMultiTenancyEnabled={false}
+      />,
+    );
+
+    await waitForElementToBeRemoved(screen.queryByTestId('form-skeleton'));
+
+    expect(screen.queryByText('Something went wrong')).not.toBeInTheDocument();
+  });
 });

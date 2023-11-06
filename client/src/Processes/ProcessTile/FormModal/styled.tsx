@@ -47,8 +47,31 @@ const InlineNotification = styled(BaseInlineNotification)`
 
 const FormContainer = styled.div`
   width: 100%;
+  max-height: 100%;
   display: flex;
   justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: hidden;
 `;
 
-export {FormSkeletonContainer, InlineNotification, FormContainer};
+const FormScrollContainer = styled.div`
+  width: 100%;
+  max-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+`;
+
+const InlineErrorContainer = styled.div`
+  padding-top: var(--cds-spacing-02);
+`;
+
+export {
+  FormSkeletonContainer,
+  InlineNotification,
+  FormContainer,
+  FormScrollContainer,
+  InlineErrorContainer,
+};
