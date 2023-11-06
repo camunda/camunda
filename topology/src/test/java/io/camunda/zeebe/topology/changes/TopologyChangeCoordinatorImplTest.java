@@ -15,9 +15,9 @@ import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.topology.ClusterTopologyAssert;
 import io.camunda.zeebe.topology.ClusterTopologyManager;
+import io.camunda.zeebe.topology.api.TopologyRequestFailedException;
+import io.camunda.zeebe.topology.api.TopologyRequestFailedException.OperationNotAllowed;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator.TopologyChangeRequest;
-import io.camunda.zeebe.topology.changes.TopologyChangeCoordinatorImpl.InvalidTopologyChangeException;
-import io.camunda.zeebe.topology.changes.TopologyChangeCoordinatorImpl.OperationNotAllowed;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.PartitionState;
@@ -53,7 +53,7 @@ final class TopologyChangeCoordinatorImplTest {
     assertThat(applyFuture)
         .failsWithin(Duration.ofMillis(100))
         .withThrowableOfType(ExecutionException.class)
-        .withCauseInstanceOf(InvalidTopologyChangeException.class)
+        .withCauseInstanceOf(TopologyRequestFailedException.InvalidRequest.class)
         .withMessageContaining(
             "Expected to leave partition, but the local member does not exist in the topology");
   }
@@ -86,7 +86,7 @@ final class TopologyChangeCoordinatorImplTest {
     assertThat(applyFuture)
         .failsWithin(Duration.ofMillis(100))
         .withThrowableOfType(ExecutionException.class)
-        .withCauseInstanceOf(InvalidTopologyChangeException.class)
+        .withCauseInstanceOf(TopologyRequestFailedException.InvalidRequest.class)
         .withMessageContaining(
             "Expected to leave partition, but the local member does not have the partition 1");
   }
@@ -117,7 +117,10 @@ final class TopologyChangeCoordinatorImplTest {
     // given
     final ClusterTopology initialTopology =
         ClusterTopology.init()
-            .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()));
+            .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
+            .addMember(
+                MemberId.from("2"),
+                MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))));
     clusterTopologyManager.setClusterTopology(initialTopology);
 
     final List<TopologyChangeOperation> operations =

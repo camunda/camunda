@@ -47,7 +47,6 @@ import java.util.stream.Collectors;
 
 /** Manages the persistent state of the Raft cluster from the perspective of a single server. */
 public final class RaftClusterContext implements RaftCluster, AutoCloseable {
-
   private final RaftContext raft;
   private final DefaultRaftMember localMember;
   private final Map<MemberId, RaftMemberContext> remoteMemberContexts = new HashMap<>();
@@ -61,13 +60,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     localMember =
         new DefaultRaftMember(localMemberId, RaftMember.Type.PASSIVE, time).setCluster(this);
     this.raft = checkNotNull(raft, "context cannot be null");
-
-    // If a configuration is stored, use the stored configuration, otherwise configure the server
-    // with the user provided configuration.
-    final var storedConfiguration = raft.getMetaStore().loadConfiguration();
-    if (storedConfiguration != null) {
-      updateConfiguration(storedConfiguration);
-    }
   }
 
   @Override
@@ -81,7 +73,13 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     raft.getThreadContext()
         .execute(
             () -> {
-              if (configuration == null) {
+              // If a configuration is stored, use the stored configuration, otherwise configure the
+              // server
+              // with the user provided configuration.
+              final var storedConfiguration = raft.getMetaStore().loadConfiguration();
+              if (storedConfiguration != null) {
+                updateConfiguration(storedConfiguration);
+              } else {
                 createInitialConfig(cluster);
               }
               raft.transition(localMember.getType());
@@ -295,8 +293,10 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       return;
     }
 
+    final var initialType = localMember.getType();
     updateConfiguration(configuration);
-    if (wasPromoted(currentConfig, configuration, localMember)) {
+    final var newType = localMember.getType();
+    if (initialType.ordinal() < newType.ordinal()) {
       raft.transition(localMember.getType());
     }
 
@@ -304,36 +304,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     if (raft.getCommitIndex() >= configuration.index()) {
       commitCurrentConfiguration();
     }
-  }
-
-  /**
-   * @return true if member exists in previous and update configuration and the member type changed
-   *     to a higher type
-   */
-  private boolean wasPromoted(
-      final Configuration previousConfig,
-      final Configuration updatedConfig,
-      final RaftMember member) {
-    if (previousConfig == null) {
-      // When a member receives its first configuration, i.e. when it's joining an existing
-      // partition, the member should immediately transition to the newly configured role.
-      // Without this, joining will fail when the newly joining member is required for quorum. The
-      // most simple case is starting with a single member cluster and adding one new member. The
-      // join request completes only when both old and new members have committed the configuration
-      // change. That means the new member must transition to follower before the join request
-      // completes, when it receives the first configure request from the current leader.
-      return true;
-    }
-
-    final var previousMembers = previousConfig.newMembers();
-    final var updatedMembers = updatedConfig.newMembers();
-
-    final var previousMember = previousMembers.stream().filter(m -> m.equals(member)).findFirst();
-    final var updatedMember = updatedMembers.stream().filter(m -> m.equals(member)).findFirst();
-
-    return previousMember.isPresent()
-        && updatedMember.isPresent()
-        && previousMember.get().getType().ordinal() < updatedMember.get().getType().ordinal();
   }
 
   private void updateConfiguration(final Configuration configuration) {

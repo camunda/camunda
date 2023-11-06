@@ -164,6 +164,7 @@ public final class BrokerTopologyManagerImpl extends Actor
 
     final int nodeId = distributedBrokerInfo.getNodeId();
 
+    topology.syncPartitions(nodeId, distributedBrokerInfo.getPartitionRoles().keySet());
     distributedBrokerInfo.consumePartitions(
         topology::addPartitionIfAbsent,
         (leaderPartitionId, term) -> topology.setPartitionLeader(leaderPartitionId, nodeId, term),

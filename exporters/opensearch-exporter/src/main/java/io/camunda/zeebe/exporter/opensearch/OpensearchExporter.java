@@ -187,6 +187,10 @@ public class OpensearchExporter implements Exporter {
   }
 
   private void createIndexTemplates() {
+    if (configuration.retention.isEnabled()) {
+      createIndexStateManagementPolicy();
+    }
+
     final IndexConfiguration index = configuration.index;
 
     if (index.createTemplate) {
@@ -285,6 +289,26 @@ public class OpensearchExporter implements Exporter {
     }
 
     indexTemplatesCreated = true;
+  }
+
+  private void createIndexStateManagementPolicy() {
+    final var policyOptional = client.getIndexStateManagementPolicy();
+
+    // Create the policy if it doesn't exist yet
+    if (policyOptional.isEmpty()) {
+      if (!client.createIndexStateManagementPolicy()) {
+        log.warn("Failed to acknowledge the creation of the Index State Management Policy");
+      }
+      return;
+    }
+
+    // Update the policy if it exists and is different from the configuration
+    final var policy = policyOptional.get();
+    if (!policy.equalsConfiguration(configuration)) {
+      if (!client.updateIndexStateManagementPolicy(policy.seqNo(), policy.primaryTerm())) {
+        log.warn("Failed to acknowledge the update of the Index State Management Policy");
+      }
+    }
   }
 
   private void createComponentTemplate() {

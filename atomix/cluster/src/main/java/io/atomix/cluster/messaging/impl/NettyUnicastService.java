@@ -39,8 +39,12 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+import io.netty.resolver.dns.BiDnsQueryLifecycleObserverFactory;
+import io.netty.resolver.dns.DnsAddressResolverGroup;
+import io.netty.resolver.dns.DnsNameResolverBuilder;
+import io.netty.resolver.dns.LoggingDnsQueryLifeCycleObserverFactory;
 import io.netty.util.concurrent.Future;
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,6 +52,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
+import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,6 +81,8 @@ public class NettyUnicastService implements ManagedUnicastService {
   private EventLoopGroup group;
   private DatagramChannel channel;
 
+  private DnsAddressResolverGroup dnsAddressResolverGroup;
+
   public NettyUnicastService(
       final String clusterId, final Address advertisedAddress, final MessagingConfig config) {
     this.advertisedAddress = advertisedAddress;
@@ -94,18 +101,28 @@ public class NettyUnicastService implements ManagedUnicastService {
       LOGGER.debug("Failed sending unicast message, unicast service was not started.");
       return;
     }
-    final InetAddress resolvedAddress = address.tryResolveAddress();
-    if (resolvedAddress == null) {
-      LOGGER.debug(
-          "Failed sending unicast message (destination address {} cannot be resolved)", address);
-      return;
-    }
+
     final Message message = new Message(advertisedAddress, subject, payload);
     final byte[] bytes = SERIALIZER.encode(message);
     final ByteBuf buf = channel.alloc().buffer(Integer.BYTES + Integer.BYTES + bytes.length);
     buf.writeInt(preamble);
     buf.writeInt(bytes.length).writeBytes(bytes);
-    channel.writeAndFlush(new DatagramPacket(buf, address.socketAddress()));
+
+    dnsAddressResolverGroup
+        .getResolver(group.next())
+        .resolve(address.socketAddress())
+        .addListener(
+            resolvedAddress -> {
+              if (resolvedAddress.isSuccess()) {
+                channel.writeAndFlush(
+                    new DatagramPacket(buf, (InetSocketAddress) resolvedAddress.get()));
+              } else {
+                log.warn(
+                    "Failed sending unicast message (destination address {} cannot be resolved)",
+                    address,
+                    resolvedAddress.exceptionNow());
+              }
+            });
   }
 
   @Override
@@ -189,7 +206,19 @@ public class NettyUnicastService implements ManagedUnicastService {
   public CompletableFuture<UnicastService> start() {
     group = new NioEventLoopGroup(0, namedThreads("netty-unicast-event-nio-client-%d", log));
     return bootstrap()
-        .thenRun(() -> started.set(true))
+        .thenRun(
+            () -> {
+              final var metrics = new NettyDnsMetrics();
+              started.set(true);
+              dnsAddressResolverGroup =
+                  new DnsAddressResolverGroup(
+                      new DnsNameResolverBuilder(group.next())
+                          .dnsQueryLifecycleObserverFactory(
+                              new BiDnsQueryLifecycleObserverFactory(
+                                  ignored -> metrics,
+                                  new LoggingDnsQueryLifeCycleObserverFactory()))
+                          .channelType(NioDatagramChannel.class));
+            })
         .thenApply(
             v -> {
               log.info(
@@ -217,8 +246,13 @@ public class NettyUnicastService implements ManagedUnicastService {
   private void doStop() {
     boolean interrupted = false;
     if (channel != null) {
+
       try {
         channel.close().sync();
+        if (dnsAddressResolverGroup != null) {
+          CloseHelper.close(
+              error -> log.warn("Failed to close DNS resolvers", error), dnsAddressResolverGroup);
+        }
       } catch (final InterruptedException e) {
         interrupted = true;
       }

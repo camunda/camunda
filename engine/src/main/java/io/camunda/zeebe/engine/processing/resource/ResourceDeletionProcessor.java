@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.resource;
 
 import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
 
+import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.CommandDistributionBehavior;
@@ -49,6 +50,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 import java.util.Optional;
 
 public class ResourceDeletionProcessor
@@ -137,26 +139,30 @@ public class ResourceDeletionProcessor
   private void tryDeleteResources(final TypedRecord<ResourceDeletionRecord> command) {
     final var value = command.getValue();
 
-    final var processOptional =
-        Optional.ofNullable(
-            processState.getProcessByKeyAndTenant(value.getResourceKey(), value.getTenantId()));
-    if (processOptional.isPresent()) {
-      deleteProcess(processOptional.get());
-      return;
-    }
+    for (final String tenantId : getAuthorizedTenants(command)) {
+      final var processOptional =
+          Optional.ofNullable(
+              processState.getProcessByKeyAndTenant(value.getResourceKey(), tenantId));
+      if (processOptional.isPresent()) {
+        setTenantId(command, tenantId);
+        deleteProcess(processOptional.get());
+        return;
+      }
 
-    final var drgOptional =
-        decisionState.findDecisionRequirementsByTenantAndKey(
-            value.getTenantId(), value.getResourceKey());
-    if (drgOptional.isPresent()) {
-      deleteDecisionRequirements(drgOptional.get());
-      return;
-    }
+      final var drgOptional =
+          decisionState.findDecisionRequirementsByTenantAndKey(tenantId, value.getResourceKey());
+      if (drgOptional.isPresent()) {
+        setTenantId(command, tenantId);
+        deleteDecisionRequirements(drgOptional.get());
+        return;
+      }
 
-    final var formOptional = formState.findFormByKey(value.getResourceKey(), value.getTenantId());
-    if (formOptional.isPresent()) {
-      deleteForm(formOptional.get());
-      return;
+      final var formOptional = formState.findFormByKey(value.getResourceKey(), tenantId);
+      if (formOptional.isPresent()) {
+        setTenantId(command, tenantId);
+        deleteForm(formOptional.get());
+        return;
+      }
     }
 
     throw new NoSuchResourceException(value.getResourceKey());
@@ -177,7 +183,8 @@ public class ResourceDeletionProcessor
             .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
             .setResourceName(BufferUtil.bufferAsString(drg.getResourceName()))
             .setChecksum(drg.getChecksum())
-            .setResource(drg.getResource());
+            .setResource(drg.getResource())
+            .setTenantId(drg.getTenantId());
 
     stateWriter.appendFollowUpEvent(
         keyGenerator.nextKey(), DecisionRequirementsIntent.DELETED, drgRecord);
@@ -192,7 +199,8 @@ public class ResourceDeletionProcessor
             .setDecisionKey(persistedDecision.getDecisionKey())
             .setDecisionRequirementsId(
                 BufferUtil.bufferAsString(persistedDecision.getDecisionRequirementsId()))
-            .setDecisionRequirementsKey(persistedDecision.getDecisionRequirementsKey());
+            .setDecisionRequirementsKey(persistedDecision.getDecisionRequirementsKey())
+            .setTenantId(persistedDecision.getTenantId());
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), DecisionIntent.DELETED, decisionRecord);
   }
 
@@ -296,6 +304,21 @@ public class ResourceDeletionProcessor
             .setVersion(persistedForm.getVersion());
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), FormIntent.DELETED, form);
+  }
+
+  private List<String> getAuthorizedTenants(final TypedRecord<ResourceDeletionRecord> command) {
+    final String tenantId = command.getValue().getTenantId();
+    if (tenantId.isEmpty()) {
+      return (List)
+          command.getAuthorizations().getOrDefault(Authorization.AUTHORIZED_TENANTS, List.of());
+    }
+
+    return List.of(tenantId);
+  }
+
+  private void setTenantId(
+      final TypedRecord<ResourceDeletionRecord> command, final String tenantId) {
+    command.getValue().setTenantId(tenantId);
   }
 
   private static final class NoSuchResourceException extends IllegalStateException {

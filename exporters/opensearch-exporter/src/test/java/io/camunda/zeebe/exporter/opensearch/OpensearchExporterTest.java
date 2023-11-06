@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -21,6 +22,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
+import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -31,6 +33,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -74,6 +77,63 @@ final class OpensearchExporterTest {
     // then
     assertThatThrownBy(() -> exporter.export(mock(Record.class)))
         .isInstanceOf(OpensearchExporterException.class);
+  }
+
+  @Test
+  void shouldCreateIndexStateManagementPolicy() {
+    // given
+    config.retention.setEnabled(true);
+    exporter.configure(context);
+    exporter.open(controller);
+    when(client.getIndexStateManagementPolicy()).thenReturn(Optional.empty());
+
+    // when
+    final var recordMock = mock(Record.class);
+    when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+    exporter.export(recordMock);
+
+    // then
+    verify(client, times(1)).createIndexStateManagementPolicy();
+    verify(client, never()).updateIndexStateManagementPolicy(anyInt(), anyInt());
+  }
+
+  @Test
+  void shouldUpdateIndexStateManagementPolicy() {
+    // given
+    config.retention.setEnabled(true);
+    exporter.configure(context);
+    exporter.open(controller);
+    when(client.getIndexStateManagementPolicy())
+        .thenReturn(Optional.of(mock(GetIndexStateManagementPolicyResponse.class)));
+
+    // when
+    final var recordMock = mock(Record.class);
+    when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+    exporter.export(recordMock);
+
+    // then
+    verify(client, never()).createIndexStateManagementPolicy();
+    verify(client, times(1)).updateIndexStateManagementPolicy(anyInt(), anyInt());
+  }
+
+  @Test
+  void shouldNotCreateOrUpdateIndexStateManagementPolicy() {
+    // given
+    config.retention.setEnabled(true);
+    exporter.configure(context);
+    exporter.open(controller);
+    final var policyMock = mock(GetIndexStateManagementPolicyResponse.class);
+    when(policyMock.equalsConfiguration(any())).thenReturn(true);
+    when(client.getIndexStateManagementPolicy()).thenReturn(Optional.of(policyMock));
+
+    // when
+    final var recordMock = mock(Record.class);
+    when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+    exporter.export(recordMock);
+
+    // then
+    verify(client, never()).createIndexStateManagementPolicy();
+    verify(client, never()).updateIndexStateManagementPolicy(anyInt(), anyInt());
   }
 
   @Nested

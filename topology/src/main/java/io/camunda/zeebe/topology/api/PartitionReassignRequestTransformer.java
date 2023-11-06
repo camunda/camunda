@@ -11,6 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.topology.PartitionDistributor;
+import io.camunda.zeebe.topology.api.TopologyRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator.TopologyChangeRequest;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
@@ -39,7 +40,9 @@ public class PartitionReassignRequestTransformer implements TopologyChangeReques
       final ClusterTopology currentTopology) {
     if (members.isEmpty()) {
       return Either.left(
-          new IllegalArgumentException("Cannot reassign partitions if no brokers are provided"));
+          new InvalidRequest(
+              new IllegalArgumentException(
+                  "Cannot reassign partitions if no brokers are provided")));
     }
 
     return generatePartitionDistributionOperations(currentTopology, members);
@@ -56,7 +59,7 @@ public class PartitionReassignRequestTransformer implements TopologyChangeReques
 
     if (brokers.size() < replicationFactor) {
       return Either.left(
-          new IllegalArgumentException(
+          new TopologyRequestFailedException.InvalidRequest(
               String.format(
                   "Number of brokers [%d] is less than the replication factor [%d]",
                   brokers.size(), replicationFactor)));

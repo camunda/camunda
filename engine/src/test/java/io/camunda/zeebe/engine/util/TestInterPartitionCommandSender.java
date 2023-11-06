@@ -24,6 +24,7 @@ public class TestInterPartitionCommandSender implements InterPartitionCommandSen
 
   private final Map<Integer, LogStreamWriter> writers = new HashMap<>();
   private final Function<Integer, LogStreamWriter> writerFactory;
+  private CommandInterceptor interceptor = CommandInterceptor.SEND_ALL;
 
   public TestInterPartitionCommandSender(final Function<Integer, LogStreamWriter> writerFactory) {
     this.writerFactory = writerFactory;
@@ -45,6 +46,9 @@ public class TestInterPartitionCommandSender implements InterPartitionCommandSen
       final Intent intent,
       final Long recordKey,
       final UnifiedRecordValue command) {
+    if (!interceptor.shouldSend(receiverPartitionId, valueType, intent, recordKey, command)) {
+      return;
+    }
     final var metadata =
         new RecordMetadata().recordType(RecordType.COMMAND).intent(intent).valueType(valueType);
     final var writer = writers.get(receiverPartitionId);
@@ -68,5 +72,28 @@ public class TestInterPartitionCommandSender implements InterPartitionCommandSen
         i++) {
       writers.put(i, writerFactory.apply(i));
     }
+  }
+
+  public void intercept(final CommandInterceptor interceptor) {
+    this.interceptor = interceptor;
+  }
+
+  @FunctionalInterface
+  public interface CommandInterceptor {
+    CommandInterceptor SEND_ALL =
+        (receiverPartitionId, valueType, intent, recordKey, command) -> true;
+
+    CommandInterceptor DROP_ALL =
+        (receiverPartitionId, valueType, intent, recordKey, command) -> false;
+
+    /**
+     * @return true if the command should be sent, false if not.
+     */
+    boolean shouldSend(
+        final int receiverPartitionId,
+        final ValueType valueType,
+        final Intent intent,
+        final Long recordKey,
+        final UnifiedRecordValue command);
   }
 }

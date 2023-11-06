@@ -24,6 +24,7 @@ public class OpensearchExporterConfiguration {
   public final IndexConfiguration index = new IndexConfiguration();
   public final BulkConfiguration bulk = new BulkConfiguration();
   public final AwsConfiguration aws = new AwsConfiguration();
+  public final RetentionConfiguration retention = new RetentionConfiguration();
   private final AuthenticationConfiguration authentication = new AuthenticationConfiguration();
 
   public boolean hasAuthenticationPresent() {
@@ -46,6 +47,8 @@ public class OpensearchExporterConfiguration {
         + bulk
         + ", aws="
         + aws
+        + ", retention="
+        + retention
         + '}';
   }
 
@@ -348,6 +351,60 @@ public class OpensearchExporterConfiguration {
       } else {
         return "AwsConfiguration{Disabled}";
       }
+    }
+  }
+
+  public static class RetentionConfiguration {
+    private boolean enabled = false;
+    private String minimumAge = "30d";
+    private String policyName = "zeebe-record-retention-policy";
+    private String policyDescription = "Zeebe record retention policy";
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(final boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public String getMinimumAge() {
+      return minimumAge;
+    }
+
+    public void setMinimumAge(final String minimumAge) {
+      this.minimumAge = minimumAge;
+    }
+
+    public String getPolicyName() {
+      return policyName;
+    }
+
+    public void setPolicyName(final String policyName) {
+      this.policyName = policyName;
+    }
+
+    public String getPolicyDescription() {
+      return policyDescription;
+    }
+
+    public void setPolicyDescription(final String policyDescription) {
+      this.policyDescription = policyDescription;
+    }
+
+    @Override
+    public String toString() {
+      return "RetentionConfiguration{"
+          + "isEnabled="
+          + enabled
+          + ", minimumAge='"
+          + minimumAge
+          + ", policyName='"
+          + policyName
+          + ", policyDescription='"
+          + policyDescription
+          + '\''
+          + '}';
     }
   }
 }

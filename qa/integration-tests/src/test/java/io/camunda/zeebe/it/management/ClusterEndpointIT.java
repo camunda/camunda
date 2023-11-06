@@ -9,18 +9,20 @@ package io.camunda.zeebe.it.management;
 
 import static org.assertj.core.api.Assertions.*;
 
+import feign.FeignException;
 import io.camunda.zeebe.management.cluster.Operation;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
+import io.camunda.zeebe.management.cluster.TopologyChange.StatusEnum;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import java.util.List;
+import java.util.function.Predicate;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.api.Timeout;
 
-@ZeebeIntegration
-@Execution(ExecutionMode.CONCURRENT)
+@Timeout(2 * 60) // 2 minutes
 final class ClusterEndpointIT {
   private static final int BROKER_COUNT = 2;
   private static final int PARTITION_COUNT = 2;
@@ -87,6 +89,80 @@ final class ClusterEndpointIT {
           .returns(2, Operation::getPartitionId)
           .returns(3, Operation::getPriority);
     }
+  }
+
+  @Test
+  void shouldRejectJoinOnNonExistingPartition() {
+    try (final var cluster = createCluster(1)) {
+      // given
+      cluster.awaitCompleteTopology();
+      final var actuator = ClusterActuator.of(cluster.availableGateway());
+      // when -- request a join
+      assertThatCode(() -> actuator.joinPartition(0, 3, 3))
+          .describedAs("Joining a non-existing partition should fail with 400 Bad Request")
+          .isInstanceOf(FeignException.BadRequest.class)
+          .hasMessageContaining("partition has no active members");
+    }
+  }
+
+  @Test
+  void shouldRequestScaleBrokers() {
+    try (final var cluster = createCluster(1)) {
+      // given
+      cluster.awaitCompleteTopology();
+      final var actuator = ClusterActuator.of(cluster.availableGateway());
+
+      // when
+      final var response = actuator.scaleBrokers(List.of(0, 1, 2));
+
+      // then
+      assertThat(response.getExpectedTopology()).hasSize(3);
+    }
+  }
+
+  @Test
+  void shouldRequestAddBroker() {
+    try (final var cluster = createCluster(1)) {
+      // given
+      cluster.awaitCompleteTopology();
+      final var actuator = ClusterActuator.of(cluster.availableGateway());
+
+      // when
+      final var response = actuator.addBroker(2);
+
+      // then
+      assertThat(response.getExpectedTopology()).hasSize(3);
+    }
+  }
+
+  @Test
+  void shouldRequestRemoveBroker() {
+    try (final var cluster = createCluster(1)) {
+      // given
+      cluster.awaitCompleteTopology();
+      final var actuator = ClusterActuator.of(cluster.availableGateway());
+      // Must move partitions to broker 0 before removing broker 1 from the cluster
+      movePartition(actuator);
+
+      // when
+      final var response = actuator.removeBroker(1);
+
+      // then
+      assertThat(response.getExpectedTopology()).hasSize(1);
+    }
+  }
+
+  private static void movePartition(final ClusterActuator actuator) {
+    actuator.joinPartition(0, 2, 1);
+    Awaitility.await()
+        .until(
+            () -> actuator.getTopology().getChange().getStatus(),
+            Predicate.isEqual(StatusEnum.COMPLETED));
+    actuator.leavePartition(1, 2);
+    Awaitility.await()
+        .until(
+            () -> actuator.getTopology().getChange().getStatus(),
+            Predicate.isEqual(StatusEnum.COMPLETED));
   }
 
   private static TestCluster createCluster(final int replicationFactor) {

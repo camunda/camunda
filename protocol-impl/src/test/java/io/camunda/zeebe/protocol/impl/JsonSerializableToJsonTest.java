@@ -59,6 +59,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -1930,7 +1931,9 @@ final class JsonSerializableToJsonTest {
             () -> {
               final var resourceKey = 1L;
 
-              return new ResourceDeletionRecord().setResourceKey(resourceKey);
+              return new ResourceDeletionRecord()
+                  .setResourceKey(resourceKey)
+                  .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
             },
         """
         {

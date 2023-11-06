@@ -20,6 +20,9 @@ import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.storage.system.MetaStore;
+import io.atomix.utils.concurrent.Scheduled;
+import io.atomix.utils.concurrent.ThreadContext;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.Consumer;
@@ -41,6 +44,7 @@ final class RaftClusterContextTest {
     final var configuration = new Configuration(1, 1, Instant.now().toEpochMilli(), members);
     final var raft = raftWithStoredConfiguration(configuration);
     final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap().join();
 
     // then
     assertThat(context.getLocalMember().memberId()).isEqualTo(MemberId.from("1"));
@@ -74,6 +78,7 @@ final class RaftClusterContextTest {
         raftWithStoredConfiguration(
             new Configuration(1, 1, Instant.now().toEpochMilli(), List.of(localMember)));
     final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
 
     // when -- reconfigure with a new configuration that contains all members
     context.configure(new Configuration(2, 1, Instant.now().toEpochMilli(), members));
@@ -109,6 +114,7 @@ final class RaftClusterContextTest {
     final var raft =
         raftWithStoredConfiguration(new Configuration(1, 1, Instant.now().toEpochMilli(), members));
     final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
 
     // when -- reconfigure with a new configuration only contains the local member
     context.configure(new Configuration(2, 1, Instant.now().toEpochMilli(), List.of(localMember)));
@@ -141,6 +147,7 @@ final class RaftClusterContextTest {
         raftWithStoredConfiguration(
             new Configuration(1, 1, Instant.now().toEpochMilli(), oldMembers));
     final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
 
     // when -- reconfigure with a new configuration only contains the local member
     final var newLocalMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
@@ -178,6 +185,7 @@ final class RaftClusterContextTest {
     final var raft =
         raftWithStoredConfiguration(new Configuration(1, 1, Instant.now().toEpochMilli(), members));
     final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
 
     // when
     final Consumer<Boolean> callback = mock();
@@ -210,6 +218,7 @@ final class RaftClusterContextTest {
         raftWithStoredConfiguration(
             new Configuration(1, 1, Instant.now().toEpochMilli(), newMembers, oldMembers));
     final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
 
     // when
     final Consumer<Boolean> callback = mock();
@@ -238,6 +247,7 @@ final class RaftClusterContextTest {
     final var raft =
         raftWithStoredConfiguration(new Configuration(1, 1, Instant.now().toEpochMilli(), members));
     final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
 
     // when
     context.getMemberContext(new MemberId("2")).setMatchIndex(2);
@@ -270,6 +280,7 @@ final class RaftClusterContextTest {
         raftWithStoredConfiguration(
             new Configuration(1, 1, Instant.now().toEpochMilli(), newMembers, oldMembers));
     final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
 
     // when
     for (final var member : newRemoteMembers) {
@@ -305,6 +316,7 @@ final class RaftClusterContextTest {
         raftWithStoredConfiguration(
             new Configuration(1, 1, Instant.now().toEpochMilli(), newMembers, oldMembers));
     final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
 
     // when
     for (final var member : newRemoteMembers) {
@@ -335,6 +347,7 @@ final class RaftClusterContextTest {
         raftWithStoredConfiguration(
             new Configuration(1, 1, Instant.now().toEpochMilli(), newMembers, oldMembers));
     final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
 
     // when
 
@@ -362,6 +375,7 @@ final class RaftClusterContextTest {
         raftWithStoredConfiguration(
             new Configuration(1, 1, Instant.now().toEpochMilli(), newMembers, oldMembers));
     final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
 
     // when
 
@@ -389,6 +403,7 @@ final class RaftClusterContextTest {
                 new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now())));
     final var raft = raftWithStoredConfiguration(initialConfiguration);
     final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
 
     // when -- demote member 3 to passive
     final var newConfiguration =
@@ -424,6 +439,7 @@ final class RaftClusterContextTest {
                 new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now())));
     final var raft = raftWithStoredConfiguration(initialConfiguration);
     final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
 
     // when -- enter joint consensus with member 3 being passive
     final var newConfiguration =
@@ -447,8 +463,22 @@ final class RaftClusterContextTest {
   }
 
   private RaftContext raftWithStoredConfiguration(final Configuration configuration) {
+    final var threadContext =
+        new ThreadContext() {
+          @Override
+          public Scheduled schedule(
+              final Duration initialDelay, final Duration interval, final Runnable callback) {
+            throw new UnsupportedOperationException();
+          }
+
+          @Override
+          public void execute(final Runnable command) {
+            command.run();
+          }
+        };
     final var raft = mock(RaftContext.class, withSettings().stubOnly());
     final var metaStore = mock(MetaStore.class, withSettings().stubOnly());
+    when(raft.getThreadContext()).thenReturn(threadContext);
     when(metaStore.loadConfiguration()).thenReturn(configuration);
     when(raft.getMetaStore()).thenReturn(metaStore);
     return raft;

@@ -10,23 +10,27 @@
   ],
   "dependencyDashboard": true,
   "enabledManagers": [
-    "maven", "dockerfile"
+    "maven", "dockerfile", "gomod", "github-actions"
   ],
   "packageRules": [
     {
-      "matchManagers": [
-        "maven"
+      "matchBaseBranches": ["/^stable\\/8\\..*/"],
+      "matchUpdateTypes": [
+        "minor",
+        "major"
       ],
-      "packagePatterns": ["*"],
       "enabled": false
     },
     {
-      "matchPackagePrefixes": ["org.springframework.boot"],
-      "enabled": true
+      "matchPackagePrefixes": ["org.opensearch.client"],
+      "matchUpdateTypes": [
+        "minor",
+        "major"
+      ],
+      "enabled": false
     },
     {
-      "matchBaseBranches": ["/^stable\\/8\\..*/"],
-      "matchPackagePrefixes": ["org.springframework.boot"],
+      "matchPackagePrefixes": ["org.elasticsearch"],
       "matchUpdateTypes": [
         "minor",
         "major"
@@ -43,6 +47,10 @@
         "patch"
       ],
       "enabled": false
+    },
+    {
+      "matchPackagePrefixes": ["org.jacoco"],
+      "allowedVersions": "!/0.8.9/"
     }
   ],
   "dockerfile": {

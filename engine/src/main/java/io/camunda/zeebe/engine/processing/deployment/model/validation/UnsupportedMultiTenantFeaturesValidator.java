@@ -24,14 +24,14 @@ import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 
 public final class UnsupportedMultiTenantFeaturesValidator {
 
   private static final EnumSet<BpmnElementType> REJECTED_ELEMENT_TYPES =
       EnumSet.noneOf(BpmnElementType.class);
-  private static final EnumSet<BpmnEventType> UNSUPPORTED_EVENT_TYPES =
-      EnumSet.of(BpmnEventType.SIGNAL);
+  private static final Set<BpmnEventType> UNSUPPORTED_EVENT_TYPES = Set.of();
 
   /**
    * Validates a list of processes for containing unsupported elements when used with multi-tenancy.

@@ -7,12 +7,23 @@
  */
 package io.camunda.zeebe.exporter.opensearch;
 
+import static io.camunda.zeebe.exporter.opensearch.OpensearchClient.ISM_DELETE_STATE;
+import static io.camunda.zeebe.exporter.opensearch.OpensearchClient.ISM_INITIAL_STATE;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.opensearch.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
 import io.camunda.zeebe.exporter.opensearch.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
+import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.IsmTemplate;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Action;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Transition;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Transition.Conditions;
 import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
@@ -20,6 +31,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.agrona.CloseHelper;
@@ -90,6 +102,30 @@ final class TestClient implements CloseableSilently {
     }
   }
 
+  GetIndexStateManagementPolicyResponse getIndexStateManagementPolicy() {
+    try {
+      final var request =
+          new Request("GET", "_plugins/_ism/policies/" + config.retention.getPolicyName());
+      final var response = restClient.performRequest(request);
+      return MAPPER.readValue(
+          response.getEntity().getContent(), GetIndexStateManagementPolicyResponse.class);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  void putIndexStateManagementPolicy(final String minimumAge) {
+    try {
+      final var request =
+          new Request("PUT", "_plugins/_ism/policies/" + config.retention.getPolicyName());
+      final var requestEntity = createPutIndexManagementPolicyRequest(minimumAge);
+      request.setJsonEntity(MAPPER.writeValueAsString(requestEntity));
+      restClient.performRequest(request);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
   void putUser(final String username, final String password, final List<String> roles) {
     try {
       final var request = new Request("PUT", "/_plugins/_security/api/internalusers/" + username);
@@ -108,6 +144,25 @@ final class TestClient implements CloseableSilently {
   @Override
   public void close() {
     CloseHelper.quietCloseAll(osClient._transport());
+  }
+
+  private PutIndexStateManagementPolicyRequest createPutIndexManagementPolicyRequest(
+      final String minimumAge) {
+    final var initialState =
+        new State(
+            ISM_INITIAL_STATE,
+            Collections.emptyList(),
+            List.of(new Transition(ISM_DELETE_STATE, new Conditions(minimumAge))));
+    final var deleteState =
+        new State(
+            ISM_DELETE_STATE, List.of(new Action(new ObjectMapper())), Collections.emptyList());
+    final var policy =
+        new Policy(
+            config.retention.getPolicyDescription(),
+            ISM_INITIAL_STATE,
+            List.of(initialState, deleteState),
+            new IsmTemplate(List.of(config.index.prefix + "*"), 1));
+    return new PutIndexStateManagementPolicyRequest(policy);
   }
 
   record IndexTemplatesDto(@JsonProperty("index_templates") List<IndexTemplateWrapper> wrappers) {

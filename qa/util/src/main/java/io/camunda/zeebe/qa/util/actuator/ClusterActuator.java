@@ -21,6 +21,7 @@ import feign.jackson.JacksonEncoder;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
 import io.camunda.zeebe.management.cluster.PostOperationResponse;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.zeebe.containers.ZeebeNode;
 import java.util.List;
 
@@ -100,4 +101,32 @@ public interface ClusterActuator {
   @RequestLine("GET")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   GetTopologyResponse getTopology();
+
+  /**
+   * Scales the given brokers up or down and reassigns partitions to the new brokers.
+   *
+   * @param ids
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST /brokers")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PostOperationResponse scaleBrokers(@RequestBody List<Integer> ids);
+
+  /**
+   * Request that the broker is added to the cluster.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST /brokers/{brokerId}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PostOperationResponse addBroker(@Param final int brokerId);
+
+  /**
+   * Request that the broker is removed from the cluster
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("DELETE /brokers/{brokerId}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PostOperationResponse removeBroker(@Param final int brokerId);
 }

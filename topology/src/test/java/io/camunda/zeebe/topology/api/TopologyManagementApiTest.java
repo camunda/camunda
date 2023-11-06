@@ -15,7 +15,9 @@ import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.impl.DiscoveryMembershipProtocol;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.topology.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
@@ -112,7 +114,7 @@ final class TopologyManagementApiTest {
     final var request = new TopologyManagementRequest.AddMembersRequest(Set.of(MemberId.from("1")));
 
     // when
-    final var changeStatus = clientApi.addMembers(request).join();
+    final var changeStatus = clientApi.addMembers(request).join().get();
 
     // then
     final var expected = new MemberJoinOperation(MemberId.from("1"));
@@ -131,7 +133,7 @@ final class TopologyManagementApiTest {
             Set.of(MemberId.from("1"), MemberId.from("2")));
 
     // when
-    final var changeStatus = clientApi.removeMembers(request).join();
+    final var changeStatus = clientApi.removeMembers(request).join().get();
 
     // then
     final List<TopologyChangeOperation> expected =
@@ -148,7 +150,7 @@ final class TopologyManagementApiTest {
         new TopologyManagementRequest.JoinPartitionRequest(MemberId.from("1"), 1, 3);
 
     // when
-    final var changeStatus = clientApi.joinPartition(request).join();
+    final var changeStatus = clientApi.joinPartition(request).join().get();
 
     // then
     assertThat(changeStatus.plannedChanges())
@@ -161,7 +163,7 @@ final class TopologyManagementApiTest {
     final var request = new TopologyManagementRequest.LeavePartitionRequest(MemberId.from("1"), 1);
 
     // when
-    final var changeStatus = clientApi.leavePartition(request).join();
+    final var changeStatus = clientApi.leavePartition(request).join().get();
 
     // then
     assertThat(changeStatus.plannedChanges())
@@ -184,7 +186,7 @@ final class TopologyManagementApiTest {
     recordingCoordinator.setCurrentTopology(currentTopology);
 
     // when
-    final var changeStatus = clientApi.reassignPartitions(request).join();
+    final var changeStatus = clientApi.reassignPartitions(request).join().get();
 
     // then
     assertThat(changeStatus.plannedChanges())
@@ -207,7 +209,7 @@ final class TopologyManagementApiTest {
     recordingCoordinator.setCurrentTopology(currentTopology);
 
     // when
-    final var changeStatus = clientApi.scaleMembers(request).join();
+    final var changeStatus = clientApi.scaleMembers(request).join().get();
 
     // then
     assertThat(changeStatus.plannedChanges())
@@ -215,5 +217,23 @@ final class TopologyManagementApiTest {
             new MemberJoinOperation(MemberId.from("2")),
             new PartitionJoinOperation(MemberId.from("2"), 2, 1),
             new PartitionLeaveOperation(MemberId.from("1"), 2));
+  }
+
+  @Test
+  void shouldReturnInvalidErrorForInvalidRequests() {
+    // given
+    final var request =
+        new TopologyManagementRequest.ScaleRequest(Set.of()); // invalid request when no brokers
+    recordingCoordinator.setCurrentTopology(initialTopology);
+
+    // when
+    final var changeStatus = clientApi.scaleMembers(request).join();
+
+    // then
+    EitherAssert.assertThat(changeStatus)
+        .isLeft()
+        .left()
+        .extracting(ErrorResponse::code)
+        .isEqualTo(ErrorCode.INVALID_REQUEST);
   }
 }

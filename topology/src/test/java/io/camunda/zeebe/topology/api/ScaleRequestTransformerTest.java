@@ -93,7 +93,7 @@ class ScaleRequestTransformerTest {
     EitherAssert.assertThat(operationsEither)
         .isLeft()
         .left()
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOf(TopologyRequestFailedException.InvalidRequest.class);
   }
 
   void shouldScaleAndReassign(

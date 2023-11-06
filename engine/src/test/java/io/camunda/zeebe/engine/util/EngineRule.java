@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender.CommandInterceptor;
 import io.camunda.zeebe.engine.util.client.DecisionEvaluationClient;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
 import io.camunda.zeebe.engine.util.client.IncidentClient;
@@ -85,6 +86,7 @@ public final class EngineRule extends ExternalResource {
   private JobStreamer jobStreamer = JobStreamer.noop();
 
   private FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
+  private ArrayList<TestInterPartitionCommandSender> interPartitionCommandSenders;
 
   private EngineRule(final int partitionCount) {
     this(partitionCount, null);
@@ -155,7 +157,7 @@ public final class EngineRule extends ExternalResource {
   }
 
   private void startProcessors() {
-    final var interPartitionCommandSenders = new ArrayList<TestInterPartitionCommandSender>();
+    interPartitionCommandSenders = new ArrayList<>();
 
     forEachPartition(
         partitionId -> {
@@ -403,6 +405,14 @@ public final class EngineRule extends ExternalResource {
   public EngineRule maxCommandsInBatch(final int maxCommandsInBatch) {
     environmentRule.maxCommandsInBatch(maxCommandsInBatch);
     return this;
+  }
+
+  public void interceptInterPartitionCommands(final CommandInterceptor interceptor) {
+    if (interPartitionCommandSenders == null) {
+      throw new IllegalStateException(
+          "Cannot intercept inter-partition commands before the engine is started");
+    }
+    interPartitionCommandSenders.forEach(sender -> sender.intercept(interceptor));
   }
 
   private static final class VersatileBlob implements DbKey, DbValue {

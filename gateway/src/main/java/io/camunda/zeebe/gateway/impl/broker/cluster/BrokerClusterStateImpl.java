@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.Predicate;
 import org.agrona.collections.Int2IntHashMap;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.IntArrayList;
@@ -81,6 +82,32 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
         inactives.removeIf(inactive -> inactive == leaderId);
       }
     }
+  }
+
+  /**
+   * Syncs the partitions of the given node with the local state. Removes partitions which are not
+   * present on the node anymore.
+   */
+  public void syncPartitions(final int nodeId, final Set<Integer> partitions) {
+    partitionsHealthPerBroker
+        .getOrDefault(nodeId, new Int2ObjectHashMap<>())
+        .keySet()
+        .removeIf(Predicate.not(partitions::contains));
+    partitionLeaders
+        .entrySet()
+        .removeIf(entry -> entry.getValue() == nodeId && !partitions.contains(entry.getKey()));
+    partitionFollowers.forEach(
+        (partitionId, followers) -> {
+          if (!partitions.contains(partitionId)) {
+            followers.removeIf(follower -> follower == nodeId);
+          }
+        });
+    partitionInactiveNodes.forEach(
+        (partitionId, inactives) -> {
+          if (!partitions.contains(partitionId)) {
+            inactives.removeIf(inactive -> inactive == nodeId);
+          }
+        });
   }
 
   public void setPartitionHealthStatus(

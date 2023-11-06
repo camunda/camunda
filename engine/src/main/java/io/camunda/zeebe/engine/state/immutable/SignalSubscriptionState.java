@@ -15,7 +15,8 @@ public interface SignalSubscriptionState {
 
   boolean exists(SignalSubscriptionRecord subscription);
 
-  void visitBySignalName(DirectBuffer signalName, SignalSubscriptionVisitor visitor);
+  void visitBySignalName(
+      DirectBuffer signalName, String tenantId, SignalSubscriptionVisitor visitor);
 
   /**
    * Visit all subscriptions with the given process definition key.
