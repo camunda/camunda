@@ -1,9 +1,10 @@
-ARG BASE_IMAGE="eclipse-temurin:17.0.8_7-jre-focal"
-ARG BASE_DIGEST_AMD64="sha256:47bb851c475780124df3e6baa9fb39a6029098113114c66957eb76235574d8ac"
-ARG BASE_DIGEST_ARM64="sha256:3b8ea833ccf9aada6328babf593c3d8bd19d784cc9c8e8a840f6827bf9b9c882"
+# hadolint global ignore=DL3006
+ARG BASE_IMAGE="alpine:3.18.4"
+ARG BASE_DIGEST_AMD64="sha256:48d9183eb12a05c99bcc0bf44a003607b8e941e1d4f41f9ad12bdcc4b5672f86"
+ARG BASE_DIGEST_ARM64="sha256:6ce9a9a256a3495ae60ab0059ed1c7aee5ee89450477f2223f6ea7f6296df555"
 
 # Prepare Operate Distribution
-FROM alpine:3.18.4 as prepare
+FROM ${BASE_IMAGE} as prepare
 
 WORKDIR /tmp/operate
 
@@ -21,6 +22,9 @@ FROM ${BASE_IMAGE}@${BASE_DIGEST_AMD64} as base-amd64
 ARG BASE_DIGEST_AMD64
 ARG BASE_DIGEST="${BASE_DIGEST_AMD64}"
 
+# Install Tini for amd64
+RUN apk update && apk add --no-cache tini
+
 ### ARM64 base image ##
 # BASE_DIGEST_ARM64 is defined at the top of the Dockerfile
 # hadolint ignore=DL3006
@@ -28,10 +32,14 @@ FROM ${BASE_IMAGE}@${BASE_DIGEST_ARM64} as base-arm64
 ARG BASE_DIGEST_ARM64
 ARG BASE_DIGEST="${BASE_DIGEST_ARM64}"
 
+# Install Tini for arm64
+RUN apk update && apk add --no-cache tini
+
 ### Application Image ###
 # TARGETARCH is provided by buildkit
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # hadolint ignore=DL3006
+
 FROM base-${TARGETARCH} as app
 # leave unset to use the default value at the top of the file
 ARG BASE_IMAGE
@@ -65,16 +73,15 @@ LABEL io.k8s.description="Tool for process observability and troubleshooting pro
 
 EXPOSE 8080
 
-ARG TARGETARCH
-ADD https://github.com/krallin/tini/releases/download/v0.19.0/tini-${TARGETARCH} /bin/tini
+RUN apk update && apk upgrade
+RUN apk add --no-cache bash openjdk17-jre tzdata
 
 WORKDIR /usr/local/operate
+VOLUME /tmp
 
 COPY --from=prepare /tmp/operate /usr/local/operate
 
-RUN chmod +x /bin/tini
-
-RUN addgroup --gid 1004 operate && useradd -g operate -u 1004 -d /usr/local/operate operate
+RUN addgroup --gid 1004 operate && adduser -h /usr/local/operate -G operate -u 1004 -D operate
 USER operate:operate
 
-ENTRYPOINT ["/bin/tini", "--", "/usr/local/operate/bin/operate"]
+ENTRYPOINT ["/sbin/tini", "--", "/usr/local/operate/bin/operate"]
