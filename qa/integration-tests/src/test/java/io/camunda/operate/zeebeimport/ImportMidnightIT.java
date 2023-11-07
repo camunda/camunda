@@ -6,6 +6,27 @@
  */
 package io.camunda.operate.zeebeimport;
 
+import io.camunda.operate.entities.FlowNodeInstanceEntity;
+import io.camunda.operate.entities.FlowNodeState;
+import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.operate.entities.listview.ProcessInstanceState;
+import io.camunda.operate.exceptions.NoSuchIndexException;
+import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
+import io.camunda.operate.util.SearchTestRule;
+import io.camunda.operate.util.TestApplication;
+import io.camunda.operate.util.ZeebeTestUtil;
+import io.camunda.operate.util.searchrepository.TestSearchRepository;
+import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
+import io.camunda.operate.zeebeimport.elasticsearch.ElasticsearchRecordsReader;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import org.junit.Rule;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.SpyBean;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -14,37 +35,13 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.entities.FlowNodeState;
-import io.camunda.operate.exceptions.NoSuchIndexException;
-import io.camunda.operate.util.TestApplication;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceState;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.util.SearchTestRule;
-import io.camunda.operate.util.OperateZeebeAbstractIT;
-import io.camunda.operate.util.ZeebeTestUtil;
-import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
-import io.camunda.operate.zeebeimport.elasticsearch.ElasticsearchRecordsReader;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.reindex.ReindexRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
-import org.junit.Rule;
-import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import java.util.Map;
 
+import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.operate.zeebe.ImportValueType.PROCESS_INSTANCE;
 import static org.assertj.core.api.Assertions.assertThat;
-import static io.camunda.operate.util.ThreadUtil.sleepFor;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest(
@@ -65,7 +62,7 @@ public class ImportMidnightIT extends OperateZeebeAbstractIT {
   private RecordsReaderHolder recordsReaderHolder;
 
   @Autowired
-  private RestHighLevelClient esClient;
+  private TestSearchRepository testSearchRepository;
 
   @Rule
   public SearchTestRule searchTestRule = new SearchTestRule() {
@@ -144,10 +141,8 @@ public class ImportMidnightIT extends OperateZeebeAbstractIT {
     String firstDateStr = dateTimeFormatter.format(firstDate);
     String secondDateStr = dateTimeFormatter.format(secondDate);
     String script = "ctx._index = ctx._index.replace( \"" + firstDateStr + "\", \"" + secondDateStr + "\");";
-    ReindexRequest reindexRequest = new ReindexRequest().setSourceIndices(zeebeRule.getPrefix() + "*")
-        .setDestIndex("generated")
-        .setScript(new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, new HashMap<>()));
-    esClient.reindex(reindexRequest, RequestOptions.DEFAULT);
+
+    testSearchRepository.reindex(zeebeRule.getPrefix() + "*", "generated", script, Map.of());
   }
 
   /**

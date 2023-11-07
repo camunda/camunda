@@ -46,4 +46,6 @@ public interface TestSearchRepository {
   void update(String index, String id, Map<String, Object> fields) throws IOException;
 
   List<VariableEntity> getVariablesByProcessInstanceKey(String index, Long processInstanceKey);
+
+  void reindex(String srcIndex, String dstIndex, String script, Map<String, Object> scriptParams) throws IOException;
 }

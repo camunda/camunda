@@ -7,6 +7,7 @@
 package io.camunda.operate.store.opensearch.dsl;
 
 import io.camunda.operate.schema.templates.TemplateDescriptor;
+import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
@@ -30,6 +31,8 @@ import org.opensearch.client.opensearch.snapshot.GetRepositoryRequest;
 import org.opensearch.client.opensearch.snapshot.GetSnapshotRequest;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations.SCROLL_KEEP_ALIVE_MS;
 
@@ -90,6 +93,18 @@ public interface RequestDSL {
     return new ReindexRequest.Builder()
       .source(Source.of(b -> b.index(srcIndex).query(srcQuery)))
       .dest(Destination.of(b -> b.index(dstIndex)));
+  }
+
+  static ReindexRequest.Builder reindexRequestBuilder(String srcIndex, String dstIndex, String script, Map<String, Object> scriptParams) {
+    var jsonParams = scriptParams.entrySet().stream().collect(Collectors.toMap(
+      Map.Entry::getKey,
+      e -> JsonData.of(e.getValue())
+    ));
+
+    return new ReindexRequest.Builder()
+      .source(Source.of(b -> b.index(srcIndex)))
+      .dest(Destination.of(b -> b.index(dstIndex)))
+      .script(b -> b.inline(i -> i.source(script).params(jsonParams)));
   }
 
   static GetRepositoryRequest.Builder repositoryRequestBuilder(String name) {

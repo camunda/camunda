@@ -28,6 +28,9 @@ import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
+import org.elasticsearch.index.reindex.ReindexRequest;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.xcontent.XContentType;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -186,5 +189,14 @@ public class TestElasticSearchRepository implements TestSearchRepository {
         e.getMessage(), processInstanceKey);
       throw new OperateRuntimeException(message, e);
     }
+  }
+
+  @Override
+  public void reindex(String srcIndex, String dstIndex, String script, Map<String, Object> scriptParams) throws IOException {
+    ReindexRequest reindexRequest = new ReindexRequest().setSourceIndices(srcIndex)
+      .setDestIndex(dstIndex)
+      .setScript(new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, scriptParams));
+
+    esClient.reindex(reindexRequest, RequestOptions.DEFAULT);
   }
 }

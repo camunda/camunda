@@ -8,16 +8,10 @@ package io.camunda.operate.util.searchrepository;
 
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.entities.VariableEntity;
-import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
 import io.camunda.operate.store.opensearch.dsl.RequestDSL;
-import io.camunda.operate.util.ElasticsearchUtil;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
-import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.opensearch.client.opensearch._types.mapping.DynamicMapping;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,9 +34,8 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.script;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.getIndexRequestBuilder;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.indexRequestBuilder;
+import static io.camunda.operate.store.opensearch.dsl.RequestDSL.reindexRequestBuilder;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Component
 @Conditional(OpensearchCondition.class)
@@ -187,5 +180,11 @@ public class TestOpenSearchRepository implements TestSearchRepository {
       .query(constantScore(term(VariableTemplate.PROCESS_INSTANCE_KEY, processInstanceKey)));
 
     return richOpenSearchClient.doc().scrollValues(requestBuilder, VariableEntity.class);
+  }
+
+  @Override
+  public void reindex(String srcIndex, String dstIndex, String script, Map<String, Object> scriptParams) throws IOException {
+    var request = reindexRequestBuilder(srcIndex, dstIndex, script, scriptParams).build();
+    richOpenSearchClient.index().reindexWithRetries(request);
   }
 }
