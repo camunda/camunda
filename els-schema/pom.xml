@@ -20,6 +20,11 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.json</groupId>
+			<artifactId>json</artifactId>
+		</dependency>
+
+		<dependency>
 			<groupId>io.camunda</groupId>
 			<artifactId>tasklist-common</artifactId>
 			<version>${project.version}</version>

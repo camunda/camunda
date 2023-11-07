@@ -157,6 +157,18 @@
         <version>${version.opensearch}</version>
       </dependency>
 
+      <dependency>
+        <groupId>org.opensearch.client</groupId>
+        <artifactId>opensearch-rest-client</artifactId>
+        <version>${version.opensearch}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.json</groupId>
+        <artifactId>json</artifactId>
+        <version>20230618</version>
+      </dependency>
+
       <!-- End Opensearch  -->
 
       <!-- START have to define this to override wrong version coming from spring-boot-dependencies BOM -->

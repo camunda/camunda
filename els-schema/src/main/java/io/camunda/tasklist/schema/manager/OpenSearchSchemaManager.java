@@ -19,6 +19,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.opensearch.client.Request;
+import org.opensearch.client.Response;
+import org.opensearch.client.RestClient;
 import org.opensearch.client.json.JsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
@@ -47,6 +52,8 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
   @Autowired protected RetryOpenSearchClient retryOpenSearchClient;
 
+  @Autowired protected RestClient opensearchRestClient;
+
   @Autowired private List<TemplateDescriptor> templateDescriptors;
 
   @Autowired private List<AbstractIndexDescriptor> indexDescriptors;
@@ -55,12 +62,60 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
   @Override
   public void createSchema() {
-    /*if (tasklistProperties.getArchiver().isIlmEnabled()) {
+    if (tasklistProperties.getArchiver().isIlmEnabled()) {
       createIndexLifeCycles();
-    }*/
+    }
     createDefaults();
     createTemplates();
     createIndices();
+  }
+
+  private void createIndexLifeCycles() {
+    LOGGER.warn("ISM is not implemented in Opensearch Java client");
+
+    final Request request =
+        new Request("PUT", "_plugins/_ism/policies/" + TASKLIST_DELETE_ARCHIVED_INDICES);
+    final JSONObject requestJson = new JSONObject();
+    final JSONArray statesJson = new JSONArray();
+    final JSONObject openState = new JSONObject();
+    final JSONArray openActions = new JSONArray();
+    final JSONObject openActionJson = new JSONObject();
+    final JSONArray transitionOpenActions = new JSONArray();
+    final JSONObject openTransition = new JSONObject();
+    final JSONObject openCondition = new JSONObject();
+    final JSONObject deleteState = new JSONObject();
+    final JSONArray actionsDelete = new JSONArray();
+    final JSONObject deleteJson = new JSONObject();
+    deleteJson.put("delete", new JSONObject());
+    actionsDelete.put(deleteJson);
+    deleteState.put("name", "delete");
+    deleteState.put("actions", actionsDelete);
+    openCondition.put(
+        "min_index_age", tasklistProperties.getArchiver().getIlmMinAgeForDeleteArchivedIndices());
+    openTransition.put("state_name", "delete");
+    openTransition.put("conditions", openCondition);
+    openActionJson.put("open", new JSONObject());
+    openActions.put(openActionJson);
+    openState.put("name", "open");
+    openState.put("actions", openActions);
+    transitionOpenActions.put(openTransition);
+    openState.put("transitions", transitionOpenActions);
+    statesJson.put(openState);
+    statesJson.put(deleteState);
+    final JSONObject policyJson = new JSONObject();
+    policyJson.put("policy_id", TASKLIST_DELETE_ARCHIVED_INDICES);
+    policyJson.put("description", "Policy to delete archived indices older than configuration");
+    policyJson.put("default_state", "open");
+    policyJson.put("states", statesJson);
+
+    requestJson.put("policy", policyJson);
+
+    request.setJsonEntity(requestJson.toString());
+    try {
+      final Response response = opensearchRestClient.performRequest(request);
+    } catch (IOException e) {
+      throw new TasklistRuntimeException(e);
+    }
   }
 
   private void createDefaults() {

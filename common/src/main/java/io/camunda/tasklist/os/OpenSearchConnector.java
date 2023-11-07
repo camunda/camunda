@@ -45,6 +45,7 @@ import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.ssl.TrustStrategy;
+import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -83,6 +84,28 @@ public class OpenSearchConnector {
           e);
     }
     return openSearchClient;
+  }
+
+  @Bean
+  public RestClient opensearchRestClient() {
+    final var originalHttpHost = getHttpHost(tasklistProperties.getOpenSearch());
+    final org.apache.http.HttpHost httpHost =
+        new org.apache.http.HttpHost(
+            originalHttpHost.getHostName(),
+            originalHttpHost.getPort(),
+            originalHttpHost.getSchemeName());
+    return RestClient.builder(httpHost).build();
+  }
+
+  @Bean
+  public RestClient opensearchZeebeRestClient() {
+    final var originalHttpHost = getHttpHost(tasklistProperties.getZeebeOpenSearch());
+    final org.apache.http.HttpHost httpHost =
+        new org.apache.http.HttpHost(
+            originalHttpHost.getHostName(),
+            originalHttpHost.getPort(),
+            originalHttpHost.getSchemeName());
+    return RestClient.builder(httpHost).build();
   }
 
   @Bean

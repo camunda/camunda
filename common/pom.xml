@@ -66,6 +66,11 @@
 			<artifactId>opensearch-java</artifactId>
 		</dependency>
 
+		<dependency>
+			<groupId>org.opensearch.client</groupId>
+			<artifactId>opensearch-rest-client</artifactId>
+		</dependency>
+
 		<!-- End Opensearch -->
 
 		<!-- ZEEBE -->
