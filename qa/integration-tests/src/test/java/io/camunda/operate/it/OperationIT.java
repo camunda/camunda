@@ -19,7 +19,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.elasticsearch.TestSearchRepository;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.IncidentEntity;
@@ -32,6 +31,7 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.util.*;
+import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.*;
 import io.camunda.operate.webapp.rest.dto.OperationDto;

@@ -27,15 +27,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.constantScore;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.longTerms;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.matchAll;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.script;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
-import static io.camunda.operate.store.opensearch.dsl.RequestDSL.getIndexRequestBuilder;
-import static io.camunda.operate.store.opensearch.dsl.RequestDSL.indexRequestBuilder;
-import static io.camunda.operate.store.opensearch.dsl.RequestDSL.reindexRequestBuilder;
-import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
+import static io.camunda.operate.store.opensearch.dsl.RequestDSL.*;
 
 @Component
 @Conditional(OpensearchCondition.class)
@@ -130,6 +123,11 @@ public class TestOpenSearchRepository implements TestSearchRepository {
       .stream()
       .map(map -> (Long) map.get(idFieldName))
       .toList();
+  }
+
+  @Override
+  public void deleteByTermsQuery(String index, String fieldName, List<Long> values) throws IOException {
+    richOpenSearchClient.doc().deleteByQuery(index, longTerms(fieldName, values));
   }
 
   @Override

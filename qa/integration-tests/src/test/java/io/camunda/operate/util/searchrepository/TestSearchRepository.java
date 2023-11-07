@@ -43,6 +43,8 @@ public interface TestSearchRepository {
 
   List<Long> searchIds(String index, String idFieldName, List<Long> ids, int size) throws IOException;
 
+  void deleteByTermsQuery(String index, String fieldName, List<Long> values) throws IOException;
+
   void update(String index, String id, Map<String, Object> fields) throws IOException;
 
   List<VariableEntity> getVariablesByProcessInstanceKey(String index, Long processInstanceKey);

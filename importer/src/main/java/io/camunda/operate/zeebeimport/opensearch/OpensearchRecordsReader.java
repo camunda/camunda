@@ -98,6 +98,10 @@ public class OpensearchRecordsReader implements RecordsReader {
   private ImportJob pendingImportJob;
   private boolean ongoingRescheduling;
 
+  private long maxPossibleSequence;
+
+  private int countEmptyRuns;
+
   @Autowired
   @Qualifier("importThreadPoolExecutor")
   private ThreadPoolTaskExecutor importExecutor;
@@ -134,6 +138,9 @@ public class OpensearchRecordsReader implements RecordsReader {
   @PostConstruct
   private void postConstruct() {
     this.batchSizeThrottle = new NumberThrottleable.DivideNumberThrottle(operateProperties.getZeebeOpensearch().getBatchSize());
+    //1st sequence of next partition - 1
+    this.maxPossibleSequence = sequence(partitionId + 1, 0) - 1;
+    this.countEmptyRuns = 0;
   }
 
   @Override
@@ -209,10 +216,17 @@ public class OpensearchRecordsReader implements RecordsReader {
       lessThanEqualsSequence = lastSequence;
       logger.debug(
           "Import batch reread was called. Data type {}, partitionId {}, sequence {}, lastSequence {}, maxNumberOfHits {}.",
-          importValueType, partitionId, sequence, lastSequence, maxNumberOfHits);
+          importValueType, partitionId, sequence, lessThanEqualsSequence, maxNumberOfHits);
     } else {
       maxNumberOfHits = batchSize;
-      lessThanEqualsSequence = sequence + batchSize;
+      if (countEmptyRuns == operateProperties.getImporter().getMaxEmptyRuns()) {
+        lessThanEqualsSequence = maxPossibleSequence;
+        countEmptyRuns = 0;
+        logger.debug("Max empty runs reached. Data type {}, partitionId {}, sequence {}, lastSequence {}, maxNumberOfHits {}.",
+            importValueType, partitionId, sequence, lessThanEqualsSequence, maxNumberOfHits);
+      } else {
+        lessThanEqualsSequence = sequence + batchSize;
+      }
     }
 
     var searchRequestBuilder = searchRequestBuilder(aliasName)
@@ -224,6 +238,11 @@ public class OpensearchRecordsReader implements RecordsReader {
     boolean scrollNeeded = maxNumberOfHits >= ElasticsearchUtil.QUERY_MAX_SIZE;
     try {
       final HitEntity[] hits = withTimerSearchHits(() -> read(searchRequestBuilder, scrollNeeded));
+      if (hits.length == 0) {
+        countEmptyRuns++;
+      } else {
+        countEmptyRuns = 0;
+      }
       return createImportBatch(hits);
     } catch (OpenSearchException ex) {
       if (ex.getMessage().contains("no such index")) {

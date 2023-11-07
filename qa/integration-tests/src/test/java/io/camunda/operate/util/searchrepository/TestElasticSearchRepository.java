@@ -31,6 +31,7 @@ import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
+import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.xcontent.XContentType;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +48,7 @@ import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @Component
 @Conditional(ElasticsearchCondition.class)
@@ -152,6 +154,13 @@ public class TestElasticSearchRepository implements TestSearchRepository {
         .query(q)
         .size(size));
     return ElasticsearchUtil.scrollFieldToList(request, idFieldName, esClient);
+  }
+
+  @Override
+  public void deleteByTermsQuery(String index, String fieldName, List<Long> values) throws IOException {
+    DeleteByQueryRequest request =
+        new DeleteByQueryRequest(index).setQuery(termsQuery(fieldName, values));
+    esClient.deleteByQuery(request, RequestOptions.DEFAULT);
   }
 
   @Override

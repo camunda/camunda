@@ -26,6 +26,8 @@ public class ImportProperties {
 
   public static final int DEFAULT_IMPORT_POSITION_UPDATE_INTERVAL = 10000;
 
+  private static final int DEFAULT_MAX_EMPTY_RUNS = 10;
+
   private int threadsCount = DEFAULT_IMPORT_THREADS_COUNT;
 
   private int postImportThreadsCount = DEFAULT_POST_IMPORT_THREADS_COUNT;
@@ -68,6 +70,7 @@ public class ImportProperties {
    * Should not be set true forever for performance reasons.
    */
   private boolean readArchivedParents = false;
+  private int maxEmptyRuns = DEFAULT_MAX_EMPTY_RUNS;
 
   public boolean isStartLoadingDataOnStartup() {
     return startLoadingDataOnStartup;
@@ -167,6 +170,15 @@ public class ImportProperties {
 
   public ImportProperties setReadArchivedParents(boolean readArchivedParents) {
     this.readArchivedParents = readArchivedParents;
+    return this;
+  }
+
+  public int getMaxEmptyRuns() {
+    return maxEmptyRuns;
+  }
+
+  public ImportProperties setMaxEmptyRuns(int maxEmptyRuns) {
+    this.maxEmptyRuns = maxEmptyRuns;
     return this;
   }
 }
