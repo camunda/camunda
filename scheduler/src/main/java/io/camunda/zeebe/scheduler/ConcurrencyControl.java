@@ -11,13 +11,15 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.time.Duration;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Control interface to schedule tasks or follow-up tasks such that different tasks scheduled via
  * the same {@code ConcurrencyControl} object are never executed concurrently
  */
-public interface ConcurrencyControl {
+public interface ConcurrencyControl extends Executor {
 
   /**
    * Schedules a callback to be invoked after the future has completed
@@ -65,5 +67,10 @@ public interface ConcurrencyControl {
    */
   default <V> ActorFuture<V> createCompletedFuture() {
     return CompletableActorFuture.completed(null);
+  }
+
+  @Override
+  default void execute(@NotNull final Runnable command) {
+    run(command);
   }
 }
