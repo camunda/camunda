@@ -6,18 +6,6 @@
  */
 package io.camunda.operate.zeebeimport;
 
-import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
-import static io.camunda.operate.entities.listview.ProcessInstanceState.ACTIVE;
-import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
-import static io.camunda.operate.util.ThreadUtil.sleepFor;
-import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
-import static io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto.INCIDENT;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
@@ -29,7 +17,10 @@ import io.camunda.operate.entities.dmn.DecisionInstanceState;
 import io.camunda.operate.entities.dmn.DecisionType;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
-import io.camunda.operate.util.*;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
+import io.camunda.operate.util.PayloadUtil;
+import io.camunda.operate.util.ZeebeTestUtil;
+import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
@@ -45,22 +36,25 @@ import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.Predicate;
 
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.skyscreamer.jsonassert.JSONAssert;
-import org.skyscreamer.jsonassert.JSONCompareMode;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
+import static io.camunda.operate.entities.listview.ProcessInstanceState.ACTIVE;
+import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
+import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
+import static io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto.INCIDENT;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class ZeebeImportIT extends OperateZeebeAbstractIT {
 
@@ -77,7 +71,7 @@ public class ZeebeImportIT extends OperateZeebeAbstractIT {
   private IncidentReader incidentReader;
 
   @Autowired
-  private RestHighLevelClient esClient;
+  private TestSearchRepository testSearchRepository;
 
   @Autowired
   private DecisionInstanceTemplate decisionInstanceTemplate;
@@ -87,10 +81,6 @@ public class ZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Autowired
   private PayloadUtil payloadUtil;
-
-  @Autowired
-  @Qualifier("zeebeEsClient")
-  protected RestHighLevelClient zeebeEsClient;
 
   @Test
   public void testProcessNameAndVersionAreLoaded() {
@@ -536,10 +526,7 @@ public class ZeebeImportIT extends OperateZeebeAbstractIT {
         .startProcessInstance(bpmnProcessId, payload).waitUntil().decisionInstancesAreCreated(1);
 
     //then
-    final SearchRequest request = new SearchRequest(decisionInstanceTemplate.getAlias()).source(
-        new SearchSourceBuilder().query(matchAllQuery()));
-    final List<DecisionInstanceEntity> decisionEntities = ElasticsearchUtil.scroll(request,
-        DecisionInstanceEntity.class, objectMapper, esClient);
+    final List<DecisionInstanceEntity> decisionEntities = testSearchRepository.searchAll(decisionInstanceTemplate.getAlias(), DecisionInstanceEntity.class);
 
     assertThat(decisionEntities).hasSize(1);
     assertThat(decisionEntities.get(0).getEvaluatedInputs()).hasSize(1);
@@ -577,12 +564,7 @@ public class ZeebeImportIT extends OperateZeebeAbstractIT {
         .decisionInstancesAreCreated(1);
 
     //then
-    final SearchRequest request = new SearchRequest(decisionInstanceTemplate.getAlias()).source(
-        new SearchSourceBuilder()
-            .query(matchAllQuery())
-    );
-    final List<DecisionInstanceEntity> decisionEntities = ElasticsearchUtil
-        .scroll(request, DecisionInstanceEntity.class, objectMapper, esClient);
+    final List<DecisionInstanceEntity> decisionEntities = testSearchRepository.searchAll(decisionInstanceTemplate.getAlias(), DecisionInstanceEntity.class);
 
     assertThat(decisionEntities).hasSize(1);
     final DecisionInstanceEntity entity = decisionEntities.get(0);
@@ -646,12 +628,7 @@ public class ZeebeImportIT extends OperateZeebeAbstractIT {
         .decisionInstancesAreCreated(2);
 
     //then
-    final SearchRequest request = new SearchRequest(decisionInstanceTemplate.getAlias()).source(
-        new SearchSourceBuilder()
-            .query(matchAllQuery())
-    );
-    final List<DecisionInstanceEntity> decisionEntities = ElasticsearchUtil
-        .scroll(request, DecisionInstanceEntity.class, objectMapper, esClient);
+    final List<DecisionInstanceEntity> decisionEntities = testSearchRepository.searchAll(decisionInstanceTemplate.getAlias(), DecisionInstanceEntity.class);
 
     assertThat(decisionEntities).hasSize(2);
     decisionEntities.forEach(entity ->
@@ -721,12 +698,7 @@ public class ZeebeImportIT extends OperateZeebeAbstractIT {
         .decisionInstancesAreCreated(1);
 
     //then
-    final SearchRequest request = new SearchRequest(decisionInstanceTemplate.getAlias()).source(
-        new SearchSourceBuilder()
-            .query(matchAllQuery())
-    );
-    final List<DecisionInstanceEntity> decisionEntities = ElasticsearchUtil
-        .scroll(request, DecisionInstanceEntity.class, objectMapper, esClient);
+    final List<DecisionInstanceEntity> decisionEntities = testSearchRepository.searchAll(decisionInstanceTemplate.getAlias(), DecisionInstanceEntity.class);
 
     assertThat(decisionEntities).hasSize(1);
     final DecisionInstanceEntity entity = decisionEntities.get(0);
