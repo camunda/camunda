@@ -10,15 +10,12 @@ package io.camunda.zeebe.engine.processing.message;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.StoredMessage;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 
 public final class MessageSubscriptionRejectProcessor
@@ -28,8 +25,6 @@ public final class MessageSubscriptionRejectProcessor
   private final MessageSubscriptionState subscriptionState;
   private final SubscriptionCommandSender commandSender;
   private final StateWriter stateWriter;
-  private final TypedRejectionWriter rejectionWriter;
-  private final SideEffectWriter sideEffectWriter;
 
   public MessageSubscriptionRejectProcessor(
       final MessageState messageState,
@@ -40,22 +35,12 @@ public final class MessageSubscriptionRejectProcessor
     this.subscriptionState = subscriptionState;
     this.commandSender = commandSender;
     stateWriter = writers.state();
-    rejectionWriter = writers.rejection();
-    sideEffectWriter = writers.sideEffect();
   }
 
   @Override
   public void processRecord(final TypedRecord<MessageSubscriptionRecord> record) {
 
     final MessageSubscriptionRecord subscriptionRecord = record.getValue();
-
-    if (!messageState.existMessageCorrelation(
-        subscriptionRecord.getMessageKey(), subscriptionRecord.getBpmnProcessIdBuffer())) {
-
-      rejectCommand(record);
-      return;
-    }
-
     stateWriter.appendFollowUpEvent(
         record.getKey(), MessageSubscriptionIntent.REJECTED, subscriptionRecord);
 
@@ -99,8 +84,8 @@ public final class MessageSubscriptionRejectProcessor
         });
   }
 
-  private boolean sendCorrelateCommand(final MessageSubscriptionRecord subscription) {
-    return commandSender.correlateProcessMessageSubscription(
+  private void sendCorrelateCommand(final MessageSubscriptionRecord subscription) {
+    commandSender.correlateProcessMessageSubscription(
         subscription.getProcessInstanceKey(),
         subscription.getElementInstanceKey(),
         subscription.getBpmnProcessIdBuffer(),
@@ -108,15 +93,5 @@ public final class MessageSubscriptionRejectProcessor
         subscription.getMessageKey(),
         subscription.getVariablesBuffer(),
         subscription.getCorrelationKeyBuffer());
-  }
-
-  private void rejectCommand(final TypedRecord<MessageSubscriptionRecord> record) {
-    final var subscription = record.getValue();
-    final var reason =
-        String.format(
-            "Expected message '%d' to be correlated for process with BPMN process id '%s' but no correlation was found",
-            subscription.getMessageKey(), subscription.getBpmnProcessId());
-
-    rejectionWriter.appendRejection(record, RejectionType.INVALID_STATE, reason);
   }
 }
