@@ -9,12 +9,16 @@ package io.camunda.operate.util;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.entities.BatchOperationEntity;
+import io.camunda.operate.webapp.rest.DecisionRestService;
+import io.camunda.operate.webapp.rest.ProcessRestService;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -390,6 +394,34 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
       batchOperationDto.setName(name);
     }
     return batchOperationDto;
+  }
+
+  protected BatchOperationEntity deleteProcessWithOkResponse(String processId) throws Exception {
+    String requestUrl = ProcessRestService.PROCESS_URL + "/" + processId;
+    MockHttpServletRequestBuilder request = delete(requestUrl).accept(mockMvcTestRule.getContentType());
+
+    final MvcResult mvcResult = mockMvc.perform(request)
+        .andExpect(status().is(HttpStatus.SC_OK))
+        .andReturn();
+    searchTestRule.refreshSerchIndexes();
+
+    final BatchOperationEntity batchOperation = objectMapper
+        .readValue(mvcResult.getResponse().getContentAsString(), BatchOperationEntity.class);
+    return batchOperation;
+  }
+
+  protected BatchOperationEntity deleteDecisionWithOkResponse(String decisionDefinitionId) throws Exception {
+    String requestUrl = DecisionRestService.DECISION_URL + "/" + decisionDefinitionId;
+    MockHttpServletRequestBuilder request = delete(requestUrl).accept(mockMvcTestRule.getContentType());
+
+    final MvcResult mvcResult = mockMvc.perform(request)
+        .andExpect(status().is(HttpStatus.SC_OK))
+        .andReturn();
+    searchTestRule.refreshSerchIndexes();
+
+    final BatchOperationEntity batchOperation = objectMapper
+        .readValue(mvcResult.getResponse().getContentAsString(), BatchOperationEntity.class);
+    return batchOperation;
   }
 
   protected void clearMetrics() {

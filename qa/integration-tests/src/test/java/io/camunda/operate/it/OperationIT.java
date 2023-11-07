@@ -8,6 +8,7 @@ package io.camunda.operate.it;
 
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesQuery;
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllRunningQuery;
+import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.operate.webapp.rest.OperationRestService.OPERATION_URL;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -18,17 +19,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.elasticsearch.TestSearchRepository;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.OperationType;
+import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
-import io.camunda.operate.util.ConversionUtils;
-import io.camunda.operate.util.OperateZeebeAbstractIT;
-import io.camunda.operate.util.ZeebeTestUtil;
+import io.camunda.operate.util.*;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.*;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
@@ -41,12 +44,13 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
-import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
-import io.camunda.operate.webapp.zeebe.operation.ResolveIncidentHandler;
-import io.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
+import io.camunda.operate.webapp.zeebe.operation.*;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+
+import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -73,6 +77,12 @@ public class OperationIT extends OperateZeebeAbstractIT {
   private UpdateVariableHandler updateVariableHandler;
 
   @Autowired
+  private DeleteProcessDefinitionHandler deleteProcessDefinitionHandler;
+
+  @Autowired
+  private DeleteDecisionDefinitionHandler deleteDecisionDefinitionHandler;
+
+  @Autowired
   private ProcessInstanceReader processInstanceReader;
 
   @Autowired
@@ -93,6 +103,12 @@ public class OperationIT extends OperateZeebeAbstractIT {
   @Autowired
   private ObjectMapper objectMapper;
 
+  @Autowired
+  private TestSearchRepository testSearchRepository;
+
+  @Autowired
+  private DecisionInstanceTemplate decisionInstanceTemplate;
+
   private Long initialBatchOperationMaxSize;
 
   @Before
@@ -101,6 +117,8 @@ public class OperationIT extends OperateZeebeAbstractIT {
     cancelProcessInstanceHandler.setZeebeClient(super.getClient());
     updateRetriesHandler.setZeebeClient(super.getClient());
     updateVariableHandler.setZeebeClient(super.getClient());
+    deleteProcessDefinitionHandler.setZeebeClient(super.getClient());
+    deleteDecisionDefinitionHandler.setZeebeClient(super.getClient());
 
     mockMvc = mockMvcTestRule.getMockMvc();
     initialBatchOperationMaxSize = operateProperties.getBatchOperationMaxSize();
@@ -896,6 +914,141 @@ public class OperationIT extends OperateZeebeAbstractIT {
       .format("Too many process instances are selected for batch operation. Maximum possible amount: %s", operateProperties.getBatchOperationMaxSize());
     assertThat(mvcResult.getResolvedException().getMessage()).contains(expectedErrorMsg);
   }
+
+  @Test
+  public void testDeleteProcessDefinitionDeletes() throws Exception {
+
+    // given
+    // process instances that complete execution
+    final String bpmnProcessId = "startEndProcess";
+    final BpmnModelInstance startEndProcess =
+        Bpmn.createExecutableProcess(bpmnProcessId)
+            .startEvent()
+            .endEvent()
+            .done();
+    final Long processDefinitionKey = deployProcess(startEndProcess, "startEndProcess.bpmn");
+    final Long processInstanceKey1 = ZeebeTestUtil.startProcessInstance(super.getClient(), bpmnProcessId, null);
+    final Long processInstanceKey2 = ZeebeTestUtil.startProcessInstance(super.getClient(), bpmnProcessId, null);
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceKey1);
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceKey2);
+
+    final ListViewQueryDto processInstanceQuery = createGetAllProcessInstancesQuery()
+        .setIds(Arrays.asList(String.valueOf(processInstanceKey1), String.valueOf(processInstanceKey2)));
+
+    //when
+    //we call DELETE_PROCESS_DEFINITION operation on process
+    BatchOperationEntity batchOperationEntity = deleteProcessWithOkResponse(String.valueOf(processDefinitionKey));
+
+    //and execute the operation
+    executeOneBatch();
+    sleepFor(2000);
+
+    //then
+    //the state of operation is COMPLETED, and the instances are deleted
+    ListViewResponseDto processInstances = getProcessInstances(processInstanceQuery);
+    assertThat(processInstances.getProcessInstances()).isEmpty();
+    OperationDto operation = getOperation(batchOperationEntity.getId());
+    assertThat(operation.getType()).isEqualTo(OperationType.DELETE_PROCESS_DEFINITION);
+    assertThat(operation.getState()).isEqualTo(OperationState.COMPLETED);
+    assertThat(operation.getErrorMessage()).isNull();
+    assertThat(operation.getId()).isNotNull();
+  }
+
+  @Test
+  public void testDeleteProcessDefinitionFailsWhenRunning() throws Exception {
+
+    // given
+    // process instances that are running
+    final Long processDefinitionKey = tester
+        .deployProcess("single-task.bpmn")
+        .waitUntil().processIsDeployed()
+        .getProcessDefinitionKey();
+    final Long processInstanceKey1 = tester.startProcessInstance("process", null)
+        .and()
+        .waitUntil().processInstanceIsStarted()
+        .getProcessInstanceKey();
+    final Long processInstanceKey2 = tester.startProcessInstance("process", null)
+        .and()
+        .waitUntil().processInstanceIsStarted()
+        .getProcessInstanceKey();
+    final ListViewQueryDto processInstanceQuery = createGetAllProcessInstancesQuery()
+        .setIds(Arrays.asList(String.valueOf(processInstanceKey1), String.valueOf(processInstanceKey2)));
+
+    //when
+    //we call DELETE_PROCESS_DEFINITION operation on process
+    BatchOperationEntity batchOperationEntity = deleteProcessWithOkResponse(String.valueOf(processDefinitionKey));
+
+    //and execute the operation
+    executeOneBatch();
+    sleepFor(2000);
+
+    //then
+    //the state of operation is FAILED, and the instances are not deleted
+    ListViewResponseDto processInstances = getProcessInstances(processInstanceQuery);
+    assertThat(processInstances.getProcessInstances()).size().isEqualTo(2);
+    OperationDto operation = getOperation(batchOperationEntity.getId());
+    assertThat(operation.getType()).isEqualTo(OperationType.DELETE_PROCESS_DEFINITION);
+    assertThat(operation.getState()).isEqualTo(OperationState.FAILED);
+    assertThat(operation.getErrorMessage()).contains("Process instances still running.");
+    assertThat(operation.getId()).isNotNull();
+  }
+
+  @Test
+  public void testDeleteDecisionDefinitionDeletes() throws Exception {
+
+    // given
+    deployDecisionRequirements();
+    deployProcessWithDecision();
+    String bpmnProcessId = "invoice_decision";
+    String payload = "{\"amount\": 1200, \"invoiceCategory\": \"Travel Expenses\"}";
+    final Long processInstanceKey1 = ZeebeTestUtil.startProcessInstance(super.getClient(), bpmnProcessId, payload);
+    final Long processInstanceKey2 = ZeebeTestUtil.startProcessInstance(super.getClient(), bpmnProcessId, payload);
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceKey1);
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceKey2);
+    List<DecisionInstanceEntity> decisionInstanceEntities = searchAllDocuments(decisionInstanceTemplate.getAlias(), DecisionInstanceEntity.class);
+    String decisionDefinitionId = decisionInstanceEntities.get(0).getDecisionDefinitionId();
+
+    //when
+    //we call DELETE_DECISION_DEFINITION operation
+    BatchOperationEntity batchOperationEntity = deleteDecisionWithOkResponse(String.valueOf(decisionDefinitionId));
+
+    //and execute the operation
+    executeOneBatch();
+    sleepFor(2000);
+
+    //then
+    //the state of operation is COMPLETED, and the instances are deleted
+    decisionInstanceEntities = searchAllDocuments(decisionInstanceTemplate.getAlias(), DecisionInstanceEntity.class);
+    assertThat(decisionInstanceEntities).isEmpty();
+    OperationDto operation = getOperation(batchOperationEntity.getId());
+    assertThat(operation.getType()).isEqualTo(OperationType.DELETE_DECISION_DEFINITION);
+    assertThat(operation.getState()).isEqualTo(OperationState.COMPLETED);
+    assertThat(operation.getErrorMessage()).isNull();
+    assertThat(operation.getId()).isNotNull();
+  }
+
+  protected void deployDecisionRequirements() {
+    tester.deployDecision("invoiceBusinessDecisions_v_1.dmn").waitUntil().decisionsAreDeployed(2);
+  }
+
+  protected Long deployProcessWithDecision() {
+    Long procDefinitionKey = tester.deployProcess("invoice_decision.bpmn").waitUntil().processIsDeployed().getProcessDefinitionKey();
+    return procDefinitionKey;
+  }
+
+  protected Long startProcessWithDecision(String payload) {
+    Long procInstanceKey = tester.startProcessInstance("invoice_decision", payload).waitUntil().processInstanceIsStarted().getProcessInstanceKey();
+    return procInstanceKey;
+  }
+
+  protected <R> List<R> searchAllDocuments(String index, Class<R> clazz) {
+    try {
+      return testSearchRepository.searchAll(index, clazz);
+    } catch (IOException ex) {
+      throw new OperateRuntimeException("Search failed for index " + index, ex);
+    }
+  }
+
   private long startDemoProcessInstance() {
     String processId = "demoProcess";
     return tester.startProcessInstance(processId, "{\"a\": \"b\"}")
