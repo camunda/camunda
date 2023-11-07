@@ -107,6 +107,7 @@ public final class EngineRule extends ExternalResource {
   private JobStreamer jobStreamer = JobStreamer.noop();
 
   private FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
+  private ArrayList<TestInterPartitionCommandSender> interPartitionCommandSenders;
 
   private EngineRule(final int partitionCount) {
     this(partitionCount, null);
@@ -185,7 +186,7 @@ public final class EngineRule extends ExternalResource {
     final DeploymentRecord deploymentRecord = new DeploymentRecord();
     final UnsafeBuffer deploymentBuffer = new UnsafeBuffer(new byte[deploymentRecord.getLength()]);
     deploymentRecord.write(deploymentBuffer, 0);
-    final var interPartitionCommandSenders = new ArrayList<TestInterPartitionCommandSender>();
+    interPartitionCommandSenders = new ArrayList<>();
 
     forEachPartition(
         partitionId -> {
@@ -418,6 +419,15 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
+  public void interceptInterPartitionCommands(
+      final TestInterPartitionCommandSender.CommandInterceptor interceptor) {
+    if (interPartitionCommandSenders == null) {
+      throw new IllegalStateException(
+          "Cannot intercept inter-partition commands before the engine is started");
+    }
+    interPartitionCommandSenders.forEach(sender -> sender.intercept(interceptor));
+  }
+
   private static final class VersatileBlob implements DbKey, DbValue {
 
     private final DirectBuffer genericBuffer = new UnsafeBuffer(0, 0);
@@ -520,6 +530,7 @@ public final class EngineRule extends ExternalResource {
   private class TestInterPartitionCommandSender implements InterPartitionCommandSender {
 
     private final Map<Integer, LogStreamWriter> writers = new HashMap<>();
+    private CommandInterceptor interceptor = CommandInterceptor.SEND_ALL;
 
     @Override
     public void sendCommand(
@@ -537,6 +548,9 @@ public final class EngineRule extends ExternalResource {
         final Intent intent,
         final Long recordKey,
         final UnifiedRecordValue command) {
+      if (!interceptor.shouldSend(receiverPartitionId, valueType, intent, recordKey, command)) {
+        return;
+      }
       final var metadata =
           new RecordMetadata().recordType(RecordType.COMMAND).intent(intent).valueType(valueType);
       final var writer = writers.get(receiverPartitionId);
@@ -558,6 +572,29 @@ public final class EngineRule extends ExternalResource {
       for (int i = PARTITION_ID; i < PARTITION_ID + partitionCount; i++) {
         writers.put(i, environmentRule.newLogStreamWriter(i));
       }
+    }
+
+    public void intercept(final CommandInterceptor interceptor) {
+      this.interceptor = interceptor;
+    }
+
+    @FunctionalInterface
+    public interface CommandInterceptor {
+      CommandInterceptor SEND_ALL =
+          (receiverPartitionId, valueType, intent, recordKey, command) -> true;
+
+      CommandInterceptor DROP_ALL =
+          (receiverPartitionId, valueType, intent, recordKey, command) -> false;
+
+      /**
+       * @return true if the command should be sent, false if not.
+       */
+      boolean shouldSend(
+          final int receiverPartitionId,
+          final ValueType valueType,
+          final Intent intent,
+          final Long recordKey,
+          final UnifiedRecordValue command);
     }
   }
 }
