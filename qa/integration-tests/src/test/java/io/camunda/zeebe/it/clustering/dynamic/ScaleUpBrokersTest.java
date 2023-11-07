@@ -47,7 +47,7 @@ class ScaleUpBrokersTest {
   private final List<TestStandaloneBroker> newBrokers = new ArrayList<>();
 
   @TestZeebe
-  private final TestCluster CLUSTER =
+  private final TestCluster cluster =
       TestCluster.builder()
           .useRecordingExporter(true)
           .withEmbeddedGateway(true)
@@ -64,7 +64,7 @@ class ScaleUpBrokersTest {
 
   @BeforeEach
   void createClient() {
-    zeebeClient = CLUSTER.availableGateway().newClientBuilder().build();
+    zeebeClient = cluster.availableGateway().newClientBuilder().build();
   }
 
   @AfterEach
@@ -76,7 +76,7 @@ class ScaleUpBrokersTest {
   @Test
   void shouldScaleClusterByAddingOneBroker() {
     // given
-    final int currentClusterSize = CLUSTER.brokers().size();
+    final int currentClusterSize = cluster.brokers().size();
     final int newClusterSize = currentClusterSize + 1;
     final int newBrokerId = newClusterSize - 1;
 
@@ -88,19 +88,19 @@ class ScaleUpBrokersTest {
 
     // then
     // verify partition 2 is moved from broker 0 to 1
-    assertBrokerHasPartition(CLUSTER, newBrokerId, 2);
-    assertBrokerDoesNotHavePartition(CLUSTER, 0, 2);
-    assertBrokerHasPartition(CLUSTER, 0, 1);
+    assertBrokerHasPartition(cluster, newBrokerId, 2);
+    assertBrokerDoesNotHavePartition(cluster, 0, 2);
+    assertBrokerHasPartition(cluster, 0, 1);
 
     // Changes are reflected in the topology returned by grpc query
-    CLUSTER.awaitCompleteTopology(newClusterSize, 3, 1, Duration.ofSeconds(10));
+    cluster.awaitCompleteTopology(newClusterSize, 3, 1, Duration.ofSeconds(10));
 
     // then - verify the cluster can still process
     assertThatAllJobsCanBeCompleted(processInstanceKeys);
   }
 
   private void scale(final int newClusterSize) {
-    final var actuator = ClusterActuator.of(CLUSTER.availableGateway());
+    final var actuator = ClusterActuator.of(cluster.availableGateway());
     final var newBrokerSet = IntStream.range(0, newClusterSize).boxed().toList();
 
     // when
@@ -110,13 +110,13 @@ class ScaleUpBrokersTest {
     // then - verify topology changes are completed
     Awaitility.await()
         .timeout(Duration.ofMinutes(2))
-        .untilAsserted(() -> assertChangeIsApplied(CLUSTER, response));
+        .untilAsserted(() -> assertChangeIsApplied(cluster, response));
   }
 
   @Test
   void shouldScaleUpAgain() {
     // given
-    final int currentClusterSize = CLUSTER.brokers().size();
+    final int currentClusterSize = cluster.brokers().size();
     final int clusterSize2 = currentClusterSize + 1;
     final int broker2 = clusterSize2 - 1;
 
@@ -131,10 +131,10 @@ class ScaleUpBrokersTest {
     scale(finalClusterSize);
 
     // then -- partition 3 must be moved to new broker
-    assertBrokerHasPartition(CLUSTER, broker3, 3);
+    assertBrokerHasPartition(cluster, broker3, 3);
 
     // Changes are reflected in the topology returned by grpc query
-    CLUSTER.awaitCompleteTopology(finalClusterSize, 3, 1, Duration.ofSeconds(10));
+    cluster.awaitCompleteTopology(finalClusterSize, 3, 1, Duration.ofSeconds(10));
   }
 
   private void assertThatAllJobsCanBeCompleted(final List<Long> processInstanceKeys) {
@@ -204,7 +204,7 @@ class ScaleUpBrokersTest {
                   b.getCluster()
                       .setInitialContactPoints(
                           List.of(
-                              CLUSTER
+                              cluster
                                   .brokers()
                                   .get(MemberId.from("0"))
                                   .address(TestZeebePort.CLUSTER)));
