@@ -91,13 +91,15 @@ services:
       - elasticsearch
   keycloak:
     container_name: keycloak
-    image: jboss/keycloak:16.1.1
+    image: bitnami/keycloak:22.0.3
     profiles: ['self-managed']
     ports:
       - "18080:8080"
     environment:
-      KEYCLOAK_USER: admin
-      KEYCLOAK_PASSWORD: admin
+      KEYCLOAK_ADMIN_USER: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KEYCLOAK_DATABASE_VENDOR: dev-mem
+      KEYCLOAK_HTTP_RELATIVE_PATH: /auth
   identity:
     depends_on:
       - keycloak
