@@ -12,6 +12,7 @@ import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.FR
 import com.netflix.concurrency.limits.limit.WindowedLimit;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.SequencerFlowControl;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.StabilizingAIMDLimit;
+import io.camunda.zeebe.logstreams.impl.metrics.AppenderMetrics;
 import io.camunda.zeebe.logstreams.impl.metrics.SequencerMetrics;
 import io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
@@ -40,12 +41,15 @@ import org.slf4j.LoggerFactory;
  */
 public final class Sequencer implements LogStreamWriter, Closeable {
   private static final Logger LOG = LoggerFactory.getLogger(Sequencer.class);
+
   private final int maxFragmentSize;
 
   private volatile long position;
   private volatile boolean isClosed = false;
   private final ReentrantLock lock = new ReentrantLock();
   private final SequencerMetrics metrics;
+
+  private final AppenderMetrics appenderMetrics;
   private final LogStorage logStorage;
   private final SequencerFlowControl flowControlUserCommands =
       SequencerFlowControl.builder()
@@ -65,7 +69,6 @@ public final class Sequencer implements LogStreamWriter, Closeable {
       SequencerFlowControl.builder()
               .limit(new StabilizingAIMDLimit(100, 10000, 1, 0.9, Duration.ofSeconds(1).toNanos()))
               .build();
-  private final AppendListener noopListener = new AppendListener() {};
 
   public Sequencer(
       final LogStorage logStorage,
@@ -77,6 +80,7 @@ public final class Sequencer implements LogStreamWriter, Closeable {
     position = initialPosition;
     this.maxFragmentSize = maxFragmentSize;
     metrics = new SequencerMetrics(partitionId);
+    appenderMetrics = new AppenderMetrics(partitionId);
   }
 
   /** {@inheritDoc} */
@@ -128,7 +132,11 @@ public final class Sequencer implements LogStreamWriter, Closeable {
       sequenced =
           new SequencedBatch(
               ActorClock.currentTimeMillis(), lowestPosition, sourcePosition, appendEntries);
-      logStorage.append(lowestPosition, highestPosition, sequenced, noopListener);
+      logStorage.append(
+          lowestPosition,
+          highestPosition,
+          sequenced,
+          new InstrumentingAppendListener(highestPosition));
       position = highestPosition + 1;
     } finally {
       lock.unlock();
@@ -176,5 +184,24 @@ public final class Sequencer implements LogStreamWriter, Closeable {
     INTERNAL_COMMAND,
     INTER_PARTITION_COMMAND,
     FOLLOW_UP_EVENTS
+  }
+
+  private final class InstrumentingAppendListener implements AppendListener {
+
+    private final long recordPosition;
+
+    private InstrumentingAppendListener(final long recordPosition) {
+      this.recordPosition = recordPosition;
+    }
+
+    @Override
+    public void onWrite(final long address) {
+      appenderMetrics.setLastWrittenPosition(recordPosition);
+    }
+
+    @Override
+    public void onCommit(final long address) {
+      appenderMetrics.setLastCommittedPosition(recordPosition);
+    }
   }
 }
