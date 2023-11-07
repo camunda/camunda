@@ -38,7 +38,7 @@ jobs:
     name: Execute Release and Upload to Download Center
     runs-on: gcp-core-2-release
     env:
-      DOCKER_IMAGE_TEAM: registry.camunda.cloud/team-optimize/optimize
+      DOCKER_IMAGE_TEAM: registry.camunda.cloud/optimize-ee/optimize
       DOCKER_IMAGE_DOCKER_HUB: camunda/optimize
       DOCKER_LATEST_TAG: latest
     strategy:
@@ -136,7 +136,7 @@ jobs:
         env:
           RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION || '0.0.0' }}
           DEVELOPMENT_VERSION: ${{ github.event.inputs.DEVELOPMENT_VERSION || '0.1.0-SNAPSHOT' }}
-          BRANCH: ${{ github.event.inputs.BRANCH || 'master' }}
+          BRANCH: ${{ github.event.inputs.BRANCH || github.ref_name}}
           GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
           GITHUB_APP_ID: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
           DRY_RUN: ${{ github.event.inputs.DRY_RUN || 'true' }}
@@ -164,12 +164,11 @@ jobs:
           BRANCH: ${{ github.event.inputs.BRANCH }}
           DRY_RUN: ${{ github.event.inputs.DRY_RUN || 'true'}}
         run: |
-          git checkout master
+          git checkout ${{ github.ref_name }}
           .github/scripts/update-previous-version.sh
 
       - name: Build Docker Image
         run: |
-          git checkout master
           .github/scripts/build-release-docker-images.sh
         env:
           MAJOR_OR_MINOR:  ${{ steps.is-major-or-minor.outputs.is_major_or_minor }}
@@ -180,7 +179,7 @@ jobs:
       - name: Start Smoketest
         uses: ./.github/actions/compose
         with:
-          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.smoketest.yml
+          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.smoketest.release.yml
           project_name: smoketest
         env:
           OPTIMIZE_IMAGE_TAG: ${{ github.event.inputs.RELEASE_VERSION }}
