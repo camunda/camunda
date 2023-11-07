@@ -31,9 +31,10 @@ services:
 
   opensearch:
     image: opensearchproject/opensearch:2.5.0
+    depends_on:
+      - opensearch-init
     container_name: opensearch
     environment:
-      - cluster.name=opensearch-cluster
       - node.name=opensearch
       - discovery.seed_hosts=opensearch
       - plugins.security.disabled=true
@@ -50,6 +51,12 @@ services:
     ports:
       - "9200:9200"
       - "9600:9600" # required for Performance Analyzer
+
+  opensearch-init:
+      image: bash
+      privileged: true
+      user: root
+      command: [ "sysctl", "-w", "vm.max_map_count=262144"]
 
   zeebe:
     container_name: zeebe
