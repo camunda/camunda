@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture;
  *
  * @param <T> managed type
  */
-public interface Managed<T> {
+public interface Managed<T> extends AutoCloseable {
 
   /**
    * Starts the managed object.
@@ -45,4 +45,9 @@ public interface Managed<T> {
    * @return A completable future to be completed once the object has been stopped.
    */
   CompletableFuture<Void> stop();
+
+  @Override
+  default void close() throws Exception {
+    stop().join();
+  }
 }
