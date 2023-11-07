@@ -732,7 +732,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
       "Nutze die Optimize Ausreißeranalyse, um Verbesserungspotenzial im Prozess zu finden",
       "Echtzeitnahe Überwachung der Prozess Gesundheit",
       "Überwache Prozessausführungsdaten der letzten Minuten, Stunden und Tage echtzeitnah, um korrektiv eingreifen zu können.",
-      "Erstelle eine Kopie dieses Dashboards und passen Sie es Ihren Bedürfnissen an",
+      "Erstellen Sie eine Kopie dieses Dashboards und passen Sie es Ihren Bedürfnissen an",
       "Aktuell laufend",
       "Dieser Bericht zeigt den Fortschritt aller laufenden Prozesse an.",
       "In den letzten 7 Tagen eingegangene",
