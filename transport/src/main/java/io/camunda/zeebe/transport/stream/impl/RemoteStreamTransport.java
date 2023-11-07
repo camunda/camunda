@@ -149,52 +149,53 @@ public final class RemoteStreamTransport<M> extends Actor {
     }
 
     final var cause = error.getCause();
-    switch (cause) {
-        // it's possible that the member that was just added has since been removed in between
-        // retries;
-        // if this is the case, it'll be re-added eventually
-      case final NoSuchMemberException e -> {
-        LOG.trace(
-            """
-            Failed to restart streams for member '{}', which has been removed from the
-            membership protocol; can be safely ignored.""",
-            receiver,
-            e);
-        completed.complete(null);
-      }
-        // this error means the remote member is not handling requests of this type; either it's not
-        // a gateway, or it's still starting up or shutting down. in either case, restarting streams
-        // makes no sense
-      case final NoRemoteHandler e -> {
-        LOG.trace(
-            """
-            Failed to restart streams for member '{}'; either it's not a client
-            stream service, or it's still starting up. Can be safely ignored.""",
-            receiver,
-            e);
-        completed.complete(null);
-      }
-        // no point retrying if the remote handler failed to handle our request
-      case final RemoteHandlerFailure e -> {
-        LOG.warn(
-            """
-            Failed to restart streams for member '{}'; unrecoverable error occurred on recipient
-            side, will not retry.""",
-            receiver,
-            e);
-        completed.completeExceptionally(e);
-      }
-      default -> {
-        LOG.warn(
-            "Failed to restart streams for member '{}', retrying in {}ms",
-            receiver,
-            retryDelayMs,
-            error);
-        final var nextRetryDelay = retryDelaySupplier.applyAsLong(retryDelayMs);
-        actor.schedule(
-            Duration.ofMillis(nextRetryDelay),
-            () -> sendRestartStreamsRequest(receiver, completed, nextRetryDelay));
-      }
+    // it's possible that the member that was just added has since been removed in between
+    // retries; if this is the case, it'll be re-added eventually
+    if (cause instanceof final NoSuchMemberException e) {
+      LOG.trace(
+          """
+          Failed to restart streams for member '{}', which has been removed from the
+          membership protocol; can be safely ignored.""",
+          receiver,
+          e);
+      completed.complete(null);
+      return;
     }
+
+    // this error means the remote member is not handling requests of this type; either it's not
+    // a gateway, or it's still starting up or shutting down. in either case, restarting streams
+    // makes no sense
+    if (cause instanceof final NoRemoteHandler e) {
+      LOG.trace(
+          """
+          Failed to restart streams for member '{}'; either it's not a client
+          stream service, or it's still starting up. Can be safely ignored.""",
+          receiver,
+          e);
+      completed.complete(null);
+      return;
+    }
+
+    // no point retrying if the remote handler failed to handle our request
+    if (cause instanceof final RemoteHandlerFailure e) {
+      LOG.warn(
+          """
+          Failed to restart streams for member '{}'; unrecoverable error occurred on recipient
+          side, will not retry.""",
+          receiver,
+          e);
+      completed.completeExceptionally(e);
+      return;
+    }
+
+    LOG.warn(
+        "Failed to restart streams for member '{}', retrying in {}ms",
+        receiver,
+        retryDelayMs,
+        error);
+    final var nextRetryDelay = retryDelaySupplier.applyAsLong(retryDelayMs);
+    actor.schedule(
+        Duration.ofMillis(nextRetryDelay),
+        () -> sendRestartStreamsRequest(receiver, completed, nextRetryDelay));
   }
 }
