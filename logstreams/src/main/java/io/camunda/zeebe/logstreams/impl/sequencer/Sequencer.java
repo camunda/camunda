@@ -9,6 +9,7 @@ package io.camunda.zeebe.logstreams.impl.sequencer;
 
 import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.FRAME_ALIGNMENT;
 
+import com.netflix.concurrency.limits.limit.WindowedLimit;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.SequencerFlowControl;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.StabilizingAIMDLimit;
 import io.camunda.zeebe.logstreams.impl.metrics.SequencerMetrics;
@@ -48,7 +49,11 @@ public final class Sequencer implements LogStreamWriter, Closeable {
   private final LogStorage logStorage;
   private final SequencerFlowControl flowControlUserCommands =
       SequencerFlowControl.builder()
-          .limit(new StabilizingAIMDLimit(100, 10000, 1, 0.9, Duration.ofMillis(250).toNanos()))
+          .limit(
+              WindowedLimit.newBuilder()
+                  .build(
+                      new StabilizingAIMDLimit(
+                          100, 1000, 1, 0.9, Duration.ofMillis(200).toNanos())))
           .build();
   private final SequencerFlowControl flowControlInterPartition =
       SequencerFlowControl.builder()
