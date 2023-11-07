@@ -8,7 +8,7 @@
       <bpmn:incoming>SequenceFlow_04u8lgc</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1kgia40</bpmn:outgoing>
       <bpmn:timerEventDefinition>
-        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1S</bpmn:timeDuration>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT2M</bpmn:timeDuration>
       </bpmn:timerEventDefinition>
     </bpmn:intermediateCatchEvent>
     <bpmn:sequenceFlow id="SequenceFlow_04u8lgc" sourceRef="StartEvent_1" targetRef="IntermediateCatchEvent_0vwombs" />
@@ -20,7 +20,7 @@
       <bpmn:incoming>SequenceFlow_1kgia40</bpmn:incoming>
       <bpmn:outgoing>Flow_0haa91y</bpmn:outgoing>
       <bpmn:timerEventDefinition id="TimerEventDefinition_09svyjc">
-        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1S</bpmn:timeDuration>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT2M</bpmn:timeDuration>
       </bpmn:timerEventDefinition>
     </bpmn:intermediateCatchEvent>
     <bpmn:sequenceFlow id="Flow_0haa91y" sourceRef="Event_0ymxasm" targetRef="Event_191mmdw" />
