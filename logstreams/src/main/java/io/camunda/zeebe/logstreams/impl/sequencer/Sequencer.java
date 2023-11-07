@@ -136,6 +136,8 @@ public final class Sequencer implements LogStreamWriter, Closeable {
   @Override
   public void acknowledgePosition(final long position) {
     flowControlUserCommands.onResponse(position);
+    flowControlInternalCommands.onResponse(position);
+    flowControlInterPartition.onResponse(position);
   }
 
   /**
