@@ -354,6 +354,35 @@ public final class JobStateTest {
   }
 
   @Test
+  public void shouldUpdateDeadline() {
+    // given
+    final long jobKey = 1L;
+    final long deadline = 300000;
+    final long newDeadline = 600000;
+    final JobRecord jobRecord = newJobRecord().setDeadline(deadline);
+    jobState.create(jobKey, jobRecord);
+    jobState.activate(jobKey, jobRecord);
+
+    // when
+    jobState.updateJobDeadline(jobKey, newDeadline);
+
+    // then
+    assertThat(jobState.exists(jobKey)).isTrue();
+    assertThat(jobState.getJob(jobKey).getDeadline()).isEqualTo(newDeadline);
+
+    final List<JobRecord> timedOutJobs = new ArrayList<>();
+    jobState.forEachTimedOutEntry(
+        newDeadline + 1,
+        (key, value) -> {
+          timedOutJobs.add(value);
+          return true;
+        });
+
+    assertThat(timedOutJobs.size()).isEqualTo(1);
+    assertThat(timedOutJobs.get(0).getDeadline()).isEqualTo(newDeadline);
+  }
+
+  @Test
   public void shouldFailJobWithRetriesLeft() {
     // given
     final long key = 1L;

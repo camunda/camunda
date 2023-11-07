@@ -250,6 +250,24 @@ public final class DbJobState implements JobState, MutableJobState {
         });
   }
 
+  @Override
+  public void updateJobDeadline(final long jobKey, final long newDeadline) {
+    this.jobKey.wrapLong(jobKey);
+    final JobRecord job = getJob(jobKey);
+
+    if (job != null) {
+      final long deadline = job.getDeadline();
+
+      deadlineKey.wrapLong(deadline);
+      deadlinesColumnFamily.deleteExisting(deadlineJobKey);
+
+      job.setDeadline(newDeadline);
+      updateJobRecord(jobKey, job);
+
+      addJobDeadline(jobKey, newDeadline);
+    }
+  }
+
   private void createJob(final long key, final JobRecord record, final DirectBuffer type) {
     createJobRecord(key, record);
     initializeJobState();
