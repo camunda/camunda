@@ -6,17 +6,26 @@
  */
 package io.camunda.operate.conditions;
 
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.stereotype.Component;
+
 import static io.camunda.operate.conditions.DatabaseCondition.DATABASE_PROPERTY;
 
-public class DatabaseInfo {
+@Component
+public class DatabaseInfo implements ApplicationContextAware {
+
+  private static ApplicationContext applicationContext;
+
   static final DatabaseType DEFAULT_DATABASE = DatabaseType.Elasticsearch;
-  static final DatabaseType DATABASE = DatabaseType.byCode(System.getenv(DATABASE_PROPERTY)).orElse(DEFAULT_DATABASE);
 
   public static DatabaseType getCurrent(){
-    return DATABASE;
+    var code =  applicationContext.getEnvironment().getProperty(DATABASE_PROPERTY);
+    return DatabaseType.byCode(code).orElse(DEFAULT_DATABASE);
   }
   public static boolean isCurrent(DatabaseType databaseType){
-    return DATABASE == databaseType;
+    return databaseType == getCurrent();
   }
 
   public static boolean isElasticsearch(){
@@ -25,5 +34,10 @@ public class DatabaseInfo {
 
   public static boolean isOpensearch(){
     return isCurrent(DatabaseType.Opensearch);
+  }
+
+  @Override
+  public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+    DatabaseInfo.applicationContext = applicationContext;
   }
 }
