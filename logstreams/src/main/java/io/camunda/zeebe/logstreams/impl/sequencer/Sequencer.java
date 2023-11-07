@@ -114,8 +114,8 @@ public final class Sequencer implements LogStreamWriter, Closeable {
       lowestPosition = position;
       highestPosition = lowestPosition + batchSize - 1;
       if (commandType != CommandType.FOLLOW_UP_EVENTS
-          && !getFlowControlFor(commandType).tryAcquire(
-              highestPosition, appendEntries.getFirst().recordMetadata().getIntent())) {
+          && !getFlowControlFor(commandType)
+              .tryAcquire(highestPosition, appendEntries.getFirst().recordMetadata().getIntent())) {
         // It's a user command and we can't get a permit, reject. Otherwise accept because it's
         // follow up command or we have a permit
         return Either.left(WriteFailure.FULL);
