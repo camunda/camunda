@@ -10,9 +10,7 @@ import io.camunda.operate.webapp.api.v1.entities.Incident;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 
 public interface IncidentDao extends
-    SearchableDao<Incident>,
-    SortableDao<Incident>,
-    PageableDao<Incident> {
+    SearchableDao<Incident> {
 
   Incident byKey(Long key) throws APIException;
 

@@ -11,9 +11,7 @@ import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 
 public interface ProcessInstanceDao extends
-    SearchableDao<ProcessInstance>,
-    SortableDao<ProcessInstance>,
-    PageableDao<ProcessInstance> {
+    SearchableDao<ProcessInstance> {
 
   ProcessInstance byKey(Long key) throws APIException;
 

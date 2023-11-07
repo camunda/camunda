@@ -4,13 +4,14 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.webapp.api.v1.dao;
+package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.webapp.api.v1.dao.SequenceFlowDao;
 import io.camunda.operate.webapp.api.v1.entities.Incident;
 import io.camunda.operate.webapp.api.v1.entities.SequenceFlow;
 import io.camunda.operate.webapp.api.v1.entities.Query;

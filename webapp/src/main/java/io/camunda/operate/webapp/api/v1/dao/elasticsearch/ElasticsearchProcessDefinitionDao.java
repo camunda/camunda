@@ -4,7 +4,7 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.webapp.api.v1.dao;
+package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
 import static io.camunda.operate.schema.indices.ProcessIndex.BPMN_XML;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -12,6 +12,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.webapp.api.v1.dao.ProcessDefinitionDao;
 import io.camunda.operate.webapp.api.v1.entities.ProcessDefinition;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;

@@ -10,9 +10,7 @@ import io.camunda.operate.webapp.api.v1.entities.Variable;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 
 public interface VariableDao extends
-    SearchableDao<Variable>,
-    SortableDao<Variable>,
-    PageableDao<Variable> {
+    SearchableDao<Variable> {
   Variable byKey(Long key) throws APIException;
 
 }

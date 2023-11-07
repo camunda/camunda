@@ -12,7 +12,6 @@ import io.camunda.operate.webapp.api.v1.entities.Incident;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -25,17 +24,7 @@ public class OpensearchIncidentDao implements IncidentDao {
   }
 
   @Override
-  public void buildPaging(Query<Incident> query, SearchSourceBuilder searchSourceBuilder) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
   public Results<Incident> search(Query<Incident> query) throws APIException {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public void buildSorting(Query<Incident> query, String uniqueKey, SearchSourceBuilder searchSourceBuilder) {
     throw new UnsupportedOperationException();
   }
 }

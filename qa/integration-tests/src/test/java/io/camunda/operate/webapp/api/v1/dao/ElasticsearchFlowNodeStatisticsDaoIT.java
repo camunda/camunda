@@ -9,6 +9,7 @@ package io.camunda.operate.webapp.api.v1.dao;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.util.OperateZeebeAbstractIT;
+import io.camunda.operate.webapp.api.v1.dao.elasticsearch.ElasticsearchFlowNodeStatisticsDao;
 import io.camunda.operate.webapp.api.v1.entities.FlowNodeStatistics;
 
 import java.util.List;

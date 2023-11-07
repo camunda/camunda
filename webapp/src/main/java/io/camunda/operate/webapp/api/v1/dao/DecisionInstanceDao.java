@@ -10,9 +10,7 @@ import io.camunda.operate.webapp.api.v1.entities.DecisionInstance;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 
 public interface DecisionInstanceDao extends
-    SearchableDao<DecisionInstance>,
-    SortableDao<DecisionInstance>,
-    PageableDao<DecisionInstance> {
+    SearchableDao<DecisionInstance> {
 
   DecisionInstance byId(String id) throws APIException;
 }

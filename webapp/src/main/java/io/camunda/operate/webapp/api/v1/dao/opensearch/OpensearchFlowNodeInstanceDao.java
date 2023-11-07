@@ -12,7 +12,6 @@ import io.camunda.operate.webapp.api.v1.entities.FlowNodeInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -25,17 +24,7 @@ public class OpensearchFlowNodeInstanceDao implements FlowNodeInstanceDao {
   }
 
   @Override
-  public void buildPaging(Query<FlowNodeInstance> query, SearchSourceBuilder searchSourceBuilder) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
   public Results<FlowNodeInstance> search(Query<FlowNodeInstance> query) throws APIException {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public void buildSorting(Query<FlowNodeInstance> query, String uniqueKey, SearchSourceBuilder searchSourceBuilder) {
     throw new UnsupportedOperationException();
   }
 }

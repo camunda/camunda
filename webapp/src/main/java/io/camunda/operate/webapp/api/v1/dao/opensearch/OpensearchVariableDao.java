@@ -12,25 +12,15 @@ import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.entities.Variable;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Conditional(OpensearchCondition.class)
 @Component
 public class OpensearchVariableDao implements VariableDao {
-  @Override
-  public void buildPaging(Query<Variable> query, SearchSourceBuilder searchSourceBuilder) {
-    throw new UnsupportedOperationException();
-  }
 
   @Override
   public Results<Variable> search(Query<Variable> query) throws APIException {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public void buildSorting(Query<Variable> query, String uniqueKey, SearchSourceBuilder searchSourceBuilder) {
     throw new UnsupportedOperationException();
   }
 

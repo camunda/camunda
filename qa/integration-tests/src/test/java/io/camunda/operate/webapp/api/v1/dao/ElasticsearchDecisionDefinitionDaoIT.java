@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
+import io.camunda.operate.webapp.api.v1.dao.elasticsearch.ElasticsearchDecisionDefinitionDao;
 import io.camunda.operate.webapp.api.v1.entities.DecisionDefinition;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;

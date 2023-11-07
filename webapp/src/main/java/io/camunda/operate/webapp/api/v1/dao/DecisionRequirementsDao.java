@@ -13,9 +13,7 @@ import java.util.List;
 import java.util.Set;
 
 public interface DecisionRequirementsDao extends
-    SearchableDao<DecisionRequirements>,
-    SortableDao<DecisionRequirements>,
-    PageableDao<DecisionRequirements> {
+    SearchableDao<DecisionRequirements> {
 
   DecisionRequirements byKey(Long key) throws APIException;
 

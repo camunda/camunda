@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.fail;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
+import io.camunda.operate.webapp.api.v1.dao.elasticsearch.ElasticsearchVariableDao;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;

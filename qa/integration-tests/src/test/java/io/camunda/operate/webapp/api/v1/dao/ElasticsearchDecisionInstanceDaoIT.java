@@ -13,6 +13,7 @@ import io.camunda.operate.entities.dmn.DecisionType;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
+import io.camunda.operate.webapp.api.v1.dao.elasticsearch.ElasticsearchDecisionInstanceDao;
 import io.camunda.operate.webapp.api.v1.entities.*;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;

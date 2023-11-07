@@ -4,7 +4,7 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.webapp.api.v1.dao;
+package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
 import static io.camunda.operate.entities.FlowNodeState.ACTIVE;
 import static io.camunda.operate.entities.FlowNodeState.COMPLETED;
@@ -26,6 +26,7 @@ import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.operate.webapp.api.v1.dao.FlowNodeStatisticsDao;
 import io.camunda.operate.webapp.api.v1.entities.FlowNodeStatistics;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 

@@ -4,7 +4,7 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.webapp.api.v1.dao;
+package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
 import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
 
@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
-public abstract class ElasticsearchDao<T> implements SortableDao<T>, PageableDao<T> {
+public abstract class ElasticsearchDao<T> {
 
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -50,7 +50,7 @@ public abstract class ElasticsearchDao<T> implements SortableDao<T>, PageableDao
   @Autowired
   protected OperateProperties operateProperties;
 
-  public void buildSorting(final Query<T> query, final String uniqueSortKey,
+  protected void buildSorting(final Query<T> query, final String uniqueSortKey,
       final SearchSourceBuilder searchSourceBuilder) {
     final List<Sort> sorts = query.getSort();
     if (sorts != null) {
@@ -70,7 +70,7 @@ public abstract class ElasticsearchDao<T> implements SortableDao<T>, PageableDao
     searchSourceBuilder.sort(SortBuilders.fieldSort(uniqueSortKey).order(SortOrder.ASC));
   }
 
-  public void buildPaging(final Query<T> query, final SearchSourceBuilder searchSourceBuilder) {
+  protected void buildPaging(final Query<T> query, final SearchSourceBuilder searchSourceBuilder) {
     final Object[] searchAfter = query.getSearchAfter();
     if (searchAfter != null) {
       searchSourceBuilder.searchAfter(searchAfter);

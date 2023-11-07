@@ -12,7 +12,6 @@ import io.camunda.operate.webapp.api.v1.entities.DecisionInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -25,17 +24,8 @@ public class OpensearchDecisionInstanceDao implements DecisionInstanceDao {
   }
 
   @Override
-  public void buildPaging(Query<DecisionInstance> query, SearchSourceBuilder searchSourceBuilder) {
-
-  }
-
-  @Override
   public Results<DecisionInstance> search(Query<DecisionInstance> query) throws APIException {
     throw new UnsupportedOperationException();
   }
 
-  @Override
-  public void buildSorting(Query<DecisionInstance> query, String uniqueKey, SearchSourceBuilder searchSourceBuilder) {
-
-  }
 }

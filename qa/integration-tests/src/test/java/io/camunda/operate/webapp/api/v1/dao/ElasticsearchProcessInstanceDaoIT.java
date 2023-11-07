@@ -13,6 +13,7 @@ import static io.camunda.operate.webapp.api.v1.entities.ProcessInstance.VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.util.OperateZeebeAbstractIT;
+import io.camunda.operate.webapp.api.v1.dao.elasticsearch.ElasticsearchProcessInstanceDao;
 import io.camunda.operate.webapp.api.v1.entities.ChangeStatus;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;

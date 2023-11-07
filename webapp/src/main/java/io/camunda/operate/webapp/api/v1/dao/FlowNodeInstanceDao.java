@@ -10,9 +10,7 @@ import io.camunda.operate.webapp.api.v1.entities.FlowNodeInstance;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 
 public interface FlowNodeInstanceDao extends
-    SearchableDao<FlowNodeInstance>,
-    SortableDao<FlowNodeInstance>,
-    PageableDao<FlowNodeInstance> {
+    SearchableDao<FlowNodeInstance> {
 
   FlowNodeInstance byKey(Long key) throws APIException;
 }

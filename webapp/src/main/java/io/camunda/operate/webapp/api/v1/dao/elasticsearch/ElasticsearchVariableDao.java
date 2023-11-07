@@ -4,7 +4,7 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.webapp.api.v1.dao;
+package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -12,7 +12,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.webapp.api.v1.entities.Incident;
+import io.camunda.operate.webapp.api.v1.dao.VariableDao;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.entities.Variable;
@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;

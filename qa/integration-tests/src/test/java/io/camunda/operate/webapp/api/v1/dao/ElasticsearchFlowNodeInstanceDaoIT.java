@@ -10,6 +10,7 @@ import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_I
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.util.OperateZeebeAbstractIT;
+import io.camunda.operate.webapp.api.v1.dao.elasticsearch.ElasticsearchFlowNodeInstanceDao;
 import io.camunda.operate.webapp.api.v1.entities.FlowNodeInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort;

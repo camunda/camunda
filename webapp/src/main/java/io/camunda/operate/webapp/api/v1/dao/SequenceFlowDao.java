@@ -9,8 +9,6 @@ package io.camunda.operate.webapp.api.v1.dao;
 import io.camunda.operate.webapp.api.v1.entities.SequenceFlow;
 
 public interface SequenceFlowDao extends
-    SearchableDao<SequenceFlow>,
-    SortableDao<SequenceFlow>,
-    PageableDao<SequenceFlow> {
+    SearchableDao<SequenceFlow> {
 }
 

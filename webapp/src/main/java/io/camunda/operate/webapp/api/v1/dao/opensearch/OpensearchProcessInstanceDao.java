@@ -13,17 +13,12 @@ import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Conditional(OpensearchCondition.class)
 @Component
 public class OpensearchProcessInstanceDao implements ProcessInstanceDao {
-  @Override
-  public void buildPaging(Query<ProcessInstance> query, SearchSourceBuilder searchSourceBuilder) {
-    throw new UnsupportedOperationException();
-  }
 
   @Override
   public ProcessInstance byKey(Long key) throws APIException {
@@ -37,11 +32,6 @@ public class OpensearchProcessInstanceDao implements ProcessInstanceDao {
 
   @Override
   public Results<ProcessInstance> search(Query<ProcessInstance> query) throws APIException {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public void buildSorting(Query<ProcessInstance> query, String uniqueKey, SearchSourceBuilder searchSourceBuilder) {
     throw new UnsupportedOperationException();
   }
 }
