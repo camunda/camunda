@@ -23,7 +23,7 @@ const labels = {
   inputVariables: 'input',
   outputVariables: 'output',
   variables: 'variable',
-  flowNodeDurations: 'flowNodeDuration',
+  flowNodeDurations: 'dur',
 };
 
 export default function ColumnSelection({report, onChange, disabled}) {
@@ -94,7 +94,7 @@ export default function ColumnSelection({report, onChange, disabled}) {
                   sectionType = 'outputVariable';
                   break;
                 case 'flowNodeDurations':
-                  sectionType = 'flowNodeDuration';
+                  sectionType = 'dur';
                   break;
                 case 'counts':
                   sectionType = 'count';

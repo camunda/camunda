@@ -1263,6 +1263,7 @@
         "duration": "Dauer",
         "instanceDuration": "Instanzdauer",
         "processInstanceDuration": "Dauer der Prozessinstanz",
+        "dur": "Prozessknoten Dauer",
         "flowNodeDuration": "Prozessknoten Dauer",
         "variable": "Variable",
         "multipleVariable": "Variable",
@@ -1283,7 +1284,7 @@
         "variable-plural": "Variablen",
         "inputVariable-plural": "Eingangsvariablen",
         "outputVariable-plural": "Ausgabevariablen",
-        "flowNodeDuration-plural": "Prozessknoten Dauern",
+        "dur-plural": "Prozessknoten Dauern",
         "count": "Anzahl",
         "count-plural": "Anzahl"
       },

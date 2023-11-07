@@ -1263,6 +1263,7 @@
         "duration": "Duration",
         "instanceDuration": "Instance Duration",
         "processInstanceDuration": "Process Instance Duration",
+        "dur": "Flow Node Duration",
         "flowNodeDuration": "Flow Node Duration",
         "variable": "Variable",
         "multipleVariable": "Variable",
@@ -1283,7 +1284,7 @@
         "variable-plural": "Variables",
         "inputVariable-plural": "Input Variables",
         "outputVariable-plural": "Output Variables",
-        "flowNodeDuration-plural": "Flow Nodes Durations",
+        "dur-plural": "Flow Nodes Durations",
         "count": "Count",
         "count-plural": "Counts"
       },

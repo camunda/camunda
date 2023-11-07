@@ -79,11 +79,7 @@ export default function processRawData({
 
   const outputVariables = getVisibleColumns(outputVars, tableColumns, 'output');
 
-  const flowNodeDurationNames = getVisibleColumns(
-    flowNodeDurations || {},
-    tableColumns,
-    'flowNodeDuration'
-  );
+  const flowNodeDurationNames = getVisibleColumns(flowNodeDurations || {}, tableColumns, 'dur');
 
   // If all columns are excluded return a message to enable one
   if (
