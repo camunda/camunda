@@ -19,7 +19,6 @@ import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,7 +107,7 @@ public class SequencerFlowControl extends AbstractLimiter<Intent> {
   record ListenerId(long position) implements Comparable<ListenerId> {
 
     @Override
-    public int compareTo(@NotNull final SequencerFlowControl.ListenerId o) {
+    public int compareTo(final SequencerFlowControl.ListenerId o) {
       return Long.compare(position, o.position);
     }
   }
