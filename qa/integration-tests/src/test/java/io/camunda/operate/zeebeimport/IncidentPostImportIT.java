@@ -10,35 +10,28 @@ import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.ThreadUtil;
 import io.camunda.operate.util.Tuple;
+import io.camunda.operate.util.searchrepository.TestZeebeRepository;
+import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
-import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
-import io.camunda.operate.webapp.rest.dto.listview.*;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
+import io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto;
 import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
 import io.camunda.operate.zeebe.ImportValueType;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 
-import java.io.IOException;
-import java.util.*;
+import java.util.List;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
-import static io.camunda.operate.util.ElasticsearchUtil.scroll;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public class IncidentPostImportIT extends OperateZeebeAbstractIT {
 
@@ -55,8 +48,7 @@ public class IncidentPostImportIT extends OperateZeebeAbstractIT {
   private CancelProcessInstanceHandler cancelProcessInstanceHandler;
 
   @Autowired
-  @Qualifier("zeebeEsClient")
-  protected RestHighLevelClient zeebeEsClient;
+  private TestZeebeRepository testZeebeRepository;
 
   @Before
   public void before() {
@@ -168,32 +160,22 @@ public class IncidentPostImportIT extends OperateZeebeAbstractIT {
   }
 
   private Tuple<Long, Long> findSingleZeebeIncidentData(Long processInstanceKey) {
-    SearchRequest request = new SearchRequest(zeebeRule.getPrefix() + "_incident*").source(
-        new SearchSourceBuilder().query(termQuery("value.processInstanceKey", processInstanceKey)));
-    List<Tuple<Long, Long>> incidentData = new ArrayList<>();
-    try {
-      scroll(request, sh -> {
-        incidentData.addAll(Arrays.stream(sh.getHits()).map(
-                hit -> new Tuple<>((Long)hit.getSourceAsMap().get("key"), (Long)(((Map)hit.getSourceAsMap().get("value")).get("jobKey"))))
-            .collect(Collectors.toList()));
-      }, zeebeEsClient);
-    } catch (IOException e) {
-      throw new OperateRuntimeException(e);
-    }
-    assertThat(incidentData).hasSize(1);
-    return incidentData.get(0);
+    record Value(Long jobKey){};
+    record Result(Long key, Value value){};
+
+    var index = zeebeRule.getPrefix() + "_incident*";
+    List<Tuple<Long, Long>> tuples = testZeebeRepository.scrollTerm(index, "value.processInstanceKey", processInstanceKey, Result.class)
+      .stream()
+      .map(result -> new Tuple<>(result.key, result.value.jobKey))
+      .toList();
+
+    assertThat(tuples).hasSize(1);
+    return tuples.get(0);
   }
 
   private long countZeebeIncidentRecords(Long processInstanceKey) {
-    SearchRequest request = new SearchRequest(zeebeRule.getPrefix() + "_incident*").source(
-        new SearchSourceBuilder().query(termQuery("value.processInstanceKey", processInstanceKey)));
-    List<Tuple<Long, Long>> incidentData = new ArrayList<>();
-    try {
-      SearchResponse response = zeebeEsClient.search(request, RequestOptions.DEFAULT);
-      return response.getHits().getTotalHits().value;
-    } catch (IOException e) {
-      throw new OperateRuntimeException(e);
-    }
+    var index = zeebeRule.getPrefix() + "_incident*";
+    return testZeebeRepository.scrollTerm(index, "value.processInstanceKey", processInstanceKey, Object.class).size();
   }
 
   protected void processImportTypeAndWait(ImportValueType importValueType,

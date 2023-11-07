@@ -186,7 +186,7 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
     if (incidents2Process.size() > incidents.size()) {
       throw new OperateRuntimeException("Not all incidents are yet imported for post processing: " + incidents2Process);
     }
-    pendingIncidentsBatch.setIncidents(incidents);
+    pendingIncidentsBatch.setIncidents(new ArrayList<>(incidents)); // Batch incidents must be a mutable list
     return pendingIncidentsBatch;
   }
 
