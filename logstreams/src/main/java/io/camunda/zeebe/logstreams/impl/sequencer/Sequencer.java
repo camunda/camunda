@@ -48,7 +48,7 @@ public final class Sequencer implements LogStreamWriter, Closeable {
   private final LogStorage logStorage;
   private final SequencerFlowControl flowControlUserCommands =
       SequencerFlowControl.builder()
-          .limit(new StabilizingAIMDLimit(100, 10000, 1, 0.9, Duration.ofSeconds(1).toNanos()))
+          .limit(new StabilizingAIMDLimit(100, 10000, 1, 0.9, Duration.ofMillis(250).toNanos()))
           .build();
   private final SequencerFlowControl flowControlInterPartition =
       SequencerFlowControl.builder()
@@ -113,8 +113,8 @@ public final class Sequencer implements LogStreamWriter, Closeable {
     try {
       lowestPosition = position;
       highestPosition = lowestPosition + batchSize - 1;
-      if (sourcePosition == -1
-          && !flowControlUserCommands.tryAcquire(
+      if (commandType != CommandType.FOLLOW_UP_EVENTS
+          && !getFlowControlFor(commandType).tryAcquire(
               highestPosition, appendEntries.getFirst().recordMetadata().getIntent())) {
         // It's a user command and we can't get a permit, reject. Otherwise accept because it's
         // follow up command or we have a permit
@@ -153,6 +153,15 @@ public final class Sequencer implements LogStreamWriter, Closeable {
         && entry.recordValue().getLength() > 0
         && entry.recordMetadata() != null
         && entry.recordMetadata().getLength() > 0;
+  }
+
+  private SequencerFlowControl getFlowControlFor(final CommandType commandType) {
+    return switch (commandType) {
+      case USER_COMMAND -> flowControlUserCommands;
+      case INTERNAL_COMMAND -> flowControlInternalCommands;
+      case INTER_PARTITION_COMMAND -> flowControlInterPartition;
+      case FOLLOW_UP_EVENTS -> null;
+    };
   }
 
   public enum CommandType {
