@@ -1,14 +1,14 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base",
-    ":semanticCommitTypeAll(deps)"
+    "config:base"
   ],
   "baseBranches": [
     "main",
     "/^stable\\/8\\..*/"
   ],
   "dependencyDashboard": true,
+  "commitMessagePrefix": "deps({{datasource}})",
   "enabledManagers": [
     "maven", "dockerfile", "gomod", "github-actions"
   ],
