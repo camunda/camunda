@@ -54,7 +54,7 @@
 
     <!-- Library versions not provided by spring boot -->
     <version.zeebe>8.3.0</version.zeebe>
-    <version.identity>8.3.0</version.identity>
+    <version.identity>8.4.0-SNAPSHOT</version.identity>
     <version.elasticsearch>7.17.13</version.elasticsearch>
     <version.opensearch>2.5.0</version.opensearch>
     <version.springdoc>2.2.0</version.springdoc>
@@ -91,6 +91,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>identity-sdk</artifactId>
+        <version>${version.identity}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>identity-spring-boot-starter</artifactId>
         <version>${version.identity}</version>
       </dependency>
 

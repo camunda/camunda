@@ -53,6 +53,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
@@ -93,10 +94,12 @@ import org.springframework.test.context.junit4.SpringRunner;
                 "camunda.operate.identity.clientId=operate",
                 "camunda.operate.identity.clientSecret=the-cake-is-alive",
                 "camunda.operate.identity.audience=operate-api",
+                "camunda.operate.identity.baseUrl=http://localhost:8080",
                 "server.servlet.session.cookie.name=" + COOKIE_JSESSIONID,
                 "camunda.operate.persistentSessionsEnabled=true"
         },
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@TestPropertySource(locations = {"/application.yml", "/application-identity-auth.yml"})
 @ActiveProfiles({IDENTITY_AUTH_PROFILE, "test"})
 public class AuthenticationWithPersistentSessionsITMocked implements AuthenticationTestable {
 

@@ -136,6 +136,11 @@
       <artifactId>identity-sdk</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>identity-spring-boot-starter</artifactId>
+    </dependency>
+
     <!-- Micrometer Prometheus -->
     <dependency>
       <groupId>io.micrometer</groupId>

@@ -6,4 +6,4 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${camunda.operate.identity.issuerUrl}
+          issuer-uri: ${camunda.identity.issuer:${camunda.operate.identity.issuerUrl:}}

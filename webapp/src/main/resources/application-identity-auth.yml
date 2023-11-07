@@ -1,0 +1,9 @@
+# Fallback Identity configuration for deprecated env variable naming
+camunda:
+  identity:
+    issuer: ${camunda.operate.identity.issuerUrl:}
+    issuerBackendUrl: ${camunda.operate.identity.issuerBackendUrl:}
+    clientId: ${camunda.operate.identity.clientId:}
+    clientSecret: ${camunda.operate.identity.clientSecret:}
+    audience: ${camunda.operate.identity.audience:}
+    baseUrl: ${camunda.operate.identity.baseUrl:}

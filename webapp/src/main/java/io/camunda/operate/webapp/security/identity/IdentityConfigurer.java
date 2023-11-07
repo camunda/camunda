@@ -19,17 +19,6 @@ import org.springframework.context.annotation.Profile;
 @Configuration
 public class IdentityConfigurer {
 
-  @Bean
-  @Profile(OperateProfileService.IDENTITY_AUTH_PROFILE)
-  public Identity getIdentity(OperateProperties operateProperties) {
-    return new Identity(new IdentityConfiguration.Builder().withBaseUrl(operateProperties.getIdentity().getBaseUrl())
-        .withIssuer(operateProperties.getIdentity().getIssuerUrl())
-        .withIssuerBackendUrl(operateProperties.getIdentity().getIssuerBackendUrl())
-        .withClientId(operateProperties.getIdentity().getClientId())
-        .withClientSecret(operateProperties.getIdentity().getClientSecret())
-        .withAudience(operateProperties.getIdentity().getAudience()).build());
-  }
-
   @Bean(name = "saasIdentity")
   @Profile(OperateProfileService.SSO_AUTH_PROFILE)
   @ConditionalOnProperty(prefix = OperateProperties.PREFIX, name = "identity.resourcePermissionsEnabled", havingValue = "true")

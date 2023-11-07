@@ -9,7 +9,7 @@ package io.camunda.operate.webapp.security.oauth2;
 import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
 import static io.camunda.operate.webapp.security.BaseWebConfigurer.sendJSONErrorMessage;
 
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.identity.sdk.IdentityConfiguration;
 import java.io.IOException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -41,7 +41,7 @@ public class IdentityOAuth2WebConfigurer {
   private Environment env;
 
   @Autowired
-  private OperateProperties operateProperties;
+  private IdentityConfiguration identityConfiguration;
 
   @Autowired
   private IdentityJwt2AuthenticationTokenConverter jwtConverter;
@@ -58,7 +58,7 @@ public class IdentityOAuth2WebConfigurer {
   }
 
   private String getJwkSetUriProperty() {
-    return operateProperties.getIdentity().getIssuerBackendUrl() + JWKS_PATH;
+    return identityConfiguration.getIssuerBackendUrl() + JWKS_PATH;
   }
 
   private void authenticationFailure(final HttpServletRequest request,
