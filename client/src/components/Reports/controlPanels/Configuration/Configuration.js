@@ -72,7 +72,7 @@ export default class Configuration extends React.Component {
         showInstanceCount: false,
         showGradientBars: true,
         tableColumns: {
-          includeNewVariables: true,
+          includeNewVariables: false,
           includedColumns: [],
           excludedColumns: [],
           columnOrder: data.configuration.tableColumns.columnOrder,
