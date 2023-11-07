@@ -51,6 +51,7 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -104,6 +105,9 @@ public final class BrokerClientTest {
           topology.addBrokerIfAbsent(0);
           topology.setBrokerAddressIfPresent(0, stubAddress.toString());
         });
+    Awaitility.await("Topology is updated")
+        .untilAsserted(
+            () -> assertThat(topologyManager.getTopology().getPartitions()).isNotEmpty());
 
     client =
         new BrokerClientImpl(
