@@ -46,6 +46,7 @@ class ProcessesBase extends NetworkReconnectionHandler {
       versionsByProcessAndTenant: computed,
       reset: override,
       isInitialLoadComplete: computed,
+      filteredProcesses: computed,
     });
   }
 
@@ -123,7 +124,7 @@ class ProcessesBase extends NetworkReconnectionHandler {
   };
 
   get processes() {
-    return this.state.processes
+    return this.filteredProcesses
       .map(({key, tenantId, bpmnProcessId, name}) => ({
         id: key,
         label: name ?? bpmnProcessId,
@@ -133,10 +134,14 @@ class ProcessesBase extends NetworkReconnectionHandler {
       .sort(sortOptions);
   }
 
+  get filteredProcesses() {
+    return this.state.processes;
+  }
+
   get versionsByProcessAndTenant(): {
     [key: string]: ProcessVersionDto[];
   } {
-    return this.state.processes.reduce<{
+    return this.filteredProcesses.reduce<{
       [key: string]: ProcessVersionDto[];
     }>(
       (versionsByProcessAndTenant, {key, processes}) => ({
@@ -225,7 +230,7 @@ class ProcessesBase extends NetworkReconnectionHandler {
     const bpmnProcessId = selectedProcess?.bpmnProcessId;
     const processName = selectedProcess?.name ?? bpmnProcessId ?? 'Process';
 
-    return {bpmnProcessId, processName, version};
+    return {key: selectedProcess?.key, bpmnProcessId, processName, version};
   };
 
   reset() {

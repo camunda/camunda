@@ -7,10 +7,19 @@
 
 import {render, screen} from 'modules/testing-library';
 import {Toolbar} from '.';
+import {MemoryRouter} from 'react-router-dom';
+
+type Props = {
+  children?: React.ReactNode;
+};
+
+const Wrapper = ({children}: Props) => {
+  return <MemoryRouter>{children}</MemoryRouter>;
+};
 
 describe('<ProcessOperations />', () => {
   it('should not display toolbar if selected instances count is 0 ', async () => {
-    render(<Toolbar selectedInstancesCount={0} />);
+    render(<Toolbar selectedInstancesCount={0} />, {wrapper: Wrapper});
 
     expect(screen.queryByText(/items selected/i)).not.toBeInTheDocument();
     expect(
@@ -25,7 +34,9 @@ describe('<ProcessOperations />', () => {
   });
 
   it('should display toolbar with action buttons', async () => {
-    const {rerender} = render(<Toolbar selectedInstancesCount={1} />);
+    const {rerender} = render(<Toolbar selectedInstancesCount={1} />, {
+      wrapper: Wrapper,
+    });
 
     expect(screen.getAllByRole('button', {name: 'Cancel'}).length).toBe(2);
     expect(screen.getByRole('button', {name: 'Retry'}));

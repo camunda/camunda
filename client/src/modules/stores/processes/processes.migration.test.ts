@@ -11,7 +11,13 @@ import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupe
 import {generateProcessKey} from 'modules/utils/generateProcessKey';
 
 describe('processes.migration store', () => {
-  afterEach(() => processesStore.reset);
+  const originalWindow = {...window};
+  const locationSpy = jest.spyOn(window, 'location', 'get');
+
+  afterEach(() => {
+    processesStore.reset();
+    locationSpy.mockClear();
+  });
 
   it('should get targetProcessVersions', async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
@@ -49,5 +55,237 @@ describe('processes.migration store', () => {
     processesStore.setSelectedTargetVersion(1);
 
     expect(processesStore.selectedTargetProcessId).toEqual('2251799813685894');
+  });
+
+  it('should get selectable target processes when resource based permissions are enabled', async () => {
+    window.clientConfig = {
+      resourcePermissionsEnabled: true,
+    };
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+
+    await processesStore.fetchProcesses();
+
+    expect(processesStore.filteredProcesses).toEqual([
+      {
+        bpmnProcessId: 'demoProcess',
+        key: '{demoProcess}-{<default>}',
+        name: 'New demo process',
+        tenantId: '<default>',
+        processes: [
+          {
+            id: 'demoProcess3',
+            name: 'New demo process',
+            version: 3,
+            bpmnProcessId: 'demoProcess',
+          },
+          {
+            id: 'demoProcess2',
+            name: 'Demo process',
+            version: 2,
+            bpmnProcessId: 'demoProcess',
+          },
+          {
+            id: 'demoProcess1',
+            name: 'Demo process',
+            version: 1,
+            bpmnProcessId: 'demoProcess',
+          },
+        ],
+        permissions: ['UPDATE_PROCESS_INSTANCE'],
+      },
+    ]);
+    window.clientConfig = undefined;
+  });
+
+  it('should get selectable target processes when a process with single version is selected', async () => {
+    locationSpy.mockImplementation(() => ({
+      ...originalWindow.location,
+      search:
+        '?active=true&incidents=true&process=bigVarProcess&version=1&tenant=<default>',
+    }));
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+
+    await processesStore.fetchProcesses();
+
+    expect(processesStore.filteredProcesses).toEqual([
+      {
+        bpmnProcessId: 'demoProcess',
+        key: '{demoProcess}-{<default>}',
+        name: 'New demo process',
+        permissions: ['UPDATE_PROCESS_INSTANCE'],
+        processes: [
+          {
+            bpmnProcessId: 'demoProcess',
+            id: 'demoProcess3',
+            name: 'New demo process',
+            version: 3,
+          },
+          {
+            bpmnProcessId: 'demoProcess',
+            id: 'demoProcess2',
+            name: 'Demo process',
+            version: 2,
+          },
+          {
+            bpmnProcessId: 'demoProcess',
+            id: 'demoProcess1',
+            name: 'Demo process',
+            version: 1,
+          },
+        ],
+        tenantId: '<default>',
+      },
+      {
+        bpmnProcessId: 'eventBasedGatewayProcess',
+        key: '{eventBasedGatewayProcess}-{<default>}',
+        name: null,
+        permissions: ['DELETE'],
+        processes: [
+          {
+            bpmnProcessId: 'eventBasedGatewayProcess',
+            id: '2251799813696866',
+            name: 'Event based gateway with timer start',
+            version: 2,
+          },
+          {
+            bpmnProcessId: 'eventBasedGatewayProcess',
+            id: '2251799813685911',
+            name: 'Event based gateway with message start',
+            version: 1,
+          },
+        ],
+        tenantId: '<default>',
+      },
+
+      {
+        bpmnProcessId: 'bigVarProcess',
+        key: '{bigVarProcess}-{<tenant-A>}',
+        name: 'Big variable process',
+        permissions: ['DELETE_PROCESS_INSTANCE'],
+        processes: [
+          {
+            bpmnProcessId: 'bigVarProcess',
+            id: '2251799813685893',
+            name: 'Big variable process',
+            version: 2,
+          },
+          {
+            bpmnProcessId: 'bigVarProcess',
+            id: '2251799813685894',
+            name: 'Big variable process',
+            version: 1,
+          },
+        ],
+        tenantId: '<tenant-A>',
+      },
+
+      {
+        bpmnProcessId: 'orderProcess',
+        key: '{orderProcess}-{<default>}',
+        name: 'Order',
+        processes: [],
+        tenantId: '<default>',
+      },
+    ]);
+    window.clientConfig = undefined;
+  });
+
+  it('should get selectable target processes when a process with multiple versions is selected', async () => {
+    locationSpy.mockImplementation(() => ({
+      ...originalWindow.location,
+      search: '?active=true&incidents=true&process=demoProcess&version=3',
+    }));
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+
+    await processesStore.fetchProcesses();
+
+    expect(processesStore.filteredProcesses).toEqual([
+      {
+        bpmnProcessId: 'demoProcess',
+        key: '{demoProcess}-{<default>}',
+        name: 'New demo process',
+        permissions: ['UPDATE_PROCESS_INSTANCE'],
+        processes: [
+          {
+            bpmnProcessId: 'demoProcess',
+            id: 'demoProcess2',
+            name: 'Demo process',
+            version: 2,
+          },
+          {
+            bpmnProcessId: 'demoProcess',
+            id: 'demoProcess1',
+            name: 'Demo process',
+            version: 1,
+          },
+        ],
+        tenantId: '<default>',
+      },
+      {
+        bpmnProcessId: 'eventBasedGatewayProcess',
+        key: '{eventBasedGatewayProcess}-{<default>}',
+        name: null,
+        permissions: ['DELETE'],
+        processes: [
+          {
+            bpmnProcessId: 'eventBasedGatewayProcess',
+            id: '2251799813696866',
+            name: 'Event based gateway with timer start',
+            version: 2,
+          },
+          {
+            bpmnProcessId: 'eventBasedGatewayProcess',
+            id: '2251799813685911',
+            name: 'Event based gateway with message start',
+            version: 1,
+          },
+        ],
+        tenantId: '<default>',
+      },
+      {
+        bpmnProcessId: 'bigVarProcess',
+        key: '{bigVarProcess}-{<default>}',
+        name: 'Big variable process',
+        permissions: ['DELETE_PROCESS_INSTANCE'],
+        processes: [
+          {
+            bpmnProcessId: 'bigVarProcess',
+            id: '2251799813685892',
+            name: 'Big variable process',
+            version: 1,
+          },
+        ],
+        tenantId: '<default>',
+      },
+      {
+        bpmnProcessId: 'bigVarProcess',
+        key: '{bigVarProcess}-{<tenant-A>}',
+        name: 'Big variable process',
+        permissions: ['DELETE_PROCESS_INSTANCE'],
+        processes: [
+          {
+            bpmnProcessId: 'bigVarProcess',
+            id: '2251799813685893',
+            name: 'Big variable process',
+            version: 2,
+          },
+          {
+            bpmnProcessId: 'bigVarProcess',
+            id: '2251799813685894',
+            name: 'Big variable process',
+            version: 1,
+          },
+        ],
+        tenantId: '<tenant-A>',
+      },
+      {
+        bpmnProcessId: 'orderProcess',
+        key: '{orderProcess}-{<default>}',
+        name: 'Order',
+        processes: [],
+        tenantId: '<default>',
+      },
+    ]);
+    window.clientConfig = undefined;
   });
 });

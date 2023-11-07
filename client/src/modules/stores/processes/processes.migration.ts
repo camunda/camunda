@@ -27,10 +27,43 @@ class Processes extends ProcessesBase {
       migrationState: observable,
       targetProcessVersions: computed,
       selectedTargetProcessId: computed,
+      filteredProcesses: override,
       setSelectedTargetVersion: action,
       setSelectedTargetProcess: action,
       reset: override,
     });
+  }
+
+  get filteredProcesses() {
+    const {key: sourceProcessKey, version: sourceProcessVersion} =
+      this.getSelectedProcessDetails();
+
+    return this.state.processes.reduce<Process[]>(
+      (selectableTargetProcesses, process) => {
+        if (
+          window?.clientConfig?.resourcePermissionsEnabled &&
+          !process.permissions?.includes('UPDATE_PROCESS_INSTANCE')
+        ) {
+          return selectableTargetProcesses;
+        }
+
+        if (process.key === sourceProcessKey) {
+          const filteredVersions = process.processes.filter(
+            ({version}) => version.toString() !== sourceProcessVersion,
+          );
+
+          return filteredVersions.length === 0
+            ? selectableTargetProcesses
+            : [
+                ...selectableTargetProcesses,
+                {...process, processes: filteredVersions},
+              ];
+        }
+
+        return [...selectableTargetProcesses, process];
+      },
+      [],
+    );
   }
 
   setSelectedTargetProcess = (selectedTargetProcessKey: string) => {
