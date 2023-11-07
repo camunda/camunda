@@ -147,9 +147,8 @@ public class ProcessingScheduleServiceImpl
                 if (recordBatch.isEmpty()) {
                   return true;
                 }
-                return logStreamWriter
-                    .tryWrite(recordBatch.entries(), CommandType.INTERNAL_COMMAND)
-                    .isRight();
+                logStreamWriter.tryWrite(recordBatch.entries(), CommandType.INTERNAL_COMMAND);
+                return true;
               },
               abortCondition);
 
