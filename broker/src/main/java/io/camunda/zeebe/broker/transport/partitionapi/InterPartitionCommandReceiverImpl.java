@@ -12,6 +12,7 @@ import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.protocol.InterPartitionMessageDecoder;
 import io.camunda.zeebe.broker.protocol.MessageHeaderDecoder;
+import io.camunda.zeebe.logstreams.impl.sequencer.Sequencer.CommandType;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
@@ -105,7 +106,8 @@ final class InterPartitionCommandReceiverImpl {
             .intent(CheckpointIntent.CREATE)
             .valueType(ValueType.CHECKPOINT);
     final var checkpointRecord = new CheckpointRecord().setCheckpointId(decoded.checkpointId);
-    return logStreamWriter.tryWrite(LogAppendEntry.of(metadata, checkpointRecord));
+    return logStreamWriter.tryWrite(
+        LogAppendEntry.of(metadata, checkpointRecord), CommandType.INTER_PARTITION_COMMAND);
   }
 
   private Either<WriteFailure, Long> writeCommand(final DecodedMessage decoded) {
@@ -115,7 +117,7 @@ final class InterPartitionCommandReceiverImpl {
             .map(key -> LogAppendEntry.of(key, decoded.metadata(), decoded.command()))
             .orElseGet(() -> LogAppendEntry.of(decoded.metadata(), decoded.command()));
 
-    return logStreamWriter.tryWrite(appendEntry);
+    return logStreamWriter.tryWrite(appendEntry, CommandType.INTER_PARTITION_COMMAND);
   }
 
   void setDiskSpaceAvailable(final boolean available) {

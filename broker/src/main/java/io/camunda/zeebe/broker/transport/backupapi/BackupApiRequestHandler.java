@@ -13,6 +13,7 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
+import io.camunda.zeebe.logstreams.impl.sequencer.Sequencer.CommandType;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
@@ -113,7 +114,9 @@ public final class BackupApiRequestHandler
             .requestId(requestId)
             .requestStreamId(requestStreamId);
     final var checkpointRecord = new CheckpointRecord().setCheckpointId(requestReader.backupId());
-    final var written = logStreamWriter.tryWrite(LogAppendEntry.of(metadata, checkpointRecord));
+    final var written =
+        logStreamWriter.tryWrite(
+            LogAppendEntry.of(metadata, checkpointRecord), CommandType.FOLLOW_UP_EVENTS);
 
     if (written.isRight()) {
       // Response will be sent by the processor

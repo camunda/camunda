@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.logstreams.util;
 
+import io.camunda.zeebe.logstreams.impl.sequencer.Sequencer.CommandType;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
@@ -114,6 +115,14 @@ public class SyncLogStream implements SynchronousLogStream {
 
     private Writer(final LogStreamWriter delegate) {
       this.delegate = delegate;
+    }
+
+    @Override
+    public Either<WriteFailure, Long> tryWrite(
+        final List<LogAppendEntry> appendEntries,
+        final long sourcePosition,
+        final CommandType commandType) {
+      return tryWrite(appendEntries, sourcePosition);
     }
 
     @Override

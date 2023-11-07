@@ -8,6 +8,7 @@
 package io.camunda.zeebe.logstreams.log;
 
 import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
+import io.camunda.zeebe.logstreams.impl.sequencer.Sequencer.CommandType;
 import io.camunda.zeebe.util.Either;
 import java.util.Collections;
 import java.util.List;
@@ -34,14 +35,25 @@ public interface LogStreamWriter {
    * @return the event position, a negative value if fails to write the event, or 0 if the value is
    *     empty
    */
+  default Either<WriteFailure, Long> tryWrite(
+      final LogAppendEntry appendEntry, final CommandType commandType) {
+    return tryWrite(appendEntry, LogEntryDescriptor.KEY_NULL_VALUE, commandType);
+  }
+
   default Either<WriteFailure, Long> tryWrite(final LogAppendEntry appendEntry) {
-    return tryWrite(appendEntry, LogEntryDescriptor.KEY_NULL_VALUE);
+    return tryWrite(appendEntry, CommandType.FOLLOW_UP_EVENTS);
   }
 
   /** {@inheritDoc} */
   default Either<WriteFailure, Long> tryWrite(
+      final LogAppendEntry appendEntry, final long sourcePosition, final CommandType commandType) {
+    return tryWrite(Collections.singletonList(appendEntry), sourcePosition, commandType);
+  }
+
+  default Either<WriteFailure, Long> tryWrite(
       final LogAppendEntry appendEntry, final long sourcePosition) {
-    return tryWrite(Collections.singletonList(appendEntry), sourcePosition);
+    return tryWrite(
+        Collections.singletonList(appendEntry), sourcePosition, CommandType.FOLLOW_UP_EVENTS);
   }
 
   /**
@@ -52,8 +64,13 @@ public interface LogStreamWriter {
    * @return the last (i.e. highest) event position, a negative value if fails to write the events,
    *     or 0 if the batch is empty
    */
+  default Either<WriteFailure, Long> tryWrite(
+      final List<LogAppendEntry> appendEntries, final CommandType commandType) {
+    return tryWrite(appendEntries, LogEntryDescriptor.KEY_NULL_VALUE, commandType);
+  }
+
   default Either<WriteFailure, Long> tryWrite(final List<LogAppendEntry> appendEntries) {
-    return tryWrite(appendEntries, LogEntryDescriptor.KEY_NULL_VALUE);
+    return tryWrite(appendEntries, CommandType.FOLLOW_UP_EVENTS);
   }
 
   /**
@@ -66,7 +83,14 @@ public interface LogStreamWriter {
    *     or 0 if the batch is empty
    */
   Either<WriteFailure, Long> tryWrite(
-      final List<LogAppendEntry> appendEntries, final long sourcePosition);
+      final List<LogAppendEntry> appendEntries,
+      final long sourcePosition,
+      final CommandType commandType);
+
+  default Either<WriteFailure, Long> tryWrite(
+      final List<LogAppendEntry> appendEntries, final long sourcePosition) {
+    return tryWrite(appendEntries, sourcePosition, CommandType.FOLLOW_UP_EVENTS);
+  }
 
   default void acknowledgePosition(final long position) {}
 

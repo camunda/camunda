@@ -18,6 +18,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.zeebe.logstreams.impl.sequencer.Sequencer.CommandType;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.Actor;
@@ -373,6 +374,14 @@ class ProcessingScheduleServiceTest {
     @Override
     public boolean canWriteEvents(final int eventCount, final int batchSize) {
       return true;
+    }
+
+    @Override
+    public Either<WriteFailure, Long> tryWrite(
+        final List<LogAppendEntry> appendEntries,
+        final long sourcePosition,
+        final CommandType commandType) {
+      return tryWrite(appendEntries, sourcePosition);
     }
 
     @Override

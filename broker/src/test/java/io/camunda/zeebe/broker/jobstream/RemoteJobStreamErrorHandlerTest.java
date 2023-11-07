@@ -45,7 +45,7 @@ final class RemoteJobStreamErrorHandlerTest {
     final var handler = new RemoteJobStreamErrorHandler(jobErrorHandler);
     final var job = new TestActivatedJob(Protocol.encodePartitionId(1, 1), new JobRecord());
     final var error = new RuntimeException("Failure");
-    handler.addWriter(1, (entries, ignored) -> Either.right(1L));
+    handler.addWriter(1, (entries, ignored, ignore2) -> Either.right(1L));
 
     // when
     handler.handleError(error, job);
@@ -63,7 +63,7 @@ final class RemoteJobStreamErrorHandlerTest {
     // given
     final var handler = new RemoteJobStreamErrorHandler(jobErrorHandler);
     final var job = new TestActivatedJob(1, new JobRecord());
-    handler.addWriter(1, (entries, ignored) -> Either.right(1L));
+    handler.addWriter(1, (entries, ignored, ignore2) -> Either.right(1L));
 
     // when
     handler.removeWriter(1);
@@ -81,7 +81,7 @@ final class RemoteJobStreamErrorHandlerTest {
     final var writtenEntries = new ArrayList<LogAppendEntry>();
     handler.addWriter(
         1,
-        (entries, ignored) -> {
+        (entries, ignored, ignored2) -> {
           writtenEntries.addAll(entries);
           return Either.right(1L);
         });

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import io.camunda.zeebe.logstreams.impl.sequencer.Sequencer.CommandType;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -146,7 +147,9 @@ public class ProcessingScheduleServiceImpl
                 if (recordBatch.isEmpty()) {
                   return true;
                 }
-                return logStreamWriter.tryWrite(recordBatch.entries()).isRight();
+                return logStreamWriter
+                    .tryWrite(recordBatch.entries(), CommandType.INTERNAL_COMMAND)
+                    .isRight();
               },
               abortCondition);
 

@@ -46,10 +46,20 @@ public final class Sequencer implements LogStreamWriter, Closeable {
   private final ReentrantLock lock = new ReentrantLock();
   private final SequencerMetrics metrics;
   private final LogStorage logStorage;
-  private final SequencerFlowControl flowControl =
+  private final SequencerFlowControl flowControlUserCommands =
       SequencerFlowControl.builder()
           .limit(new StabilizingAIMDLimit(100, 10000, 1, 0.9, Duration.ofSeconds(1).toNanos()))
           .build();
+  private final SequencerFlowControl flowControlInterPartition =
+      SequencerFlowControl.builder()
+          .limit(new StabilizingAIMDLimit(100, 10000, 1, 0.9, Duration.ofSeconds(1).toNanos()))
+          .build();
+
+  private final SequencerFlowControl
+      flowControlInternalCommands = // commands like Timer trigger, message expiry
+      SequencerFlowControl.builder()
+              .limit(new StabilizingAIMDLimit(100, 10000, 1, 0.9, Duration.ofSeconds(1).toNanos()))
+              .build();
   private final AppendListener noopListener = new AppendListener() {};
 
   public Sequencer(
@@ -77,7 +87,9 @@ public final class Sequencer implements LogStreamWriter, Closeable {
   /** {@inheritDoc} */
   @Override
   public Either<WriteFailure, Long> tryWrite(
-      final List<LogAppendEntry> appendEntries, final long sourcePosition) {
+      final List<LogAppendEntry> appendEntries,
+      final long sourcePosition,
+      final CommandType commandType) {
     if (isClosed) {
       LOG.warn("Rejecting write of {}, sequencer is closed", appendEntries);
       return Either.left(WriteFailure.CLOSED);
@@ -102,7 +114,7 @@ public final class Sequencer implements LogStreamWriter, Closeable {
       lowestPosition = position;
       highestPosition = lowestPosition + batchSize - 1;
       if (sourcePosition == -1
-          && !flowControl.tryAcquire(
+          && !flowControlUserCommands.tryAcquire(
               highestPosition, appendEntries.getFirst().recordMetadata().getIntent())) {
         // It's a user command and we can't get a permit, reject. Otherwise accept because it's
         // follow up command or we have a permit
@@ -123,7 +135,7 @@ public final class Sequencer implements LogStreamWriter, Closeable {
 
   @Override
   public void acknowledgePosition(final long position) {
-    flowControl.onResponse(position);
+    flowControlUserCommands.onResponse(position);
   }
 
   /**
@@ -141,5 +153,12 @@ public final class Sequencer implements LogStreamWriter, Closeable {
         && entry.recordValue().getLength() > 0
         && entry.recordMetadata() != null
         && entry.recordMetadata().getLength() > 0;
+  }
+
+  public enum CommandType {
+    USER_COMMAND,
+    INTERNAL_COMMAND,
+    INTER_PARTITION_COMMAND,
+    FOLLOW_UP_EVENTS
   }
 }
