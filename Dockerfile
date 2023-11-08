@@ -85,6 +85,7 @@ EXPOSE 8090 8091
 VOLUME /tmp
 
 RUN apk add --no-cache bash curl tini openjdk17-jre tzdata && \
+    apk -U upgrade && \
     curl "https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh" --output /usr/local/bin/wait-for-it.sh && \
     chmod +x /usr/local/bin/wait-for-it.sh && \
     addgroup -S optimize && \
