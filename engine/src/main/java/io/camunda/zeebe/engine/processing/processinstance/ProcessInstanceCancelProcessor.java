@@ -13,7 +13,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 
-public final class CancelProcessInstanceHandler implements ProcessInstanceCommandHandler {
+public final class ProcessInstanceCancelProcessor implements ProcessInstanceCommandHandler {
 
   private static final String MESSAGE_PREFIX =
       "Expected to cancel a process instance with key '%d', but ";
