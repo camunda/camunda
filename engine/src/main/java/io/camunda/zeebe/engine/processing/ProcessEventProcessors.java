@@ -15,11 +15,11 @@ import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCorr
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCreateProcessor;
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.processing.processinstance.CreateProcessInstanceProcessor;
-import io.camunda.zeebe.engine.processing.processinstance.CreateProcessInstanceWithResultProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchActivateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchTerminateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCommandProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateWithResultProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -198,8 +198,8 @@ public final class ProcessEventProcessors {
         processingState.getElementInstanceState();
     final KeyGenerator keyGenerator = processingState.getKeyGenerator();
 
-    final CreateProcessInstanceProcessor createProcessor =
-        new CreateProcessInstanceProcessor(
+    final ProcessInstanceCreationCreateProcessor createProcessor =
+        new ProcessInstanceCreationCreateProcessor(
             processingState.getProcessState(), keyGenerator, writers, bpmnBehaviors, metrics);
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE, createProcessor);
@@ -207,7 +207,8 @@ public final class ProcessEventProcessors {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_CREATION,
         ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
-        new CreateProcessInstanceWithResultProcessor(createProcessor, elementInstanceState));
+        new ProcessInstanceCreationCreateWithResultProcessor(
+            createProcessor, elementInstanceState));
   }
 
   private static void addProcessInstanceModificationStreamProcessors(
