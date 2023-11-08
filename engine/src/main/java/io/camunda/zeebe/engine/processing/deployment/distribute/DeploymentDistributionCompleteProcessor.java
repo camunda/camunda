@@ -19,7 +19,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 
-public class CompleteDeploymentDistributionProcessor
+public class DeploymentDistributionCompleteProcessor
     implements TypedRecordProcessor<DeploymentDistributionRecord> {
 
   private static final String REJECT_MSG_DEPLOYMENT_DISTRIBUTION_COMPLETED =
@@ -30,7 +30,7 @@ public class CompleteDeploymentDistributionProcessor
   private final DeploymentState deploymentState;
   private final TypedRejectionWriter rejectionWriter;
 
-  public CompleteDeploymentDistributionProcessor(
+  public DeploymentDistributionCompleteProcessor(
       final DeploymentState deploymentState, final Writers writers) {
     stateWriter = writers.state();
     this.deploymentState = deploymentState;
