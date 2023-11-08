@@ -65,7 +65,7 @@
     <version.log4j.testjar>2.17.2</version.log4j.testjar>
     <version.awssdk>2.21.4</version.awssdk>
     <zeebe-test-container.version>3.6.0</zeebe-test-container.version>
-    <elasticsearch-test-container.version>1.19.0</elasticsearch-test-container.version>
+    <elasticsearch-test-container.version>1.19.1</elasticsearch-test-container.version>
 
     <!-- Auth0 Dependencies -->
     <!-- If any of the following version changes, -->
