@@ -20,7 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import org.agrona.DirectBuffer;
 
-public final class UpdateVariableDocumentProcessor
+public final class VariableDocumentUpdateProcessor
     implements TypedRecordProcessor<VariableDocumentRecord> {
 
   private final ElementInstanceState elementInstanceState;
@@ -28,7 +28,7 @@ public final class UpdateVariableDocumentProcessor
   private final VariableBehavior variableBehavior;
   private final Writers writers;
 
-  public UpdateVariableDocumentProcessor(
+  public VariableDocumentUpdateProcessor(
       final ElementInstanceState elementInstanceState,
       final KeyGenerator keyGenerator,
       final VariableBehavior variableBehavior,
