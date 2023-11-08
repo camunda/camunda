@@ -17,7 +17,7 @@ public final class ProcessInstanceCommandHandlers {
       new HashMap<>();
 
   public ProcessInstanceCommandHandlers() {
-    handlers.put(ProcessInstanceIntent.CANCEL, new CancelProcessInstanceHandler());
+    handlers.put(ProcessInstanceIntent.CANCEL, new ProcessInstanceCancelProcessor());
   }
 
   public void handle(final ProcessInstanceCommandContext context) {
