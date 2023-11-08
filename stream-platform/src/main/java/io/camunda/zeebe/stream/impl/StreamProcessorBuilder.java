@@ -14,6 +14,7 @@ import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.NoopScheduledCommandCache;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StageableScheduledCommandCache;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,7 +30,7 @@ public final class StreamProcessorBuilder {
   private int nodeId;
 
   private List<RecordProcessor> recordProcessors;
-  private StageableScheduledCommandCache scheduledCommandCache;
+  private StageableScheduledCommandCache scheduledCommandCache = new NoopScheduledCommandCache();
 
   public StreamProcessorBuilder() {
     streamProcessorContext = new StreamProcessorContext();
