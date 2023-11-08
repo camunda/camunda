@@ -32,6 +32,7 @@ import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache;
 import io.camunda.zeebe.stream.api.state.MutableLastProcessedPositionState;
 import io.camunda.zeebe.stream.impl.metrics.ProcessingMetrics;
 import io.camunda.zeebe.stream.impl.metrics.StreamProcessorMetrics;
@@ -157,13 +158,16 @@ public final class ProcessingStateMachine {
   private final int maxCommandsInBatch;
   private int processedCommandsCount;
   private final ProcessingMetrics processingMetrics;
+  private final ScheduledCommandCache scheduledCommandCache;
 
   public ProcessingStateMachine(
       final StreamProcessorContext context,
       final BooleanSupplier shouldProcessNext,
-      final List<RecordProcessor> recordProcessors) {
+      final List<RecordProcessor> recordProcessors,
+      final ScheduledCommandCache scheduledCommandCache) {
     this.context = context;
     this.recordProcessors = recordProcessors;
+    this.scheduledCommandCache = scheduledCommandCache;
     actor = context.getActor();
     recordValues = context.getRecordValues();
     logStreamReader = context.getLogStreamReader();
@@ -535,6 +539,7 @@ public final class ProcessingStateMachine {
                   updateState();
                 });
           } else {
+            scheduledCommandCache.remove(metadata.getIntent(), currentRecord.getKey());
             executeSideEffects();
           }
         });
