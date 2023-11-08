@@ -22,7 +22,7 @@ import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistri
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCompleteProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentRedistributor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionAcknowledgeProcessor;
-import io.camunda.zeebe.engine.processing.dmn.EvaluateDecisionProcessor;
+import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluteProcessor;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
@@ -271,12 +271,13 @@ public final class EngineProcessors {
       final Writers writers,
       final MutableProcessingState processingState) {
 
-    final EvaluateDecisionProcessor evaluateDecisionProcessor =
-        new EvaluateDecisionProcessor(decisionBehavior, processingState.getKeyGenerator(), writers);
+    final DecisionEvaluationEvaluteProcessor decisionEvaluationEvaluteProcessor =
+        new DecisionEvaluationEvaluteProcessor(
+            decisionBehavior, processingState.getKeyGenerator(), writers);
     typedRecordProcessors.onCommand(
         ValueType.DECISION_EVALUATION,
         DecisionEvaluationIntent.EVALUATE,
-        evaluateDecisionProcessor);
+        decisionEvaluationEvaluteProcessor);
   }
 
   private static void addResourceDeletionProcessors(

@@ -24,7 +24,8 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.collection.Tuple;
 
-public class EvaluateDecisionProcessor implements TypedRecordProcessor<DecisionEvaluationRecord> {
+public class DecisionEvaluationEvaluteProcessor
+    implements TypedRecordProcessor<DecisionEvaluationRecord> {
 
   private static final String ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED =
       "Expected either a decision id or a valid decision key, but none provided";
@@ -35,7 +36,7 @@ public class EvaluateDecisionProcessor implements TypedRecordProcessor<DecisionE
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
 
-  public EvaluateDecisionProcessor(
+  public DecisionEvaluationEvaluteProcessor(
       final DecisionBehavior decisionBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers) {
