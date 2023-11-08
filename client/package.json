@@ -60,7 +60,7 @@
     "@playwright/test": "1.39.0",
     "@tanstack/react-query-devtools": "4.36.1",
     "@testing-library/jest-dom": "6.1.4",
-    "@testing-library/react": "14.0.0",
+    "@testing-library/react": "14.1.0",
     "@testing-library/user-event": "14.5.1",
     "@types/carbon-components-react": "7.55.5",
     "@types/carbon__elements": "11.10.2",
