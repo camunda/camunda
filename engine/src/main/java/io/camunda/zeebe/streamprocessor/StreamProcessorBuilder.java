@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.streamprocessor.ScheduledCommandCache.NoopScheduledCommandCache;
 import io.camunda.zeebe.streamprocessor.ScheduledCommandCache.StageableScheduledCommandCache;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +33,7 @@ public final class StreamProcessorBuilder {
   private int nodeId;
 
   private List<RecordProcessor> recordProcessors;
-  private StageableScheduledCommandCache scheduledCommandCache;
+  private StageableScheduledCommandCache scheduledCommandCache = new NoopScheduledCommandCache();
 
   public StreamProcessorBuilder() {
     streamProcessorContext = new StreamProcessorContext();

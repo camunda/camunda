@@ -16,6 +16,29 @@ public interface ScheduledCommandCache {
 
   void remove(final Intent intent, final long key);
 
+  final class NoopScheduledCommandCache
+      implements StageableScheduledCommandCache, StagedScheduledCommandCache {
+
+    @Override
+    public void persist() {}
+
+    @Override
+    public void add(final Intent intent, final long key) {}
+
+    @Override
+    public boolean isCached(final Intent intent, final long key) {
+      return false;
+    }
+
+    @Override
+    public void remove(final Intent intent, final long key) {}
+
+    @Override
+    public StagedScheduledCommandCache stage() {
+      return this;
+    }
+  }
+
   interface ScheduledCommandCacheChanges {
 
     void persist();

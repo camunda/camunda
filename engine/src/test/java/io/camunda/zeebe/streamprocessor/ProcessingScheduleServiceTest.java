@@ -36,6 +36,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
+import io.camunda.zeebe.streamprocessor.ScheduledCommandCache.NoopScheduledCommandCache;
 import io.camunda.zeebe.streamprocessor.StreamProcessor.Phase;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.time.Duration;
@@ -67,7 +68,10 @@ class ProcessingScheduleServiceTest {
     writerAsyncSupplier = new WriterAsyncSupplier();
     final var processingScheduleService =
         new ProcessingScheduleServiceImpl(
-            lifecycleSupplier, lifecycleSupplier, writerAsyncSupplier);
+            lifecycleSupplier,
+            lifecycleSupplier,
+            writerAsyncSupplier,
+            new NoopScheduledCommandCache());
 
     scheduleService = new TestScheduleServiceActorDecorator(processingScheduleService);
     actorScheduler.submitActor(scheduleService);
@@ -157,7 +161,10 @@ class ProcessingScheduleServiceTest {
     lifecycleSupplier.currentPhase = Phase.PAUSED;
     final var notOpenScheduleService =
         new ProcessingScheduleServiceImpl(
-            lifecycleSupplier, lifecycleSupplier, writerAsyncSupplier);
+            lifecycleSupplier,
+            lifecycleSupplier,
+            writerAsyncSupplier,
+            new NoopScheduledCommandCache());
     final var mockedTask = spy(new DummyTask());
 
     // when
@@ -176,7 +183,10 @@ class ProcessingScheduleServiceTest {
     final var notOpenScheduleService =
         new TestScheduleServiceActorDecorator(
             new ProcessingScheduleServiceImpl(
-                lifecycleSupplier, lifecycleSupplier, writerAsyncSupplier));
+                lifecycleSupplier,
+                lifecycleSupplier,
+                writerAsyncSupplier,
+                new NoopScheduledCommandCache()));
 
     // when
     final var actorFuture = actorScheduler.submitActor(notOpenScheduleService);
