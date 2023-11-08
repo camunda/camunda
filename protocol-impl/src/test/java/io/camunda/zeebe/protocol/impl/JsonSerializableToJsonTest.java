@@ -637,6 +637,7 @@ final class JsonSerializableToJsonTest {
               "errorCode": "error",
               "customHeaders": {},
               "deadline": 1000,
+              "timeout": -1,
               "tenantId": "<default>"
             }
           ],
@@ -679,6 +680,7 @@ final class JsonSerializableToJsonTest {
               final String type = "myType";
               final int retries = 12;
               final int deadline = 13;
+              final int timeout = 14;
 
               final String bpmnProcessId = "test-process";
               final int processDefinitionKey = 13;
@@ -699,6 +701,7 @@ final class JsonSerializableToJsonTest {
                       .setRetryBackoff(1003)
                       .setRecurringTime(1004)
                       .setDeadline(deadline)
+                      .setTimeout(timeout)
                       .setErrorMessage("failed message")
                       .setErrorCode(wrapString("error"))
                       .setBpmnProcessId(wrapString(bpmnProcessId))
@@ -733,6 +736,7 @@ final class JsonSerializableToJsonTest {
             "workerVersion": "42"
           },
           "deadline": 13,
+          "timeout": 14,
           "tenantId": "<default>"
         }
         """
@@ -762,6 +766,7 @@ final class JsonSerializableToJsonTest {
           "errorCode": "",
           "customHeaders": {},
           "deadline": -1,
+          "timeout": -1,
           "tenantId": "<default>"
         }
         """
@@ -789,6 +794,7 @@ final class JsonSerializableToJsonTest {
             "foo": null
           },
           "deadline": -1,
+          "timeout": -1,
           "worker": "",
           "retries": -1,
           "retryBackoff": 0,

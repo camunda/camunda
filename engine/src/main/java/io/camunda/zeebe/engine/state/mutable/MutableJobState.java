@@ -41,4 +41,6 @@ public interface MutableJobState extends JobState {
   void cleanupTimeoutsWithoutJobs();
 
   void cleanupBackoffsWithoutJobs();
+
+  void updateJobDeadline(long jobKey, long newDeadline);
 }

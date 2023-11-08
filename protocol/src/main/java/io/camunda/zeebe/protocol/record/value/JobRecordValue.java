@@ -72,6 +72,12 @@ public interface JobRecordValue
   long getDeadline();
 
   /**
+   * @return the duration used to update the deadline. If this property is not set it will return
+   *     '-1'.
+   */
+  long getTimeout();
+
+  /**
    * @return the message that contains additional context of the failure/error. It is set by the job
    *     worker then the processing fails because of a technical failure or a non-technical error.
    */
