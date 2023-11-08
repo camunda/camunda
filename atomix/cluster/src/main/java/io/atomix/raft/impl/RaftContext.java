@@ -625,10 +625,14 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
                 .whenCompleteAsync(
                     (response, error) -> {
                       if (error != null) {
+                        log.error("Failed transfer", error);
                         future.completeExceptionally(error);
                       } else if (response.status() == Status.ERROR) {
+                        log.error("Failed transfer with error status: %s".formatted(response));
+
                         future.completeExceptionally(response.error().createException());
                       } else {
+                        log.info("Successfully transferred");
                         transition(Role.CANDIDATE);
                       }
                     },
