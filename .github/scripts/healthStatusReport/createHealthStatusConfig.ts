@@ -17,6 +17,18 @@ type GithubWorkflow =
     }
   | string;
 
+type PRParams = {
+  author?: string;
+  base?: string;
+  labels?: string[];
+  state?: PRState;
+  title?: string;
+  resultType?: PRResultType;
+};
+type PRState = 'open' | 'close' | 'all';
+
+type PRResultType = 'list' | 'count';
+
 type Config = {
   github: {
     title?: string;
@@ -40,6 +52,12 @@ type Config = {
       versions: string[];
     }[];
   };
+  githubPrs: {
+    title?: string;
+    organization: string;
+    repository: string;
+    prs: PRParams[];
+  };
 };
 
 type Branch = {
@@ -61,8 +79,10 @@ type SnykProjectsResponse = {
 };
 
 async function createHealthStatusConfig() {
-  const ciBranches = (await getCiBranches()).filter(branch=>!branch.includes('3.8'));
-  const snykProjects = (await fetchSnykProjects()).filter(project=>!project.name.includes('3.8'));
+  const ciBranches = (await getCiBranches()).filter((branch) => !branch.includes('3.8'));
+  const snykProjects = (await fetchSnykProjects()).filter(
+    (project) => !project.name.includes('3.8'),
+  );
 
   const config: Partial<Config> = {
     argoCd: {
@@ -101,6 +121,26 @@ async function createHealthStatusConfig() {
           project: 'camunda/optimize',
           versions: getHighestDockerVersions(snykProjects),
           origin: 'docker-hub',
+        },
+      ],
+    },
+    githubPrs: {
+      repository: 'camunda-optimize',
+      organization: 'camunda',
+      prs: [
+        {
+          author: 'renovate[bot]',
+          labels: ['renovate', 'frontend'],
+          resultType: 'count',
+          title: 'Open renovate FE PRs',
+          state: 'open',
+        },
+        {
+          author: 'renovate[bot]',
+          labels: ['renovate', 'backend'],
+          resultType: 'count',
+          title: 'Open renovate BE PRs',
+          state: 'open',
         },
       ],
     },
