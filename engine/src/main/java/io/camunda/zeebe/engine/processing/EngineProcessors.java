@@ -27,7 +27,7 @@ import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.processing.resource.ResourceDeletionProcessor;
+import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -285,7 +285,7 @@ public final class EngineProcessors {
       final Writers writers,
       final MutableProcessingState processingState) {
     final var resourceDeletionProcessor =
-        new ResourceDeletionProcessor(
+        new ResourceDeletionDeleteProcessor(
             writers, processingState.getKeyGenerator(), processingState.getDecisionState());
     typedRecordProcessors.onCommand(
         ValueType.RESOURCE_DELETION, ResourceDeletionIntent.DELETE, resourceDeletionProcessor);
