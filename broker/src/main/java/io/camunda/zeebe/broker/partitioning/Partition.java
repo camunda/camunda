@@ -111,15 +111,17 @@ public final class Partition {
               .whenComplete(
                   (stepDownOk, stepDownError) -> {
                     final var stop = startupProcess.shutdown(concurrencyControl, context);
-                    concurrencyControl.runOnCompletion(
-                        stop,
-                        (ok, error) -> {
-                          if (error != null) {
-                            result.completeExceptionally(error);
-                          } else {
-                            result.complete(this);
-                          }
-                        });
+                    concurrencyControl.run(
+                        () ->
+                            concurrencyControl.runOnCompletion(
+                                stop,
+                                (ok, error) -> {
+                                  if (error != null) {
+                                    result.completeExceptionally(error);
+                                  } else {
+                                    result.complete(this);
+                                  }
+                                }));
                   });
         });
     return result;
