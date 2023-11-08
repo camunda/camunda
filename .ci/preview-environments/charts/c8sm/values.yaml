@@ -61,7 +61,16 @@ camunda-platform:
             effect: "NoSchedule"
 
   operate:
-    enabled: false
+    fullnameOverride: operate
+    env:
+    - name: SPRING_PROFILES_ACTIVE
+      value: dev-data
+    nodeSelector:
+      cloud.google.com/gke-nodepool: previews
+    tolerations:
+    - key: "previews"
+      operator: "Exists"
+      effect: "NoSchedule"
 
   optimize:
     fullnameOverride: optimize
@@ -72,11 +81,9 @@ camunda-platform:
       - name: registry-camunda-cloud
       # will be set by the "deploy-preview-env" action
       tag: latest
-
     env:
     - name: CAMUNDA_OPTIMIZE_IMPORT_CUSTOMER_ONBOARDING
       value: "true"
-
     nodeSelector:
       cloud.google.com/gke-nodepool: previews
     tolerations:
@@ -84,9 +91,14 @@ camunda-platform:
       operator: "Exists"
       effect: "NoSchedule"
 
-
   tasklist:
-    enabled: false
+    fullnameOverride: tasklist
+    nodeSelector:
+      cloud.google.com/gke-nodepool: previews
+    tolerations:
+    - key: "previews"
+      operator: "Exists"
+      effect: "NoSchedule"
 
   # Configuration for ElasticSearch. Persistence is disabled by default,
   # and we're setting some reasonable defaults for the `PersistentVolumeClaim` size
@@ -162,7 +174,11 @@ global:
 
       # will be set by the "deploy-preview-env" action
       publicIssuerUrl: "https://keycloak-test.optimize.camunda.cloud/auth/realms/camunda-platform"
+      operate:
+        redirectUrl: "https://test.optimize.camunda.cloud"
       optimize:
+        redirectUrl: "https://test.optimize.camunda.cloud"
+      tasklist:
         redirectUrl: "https://test.optimize.camunda.cloud"
 
   zeebeClusterName: zeebe
