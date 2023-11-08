@@ -32,14 +32,20 @@ import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.streamprocessor.ScheduledCommandCache.NoopScheduledCommandCache;
+import io.camunda.zeebe.streamprocessor.ScheduledCommandCache.StageableScheduledCommandCache;
 import io.camunda.zeebe.streamprocessor.StreamProcessor.Phase;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.time.Duration;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -58,6 +64,7 @@ class ProcessingScheduleServiceTest {
   @RegisterExtension
   ControlledActorSchedulerExtension actorScheduler = new ControlledActorSchedulerExtension();
 
+  private final TestCommandCache commandCache = new TestCommandCache();
   private LifecycleSupplier lifecycleSupplier;
   private WriterAsyncSupplier writerAsyncSupplier;
   private TestScheduleServiceActorDecorator scheduleService;
@@ -68,10 +75,7 @@ class ProcessingScheduleServiceTest {
     writerAsyncSupplier = new WriterAsyncSupplier();
     final var processingScheduleService =
         new ProcessingScheduleServiceImpl(
-            lifecycleSupplier,
-            lifecycleSupplier,
-            writerAsyncSupplier,
-            new NoopScheduledCommandCache());
+            lifecycleSupplier, lifecycleSupplier, writerAsyncSupplier, commandCache);
 
     scheduleService = new TestScheduleServiceActorDecorator(processingScheduleService);
     actorScheduler.submitActor(scheduleService);
@@ -316,6 +320,75 @@ class ProcessingScheduleServiceTest {
     verify(mockedTask, never()).execute(any());
   }
 
+  @Test
+  void shouldCacheWrittenCommands() {
+    // given
+    final var batchWriter = writerAsyncSupplier.get().join();
+    when(batchWriter.canWriteAdditionalEvent(anyInt(), anyInt())).thenReturn(true);
+    final var logEntryBuilder = mock(LogEntryBuilder.class, Mockito.RETURNS_DEEP_STUBS);
+    when(batchWriter.event()).thenReturn(logEntryBuilder);
+
+    // when
+    scheduleService.runDelayed(
+        Duration.ZERO,
+        (builder) -> {
+          builder.appendCommandRecord(1, ACTIVATE_ELEMENT, RECORD);
+          return builder.build();
+        });
+    actorScheduler.workUntilDone();
+
+    // then - it's sufficient to assert it was staged for caching, and then the staged cache was
+    // persisted
+    assertThat(commandCache.stagedCache.isCached(ACTIVATE_ELEMENT, 1)).isTrue();
+    assertThat(commandCache.stagedCache.persisted).isTrue();
+  }
+
+  @Test
+  void shouldNotWriteCachedCommands() {
+    // given
+    final var batchWriter = writerAsyncSupplier.get().join();
+    when(batchWriter.canWriteAdditionalEvent(anyInt(), anyInt())).thenReturn(true);
+    final var logEntryBuilder = mock(LogEntryBuilder.class, Mockito.RETURNS_DEEP_STUBS);
+    when(batchWriter.event()).thenReturn(logEntryBuilder);
+    commandCache.add(ACTIVATE_ELEMENT, 1);
+
+    // when
+    scheduleService.runDelayed(
+        Duration.ZERO,
+        (builder) -> {
+          builder.appendCommandRecord(1, ACTIVATE_ELEMENT, RECORD);
+          return builder.build();
+        });
+    actorScheduler.workUntilDone();
+
+    // then
+    verify(batchWriter, never()).event();
+    verify(batchWriter).tryWrite();
+  }
+
+  @Test
+  void shouldNotCacheWrittenCommandsIfWriteFails() {
+    // given
+    final var batchWriter = writerAsyncSupplier.get().join();
+    when(batchWriter.canWriteAdditionalEvent(anyInt(), anyInt())).thenReturn(true);
+    final var logEntryBuilder = mock(LogEntryBuilder.class, Mockito.RETURNS_DEEP_STUBS);
+    when(batchWriter.event()).thenReturn(logEntryBuilder);
+    when(batchWriter.tryWrite()).thenThrow(new RuntimeException("failure"));
+
+    // when
+    scheduleService.runDelayed(
+        Duration.ZERO,
+        (builder) -> {
+          builder.appendCommandRecord(1, ACTIVATE_ELEMENT, RECORD);
+          return builder.build();
+        });
+    actorScheduler.workUntilDone();
+
+    // then - write was staged for caching, but not persisted due to error
+    assertThat(commandCache.stagedCache.isCached(ACTIVATE_ELEMENT, 1)).isTrue();
+    assertThat(commandCache.stagedCache.persisted).isFalse();
+  }
+
   /**
    * This decorator is an actor and implements {@link ProcessingScheduleService} and delegates to
    * {@link ProcessingScheduleServiceImpl}, on each call it will submit an extra job to the related
@@ -393,6 +466,54 @@ class ProcessingScheduleServiceTest {
     @Override
     public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
       return RecordBatch::empty;
+    }
+  }
+
+  private static final class TestCommandCache extends TestScheduledCommandCache
+      implements StageableScheduledCommandCache {
+    private final StagedCache stagedCache = new StagedCache();
+
+    @Override
+    public StagedScheduledCommandCache stage() {
+      return stagedCache;
+    }
+
+    private final class StagedCache extends TestScheduledCommandCache
+        implements StagedScheduledCommandCache {
+      private volatile boolean persisted;
+
+      @Override
+      public boolean isCached(final Intent intent, final long key) {
+        return super.isCached(intent, key) || TestCommandCache.this.isCached(intent, key);
+      }
+
+      @Override
+      public void persist() {
+        persisted = true;
+      }
+    }
+  }
+
+  private static class TestScheduledCommandCache implements ScheduledCommandCache {
+    private final Map<Intent, Set<Long>> cachedKeys = new ConcurrentHashMap<>();
+
+    @Override
+    public void add(final Intent intent, final long key) {
+      cacheForIntent(intent).add(key);
+    }
+
+    @Override
+    public boolean isCached(final Intent intent, final long key) {
+      return cacheForIntent(intent).contains(key);
+    }
+
+    @Override
+    public void remove(final Intent intent, final long key) {
+      cacheForIntent(intent).remove(key);
+    }
+
+    private Set<Long> cacheForIntent(final Intent intent) {
+      return cachedKeys.computeIfAbsent(intent, ignored -> new ConcurrentSkipListSet<>());
     }
   }
 }
