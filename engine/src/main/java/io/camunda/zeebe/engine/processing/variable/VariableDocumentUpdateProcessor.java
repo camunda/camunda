@@ -21,7 +21,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.agrona.DirectBuffer;
 
-public final class UpdateVariableDocumentProcessor
+public final class VariableDocumentUpdateProcessor
     implements TypedRecordProcessor<VariableDocumentRecord> {
 
   private static final String ERROR_MESSAGE_SCOPE_NOT_FOUND =
@@ -32,7 +32,7 @@ public final class UpdateVariableDocumentProcessor
   private final VariableBehavior variableBehavior;
   private final Writers writers;
 
-  public UpdateVariableDocumentProcessor(
+  public VariableDocumentUpdateProcessor(
       final ElementInstanceState elementInstanceState,
       final KeyGenerator keyGenerator,
       final VariableBehavior variableBehavior,

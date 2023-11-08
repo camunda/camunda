@@ -27,7 +27,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.timer.TimerCancelProcessor;
 import io.camunda.zeebe.engine.processing.timer.TimerTriggerProcessor;
-import io.camunda.zeebe.engine.processing.variable.UpdateVariableDocumentProcessor;
+import io.camunda.zeebe.engine.processing.variable.VariableDocumentUpdateProcessor;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
@@ -184,7 +184,7 @@ public final class ProcessEventProcessors {
     typedRecordProcessors.onCommand(
         ValueType.VARIABLE_DOCUMENT,
         VariableDocumentIntent.UPDATE,
-        new UpdateVariableDocumentProcessor(
+        new VariableDocumentUpdateProcessor(
             elementInstanceState, keyGenerator, bpmnBehaviors.variableBehavior(), writers));
   }
 
