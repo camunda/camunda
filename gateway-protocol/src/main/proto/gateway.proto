@@ -546,6 +546,16 @@ message UpdateJobRetriesRequest {
 message UpdateJobRetriesResponse {
 }
 
+message UpdateJobTimeoutRequest {
+  // the unique job identifier, as obtained from ActivateJobsResponse
+  int64 jobKey = 1;
+  // the duration of the new timeout in ms, starting from the current moment
+  string timeout = 2;
+}
+
+message UpdateJobTimeoutResponse {
+}
+
 message SetVariablesRequest {
   // the unique identifier of a particular element; can be the process instance key (as
   // obtained during instance creation), or a given element, such as a service task (see
@@ -876,6 +886,20 @@ service Gateway {
    */
   rpc ModifyProcessInstance (ModifyProcessInstanceRequest) returns (ModifyProcessInstanceResponse) {
 
+  }
+
+  /*
+  Updates the deadline of a job using the timeout (in ms) provided. This can be used
+  for extending or shortening the job deadline.
+
+  Errors:
+    NOT_FOUND:
+      - no job exists with the given key
+
+    INVALID_STATE:
+      - no deadline exists for the given job key
+ */
+  rpc UpdateJobTimeout (UpdateJobTimeoutRequest) returns (UpdateJobTimeoutResponse) {
   }
 
   /*
