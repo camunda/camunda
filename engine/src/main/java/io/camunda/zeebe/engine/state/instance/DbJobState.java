@@ -256,9 +256,9 @@ public final class DbJobState implements JobState, MutableJobState {
     final JobRecord job = getJob(jobKey);
 
     if (job != null) {
-      final long deadline = job.getDeadline();
+      final long oldDeadline = job.getDeadline();
 
-      deadlineKey.wrapLong(deadline);
+      deadlineKey.wrapLong(oldDeadline);
       deadlinesColumnFamily.deleteExisting(deadlineJobKey);
 
       job.setDeadline(newDeadline);
@@ -375,6 +375,13 @@ public final class DbJobState implements JobState, MutableJobState {
       return jobRecord;
     }
     return null;
+  }
+
+  @Override
+  public boolean jobDeadlineExists(final long jobKey, final long deadline) {
+    this.jobKey.wrapLong(jobKey);
+    deadlineKey.wrapLong(deadline);
+    return deadlinesColumnFamily.exists(deadlineJobKey);
   }
 
   @Override
