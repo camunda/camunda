@@ -33,6 +33,8 @@ public interface JobState {
 
   JobRecord getJob(final long key, final Map<String, Object> authorizations);
 
+  boolean jobDeadlineExists(final long jobKey, final long deadline);
+
   long findBackedOffJobs(final long timestamp, final BiPredicate<Long, JobRecord> callback);
 
   enum State {
