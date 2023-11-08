@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.MutableRecordBatch;
 import io.camunda.zeebe.stream.api.records.RecordBatchSizePredicate;
+import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StagedScheduledCommandCache;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import io.camunda.zeebe.stream.impl.records.RecordBatch;
@@ -26,25 +27,32 @@ import io.camunda.zeebe.stream.impl.records.RecordBatch;
 final class BufferedTaskResultBuilder implements TaskResultBuilder {
 
   private final MutableRecordBatch mutableRecordBatch;
+  private final StagedScheduledCommandCache cache;
 
-  BufferedTaskResultBuilder(final RecordBatchSizePredicate predicate) {
+  BufferedTaskResultBuilder(
+      final RecordBatchSizePredicate predicate, final StagedScheduledCommandCache cache) {
     mutableRecordBatch = new RecordBatch(predicate);
+    this.cache = cache;
   }
 
   @Override
   public boolean appendCommandRecord(
       final long key, final Intent intent, final UnifiedRecordValue value) {
-
     final ValueType valueType = TypedEventRegistry.TYPE_REGISTRY.get(value.getClass());
     if (valueType == null) {
       // usually happens when the record is not registered at the TypedStreamEnvironment
       throw new IllegalStateException("Missing value type mapping for record: " + value.getClass());
     }
 
+    if (cache.isCached(intent, key)) {
+      return true;
+    }
+
     final var either =
         mutableRecordBatch.appendRecord(
             key, -1, RecordType.COMMAND, intent, RejectionType.NULL_VAL, "", valueType, value);
 
+    either.ifRight(ok -> cache.add(intent, key));
     return either.isRight();
   }
 
