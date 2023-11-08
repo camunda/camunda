@@ -44,7 +44,7 @@ jobs:
           # Token for git actions, e.g. git push
           token: ${{ secrets.BACKPORT_ACTION_PAT }}
       - name: Create backport pull requests
-        uses: korthout/backport-action@cb79e4e5f46c7d7d653dd3d5fa8a9b0a945dfe4b # v2
+        uses: korthout/backport-action@08bafb375e6e9a9a2b53a744b987e5d81a133191 # v2
         with:
           # Optional
           # Token to authenticate requests to GitHub
