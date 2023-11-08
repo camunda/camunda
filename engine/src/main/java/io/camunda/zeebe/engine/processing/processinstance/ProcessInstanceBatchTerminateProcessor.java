@@ -19,14 +19,14 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 
-public final class TerminateProcessInstanceBatchProcessor
+public final class ProcessInstanceBatchTerminateProcessor
     implements TypedRecordProcessor<ProcessInstanceBatchRecord> {
 
   private final TypedCommandWriter commandWriter;
   private final KeyGenerator keyGenerator;
   private final ElementInstanceState elementInstanceState;
 
-  public TerminateProcessInstanceBatchProcessor(
+  public ProcessInstanceBatchTerminateProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
       final ElementInstanceState elementInstanceState) {
