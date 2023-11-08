@@ -45,6 +45,8 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
 
   private Function<InstallRequest, CompletableFuture<InstallResponse>> installHandler;
   private Function<TransferRequest, CompletableFuture<TransferResponse>> transferHandler;
+  private Function<AnointRequest, CompletableFuture<AnointResponse>> anointHandler;
+
   private Function<PollRequest, CompletableFuture<PollResponse>> pollHandler;
   private Function<VoteRequest, CompletableFuture<VoteResponse>> voteHandler;
   private Function<VersionedAppendRequest, CompletableFuture<AppendResponse>> appendHandler;
@@ -233,6 +235,21 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   }
 
   @Override
+  public CompletableFuture<AnointResponse> anoint(
+      final MemberId memberId, final AnointRequest request) {
+    final var responseFuture = new CompletableFuture<AnointResponse>();
+    send(
+        memberId,
+        () ->
+            getServer(memberId)
+                .thenCompose(listener -> listener.anoint(memberId, request))
+                .thenAccept(
+                    response -> send(localMemberId, () -> responseFuture.complete(response), null)),
+        responseFuture);
+    return responseFuture;
+  }
+
+  @Override
   public CompletableFuture<PollResponse> poll(final MemberId memberId, final PollRequest request) {
     final var responseFuture = new CompletableFuture<PollResponse>();
     send(
@@ -290,6 +307,17 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   @Override
   public void unregisterTransferHandler() {
     transferHandler = null;
+  }
+
+  @Override
+  public void registerAnointHandler(
+      final Function<AnointRequest, CompletableFuture<AnointResponse>> handler) {
+    anointHandler = handler;
+  }
+
+  @Override
+  public void unregisterAnointHander() {
+    anointHandler = null;
   }
 
   @Override

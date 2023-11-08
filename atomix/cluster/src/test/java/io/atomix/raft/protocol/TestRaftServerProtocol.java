@@ -36,6 +36,7 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   private Function<LeaveRequest, CompletableFuture<LeaveResponse>> leaveHandler;
   private Function<InstallRequest, CompletableFuture<InstallResponse>> installHandler;
   private Function<TransferRequest, CompletableFuture<TransferResponse>> transferHandler;
+  private Function<AnointRequest, CompletableFuture<AnointResponse>> anointHandler;
   private Function<PollRequest, CompletableFuture<PollResponse>> pollHandler;
   private Function<VoteRequest, CompletableFuture<VoteResponse>> voteHandler;
   private Function<VersionedAppendRequest, CompletableFuture<AppendResponse>> appendHandler;
@@ -104,6 +105,12 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   }
 
   @Override
+  public CompletableFuture<AnointResponse> anoint(
+      final MemberId memberId, final AnointRequest request) {
+    return scheduleTimeout(getServer(memberId).thenCompose(listener -> listener.anoint(request)));
+  }
+
+  @Override
   public CompletableFuture<PollResponse> poll(final MemberId memberId, final PollRequest request) {
     return scheduleTimeout(getServer(memberId).thenCompose(listener -> listener.poll(request)));
   }
@@ -134,6 +141,17 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   @Override
   public void unregisterTransferHandler() {
     transferHandler = null;
+  }
+
+  @Override
+  public void registerAnointHandler(
+      final Function<AnointRequest, CompletableFuture<AnointResponse>> handler) {
+    anointHandler = handler;
+  }
+
+  @Override
+  public void unregisterAnointHander() {
+    anointHandler = null;
   }
 
   @Override
@@ -270,6 +288,14 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   CompletableFuture<TransferResponse> transfer(final TransferRequest request) {
     if (transferHandler != null) {
       return transferHandler.apply(request);
+    } else {
+      return CompletableFuture.failedFuture(new ConnectException());
+    }
+  }
+
+  CompletableFuture<AnointResponse> anoint(final AnointRequest request) {
+    if (anointHandler != null) {
+      return anointHandler.apply(request);
     } else {
       return CompletableFuture.failedFuture(new ConnectException());
     }

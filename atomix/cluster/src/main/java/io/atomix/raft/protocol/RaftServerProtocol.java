@@ -77,6 +77,8 @@ public interface RaftServerProtocol {
    */
   CompletableFuture<TransferResponse> transfer(MemberId memberId, TransferRequest request);
 
+  CompletableFuture<AnointResponse> anoint(MemberId memberId, AnointRequest request);
+
   /**
    * Sends a poll request to the given node.
    *
@@ -116,6 +118,10 @@ public interface RaftServerProtocol {
 
   /** Unregisters the transfer request handler. */
   void unregisterTransferHandler();
+
+  void registerAnointHandler(Function<AnointRequest, CompletableFuture<AnointResponse>> handler);
+
+  void unregisterAnointHander();
 
   /**
    * Registers a configure request callback.

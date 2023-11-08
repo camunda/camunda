@@ -20,6 +20,8 @@ import com.google.common.base.Preconditions;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.raft.metrics.RaftRequestMetrics;
+import io.atomix.raft.protocol.AnointRequest;
+import io.atomix.raft.protocol.AnointResponse;
 import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.ConfigureRequest;
@@ -109,6 +111,12 @@ public class RaftServerCommunicator implements RaftServerProtocol {
   }
 
   @Override
+  public CompletableFuture<AnointResponse> anoint(
+      final MemberId memberId, final AnointRequest request) {
+    return sendAndReceive(context.anointSubject, request, memberId);
+  }
+
+  @Override
   public CompletableFuture<PollResponse> poll(final MemberId memberId, final PollRequest request) {
     return sendAndReceive(context.pollSubject, request, memberId);
   }
@@ -143,6 +151,21 @@ public class RaftServerCommunicator implements RaftServerProtocol {
   @Override
   public void unregisterTransferHandler() {
     clusterCommunicator.unsubscribe(context.transferSubject);
+  }
+
+  @Override
+  public void registerAnointHandler(
+      final Function<AnointRequest, CompletableFuture<AnointResponse>> handler) {
+    clusterCommunicator.replyTo(
+        context.anointSubject,
+        serializer::decode,
+        handler.<AnointRequest>compose(this::recordReceivedMetrics),
+        serializer::encode);
+  }
+
+  @Override
+  public void unregisterAnointHander() {
+    clusterCommunicator.unsubscribe(context.anointSubject);
   }
 
   @Override

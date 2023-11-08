@@ -39,11 +39,13 @@ import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.cluster.impl.RaftClusterContext;
+import io.atomix.raft.cluster.impl.RaftMemberContext;
 import io.atomix.raft.metrics.RaftReplicationMetrics;
 import io.atomix.raft.metrics.RaftRoleMetrics;
 import io.atomix.raft.metrics.RaftServiceMetrics;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartitionConfig;
+import io.atomix.raft.protocol.AnointRequest;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.ProtocolVersionHandler;
@@ -79,6 +81,7 @@ import java.net.ConnectException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
@@ -317,6 +320,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     protocol.registerJoinHandler(request -> runOnContext(() -> role.onJoin(request)));
     protocol.registerLeaveHandler(request -> runOnContext(() -> role.onLeave(request)));
     protocol.registerTransferHandler(request -> runOnContext(() -> role.onTransfer(request)));
+    protocol.registerAnointHandler(request -> runOnContext(() -> role.onAnoint(request)));
     protocol.registerAppendV1Handler(
         request -> runOnContext(() -> role.onAppend(ProtocolVersionHandler.transform(request))));
     protocol.registerAppendV2Handler(
@@ -776,6 +780,27 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     return leader != null ? cluster.getMember(leader) : null;
   }
 
+  public void stepDown() {
+    checkThread();
+    final var replacement =
+        cluster.getReplicationTargets().stream()
+            .max(Comparator.comparing(RaftMemberContext::getMatchIndex));
+    if (replacement.isEmpty()) {
+      transition(Role.FOLLOWER);
+      return;
+    }
+
+    protocol
+        .anoint(replacement.get().getMember().memberId(), new AnointRequest())
+        .whenCompleteAsync(
+            (ok, error) -> {
+              if (error != null) {
+                transition(Role.FOLLOWER);
+              }
+            },
+            threadContext);
+  }
+
   /** Transition handler. */
   public void transition(final Role role) {
     checkThread();
@@ -955,6 +980,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     protocol.unregisterJoinHandler();
     protocol.unregisterLeaveHandler();
     protocol.unregisterTransferHandler();
+    protocol.unregisterAnointHander();
     protocol.unregisterAppendHandler();
     protocol.unregisterPollHandler();
     protocol.unregisterVoteHandler();

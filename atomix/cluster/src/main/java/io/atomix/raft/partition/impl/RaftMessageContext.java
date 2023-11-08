@@ -32,6 +32,7 @@ class RaftMessageContext {
   final String leaveSubject;
   final String installSubject;
   final String transferSubject;
+  final String anointSubject;
   final String pollSubject;
   final String voteSubject;
   final String appendV1subject;
@@ -52,6 +53,7 @@ class RaftMessageContext {
     leaveSubject = getSubject(prefix, "leave");
     installSubject = getSubject(prefix, "install");
     transferSubject = getSubject(prefix, "transfer");
+    anointSubject = getSubject(prefix, "anoint");
     pollSubject = getSubject(prefix, "poll");
     voteSubject = getSubject(prefix, "vote");
     appendV1subject = getSubject(prefix, "append");

@@ -20,6 +20,8 @@ import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftError.Type;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.impl.RaftContext;
+import io.atomix.raft.protocol.AnointRequest;
+import io.atomix.raft.protocol.AnointResponse;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.ConfigureResponse;
@@ -133,6 +135,18 @@ public class InactiveRole extends AbstractRole {
     final var result =
         logResponse(
             TransferResponse.builder()
+                .withStatus(Status.ERROR)
+                .withError(RaftError.Type.UNAVAILABLE)
+                .build());
+    return CompletableFuture.completedFuture(result);
+  }
+
+  @Override
+  public CompletableFuture<AnointResponse> onAnoint(final AnointRequest request) {
+    logRequest(request);
+    final var result =
+        logResponse(
+            AnointResponse.builder()
                 .withStatus(Status.ERROR)
                 .withError(RaftError.Type.UNAVAILABLE)
                 .build());

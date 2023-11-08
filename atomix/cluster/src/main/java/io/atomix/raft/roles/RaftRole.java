@@ -17,6 +17,8 @@
 package io.atomix.raft.roles;
 
 import io.atomix.raft.RaftServer;
+import io.atomix.raft.protocol.AnointRequest;
+import io.atomix.raft.protocol.AnointResponse;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.ConfigureResponse;
@@ -85,6 +87,8 @@ public interface RaftRole extends Managed<RaftRole> {
    * @return A completable future to be completed with the request response.
    */
   CompletableFuture<TransferResponse> onTransfer(TransferRequest request);
+
+  CompletableFuture<AnointResponse> onAnoint(AnointRequest request);
 
   /**
    * Handles an append request.

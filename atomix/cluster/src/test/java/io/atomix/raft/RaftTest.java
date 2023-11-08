@@ -214,7 +214,7 @@ public class RaftTest extends ConcurrentTestCase {
     awaitAppendEntries(leader, 1000);
     final RaftServer follower = servers.stream().filter(RaftServer::isFollower).findFirst().get();
     follower.promote().thenRun(this::resume);
-    await(15000, 1001);
+    await(15000, 1);
     assertThat(follower.isLeader()).isTrue();
   }
 

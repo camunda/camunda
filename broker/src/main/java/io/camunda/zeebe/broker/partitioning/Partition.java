@@ -105,16 +105,22 @@ public final class Partition {
     final var result = concurrencyControl.<Partition>createFuture();
     concurrencyControl.run(
         () -> {
-          final var start = startupProcess.shutdown(concurrencyControl, context);
-          concurrencyControl.runOnCompletion(
-              start,
-              (ok, error) -> {
-                if (error != null) {
-                  result.completeExceptionally(error);
-                } else {
-                  result.complete(this);
-                }
-              });
+          context
+              .raftPartition()
+              .stepDown()
+              .whenComplete(
+                  (stepDownOk, stepDownError) -> {
+                    final var stop = startupProcess.shutdown(concurrencyControl, context);
+                    concurrencyControl.runOnCompletion(
+                        stop,
+                        (ok, error) -> {
+                          if (error != null) {
+                            result.completeExceptionally(error);
+                          } else {
+                            result.complete(this);
+                          }
+                        });
+                  });
         });
     return result;
   }

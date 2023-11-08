@@ -175,8 +175,7 @@ public class DefaultRaftServer implements RaftServer {
 
   @Override
   public CompletableFuture<Void> stepDown() {
-    return CompletableFuture.runAsync(
-        () -> context.transition(Role.FOLLOWER), context.getThreadContext());
+    return CompletableFuture.runAsync(context::stepDown, context.getThreadContext());
   }
 
   /** Starts the server. */
