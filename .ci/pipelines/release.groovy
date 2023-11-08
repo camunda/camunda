@@ -212,7 +212,7 @@ pipeline {
               export VERSION=${VERSION}
               export DATE=${DATE}
               export REVISION=${REVISION}
-              export BASE_IMAGE=eclipse-temurin:17.0.8_7-jre-focal
+              export BASE_IMAGE=docker.io/library/alpine:3.18.4
               apk update
               apk add jq
               apk --no-cache add bash

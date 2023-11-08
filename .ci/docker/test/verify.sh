@@ -95,6 +95,7 @@ do
         --arg VERSION "${VERSION}" \
         --arg REVISION "${REVISION}" \
         --arg DATE "${DATE}" \
+        --arg BASE_IMAGE "${BASE_IMAGE}" \
         --arg BASEDIGEST "${digestForArchitecture}" \
         "$(cat "${labelsGoldenFile}")"
     )
