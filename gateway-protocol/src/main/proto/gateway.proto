@@ -550,7 +550,7 @@ message UpdateJobTimeoutRequest {
   // the unique job identifier, as obtained from ActivateJobsResponse
   int64 jobKey = 1;
   // the duration of the new timeout in ms, starting from the current moment
-  string timeout = 2;
+  int64 timeout = 2;
 }
 
 message UpdateJobTimeoutResponse {
