@@ -6,9 +6,12 @@
 package org.camunda.optimize.dto.optimize.query.analysis;
 
 import lombok.Data;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.rest.queryparam.QueryParamUtil;
 import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
+import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,18 +23,20 @@ public class ProcessDefinitionParametersDto {
   protected String processDefinitionKey;
   protected List<String> processDefinitionVersions;
   protected List<String> tenantIds = DEFAULT_TENANT_IDS;
-  protected long minimumDeviationFromAvg;
-  protected boolean disconsiderAutomatedTasks;
+  protected Long minimumDeviationFromAvg;
+  protected Boolean disconsiderAutomatedTasks;
+  protected List<ProcessFilterDto<?>> filters = new ArrayList<>();
+  protected ZoneId timezone;
 
-  public void setTenantIds(List<String> tenantIds) {
+  public void setTenantIds(final List<String> tenantIds) {
     this.tenantIds = normalizeTenants(tenantIds);
   }
 
-  protected List<String> normalizeNullTenants(List<String> tenantIds) {
+  protected List<String> normalizeNullTenants(final List<String> tenantIds) {
     return tenantIds.stream().map(QueryParamUtil::normalizeNullStringValue).collect(Collectors.toList());
   }
 
-  private List<String> normalizeTenants(List<String> tenantIds) {
+  private List<String> normalizeTenants(final List<String> tenantIds) {
     final List<String> normalizedTenantIds = normalizeNullTenants(tenantIds);
     return normalizedTenantIds.isEmpty() ? DEFAULT_TENANT_IDS : normalizedTenantIds;
   }

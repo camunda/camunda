@@ -31,7 +31,7 @@ import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInst
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 
-public class AnalysisRestServiceIT extends AbstractPlatformIT {
+public class BranchAnalysisRestServiceIT extends AbstractPlatformIT {
 
   private static final String DIAGRAM = "org/camunda/optimize/service/es/reader/gateway_process.bpmn";
   private static final String PROCESS_DEFINITION_ID_2 = "procDef2";
@@ -137,7 +137,7 @@ public class AnalysisRestServiceIT extends AbstractPlatformIT {
   }
 
   private String readDiagram() throws IOException {
-    return read(Thread.currentThread().getContextClassLoader().getResourceAsStream(AnalysisRestServiceIT.DIAGRAM));
+    return read(Thread.currentThread().getContextClassLoader().getResourceAsStream(BranchAnalysisRestServiceIT.DIAGRAM));
   }
 
   private static String read(InputStream input) throws IOException {

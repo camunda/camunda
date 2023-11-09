@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.query;
 
+import jakarta.ws.rs.core.Response;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.analysis.function.Gaussian;
@@ -19,7 +20,6 @@ import org.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.Test;
 
-import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -29,21 +29,17 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.test.engine.OutlierDistributionClient.ANOTHER_FLOW_NODE_ID_TEST;
 import static org.camunda.optimize.test.engine.OutlierDistributionClient.FLOW_NODE_ID_TEST;
 import static org.camunda.optimize.test.engine.OutlierDistributionClient.SPLITTING_GATEWAY_LABEL;
 import static org.camunda.optimize.test.engine.OutlierDistributionClient.VARIABLE_2_NAME;
 import static org.camunda.optimize.test.engine.OutlierDistributionClient.VARIABLE_VALUE_NORMAL;
 import static org.camunda.optimize.test.engine.OutlierDistributionClient.VARIABLE_VALUE_OUTLIER;
-import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 
 public class OutlierAnalysisIT extends AbstractPlatformIT {
-  private static final int NUMBER_OF_DATAPOINTS = 40;
-  private static final int NUMBER_OF_DATAPOINTS_FOR_CHART = NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+
   private static final String PROCESS_DEFINITION_KEY = "outlierTest";
-  // this particular value is obtained from precalculation
-  // given the distribution and outlier setup created by #createNormalDistributionAnd3Outliers
-  private static final long SAMPLE_OUTLIERS_HIGHER_OUTLIER_BOUND = 30738L;
   private static final String START_EVENT_ID = "start";
   private static final String END_EVENT_ID = "end";
   private static final String USER_TASK_ID_ONE = "user_task_1";
@@ -53,6 +49,11 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
   private static final String MANUAL_TASK_ID = "manual_task";
   private static final String SPLITTING_GATEWAY_ID = "splittingGateway";
   private static final String MERGING_GATEWAY_ID = "mergingGateway";
+  // this particular value is obtained from precalculation
+  // given the distribution and outlier setup created by #createNormalDistributionAnd3Outliers
+  public static final long SAMPLE_OUTLIERS_HIGHER_OUTLIER_BOUND = 30738L;
+  public static final int NUMBER_OF_DATAPOINTS = 40;
+  public static final int NUMBER_OF_DATAPOINTS_FOR_CHART = NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 
   @Test
   public void outlierDetectionNormalDistribution() {
@@ -404,7 +405,7 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<VariableTermDto> variableTermDtosActivity = analysisClient.getVariableTermDtosActivity(
+    List<VariableTermDto> variableTermDtosActivity = analysisClient.getVariableTermDtos(
       SAMPLE_OUTLIERS_HIGHER_OUTLIER_BOUND,
       processDefinition.getKey(),
       Collections.singletonList("1"),
@@ -433,7 +434,7 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<VariableTermDto> variableTermDtosActivity = analysisClient.getVariableTermDtosActivity(
+    List<VariableTermDto> variableTermDtosActivity = analysisClient.getVariableTermDtos(
       activityHigherOutlierBound,
       processDefinition.getKey(),
       Collections.singletonList("1"),
@@ -465,7 +466,7 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    List<VariableTermDto> result = analysisClient.getVariableTermDtosActivity(
+    List<VariableTermDto> result = analysisClient.getVariableTermDtos(
       activityHigherOutlierBound,
       processDefinition.getKey(),
       Collections.singletonList("1"),
@@ -657,8 +658,7 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
     assertThat(outlierTest).isEmpty();
   }
 
-
-  private BpmnModelInstance getBpmnModelInstance(String... activityId) {
+  public static BpmnModelInstance getBpmnModelInstance(String... activityId) {
     StartEventBuilder builder = Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
       .name("aProcessName")
       .startEvent(START_EVENT_ID);

@@ -8,42 +8,19 @@ package org.camunda.optimize.dto.optimize.rest.analysis;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.analysis.ProcessDefinitionParametersDto;
 
-import jakarta.ws.rs.DefaultValue;
-import jakarta.ws.rs.QueryParam;
-import java.util.List;
+import java.util.Optional;
 
 @NoArgsConstructor
 public class ProcessDefinitionParametersRequestDto extends ProcessDefinitionParametersDto {
+
   @Override
-  @QueryParam("processDefinitionKey")
-  public void setProcessDefinitionKey(final String processDefinitionKey) {
-    super.setProcessDefinitionKey(processDefinitionKey);
+  public void setMinimumDeviationFromAvg(final Long minimumDeviationFromAvg) {
+    this.minimumDeviationFromAvg = Optional.ofNullable(minimumDeviationFromAvg).orElse(50L);
   }
 
   @Override
-  @QueryParam("processDefinitionVersions")
-  public void setProcessDefinitionVersions(final List<String> processDefinitionVersions) {
-    super.setProcessDefinitionVersions(processDefinitionVersions);
-  }
-
-  @Override
-  @QueryParam("tenantIds")
-  public void setTenantIds(List<String> tenantIds) {
-    this.tenantIds = normalizeNullTenants(tenantIds);
-  }
-
-  @Override
-  @QueryParam("minimumDeviationFromAvg")
-  @DefaultValue("50")
-  public void setMinimumDeviationFromAvg(final long minimumDeviationFromAvg) {
-    this.minimumDeviationFromAvg = minimumDeviationFromAvg;
-  }
-
-  @Override
-  @QueryParam("disconsiderAutomatedTasks")
-  @DefaultValue("false")
-  public void setDisconsiderAutomatedTasks(final boolean disconsiderAutomatedTasks) {
-    this.disconsiderAutomatedTasks = disconsiderAutomatedTasks;
+  public void setDisconsiderAutomatedTasks(final Boolean disconsiderAutomatedTasks) {
+    this.disconsiderAutomatedTasks = Optional.ofNullable(disconsiderAutomatedTasks).orElse(false);
   }
 
 }

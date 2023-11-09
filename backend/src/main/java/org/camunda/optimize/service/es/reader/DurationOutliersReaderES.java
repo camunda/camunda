@@ -23,7 +23,8 @@ import org.camunda.optimize.service.db.reader.DurationOutliersReader;
 import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.db.reader.ProcessVariableReader;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-
+import org.camunda.optimize.service.es.filter.FilterContext;
+import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
@@ -114,6 +115,8 @@ import static org.camunda.bpm.engine.ActivityTypes.START_EVENT_TIMER;
 import static org.camunda.bpm.engine.ActivityTypes.TASK_MANUAL_TASK;
 import static org.camunda.bpm.engine.ActivityTypes.TASK_USER_TASK;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_TOTAL_DURATION;
@@ -124,8 +127,6 @@ import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLE_VALUE;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
-import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
-import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
@@ -143,11 +144,12 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
   private final ObjectMapper objectMapper;
   private final ProcessDefinitionReader processDefinitionReader;
   private final ProcessVariableReader processVariableReader;
+  private final ProcessQueryFilterEnhancer queryFilterEnhancer;
   private final ConfigurationService configurationService;
 
   @Override
   public List<DurationChartEntryDto> getCountByDurationChart(final FlowNodeOutlierParametersDto outlierParams) {
-    final BoolQueryBuilder query = createProcessDefinitionFilterQuery(outlierParams);
+    final BoolQueryBuilder query = buildBaseQuery(outlierParams);
 
     long interval = getInterval(query, outlierParams.getFlowNodeId(), outlierParams.getProcessDefinitionKey());
     HistogramAggregationBuilder histogram = AggregationBuilders.histogram(AGG_HISTOGRAM)
@@ -200,12 +202,12 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
 
   @Override
   public Map<String, FindingsDto> getFlowNodeOutlierMap(final ProcessDefinitionParametersDto processDefinitionParams) {
-    final BoolQueryBuilder processInstanceQuery = createProcessDefinitionFilterQuery(processDefinitionParams);
+    final BoolQueryBuilder processInstanceQuery = buildBaseQuery(processDefinitionParams);
     ExtendedStatsAggregationBuilder stats = AggregationBuilders.extendedStats(AGG_STATS)
       .field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION);
 
     final BoolQueryBuilder query = boolQuery();
-    if (processDefinitionParams.isDisconsiderAutomatedTasks()) {
+    if (Boolean.TRUE.equals(processDefinitionParams.getDisconsiderAutomatedTasks())) {
       query.filter(termsQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TYPE, generateListOfHumanTasks()));
     } else {
       query.filter(boolQuery().mustNot(termsQuery(
@@ -338,7 +340,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
   @Override
   public List<ProcessInstanceIdDto> getSignificantOutlierVariableTermsInstanceIds(final FlowNodeOutlierVariableParametersDto outlierParams) {
     // filter by definition
-    final BoolQueryBuilder mainFilterQuery = createProcessDefinitionFilterQuery(outlierParams);
+    final BoolQueryBuilder mainFilterQuery = buildBaseQuery(outlierParams);
     // flowNode id & outlier duration
     final BoolQueryBuilder flowNodeFilterQuery = createFlowNodeOutlierQuery(outlierParams);
     mainFilterQuery.must(nestedQuery(FLOW_NODE_INSTANCES, flowNodeFilterQuery, ScoreMode.None));
@@ -389,6 +391,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
     final BoolQueryBuilder flowNodeFilterQuery = boolQuery()
       .must(termQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID, outlierParams.getFlowNodeId()))
       .minimumShouldMatch(1);
+    addFiltersToQuery(outlierParams, flowNodeFilterQuery);
     if (outlierParams.getHigherOutlierBound() != null) {
       flowNodeFilterQuery.should(
         rangeQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION).gt(outlierParams.getHigherOutlierBound())
@@ -400,6 +403,14 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
       );
     }
     return flowNodeFilterQuery;
+  }
+
+  private void addFiltersToQuery(final ProcessDefinitionParametersDto params, final BoolQueryBuilder query) {
+    queryFilterEnhancer.addFilterToQuery(
+      query,
+      params.getFilters(),
+      FilterContext.builder().timezone(params.getTimezone()).build()
+    );
   }
 
   private ParsedReverseNested getVariableTermOccurrencesOfNonOutliers(final FlowNodeOutlierParametersDto outlierParams,
@@ -534,7 +545,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
       .subAggregation(flowNodeFilterAggregation);
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(createProcessDefinitionFilterQuery(outlierParams))
+      .query(buildBaseQuery(outlierParams))
       .fetchSource(false)
       .aggregation(nestedFlowNodeAggregation)
       .size(0);
@@ -582,7 +593,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
           .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         return new AbstractMap.SimpleEntry<>(variableName, significantTerms);
       })
-      .filter(stringMapSimpleEntry -> stringMapSimpleEntry.getValue().size() > 0)
+      .filter(stringMapSimpleEntry -> !stringMapSimpleEntry.getValue().isEmpty())
       .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
@@ -658,7 +669,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
 
     final SearchRequest searchRequest =
       new SearchRequest(getProcessInstanceIndexAliasName(processDefinitionParams.getProcessDefinitionKey()))
-      .source(searchSourceBuilder);
+        .source(searchSourceBuilder);
     try {
       final Aggregations allFlowNodesPercentileRanks = esClient.search(searchRequest)
         .getAggregations();
@@ -778,14 +789,13 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
       throw e;
     }
 
-    double min = ((Stats) ((Filter) ((Nested) search.getAggregations()
+    final Stats stats = ((Filter) ((Nested) search.getAggregations()
       .get(FLOW_NODE_INSTANCES)).getAggregations().get(AGG_FILTERED_FLOW_NODES)).getAggregations()
-      .get(AGG_STATS)).getMin();
-    double max = ((Stats) ((Filter) ((Nested) search.getAggregations()
-      .get(FLOW_NODE_INSTANCES)).getAggregations().get(AGG_FILTERED_FLOW_NODES)).getAggregations()
-      .get(AGG_STATS)).getMax();
+      .get(AGG_STATS);
+    double min = stats.getMin();
+    double max = stats.getMax();
 
-    if (max == min) {
+    if ((max == min) || stats.getCount() == 0) {
       // in case there is no distribution fallback to an interval of 1 as 0 is not a valid interval
       return 1L;
     } else {
@@ -810,14 +820,16 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
       .get(AGG_REVERSE_NESTED_PROCESS_INSTANCE);
   }
 
-  private BoolQueryBuilder createProcessDefinitionFilterQuery(final ProcessDefinitionParametersDto processDefinitionParams) {
-    return DefinitionQueryUtil.createDefinitionQuery(
+  private BoolQueryBuilder buildBaseQuery(final ProcessDefinitionParametersDto processDefinitionParams) {
+    final BoolQueryBuilder definitionQuery = DefinitionQueryUtil.createDefinitionQuery(
       processDefinitionParams.getProcessDefinitionKey(),
       processDefinitionParams.getProcessDefinitionVersions(),
       processDefinitionParams.getTenantIds(),
       new ProcessInstanceIndexES(processDefinitionParams.getProcessDefinitionKey()),
       processDefinitionReader::getLatestVersionToKey
     );
+    addFiltersToQuery(processDefinitionParams, definitionQuery);
+    return definitionQuery;
   }
 
   private double getRatio(final long totalCount, final long observedCount) {

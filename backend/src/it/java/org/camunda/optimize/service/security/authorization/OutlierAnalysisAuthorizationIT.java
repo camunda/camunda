@@ -7,6 +7,7 @@ package org.camunda.optimize.service.security.authorization;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import jakarta.ws.rs.core.Response;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.builder.StartEventBuilder;
@@ -18,7 +19,6 @@ import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
@@ -65,7 +65,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractPlatformIT {
     final Response response = executeRequest(
       processDefinition,
       embeddedOptimizeExtension.getRequestExecutor().withoutAuthentication(),
-      null,
+      Collections.emptyList(),
       endpoint
     );
 
@@ -90,7 +90,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractPlatformIT {
     final Response response = executeRequest(
       processDefinition,
       embeddedOptimizeExtension.getRequestExecutor(),
-      null,
+      Collections.emptyList(),
       endpoint
     );
 
@@ -117,7 +117,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractPlatformIT {
     final Response response = executeRequest(
       processDefinition,
       embeddedOptimizeExtension.getRequestExecutor().withUserAuthentication(KERMIT_USER, KERMIT_USER),
-      null,
+      Collections.emptyList(),
       endpoint
     );
 
@@ -274,7 +274,8 @@ public class OutlierAnalysisAuthorizationIT extends AbstractPlatformIT {
             FLOW_NODE_ID_START,
             null,
             // -1 ensures we get results as
-            -1L
+            -1L,
+            Collections.emptyList()
           )
           .execute();
       case ENDPOINT_SIGNIFICANT_OUTLIER_VARIABLE_TERMS_PROCESS_INSTANCE_IDS_EXPORT:

@@ -44,7 +44,6 @@ public class OutlierAnalysisService {
   public List<VariableTermDto> getSignificantOutlierVariableTerms(final FlowNodeOutlierParametersDto outlierParams,
                                                                   final String userId) {
     doAuthorizationCheck(outlierParams, userId);
-
     return outliersReader.getSignificantOutlierVariableTerms(outlierParams);
   }
 
