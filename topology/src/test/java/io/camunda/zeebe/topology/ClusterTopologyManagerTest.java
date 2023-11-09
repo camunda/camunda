@@ -92,7 +92,8 @@ final class ClusterTopologyManagerTest {
             new TestConcurrencyControl(),
             localMemberId,
             persistedClusterTopology,
-            Duration.ofMillis(100));
+            Duration.ofMillis(100),
+            Duration.ofMillis(200));
     clusterTopologyManager.setTopologyGossiper(gossipHandler);
     return clusterTopologyManager;
   }
