@@ -13,7 +13,18 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.agrona.collections.LongHashSet;
 
-final class BoundedCommandCache {
+/**
+ * A thread-safe, bounded command cache with light memory footprint, by storing keys in an
+ * underlying {@link LongHashSet}. You can roughly estimate the memory usage of the set as the
+ * capacity times 8 bytes (i.e. size of long).
+ *
+ * <p>Thread-safety is guaranteed via naive locking, to be optimized if need be.
+ *
+ * <p>The set is bounded by performing random eviction to avoid going over capacity. Whenever new
+ * keys are added, we calculate how many should be evicted beforehand, then randomly remove this
+ * amount (since a set has no deterministic ordering).
+ */
+public final class BoundedCommandCache {
   private static final int DEFAULT_CAPACITY = 100_000;
 
   private final Lock lock = new ReentrantLock();
@@ -21,7 +32,7 @@ final class BoundedCommandCache {
   private final int capacity;
   private final LongHashSet cache;
 
-  BoundedCommandCache() {
+  public BoundedCommandCache() {
     this(DEFAULT_CAPACITY);
   }
 
@@ -34,7 +45,7 @@ final class BoundedCommandCache {
    *
    * @param capacity the maximum capacity of the command cache
    */
-  BoundedCommandCache(final int capacity) {
+  public BoundedCommandCache(final int capacity) {
     this.capacity = capacity;
 
     // to avoid resizing, we set a load factor of 0.9, and increase the internal capacity
@@ -44,16 +55,20 @@ final class BoundedCommandCache {
     cache = new LongHashSet(capacityToPreventResize, 0.9f, true);
   }
 
-  void add(final LongHashSet keys) {
+  public void add(final LongHashSet keys) {
     LockUtil.withLock(lock, () -> lockedAdd(keys));
   }
 
-  boolean contains(final long key) {
+  public boolean contains(final long key) {
     return LockUtil.withLock(lock, () -> cache.contains(key));
   }
 
-  void remove(final long key) {
+  public void remove(final long key) {
     LockUtil.withLock(lock, (Runnable) () -> cache.remove(key));
+  }
+
+  public int size() {
+    return LockUtil.withLock(lock, cache::size);
   }
 
   private void lockedAdd(final LongHashSet keys) {
@@ -66,11 +81,13 @@ final class BoundedCommandCache {
   }
 
   private void evict(final int count) {
-    final var evictionStartIndex = ThreadLocalRandom.current().nextInt(0, capacity - count);
+    final var evictionStartIndex = ThreadLocalRandom.current().nextInt(0, capacity - count + 1);
     final int evictionEndIndex = evictionStartIndex + count;
     final var iterator = cache.iterator();
 
-    for (int i = 0; i < evictionEndIndex && iterator.hasNext(); i++, iterator.next()) {
+    for (int i = 0; i < evictionEndIndex && iterator.hasNext(); i++) {
+      iterator.next();
+
       if (i >= evictionStartIndex) {
         iterator.remove();
       }
