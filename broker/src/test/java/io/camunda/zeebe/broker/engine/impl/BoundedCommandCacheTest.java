@@ -18,7 +18,7 @@ final class BoundedCommandCacheTest {
   @Test
   void shouldNotExceedCapacity() {
     // given
-    final var cache = new BoundedCommandCache();
+    final var cache = new BoundedCommandCache(4);
     cache.add(setOf(1, 2, 3, 4));
 
     // when

@@ -34,6 +34,10 @@ public final class BoundedCommandCache {
   private final LongHashSet cache;
   private final IntConsumer sizeReporter;
 
+  public BoundedCommandCache(final int capacity) {
+    this(capacity, ignored -> {});
+  }
+
   public BoundedCommandCache() {
     this(ignored -> {});
   }
