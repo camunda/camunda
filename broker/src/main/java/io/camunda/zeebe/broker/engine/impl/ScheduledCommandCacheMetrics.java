@@ -42,7 +42,8 @@ public interface ScheduledCommandCacheMetrics {
 
     @Override
     public IntConsumer forIntent(final Intent intent) {
-      return SIZE.labels(partitionId, intent.name())::set;
+      final var intentName = intent.getClass().getSimpleName() + "." + intent.name();
+      return SIZE.labels(partitionId, intentName)::set;
     }
   }
 }
