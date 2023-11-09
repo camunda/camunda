@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.engine.impl.BoundedScheduledCommandCache;
+import io.camunda.zeebe.broker.engine.impl.ScheduledCommandCacheMetrics.BoundedCommandCacheMetrics;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.engine.Engine;
@@ -145,6 +146,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
             : List.of(engine);
     final var scheduledCommandCache =
         BoundedScheduledCommandCache.ofIntent(
+            new BoundedCommandCacheMetrics(context.getPartitionId()),
             TimerIntent.TRIGGER,
             JobIntent.TIME_OUT,
             JobIntent.RECUR_AFTER_BACKOFF,

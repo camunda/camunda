@@ -25,6 +25,7 @@ import org.agrona.collections.LongHashSet;
  * <p>NOTE: the staged cache return via {@link #stage()} is not thread-safe!
  */
 public final class BoundedScheduledCommandCache implements StageableScheduledCommandCache {
+
   private final Map<Intent, BoundedCommandCache> caches;
 
   /**
@@ -43,10 +44,14 @@ public final class BoundedScheduledCommandCache implements StageableScheduledCom
    * @param intents the intents to cache
    * @return a thread-safe command cache
    */
-  public static BoundedScheduledCommandCache ofIntent(final Intent... intents) {
+  public static BoundedScheduledCommandCache ofIntent(
+      final ScheduledCommandCacheMetrics metrics, final Intent... intents) {
     final Map<Intent, BoundedCommandCache> caches =
         Arrays.stream(intents)
-            .collect(Collectors.toMap(Function.identity(), ignored -> new BoundedCommandCache()));
+            .collect(
+                Collectors.toMap(
+                    Function.identity(),
+                    intent -> new BoundedCommandCache(metrics.forIntent(intent))));
     return new BoundedScheduledCommandCache(caches);
   }
 
