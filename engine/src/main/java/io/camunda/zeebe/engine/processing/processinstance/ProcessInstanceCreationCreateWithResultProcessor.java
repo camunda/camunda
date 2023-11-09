@@ -19,10 +19,10 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
-public final class CreateProcessInstanceWithResultProcessor
+public final class ProcessInstanceCreationCreateWithResultProcessor
     implements CommandProcessor<ProcessInstanceCreationRecord> {
 
-  private final CreateProcessInstanceProcessor createProcessor;
+  private final ProcessInstanceCreationCreateProcessor createProcessor;
   private final MutableElementInstanceState elementInstanceState;
   private final AwaitProcessInstanceResultMetadata awaitResultMetadata =
       new AwaitProcessInstanceResultMetadata();
@@ -32,8 +32,8 @@ public final class CreateProcessInstanceWithResultProcessor
 
   private boolean shouldRespond;
 
-  public CreateProcessInstanceWithResultProcessor(
-      final CreateProcessInstanceProcessor createProcessor,
+  public ProcessInstanceCreationCreateWithResultProcessor(
+      final ProcessInstanceCreationCreateProcessor createProcessor,
       final MutableElementInstanceState elementInstanceState) {
     this.createProcessor = createProcessor;
     this.elementInstanceState = elementInstanceState;

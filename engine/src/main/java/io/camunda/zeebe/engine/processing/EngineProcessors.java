@@ -19,18 +19,18 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavio
 import io.camunda.zeebe.engine.processing.common.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
-import io.camunda.zeebe.engine.processing.deployment.distribute.CompleteDeploymentDistributionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
+import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCompleteProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentRedistributor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionAcknowledgeProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
-import io.camunda.zeebe.engine.processing.dmn.EvaluateDecisionProcessor;
+import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluteProcessor;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.processing.resource.ResourceDeletionProcessor;
+import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -255,7 +255,7 @@ public final class EngineProcessors {
 
     // completes the deployment distribution
     final var completeDeploymentDistributionProcessor =
-        new CompleteDeploymentDistributionProcessor(processingState.getDeploymentState(), writers);
+        new DeploymentDistributionCompleteProcessor(processingState.getDeploymentState(), writers);
     typedRecordProcessors.onCommand(
         ValueType.DEPLOYMENT_DISTRIBUTION,
         DeploymentDistributionIntent.COMPLETE,
@@ -302,12 +302,13 @@ public final class EngineProcessors {
       final Writers writers,
       final MutableProcessingState processingState) {
 
-    final EvaluateDecisionProcessor evaluateDecisionProcessor =
-        new EvaluateDecisionProcessor(decisionBehavior, processingState.getKeyGenerator(), writers);
+    final DecisionEvaluationEvaluteProcessor decisionEvaluationEvaluteProcessor =
+        new DecisionEvaluationEvaluteProcessor(
+            decisionBehavior, processingState.getKeyGenerator(), writers);
     typedRecordProcessors.onCommand(
         ValueType.DECISION_EVALUATION,
         DecisionEvaluationIntent.EVALUATE,
-        evaluateDecisionProcessor);
+        decisionEvaluationEvaluteProcessor);
   }
 
   private static void addResourceDeletionProcessors(
@@ -317,7 +318,7 @@ public final class EngineProcessors {
       final CommandDistributionBehavior commandDistributionBehavior,
       final BpmnBehaviors bpmnBehaviors) {
     final var resourceDeletionProcessor =
-        new ResourceDeletionProcessor(
+        new ResourceDeletionDeleteProcessor(
             writers,
             processingState.getKeyGenerator(),
             processingState,

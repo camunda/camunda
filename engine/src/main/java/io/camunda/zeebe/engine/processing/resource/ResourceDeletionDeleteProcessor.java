@@ -53,7 +53,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Optional;
 
-public class ResourceDeletionProcessor
+public class ResourceDeletionDeleteProcessor
     implements DistributedTypedRecordProcessor<ResourceDeletionRecord> {
 
   private final StateWriter stateWriter;
@@ -71,7 +71,7 @@ public class ResourceDeletionProcessor
   private final StartEventSubscriptionManager startEventSubscriptionManager;
   private final FormState formState;
 
-  public ResourceDeletionProcessor(
+  public ResourceDeletionDeleteProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
       final ProcessingState processingState,

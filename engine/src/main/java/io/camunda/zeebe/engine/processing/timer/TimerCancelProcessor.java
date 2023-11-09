@@ -17,7 +17,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
-public final class CancelTimerProcessor implements TypedRecordProcessor<TimerRecord> {
+public final class TimerCancelProcessor implements TypedRecordProcessor<TimerRecord> {
   public static final String NO_TIMER_FOUND_MESSAGE =
       "Expected to cancel timer with key '%d', but no such timer was found";
 
@@ -25,7 +25,7 @@ public final class CancelTimerProcessor implements TypedRecordProcessor<TimerRec
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
 
-  public CancelTimerProcessor(
+  public TimerCancelProcessor(
       final TimerInstanceState timerInstanceState,
       final StateWriter stateWriter,
       final TypedRejectionWriter rejectionWriter) {
