@@ -97,22 +97,24 @@ public final class TopologyManagementRequestsHandler implements TopologyManageme
   private ActorFuture<TopologyChangeResponse> handleRequest(
       final TopologyChangeRequest transformer) {
     final ActorFuture<TopologyChangeResponse> responseFuture = executor.createFuture();
-    coordinator
-        .applyOperations(transformer)
-        .onComplete(
-            (result, error) -> {
-              if (error == null) {
-                final var changeStatus =
-                    new TopologyChangeResponse(
-                        result.changeId(),
-                        result.currentTopology().members(),
-                        result.finalTopology().members(),
-                        result.operations());
-                responseFuture.complete(changeStatus);
-              } else {
-                responseFuture.completeExceptionally(error);
-              }
-            });
+    executor.run(
+        () ->
+            coordinator
+                .applyOperations(transformer)
+                .onComplete(
+                    (result, error) -> {
+                      if (error == null) {
+                        final var changeStatus =
+                            new TopologyChangeResponse(
+                                result.changeId(),
+                                result.currentTopology().members(),
+                                result.finalTopology().members(),
+                                result.operations());
+                        responseFuture.complete(changeStatus);
+                      } else {
+                        responseFuture.completeExceptionally(error);
+                      }
+                    }));
     return responseFuture;
   }
 }
