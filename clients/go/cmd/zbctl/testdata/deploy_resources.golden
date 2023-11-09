@@ -42,5 +42,6 @@
         "tenantId": "<default>"
       }
     }
-  ]
+  ],
+  "tenantId": "<default>"
 }
