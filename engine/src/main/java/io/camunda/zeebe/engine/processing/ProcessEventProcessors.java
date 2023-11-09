@@ -17,7 +17,7 @@ import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionDele
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchActivateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchTerminateProcessor;
-import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCommandProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCancelProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateWithResultProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationProcessor;
@@ -60,8 +60,7 @@ public final class ProcessEventProcessors {
 
     final var processEngineMetrics = new ProcessEngineMetrics(processingState.getPartitionId());
 
-    addProcessInstanceCommandProcessor(
-        writers, typedRecordProcessors, processingState.getElementInstanceState());
+    addProcessInstanceCommandProcessor(writers, typedRecordProcessors, processingState);
 
     final var bpmnStreamProcessor =
         new BpmnStreamProcessor(bpmnBehaviors, processingState, writers, processEngineMetrics);
@@ -94,17 +93,11 @@ public final class ProcessEventProcessors {
   private static void addProcessInstanceCommandProcessor(
       final Writers writers,
       final TypedRecordProcessors typedRecordProcessors,
-      final MutableElementInstanceState elementInstanceState) {
-
-    final ProcessInstanceCommandProcessor commandProcessor =
-        new ProcessInstanceCommandProcessor(writers, elementInstanceState);
-
-    Arrays.stream(ProcessInstanceIntent.values())
-        .filter(ProcessInstanceIntent::isProcessInstanceCommand)
-        .forEach(
-            intent ->
-                typedRecordProcessors.onCommand(
-                    ValueType.PROCESS_INSTANCE, intent, commandProcessor));
+      final ProcessingState processingState) {
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_INSTANCE,
+        ProcessInstanceIntent.CANCEL,
+        new ProcessInstanceCancelProcessor(processingState, writers));
   }
 
   private static void addBpmnStepProcessor(
