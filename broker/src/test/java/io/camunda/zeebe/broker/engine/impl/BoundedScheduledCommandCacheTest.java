@@ -135,5 +135,19 @@ final class BoundedScheduledCommandCacheTest {
       assertThat(cache.contains(TimerIntent.TRIGGER, 1)).isFalse();
       assertThat(staged.contains(TimerIntent.TRIGGER, 1)).isTrue();
     }
+
+    @Test
+    void shouldNotRemoveFromMainCache() {
+      // given
+      final var cache = BoundedScheduledCommandCache.ofIntent(TimerIntent.TRIGGER);
+      final var staged = cache.stage();
+      cache.add(TimerIntent.TRIGGER, 1);
+
+      // when
+      staged.remove(TimerIntent.TRIGGER, 1);
+
+      // then
+      assertThat(cache.contains(TimerIntent.TRIGGER, 1)).isTrue();
+    }
   }
 }
