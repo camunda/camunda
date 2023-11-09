@@ -95,12 +95,7 @@ public final class BoundedScheduledCommandCache implements StageableScheduledCom
 
     @Override
     public void remove(final Intent intent, final long key) {
-      if (!stagedKeys(intent).remove(key)) {
-        final var cache = caches.get(intent);
-        if (cache != null) {
-          cache.remove(key);
-        }
-      }
+      stagedKeys(intent).remove(key);
     }
 
     @Override
