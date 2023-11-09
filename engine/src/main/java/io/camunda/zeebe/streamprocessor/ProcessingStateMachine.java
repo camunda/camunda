@@ -153,13 +153,16 @@ public final class ProcessingStateMachine {
   private final int maxCommandsInBatch;
   private int processedCommandsCount;
   private final ProcessingMetrics processingMetrics;
+  private final ScheduledCommandCache scheduledCommandCache;
 
   public ProcessingStateMachine(
       final StreamProcessorContext context,
       final BooleanSupplier shouldProcessNext,
-      final List<RecordProcessor> recordProcessors) {
+      final List<RecordProcessor> recordProcessors,
+      final ScheduledCommandCache scheduledCommandCache) {
     this.context = context;
     this.recordProcessors = recordProcessors;
+    this.scheduledCommandCache = scheduledCommandCache;
     actor = context.getActor();
     recordValues = context.getRecordValues();
     logStreamReader = context.getLogStreamReader();
@@ -308,6 +311,7 @@ public final class ProcessingStateMachine {
           });
     }
   }
+
   /**
    * Finalize the command processing, which includes certain clean-up tasks, like mark the command
    * as processed and reset transient processing state, etc.
@@ -532,6 +536,7 @@ public final class ProcessingStateMachine {
                   updateState();
                 });
           } else {
+            scheduledCommandCache.remove(metadata.getIntent(), currentRecord.getKey());
             executeSideEffects();
           }
         });

@@ -15,6 +15,7 @@ import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
+import io.camunda.zeebe.streamprocessor.ScheduledCommandCache.StageableScheduledCommandCache;
 import io.camunda.zeebe.streamprocessor.StreamProcessor.Phase;
 import java.time.Duration;
 import java.util.function.BooleanSupplier;
@@ -32,6 +33,7 @@ public class ProcessingScheduleServiceImpl
   private final Supplier<StreamProcessor.Phase> streamProcessorPhaseSupplier;
   private final BooleanSupplier abortCondition;
   private final Supplier<ActorFuture<LogStreamBatchWriter>> writerAsyncSupplier;
+  private final StageableScheduledCommandCache commandCache;
   private LogStreamBatchWriter logStreamBatchWriter;
   private ActorControl actorControl;
   private AbortableRetryStrategy writeRetryStrategy;
@@ -40,10 +42,12 @@ public class ProcessingScheduleServiceImpl
   public ProcessingScheduleServiceImpl(
       final Supplier<Phase> streamProcessorPhaseSupplier,
       final BooleanSupplier abortCondition,
-      final Supplier<ActorFuture<LogStreamBatchWriter>> writerAsyncSupplier) {
+      final Supplier<ActorFuture<LogStreamBatchWriter>> writerAsyncSupplier,
+      final StageableScheduledCommandCache commandCache) {
     this.streamProcessorPhaseSupplier = streamProcessorPhaseSupplier;
     this.abortCondition = abortCondition;
     this.writerAsyncSupplier = writerAsyncSupplier;
+    this.commandCache = commandCache;
   }
 
   @Override
@@ -135,19 +139,29 @@ public class ProcessingScheduleServiceImpl
       final var builder =
           new BufferedTaskResultBuilder(logStreamBatchWriter::canWriteAdditionalEvent);
       final var result = task.execute(builder);
+      final var stagedCache = commandCache.stage();
 
       logStreamBatchWriter.reset();
       result
           .getRecordBatch()
           .forEach(
-              entry ->
-                  logStreamBatchWriter
-                      .event()
-                      .key(entry.key())
-                      .metadataWriter(entry.recordMetadata())
-                      .sourceIndex(entry.sourceIndex())
-                      .valueWriter(entry.recordValue())
-                      .done());
+              entry -> {
+                final var intent = entry.recordMetadata().getIntent();
+                final var key = entry.key();
+                if (stagedCache.contains(intent, key)) {
+                  return;
+                }
+
+                logStreamBatchWriter
+                    .event()
+                    .key(entry.key())
+                    .metadataWriter(entry.recordMetadata())
+                    .sourceIndex(entry.sourceIndex())
+                    .valueWriter(entry.recordValue())
+                    .done();
+                stagedCache.add(intent, entry.key());
+              });
+
       // we need to retry the writing if the dispatcher return zero or negative position (this means
       // it was full during writing)
       // it will be freed from the LogStorageAppender concurrently, which means we might be able to
@@ -162,7 +176,9 @@ public class ProcessingScheduleServiceImpl
 
       writeFuture.onComplete(
           (v, t) -> {
-            if (t != null) {
+            if (t == null) {
+              stagedCache.persist();
+            } else {
               // todo handle error;
               //   can happen if we tried to write a too big batch of records
               //   this should resolve if we use the buffered writer were we detect these errors

@@ -8,6 +8,8 @@
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.atomix.raft.RaftServer.Role;
+import io.camunda.zeebe.broker.engine.impl.BoundedScheduledCommandCache;
+import io.camunda.zeebe.broker.engine.impl.ScheduledCommandCacheMetrics.BoundedCommandCacheMetrics;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.engine.Engine;
@@ -15,6 +17,9 @@ import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.streamprocessor.StreamProcessorListener;
@@ -139,6 +144,13 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         isBackupFeatureEnabled
             ? List.of(engine, context.getCheckpointProcessor())
             : List.of(engine);
+    final var scheduledCommandCache =
+        BoundedScheduledCommandCache.ofIntent(
+            new BoundedCommandCacheMetrics(context.getPartitionId()),
+            TimerIntent.TRIGGER,
+            JobIntent.TIME_OUT,
+            JobIntent.RECUR_AFTER_BACKOFF,
+            MessageIntent.EXPIRE);
 
     return StreamProcessor.builder()
         .logStream(context.getLogStream())
@@ -161,6 +173,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
             })
         .streamProcessorMode(streamProcessorMode)
         .partitionCommandSender(context.getPartitionCommandSender())
+        .scheduledCommandCache(scheduledCommandCache)
         .build();
   }
 }
