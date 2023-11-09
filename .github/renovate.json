@@ -3,7 +3,7 @@
   "extends": [
     "config:base"
   ],
-  "commitMessagePrefix": "deps({{datasource}})",
+  "commitMessagePrefix": "deps({{datasource}}):",
   "baseBranches": [
     "main",
     "/^stable\\/8\\..*/"
