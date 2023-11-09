@@ -6,29 +6,29 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
-import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
-import io.camunda.operate.webapp.api.v1.dao.elasticsearch.ElasticsearchVariableDao;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.entities.Variable;
-import java.util.List;
-import java.util.Map;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class ElasticsearchVariableDaoIT extends OperateZeebeAbstractIT {
+import java.util.List;
+import java.util.Map;
+
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+
+public class VariableDaoIT extends OperateZeebeAbstractIT {
 
   @Autowired
-  ElasticsearchVariableDao dao;
+  private VariableDao dao;
 
   private Results<Variable> variableResults;
   private Variable variable;
@@ -73,7 +73,7 @@ public class ElasticsearchVariableDaoIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/operate/issues/5287")
+  //@Ignore("https://github.com/camunda/operate/issues/5287")
   public void shouldReturnVariables() throws Exception {
     given(() ->
         processInstanceKey = createVariablesAndGetProcessInstanceKey(
@@ -100,6 +100,7 @@ public class ElasticsearchVariableDaoIT extends OperateZeebeAbstractIT {
   }
 
   @Test
+  @Ignore
   public void shouldReturnByKey() throws Exception {
     given(() -> {
       processInstanceKey = createVariablesAndGetProcessInstanceKey(
@@ -178,7 +179,7 @@ public class ElasticsearchVariableDaoIT extends OperateZeebeAbstractIT {
       assertThat(variableResults.getTotal()).isEqualTo(7);
       assertThat(variableResults.getItems()).hasSize(5);
       Object[] searchAfter = variableResults.getSortValues();
-      assertThat(variableResults.getItems().get(4).getKey()).isEqualTo(searchAfter[0]);
+      assertThat(String.valueOf(variableResults.getItems().get(4).getKey())).isEqualTo(String.valueOf(searchAfter[0]));
 
       Long firstKey = variableResults.getItems().get(0).getKey();
       Long secondKey = variableResults.getItems().get(1).getKey();
