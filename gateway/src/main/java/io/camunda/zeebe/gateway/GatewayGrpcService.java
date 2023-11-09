@@ -47,6 +47,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutResponse;
 import io.grpc.stub.StreamObserver;
 
 public class GatewayGrpcService extends GatewayImplBase {
@@ -184,6 +186,14 @@ public class GatewayGrpcService extends GatewayImplBase {
       final ModifyProcessInstanceRequest request,
       final StreamObserver<ModifyProcessInstanceResponse> responseObserver) {
     endpointManager.modifyProcessInstance(
+        request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
+  }
+
+  @Override
+  public void updateJobTimeout(
+      final UpdateJobTimeoutRequest request,
+      final StreamObserver<UpdateJobTimeoutResponse> responseObserver) {
+    endpointManager.updateJobTimeout(
         request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
   }
 
