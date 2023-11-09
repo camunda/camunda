@@ -12,7 +12,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 public interface ScheduledCommandCache {
   void add(final Intent intent, final long key);
 
-  boolean isCached(final Intent intent, final long key);
+  boolean contains(final Intent intent, final long key);
 
   void remove(final Intent intent, final long key);
 
@@ -26,7 +26,7 @@ public interface ScheduledCommandCache {
     public void add(final Intent intent, final long key) {}
 
     @Override
-    public boolean isCached(final Intent intent, final long key) {
+    public boolean contains(final Intent intent, final long key) {
       return false;
     }
 

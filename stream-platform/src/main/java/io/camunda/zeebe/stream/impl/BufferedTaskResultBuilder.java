@@ -45,7 +45,7 @@ public final class BufferedTaskResultBuilder implements TaskResultBuilder {
       throw new IllegalStateException("Missing value type mapping for record: " + value.getClass());
     }
 
-    if (cache.isCached(intent, key)) {
+    if (cache.contains(intent, key)) {
       return true;
     }
 
