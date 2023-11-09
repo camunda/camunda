@@ -30,7 +30,7 @@ public final class BufferedTaskResultBuilder implements TaskResultBuilder {
   private final MutableRecordBatch mutableRecordBatch;
   private final StagedScheduledCommandCache cache;
 
-  BufferedTaskResultBuilder(
+  public BufferedTaskResultBuilder(
       final RecordBatchSizePredicate predicate, final StagedScheduledCommandCache cache) {
     mutableRecordBatch = new RecordBatch(predicate);
     this.cache = cache;

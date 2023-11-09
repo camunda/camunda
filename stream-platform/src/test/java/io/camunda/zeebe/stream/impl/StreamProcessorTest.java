@@ -1355,7 +1355,10 @@ public final class StreamProcessorTest {
     commandCache.add(ACTIVATE_ELEMENT, 1);
 
     // when
-    streamPlatform.writeBatch(command().key(1).processInstance(ACTIVATE_ELEMENT, RECORD));
+    streamPlatform.writeBatch(
+        RecordToWrite.command()
+            .key(1)
+            .processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
     // then
     verify(testProcessor, timeout(5000)).process(any(), any());
