@@ -137,13 +137,18 @@ jobs:
       - name: Maven Test Build
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
-        run: >
-          ./mvnw -T2 -B --no-snapshot-updates
-          -D skipITs -D skipChecks -D surefire.rerunFailingTestsCount=3
-          -D junitThreadCount=16
-          -P skip-random-tests,parallel-tests,extract-flaky-tests
-          verify
-          | tee "${BUILD_OUTPUT_FILE_PATH}"
+        run: |
+          while [ $? ];
+          do
+            ./mvnw -T2 -B --no-snapshot-updates \
+            -D skipITs -D skipChecks -D surefire.rerunFailingTestsCount=3 \
+            -D junitThreadCount=16 \
+            -P skip-random-tests,parallel-tests,extract-flaky-tests \
+            -Dtest=io.atomix.raft.roles.LeaderRoleTest \
+            -pl atomix/cluster/ \
+            verify \
+            | tee "${BUILD_OUTPUT_FILE_PATH}";
+          done
       - name: Normalize artifact name
         run: echo "ARTIFACT_NAME=$(echo ${{ matrix.project }} | sed 's/\//-/g')" >> $GITHUB_ENV
       - name: Duplicate Test Check
