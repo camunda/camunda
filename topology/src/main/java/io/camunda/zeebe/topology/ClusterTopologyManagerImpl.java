@@ -15,6 +15,7 @@ import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.ExponentialBackoffRetryDelay;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
 import java.time.Duration;
@@ -46,7 +47,8 @@ import org.slf4j.LoggerFactory;
  */
 public final class ClusterTopologyManagerImpl implements ClusterTopologyManager {
   private static final Logger LOG = LoggerFactory.getLogger(ClusterTopologyManagerImpl.class);
-  private static final Duration DEFAULT_RETRY_DELAY = Duration.ofSeconds(10);
+  private static final Duration MIN_RETRY_DELAY = Duration.ofSeconds(10);
+  private static final Duration MAX_RETRY_DELAY = Duration.ofMinutes(1);
   private final ConcurrencyControl executor;
   private final PersistedClusterTopology persistedClusterTopology;
   private Consumer<ClusterTopology> topologyGossiper;
@@ -56,17 +58,13 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
   // Indicates whether there is a topology change operation in progress on this member.
   private boolean onGoingTopologyChangeOperation = false;
   private boolean shouldRetry = false;
-  private final Duration retryDelay;
+  private final ExponentialBackoffRetryDelay backoffRetry;
 
   ClusterTopologyManagerImpl(
       final ConcurrencyControl executor,
       final MemberId localMemberId,
       final PersistedClusterTopology persistedClusterTopology) {
-    this.executor = executor;
-    this.persistedClusterTopology = persistedClusterTopology;
-    startFuture = executor.createFuture();
-    this.localMemberId = localMemberId;
-    retryDelay = DEFAULT_RETRY_DELAY;
+    this(executor, localMemberId, persistedClusterTopology, MIN_RETRY_DELAY, MAX_RETRY_DELAY);
   }
 
   @VisibleForTesting
@@ -74,12 +72,13 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
       final ConcurrencyControl executor,
       final MemberId localMemberId,
       final PersistedClusterTopology persistedClusterTopology,
-      final Duration retryDelay) {
+      final Duration minRetryDelay,
+      final Duration maxRetryDelay) {
     this.executor = executor;
     this.persistedClusterTopology = persistedClusterTopology;
     startFuture = executor.createFuture();
     this.localMemberId = localMemberId;
-    this.retryDelay = retryDelay;
+    backoffRetry = new ExponentialBackoffRetryDelay(maxRetryDelay, minRetryDelay);
   }
 
   @Override
@@ -232,10 +231,16 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
         .onComplete((transformer, error) -> onOperationApplied(operation, transformer, error));
   }
 
-  private void retryLastAppliedOperation() {
+  private void logAndScheduleRetry(final TopologyChangeOperation operation, final Throwable error) {
     shouldRetry = true;
+    final Duration delay = backoffRetry.nextDelay();
+    LOG.error(
+        "Failed to apply topology change operation {}. Will be retried in {}.",
+        operation,
+        delay,
+        error);
     executor.schedule(
-        retryDelay,
+        delay,
         () -> {
           LOG.debug("Retrying last applied operation");
           applyTopologyChangeOperation(persistedClusterTopology.getTopology());
@@ -248,6 +253,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
       final Throwable error) {
     onGoingTopologyChangeOperation = false;
     if (error == null) {
+      backoffRetry.reset();
       updateLocalTopology(
           persistedClusterTopology.getTopology().advanceTopologyChange(localMemberId, transformer));
       LOG.info(
@@ -261,14 +267,9 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
             applyTopologyChangeOperation(persistedClusterTopology.getTopology());
           });
     } else {
-      // TODO: Retry after a fixed delay. The failure is most likely due to timeouts such
+      // Retry after a delay. The failure is most likely due to timeouts such
       // as when joining a raft partition.
-      LOG.error(
-          "Failed to apply topology change operation {}. Will be retried in {}.",
-          operation,
-          retryDelay,
-          error);
-      retryLastAppliedOperation();
+      logAndScheduleRetry(operation, error);
     }
   }
 
