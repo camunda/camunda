@@ -249,6 +249,7 @@ public class PassiveRole extends InactiveRole {
       pendingSnapshotStartTimestamp = 0L;
       snapshotReplicationMetrics.decrementCount();
       snapshotReplicationMetrics.observeDuration(elapsed);
+      raft.updateCurrentSnapshot();
       onSnapshotReceiveCompletedOrAborted();
     } else {
       setNextExpected(request.nextChunkId());

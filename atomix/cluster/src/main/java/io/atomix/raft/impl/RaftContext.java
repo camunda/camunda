@@ -262,11 +262,16 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   private void onNewPersistedSnapshot(final PersistedSnapshot persistedSnapshot) {
-    threadContext.execute(
-        () -> {
-          currentSnapshot = persistedSnapshot;
-          logCompactor.compactFromSnapshots(persistedSnapshotStore, threadContext);
-        });
+    threadContext.execute(this::updateCurrentSnapshot);
+  }
+
+  public void updateCurrentSnapshot() {
+    checkThread();
+    // Get the latest snapshot from snapshot store because it might have been updated
+    // already before this listener is executed
+    currentSnapshot = persistedSnapshotStore.getLatestSnapshot().orElse(null);
+    log.trace("Set currentSnapshot to {}", currentSnapshot);
+    logCompactor.compactFromSnapshots(persistedSnapshotStore, threadContext);
   }
 
   private void onUncaughtException(final Throwable error) {
