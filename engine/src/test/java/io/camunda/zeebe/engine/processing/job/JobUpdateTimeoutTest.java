@@ -12,7 +12,9 @@ import static org.assertj.core.api.Assertions.within;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
@@ -52,6 +54,67 @@ public class JobUpdateTimeoutTest {
     final var updatedRecord = ENGINE.job().withKey(jobKey).withTimeout(timeout).updateTimeout();
 
     // then
+    assertJobDeadline(updatedRecord, jobKey, job, timeout);
+  }
+
+  @Test
+  public void shouldDecreaseJobTimeout() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final var batchRecord =
+        ENGINE.jobs().withType(jobType).withTimeout(Duration.ofMinutes(15).toMillis()).activate();
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final long timeout = Duration.ofMinutes(10).toMillis();
+
+    // when
+    final var updatedRecord = ENGINE.job().withKey(jobKey).withTimeout(timeout).updateTimeout();
+
+    // then
+    assertJobDeadline(updatedRecord, jobKey, job, timeout);
+  }
+
+  @Test
+  public void shouldRejectUpdateTimoutIfJobNotFound() {
+    // given
+    final long jobKey = 123L;
+    final long timeout = Duration.ofMinutes(10).toMillis();
+
+    // when
+    final var jobRecord =
+        ENGINE.job().withKey(jobKey).withTimeout(timeout).expectRejection().updateTimeout();
+
+    // then
+    Assertions.assertThat(jobRecord)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to update job deadline with key '%d', but no such job was found"
+                .formatted(jobKey));
+  }
+
+  @Test
+  public void shouldRejectUpdateTimoutIfDeadlineNotFound() {
+    // given
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, PROCESS_ID);
+    final long timeout = Duration.ofMinutes(10).toMillis();
+
+    // when
+    final var jobRecord =
+        ENGINE.job().withKey(job.getKey()).withTimeout(timeout).expectRejection().updateTimeout();
+
+    // then
+    Assertions.assertThat(jobRecord)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Expected to find a job with key '%d' and deadline '%d', but no such job was found"
+                .formatted(job.getKey(), job.getValue().getDeadline()));
+  }
+
+  private static void assertJobDeadline(
+      final Record<JobRecordValue> updatedRecord,
+      final long jobKey,
+      final JobRecordValue job,
+      final long timeout) {
     Assertions.assertThat(updatedRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(JobIntent.TIMEOUT_UPDATED);
@@ -63,13 +126,4 @@ public class JobUpdateTimeoutTest {
         .isCloseTo(
             ActorClock.currentTimeMillis() + timeout, within(Duration.ofMillis(100).toMillis()));
   }
-
-  @Test
-  public void shouldDecreaseJobTimeout() {}
-
-  @Test
-  public void shouldRejectUpdateTimoutIfJobNotFound() {}
-
-  @Test
-  public void shouldRejectUpdateTimoutIfDeadlineNotFound() {}
 }
