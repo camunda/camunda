@@ -11,6 +11,7 @@ import io.camunda.zeebe.util.LockUtil;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.IntConsumer;
 import org.agrona.collections.LongHashSet;
 
 /**
@@ -31,9 +32,15 @@ public final class BoundedCommandCache {
 
   private final int capacity;
   private final LongHashSet cache;
+  private final IntConsumer sizeReporter;
 
   public BoundedCommandCache() {
-    this(DEFAULT_CAPACITY);
+    this(ignored -> {});
+  }
+
+  /** Returns a bounded cache which will report size changes to the given consumer. */
+  public BoundedCommandCache(final IntConsumer sizeReporter) {
+    this(DEFAULT_CAPACITY, sizeReporter);
   }
 
   /**
@@ -45,8 +52,9 @@ public final class BoundedCommandCache {
    *
    * @param capacity the maximum capacity of the command cache
    */
-  public BoundedCommandCache(final int capacity) {
+  public BoundedCommandCache(final int capacity, final IntConsumer sizeReporter) {
     this.capacity = capacity;
+    this.sizeReporter = sizeReporter;
 
     // to avoid resizing, we set a load factor of 0.9, and increase the internal capacity
     // preemptively
@@ -64,7 +72,12 @@ public final class BoundedCommandCache {
   }
 
   public void remove(final long key) {
-    LockUtil.withLock(lock, (Runnable) () -> cache.remove(key));
+    LockUtil.withLock(
+        lock,
+        () -> {
+          cache.remove(key);
+          sizeReporter.accept(cache.size());
+        });
   }
 
   public int size() {
@@ -78,6 +91,7 @@ public final class BoundedCommandCache {
     }
 
     cache.addAll(keys);
+    sizeReporter.accept(cache.size());
   }
 
   private void evict(final int count) {
