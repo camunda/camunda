@@ -1387,7 +1387,7 @@ public final class StreamProcessorTest {
     // then
     verify(testProcessor, timeout(5000)).process(any(), any());
     Awaitility.await("until command is removed from cache after processing")
-        .untilAsserted(() -> assertThat(commandCache.isCached(ACTIVATE_ELEMENT, 1)).isFalse());
+        .untilAsserted(() -> assertThat(commandCache.contains(ACTIVATE_ELEMENT, 1)).isFalse());
   }
 
   private static final class TestProcessor implements RecordProcessor {
