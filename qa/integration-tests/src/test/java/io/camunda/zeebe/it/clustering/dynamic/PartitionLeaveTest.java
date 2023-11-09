@@ -7,14 +7,12 @@
  */
 package io.camunda.zeebe.it.clustering.dynamic;
 
-import static io.camunda.zeebe.it.clustering.dynamic.Utils.assertBrokerDoesNotHavePartition;
-import static io.camunda.zeebe.it.clustering.dynamic.Utils.assertChangeIsApplied;
-import static io.camunda.zeebe.it.clustering.dynamic.Utils.assertChangeIsCompleted;
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.assertChangeIsPlanned;
 
 import io.camunda.zeebe.management.cluster.PostOperationResponse;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import java.time.Duration;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
@@ -32,10 +30,12 @@ final class PartitionLeaveTest {
       // then
       assertChangeIsPlanned(response);
       Awaitility.await("Requested change is completed in time")
-          .untilAsserted(() -> assertChangeIsCompleted(cluster, response));
-      assertChangeIsApplied(cluster, response);
-      assertBrokerDoesNotHavePartition(
-          cluster, scenario.operation().brokerId(), scenario.operation().partitionId());
+          .untilAsserted(
+              () -> ClusterActuatorAssert.assertThat(cluster).hasCompletedChanges(response));
+      ClusterActuatorAssert.assertThat(cluster).hasAppliedChanges(response);
+      ClusterActuatorAssert.assertThat(cluster)
+          .brokerDoesNotHavePartition(
+              scenario.operation().brokerId(), scenario.operation().partitionId());
       cluster.awaitHealthyTopology();
     }
   }
@@ -48,16 +48,17 @@ final class PartitionLeaveTest {
       final var leave = runOperation(cluster, scenario.operation());
       assertChangeIsPlanned(leave);
       Awaitility.await("Leaving is completed in time")
-          .untilAsserted(() -> assertChangeIsCompleted(cluster, leave));
-      assertChangeIsApplied(cluster, leave);
+          .untilAsserted(
+              () -> ClusterActuatorAssert.assertThat(cluster).hasCompletedChanges(leave));
+      ClusterActuatorAssert.assertThat(cluster).hasAppliedChanges(leave);
       // when
       final var join = revertOperation(cluster, scenario.operation());
       // then
       assertChangeIsPlanned(join);
       Awaitility.await("Rejoining is completed in time")
           .timeout(Duration.ofMinutes(1))
-          .untilAsserted(() -> assertChangeIsCompleted(cluster, join));
-      assertChangeIsApplied(cluster, join);
+          .untilAsserted(() -> ClusterActuatorAssert.assertThat(cluster).hasCompletedChanges(join));
+      ClusterActuatorAssert.assertThat(cluster).hasAppliedChanges(join);
       cluster.awaitHealthyTopology();
     }
   }
