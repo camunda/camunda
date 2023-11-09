@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 public class UpdateJobTimeoutProcessor implements TypedRecordProcessor<JobRecord> {
@@ -67,12 +68,10 @@ public class UpdateJobTimeoutProcessor implements TypedRecordProcessor<JobRecord
       return;
     }
 
-    // check if the job is locked
+    final long newDeadline = ActorClock.currentTimeMillis() + value.getTimeout();
+    job.setDeadline(newDeadline);
 
-    // calculate new deadline
-    // final long newDeadline = System.currentTimeMillis() + value.getTimeout();
-
-    stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMEOUT_UPDATED, value);
-    responseWriter.writeEventOnCommand(jobKey, JobIntent.TIMEOUT_UPDATED, value, command);
+    stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMEOUT_UPDATED, job);
+    responseWriter.writeEventOnCommand(jobKey, JobIntent.TIMEOUT_UPDATED, job, command);
   }
 }
