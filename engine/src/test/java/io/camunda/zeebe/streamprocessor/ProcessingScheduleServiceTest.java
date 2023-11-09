@@ -32,20 +32,15 @@ import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.streamprocessor.ScheduledCommandCache.NoopScheduledCommandCache;
-import io.camunda.zeebe.streamprocessor.ScheduledCommandCache.StageableScheduledCommandCache;
 import io.camunda.zeebe.streamprocessor.StreamProcessor.Phase;
+import io.camunda.zeebe.streamprocessor.TestScheduledCommandCache.TestCommandCache;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.time.Duration;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -339,8 +334,9 @@ class ProcessingScheduleServiceTest {
 
     // then - it's sufficient to assert it was staged for caching, and then the staged cache was
     // persisted
-    assertThat(commandCache.stagedCache.isCached(ACTIVATE_ELEMENT, 1)).isTrue();
-    assertThat(commandCache.stagedCache.persisted).isTrue();
+    assertThat(commandCache.stagedCache().isCached(ACTIVATE_ELEMENT, 1)).isTrue();
+    assertThat(commandCache.stagedCache().persisted()).isTrue();
+    assertThat(commandCache.isCached(ACTIVATE_ELEMENT, 1)).isTrue();
   }
 
   @Test
@@ -385,8 +381,9 @@ class ProcessingScheduleServiceTest {
     actorScheduler.workUntilDone();
 
     // then - write was staged for caching, but not persisted due to error
-    assertThat(commandCache.stagedCache.isCached(ACTIVATE_ELEMENT, 1)).isTrue();
-    assertThat(commandCache.stagedCache.persisted).isFalse();
+    assertThat(commandCache.stagedCache().isCached(ACTIVATE_ELEMENT, 1)).isTrue();
+    assertThat(commandCache.stagedCache().persisted()).isFalse();
+    assertThat(commandCache.isCached(ACTIVATE_ELEMENT, 1)).isFalse();
   }
 
   /**
@@ -466,54 +463,6 @@ class ProcessingScheduleServiceTest {
     @Override
     public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
       return RecordBatch::empty;
-    }
-  }
-
-  private static final class TestCommandCache extends TestScheduledCommandCache
-      implements StageableScheduledCommandCache {
-    private final StagedCache stagedCache = new StagedCache();
-
-    @Override
-    public StagedScheduledCommandCache stage() {
-      return stagedCache;
-    }
-
-    private final class StagedCache extends TestScheduledCommandCache
-        implements StagedScheduledCommandCache {
-      private volatile boolean persisted;
-
-      @Override
-      public boolean isCached(final Intent intent, final long key) {
-        return super.isCached(intent, key) || TestCommandCache.this.isCached(intent, key);
-      }
-
-      @Override
-      public void persist() {
-        persisted = true;
-      }
-    }
-  }
-
-  private static class TestScheduledCommandCache implements ScheduledCommandCache {
-    private final Map<Intent, Set<Long>> cachedKeys = new ConcurrentHashMap<>();
-
-    @Override
-    public void add(final Intent intent, final long key) {
-      cacheForIntent(intent).add(key);
-    }
-
-    @Override
-    public boolean isCached(final Intent intent, final long key) {
-      return cacheForIntent(intent).contains(key);
-    }
-
-    @Override
-    public void remove(final Intent intent, final long key) {
-      cacheForIntent(intent).remove(key);
-    }
-
-    private Set<Long> cacheForIntent(final Intent intent) {
-      return cachedKeys.computeIfAbsent(intent, ignored -> new ConcurrentSkipListSet<>());
     }
   }
 }
