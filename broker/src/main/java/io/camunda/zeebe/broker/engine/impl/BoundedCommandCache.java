@@ -38,10 +38,6 @@ public final class BoundedCommandCache {
     this(capacity, ignored -> {});
   }
 
-  public BoundedCommandCache() {
-    this(ignored -> {});
-  }
-
   /** Returns a bounded cache which will report size changes to the given consumer. */
   public BoundedCommandCache(final IntConsumer sizeReporter) {
     this(DEFAULT_CAPACITY, sizeReporter);

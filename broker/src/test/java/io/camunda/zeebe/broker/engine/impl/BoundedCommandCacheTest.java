@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.agrona.collections.LongHashSet;
 import org.junit.jupiter.api.Test;
 
@@ -28,6 +29,22 @@ final class BoundedCommandCacheTest {
     assertThat(cache.size()).isEqualTo(4);
     assertThat(cache.contains(5)).isTrue();
     assertThat(cache.contains(6)).isTrue();
+  }
+
+  @Test
+  void shouldEvictRandomKeysOnCapacityReached() {
+    // given
+    final var cache = new BoundedCommandCache(4);
+    final var initialKeys = setOf(1, 2, 3, 4);
+    cache.add(initialKeys);
+
+    // when
+    cache.add(setOf(5, 6));
+
+    // then
+    final var remainingInitialKeys =
+        initialKeys.stream().filter(cache::contains).collect(Collectors.toSet());
+    assertThat(remainingInitialKeys).hasSize(2).containsAnyElementsOf(initialKeys);
   }
 
   @Test
