@@ -1,59 +1,40 @@
+@use '@carbon/colors';
 @import 'shared-styles/shared-styles.scss';
 
 .ActionItem {
-  border: 1px solid var(--silver-darken-87);
+  border: 1px solid var(--cds-border-subtle);
   border-radius: 3px;
-  background: var(--silver-lighten-99);
+  background-color: colors.$white;
   width: 100%;
   position: relative;
   min-height: 32px;
-  padding-bottom: 10px;
-
-  &.highlighted {
-    background: var(--blue-base-65);
-    color: var(--white);
-  }
-
-  > .Message.error {
-    padding: 5px 10px;
-  }
+  padding: 10px;
+  padding-top: 5px;
 
   .header {
     display: flex;
     width: 100%;
     align-items: center;
     margin-left: auto;
-    padding: 5px 10px 0px 10px;
 
     .type {
-      color: var(--grey-lighten-56);
+      color: var(--cds-text-secondary);
       font-size: 0.75em;
       flex-grow: 1;
     }
 
     .buttons {
       margin-left: auto;
-
-      .Button {
-        height: 22px;
-        width: 22px;
-
-        .Icon {
-          margin: 0;
-        }
-      }
     }
   }
 
   .content {
     font-size: 0.75em;
-    padding: 0 10px;
     max-width: 100%;
   }
 
   &:not(:hover) {
-    .Button,
-    &.Button {
+    button {
       opacity: 0;
 
       &.active,

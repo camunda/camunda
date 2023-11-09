@@ -17,5 +17,9 @@
   &.highlighted {
     background: colors.$blue-60;
     color: colors.$white;
+
+    svg {
+      fill: colors.$white;
+    }
   }
 }

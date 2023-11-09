@@ -52,7 +52,7 @@ export const targetValueInput = (name) => Selector('.Modal tbody tr').withText(n
 export const nodeFilterOperator = (name) =>
   Selector('.Modal tbody tr').withText(name).find('.Dropdown:first-child');
 export const warning = Selector('.Message--warning');
-export const processPartButton = Selector('.ReportControlPanel .Button').withText(
+export const processPartButton = Selector('.ReportControlPanel button').withText(
   'Process Instance Part'
 );
 export const modalFlowNode = (id) => Selector(`.ProcessPartModal [data-element-id="${id}"]`);
@@ -85,7 +85,7 @@ export const axisInputs = (label) => Selector(`input[placeholder="${label}"]`);
 export const chartGoalInput = Selector('input[placeholder="Goal value"]');
 export const warningMessage = Selector('.Report .MessageBox--warning');
 export const controlPanelFilter = Selector('.ActionItem');
-export const filterRemoveButton = controlPanelFilter.find('.Button:last-child');
+export const filterRemoveButton = controlPanelFilter.find('button:last-child');
 export const definitionElement = (name) => Selector('.DefinitionList li').withText(name);
 export const definitionEditorPopover = Selector('.DefinitionList .Popover');
 export const definitionEditor = definitionEditorPopover.find('.buttonWrapper button');

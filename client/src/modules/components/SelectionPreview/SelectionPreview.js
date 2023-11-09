@@ -30,7 +30,7 @@ export default function SelectionPreview({disabled, onClick, highlighted, classN
       <Button
         size="sm"
         renderIcon={Close}
-        kind={highlighted ? 'primary' : 'ghost'}
+        kind="ghost"
         hasIconOnly
         disabled={disabled}
         onClick={onClick}
