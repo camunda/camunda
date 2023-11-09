@@ -135,6 +135,6 @@ public class OpenSearchBulkProcessor extends AbstractImportBatchProcessorOpenSea
 
   @Override
   public String getZeebeVersion() {
-    return "8.3";
+    return "8.4";
   }
 }
