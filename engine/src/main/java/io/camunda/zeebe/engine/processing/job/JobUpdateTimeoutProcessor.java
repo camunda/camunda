@@ -20,7 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
-public class UpdateJobTimeoutProcessor implements TypedRecordProcessor<JobRecord> {
+public class JobUpdateTimeoutProcessor implements TypedRecordProcessor<JobRecord> {
 
   public static final String NO_JOB_FOUND_MESSAGE =
       "Expected to update job deadline with key '%d', but no such job was found";
@@ -33,7 +33,7 @@ public class UpdateJobTimeoutProcessor implements TypedRecordProcessor<JobRecord
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
 
-  public UpdateJobTimeoutProcessor(final ProcessingState state, final Writers writers) {
+  public JobUpdateTimeoutProcessor(final ProcessingState state, final Writers writers) {
     jobState = state.getJobState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
