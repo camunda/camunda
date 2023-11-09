@@ -38,6 +38,7 @@ import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.streamprocessor.StreamProcessorContext;
 import io.camunda.zeebe.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
+import io.camunda.zeebe.streamprocessor.TestScheduledCommandCache.TestCommandCache;
 import io.camunda.zeebe.streamprocessor.state.DbLastProcessedPositionState;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -80,6 +81,7 @@ public final class StreamPlatform {
   private final StreamProcessorLifecycleAware mockProcessorLifecycleAware;
   private final StreamProcessorListener mockStreamProcessorListener;
   private int maxCommandsInBatch = StreamProcessorContext.DEFAULT_MAX_COMMANDS_IN_BATCH;
+  private TestCommandCache scheduledCommandCache;
 
   public StreamPlatform(
       final Path dataDirectory,
@@ -216,10 +218,15 @@ public final class StreamPlatform {
     return mockProcessorLifecycleAware;
   }
 
+  public TestCommandCache scheduledCommandCache() {
+    return scheduledCommandCache;
+  }
+
   public StreamProcessor buildStreamProcessor(
       final SynchronousLogStream stream, final boolean awaitOpening) {
     final var storage = createRuntimeFolder(stream);
     final var snapshot = storage.getParent().resolve(SNAPSHOT_FOLDER);
+    scheduledCommandCache = new TestCommandCache();
 
     final ZeebeDb<?> zeebeDb;
     if (snapshotWasTaken) {
@@ -239,6 +246,7 @@ public final class StreamPlatform {
             .streamProcessorMode(streamProcessorMode)
             .listener(mockStreamProcessorListener)
             .maxCommandsInBatch(maxCommandsInBatch)
+            .scheduledCommandCache(scheduledCommandCache)
             .partitionCommandSender(mock(InterPartitionCommandSender.class));
 
     builder.getLifecycleListeners().add(mockProcessorLifecycleAware);
