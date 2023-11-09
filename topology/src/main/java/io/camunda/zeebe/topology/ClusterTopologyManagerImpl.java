@@ -84,7 +84,9 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
 
   @Override
   public ActorFuture<ClusterTopology> getClusterTopology() {
-    return executor.call(persistedClusterTopology::getTopology);
+    final var future = executor.<ClusterTopology>createFuture();
+    executor.run(() -> future.complete(persistedClusterTopology.getTopology()));
+    return future;
   }
 
   @Override
