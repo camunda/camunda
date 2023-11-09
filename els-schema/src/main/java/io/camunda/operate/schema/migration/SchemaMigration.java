@@ -30,7 +30,8 @@ import org.springframework.context.annotation.Import;
     "io.camunda.operate.connect",
     "io.camunda.operate.store",
     "io.camunda.operate.schema",
-    "io.camunda.operate.management" },
+    "io.camunda.operate.management",
+    "io.camunda.operate.conditions"},
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @Import({JacksonConfig.class, Metrics.class})
 public class SchemaMigration implements CommandLineRunner {

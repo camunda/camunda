@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 
 import static io.camunda.operate.conditions.DatabaseCondition.DATABASE_PROPERTY;
 
-@Component
+@Component("databaseInfo")
 public class DatabaseInfo implements ApplicationContextAware {
 
   private static ApplicationContext applicationContext;
