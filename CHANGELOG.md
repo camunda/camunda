@@ -1,3 +1,103 @@
+# v8.4.0-alpha1
+## 🚀 New Features
+* adding ISM to OpenSearch ([#3731](https://github.com/camunda/tasklist/issues/3731))
+* Add support for deployed forms in tasks ([#3716](https://github.com/camunda/tasklist/issues/3716))
+* add isDeleted to Form API Response ([#3723](https://github.com/camunda/tasklist/issues/3723))
+* Update Form API (ElasticSearch/OpenSearch) ([#3620](https://github.com/camunda/tasklist/issues/3620))
+* Add Form importes for the version 8.4 ([#3671](https://github.com/camunda/tasklist/issues/3671))
+* improvements on Importers ([#3614](https://github.com/camunda/tasklist/issues/3614))
+* Import from zeebe form deployment (ElasticSearch/OpenSearch) ([#3526](https://github.com/camunda/tasklist/issues/3526))
+* Add Unit and Integration tests for OpenAPI ([#3574](https://github.com/camunda/tasklist/issues/3574))
+
+## 💊 Bugfixes
+* Update OpenSearchBulkProcessor.java version ([#3777](https://github.com/camunda/tasklist/issues/3777))
+* auth0 claims ([#3764](https://github.com/camunda/tasklist/issues/3764))
+* Fix start form submission error positioning ([#3717](https://github.com/camunda/tasklist/issues/3717))
+* add null check to extractTypedValue ([#3721](https://github.com/camunda/tasklist/issues/3721))
+* update migration script ([#3737](https://github.com/camunda/tasklist/issues/3737))
+* [opensearch] Use aggregation by processDefinitionId and tenantId for process retrieval ([#3642](https://github.com/camunda/tasklist/issues/3642))
+* fixing importer error when task retrieval fails ([#3640](https://github.com/camunda/tasklist/issues/3640))
+* Set localhost for application.yml ([#3633](https://github.com/camunda/tasklist/issues/3633))
+* close elasticsearchClient on tear down ([#3628](https://github.com/camunda/tasklist/issues/3628))
+* Resource based auth is not checked when starting a process ([#3611](https://github.com/camunda/tasklist/issues/3611))
+* exiting application for schemaMigration ([#3624](https://github.com/camunda/tasklist/issues/3624))
+* Only first 10 process are displayed in the processes tab ([#3605](https://github.com/camunda/tasklist/issues/3605))
+* Improve error message when task is already asigned ([#3589](https://github.com/camunda/tasklist/issues/3589))
+* avoid running reindex when reindex is already running ([#3608](https://github.com/camunda/tasklist/issues/3608))
+* Fix JSON modal editor theme ([#3609](https://github.com/camunda/tasklist/issues/3609))
+
+## 🧹 Chore
+* **deps**: bump version 8.4.0-alpha1 ([#3771](https://github.com/camunda/tasklist/issues/3771))
+* bump deps 8.4.0-alpha1 ([#3769](https://github.com/camunda/tasklist/issues/3769))
+* **deps**: update camunda/zeebe docker tag to v8.3.2 ([#3765](https://github.com/camunda/tasklist/issues/3765))
+* **deps**: update dependency node to v20.9.0 ([#3683](https://github.com/camunda/tasklist/issues/3683))
+* **deps**: update dependency @types/node to v20.9.0 ([#3761](https://github.com/camunda/tasklist/issues/3761))
+* **deps**: update dependency eslint to v8.53.0 ([#3743](https://github.com/camunda/tasklist/issues/3743))
+* Deduplicate lockfile
+* **deps**: update all non-major dependencies ([#3742](https://github.com/camunda/tasklist/issues/3742))
+* **deps**: update dependency @testing-library/react to v14.1.0 ([#3762](https://github.com/camunda/tasklist/issues/3762))
+* **deps**: update dependency @carbon/react to v1.41.2 ([#3704](https://github.com/camunda/tasklist/issues/3704))
+* **deps**: update typescript-eslint monorepo to v6.10.0 ([#3747](https://github.com/camunda/tasklist/issues/3747))
+* **deps**: update hashicorp/vault-action digest to 2fb925f ([#3741](https://github.com/camunda/tasklist/issues/3741))
+* skip merge_commits for backport-action ([#3740](https://github.com/camunda/tasklist/issues/3740))
+* Update Browserlist DB
+* **deps**: bump version.elasticsearch from 7.17.10 to 7.17.14 ([#3715](https://github.com/camunda/tasklist/issues/3715))
+* use github backport-action ([#3739](https://github.com/camunda/tasklist/issues/3739))
+* Fix vite config types
+* **deps**: update dependency react-router-dom to v6.18.0 ([#3718](https://github.com/camunda/tasklist/issues/3718))
+* **deps**: update dependency @carbon/elements to v11.32.2 ([#3703](https://github.com/camunda/tasklist/issues/3703))
+* add version to form response ([#3736](https://github.com/camunda/tasklist/issues/3736))
+* **deps**: update dependency @vitejs/plugin-react to v4.1.1 ([#3735](https://github.com/camunda/tasklist/issues/3735))
+* **deps**: update all non-major dependencies ([#3733](https://github.com/camunda/tasklist/issues/3733))
+* [opensearch] use auto slicing in reindex and delete by query ([#3644](https://github.com/camunda/tasklist/issues/3644))
+* **deps**: update all non-major dependencies ([#3713](https://github.com/camunda/tasklist/issues/3713))
+* **deps**: update hashicorp/vault-action digest to caba6ef ([#3732](https://github.com/camunda/tasklist/issues/3732))
+* **deps**: update dependency zeebe-node to v8.3.0 ([#3720](https://github.com/camunda/tasklist/issues/3720))
+* **deps**: update actions/add-to-project digest to 0be3b65 ([#3728](https://github.com/camunda/tasklist/issues/3728))
+* Bump form-js to 1.4.0 ([#3724](https://github.com/camunda/tasklist/issues/3724))
+* Skip flaky tests
+* **deps**: update dependency @playwright/test to v1.39.0 ([#3654](https://github.com/camunda/tasklist/issues/3654))
+* **deps**: update all non-major dependencies ([#3670](https://github.com/camunda/tasklist/issues/3670))
+* change dependabot verification to weekly ([#3702](https://github.com/camunda/tasklist/issues/3702))
+* Update Browserlist DB
+* fix migration tests ([#3647](https://github.com/camunda/tasklist/issues/3647))
+* **deps**: update hashicorp/vault-action digest to affa6f0 ([#3694](https://github.com/camunda/tasklist/issues/3694))
+* bump spring 3.1.5 and maven failsafe and elasticsearch-test-container ([#3693](https://github.com/camunda/tasklist/issues/3693))
+* **deps**: bump version.zeebe from 8.3.0 to 8.3.1 ([#3680](https://github.com/camunda/tasklist/issues/3680))
+* **deps**: update dependencies ([#3675](https://github.com/camunda/tasklist/issues/3675))
+* [CVE-2023-44487] update springboot to 3.0.12 ([#3656](https://github.com/camunda/tasklist/issues/3656))
+* Add make lint on make file ([#3687](https://github.com/camunda/tasklist/issues/3687))
+* **deps**: update typescript-eslint monorepo to v6.9.0 ([#3672](https://github.com/camunda/tasklist/issues/3672))
+* **deps**: update actions/setup-node action to v4 ([#3673](https://github.com/camunda/tasklist/issues/3673))
+* **deps**: update hashicorp/vault-action digest to 4727f0b ([#3674](https://github.com/camunda/tasklist/issues/3674))
+* Update form-js ([#3669](https://github.com/camunda/tasklist/issues/3669))
+* **deps**: update dependency lint-staged to v15 ([#3664](https://github.com/camunda/tasklist/issues/3664))
+* **deps**: update helm release camunda-platform to v8.3.0 ([#3663](https://github.com/camunda/tasklist/issues/3663))
+* **deps**: update dependency eslint to v8.52.0 ([#3667](https://github.com/camunda/tasklist/issues/3667))
+* Update Browserlist DB
+* **deps**: update dependency @types/react to v18.2.31 ([#3661](https://github.com/camunda/tasklist/issues/3661))
+* **deps**: update dependency react-router-dom to v6.17.0 ([#3655](https://github.com/camunda/tasklist/issues/3655))
+* **deps**: update dependency @axe-core/playwright to v4.8.1 ([#3636](https://github.com/camunda/tasklist/issues/3636))
+* **deps**: update tanstack-query monorepo to v4.36.1 ([#3599](https://github.com/camunda/tasklist/issues/3599))
+* Migrate to Vite ([#3639](https://github.com/camunda/tasklist/issues/3639))
+* **deps**: update all non-major dependencies ([#3598](https://github.com/camunda/tasklist/issues/3598))
+* **deps**: update dependency @monaco-editor/react to v4.6.0 ([#3597](https://github.com/camunda/tasklist/issues/3597))
+* **deps**: update dependency monaco-editor to v0.44.0 ([#3593](https://github.com/camunda/tasklist/issues/3593))
+* **deps**: update dependency @camunda/camunda-composite-components to v0.2.17 ([#3458](https://github.com/camunda/tasklist/issues/3458))
+* **deps**: update dependency @carbon/react to v1.40.0 ([#3651](https://github.com/camunda/tasklist/issues/3651))
+* **deps**: update dependency sass to v1.69.4 ([#3591](https://github.com/camunda/tasklist/issues/3591))
+* **deps**: update stefanzweifel/git-auto-commit-action action to v5 ([#3596](https://github.com/camunda/tasklist/issues/3596))
+* **deps**: update enricomi/publish-unit-test-result-action action to v2.11.0 ([#3603](https://github.com/camunda/tasklist/issues/3603))
+* **deps**: update actions/checkout digest to b4ffde6 ([#3649](https://github.com/camunda/tasklist/issues/3649))
+* **deps**: update stefanzweifel/git-auto-commit-action digest to e8f94e4 ([#3595](https://github.com/camunda/tasklist/issues/3595))
+* Update Browserlist DB
+* adding init container config for importer ([#3622](https://github.com/camunda/tasklist/issues/3622))
+* Add migration scipt to pom file ([#3621](https://github.com/camunda/tasklist/issues/3621))
+* Remove reference to deleted feature flag
+* adding importers 8.4 ([#3604](https://github.com/camunda/tasklist/issues/3604))
+* Update version on package.json
+* Revert failed release
+* update CHANGELOG.md
 # v8.3.0
 ## 💊 Bugfixes
 * Importer not working on SaaS due do missing bean dependency ([#3594](https://github.com/camunda/tasklist/issues/3594))
