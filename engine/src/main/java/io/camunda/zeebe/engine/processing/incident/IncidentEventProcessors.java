@@ -25,6 +25,6 @@ public final class IncidentEventProcessors {
     typedRecordProcessors.onCommand(
         ValueType.INCIDENT,
         IncidentIntent.RESOLVE,
-        new ResolveIncidentProcessor(processingState, bpmnStreamProcessor, writers));
+        new IncidentResolveProcessor(processingState, bpmnStreamProcessor, writers));
   }
 }

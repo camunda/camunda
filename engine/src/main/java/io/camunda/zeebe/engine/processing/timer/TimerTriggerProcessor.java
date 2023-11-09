@@ -35,7 +35,7 @@ import java.time.Instant;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> {
+public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRecord> {
 
   private static final String NO_TIMER_FOUND_MESSAGE =
       "Expected to trigger timer with key '%d', but no such timer was found";
@@ -54,7 +54,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
 
   private final EventHandle eventHandle;
 
-  public TriggerTimerProcessor(
+  public TimerTriggerProcessor(
       final MutableProcessingState processingState,
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers) {

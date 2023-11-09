@@ -15,19 +15,19 @@ import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCorr
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCreateProcessor;
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.processing.processinstance.ActivateProcessInstanceBatchProcessor;
-import io.camunda.zeebe.engine.processing.processinstance.CreateProcessInstanceProcessor;
-import io.camunda.zeebe.engine.processing.processinstance.CreateProcessInstanceWithResultProcessor;
-import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCommandProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchActivateProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchTerminateProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCancelProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateWithResultProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationProcessor;
-import io.camunda.zeebe.engine.processing.processinstance.TerminateProcessInstanceBatchProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.processing.timer.CancelTimerProcessor;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
-import io.camunda.zeebe.engine.processing.timer.TriggerTimerProcessor;
-import io.camunda.zeebe.engine.processing.variable.UpdateVariableDocumentProcessor;
+import io.camunda.zeebe.engine.processing.timer.TimerCancelProcessor;
+import io.camunda.zeebe.engine.processing.timer.TimerTriggerProcessor;
+import io.camunda.zeebe.engine.processing.variable.VariableDocumentUpdateProcessor;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
@@ -60,8 +60,7 @@ public final class ProcessEventProcessors {
 
     final var processEngineMetrics = new ProcessEngineMetrics(processingState.getPartitionId());
 
-    addProcessInstanceCommandProcessor(
-        writers, typedRecordProcessors, processingState.getElementInstanceState());
+    addProcessInstanceCommandProcessor(writers, typedRecordProcessors, processingState);
 
     final var bpmnStreamProcessor =
         new BpmnStreamProcessor(bpmnBehaviors, processingState, writers, processEngineMetrics);
@@ -94,17 +93,11 @@ public final class ProcessEventProcessors {
   private static void addProcessInstanceCommandProcessor(
       final Writers writers,
       final TypedRecordProcessors typedRecordProcessors,
-      final MutableElementInstanceState elementInstanceState) {
-
-    final ProcessInstanceCommandProcessor commandProcessor =
-        new ProcessInstanceCommandProcessor(writers, elementInstanceState);
-
-    Arrays.stream(ProcessInstanceIntent.values())
-        .filter(ProcessInstanceIntent::isProcessInstanceCommand)
-        .forEach(
-            intent ->
-                typedRecordProcessors.onCommand(
-                    ValueType.PROCESS_INSTANCE, intent, commandProcessor));
+      final ProcessingState processingState) {
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_INSTANCE,
+        ProcessInstanceIntent.CANCEL,
+        new ProcessInstanceCancelProcessor(processingState, writers));
   }
 
   private static void addBpmnStepProcessor(
@@ -161,11 +154,11 @@ public final class ProcessEventProcessors {
         .onCommand(
             ValueType.TIMER,
             TimerIntent.TRIGGER,
-            new TriggerTimerProcessor(processingState, bpmnBehaviors, writers))
+            new TimerTriggerProcessor(processingState, bpmnBehaviors, writers))
         .onCommand(
             ValueType.TIMER,
             TimerIntent.CANCEL,
-            new CancelTimerProcessor(
+            new TimerCancelProcessor(
                 processingState.getTimerState(), writers.state(), writers.rejection()))
         .withListener(timerChecker);
   }
@@ -179,7 +172,7 @@ public final class ProcessEventProcessors {
     typedRecordProcessors.onCommand(
         ValueType.VARIABLE_DOCUMENT,
         VariableDocumentIntent.UPDATE,
-        new UpdateVariableDocumentProcessor(
+        new VariableDocumentUpdateProcessor(
             elementInstanceState, keyGenerator, bpmnBehaviors.variableBehavior(), writers));
   }
 
@@ -193,8 +186,8 @@ public final class ProcessEventProcessors {
         processingState.getElementInstanceState();
     final KeyGenerator keyGenerator = processingState.getKeyGenerator();
 
-    final CreateProcessInstanceProcessor createProcessor =
-        new CreateProcessInstanceProcessor(
+    final ProcessInstanceCreationCreateProcessor createProcessor =
+        new ProcessInstanceCreationCreateProcessor(
             processingState.getProcessState(), keyGenerator, writers, bpmnBehaviors, metrics);
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE, createProcessor);
@@ -202,7 +195,8 @@ public final class ProcessEventProcessors {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_CREATION,
         ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
-        new CreateProcessInstanceWithResultProcessor(createProcessor, elementInstanceState));
+        new ProcessInstanceCreationCreateWithResultProcessor(
+            createProcessor, elementInstanceState));
   }
 
   private static void addProcessInstanceModificationStreamProcessors(
@@ -230,14 +224,14 @@ public final class ProcessEventProcessors {
         .onCommand(
             ValueType.PROCESS_INSTANCE_BATCH,
             ProcessInstanceBatchIntent.TERMINATE,
-            new TerminateProcessInstanceBatchProcessor(
+            new ProcessInstanceBatchTerminateProcessor(
                 writers,
                 processingState.getKeyGenerator(),
                 processingState.getElementInstanceState()))
         .onCommand(
             ValueType.PROCESS_INSTANCE_BATCH,
             ProcessInstanceBatchIntent.ACTIVATE,
-            new ActivateProcessInstanceBatchProcessor(
+            new ProcessInstanceBatchActivateProcessor(
                 writers,
                 processingState.getKeyGenerator(),
                 processingState.getElementInstanceState(),

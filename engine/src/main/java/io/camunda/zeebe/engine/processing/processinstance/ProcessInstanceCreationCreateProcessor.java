@@ -43,7 +43,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
-public final class CreateProcessInstanceProcessor
+public final class ProcessInstanceCreationCreateProcessor
     implements CommandProcessor<ProcessInstanceCreationRecord> {
 
   private static final String ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED =
@@ -80,7 +80,7 @@ public final class CreateProcessInstanceProcessor
 
   private final ElementActivationBehavior elementActivationBehavior;
 
-  public CreateProcessInstanceProcessor(
+  public ProcessInstanceCreationCreateProcessor(
       final ProcessState processState,
       final KeyGenerator keyGenerator,
       final Writers writers,

@@ -26,7 +26,8 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
-public class ResourceDeletionProcessor implements TypedRecordProcessor<ResourceDeletionRecord> {
+public class ResourceDeletionDeleteProcessor
+    implements TypedRecordProcessor<ResourceDeletionRecord> {
 
   public static final boolean RESOURCE_DELETION_IMPLEMENTED = false;
   private static final String ERROR_MESSAGE_NOT_IMPLEMENTED =
@@ -42,7 +43,7 @@ public class ResourceDeletionProcessor implements TypedRecordProcessor<ResourceD
   private final KeyGenerator keyGenerator;
   private final DecisionState decisionState;
 
-  public ResourceDeletionProcessor(
+  public ResourceDeletionDeleteProcessor(
       final Writers writers, final KeyGenerator keyGenerator, final DecisionState decisionState) {
     stateWriter = writers.state();
     responseWriter = writers.response();
