@@ -23,4 +23,4 @@ camunda.operate:
 logging:
   level:
     ROOT: INFO
-    io.camunda.operate: DEBUG
+    io.camunda.operate: INFO
