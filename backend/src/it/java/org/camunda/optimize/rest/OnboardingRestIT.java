@@ -20,7 +20,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ONBOARDING_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.ONBOARDING_INDEX_NAME;
 
 public class OnboardingRestIT extends AbstractPlatformIT {
 

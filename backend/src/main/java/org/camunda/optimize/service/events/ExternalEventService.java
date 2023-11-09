@@ -12,10 +12,11 @@ import org.camunda.optimize.dto.optimize.query.event.EventGroupRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.rest.Page;
-import org.camunda.optimize.service.es.reader.ExternalEventReader;
-import org.camunda.optimize.service.es.writer.EventProcessInstanceWriter;
-import org.camunda.optimize.service.es.writer.EventProcessInstanceWriterFactory;
-import org.camunda.optimize.service.es.writer.ExternalEventWriter;
+import org.camunda.optimize.service.db.events.EventFetcherService;
+import org.camunda.optimize.service.db.reader.ExternalEventReader;
+import org.camunda.optimize.service.db.writer.EventProcessInstanceWriter;
+import org.camunda.optimize.service.db.writer.EventProcessInstanceWriterFactory;
+import org.camunda.optimize.service.db.writer.ExternalEventWriter;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.springframework.stereotype.Component;
 

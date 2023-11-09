@@ -16,9 +16,9 @@ import org.camunda.optimize.dto.optimize.query.telemetry.ProductDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.TelemetryDataDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
+import org.camunda.optimize.service.db.schema.index.MetadataIndex;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
-import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.license.LicenseManager;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -35,8 +35,8 @@ import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
 
-import static java.util.stream.Collectors.toMap;
 import static jakarta.ws.rs.HttpMethod.GET;
+import static java.util.stream.Collectors.toMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.bpm.licensecheck.LicenseType.OPTIMIZE;
 import static org.camunda.bpm.licensecheck.LicenseType.UNIFIED;
@@ -45,7 +45,7 @@ import static org.camunda.optimize.service.telemetry.easytelemetry.EasyTelemetry
 import static org.camunda.optimize.service.telemetry.easytelemetry.EasyTelemetryDataService.FEATURE_NAMES;
 import static org.camunda.optimize.service.telemetry.easytelemetry.EasyTelemetryDataService.INFORMATION_UNAVAILABLE_STRING;
 import static org.camunda.optimize.service.telemetry.easytelemetry.EasyTelemetryDataService.OPTIMIZE_FEATURE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.METADATA_INDEX_NAME;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.mockserver.model.HttpRequest.request;
 

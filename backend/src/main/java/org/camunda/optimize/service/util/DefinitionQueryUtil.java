@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableList;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.service.es.schema.index.AbstractInstanceIndex;
+import org.camunda.optimize.service.db.schema.index.AbstractInstanceIndex;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 

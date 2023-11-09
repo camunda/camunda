@@ -37,7 +37,7 @@ import java.util.stream.Stream;
 
 import static org.camunda.optimize.service.util.DateFilterUtil.getStartOfCurrentInterval;
 import static org.camunda.optimize.service.util.DateFilterUtil.getStartOfPreviousInterval;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)

@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 public class AlertJobResult {
 
   private boolean statusChanged;
+
   private AlertDefinitionDto alert;
 
   public AlertJobResult(AlertDefinitionDto alert) {

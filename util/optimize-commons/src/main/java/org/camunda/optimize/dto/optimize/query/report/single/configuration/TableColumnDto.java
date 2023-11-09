@@ -34,7 +34,7 @@ public class TableColumnDto {
   public static final String COUNT_PREFIX = "count:";
 
   @Builder.Default
-  private boolean includeNewVariables = true;
+  private boolean includeNewVariables = false;
   @Builder.Default
   private List<String> excludedColumns = new ArrayList<>();
   @Builder.Default
@@ -64,9 +64,9 @@ public class TableColumnDto {
   }
 
   public void addCountColumns(final List<String> countColumns) {
-    // Count columns are always included by default, unless explicitly excluded
-    final List<String> newColumnsToAdd = determineNewColumns(countColumns);
-    includedColumns.addAll(newColumnsToAdd);
+    // Count columns are always excluded by default, unless explicitly included
+    final List<String> countColumnsNotIncludedOrExcluded = determineNewColumns(countColumns);
+    excludedColumns.addAll(countColumnsNotIncludedOrExcluded);
   }
 
   public void addDtoColumns(final List<String> columns) {

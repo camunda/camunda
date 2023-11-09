@@ -33,11 +33,11 @@ import java.util.stream.Stream;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_DEFINITIONS;
 import static org.camunda.optimize.service.es.filter.util.ModelElementFilterQueryUtil.createExecutedFlowNodeFilterQuery;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.INCIDENTS;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.INCIDENT_DEFINITION_KEY;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.INCIDENT_DEFINITION_VERSION;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.INCIDENT_STATUS;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.INCIDENT_TENANT_ID;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENTS;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENT_DEFINITION_KEY;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENT_DEFINITION_VERSION;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENT_STATUS;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENT_TENANT_ID;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;

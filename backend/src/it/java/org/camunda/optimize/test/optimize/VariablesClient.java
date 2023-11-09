@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
 public class VariablesClient {
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;

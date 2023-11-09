@@ -22,8 +22,9 @@ import org.camunda.optimize.dto.optimize.rest.export.dashboard.DashboardDefiniti
 import org.camunda.optimize.dto.optimize.rest.export.report.CombinedProcessReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
+import org.camunda.optimize.service.db.schema.index.DashboardIndex;
 import org.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
-import org.camunda.optimize.service.es.schema.index.DashboardIndex;
+import org.camunda.optimize.service.es.schema.index.DashboardIndexES;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
 
@@ -158,7 +159,7 @@ public class DashboardDefinitionImportIT extends AbstractExportImportEntityDefin
       .containsExactly(
         ImportIndexMismatchDto.builder()
           .indexName(embeddedOptimizeExtension.getIndexNameService()
-                       .getOptimizeIndexNameWithVersion(new DashboardIndex()))
+                       .getOptimizeIndexNameWithVersion(new DashboardIndexES()))
           .sourceIndexVersion(DashboardIndex.VERSION + 1)
           .targetIndexVersion(DashboardIndex.VERSION)
           .build());

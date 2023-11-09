@@ -20,7 +20,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEvent
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.sequence.OrderedEventDto;
 import org.camunda.optimize.service.DefinitionService;
-import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
+import org.camunda.optimize.service.db.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.util.EventDtoBuilderUtil;
 import org.springframework.stereotype.Component;
@@ -89,6 +89,10 @@ import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamund
 @AllArgsConstructor
 @Component
 public class CamundaEventService {
+
+  private final CamundaActivityEventReader camundaActivityEventReader;
+  private final DefinitionService definitionService;
+
   public static final String EVENT_SOURCE_CAMUNDA = "camunda";
   public static final String PROCESS_START_TYPE = EventDtoBuilderUtil.PROCESS_START_TYPE;
   public static final String PROCESS_END_TYPE = EventDtoBuilderUtil.PROCESS_END_TYPE;
@@ -136,9 +140,6 @@ public class CamundaEventService {
     .addAll(SINGLE_MAPPED_TYPES)
     .addAll(SPLIT_START_END_MAPPED_TYPES)
     .build();
-
-  private final CamundaActivityEventReader camundaActivityEventReader;
-  private final DefinitionService definitionService;
 
   public List<OrderedEventDto> getTraceableCamundaEventsForDefinitionAfter(final String definitionKey,
                                                                            final Long eventTimestamp, final int limit) {

@@ -17,7 +17,7 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.plugin.DecisionInputImportAdapterProvider;
 import org.camunda.optimize.plugin.DecisionOutputImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
+import org.camunda.optimize.service.db.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionFetchException;
 import org.camunda.optimize.service.importing.engine.service.definition.DecisionDefinitionResolverService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;

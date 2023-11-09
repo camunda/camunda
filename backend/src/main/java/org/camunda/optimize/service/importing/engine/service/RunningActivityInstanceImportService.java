@@ -9,10 +9,10 @@ import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.CamundaEventImportService;
+import org.camunda.optimize.service.db.writer.activity.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.RunningActivityInstanceElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.activity.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
@@ -63,7 +63,7 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
     return elasticsearchImportJobExecutor;
   }
 

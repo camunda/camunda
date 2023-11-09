@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import com.google.common.collect.Lists;
+import jakarta.ws.rs.core.Response;
 import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.optimize.AbstractPlatformIT;
@@ -32,7 +33,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import jakarta.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -46,11 +46,11 @@ import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
 import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 
 public class DefinitionRestServiceIT extends AbstractPlatformIT {
   private static final TenantDto SIMPLE_TENANT_NOT_DEFINED_DTO = TenantDto.builder()
@@ -110,6 +110,31 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
     assertThat(definition.getKey()).isEqualTo(expectedDefinition.getKey());
     assertThat(definition.getType()).isEqualTo(definitionType);
     assertThat(definition.getName()).isEqualTo(expectedDefinition.getName());
+    assertThat(definition.getTenants()).isNotEmpty().containsOnly(SIMPLE_TENANT_NOT_DEFINED_DTO);
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionByTypeAndKeyGetsLatestName(final DefinitionType definitionType) {
+    // given
+    final DefinitionOptimizeResponseDto definitionV1 = createDefinitionAndAddToElasticsearch(
+      definitionType, "key", "1", null, "the name"
+    );
+    final DefinitionOptimizeResponseDto definitionV2 = createDefinitionAndAddToElasticsearch(
+      definitionType, "key", "2", null, "new name"
+    );
+
+    // when
+    final DefinitionResponseDto definition = definitionClient.getDefinitionByTypeAndKey(
+      definitionType,
+      definitionV1
+    );
+
+    // then the name of the definition comes from the latest version
+    assertThat(definition).isNotNull();
+    assertThat(definition.getKey()).isEqualTo(definitionV1.getKey());
+    assertThat(definition.getType()).isEqualTo(definitionType);
+    assertThat(definition.getName()).isEqualTo(definitionV2.getName());
     assertThat(definition.getTenants()).isNotEmpty().containsOnly(SIMPLE_TENANT_NOT_DEFINED_DTO);
   }
 
@@ -368,6 +393,40 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
         ),
         new DefinitionResponseDto(
           processDefinition2.getKey(), processDefinition2.getName(), DefinitionType.PROCESS,
+          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
+          DEFAULT_ENGINE_ALIAS
+        )
+      );
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitions_nameUpdatedBetweenVersions(final DefinitionType definitionType) {
+    // given
+    createDefinitionAndAddToElasticsearch(
+      definitionType, "definition1", "1", null, "original name"
+    );
+    final DefinitionOptimizeResponseDto definition1v2 = createDefinitionAndAddToElasticsearch(
+      definitionType, "definition1", "2", null, "updated name"
+    );
+    final DefinitionOptimizeResponseDto definition2 = createDefinitionAndAddToElasticsearch(
+      definitionType, "definition2", "1", null, "process2"
+    );
+
+    // when
+    final List<DefinitionResponseDto> definitions = definitionClient.getAllDefinitions();
+
+    assertThat(definitions)
+      .isNotEmpty()
+      .hasSize(2)
+      .containsExactly(
+        new DefinitionResponseDto(
+          definition2.getKey(), definition2.getName(), definitionType,
+          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
+          DEFAULT_ENGINE_ALIAS
+        ),
+        new DefinitionResponseDto(
+          definition1v2.getKey(), definition1v2.getName(), definitionType,
           Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO),
           DEFAULT_ENGINE_ALIAS
         )

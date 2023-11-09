@@ -10,7 +10,7 @@ import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-public class RenameFieldTestIndex extends DefaultIndexMappingCreator {
+public class RenameFieldTestIndex extends DefaultIndexMappingCreator<XContentBuilder> {
   private static final int VERSION = 1;
 
   @Override
@@ -29,5 +29,12 @@ public class RenameFieldTestIndex extends DefaultIndexMappingCreator {
       .startObject("name")
       .field("type", "keyword")
       .endObject();
+  }
+
+  @Override
+  public XContentBuilder addStaticSetting(final String key,
+                                          final int value,
+                                          final XContentBuilder contentBuilder) throws IOException {
+    return contentBuilder.field(key, value);
   }
 }

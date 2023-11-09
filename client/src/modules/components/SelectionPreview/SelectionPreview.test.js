@@ -7,8 +7,7 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
-
-import {Button} from 'components';
+import {Button} from '@carbon/react';
 
 import SelectionPreview from './SelectionPreview';
 

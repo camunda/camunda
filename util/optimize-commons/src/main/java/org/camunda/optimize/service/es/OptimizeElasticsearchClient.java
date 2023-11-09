@@ -13,11 +13,11 @@ import net.jodah.failsafe.FailsafeException;
 import net.jodah.failsafe.FailsafeExecutor;
 import net.jodah.failsafe.RetryPolicy;
 import org.camunda.optimize.plugin.ElasticsearchCustomHeaderProvider;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.RequestOptionsProvider;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
@@ -81,6 +81,9 @@ import org.elasticsearch.client.indices.PutMappingRequest;
 import org.elasticsearch.client.indices.rollover.RolloverRequest;
 import org.elasticsearch.client.indices.rollover.RolloverResponse;
 import org.elasticsearch.client.tasks.TaskSubmissionResponse;
+import org.elasticsearch.cluster.metadata.AliasMetadata;
+import org.elasticsearch.common.unit.ByteSizeUnit;
+import org.elasticsearch.common.unit.ByteSizeValue;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.ReindexRequest;
@@ -94,7 +97,9 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * This Client serves as the main elasticsearch client to be used from application code.
@@ -108,7 +113,7 @@ import java.util.Set;
  */
 @Slf4j
 @Conditional(ElasticSearchCondition.class)
-public class OptimizeElasticsearchClient implements ConfigurationReloadable {
+public class OptimizeElasticsearchClient extends DatabaseClient {
   private static final int DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY = 30;
 
   // we had to introduce our own options due to a regression with the client's behaviour with the 7.16
@@ -120,8 +125,7 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
 
   @Getter
   private RestHighLevelClient highLevelClient;
-  @Getter
-  private OptimizeIndexNameService indexNameService;
+
 
   private RequestOptionsProvider requestOptionsProvider;
 
@@ -196,13 +200,6 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
     applyIndexPrefixes(deleteByQueryRequest);
 
     highLevelClient.deleteByQuery(deleteByQueryRequest, requestOptions());
-  }
-
-  public final GetAliasesResponse getAlias(final GetAliasesRequest getAliasesRequest)
-    throws IOException {
-    getAliasesRequest.indices(convertToPrefixedAliasNames(getAliasesRequest.indices()));
-    getAliasesRequest.aliases(convertToPrefixedAliasNames(getAliasesRequest.aliases()));
-    return highLevelClient.indices().getAlias(getAliasesRequest, requestOptions());
   }
 
   public final boolean exists(final String indexName) throws IOException {
@@ -297,6 +294,7 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
     deleteIndexByRawIndexNames(allIndicesForAlias);
   }
 
+  @Override
   public Set<String> getAllIndicesForAlias(final String aliasName) {
     GetAliasesRequest aliasesRequest = new GetAliasesRequest().aliases(aliasName);
     try {
@@ -390,8 +388,22 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
     highLevelClient.snapshot().deleteAsync(deleteSnapshotRequest, requestOptions(), listener);
   }
 
-  public long countWithoutPrefix(final CountRequest request) throws IOException {
-    return highLevelClient.count(request, requestOptions()).getCount();
+  public long countWithoutPrefix(final CountRequest request) throws IOException, InterruptedException {
+    final int maxNumberOfRetries = 10;
+    final int waitIntervalMillis = 3000;
+    int retryAttempts = 0;
+    while (retryAttempts < maxNumberOfRetries) {
+      final CountResponse countResponse = highLevelClient.count(request, requestOptions());
+      if (countResponse.getFailedShards() > 0) {
+        log.info("Not all shards returned successful for count response from indices: {}", Arrays.asList(request.indices()));
+        retryAttempts++;
+        Thread.sleep(waitIntervalMillis);
+      } else {
+        return countResponse.getCount();
+      }
+    }
+    throw new OptimizeRuntimeException(
+      String.format("Could not determine count from indices: %s", Arrays.asList(request.indices())));
   }
 
   public Response performRequest(final Request request) throws IOException {
@@ -480,15 +492,49 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
     request.index(indexNameService.getOptimizeIndexAliasForIndex(request.index()));
   }
 
-  private String[] convertToPrefixedAliasNames(final String[] indices) {
-    return Arrays.stream(indices)
-      .map(index -> {
-        final boolean hasExcludePrefix = '-' == index.charAt(0);
-        final String rawIndexName = hasExcludePrefix ? index.substring(1) : index;
-        final String prefixedIndexName = indexNameService.getOptimizeIndexAliasForIndex(rawIndexName);
-        return hasExcludePrefix ? "-" + prefixedIndexName : prefixedIndexName;
-      })
-      .toArray(String[]::new);
+  @Override
+  public Map<String, Set<String>> getAliasesForIndex(final String indexName) throws IOException {
+    final GetAliasesRequest getAliasesRequest = new GetAliasesRequest();
+    getAliasesRequest.indices(indexName);
+    final GetAliasesResponse aliases = getAlias(getAliasesRequest);
+    return aliases.getAliases().entrySet().stream()
+      .collect(Collectors.toMap(
+        Map.Entry::getKey,
+        entry -> entry.getValue().stream()
+          .map(AliasMetadata::getAlias)
+          .collect(Collectors.toSet())
+      ));
+  }
+
+  public final GetAliasesResponse getAlias(final GetAliasesRequest getAliasesRequest)
+    throws IOException {
+    getAliasesRequest.indices(convertToPrefixedAliasNames(getAliasesRequest.indices()));
+    getAliasesRequest.aliases(convertToPrefixedAliasNames(getAliasesRequest.aliases()));
+    return highLevelClient.indices().getAlias(getAliasesRequest, requestOptions());
+  }
+
+  @Override
+  public boolean triggerRollover(final String indexAliasName, final int maxIndexSizeGB) {
+    RolloverRequest rolloverRequest = new RolloverRequest(indexAliasName, null);
+    rolloverRequest.addMaxIndexSizeCondition(new ByteSizeValue(maxIndexSizeGB, ByteSizeUnit.GB));
+    log.info("Executing rollover request on {}", indexAliasName);
+    try {
+      RolloverResponse rolloverResponse = this.rollover(rolloverRequest);
+      if (rolloverResponse.isRolledOver()) {
+        log.info(
+          "Index with alias {} has been rolled over. New index name: {}",
+          indexAliasName,
+          rolloverResponse.getNewIndex()
+        );
+      } else {
+        log.debug("Index with alias {} has not been rolled over.", indexAliasName);
+      }
+      return rolloverResponse.isRolledOver();
+    } catch (Exception e) {
+      String message = "Failed to execute rollover request";
+      log.error(message, e);
+      throw new OptimizeRuntimeException(message, e);
+    }
   }
 
   private RolloverRequest applyAliasPrefixAndRolloverConditions(final RolloverRequest request) {

@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Period;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_NAME;
 
 @Tag("event-cleanup")
 public class IngestedEventCleanupPerformanceTest extends AbstractDataCleanupTest {

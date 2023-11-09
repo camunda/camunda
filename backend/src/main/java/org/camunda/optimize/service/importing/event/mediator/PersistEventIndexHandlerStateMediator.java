@@ -7,7 +7,7 @@ package org.camunda.optimize.service.importing.event.mediator;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.index.EngineImportIndexDto;
-import org.camunda.optimize.service.es.writer.ImportIndexWriter;
+import org.camunda.optimize.service.db.writer.ImportIndexWriter;
 import org.camunda.optimize.service.importing.EngineImportIndexHandler;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.AbstractStoreIndexesImportMediator;
@@ -18,8 +18,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-
-import static java.util.stream.Collectors.toList;
 
 @Component
 @Slf4j

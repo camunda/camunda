@@ -1,11 +1,4 @@
-.AlertsDropdown {
-  .createNew.bottomBorder {
-    border-bottom: 1px solid var(--silver-darken-87);
-  }
-
-  .subTitle {
-    font-size: 10px;
-    padding: 5px 20px;
-    color: var(--grey-lighten-56);
-  }
+.AlertsDropdown .cds--popover-container {
+  // fixes the alignment issues with other icon buttons in entity view page
+  vertical-align: top;
 }

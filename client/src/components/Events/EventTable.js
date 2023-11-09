@@ -254,7 +254,7 @@ export default withErrorHandling(
                       content: [
                         <TableSelectRow
                           checked={!!mappedAs}
-                          id={eventName}
+                          id={`${eventName}-${group}-${source}`}
                           name={eventName}
                           ariaLabel={eventName}
                           disabled={disabled}

@@ -7,8 +7,8 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
+import {NumberInput} from '@carbon/react';
 
-import {Input, Select} from 'components';
 import {numberParser} from 'services';
 
 import RollingFilter from './RollingFilter';
@@ -29,20 +29,20 @@ const props = {
 it('should load initial values correctly', () => {
   const node = shallow(<RollingFilter {...props} />);
 
-  expect(node.find(Input).prop('value')).toBe(2);
-  expect(node.find(Select).prop('value')).toBe('days');
+  expect(node.find(NumberInput).prop('value')).toBe(2);
+  expect(node.find('CarbonSelect').prop('value')).toBe('days');
 });
 
 it('should invoke onChange when update the value input or the unit selection', () => {
   const spy = jest.fn();
   const node = shallow(<RollingFilter {...props} onChange={spy} />);
 
-  node.find(Input).simulate('change', {target: {value: '3'}});
+  node.find(NumberInput).simulate('change', undefined, {value: '3'});
   expect(spy).toHaveBeenCalledWith({value: 3});
 
   spy.mockClear();
 
-  node.find(Select).simulate('change', 'months');
+  node.find('CarbonSelect').simulate('change', 'months');
   expect(spy).toHaveBeenCalledWith({unit: 'months'});
 });
 
@@ -51,9 +51,9 @@ it('should prevent the user from typing non integer values into the input except
   const spy = jest.fn();
   const node = shallow(<RollingFilter {...props} onChange={spy} />);
 
-  node.find(Input).simulate('change', {target: {value: 'a'}});
+  node.find(NumberInput).simulate('change', undefined, {value: 'a'});
   expect(spy).not.toHaveBeenCalled();
 
-  node.find(Input).simulate('change', {target: {value: ''}});
+  node.find(NumberInput).simulate('change', undefined, {value: ''});
   expect(spy).toHaveBeenCalled();
 });

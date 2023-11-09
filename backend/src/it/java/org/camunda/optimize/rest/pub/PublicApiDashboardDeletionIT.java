@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import jakarta.ws.rs.core.Response;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
 
 public class PublicApiDashboardDeletionIT extends AbstractPlatformIT {
   private static final String ACCESS_TOKEN = "secret_export_token";

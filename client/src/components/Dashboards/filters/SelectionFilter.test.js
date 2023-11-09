@@ -13,6 +13,8 @@ import {Popover} from 'components';
 
 import SelectionFilter from './SelectionFilter';
 import {getVariableValues} from './service';
+import {Filter} from '@carbon/icons-react';
+import {ComboBox} from '@carbon/react';
 
 const props = {
   filter: null,
@@ -41,18 +43,22 @@ beforeEach(() => {
 it('should show the operator when no value is selected', () => {
   const node = shallow(<SelectionFilter {...props} />);
 
-  expect(node.find(Popover).prop('title')).toMatchSnapshot();
+  const popoverButtonLabel = shallow(node.find(Popover).prop('trigger')).find(
+    '.cds--list-box__label'
+  );
+
+  expect(popoverButtonLabel.text()).toContain('is not ...');
+  expect(popoverButtonLabel.find(Filter)).toExist();
 });
 
 it('should allow selecting values', () => {
   const node = shallow(<SelectionFilter {...props} />);
 
-  const valueSwitch = node.find('Switch').first();
-
+  const valueSwitch = node.find('Toggle').first();
   expect(valueSwitch).toExist();
-  expect(valueSwitch.prop('label')).toBe('aStringValue');
+  expect(valueSwitch.prop('labelText')).toBe('aStringValue');
 
-  valueSwitch.simulate('change', {target: {checked: true}});
+  valueSwitch.simulate('toggle', true);
 
   expect(props.setFilter).toHaveBeenCalledWith({operator: 'not in', values: ['aStringValue']});
 });
@@ -62,22 +68,30 @@ it('should abbreviate multiple string selections', () => {
     <SelectionFilter {...props} filter={{operator: 'not in', values: ['aStringValue', null]}} />
   );
 
-  expect(node.find(Popover).prop('title')).toMatchSnapshot();
+  const popoverButtonLabel = shallow(node.find(Popover).prop('trigger')).find(
+    '.cds--list-box__label'
+  );
+
+  expect(popoverButtonLabel.find(Filter)).toExist();
+  expect(popoverButtonLabel.find('VariablePreview').prop('filter')).toEqual({
+    operator: 'not in',
+    values: ['multiple'],
+  });
 });
 
 it('should show a hint depending on the operator', () => {
   const node = shallow(<SelectionFilter {...props} />);
 
-  expect(node.find('.hint').text()).toBe('Values linked by nor logic');
+  expect(node.find('FormGroup').prop('legendText')).toBe('Values linked by nor logic');
 
   node.setProps({config: {data: {operator: 'in', values: [], allowCustomValues: false}}});
-  expect(node.find('.hint').text()).toBe('Values linked by or logic');
+  expect(node.find('FormGroup').prop('legendText')).toBe('Values linked by or logic');
 
   node.setProps({config: {data: {operator: '<', values: [], allowCustomValues: false}}});
-  expect(node.find('.hint').text()).toBe('');
+  expect(node.find('FormGroup').prop('legendText')).toBe('');
 
   node.setProps({config: {data: {operator: 'contains', values: [], allowCustomValues: false}}});
-  expect(node.find('.hint').text()).toBe('Values linked by or logic');
+  expect(node.find('FormGroup').prop('legendText')).toBe('Values linked by or logic');
 });
 
 describe('allowCustomValues', () => {
@@ -94,19 +108,20 @@ describe('allowCustomValues', () => {
     expect(node.find('.customValueAddButton')).toExist();
   });
 
-  it('should add a Typeahead input when adding a custom value', () => {
+  it('should add a Combobox input when adding a custom value', () => {
     const node = shallow(<SelectionFilter {...customProps} />);
 
     node.find('.customValueAddButton').simulate('click');
 
-    expect(node.find('Typeahead')).toExist();
+    expect(node.find(ComboBox)).toExist();
   });
 
-  it('should load available values when opening the Typeahead', () => {
+  it('should load available values when opening the Combobox', async () => {
     const node = shallow(<SelectionFilter {...customProps} />);
 
     node.find('.customValueAddButton').simulate('click');
-    node.find('Typeahead').simulate('open');
+    // For combobox component the input change event is triggered on open (and of course when typing)
+    node.find(ComboBox).simulate('inputChange', '');
 
     expect(getVariableValues).toHaveBeenCalledWith(['reportA'], 'stringVar', 'String', 10, '');
   });

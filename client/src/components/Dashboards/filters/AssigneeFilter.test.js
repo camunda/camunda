@@ -7,12 +7,19 @@
 
 import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
+import {Filter} from '@carbon/icons-react';
 
 import {Popover, UserTypeahead} from 'components';
 
-import {AssigneeFilter} from './AssigneeFilter';
+import AssigneeFilter from './AssigneeFilter';
 
 import {getAssigneeNames} from './service';
+
+jest.mock('hooks', () => ({
+  useErrorHandling: jest.fn().mockImplementation(() => ({
+    mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  })),
+}));
 
 const props = {
   filter: null,
@@ -24,7 +31,6 @@ const props = {
   },
   setFilter: jest.fn(),
   reports: [{id: 'reportA'}],
-  mightFail: (data, cb) => cb(data),
 };
 
 jest.mock('./service', () => ({
@@ -42,7 +48,12 @@ beforeEach(() => {
 it('should show the operator when no value is selected', () => {
   const node = shallow(<AssigneeFilter {...props} />);
 
-  expect(node.find(Popover).prop('title')).toMatchSnapshot();
+  const popoverButtonLabel = shallow(node.find(Popover).prop('trigger')).find(
+    '.cds--list-box__label'
+  );
+
+  expect(popoverButtonLabel.text()).toContain('is not ...');
+  expect(popoverButtonLabel.find(Filter)).toExist();
 });
 
 it('should allow selecting values', () => {
@@ -50,12 +61,12 @@ it('should allow selecting values', () => {
 
   runLastEffect();
 
-  const valueSwitch = node.find('Switch').first();
+  const valueSwitch = node.find('Toggle').first();
 
   expect(valueSwitch).toExist();
-  expect(valueSwitch.prop('label')).toBe('User 1');
+  expect(valueSwitch.prop('labelA')).toBe('User 1');
 
-  valueSwitch.simulate('change', {target: {checked: true}});
+  valueSwitch.simulate('toggle', true);
 
   expect(props.setFilter).toHaveBeenCalledWith({operator: 'not in', values: ['user1']});
 });
@@ -65,7 +76,12 @@ it('should abbreviate multiple string selections', () => {
     <AssigneeFilter {...props} filter={{operator: 'not in', values: ['user1', null]}} />
   );
 
-  expect(node.find(Popover).prop('title')).toMatchSnapshot();
+  const popoverButtonLabel = shallow(node.find(Popover).prop('trigger')).find(
+    '.cds--list-box__label'
+  );
+
+  expect(popoverButtonLabel.find('AssigneeFilterPreview')).toExist();
+  expect(popoverButtonLabel.find(Filter)).toExist();
 });
 
 it('should show an input field for custom values', () => {
@@ -97,10 +113,7 @@ it('should show an input field for custom values', () => {
     values: ['user1', 'john', 'userX'],
   });
 
-  node
-    .find('Switch')
-    .last()
-    .simulate('change', {target: {checked: false}});
+  node.find('Toggle').last().simulate('toggle', false);
 
   expect(props.setFilter).toHaveBeenCalledWith({
     operator: 'not in',

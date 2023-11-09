@@ -5,13 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
+import {Source} from 'types';
 import {put} from 'request';
-
-type Source = {
-  definitionKey: string;
-  definitionType: string;
-  tenants: (string | null)[];
-};
 
 export async function addSources(collectionId: string, sources: Source[]) {
   return await put(`api/collection/${collectionId}/scope`, sources);

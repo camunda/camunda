@@ -11,8 +11,8 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
+import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.ElasticsearchStatusException;
 
@@ -20,11 +20,11 @@ import java.util.Arrays;
 
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_PREFIX;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.INDEX_NOT_FOUND_EXCEPTION_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_PREFIX;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.DatabaseConstants.INDEX_NOT_FOUND_EXCEPTION_TYPE;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class InstanceIndexUtil {
@@ -42,7 +42,7 @@ public class InstanceIndexUtil {
     if (decisionDefinitionKey == null) {
       return DECISION_INSTANCE_MULTI_ALIAS;
     } else {
-      return new DecisionInstanceIndex(decisionDefinitionKey).getIndexName();
+      return DecisionInstanceIndex.constructIndexName(decisionDefinitionKey);
     }
   }
 
@@ -62,7 +62,7 @@ public class InstanceIndexUtil {
     if (processDefinitionKey == null) {
       return PROCESS_INSTANCE_MULTI_ALIAS;
     } else {
-      return new ProcessInstanceIndex(processDefinitionKey).getIndexName();
+      return ProcessInstanceIndex.constructIndexName(processDefinitionKey);
     }
   }
 

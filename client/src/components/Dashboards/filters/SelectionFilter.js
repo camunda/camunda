@@ -5,10 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useEffect, useState} from 'react';
+import {useEffect, useState} from 'react';
+import {Button, ComboBox, Form, FormGroup, Stack, Toggle} from '@carbon/react';
+import {Add, Filter, TrashCan} from '@carbon/icons-react';
 import classnames from 'classnames';
 
-import {Popover, Form, Switch, Button, Icon, Typeahead} from 'components';
+import {Popover} from 'components';
 import {VariablePreview} from 'filter';
 import {t} from 'translation';
 import {numberParser} from 'services';
@@ -27,8 +29,8 @@ export default function SelectionFilter({filter, type, config, setFilter, report
   } = config;
 
   const [customValues, setCustomValues] = useState([]);
-  const [loadingVariableValues, setLoadingVariableValues] = useState(false);
   const [variableValues, setVariableValues] = useState(['']);
+  const [searchedValue, setSearchedValue] = useState('');
 
   useEffect(() => {
     setCustomValues((defaultValues ?? []).filter((value) => value && !values.includes(value)));
@@ -41,7 +43,6 @@ export default function SelectionFilter({filter, type, config, setFilter, report
     }, 300);
 
     setVariableValues(values);
-    setLoadingVariableValues(false);
   };
 
   function isValidValue(value) {
@@ -106,117 +107,126 @@ export default function SelectionFilter({filter, type, config, setFilter, report
     }
   }
 
+  const toggleValue = (value) => (checked) => {
+    if (checked) {
+      addValue(value);
+    } else {
+      removeValue(value);
+    }
+  };
+
+  const variableItems = [searchedValue, ...variableValues].filter(Boolean);
+
   return (
     <div className="SelectionFilter">
       <Popover
         isTabTip
-        title={
-          <>
-            <Icon type="filter" className={classnames('indicator', {active: filter})} />{' '}
+        trigger={
+          <Popover.ListBox size="sm">
+            <Filter className={classnames('indicator', {active: filter})} />
             {filter ? (
               <VariablePreview filter={previewFilter} />
             ) : (
               getOperatorText(operator) + ' ...'
             )}
-          </>
+          </Popover.ListBox>
         }
       >
-        <Form compact>
-          <fieldset>
-            <div className="hint">{hintText}</div>
-            {values.map((value, idx) => (
-              <Switch
-                key={idx}
-                label={value === null ? t('common.nullOrUndefined') : value}
-                checked={hasValue(value)}
-                onChange={({target}) => {
-                  if (target.checked) {
-                    addValue(value);
-                  } else {
-                    removeValue(value);
-                  }
-                }}
-              />
-            ))}
-            {allowCustomValues && (
-              <>
-                {customValues.map((value, idx) => (
-                  <div className="customValue" key={idx}>
-                    <Switch
-                      checked={hasValue(value)}
-                      disabled={!isValidValue(value)}
-                      onChange={({target}) => {
-                        if (target.checked) {
-                          addValue(value);
-                        } else {
-                          removeValue(value);
-                        }
-                      }}
-                    />
-                    <Typeahead
-                      onOpen={() => {
-                        setLoadingVariableValues(true);
-                        loadValues('');
-                      }}
-                      onSearch={(value) => {
-                        setLoadingVariableValues(true);
-                        loadValues(value);
-                      }}
-                      onChange={(newValue) => {
-                        let scopedFilter = filter;
-                        if (hasValue(value)) {
-                          scopedFilter = removeValue(value);
-                        }
-                        setCustomValues(
-                          customValues.map((value, oldValueIdx) => {
-                            if (oldValueIdx !== idx) {
-                              return value;
-                            }
-                            return newValue;
-                          })
-                        );
-                        if (isValidValue(newValue)) {
-                          addValue(newValue, scopedFilter);
-                        }
-                      }}
-                      loading={loadingVariableValues}
-                      value={value}
-                      typedOption
-                      placeholder={t('dashboard.filter.selectValue')}
-                      className={classnames({invalid: value && !isValidValue(value)})}
-                    >
-                      {variableValues.map((value, idx) => (
-                        <Typeahead.Option key={idx} value={value}>
-                          {value}
-                        </Typeahead.Option>
-                      ))}
-                    </Typeahead>
-                    <Button
-                      icon
-                      onClick={() => {
-                        if (hasValue(value)) {
-                          removeValue(value);
-                        }
-                        setCustomValues(
-                          customValues.filter((customValue, idxToRemove) => idx !== idxToRemove)
-                        );
-                      }}
-                    >
-                      <Icon type="close-large" size="14px" />
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  className="customValueAddButton"
-                  onClick={() => setCustomValues([...customValues, ''])}
-                >
-                  <Icon type="plus" /> {t('common.value')}
-                </Button>
-              </>
-            )}
-          </fieldset>
+        <Form>
+          <FormGroup legendText={hintText}>
+            <Stack gap={4}>
+              {values.map((value, idx) => (
+                <Toggle
+                  id={`${idx}`}
+                  size="sm"
+                  key={idx}
+                  hideLabel
+                  labelText={value === null ? t('common.nullOrUndefined') : value}
+                  toggled={hasValue(value)}
+                  onToggle={toggleValue(value)}
+                />
+              ))}
+              {allowCustomValues && (
+                <>
+                  {customValues.map((value, idx) => (
+                    <div className="customValue" key={idx}>
+                      <Toggle
+                        id={`${idx}`}
+                        size="sm"
+                        hideLabel
+                        labelA="cutom value"
+                        toggled={hasValue(value)}
+                        disabled={!isValidValue(value)}
+                        onToggle={toggleValue(value)}
+                      />
+                      <ComboBox
+                        id={`valueSelection-${idx}`}
+                        className="valueSelection"
+                        size="sm"
+                        items={variableItems}
+                        onChange={({selectedItem}) => {
+                          let scopedFilter = filter;
+                          if (hasValue(value)) {
+                            scopedFilter = removeValue(value);
+                          }
+                          setCustomValues(
+                            customValues.map((value, oldValueIdx) => {
+                              if (oldValueIdx !== idx) {
+                                return value;
+                              }
+                              return selectedItem;
+                            })
+                          );
+                          if (isValidValue(selectedItem)) {
+                            addValue(selectedItem, scopedFilter);
+                          }
+                        }}
+                        onInputChange={(value) => {
+                          setSearchedValue(value);
+                          loadValues(value);
+                        }}
+                        placeholder={t('dashboard.filter.selectValue')}
+                        selectedItem={value}
+                        invalid={!!value && !isValidValue(value)}
+                      />
+                      <Button
+                        kind="ghost"
+                        size="sm"
+                        hasIconOnly
+                        renderIcon={TrashCan}
+                        iconDescription={t('common.remove')}
+                        onClick={() => {
+                          if (hasValue(value)) {
+                            removeValue(value);
+                          }
+                          setCustomValues(
+                            customValues.filter((customValue, idxToRemove) => idx !== idxToRemove)
+                          );
+                        }}
+                      />
+                    </div>
+                  ))}
+                  <Button
+                    size="sm"
+                    kind="tertiary"
+                    className="customValueAddButton"
+                    onClick={() => setCustomValues([...customValues, ''])}
+                    renderIcon={Add}
+                  >
+                    {t('common.value')}
+                  </Button>
+                </>
+              )}
+            </Stack>
+          </FormGroup>
           <hr />
-          <Button className="reset-button" disabled={!filter} onClick={() => setFilter()}>
+          <Button
+            size="sm"
+            kind="ghost"
+            className="reset-button"
+            disabled={!filter}
+            onClick={() => setFilter()}
+          >
             {t('common.off')}
           </Button>
         </Form>

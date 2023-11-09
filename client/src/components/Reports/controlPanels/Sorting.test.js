@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {Select} from 'components';
+import {CarbonSelect} from 'components';
 import {shallow} from 'enzyme';
 
 import {createReportUpdate} from 'services';
@@ -70,7 +70,7 @@ it('should not show soritng options when there is second sorting', () => {
 it('should invoke onChange when sorting order is changed', () => {
   const node = shallow(<Sorting {...config} />);
 
-  node.find(Select).simulate('change', 'asc');
+  node.find(CarbonSelect).simulate('change', 'asc');
 
   expect(config.onChange).toHaveBeenCalledWith({sortingOrder: 'asc'});
 });

@@ -31,8 +31,9 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.VariableDto;
+import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+
 import org.camunda.optimize.service.util.ProcessReportDataBuilderHelper;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
@@ -71,7 +72,7 @@ import static org.camunda.optimize.service.es.report.command.process.mapping.Raw
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.util.BpmnModels.FLONODE_NAME;
 import static org.camunda.optimize.util.BpmnModels.MERGE_GATEWAY_ID;
 import static org.camunda.optimize.util.BpmnModels.SCRIPT_TASK;

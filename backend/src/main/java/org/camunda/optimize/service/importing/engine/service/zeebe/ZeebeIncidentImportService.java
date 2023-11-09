@@ -13,8 +13,8 @@ import org.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentType;
 import org.camunda.optimize.dto.zeebe.incident.ZeebeIncidentDataDto;
 import org.camunda.optimize.dto.zeebe.incident.ZeebeIncidentRecordDto;
-import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
-import org.camunda.optimize.service.es.writer.ZeebeProcessInstanceWriter;
+import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
+import org.camunda.optimize.service.db.writer.ZeebeProcessInstanceWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.time.Instant;

@@ -91,7 +91,17 @@ a:hover {
   text-decoration: underline;
 }
 
-.focus-visible:not(.cds--search-input, .cds--text-input) {
+a:active {
+  color: inherit;
+}
+
+.focus-visible:not(
+    .cds--search-input,
+    .cds--text-input,
+    .cds--text-area,
+    .textInput,
+    .cds--number__input-wrapper > input
+  ) {
   outline: none;
   border-radius: 3px;
   box-shadow:
@@ -154,6 +164,12 @@ section h1 {
   font-weight: bold;
 }
 
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
 /* UTILITIES */
 
 .visually-hidden {
@@ -165,9 +181,17 @@ a[disabled] {
   pointer-events: none;
 }
 
-// TODO: Remove this once carbon-inputs branch is merged into master
-ul.cds--list-box__menu {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+// TODO: remove this once OPT-7355 is fixed
+// hide overlay displayed by dev server
+iframe#webpack-dev-server-client-overlay {
+  display: none;
+}
+
+.cds--number input[type='number'] {
+  background-color: var(--cds-field-02, #f4f4f4);
+}
+
+.cds--number__control-btn::before,
+.cds--number__control-btn::after {
+  background: inherit;
 }

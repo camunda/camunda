@@ -16,7 +16,7 @@ import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.MaxEntryLimitHitException;
+import org.camunda.optimize.service.exceptions.MaxEntryLimitHitException;
 import org.camunda.optimize.service.es.job.importing.IdentityLinkLogImportJob;
 import org.camunda.optimize.service.util.configuration.engine.UserTaskIdentityCacheConfiguration;
 import org.camunda.optimize.util.BpmnModels;

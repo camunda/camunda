@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizationType;
-import org.camunda.optimize.service.es.reader.EntitiesReader;
+import org.camunda.optimize.service.db.reader.EntitiesReader;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.springframework.stereotype.Component;
 

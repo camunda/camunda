@@ -207,14 +207,13 @@ it('should load available variables', () => {
 it('should contain a typeahead with the available variables', async () => {
   const node = shallow(<VariableFilter {...props} />);
 
-  props.config.getVariables.mockReturnValueOnce([{id: 'varA'}, {id: 'varB'}, {id: 'varC'}]);
+  const items = [{id: 'varA'}, {id: 'varB'}, {id: 'varC'}];
+  props.config.getVariables.mockReturnValueOnce(items);
 
   await runAllEffects();
 
-  expect(node.find('Typeahead')).toExist();
-  expect(node.find({value: 'varA'})).toExist();
-  expect(node.find({value: 'varB'})).toExist();
-  expect(node.find({value: 'varC'})).toExist();
+  expect(node.find('ComboBox')).toExist();
+  expect(node.find('ComboBox').prop('items')).toEqual(items);
 });
 
 it('should allow rendering a pretext if provided', async () => {

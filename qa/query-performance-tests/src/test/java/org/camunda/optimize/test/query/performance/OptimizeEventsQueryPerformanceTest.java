@@ -21,8 +21,9 @@ import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
 import org.camunda.optimize.dto.optimize.rest.sorting.SortRequestDto;
-import org.camunda.optimize.service.es.schema.index.events.EventIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
+import org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventIndexES;
+import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndexES;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -42,7 +43,7 @@ import static org.camunda.optimize.dto.optimize.query.event.sequence.EventCountR
 import static org.camunda.optimize.dto.optimize.query.event.sequence.EventCountResponseDto.Fields.source;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortOrder.ASC;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortOrder.DESC;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
 @Slf4j
 public class OptimizeEventsQueryPerformanceTest extends AbstractQueryPerformanceTest {
@@ -52,7 +53,8 @@ public class OptimizeEventsQueryPerformanceTest extends AbstractQueryPerformance
     embeddedOptimizeExtension.getElasticSearchSchemaManager()
       .createIndexIfMissing(
         embeddedOptimizeExtension.getOptimizeElasticClient(),
-        new EventSequenceCountIndex(EXTERNAL_EVENTS_INDEX_SUFFIX)
+        // TODO deal with this in OPT-7225
+        new EventSequenceCountIndexES(EXTERNAL_EVENTS_INDEX_SUFFIX)
       );
     embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessAccessUserIds().add(DEFAULT_USER);
   }
@@ -118,7 +120,7 @@ public class OptimizeEventsQueryPerformanceTest extends AbstractQueryPerformance
         .build())
       .collect(Collectors.toMap(EventSequenceCountDto::getId, seq -> seq));
     elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(
-      new EventSequenceCountIndex(EXTERNAL_EVENTS_INDEX_SUFFIX).getIndexName(), sequencesById
+      EventSequenceCountIndex.constructIndexName(EXTERNAL_EVENTS_INDEX_SUFFIX), sequencesById
     );
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
@@ -136,7 +138,7 @@ public class OptimizeEventsQueryPerformanceTest extends AbstractQueryPerformance
         .build())
       .collect(Collectors.toMap(EventDto::getId, event -> event));
     elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(
-      new EventIndex().getIndexName(), eventsById
+      new EventIndexES().getIndexName(), eventsById
     );
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }

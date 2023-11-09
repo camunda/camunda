@@ -1,21 +1,10 @@
+@use '@carbon/colors';
+
 .dark .FiltersView {
   border-color: var(--grey-darken-36);
 
-  > .Button {
-    color: var(--silver-darken-87);
-
-    &:hover {
-      border: none;
-      background: none;
-    }
-  }
-
   > * > .title {
     color: var(--silver-darken-87);
-  }
-
-  hr {
-    opacity: 0.2;
   }
 
   .Popover {
@@ -31,11 +20,6 @@
         background-color: var(--blue);
       }
     }
-  }
-
-  .reset-button {
-    border: none;
-    background: none;
   }
 }
 
@@ -86,41 +70,22 @@
     padding-left: 12px;
   }
 
-  .reset-button {
-    margin: 0 10px 5px;
-    font-size: 14px;
-    border: none;
-    background: none;
-  }
-
-  .indicator {
-    vertical-align: middle;
-    color: var(--silver-darken-80);
-    &.active {
-      color: var(--blue-darken-55);
-    }
+  .indicator .active {
+    color: colors.$blue-60;
   }
 
   hr {
     border: none;
-    border-bottom: 1px solid var(--silver-darken-87);
-    margin: 5px 0;
+    border-bottom: 1px solid var(--cds-border-subtle);
+    margin: 8px 0;
   }
 
-  .Popover {
-    .popoverContent {
-      padding: 0;
-    }
+  .cds--list-box__label {
+    display: flex;
+    align-items: center;
 
-    .Form {
-      > fieldset {
-        padding: 5px 20px 0 20px;
-
-        .Switch {
-          margin-top: 6px;
-          padding-bottom: 6px;
-        }
-      }
+    svg {
+      margin-right: 0.5rem;
     }
   }
 }

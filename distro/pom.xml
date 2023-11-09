@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>parent</artifactId>
-    <version>3.12.0</version>
+    <version>3.12.0-alpha1</version>
   </parent>
 
   <artifactId>camunda-optimize</artifactId>
@@ -14,7 +14,7 @@
   <properties>
     <exclude.from.config>OptimizeLicense.txt</exclude.from.config>
     <sonar.skip>true</sonar.skip>
-    <elasticsearch.demo.version>7.16.2</elasticsearch.demo.version>
+    <elasticsearch.demo.version>8.8.0</elasticsearch.demo.version>
   </properties>
 
   <dependencies>
@@ -119,7 +119,7 @@
               <goal>wget</goal>
             </goals>
             <configuration>
-              <url>https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${elasticsearch.demo.version}-no-jdk-windows-x86_64.zip</url>
+              <url>https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${elasticsearch.demo.version}-windows-x86_64.zip</url>
               <unpack>true</unpack>
               <outputDirectory>${project.build.directory}</outputDirectory>
             </configuration>

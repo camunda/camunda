@@ -13,9 +13,9 @@ import org.camunda.optimize.dto.optimize.query.event.autogeneration.CorrelatedTr
 import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType;
-import org.camunda.optimize.service.EventTraceStateService;
-import org.camunda.optimize.service.EventTraceStateServiceFactory;
-import org.camunda.optimize.service.es.reader.CorrelatedCamundaProcessInstanceReader;
+import org.camunda.optimize.service.events.EventTraceStateService;
+import org.camunda.optimize.service.db.events.EventTraceStateServiceFactory;
+import org.camunda.optimize.service.db.reader.CorrelatedCamundaProcessInstanceReader;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -29,7 +29,7 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toMap;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
 @Component
 public class CorrelatedInstanceService {

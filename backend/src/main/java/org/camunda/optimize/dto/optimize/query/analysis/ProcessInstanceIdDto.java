@@ -8,7 +8,7 @@ package org.camunda.optimize.dto.optimize.query.analysis;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 
 public class ProcessInstanceIdDto extends IdResponseDto {
   @Override

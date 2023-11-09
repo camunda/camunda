@@ -6,7 +6,6 @@
  */
 
 import {shallow} from 'enzyme';
-import {Button} from '@carbon/react';
 
 import {Modal} from 'components';
 
@@ -26,6 +25,16 @@ beforeEach(() => {
   jest.clearAllMocks();
 });
 
+it('should render the modal properly', () => {
+  const node = shallow(<EditUserModal {...props} />);
+
+  const radioButtons = node.find('RadioButton');
+
+  expect(radioButtons.at(0).dive().find('span').at(1).text()).toBe('Viewer');
+  expect(radioButtons.at(1).dive().find('span').at(1).text()).toBe('Editor');
+  expect(radioButtons.at(2).dive().find('span').at(1).text()).toBe('Manager');
+});
+
 it('should display the user name or ID', () => {
   const wrapper = shallow(<EditUserModal {...props} />);
   const header = wrapper.find(Modal.Header);
@@ -35,8 +44,8 @@ it('should display the user name or ID', () => {
 it('should call the onConfirm prop', () => {
   const node = shallow(<EditUserModal {...props} />);
 
-  const editorRadio = node.find({type: 'radio'}).last();
-  editorRadio.simulate('change');
+  const managerRadio = node.find('RadioButton').last();
+  managerRadio.simulate('click');
   node.find('.confirm').simulate('click');
 
   expect(props.onConfirm).toHaveBeenCalledWith('manager');
@@ -44,7 +53,7 @@ it('should call the onConfirm prop', () => {
 
 it('should call onClose when the cancel button is clicked', () => {
   const wrapper = shallow(<EditUserModal {...props} />);
-  const cancelButton = wrapper.find(Button).first();
+  const cancelButton = wrapper.find('.cancel');
   cancelButton.simulate('click');
   expect(props.onClose).toHaveBeenCalled();
 });

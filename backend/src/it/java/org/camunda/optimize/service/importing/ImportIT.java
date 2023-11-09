@@ -14,7 +14,8 @@ import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.job.importing.VariableUpdateElasticsearchImportJob;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.junit.jupiter.api.AfterEach;
@@ -32,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.buildDynamicSettings;
+import static org.camunda.optimize.service.es.schema.IndexSettingsBuilderES.buildDynamicSettings;
 
 public class ImportIT extends AbstractImportIT {
 
@@ -143,7 +144,7 @@ public class ImportIT extends AbstractImportIT {
     embeddedOptimizeExtension.getConfigurationService().setEsNestedDocumentsLimit(nestedDocLimit);
     final OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
     final String indexName = esClient.getIndexNameService()
-      .getOptimizeIndexNameWithVersionForAllIndicesOf(new ProcessInstanceIndex(processDefinitionKey));
+      .getOptimizeIndexNameWithVersionForAllIndicesOf(new ProcessInstanceIndexES(processDefinitionKey));
 
     esClient.getHighLevelClient().indices().putSettings(
       new UpdateSettingsRequest(

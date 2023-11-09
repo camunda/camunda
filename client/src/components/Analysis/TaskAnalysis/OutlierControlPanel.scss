@@ -1,0 +1,21 @@
+.OutlierControlPanel {
+  background-color: var(--silver-base-97);
+  border-radius: 8px;
+  border: 1px solid var(--silver-darken-87);
+  padding: 12px;
+  margin-bottom: 1em;
+
+  .list .item {
+    display: inline;
+    position: relative;
+    padding-right: 20px;
+    line-height: 50px;
+
+    .DefinitionSelection {
+      display: inline-block;
+      margin: 0 0.5em;
+      line-height: normal;
+      width: 220px;
+    }
+  }
+}

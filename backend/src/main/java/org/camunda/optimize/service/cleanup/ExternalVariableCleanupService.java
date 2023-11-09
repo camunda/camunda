@@ -7,7 +7,7 @@ package org.camunda.optimize.service.cleanup;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.service.es.writer.variable.ExternalProcessVariableWriter;
+import org.camunda.optimize.service.db.writer.variable.ExternalProcessVariableWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.springframework.stereotype.Component;
@@ -18,6 +18,7 @@ import java.time.OffsetDateTime;
 @Component
 @Slf4j
 public class ExternalVariableCleanupService implements CleanupService {
+
   private final ConfigurationService configurationService;
   private final ExternalProcessVariableWriter externalProcessVariableWriter;
 
@@ -34,8 +35,8 @@ public class ExternalVariableCleanupService implements CleanupService {
     log.info("Finished cleanup on external variables with a timestamp older than {}", endDate);
   }
 
-
   private CleanupConfiguration getCleanupConfiguration() {
     return this.configurationService.getCleanupServiceConfiguration();
   }
+
 }

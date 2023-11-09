@@ -95,7 +95,7 @@ it('should hide selectAll if there is only one item', () => {
 
 it('should filter items based on search', () => {
   const node = shallow(<Checklist {...props} />);
-  const toolbar = shallow(node.find('Table').prop<ReactElement>('toolbar'));
+  const toolbar = shallow<ReactElement>(node.find('Table').prop('toolbar'));
 
   toolbar.find('TableToolbarSearch').simulate('change', {target: {value: 'item 1'}});
 
@@ -121,7 +121,7 @@ it('should display the id if the label is null', () => {
 it('should select all items in view', () => {
   props.formatter.mockReturnValueOnce([{id: 'item1', checked: true, label: 'item 1'}]);
   const node = shallow(<Checklist {...props} />);
-  const toolbar = shallow(node.find('Table').prop<ReactElement>('toolbar'));
+  const toolbar = shallow<ReactElement>(node.find('Table').prop('toolbar'));
 
   toolbar.find('TableToolbarSearch').simulate('change', {target: {value: 'item'}});
   const dataTable = node.find('Table').dive().find('DataTable').dive();
@@ -162,7 +162,7 @@ it('should allow overwriting the selectAll button with a custom header', () => {
 
 it('should not show select all in view when hideSelectAllInView prop is passed', () => {
   const node = shallow(<Checklist {...props} />);
-  const toolbar = shallow(node.find('Table').prop<ReactElement>('toolbar'));
+  const toolbar = shallow<ReactElement>(node.find('Table').prop('toolbar'));
 
   toolbar.find('TableToolbarSearch').simulate('change', {target: {value: 'item'}});
   let dataTable = node.find('Table').dive().find('DataTable').dive();

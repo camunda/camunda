@@ -7,7 +7,7 @@ package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
+import org.camunda.optimize.service.db.writer.RunningProcessInstanceWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.UserOperationLogFetcher;
@@ -24,6 +24,7 @@ import java.util.List;
 
 @Component
 public class UserOperationLogEngineImportMediatorFactory extends AbstractEngineImportMediatorFactory {
+
   private final RunningProcessInstanceWriter runningProcessInstanceWriter;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final ProcessInstanceResolverService processInstanceResolverService;

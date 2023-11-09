@@ -16,7 +16,7 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -466,7 +466,7 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
 
     waitUntilMinimumDataExportedCount(
       minExportedEventCount,
-      ElasticsearchConstants.ZEEBE_VARIABLE_INDEX_NAME,
+      DatabaseConstants.ZEEBE_VARIABLE_INDEX_NAME,
       variableBoolQueryBuilder
     );
   }

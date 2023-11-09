@@ -10,10 +10,10 @@ import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.writer.DecisionDefinitionWriter;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.DecisionDefinitionElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.DecisionDefinitionWriter;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
@@ -27,7 +27,7 @@ import static java.util.stream.Collectors.groupingBy;
 @Slf4j
 public class DecisionDefinitionImportService implements ImportService<DecisionDefinitionEngineDto> {
 
-  private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  private final ElasticsearchImportJobExecutor databaseImportJobExecutor;
   private final EngineContext engineContext;
   private final DecisionDefinitionWriter decisionDefinitionWriter;
   private final DecisionDefinitionResolverService decisionDefinitionResolverService;
@@ -36,7 +36,7 @@ public class DecisionDefinitionImportService implements ImportService<DecisionDe
                                          final EngineContext engineContext,
                                          final DecisionDefinitionWriter decisionDefinitionWriter,
                                          final DecisionDefinitionResolverService decisionDefinitionResolverService) {
-    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+    this.databaseImportJobExecutor = new ElasticsearchImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.engineContext = engineContext;
@@ -57,7 +57,7 @@ public class DecisionDefinitionImportService implements ImportService<DecisionDe
       final ElasticsearchImportJob<DecisionDefinitionOptimizeDto> elasticsearchImportJob = createElasticsearchImportJob(
         optimizeDtos, importCompleteCallback
       );
-      elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
+      databaseImportJobExecutor.executeImportJob(elasticsearchImportJob);
     }
   }
 
@@ -70,8 +70,8 @@ public class DecisionDefinitionImportService implements ImportService<DecisionDe
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
-    return elasticsearchImportJobExecutor;
+  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
+    return databaseImportJobExecutor;
   }
 
   private List<DecisionDefinitionOptimizeDto> mapEngineEntitiesToOptimizeEntities(

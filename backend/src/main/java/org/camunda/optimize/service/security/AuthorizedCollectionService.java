@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
-import org.camunda.optimize.service.es.reader.CollectionReader;
+import org.camunda.optimize.service.db.reader.CollectionReader;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.springframework.stereotype.Component;
 
@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @Component
 public class AuthorizedCollectionService {
+
   private static final String VIEW_NOT_AUTHORIZED_MESSAGE = "User [%s] is not authorized to access collection [%s].";
   private static final String EDIT_NOT_AUTHORIZED_MESSAGE =
     "User [%s] is not authorized to edit/delete collection [%s].";

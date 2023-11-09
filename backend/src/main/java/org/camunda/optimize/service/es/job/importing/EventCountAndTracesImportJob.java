@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.job.importing;
 
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
-import org.camunda.optimize.service.EventTraceStateService;
+import org.camunda.optimize.service.events.EventTraceStateService;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 
 import java.util.List;

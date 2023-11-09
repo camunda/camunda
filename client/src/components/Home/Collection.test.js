@@ -8,7 +8,7 @@
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {Dropdown, EntityList, Deleter, ReportTemplateModal, Badge} from 'components';
+import {EntityList, Deleter, ReportTemplateModal} from 'components';
 import {refreshBreadcrumbs} from 'components/navigation';
 import {loadEntity, updateEntity} from 'services';
 import {getOptimizeProfile} from 'config';
@@ -118,7 +118,7 @@ it('should pass Entity to Deleter', () => {
 it('should show an edit modal when clicking the edit button', () => {
   const node = shallow(<Collection {...props} />);
 
-  node.find(Dropdown.Option).at(0).simulate('click');
+  node.find('ForwardRef(OverflowMenuItem)').at(0).simulate('click');
 
   expect(node.find(CollectionModal)).toExist();
 });
@@ -161,14 +161,14 @@ it('should render content depending on the selected tab', async () => {
     <Collection {...props} match={{params: {id: 'aCollectionId', viewMode: 'users'}}} />
   );
 
-  expect(node.find('.navigation .active').text()).toBe('Users');
+  expect(node.find('Tabs').prop('value')).toBe('users');
   expect(node.find(UserList).prop('collection')).toBe('aCollectionId');
 });
 
 it('should show the copy modal when clicking the copy button', () => {
   const node = shallow(<Collection {...props} />);
 
-  node.find(Dropdown.Option).at(1).simulate('click');
+  node.find('ForwardRef(OverflowMenuItem)').at(1).simulate('click');
 
   expect(node.find(Copier)).toExist();
 });
@@ -273,7 +273,7 @@ it('should display badge with user role Manager', () => {
 
   const node = shallow(<Collection {...props} />);
 
-  expect(node.find(Badge).children().text()).toBe('Manager');
+  expect(node.find('Tag').children().text()).toBe('Manager');
 });
 
 it('should show entity name and description', () => {

@@ -8,7 +8,7 @@ package org.camunda.optimize.service.importing;
 import io.github.netmikey.logunit.api.LogCapturer;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
@@ -21,7 +21,7 @@ import java.util.List;
 
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 
 public class CustomerOnboadingDataImportIT extends AbstractImportIT {
 
@@ -53,7 +53,7 @@ public class CustomerOnboadingDataImportIT extends AbstractImportIT {
       PROCESS_DEFINITION_INDEX_NAME,
       ProcessDefinitionOptimizeDto.class
     )).isEmpty();
-    assertThat(indexExist(new ProcessInstanceIndex(CUSTOMER_ONBOARDING_DEFINITION_NAME).getIndexName())).isFalse();
+    assertThat(indexExist(ProcessInstanceIndex.constructIndexName(CUSTOMER_ONBOARDING_DEFINITION_NAME))).isFalse();
   }
 
   @Test
@@ -75,13 +75,13 @@ public class CustomerOnboadingDataImportIT extends AbstractImportIT {
     final ProcessDefinitionOptimizeDto processDefinition = processDefinitionDocuments.get(0);
     // the onboarding data should already be considered onboarded to avoid the notification being sent upon import
     assertThat(processDefinition.isOnboarded()).isTrue();
-    assertThat(indexExist(new ProcessInstanceIndex(processDefinition.getKey()).getIndexName())).isTrue();
+    assertThat(indexExist(ProcessInstanceIndex.constructIndexName(processDefinition.getKey()))).isTrue();
     assertThat(elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
-      new ProcessInstanceIndex(processDefinition.getKey()).getIndexName(),
+      ProcessInstanceIndex.constructIndexName(processDefinition.getKey()),
       ProcessDefinitionOptimizeDto.class
     )).hasSize(3);
     List<ProcessInstanceDto> processInstanceDtos = elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
-      new ProcessInstanceIndex(processDefinition.getKey()).getIndexName(), ProcessInstanceDto.class);
+      ProcessInstanceIndex.constructIndexName(processDefinition.getKey()), ProcessInstanceDto.class);
     assertThat(processInstanceDtos).anyMatch(processInstanceDto -> processInstanceDto.getIncidents() != null);
   }
 
@@ -101,7 +101,7 @@ public class CustomerOnboadingDataImportIT extends AbstractImportIT {
         ProcessDefinitionOptimizeDto.class
       );
     assertThat(processDefinitionDocuments).isEmpty();
-    assertThat(indexExist(new ProcessInstanceIndex(CUSTOMER_ONBOARDING_DEFINITION_NAME).getIndexName())).isFalse();
+    assertThat(indexExist(ProcessInstanceIndex.constructIndexName(CUSTOMER_ONBOARDING_DEFINITION_NAME))).isFalse();
     logCapturer.assertContains("Process definition could not be loaded. Please validate your json file.");
   }
 
@@ -121,7 +121,7 @@ public class CustomerOnboadingDataImportIT extends AbstractImportIT {
         ProcessDefinitionOptimizeDto.class
       );
     assertThat(processDefinitionDocuments).hasSize(1);
-    assertThat(indexExist(new ProcessInstanceIndex(CUSTOMER_ONBOARDING_DEFINITION_NAME).getIndexName())).isFalse();
+    assertThat(indexExist(ProcessInstanceIndex.constructIndexName(CUSTOMER_ONBOARDING_DEFINITION_NAME))).isFalse();
     logCapturer.assertContains(
       "Could not load Camunda Customer Onboarding Demo process instances to input stream. Please validate the process instance json file.");
   }
@@ -142,7 +142,7 @@ public class CustomerOnboadingDataImportIT extends AbstractImportIT {
         ProcessDefinitionOptimizeDto.class
       );
     assertThat(processDefinitionDocuments).hasSize(1);
-    assertThat(indexExist(new ProcessInstanceIndex(CUSTOMER_ONBOARDING_DEFINITION_NAME).getIndexName())).isFalse();
+    assertThat(indexExist(ProcessInstanceIndex.constructIndexName(CUSTOMER_ONBOARDING_DEFINITION_NAME))).isFalse();
     logCapturer.assertContains(
       "Could not load Camunda Customer Onboarding Demo process instances to input stream. Please validate the process instance json file.");
   }
@@ -163,7 +163,7 @@ public class CustomerOnboadingDataImportIT extends AbstractImportIT {
         ProcessDefinitionOptimizeDto.class
       );
     assertThat(processDefinitionDocuments).isEmpty();
-    assertThat(indexExist(new ProcessInstanceIndex(CUSTOMER_ONBOARDING_DEFINITION_NAME).getIndexName())).isFalse();
+    assertThat(indexExist(ProcessInstanceIndex.constructIndexName(CUSTOMER_ONBOARDING_DEFINITION_NAME))).isFalse();
     logCapturer.assertContains("Process definition could not be loaded. Please validate your json file.");
   }
 
@@ -196,9 +196,9 @@ public class CustomerOnboadingDataImportIT extends AbstractImportIT {
         ProcessDefinitionOptimizeDto.class
       );
     assertThat(processDefinitionDocuments).hasSize(1);
-    assertThat(indexExist(new ProcessInstanceIndex(CUSTOMER_ONBOARDING_DEFINITION_NAME).getIndexName())).isTrue();
+    assertThat(indexExist(ProcessInstanceIndex.constructIndexName(CUSTOMER_ONBOARDING_DEFINITION_NAME))).isTrue();
     List<ProcessInstanceDto> processInstanceDto = elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
-      new ProcessInstanceIndex(processDefinitionDocuments.get(0).getKey()).getIndexName(), ProcessInstanceDto.class);
+      ProcessInstanceIndex.constructIndexName(processDefinitionDocuments.get(0).getKey()), ProcessInstanceDto.class);
 
     assertThat(processInstanceDto)
       .singleElement()

@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.query.analysis.FlowNodeOutlierVariableP
 import org.camunda.optimize.dto.optimize.query.analysis.ProcessDefinitionParametersDto;
 import org.camunda.optimize.dto.optimize.query.analysis.ProcessInstanceIdDto;
 import org.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
-import org.camunda.optimize.service.es.reader.DurationOutliersReader;
+import org.camunda.optimize.service.db.reader.DurationOutliersReader;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 

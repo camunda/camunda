@@ -9,3 +9,5 @@ export {productivityDashboardTemplate} from './productivityDashboardTemplate';
 export {efficiencyDashboardTemplate} from './efficiencyDashboardTemplate';
 export {accelerationDashboardTemplate} from './accelerationDashboardTemplate';
 export {processDashboardTemplate} from './processDashboardTemplate';
+export {portfolioPerformanceDashboardTemplate} from './portfolioPerformanceDashboardTemplate';
+export {operationsMonitoringDashboardTemplate} from './operationsMonitoringDashboardTemplate';

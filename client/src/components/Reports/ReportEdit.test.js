@@ -130,7 +130,7 @@ it('should evaluate the report on mount if the config is complete, but the resul
 
   const node = shallow(<ReportEdit {...props} report={{...report, result: null}} />);
 
-  expect(node.find('LoadingIndicator')).toExist();
+  expect(node.find('.loading')).toExist();
   expect(evaluateReport).toHaveBeenCalled();
 });
 
@@ -338,11 +338,11 @@ it('should show loading indicator if specified by children components', () => {
 
   node.find(ReportControlPanel).prop('setLoading')(true);
 
-  expect(node.find('LoadingIndicator')).toExist();
+  expect(node.find('.loading')).toExist();
 
   node.find(ReportControlPanel).prop('setLoading')(false);
 
-  expect(node.find('LoadingIndicator')).not.toExist();
+  expect(node.find('.loading')).not.toExist();
 });
 
 it('should pass the error to reportRenderer if evaluation fails', async () => {
@@ -358,12 +358,12 @@ it('should pass the error to reportRenderer if evaluation fails', async () => {
 it('should show update preview switch disabled by default', () => {
   const node = shallow(<ReportEdit {...props} />);
 
-  const updateSwicth = node.find('.updatePreview Switch');
+  const updateSwicth = node.find('.updatePreview');
 
   expect(node.state().shouldAutoReloadPreview).toBe(false);
   expect(sessionStorage.getItem).toHaveBeenCalledWith('shouldAutoReloadPreview');
-  expect(updateSwicth.prop('label')).toBe('Update Preview Automatically');
-  expect(updateSwicth.prop('checked')).toBe(false);
+  expect(updateSwicth.prop('labelA')).toBe('Update Preview Automatically');
+  expect(updateSwicth.prop('toggled')).toBe(false);
   expect(node.find('.RunPreviewButton')).toExist();
 });
 
@@ -371,9 +371,9 @@ it('should turn off automatic update when switch is toggled', () => {
   const node = shallow(<ReportEdit {...props} />);
   node.setState({shouldAutoReloadPreview: true});
 
-  const updateSwicth = node.find('.updatePreview Switch');
+  const updateSwicth = node.find('.updatePreview');
 
-  updateSwicth.simulate('change', {target: {checked: false}});
+  updateSwicth.simulate('toggle', false);
 
   expect(node.state().shouldAutoReloadPreview).toBe(false);
   expect(sessionStorage.setItem).toHaveBeenCalledWith('shouldAutoReloadPreview', false);

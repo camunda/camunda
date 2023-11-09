@@ -7,10 +7,12 @@ package org.camunda.optimize.service.es.schema;
 
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
+import org.camunda.optimize.service.util.DBProfilerUtils;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -20,8 +22,20 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
   private String indexPrefix;
 
   @Autowired
-  public OptimizeIndexNameService(final ConfigurationService configurationService) {
-    this.indexPrefix = configurationService.getEsIndexPrefix();
+  public OptimizeIndexNameService(final ConfigurationService configurationService, Environment env) {
+    // TODO change to configurationService.getIndexPrefix() with OPT-7349
+    this.setIndexPrefix(configurationService, env);
+  }
+
+  public OptimizeIndexNameService(final ConfigurationService configurationService, String profile) {
+    // TODO change to configurationService.getIndexPrefix() with OPT-7349
+    this.indexPrefix = configurationService.getIndexPrefix(profile);
+  }
+
+  private void setIndexPrefix(ConfigurationService configurationService, Environment env) {
+    // TODO change to configurationService.getIndexPrefix() with OPT-7349
+    String dbProfile = DBProfilerUtils.findOutDatabaseProfile(env);
+    this.indexPrefix = configurationService.getIndexPrefix(dbProfile);
   }
 
   public OptimizeIndexNameService(final String indexPrefix) {
@@ -76,7 +90,7 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
 
   @Override
   public void reloadConfiguration(final ApplicationContext context) {
-    this.indexPrefix = context.getBean(ConfigurationService.class).getEsIndexPrefix();
+    this.setIndexPrefix(context.getBean(ConfigurationService.class), context.getEnvironment());
   }
 
   public static String getOptimizeIndexOrTemplateNameForAliasAndVersion(final String indexAlias, final String version) {

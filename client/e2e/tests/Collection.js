@@ -21,7 +21,7 @@ fixture('Collection')
   .afterEach(cleanEntities);
 
 async function createCollection(t, name = 'Test Collection') {
-  await t.click(Common.createNewMenu).click(Common.option('Collection'));
+  await t.click(Common.createNewButton).click(Common.menuOption('Collection'));
   await t.typeText(Common.modalNameInput, name, {replace: true});
 
   await t.click(Common.modalConfirmButton);
@@ -37,12 +37,14 @@ test('create a collection and entities inside it', async (t) => {
 
   await t.click(e.entitiesTab);
 
-  await t.click(Common.createNewMenu);
+  await t.click(Common.createNewButton);
 
-  await t.expect(Common.createNewMenu.textContent).notContains('Collection');
-  await t.expect(Common.createNewMenu.textContent).contains('Dashboard');
-  await t.expect(Common.createNewMenu.textContent).contains('Report');
-  await t.click(Common.createNewMenu);
+  const createNewMenu = Common.menu('Create New').textContent;
+
+  await t.expect(createNewMenu).notContains('Collection');
+  await t.expect(createNewMenu).contains('Dashboard');
+  await t.expect(createNewMenu).contains('Report');
+  await t.click(Common.createNewButton);
 
   await createNewDashboard(t);
   const description = 'This is a description of the dashboard.';
@@ -116,7 +118,7 @@ test('user permissions', async (t) => {
   await t.click(Common.carbonOption('mary'));
   await t.typeText(Common.usersTypeahead, 'peter', {replace: true});
   await t.click(Common.carbonOption('peter')).pressKey('tab');
-  await t.click(e.roleOption('Editor'));
+  await t.click(e.carbonRoleOption('Editor'));
   await t.takeElementScreenshot(Common.modalContainer, 'img/addUser.png');
   await t.click(Common.modalConfirmButton);
 
@@ -138,7 +140,7 @@ test('user permissions', async (t) => {
   await t.click(e.addButton);
   await t.typeText(Common.usersTypeahead, username, {replace: true});
   await t.click(Common.carbonOption(username));
-  await t.click(e.roleOption('Manager'));
+  await t.click(e.carbonRoleOption('Manager'));
   await t.click(Common.modalConfirmButton);
 
   await t.hover(e.userItem(managerName));
@@ -147,7 +149,7 @@ test('user permissions', async (t) => {
   await t.click(Common.contextMenu(e.userItem(managerName)));
   await t.click(Common.edit(e.userItem(managerName)));
 
-  await t.click(e.roleOption('Viewer'));
+  await t.click(e.carbonRoleOption('Viewer'));
   await t.click(Common.modalConfirmButton);
 
   await t.expect(e.addButton.exists).notOk();
@@ -166,11 +168,11 @@ test('user permissions', async (t) => {
 
   await t.click(Common.collectionItem);
   await t.click(e.userTab);
-  await t.click(Common.selectAllCheckbox);
-  await t.click(Common.bulkMenu);
-  await t.click(e.remove(Common.bulkMenu));
+  await t.click(Common.selectAllCheckbox.filterVisible());
+  await t.click(Common.bulkMenu.filterVisible());
+  await t.click(e.remove(Common.bulkMenu.filterVisible()));
   await t.click(Common.modalConfirmButton);
-  await t.expect(Common.listItem.count).eql(1);
+  await t.expect(Common.listItem.filterVisible().count).eql(1);
 
   // delete collection
   await t.click(e.collectionContextMenu);
@@ -199,8 +201,8 @@ test('add, edit and delete sources', async (t) => {
   // add source by tenant
   await t.click(e.addButton);
   const tenantName = 'engineering';
-  await t.typeText(e.typeaheadInput, tenantName, {replace: true});
-  await t.click(Common.typeaheadOption(tenantName));
+  await t.typeText(Common.comboBox, tenantName, {replace: true});
+  await t.click(Common.carbonOption(tenantName));
   await t.click(e.itemCheckbox(3));
   await t.click(e.itemCheckbox(4));
   await t.takeElementScreenshot(Common.modalContainer, 'img/sourceByTenant.png');
@@ -229,8 +231,8 @@ test('add, edit and delete sources', async (t) => {
   // bulk deleting sources
   await t.click(Common.listItemCheckbox(e.processItem.nth(0)));
   await t.click(Common.listItemCheckbox(e.processItem.nth(1)));
-  await t.click(Common.bulkMenu);
-  await t.click(e.remove(Common.bulkMenu));
+  await t.click(Common.bulkMenu.filterVisible());
+  await t.click(e.remove(Common.bulkMenu.filterVisible()));
   await t.click(Common.modalConfirmButton);
-  await t.expect(Common.listItem.exists).notOk();
+  await t.expect(Common.listItem.filterVisible().exists).notOk();
 });

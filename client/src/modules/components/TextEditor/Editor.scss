@@ -14,9 +14,8 @@
     flex-wrap: wrap;
     align-items: flex-end;
 
-    .Button,
-    .Dropdown {
-      min-height: 35px;
+    button {
+      color: var(--cds-text);
     }
   }
 
@@ -39,7 +38,8 @@
     }
 
     &.error {
-      border-color: var(--red-darken-38);
+      outline: 2px solid var(--cds-support-error, #da1e28);
+      outline-offset: -2px;
     }
 
     & {
@@ -90,7 +90,6 @@
     }
   }
 
-  .editor,
   .toolbar {
     border: 1px solid var(--silver-darken-87);
   }

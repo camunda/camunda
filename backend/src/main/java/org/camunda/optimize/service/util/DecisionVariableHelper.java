@@ -16,12 +16,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.MULTIVALUE_FIELD_DATE;
-import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.MULTIVALUE_FIELD_DOUBLE;
-import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.MULTIVALUE_FIELD_LONG;
-import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.VARIABLE_CLAUSE_ID;
-import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.VARIABLE_VALUE;
-import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.VARIABLE_VALUE_TYPE;
+import static org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.MULTIVALUE_FIELD_DATE;
+import static org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.MULTIVALUE_FIELD_DOUBLE;
+import static org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.MULTIVALUE_FIELD_LONG;
+import static org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.VARIABLE_CLAUSE_ID;
+import static org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.VARIABLE_VALUE;
+import static org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.VARIABLE_VALUE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;

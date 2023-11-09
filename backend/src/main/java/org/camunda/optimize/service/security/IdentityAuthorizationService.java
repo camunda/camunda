@@ -26,6 +26,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.RESOUR
 @Component
 public class IdentityAuthorizationService
   extends AbstractCachingAuthorizationService<Map<IdentityType, ResolvedResourceTypeAuthorizations>> {
+
   private static final List<String> RELEVANT_PERMISSIONS = ImmutableList.of(ALL_PERMISSION, READ_PERMISSION);
 
   private final ApplicationAuthorizationService applicationAuthorizationService;

@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 @Component
 @Slf4j
 public class CollectionEntityService {
+
   private final AuthorizedEntitiesService authorizedEntitiesService;
   private final AuthorizedCollectionService authorizedCollectionService;
   private final AlertService alertService;

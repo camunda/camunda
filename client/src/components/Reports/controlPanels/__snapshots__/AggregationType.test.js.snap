@@ -4,18 +4,24 @@ exports[`should render a user task duration selection for user task duration rep
 <Popover
   className="AggregationType"
   floating={true}
-  title={
-    <React.Fragment>
-      <span
-        className="content"
-      >
-        P50
-      </span>
-      <Icon
-        className="editIcon"
-        type="edit-small"
-      />
-    </React.Fragment>
+  isTabTip={true}
+  trigger={
+    <ButtonTrigger
+      iconDescription="Aggregation"
+      kind="ghost"
+      renderIcon={
+        Object {
+          "$$typeof": Symbol(react.forward_ref),
+          "propTypes": Object {
+            "size": [Function],
+          },
+          "render": [Function],
+        }
+      }
+      size="sm"
+    >
+      P50
+    </ButtonTrigger>
   }
 >
   <Form
@@ -200,18 +206,24 @@ exports[`should render an aggregation selection for duration reports 1`] = `
 <Popover
   className="AggregationType"
   floating={true}
-  title={
-    <React.Fragment>
-      <span
-        className="content"
-      >
-        P50
-      </span>
-      <Icon
-        className="editIcon"
-        type="edit-small"
-      />
-    </React.Fragment>
+  isTabTip={true}
+  trigger={
+    <ButtonTrigger
+      iconDescription="Aggregation"
+      kind="ghost"
+      renderIcon={
+        Object {
+          "$$typeof": Symbol(react.forward_ref),
+          "propTypes": Object {
+            "size": [Function],
+          },
+          "render": [Function],
+        }
+      }
+      size="sm"
+    >
+      P50
+    </ButtonTrigger>
   }
 >
   <Form

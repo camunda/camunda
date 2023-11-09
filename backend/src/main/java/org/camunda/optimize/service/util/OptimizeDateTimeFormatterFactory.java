@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.format.DateTimeFormatter;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
 @Component
 public class OptimizeDateTimeFormatterFactory implements FactoryBean<DateTimeFormatter> {

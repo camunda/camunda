@@ -5,11 +5,16 @@
     height: 500px;
 
     .tenantsSelector {
-      align-self: center;
-      width: auto;
       margin-right: auto;
-      margin-left: 10px;
-      flex-shrink: 0;
+
+      .cds--combo-box {
+        max-height: 3rem;
+        height: 100%;
+
+        input {
+          background-color: transparent;
+        }
+      }
     }
 
     .cds--search {

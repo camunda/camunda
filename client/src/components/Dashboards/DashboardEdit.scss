@@ -1,15 +1,4 @@
 .DashboardEdit {
-  .EntityNameForm {
-    .separator {
-      width: 1px;
-      height: 23px;
-      background-color: var(--silver-darken-87);
-      margin-left: 4px;
-      margin-right: 10px;
-      transform: translate(0, 6px);
-    }
-  }
-
   .OptimizeReportTile .visualization,
   .ExternalReportTile iframe {
     opacity: 0.5;

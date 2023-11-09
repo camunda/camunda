@@ -8,7 +8,7 @@ package org.camunda.optimize.service.importing.ingested.fetcher;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
-import org.camunda.optimize.service.es.reader.ExternalVariableReader;
+import org.camunda.optimize.service.db.reader.ExternalVariableReader;
 import org.camunda.optimize.service.importing.page.TimestampBasedImportPage;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;

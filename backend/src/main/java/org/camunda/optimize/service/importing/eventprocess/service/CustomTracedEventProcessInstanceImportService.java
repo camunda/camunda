@@ -14,10 +14,10 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
+import org.camunda.optimize.service.db.reader.BusinessKeyReader;
+import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
+import org.camunda.optimize.service.db.reader.VariableUpdateInstanceReader;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
-import org.camunda.optimize.service.es.reader.BusinessKeyReader;
-import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
-import org.camunda.optimize.service.es.reader.VariableUpdateInstanceReader;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.util.DefinitionVersionHandlingUtil;
 
@@ -62,8 +62,8 @@ public class CustomTracedEventProcessInstanceImportService implements ImportServ
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
-    return eventProcessInstanceImportService.getElasticsearchImportJobExecutor();
+  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
+    return eventProcessInstanceImportService.getDatabaseImportJobExecutor();
   }
 
   private List<CamundaActivityEventDto> filterForConfiguredTenantsAndVersions(final List<CamundaActivityEventDto> camundaActivities) {

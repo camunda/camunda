@@ -38,8 +38,8 @@ import java.util.Optional;
 
 import static org.camunda.optimize.rest.util.TimeZoneUtil.formatToCorrectTimezone;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.FILTER_LIMITED_AGGREGATION;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.START_DATE;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.END_DATE;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.START_DATE;
 
 @RequiredArgsConstructor
 @Component

@@ -5,40 +5,36 @@
  * except in compliance with the proprietary license.
  */
 
-import {ForwardedRef, forwardRef, memo} from 'react';
+import {ComponentProps, ForwardedRef, forwardRef, memo} from 'react';
+import {TextInput} from '@carbon/react';
+import {Calendar} from '@carbon/icons-react';
+import classnames from 'classnames';
 
-import {Input, Message, Icon, InputProps} from 'components';
 import {t} from 'translation';
 
 import './PickerDateInput.scss';
 
-interface PickerDateInputProps extends Omit<InputProps, 'onChange'> {
+interface PickerDateInputProps extends Omit<ComponentProps<typeof TextInput>, 'onChange'> {
   reference?: ForwardedRef<HTMLInputElement>;
-  isInvalid?: boolean;
   onChange: (value: string) => void;
   onSubmit: () => void;
 }
 
 export const PickerDateInput = memo(
-  ({onChange, onSubmit, reference, isInvalid, ...props}: PickerDateInputProps) => {
-    const invalid = !!props.value && isInvalid;
+  ({onChange, onSubmit, reference, invalid, ...props}: PickerDateInputProps) => {
+    const isInvalid = !!props.value && invalid;
     return (
-      <div className="PickerDateInput">
-        <Input
-          type="text"
+      <div className={classnames('PickerDateInput', {isInvalid})}>
+        <TextInput
           {...props}
-          isInvalid={invalid}
+          invalid={isInvalid}
+          invalidText={t('common.filter.dateModal.invalidDate')}
           placeholder="yyyy-mm-dd"
           onChange={({target: {value}}) => onChange(value)}
           onKeyDown={({key}) => key === 'Enter' && onSubmit()}
           ref={reference}
         />
-        <Icon type="calender" />
-        {invalid && (
-          <Message error className="PickerDateInputWarning">
-            {t('common.filter.dateModal.invalidDate')}
-          </Message>
-        )}
+        <Calendar className="icon" />
       </div>
     );
   }

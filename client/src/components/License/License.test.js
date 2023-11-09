@@ -7,30 +7,42 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
+import {TextArea} from '@carbon/react';
+
+import {useErrorHandling} from 'hooks';
 
 import {storeLicense} from './service';
 
-import {License} from './License';
+import License from './License';
 
 jest.mock('./service', () => ({
   storeLicense: jest.fn().mockReturnValue({}),
 }));
 
-it('should store a new license', async () => {
-  const spy = jest.fn();
-  const node = shallow(
-    <License mightFail={jest.fn().mockImplementation((data, cb) => cb(data))} resetError={spy} />
-  );
+jest.mock('hooks', () => ({
+  useErrorHandling: jest.fn(() => ({
+    mightFail: jest.fn((data, cb) => cb(data)),
+    error: false,
+    resetError: jest.fn(),
+  })),
+}));
 
-  node.find('textarea').simulate('change', {target: {value: 'new license key'}});
+it('should store a new license', async () => {
+  const node = shallow(<License />);
+
+  node.find(TextArea).simulate('change', {target: {value: 'new license key'}});
   node.find('Form').simulate('submit', {preventDefault: jest.fn()});
 
   expect(storeLicense).toHaveBeenCalledWith('new license key');
-  expect(spy).toHaveBeenCalled();
 });
 
 it('should show an error on failure', async () => {
-  const node = shallow(<License mightFail={jest.fn()} error={{message: 'error happened'}} />);
+  useErrorHandling.mockReturnValueOnce({
+    mightFail: jest.fn(),
+    error: {message: 'error happened'},
+    resetError: jest.fn(),
+  });
+  const node = shallow(<License error={{message: 'error happened'}} />);
 
-  expect(node.find({type: 'error'}).children()).toIncludeText('error happened');
+  expect(node.find({kind: 'error'}).prop('subtitle')).toBe('error happened');
 });

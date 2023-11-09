@@ -24,8 +24,8 @@ import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantId
 import org.camunda.optimize.dto.optimize.query.definition.TenantIdWithDefinitionsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsResponseDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
-import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
-import org.camunda.optimize.service.es.reader.DefinitionReader;
+import org.camunda.optimize.service.db.reader.CamundaActivityEventReader;
+import org.camunda.optimize.service.db.reader.DefinitionReader;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.camunda.optimize.service.tenant.TenantService;
 import org.camunda.optimize.service.util.BpmnModelUtil;
@@ -60,10 +60,12 @@ import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 @Component
 @Slf4j
 public class DefinitionService implements ConfigurationReloadable {
+
   private final DefinitionReader definitionReader;
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final TenantService tenantService;
   private final CamundaActivityEventReader camundaActivityEventReader;
+
   private final LoadingCache<String, Map<String, DefinitionOptimizeResponseDto>> latestProcessDefinitionCache;
   private final LoadingCache<String, Map<String, DefinitionOptimizeResponseDto>> latestDecisionDefinitionCache;
 
@@ -253,11 +255,9 @@ public class DefinitionService implements ConfigurationReloadable {
                                                                                        final boolean withXml) {
     log.debug("Fetching definitions of type " + type);
     List<T> definitionsResult = definitionReader.getFullyImportedDefinitions(type, withXml);
-
     if (userId != null) {
       definitionsResult = filterAuthorizedDefinitions(userId, definitionsResult);
     }
-
     return definitionsResult;
   }
 

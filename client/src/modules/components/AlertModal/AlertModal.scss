@@ -1,5 +1,24 @@
 .AlertModal {
-  .InputGroup button.reset {
-    flex: initial;
+  .cds--modal-container {
+    max-height: 90vh;
+
+    .cds--modal-content {
+      overflow: auto;
+    }
+  }
+
+  .cds--actionable-notification__content {
+    display: inline;
+  }
+
+  .labelHidden {
+    label {
+      visibility: hidden;
+    }
+  }
+
+  .reset {
+    align-self: flex-end;
+    width: 100%;
   }
 }

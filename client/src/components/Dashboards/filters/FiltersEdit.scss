@@ -37,24 +37,12 @@
     display: none;
   }
 
-  .preText {
-    margin-bottom: 22px;
-  }
-
   .customValueCheckbox {
     display: inline-block;
-    font-size: 14px;
-
-    .label {
-      padding-left: 10px;
-    }
   }
 
   .StringInput {
-    &:not(.containMode) + .customValueCheckbox {
-      transform: translateY(-20px);
-    }
-    .customValueButtonRow .notification {
+    .notification {
       display: none;
     }
   }
@@ -68,23 +56,8 @@
         width: 100%;
         transform: translateY(-10px);
         display: block;
-        border-top: 1px solid var(--silver-darken-87);
+        border-top: 1px solid var(--cds-border-subtle);
       }
-    }
-  }
-}
-
-.dashboardAssigneeFilter {
-  .preText {
-    margin-bottom: 22px;
-  }
-
-  .customValueCheckbox {
-    display: inline-block;
-    font-size: 14px;
-
-    .label {
-      padding-left: 10px;
     }
   }
 }

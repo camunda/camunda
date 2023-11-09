@@ -7,6 +7,7 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
+import {ComboBox} from '@carbon/react';
 
 import {LoadingIndicator, TenantInfo, Typeahead} from 'components';
 import {getCollection} from 'services';
@@ -132,7 +133,7 @@ it('should load versions and tenants when key is selected', async () => {
   const node = await shallow(<DefinitionSelection {...props} />);
   await flushPromises();
 
-  await node.find(Typeahead).simulate('change', 'foo');
+  await node.find(ComboBox).simulate('change', {selectedItem: {key: 'foo'}});
   await flushPromises();
 
   expect(loadVersions).toHaveBeenCalledWith(props.type, undefined, 'foo');
@@ -147,7 +148,7 @@ it('should update to all version when key is selected', async () => {
   const node = await shallow(<DefinitionSelection {...props} />);
   await flushPromises();
 
-  await node.find(Typeahead).simulate('change', 'foo');
+  await node.find(ComboBox).simulate('change', {selectedItem: {key: 'foo'}});
   await flushPromises();
 
   expect(spy.mock.calls[0][0].versions).toEqual(['all']);
@@ -182,8 +183,8 @@ it('should disable typeahead if no reports are available', async () => {
   const node = await shallow(<DefinitionSelection {...props} />);
   await flushPromises();
 
-  expect(node.find('Typeahead')).toExist();
-  expect(node.find('Typeahead')).toBeDisabled();
+  expect(node.find(ComboBox)).toExist();
+  expect(node.find(ComboBox)).toBeDisabled();
 });
 
 it('should set key and version, if process definition is already available', async () => {
@@ -194,7 +195,11 @@ it('should set key and version, if process definition is already available', asy
   const node = await shallow(<DefinitionSelection {...definitionConfig} {...props} />);
   await flushPromises();
 
-  expect(node.find('.name')).toHaveProp('initialValue', 'bar');
+  expect(node.find(ComboBox)).toHaveProp('initialSelectedItem', {
+    id: 'bar',
+    key: 'bar',
+    name: 'Bar',
+  });
   expect(node.find(VersionPopover).prop('selected')).toEqual(['1']);
 });
 
@@ -208,7 +213,7 @@ it('should not call on change if key didnt change', async () => {
 
   spy.mockClear();
 
-  await node.find(Typeahead).simulate('change', 'bar');
+  await node.find(ComboBox).simulate('change', {selectedItem: {key: 'bar'}});
   await flushPromises();
 
   expect(spy).not.toHaveBeenCalled();
@@ -268,7 +273,7 @@ it('should show an info message if specified by props', async () => {
 });
 
 it('should pass an id for every entry to the typeahead', async () => {
-  loadDefinitions.mockReturnValueOnce([
+  const defs = [
     {
       key: 'foo',
       name: 'Foo Definition',
@@ -277,12 +282,16 @@ it('should pass an id for every entry to the typeahead', async () => {
       key: 'bar',
       name: 'Bar Definition',
     },
-  ]);
+  ];
+  loadDefinitions.mockReturnValueOnce(defs);
 
   const node = await shallow(<DefinitionSelection {...props} />);
   await flushPromises();
 
-  expect(node.find('Typeahead')).toMatchSnapshot();
+  expect(node.find(ComboBox).prop('items')).toEqual([
+    {id: 'foo', ...defs[0]},
+    {id: 'bar', ...defs[1]},
+  ]);
 });
 
 it('should construct a popover title', async () => {
@@ -389,7 +398,7 @@ describe('tenants', () => {
     );
     await flushPromises();
 
-    await node.find(Typeahead).simulate('change', 'foo');
+    await node.find(ComboBox).simulate('change', {selectedItem: {key: 'foo'}});
     await flushPromises();
 
     expect(spy).toHaveBeenCalledWith({

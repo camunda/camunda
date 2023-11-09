@@ -20,8 +20,8 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableUpdateDto
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableDataDto;
 import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
-import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
-import org.camunda.optimize.service.es.writer.ZeebeProcessInstanceWriter;
+import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
+import org.camunda.optimize.service.db.writer.ZeebeProcessInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.service.ObjectVariableService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -38,7 +38,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.BOOLEAN_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DOUBLE_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.OBJECT_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.STRING_TYPE;
-import static org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndex.SERIALIZATION_DATA_FORMAT;
+import static org.camunda.optimize.service.db.schema.index.ExternalProcessVariableIndex.SERIALIZATION_DATA_FORMAT;
 
 @Slf4j
 public class ZeebeVariableImportService extends ZeebeProcessInstanceSubEntityImportService<ZeebeVariableRecordDto> {

@@ -7,6 +7,7 @@
 
 import React, {useState, useEffect} from 'react';
 import equals from 'fast-deep-equal';
+import {Calendar} from '@carbon/icons-react';
 
 import {Button} from 'components';
 import {t} from 'translation';
@@ -44,7 +45,7 @@ export default function FiltersView({availableFilters, filter = [], setFilter, r
                 key={type}
                 emptyText={t('common.off')}
                 title={t('dashboard.filter.types.' + type)}
-                icon="calender"
+                icon={Calendar}
                 filter={dateFilter?.data}
                 setFilter={(newFilter) => {
                   const rest = filter.filter((filter) => !equals(filter, dateFilter));

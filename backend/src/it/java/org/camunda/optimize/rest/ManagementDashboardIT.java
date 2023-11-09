@@ -22,8 +22,6 @@ import org.camunda.optimize.dto.optimize.query.dashboard.tile.PositionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.CountProgressDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
@@ -64,8 +62,8 @@ import static org.camunda.optimize.service.dashboard.ManagementDashboardService.
 import static org.camunda.optimize.service.dashboard.ManagementDashboardService.STARTED_IN_LAST_SIX_MONTHS_DESCRIPTION_LOCALIZATION_CODE;
 import static org.camunda.optimize.service.dashboard.ManagementDashboardService.STARTED_IN_LAST_SIX_MONTHS_NAME_LOCALIZATION_CODE;
 import static org.camunda.optimize.service.entities.dashboard.DashboardDefinitionImportIT.getExternalResourceUrls;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
 public class ManagementDashboardIT extends AbstractPlatformIT {

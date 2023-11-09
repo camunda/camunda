@@ -71,7 +71,7 @@ export default function processRawData({
     outputVariables: outputVars,
   } = result[0] || {};
 
-  const countNames = getVisibleColumns(counts, tableColumns, 'count');
+  const countKeys = getVisibleColumns(counts, tableColumns, 'count');
 
   const variableNames = getVisibleColumns(variables, tableColumns, 'variable');
 
@@ -88,7 +88,7 @@ export default function processRawData({
   // If all columns are excluded return a message to enable one
   if (
     instanceProps.length +
-      countNames.length +
+      countKeys.length +
       variableNames.length +
       inputVariables.length +
       outputVariables.length +
@@ -127,7 +127,7 @@ export default function processRawData({
 
     return [
       ...row,
-      ...getVariableValues(countNames, instance.counts),
+      ...getVariableValues(countKeys, instance.counts),
       ...getVariableValues(variableNames, instance.variables, onVariableClick),
       ...getVariableValues(inputVariables, instance.inputVariables),
       ...getVariableValues(outputVariables, instance.outputVariables),
@@ -141,13 +141,16 @@ export default function processRawData({
       return {id: key, label, title: label};
     })
     .concat(
-      countNames.map((name) => ({
-        type: 'counts',
-        // we dont give them any prefix to keep compatibility with included/excluded columns
-        id: name,
-        label: getLabelWithType(name, 'count'),
-        title: name,
-      }))
+      countKeys.map((key) => {
+        const name = t('report.table.rawData.' + key);
+        return {
+          type: 'counts',
+          // we dont give them any prefix to keep compatibility with included/excluded columns
+          id: key,
+          label: getLabelWithType(name, 'count'),
+          title: name,
+        };
+      })
     )
     .concat(
       variableNames.map((name) => ({

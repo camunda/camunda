@@ -16,11 +16,11 @@ import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExec
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByNone;
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.none.ProcessGroupByNone;
 import org.camunda.optimize.service.es.report.command.modules.view.process.ProcessViewRawData;
+import org.camunda.optimize.service.export.CSVUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
 import static org.camunda.optimize.service.export.CSVUtils.extractAllProcessInstanceDtoFieldKeys;
 
@@ -66,6 +66,8 @@ public class RawProcessInstanceDataGroupByNoneCmd extends ProcessCmd<List<RawDat
       .getConfiguration()
       .getTableColumns();
     tableColumns.addNewAndRemoveUnexpectedVariableColumns(variableNames);
+    tableColumns.addNewAndRemoveUnexpectedFlowNodeDurationColumns(CSVUtils.extractAllPrefixedFlowNodeKeys(result.getFirstMeasureData()));
+    tableColumns.addCountColumns(CSVUtils.extractAllPrefixedCountKeys());
     tableColumns.addDtoColumns(extractAllProcessInstanceDtoFieldKeys());
   }
 

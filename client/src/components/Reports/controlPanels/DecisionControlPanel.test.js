@@ -211,16 +211,6 @@ it('should show the number of decision instances in the current Filter', () => {
   expect(node).toIncludeText('Displaying data from 3 of 5 evaluations');
 });
 
-it('should allow collapsing sections', () => {
-  const node = shallow(<DecisionControlPanel {...props} />);
-
-  node.find('.source').find(Button).simulate('click');
-  expect(node.find('.source')).toHaveClassName('collapsed');
-
-  node.find('.source').find(Button).simulate('click');
-  expect(node.find('.source')).not.toHaveClassName('collapsed');
-});
-
 it('should add new variables to includedColumns when switching definition/version', async () => {
   loadOutputVariables.mockReturnValueOnce([{id: 'existingVariable'}, {id: 'newVariable'}]);
 

@@ -9,7 +9,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import {reportConfig} from 'services';
-import {Select} from 'components';
+import {CarbonSelect} from 'components';
 
 import View from './View';
 
@@ -36,6 +36,6 @@ it('should disable variable submenu if there are no number variables', () => {
 
   const node = shallow(<View {...config} />);
 
-  expect(node.find(Select.Submenu).prop('value')).toBe('variable');
-  expect(node.find(Select.Submenu).prop('disabled')).toBe(true);
+  expect(node.find(CarbonSelect.Submenu).prop('value')).toBe('variable');
+  expect(node.find(CarbonSelect.Submenu).prop('disabled')).toBe(true);
 });

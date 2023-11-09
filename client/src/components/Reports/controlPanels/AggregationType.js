@@ -6,8 +6,9 @@
  */
 
 import React, {useState, useEffect} from 'react';
+import {Edit} from '@carbon/icons-react';
 
-import {Popover, Icon, Form, Switch} from 'components';
+import {Popover, Form, Switch} from 'components';
 import {t} from 'translation';
 import {getOptimizeProfile} from 'config';
 
@@ -114,11 +115,16 @@ export default function AggregationType({report, onChange}) {
     return (
       <Popover
         className="AggregationType"
-        title={
-          <>
-            <span className="content">{popoverTitle}</span>
-            <Icon className="editIcon" type="edit-small" />
-          </>
+        isTabTip
+        trigger={
+          <Popover.Button
+            size="sm"
+            kind="ghost"
+            renderIcon={Edit}
+            iconDescription={t('report.config.aggregation.label')}
+          >
+            {popoverTitle}
+          </Popover.Button>
         }
         floating
       >

@@ -26,6 +26,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_PROFILE;
+
 /**
  * Bunch of utility methods that might be required during upgrade
  * operation.
@@ -56,7 +58,7 @@ public class UpgradeUtil {
       new OptimizeDateTimeFormatterFactory().getObject(),
       ConfigurationServiceBuilder.createDefaultConfiguration()
     ).createOptimizeMapper();
-    OptimizeIndexNameService indexNameService = new OptimizeIndexNameService(configurationService);
+    OptimizeIndexNameService indexNameService = new OptimizeIndexNameService(configurationService, ELASTICSEARCH_PROFILE);
     ElasticsearchCustomHeaderProvider customHeaderProvider = new ElasticsearchCustomHeaderProvider(
       configurationService, new PluginJarFileLoader(configurationService));
     customHeaderProvider.initPlugins();

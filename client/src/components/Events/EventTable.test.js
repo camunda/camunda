@@ -110,8 +110,7 @@ it('should allow searching for events', async () => {
 });
 
 it('should call callback when changing mapping', async () => {
-  const spy = jest.fn();
-  const node = shallow(<EventTable {...props} onMappingChange={spy} />);
+  const node = shallow(<EventTable {...props} />);
 
   await flushPromises();
 
@@ -122,7 +121,7 @@ it('should call callback when changing mapping', async () => {
 
   await flushPromises();
 
-  expect(spy).toHaveBeenCalledWith(
+  expect(props.onMappingChange).toHaveBeenCalledWith(
     {
       group: 'eventGroup',
       source: 'order-service',
@@ -311,5 +310,59 @@ it('Should invoke loadEvents when updating the column sorting', () => {
     },
     '',
     {by: 'eventName', order: 'desc'}
+  );
+});
+
+it('should select the proper event if there are multiple events with the same name and different source', async () => {
+  loadEvents.mockReturnValueOnce([
+    {
+      group: 'eventGroup',
+      source: 'source1',
+      eventName: 'OrderProcessed',
+      count: 10,
+    },
+    {
+      group: 'eventGroup',
+      source: 'source2',
+      eventName: 'OrderProcessed',
+      count: 10,
+    },
+  ]);
+  const node = shallow(<EventTable {...props} />);
+
+  await flushPromises();
+
+  node
+    .find(Table)
+    .prop('body')[0]
+    .content[0].props.onSelect({target: {checked: true}});
+
+  await flushPromises();
+
+  expect(props.onMappingChange).toHaveBeenCalledWith(
+    {
+      group: 'eventGroup',
+      source: 'source1',
+      eventName: 'OrderProcessed',
+    },
+    true
+  );
+
+  props.onMappingChange.mockClear();
+
+  node
+    .find(Table)
+    .prop('body')[1]
+    .content[0].props.onSelect({target: {checked: true}});
+
+  await flushPromises();
+
+  expect(props.onMappingChange).toHaveBeenCalledWith(
+    {
+      group: 'eventGroup',
+      source: 'source2',
+      eventName: 'OrderProcessed',
+    },
+    true
   );
 });

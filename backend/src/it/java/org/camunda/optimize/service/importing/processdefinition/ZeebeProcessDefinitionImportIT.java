@@ -8,7 +8,6 @@ package org.camunda.optimize.service.importing.processdefinition;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.AbstractCCSMIT;
@@ -17,26 +16,32 @@ import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.zeebe.definition.ZeebeProcessDefinitionRecordDto;
-import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
+import org.junit.jupiter.api.condition.EnabledIf;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 import static org.camunda.optimize.util.ZeebeBpmnModels.END_EVENT;
+import static org.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_CATCH;
+import static org.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_GATEWAY_CATCH;
+import static org.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_INTERRUPTING_BOUNDARY;
+import static org.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_NON_INTERRUPTING_BOUNDARY;
+import static org.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_PROCESS_END;
+import static org.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_START_EVENT;
+import static org.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_START_INT_SUB_PROCESS;
+import static org.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_START_NON_INT_SUB_PROCESS;
+import static org.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_THROW;
 import static org.camunda.optimize.util.ZeebeBpmnModels.START_EVENT;
 import static org.camunda.optimize.util.ZeebeBpmnModels.USER_TASK;
+import static org.camunda.optimize.util.ZeebeBpmnModels.createProcessWith83SignalEvents;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleUserTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
 
@@ -205,11 +210,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
     // given a process that contains the following:
     // data stores, date objects, link events, escalation events, undefined tasks
     final BpmnModelInstance model = readProcessDiagramAsInstance("/bpmn/compatibility/adventure.bpmn");
-    final String processId = zeebeExtension.deployProcess(model).getBpmnProcessId();
-    zeebeExtension.startProcessInstanceWithVariables(
-      processId,
-      Map.of("space", true, "time", true)
-    );
+    zeebeExtension.deployProcess(model).getBpmnProcessId();
 
     // when
     waitUntilNumberOfDefinitionsExported(1);
@@ -221,7 +222,6 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
       .extracting(ProcessDefinitionOptimizeDto::getFlowNodeData)
       .satisfies(flowNodeDataDtos -> assertThat(flowNodeDataDtos).extracting(FlowNodeDataDto::getId)
         .contains(
-          "signalStartEventId",
           "linkIntermediateThrowEventId",
           "linkIntermediateCatchEventId",
           "undefinedTaskId",
@@ -231,6 +231,34 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
           "escalationNonInterruptingStartEventId",
           "escalationStartEventId",
           "escalationEndEventId"
+        ));
+  }
+
+  @DisabledIf("isZeebeVersionPre83")
+  @Test
+  public void importZeebeProcess_processContainsNewBpmnElementsIntroducedWith830() {
+    // given a process that contains the new signal symbols
+    zeebeExtension.deployProcess(createProcessWith83SignalEvents("startSignalName"));
+
+    // when
+    waitUntilNumberOfDefinitionsExported(1);
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions())
+      .singleElement()
+      .extracting(ProcessDefinitionOptimizeDto::getFlowNodeData)
+      .satisfies(flowNodeDataDtos -> assertThat(flowNodeDataDtos).extracting(FlowNodeDataDto::getId)
+        .contains(
+          SIGNAL_START_EVENT,
+          SIGNAL_START_INT_SUB_PROCESS,
+          SIGNAL_START_NON_INT_SUB_PROCESS,
+          SIGNAL_GATEWAY_CATCH,
+          SIGNAL_THROW,
+          SIGNAL_CATCH,
+          SIGNAL_INTERRUPTING_BOUNDARY,
+          SIGNAL_NON_INTERRUPTING_BOUNDARY,
+          SIGNAL_PROCESS_END
         ));
   }
 
@@ -252,22 +280,29 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
       .isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
   }
 
+  @EnabledIf("isZeebeVersionWithMultiTenancy")
+  @Test
+  public void tenantIdImported_processDefinitionData() {
+    // given
+    deployAndStartInstanceForProcess(createSimpleServiceTaskProcess("aProcess"));
+    waitUntilDefinitionWithIdExported("aProcess");
+    final String expectedTenantId = "testTenant";
+    setTenantIdForExportedZeebeRecords(ZEEBE_PROCESS_DEFINITION_INDEX_NAME, expectedTenantId);
+
+    // when
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions())
+      .extracting(ProcessDefinitionOptimizeDto::getTenantId)
+      .singleElement()
+      .isEqualTo(expectedTenantId);
+  }
+
   private Process deployProcessAndStartInstance(final BpmnModelInstance simpleProcess) {
     final Process deployedProcess = zeebeExtension.deployProcess(simpleProcess);
     zeebeExtension.startProcessInstanceForProcess(deployedProcess.getBpmnProcessId());
     return deployedProcess;
-  }
-
-  private void waitUntilDefinitionWithIdExported(final String processDefinitionId) {
-    waitUntilRecordMatchingQueryExported(
-      ElasticsearchConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME,
-      boolQuery()
-        .must(termQuery(ZeebeProcessDefinitionRecordDto.Fields.intent, ProcessIntent.CREATED.name()))
-        .must(termQuery(
-          ZeebeProcessDefinitionRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.bpmnProcessId,
-          processDefinitionId
-        ))
-    );
   }
 
 }

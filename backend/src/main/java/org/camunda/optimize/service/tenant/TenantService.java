@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.TenantDto;
 import java.util.List;
 
 public interface TenantService {
+
   boolean isAuthorizedToSeeTenant(final String userId, final String tenantId);
 
   default List<String> getTenantIdsForUser(final String userId) {
@@ -19,4 +20,5 @@ public interface TenantService {
   boolean isMultiTenantEnvironment();
 
   List<TenantDto> getTenantsForUser(final String userId);
+
 }

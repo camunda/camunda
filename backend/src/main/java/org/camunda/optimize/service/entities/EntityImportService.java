@@ -41,7 +41,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.COMBINED_REPORT;
 import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.DASHBOARD;

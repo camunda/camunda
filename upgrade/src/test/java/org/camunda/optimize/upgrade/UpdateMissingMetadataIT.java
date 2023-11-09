@@ -6,8 +6,9 @@
 package org.camunda.optimize.upgrade;
 
 import io.github.netmikey.logunit.api.LogCapturer;
+import org.camunda.optimize.service.db.schema.index.MetadataIndex;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
-import org.camunda.optimize.service.es.schema.index.MetadataIndex;
+import org.camunda.optimize.service.es.schema.index.MetadataIndexES;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.factories.CurrentVersionNoOperationUpgradePlanFactory;
@@ -18,7 +19,7 @@ import org.mockserver.model.HttpResponse;
 import org.mockserver.model.HttpStatusCode;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.METADATA_INDEX_NAME;
 import static org.mockserver.model.HttpRequest.request;
 
 public class UpdateMissingMetadataIT extends AbstractUpgradeIT {
@@ -46,7 +47,7 @@ public class UpdateMissingMetadataIT extends AbstractUpgradeIT {
   @Test
   public void updateIsSkippedIfNoMetadataDocExists() {
     // given
-    deleteAllDocsInIndex(new MetadataIndex());
+    deleteAllDocsInIndex(new MetadataIndexES());
     final UpgradePlan upgradePlan = new CurrentVersionNoOperationUpgradePlanFactory().createUpgradePlan();
 
     // when

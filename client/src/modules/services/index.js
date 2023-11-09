@@ -15,13 +15,12 @@ export {
   loadOutputVariables,
 } from './dataLoaders';
 export {numberParser} from './NumberParser';
-export {incompatibleFilters} from './incompatibleFilters';
+export {incompatibleFilters} from './incompatibleFilters.ts';
 export {default as reportConfig, createReportUpdate, getDefaultSorting} from './reportConfig';
 export {getDiagramElementsBetween} from './diagramServices';
 export {default as getTooltipText} from './getTooltipText';
 export {default as getScreenBounds} from './getScreenBounds';
 export {
-  loadEntities,
   loadEntity,
   loadReports,
   createEntity,
@@ -29,6 +28,8 @@ export {
   deleteEntity,
   copyReport,
 } from './entityService';
+
+export {loadEntities} from './entityService.ts';
 
 export {
   evaluateReport,

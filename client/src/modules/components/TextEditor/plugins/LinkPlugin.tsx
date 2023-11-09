@@ -6,7 +6,7 @@
  */
 
 import {useEffect, useState} from 'react';
-import {Button} from '@carbon/react';
+import {Button, Form, Stack, TextInput} from '@carbon/react';
 import {
   createCommand,
   $createTextNode,
@@ -21,7 +21,7 @@ import {mergeRegister, $insertNodeToNearestRoot} from '@lexical/utils';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
 import {LinkPlugin as LexicalLinkPlugin} from '@lexical/react/LexicalLinkPlugin';
 
-import {Form, Input, Labeled, Modal} from 'components';
+import {Modal} from 'components';
 import {t} from 'translation';
 
 import {validateUrl} from './service';
@@ -85,25 +85,23 @@ export function InsertLinkModal({editor, onClose}: {editor: LexicalEditor; onClo
       <Modal.Header>{t('textEditor.plugins.link.title')}</Modal.Header>
       <Modal.Content>
         <Form>
-          <Form.Group>
-            <Labeled label={t('textEditor.plugins.link.urlLabel')}>
-              <Input
-                placeholder={t('textEditor.plugins.link.urlPlaceholder')}
-                onChange={({target: {value}}) => setUrl(value)}
-                value={url}
-                data-modal-primary-focus
-              />
-            </Labeled>
-          </Form.Group>
-          <Form.Group>
-            <Labeled label={t('textEditor.plugins.link.altTextLabel')}>
-              <Input
-                placeholder={t('textEditor.plugins.link.altTextPlaceholder')}
-                onChange={({target: {value}}) => setAltText(value)}
-                value={altText}
-              />
-            </Labeled>
-          </Form.Group>
+          <Stack gap={6}>
+            <TextInput
+              id="linkUrl"
+              labelText={t('textEditor.plugins.link.urlLabel')}
+              placeholder={t('textEditor.plugins.link.urlPlaceholder').toString()}
+              onChange={({target: {value}}) => setUrl(value)}
+              value={url}
+              data-modal-primary-focus
+            />
+            <TextInput
+              id="linkAltText"
+              labelText={t('textEditor.plugins.link.altTextLabel')}
+              placeholder={t('textEditor.plugins.link.altTextPlaceholder').toString()}
+              onChange={({target: {value}}) => setAltText(value)}
+              value={altText}
+            />
+          </Stack>
         </Form>
       </Modal.Content>
       <Modal.Footer>

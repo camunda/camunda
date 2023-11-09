@@ -5,7 +5,7 @@ on:
     inputs:
       image_tag:
         required: true
-        description: 'Required format: 3.x.branchnumber-SNAPSHOT, eg 3.11.6861-SNAPSHOT for a branch called OPT-6861'
+        description: 'Required format: 3.x.branchnumber-SNAPSHOT, eg 3.12.6861-SNAPSHOT for a branch called OPT-6861'
 env:
   IMAGE_NAME: optimize
 permissions:
@@ -16,13 +16,13 @@ jobs:
     name: Build Docker image
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
       # The nexus username and pwd are being read from the VAULT secret management
       # that is being administrated by infra.
       - name: Import secrets
         id: secrets
-        uses: hashicorp/vault-action@86c7f837eb43794c7dc56f74d9cffac710679b28
+        uses: hashicorp/vault-action@caba6efd0e9cf0623814dd75bba0ec053be80ff5
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -86,7 +86,7 @@ jobs:
           push: true
           platforms: linux/amd64
           build-args: |
-            VERSION=3.11.0-SNAPSHOT
+            VERSION=3.12.0-SNAPSHOT
             DATE= ${{ steps.get-date.outputs.result }}
             REVISION= ${{ github.sha }}
           tags: ${{ steps.meta.outputs.docker_image }}

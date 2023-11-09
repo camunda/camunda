@@ -9,7 +9,7 @@ import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto;
-import org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndex;
+import org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndexES;
 import org.camunda.optimize.service.events.rollover.ExternalProcessVariableIndexRolloverService;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
@@ -22,12 +22,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
 
-import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.INDEX_SUFFIX_PRE_ROLLOVER;
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_PROCESS_VARIABLE_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.INDEX_SUFFIX_PRE_ROLLOVER;
 
 public class ExternalProcessVariableRolloverIT extends AbstractPlatformIT {
+
   private static final int NUMBER_OF_VARIABLES_IN_BATCH = 10;
   private static final String EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER = "-000002";
   private static final String EXPECTED_SUFFIX_AFTER_SECOND_ROLLOVER = "-000003";
@@ -38,7 +38,7 @@ public class ExternalProcessVariableRolloverIT extends AbstractPlatformIT {
     elasticSearchIntegrationTestExtension.deleteAllExternalVariableIndices();
     embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
       embeddedOptimizeExtension.getOptimizeElasticClient(),
-      new ExternalProcessVariableIndex()
+      new ExternalProcessVariableIndexES()
     );
   }
 
@@ -178,16 +178,16 @@ public class ExternalProcessVariableRolloverIT extends AbstractPlatformIT {
 
   private String getExpectedIndexNameBeforeRollover() {
     return embeddedOptimizeExtension.getIndexNameService()
-      .getOptimizeIndexTemplateNameWithVersion(new ExternalProcessVariableIndex()) + INDEX_SUFFIX_PRE_ROLLOVER;
+      .getOptimizeIndexTemplateNameWithVersion(new ExternalProcessVariableIndexES()) + INDEX_SUFFIX_PRE_ROLLOVER;
   }
 
   private String getExpectedIndexNameAfterFirstRollover() {
     return embeddedOptimizeExtension.getIndexNameService()
-      .getOptimizeIndexTemplateNameWithVersion(new ExternalProcessVariableIndex()) + EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER;
+      .getOptimizeIndexTemplateNameWithVersion(new ExternalProcessVariableIndexES()) + EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER;
   }
 
   private String getExpectedIndexNameAfterSecondRollover() {
     return embeddedOptimizeExtension.getIndexNameService()
-      .getOptimizeIndexTemplateNameWithVersion(new ExternalProcessVariableIndex()) + EXPECTED_SUFFIX_AFTER_SECOND_ROLLOVER;
+      .getOptimizeIndexTemplateNameWithVersion(new ExternalProcessVariableIndexES()) + EXPECTED_SUFFIX_AFTER_SECOND_ROLLOVER;
   }
 }

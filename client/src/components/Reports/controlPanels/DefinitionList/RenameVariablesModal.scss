@@ -14,6 +14,11 @@
     .header {
       display: flex;
 
+      .guidelines {
+        list-style: initial;
+        padding-left: 40px;
+      }
+
       .searchInputContainer {
         position: relative;
         margin-left: auto;

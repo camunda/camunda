@@ -11,13 +11,14 @@ import {SerializedEditorState} from 'lexical';
 
 import TextEditor from './TextEditor';
 import {ChangeEvent} from 'react';
+import Editor from './Editor';
 
 describe('TextEditor', () => {
   describe('Richtext editor', () => {
     it('should render editor', () => {
       const node = shallow(<TextEditor />);
 
-      expect(node.find('Editor')).toBeDefined();
+      expect(node.find(Editor)).toBeDefined();
     });
 
     it('should call onChange when text changes', () => {
@@ -41,7 +42,7 @@ describe('TextEditor', () => {
         },
       } as unknown as SerializedEditorState;
 
-      node.find('Editor').prop<(value: SerializedEditorState) => void>('onChange')?.(newValue);
+      node.find(Editor).prop<(value: SerializedEditorState) => void>('onChange')?.(newValue);
       const toolbar = node.find('.toolbar');
 
       expect(spy).toHaveBeenCalledWith(newValue);
@@ -57,7 +58,7 @@ describe('TextEditor', () => {
       expect(node.find('.toolbar')).not.toExist();
     });
 
-    it('should indicate error', () => {
+    it('should indicate error for initial state', () => {
       const editorState = {
         root: {
           children: [
@@ -77,7 +78,31 @@ describe('TextEditor', () => {
 
       const node = shallow(<TextEditor initialValue={editorState} />);
 
-      expect(node.find('Editor').prop('error')).toBe(true);
+      expect(node.find(Editor).prop('error')).toBe(true);
+    });
+
+    it('should indicate error when typed too much', () => {
+      const editorState = {
+        root: {
+          children: [
+            {
+              children: [
+                {
+                  text: 'a'.repeat(3001),
+                  type: 'text',
+                },
+              ],
+              type: 'paragraph',
+            },
+          ],
+          type: 'root',
+        },
+      } as unknown as SerializedEditorState;
+
+      const node = shallow(<TextEditor />);
+
+      node.find(Editor).prop('onChange')?.(editorState);
+      expect(node.find(Editor).prop('error')).toBe(true);
     });
   });
 
@@ -94,13 +119,13 @@ describe('TextEditor', () => {
 
       const newValue = 'this is some new text';
 
-      node.find('textarea').prop<(value: ChangeEvent<HTMLTextAreaElement>) => void>('onChange')?.({
+      node.find('TextArea').prop<(value: ChangeEvent<HTMLTextAreaElement>) => void>('onChange')?.({
         target: {value: newValue},
       } as jest.MockedObject<ChangeEvent<HTMLTextAreaElement>>);
       const toolbar = node.find('.toolbar');
 
       expect(spy).toHaveBeenCalledWith(newValue);
-      expect(toolbar).toBeDefined();
+      expect(toolbar).not.toExist();
     });
 
     it('should indicate error', () => {
@@ -110,7 +135,7 @@ describe('TextEditor', () => {
         <TextEditor simpleEditor initialValue={editorState} onChange={jest.fn()} />
       );
 
-      expect(node.find('textarea').hasClass('error')).toBe(true);
+      expect(node.find('TextArea').prop('invalid')).toBe(true);
     });
   });
 });

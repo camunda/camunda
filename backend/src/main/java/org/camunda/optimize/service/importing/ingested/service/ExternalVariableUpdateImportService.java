@@ -9,10 +9,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableUpdateDto;
+import org.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.ExternalVariableUpdateElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.importing.engine.service.ObjectVariableService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -28,9 +28,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
-import static org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndex.SERIALIZATION_DATA_FORMAT;
+import static org.camunda.optimize.service.db.schema.index.ExternalProcessVariableIndex.SERIALIZATION_DATA_FORMAT;
 
 @Slf4j
 public class ExternalVariableUpdateImportService implements ImportService<ExternalProcessVariableDto> {
@@ -71,7 +70,7 @@ public class ExternalVariableUpdateImportService implements ImportService<Extern
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
     return elasticsearchImportJobExecutor;
   }
 

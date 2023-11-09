@@ -5,16 +5,17 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState, useEffect} from 'react';
+import {useState, useEffect} from 'react';
 
-import {withErrorHandling} from 'HOC';
+import {useErrorHandling} from 'hooks';
 import {showError} from 'notifications';
 import {t} from 'translation';
 
 import {loadUserNames} from './service';
 
-export function AssigneeFilterPreview({mightFail, filter, getNames}) {
+export default function AssigneeFilterPreview({filter, getNames}) {
   const [names, setNames] = useState({});
+  const {mightFail} = useErrorHandling();
 
   useEffect(() => {
     const realUsers = filter.data.values.filter((id) => !!id); // remove null for Unassigned
@@ -55,8 +56,6 @@ export function AssigneeFilterPreview({mightFail, filter, getNames}) {
     </span>
   );
 }
-
-export default withErrorHandling(AssigneeFilterPreview);
 
 function createOperator(name) {
   return <span> {name} </span>;

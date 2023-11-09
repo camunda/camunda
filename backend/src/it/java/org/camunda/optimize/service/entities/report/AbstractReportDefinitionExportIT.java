@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExpo
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 import org.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
-import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndexES;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -122,7 +122,7 @@ public abstract class AbstractReportDefinitionExportIT extends AbstractExportImp
     final String singleReportId = createSimpleReport(ReportType.PROCESS);
     final String combinedReportId =
       reportClient.createCombinedReport(null, Collections.singletonList(singleReportId));
-    elasticSearchIntegrationTestExtension.deleteAllDocsInIndex(new SingleProcessReportIndex());
+    elasticSearchIntegrationTestExtension.deleteAllDocsInIndex(new SingleProcessReportIndexES());
 
     // when
     Response response = exportReportDefinitionAndReturnResponse(combinedReportId);

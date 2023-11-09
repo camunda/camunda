@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublish
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndexES;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.optimize.EventProcessClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
@@ -31,9 +31,9 @@ import java.util.function.BiConsumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_PREFIX;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 
 public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
 
@@ -61,7 +61,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
           .extracting(AliasMetadata::alias, AliasMetadata::writeIndex)
           .containsExactlyInAnyOrder(
             Tuple.tuple(
-              getOptimizeIndexAliasForIndexName(new EventProcessInstanceIndex(eventProcessPublishState.getId()).getIndexName()),
+              getOptimizeIndexAliasForIndexName(new EventProcessInstanceIndexES(eventProcessPublishState.getId()).getIndexName()),
               true
             ),
             Tuple.tuple(
@@ -737,7 +737,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
   private String getVersionedEventProcessInstanceIndexNameForPublishedStateId(final String eventProcessPublishStateId) {
     return elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
       .getIndexNameService()
-      .getOptimizeIndexNameWithVersion(new EventProcessInstanceIndex(eventProcessPublishStateId));
+      .getOptimizeIndexNameWithVersion(new EventProcessInstanceIndexES(eventProcessPublishStateId));
   }
 
   private String getOptimizeIndexAliasForIndexName(final String indexName) {

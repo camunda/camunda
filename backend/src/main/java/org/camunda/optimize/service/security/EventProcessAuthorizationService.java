@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @Component
 public class EventProcessAuthorizationService {
+
   private final ConfigurationService configurationService;
   private final EventProcessRoleService eventProcessRoleService;
   private final AbstractIdentityService identityService;

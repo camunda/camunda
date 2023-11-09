@@ -18,9 +18,9 @@ import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ImportIndexMismatchDto;
 import org.camunda.optimize.dto.optimize.rest.ImportedIndexMismatchResponseDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
-import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
+import org.camunda.optimize.service.db.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
-import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndexES;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -86,7 +86,7 @@ public class DecisionReportDefinitionImportIT extends AbstractExportImportEntity
       .containsExactly(
         ImportIndexMismatchDto.builder()
           .indexName(embeddedOptimizeExtension.getIndexNameService()
-                       .getOptimizeIndexNameWithVersion(new SingleDecisionReportIndex()))
+                       .getOptimizeIndexNameWithVersion(new SingleDecisionReportIndexES()))
           .sourceIndexVersion(SingleDecisionReportIndex.VERSION + 1)
           .targetIndexVersion(SingleDecisionReportIndex.VERSION)
           .build());

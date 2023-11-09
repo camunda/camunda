@@ -7,8 +7,8 @@ package org.camunda.optimize.upgrade;
 
 import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
+import org.camunda.optimize.service.db.schema.index.MetadataIndex;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
-import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
@@ -42,7 +42,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
 import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;

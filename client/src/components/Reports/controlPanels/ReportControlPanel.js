@@ -6,11 +6,11 @@
  */
 
 import React from 'react';
-import classnames from 'classnames';
 import update from 'immutability-helper';
 import deepEqual from 'fast-deep-equal';
+import {Accordion, AccordionItem, Layer, Tag} from '@carbon/react';
+import {Db2Database, Factor, Filter as FilterIcon} from '@carbon/icons-react';
 
-import {Icon, Button} from 'components';
 import {Filter} from 'filter';
 import {withErrorHandling} from 'HOC';
 import {getFlowNodeNames, loadProcessDefinitionXml, loadVariables, getRandomId} from 'services';
@@ -40,9 +40,6 @@ export default withErrorHandling(
       this.state = {
         variables: null,
         flowNodeNames: null,
-        showSource: true,
-        showSetup: true,
-        showFilter: false,
       };
     }
 
@@ -333,7 +330,7 @@ export default withErrorHandling(
     render() {
       const {report, updateReport} = this.props;
       const {data, result} = this.props.report;
-      const {showSource, showSetup, showFilter, flowNodeNames, variables} = this.state;
+      const {flowNodeNames, variables} = this.state;
 
       const shouldDisplayMeasure = ['frequency', 'duration', 'percentage'].includes(
         data.view?.properties[0]
@@ -341,145 +338,129 @@ export default withErrorHandling(
 
       return (
         <div className="ReportControlPanel">
-          <div className="controlSections">
-            <section className={classnames('select', 'source', {collapsed: !showSource})}>
-              <div
-                tabIndex="0"
-                className="sectionTitle"
-                onClick={() => {
-                  this.setState({showSource: !showSource});
-                }}
-                onKeyDown={(evt) => {
-                  if (
-                    (evt.key === ' ' || evt.key === 'Enter') &&
-                    evt.target === evt.currentTarget
-                  ) {
-                    this.setState({showSource: !showSource});
-                  }
-                }}
+          <Layer className="controlSections">
+            <Accordion>
+              <AccordionItem
+                title={
+                  <>
+                    <Db2Database />
+                    {t('common.dataSource')}
+                  </>
+                }
+                open
               >
-                <Icon type="data-source" />
-                {t('common.dataSource')}
                 <AddDefinition
                   type="process"
                   definitions={data.definitions}
                   onAdd={this.addDefinition}
                 />
-                <span className={classnames('sectionToggle', {open: showSource})}>
-                  <Icon type="down" />
-                </span>
-              </div>
-              <DefinitionList
-                type="process"
-                definitions={data.definitions}
-                onCopy={this.copyDefinition}
-                onChange={this.changeDefinition}
-                onRemove={this.removeDefinition}
-              />
-            </section>
-            <section className={classnames('reportSetup', {collapsed: !showSetup})}>
-              <Button
-                className="sectionTitle"
-                onClick={() => {
-                  this.setState({showSetup: !showSetup});
-                }}
+                <DefinitionList
+                  type="process"
+                  definitions={data.definitions}
+                  onCopy={this.copyDefinition}
+                  onChange={this.changeDefinition}
+                  onRemove={this.removeDefinition}
+                />
+              </AccordionItem>
+              <AccordionItem
+                title={
+                  <>
+                    <Factor />
+                    {t('report.reportSetup')}
+                  </>
+                }
+                open
               >
-                <Icon type="report" />
-                {t('report.reportSetup')}
-                <span className={classnames('sectionToggle', {open: showSetup})}>
-                  <Icon type="down" />
-                </span>
-              </Button>
-              <ul>
-                <li className="select">
-                  <span className="label">{t(`report.view.label`)}</span>
-                  <View
+                <ul className="reportSetup">
+                  <li className="select">
+                    <span className="label">{t(`report.view.label`)}</span>
+                    <View
+                      type="process"
+                      report={report.data}
+                      onChange={(change) => updateReport(change, true)}
+                      variables={variables}
+                    />
+                    {data.view?.entity === 'variable' && (
+                      <AggregationType report={data} onChange={this.props.updateReport} />
+                    )}
+                  </li>
+                  {shouldDisplayMeasure && (
+                    <Measure report={data} onChange={(change) => updateReport(change, true)} />
+                  )}
+                  <GroupBy
                     type="process"
+                    report={report.data}
+                    onChange={(change) => updateReport(change, true)}
+                    variables={{variable: variables}}
+                  />
+                  <DistributedBy
                     report={report.data}
                     onChange={(change) => updateReport(change, true)}
                     variables={variables}
                   />
-                  {data.view?.entity === 'variable' && (
-                    <AggregationType report={data} onChange={this.props.updateReport} />
+                  <Sorting
+                    type="process"
+                    report={report.data}
+                    onChange={(change) => updateReport(change, true)}
+                  />
+                  {isDurationHeatmap(data) && (
+                    <li className="select">
+                      <span className="label">{t('report.heatTarget.label')}</span>
+                      <TargetValueComparison
+                        report={this.props.report}
+                        onChange={this.props.updateReport}
+                      />
+                    </li>
                   )}
-                </li>
-                {shouldDisplayMeasure && (
-                  <Measure report={data} onChange={(change) => updateReport(change, true)} />
-                )}
-                <GroupBy
-                  type="process"
-                  report={report.data}
-                  onChange={(change) => updateReport(change, true)}
-                  variables={{variable: variables}}
-                />
-                <DistributedBy
-                  report={report.data}
-                  onChange={(change) => updateReport(change, true)}
+                  {isProcessInstanceDuration(data) && data.definitions?.length <= 1 && (
+                    <li>
+                      <ProcessPart
+                        flowNodeNames={flowNodeNames}
+                        xml={data.configuration.xml}
+                        processPart={data.configuration.processPart}
+                        update={(newPart) => {
+                          const aggregations = data.configuration.aggregationTypes;
+                          const change = {configuration: {processPart: {$set: newPart}}};
+                          const isPercentile = (agg) => agg.type === 'percentile';
+                          if (aggregations.find(isPercentile)) {
+                            const newAggregations = aggregations.filter(
+                              (agg) => !isPercentile(agg)
+                            );
+                            if (newAggregations.length === 0) {
+                              newAggregations.push({type: 'avg', value: null});
+                            }
+
+                            change.configuration.aggregationTypes = {$set: newAggregations};
+                          }
+                          this.props.updateReport(change, true);
+                        }}
+                      />
+                    </li>
+                  )}
+                </ul>
+              </AccordionItem>
+              <AccordionItem
+                title={
+                  <>
+                    <FilterIcon />
+                    {t('common.filter.label')}
+                    {data.filter?.length > 0 && (
+                      <Tag type="high-contrast" className="filterCount">
+                        {data.filter.length}
+                      </Tag>
+                    )}
+                  </>
+                }
+              >
+                <Filter
+                  data={data.filter}
+                  onChange={this.props.updateReport}
+                  definitions={data.definitions}
                   variables={variables}
                 />
-                <Sorting
-                  type="process"
-                  report={report.data}
-                  onChange={(change) => updateReport(change, true)}
-                />
-                {isDurationHeatmap(data) && (
-                  <li className="select">
-                    <span className="label">{t('report.heatTarget.label')}</span>
-                    <TargetValueComparison
-                      report={this.props.report}
-                      onChange={this.props.updateReport}
-                    />
-                  </li>
-                )}
-                {isProcessInstanceDuration(data) && data.definitions?.length <= 1 && (
-                  <li>
-                    <ProcessPart
-                      flowNodeNames={flowNodeNames}
-                      xml={data.configuration.xml}
-                      processPart={data.configuration.processPart}
-                      update={(newPart) => {
-                        const aggregations = data.configuration.aggregationTypes;
-                        const change = {configuration: {processPart: {$set: newPart}}};
-                        const isPercentile = (agg) => agg.type === 'percentile';
-                        if (aggregations.find(isPercentile)) {
-                          const newAggregations = aggregations.filter((agg) => !isPercentile(agg));
-                          if (newAggregations.length === 0) {
-                            newAggregations.push({type: 'avg', value: null});
-                          }
-
-                          change.configuration.aggregationTypes = {$set: newAggregations};
-                        }
-                        this.props.updateReport(change, true);
-                      }}
-                    />
-                  </li>
-                )}
-              </ul>
-            </section>
-            <section className={classnames('filter', {collapsed: !showFilter})}>
-              <Button
-                className="sectionTitle"
-                onClick={() => {
-                  this.setState({showFilter: !showFilter});
-                }}
-              >
-                <Icon type="filter" />
-                {t('common.filter.label')}
-                <span className={classnames('sectionToggle', {open: showFilter})}>
-                  <Icon type="down" />
-                </span>
-                {data.filter?.length > 0 && (
-                  <span className="filterCount">{data.filter.length}</span>
-                )}
-              </Button>
-              <Filter
-                data={data.filter}
-                onChange={this.props.updateReport}
-                definitions={data.definitions}
-                variables={variables}
-              />
-            </section>
-          </div>
+              </AccordionItem>
+            </Accordion>
+          </Layer>
           {result && typeof result.instanceCount !== 'undefined' && (
             <div className="instanceCount">
               {t(

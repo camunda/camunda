@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventImportSourceDt
 import org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -38,7 +38,7 @@ public class EventProcessInstanceImportSourceIndexHandler
 
   @Override
   public String getEngineAlias() {
-    return ElasticsearchConstants.ENGINE_ALIAS_OPTIMIZE;
+    return DatabaseConstants.ENGINE_ALIAS_OPTIMIZE;
   }
 
   @Override

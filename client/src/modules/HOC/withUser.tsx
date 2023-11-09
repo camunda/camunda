@@ -23,11 +23,11 @@ export interface User {
 
 export interface WithUserProps {
   user?: User;
-  getUser: () => Promise<User>;
-  refreshUser: () => Promise<User>;
+  getUser?: () => Promise<User>;
+  refreshUser?: () => Promise<User>;
 }
 
-export const UserContext = createContext<WithUserProps | undefined>(undefined);
+export const UserContext = createContext<WithUserProps>({});
 const resolveWithUser: ((user: User) => void)[] = [];
 
 export function UserProvider({children}: {children: ReactNode}): JSX.Element {

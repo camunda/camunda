@@ -20,7 +20,7 @@ ARG BASE_SHA="${BASE_IMAGE_SHA_ARM64}"
 # hadolint ignore=DL3006
 FROM ${BASE_IMAGE_NAME} as builder
 
-ARG VERSION=2.0.0
+ARG VERSION=""
 ARG DISTRO=production
 ARG ARTIFACT_PATH=./distro/target
 
@@ -81,6 +81,8 @@ ENV TZ=UTC
 ENV CONTAINER_HOST=0.0.0.0
 
 EXPOSE 8090 8091
+
+VOLUME /tmp
 
 RUN apk add --no-cache bash curl tini openjdk17-jre tzdata && \
     curl "https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh" --output /usr/local/bin/wait-for-it.sh && \

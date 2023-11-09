@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.tenant;
 
 import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.service.security.util.tenant.CamundaCCSMTenantAuthorizationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -19,13 +20,14 @@ import java.util.List;
 @Component
 @Conditional(CCSMCondition.class)
 public class CamundaCCSMTenantService implements TenantService {
+
   private final CamundaCCSMTenantAuthorizationService tenantAuthorizationService;
   private final ConfigurationService configurationService;
 
   @Override
   public boolean isAuthorizedToSeeTenant(final String userId, final String tenantId) {
     // In CCSM, we can only retrieve tenant auths for the current user using the user's token
-    return tenantAuthorizationService.isCurrentUserAuthorizedToSeeTenant(tenantId);
+    return tenantAuthorizationService.isAuthorizedToSeeTenant(userId, IdentityType.USER, tenantId);
   }
 
   @Override

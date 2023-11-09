@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.Precision;
 import org.camunda.optimize.dto.optimize.query.event.process.EventImportSourceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState;
-import org.camunda.optimize.service.es.writer.EventProcessPublishStateWriter;
+import org.camunda.optimize.service.db.writer.EventProcessPublishStateWriter;
 import org.camunda.optimize.service.importing.eventprocess.EventProcessInstanceIndexManager;
 import org.springframework.stereotype.Component;
 

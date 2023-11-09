@@ -11,6 +11,7 @@ import {shallow} from 'enzyme';
 import {getVariableNames} from './service';
 
 import FiltersEdit from './FiltersEdit';
+import {Checkbox} from '@carbon/react';
 
 const props = {
   availableFilters: [],
@@ -68,11 +69,8 @@ it('should include a checkbox to allow custom values', () => {
 
   node.find('.editButton').simulate('click');
 
-  const postText = shallow(
-    node.find('.dashboardVariableFilter').prop('getPosttext')({type: 'String'})
-  );
-
-  expect(postText.find('[type="checkbox"]')).toExist();
+  const postText = node.find('.dashboardVariableFilter').prop('getPosttext')({type: 'String'});
+  expect(postText.props.className).toBe('customValueCheckbox');
 });
 
 it('should disable edit button when there are no reports', () => {

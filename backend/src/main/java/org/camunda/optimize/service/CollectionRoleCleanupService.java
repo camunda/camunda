@@ -11,8 +11,8 @@ import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
-import org.camunda.optimize.service.es.reader.CollectionReader;
-import org.camunda.optimize.service.es.writer.CollectionWriter;
+import org.camunda.optimize.service.db.reader.CollectionReader;
+import org.camunda.optimize.service.db.writer.CollectionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.identity.IdentityCacheSyncListener;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -29,6 +29,7 @@ import java.util.Set;
 @Component
 @Conditional(CamundaPlatformCondition.class)
 public class CollectionRoleCleanupService implements IdentityCacheSyncListener {
+
   private final CollectionReader collectionReader;
   private final CollectionWriter collectionWriter;
   private final ConfigurationService configurationService;

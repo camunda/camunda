@@ -1,21 +1,6 @@
 .ValueListInput {
-  margin-bottom: 20px;
-
-  .undefinedOption {
-    margin-top: 14px;
-    font-size: 14px;
-
-    input[type='checkbox'] {
-      margin-right: 10px;
-    }
-  }
-
   .singeValueInput {
     width: 100%;
-  }
-
-  .Message.error {
-    margin-top: 5px;
   }
 
   .MultiValueInput {

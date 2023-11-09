@@ -6,10 +6,10 @@
  */
 
 import React, {useEffect, useState} from 'react';
+import {Tooltip} from '@carbon/react';
 
-import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
-import {Tooltip} from 'components';
+import {useErrorHandling} from 'hooks';
 
 import SelectionFilter from './SelectionFilter';
 import DateFilter from './DateFilter';
@@ -18,16 +18,16 @@ import {getVariableNames} from './service';
 
 import './VariableFilter.scss';
 
-export function VariableFilter({
+export default function VariableFilter({
   filter,
   config,
   setFilter,
   children,
   reports,
   resetTrigger,
-  mightFail,
 }) {
   const [variableLabel, setVariableLabel] = useState();
+  const {mightFail} = useErrorHandling();
 
   useEffect(() => {
     const reportIds = reports.filter(({id}) => !!id).map(({id}) => id);
@@ -60,7 +60,7 @@ export function VariableFilter({
 
   return (
     <div className="VariableFilter__Dashboard">
-      <Tooltip content={title}>
+      <Tooltip description={title}>
         <div className="title">
           <span>{title}</span>
           {children}
@@ -77,5 +77,3 @@ export function VariableFilter({
     </div>
   );
 }
-
-export default withErrorHandling(VariableFilter);

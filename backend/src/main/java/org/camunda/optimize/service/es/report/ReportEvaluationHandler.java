@@ -28,7 +28,7 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRespo
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.service.DefinitionService;
-import org.camunda.optimize.service.es.reader.ReportReader;
+import org.camunda.optimize.service.db.reader.ReportReader;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
@@ -53,7 +53,7 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.mapping;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TOO_MANY_BUCKETS_EXCEPTION_TYPE;
+import static org.camunda.optimize.service.db.DatabaseConstants.TOO_MANY_BUCKETS_EXCEPTION_TYPE;
 
 @RequiredArgsConstructor
 @Component

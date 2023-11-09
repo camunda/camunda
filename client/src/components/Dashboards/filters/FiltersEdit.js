@@ -8,8 +8,10 @@
 import React, {useState} from 'react';
 import update from 'immutability-helper';
 import equals from 'fast-deep-equal';
+import {Calendar} from '@carbon/icons-react';
+import {Checkbox} from '@carbon/react';
 
-import {Button, Icon, LabeledInput} from 'components';
+import {Button, Icon} from 'components';
 import {VariableFilter, AssigneeFilter} from 'filter';
 import {t} from 'translation';
 
@@ -61,7 +63,7 @@ export default function FiltersEdit({
               <DateFilter
                 key={type}
                 emptyText={t('common.off')}
-                icon="calender"
+                icon={Calendar}
                 title={t('dashboard.filter.types.' + type)}
                 filter={dateFilter?.data}
                 setFilter={(newFilter) => {
@@ -207,9 +209,9 @@ export default function FiltersEdit({
             getPosttext={(variable) => {
               if (variable && !['Date', 'Boolean'].includes(variable.type)) {
                 return (
-                  <LabeledInput
-                    type="checkbox"
-                    label={t('dashboard.filter.modal.allowCustomValues')}
+                  <Checkbox
+                    id="allowCustomValues"
+                    labelText={t('dashboard.filter.modal.allowCustomValues')}
                     className="customValueCheckbox"
                     checked={allowCustomValues}
                     onChange={(evt) => setAllowCustomValues(evt.target.checked)}
@@ -265,9 +267,9 @@ export default function FiltersEdit({
             }}
             getPosttext={() => {
               return (
-                <LabeledInput
-                  type="checkbox"
-                  label={t('dashboard.filter.modal.allowCustomValues')}
+                <Checkbox
+                  id="allowCustomValues"
+                  labelText={t('dashboard.filter.modal.allowCustomValues')}
                   className="customValueCheckbox"
                   checked={allowCustomValues}
                   onChange={(evt) => setAllowCustomValues(evt.target.checked)}

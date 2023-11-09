@@ -10,10 +10,10 @@ import org.camunda.optimize.dto.engine.HistoricUserOperationLogDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.UserOperationLogEntryDto;
 import org.camunda.optimize.dto.optimize.importing.UserOperationType;
+import org.camunda.optimize.service.db.writer.RunningProcessInstanceWriter;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.UserOperationLogElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
 import org.camunda.optimize.service.importing.engine.handler.RunningProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -75,7 +75,7 @@ public class UserOperationLogImportService implements ImportService<HistoricUser
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
     return elasticsearchImportJobExecutor;
   }
 

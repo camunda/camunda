@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.importing.ingested.mediator.factory;
 
-import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
+import org.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.service.ObjectVariableService;
@@ -21,6 +21,7 @@ import java.util.List;
 
 @Component
 public class ExternalVariableUpdateImportMediatorFactory extends AbstractIngestedImportMediatorFactory {
+
   private final ProcessVariableUpdateWriter variableWriter;
   private final ObjectVariableService objectVariableService;
 
@@ -48,4 +49,5 @@ public class ExternalVariableUpdateImportMediatorFactory extends AbstractIngeste
       new BackoffCalculator(configurationService)
     );
   }
+
 }

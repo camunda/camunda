@@ -5,9 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-
-import {Icon} from 'components';
+import {Component} from 'react';
+import {UpdateNow} from '@carbon/icons-react';
 
 import './AutoRefreshIcon.scss';
 
@@ -15,7 +14,7 @@ const imageSize = 16;
 const center = imageSize / 2;
 const radius = center - 1;
 
-export default class AutoRefreshIcon extends React.Component {
+export default class AutoRefreshIcon extends Component {
   constructor(props) {
     super(props);
 
@@ -57,23 +56,24 @@ export default class AutoRefreshIcon extends React.Component {
     }
   }
 
-  render = () =>
-    !this.props.interval ? (
-      <Icon type="autorefresh" />
+  render() {
+    return !this.props.interval ? (
+      <UpdateNow />
     ) : (
-      <Icon>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox={`0 0 ${imageSize} ${imageSize}`}
-          className="AutoRefreshIcon"
-        >
-          <circle cx={center} cy={center} r={radius} strokeWidth="0" fillOpacity="0.2" />
-          <path
-            strokeWidth="2"
-            ref={(path) => (this.path = path)}
-            className="AutoRefreshIcon__outline"
-          />
-        </svg>
-      </Icon>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox={`0 0 ${imageSize} ${imageSize}`}
+        width={imageSize}
+        height={imageSize}
+        className="AutoRefreshIcon"
+      >
+        <circle cx={center} cy={center} r={radius} strokeWidth="0" fillOpacity="0.2" />
+        <path
+          strokeWidth="2"
+          ref={(path) => (this.path = path)}
+          className="AutoRefreshIcon__outline"
+        />
+      </svg>
     );
+  }
 }

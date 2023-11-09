@@ -10,18 +10,19 @@
       border: none;
       padding: 0;
       padding-top: 0.5rem;
+      background-color: var(--cds-field-02);
     }
   }
 
-  .EditButton:not(.EditTextTile) {
+  .editButton:not(.editTextTile) {
     display: none;
   }
 
-  .DeleteButton {
+  .deleteButton {
     right: 10px;
   }
 
-  .EditButton {
+  .editTextTile {
     right: 39px;
   }
 }

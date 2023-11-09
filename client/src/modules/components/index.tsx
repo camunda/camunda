@@ -20,7 +20,7 @@ export {Labeled} from './Labeled';
 export {Tooltip} from './Tooltip';
 export {Modal} from './Modal';
 export {Dropdown} from './Dropdown';
-export {Select} from './Select';
+export {Select, CarbonSelect} from './Select';
 export {TextEditor} from './TextEditor';
 export {PageTitle} from './PageTitle';
 export {EntityDescription} from './EntityDescription';
@@ -46,6 +46,9 @@ export {ColorPicker} from './ColorPicker';
 export {Badge} from './Badge';
 export {Popover} from './Popover';
 export {TenantInfo} from './TenantInfo';
+export {VersionPopover, TenantPopover} from './DefinitionSelection';
+export {CopyToClipboard} from './CopyToClipboard';
+export {ShareEntity} from './ShareEntity';
 
 export type {InputProps} from './Input';
 export type {LabeledProps} from './Labeled';

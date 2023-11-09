@@ -130,14 +130,12 @@ public class OptimizeOpensearchClientFactory {
   }
 
   public static String getCurrentOSVersion(final OpenSearchClient osClient) throws IOException {
-    String version = osClient.info().version().number();
-    return version;
+    return osClient.info().version().number();
   }
 
   private static int getNumberOfClusterNodes(final OpenSearchClient openSearchClient) throws IOException {
     return openSearchClient.cluster().health().numberOfNodes();
   }
-
 
   private static HttpHost getHttpHost(DatabaseConnectionNodeConfiguration configuration) {
     String uriConfig = String.format("http://%s:%d", configuration.getHost(), configuration.getHttpPort());

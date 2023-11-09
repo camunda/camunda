@@ -1,0 +1,49 @@
+---
+# Default values for C7 Optimize Preview Environments
+
+ingress:
+  # Defines the domain under which to expose the ingress
+  domain: optimize.camunda.cloud
+
+git:
+  # will be set by the "deploy-preview-env" action
+  branch: master
+  # Defines the repository URL to use for annotating resources
+  repoUrl: https://github.com/camunda/camunda-optimize
+
+optimize:
+  image:
+    repository: registry.camunda.cloud/team-optimize/optimize
+    # will be set by the "deploy-preview-env" action
+    tag: latest
+
+cambpm:
+  image:
+    repository: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee
+    # will be set by the "deploy-preview-env" action
+    tag: latest
+
+elasticsearch:
+  image:
+    repository: docker.elastic.co/elasticsearch/elasticsearch
+    # will be set by the "deploy-preview-env" action
+    tag: latest
+
+postgres:
+  image:
+    repository: postgres
+    tag: 16.0-alpine
+
+mailhog:
+  image:
+    repository: mailhog/mailhog
+    tag: v1.0.1
+
+# Configuration of global values as required by the camunda-platform chart and
+# to comply with Infra best practices.
+global:
+  labels:
+    camunda.cloud/source: argocd
+    camunda.cloud/managed-by: Helm
+    app: optimize-camunda-cloud  # Should be overridden by Argo app
+    team: optimize

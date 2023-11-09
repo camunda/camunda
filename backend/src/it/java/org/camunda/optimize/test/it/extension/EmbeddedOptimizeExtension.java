@@ -34,14 +34,14 @@ import org.camunda.optimize.service.archive.ProcessInstanceArchivingService;
 import org.camunda.optimize.service.cleanup.CleanupScheduler;
 import org.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
 import org.camunda.optimize.service.dashboard.ManagementDashboardService;
+import org.camunda.optimize.service.db.writer.AbstractProcessInstanceDataWriter;
+import org.camunda.optimize.service.db.writer.InstantDashboardMetadataWriter;
+import org.camunda.optimize.service.db.writer.activity.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.digest.DigestService;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.writer.AbstractProcessInstanceDataWriter;
-import org.camunda.optimize.service.es.writer.InstantDashboardMetadataWriter;
-import org.camunda.optimize.service.es.writer.activity.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.events.rollover.EventIndexRolloverService;
 import org.camunda.optimize.service.events.rollover.ExternalProcessVariableIndexRolloverService;
@@ -119,6 +119,7 @@ public class EmbeddedOptimizeExtension
   private OptimizeRequestExecutor requestExecutor;
   private ObjectMapper objectMapper;
   private boolean resetImportOnStart = true;
+
   @Getter
   @Setter
   private boolean closeContextAfterTest = false;

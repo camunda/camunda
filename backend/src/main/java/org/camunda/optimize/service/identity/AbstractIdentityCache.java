@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.service.AbstractScheduledService;
-import org.camunda.optimize.service.MaxEntryLimitHitException;
+import org.camunda.optimize.service.exceptions.MaxEntryLimitHitException;
 import org.camunda.optimize.service.SearchableIdentityCache;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -34,8 +34,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.toList;
 
 public abstract class AbstractIdentityCache extends AbstractScheduledService implements ConfigurationReloadable {
   protected final Logger log = LoggerFactory.getLogger(this.getClass());

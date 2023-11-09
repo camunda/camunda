@@ -9,9 +9,9 @@ import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
-import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex;
+import org.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.action.search.SearchResponse;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -19,7 +19,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.mapHits;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
 public abstract class AbstractEventTraceStateImportIT extends AbstractPlatformIT {
 
@@ -39,14 +39,14 @@ public abstract class AbstractEventTraceStateImportIT extends AbstractPlatformIT
 
   protected List<EventTraceStateDto> getAllStoredExternalEventTraceStates() {
     return getAllStoredDocumentsForIndexAsClass(
-      new EventTraceStateIndex(EXTERNAL_EVENTS_INDEX_SUFFIX).getIndexName(),
+      EventTraceStateIndex.constructIndexName(EXTERNAL_EVENTS_INDEX_SUFFIX),
       EventTraceStateDto.class
     );
   }
 
   protected List<EventSequenceCountDto> getAllStoredExternalEventSequenceCounts() {
     return getAllStoredDocumentsForIndexAsClass(
-      new EventSequenceCountIndex(EXTERNAL_EVENTS_INDEX_SUFFIX).getIndexName(),
+      EventSequenceCountIndex.constructIndexName(EXTERNAL_EVENTS_INDEX_SUFFIX),
       EventSequenceCountDto.class
     );
   }
@@ -60,9 +60,9 @@ public abstract class AbstractEventTraceStateImportIT extends AbstractPlatformIT
   protected Long getLastProcessedEntityTimestampFromElasticsearch(String definitionKey) {
     final OffsetDateTime lastImportTimestampOfTimestampBasedImportIndex =
       elasticSearchIntegrationTestExtension.getLastImportTimestampOfTimestampBasedImportIndex(
-      // lowercase as the index names are automatically lowercased and thus the entry contains has a lowercase suffix
-      ElasticsearchConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + definitionKey.toLowerCase(),
-      ElasticsearchConstants.ENGINE_ALIAS_OPTIMIZE
+        // lowercase as the index names are automatically lowercased and thus the entry contains has a lowercase suffix
+        DatabaseConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + definitionKey.toLowerCase(),
+        DatabaseConstants.ENGINE_ALIAS_OPTIMIZE
     );
     return lastImportTimestampOfTimestampBasedImportIndex.toInstant().toEpochMilli();
   }

@@ -15,8 +15,7 @@ import {
 } from 'lexical';
 import {$patchStyleText, $getSelectionStyleValueForProperty} from '@lexical/selection';
 import {mergeRegister} from '@lexical/utils';
-
-import {Dropdown} from 'components';
+import {MenuButton, MenuItemSelectable} from '@carbon/react';
 
 export const FONT_SIZES = [
   '10px',
@@ -76,12 +75,21 @@ export default function FontSizeOptions({
   };
 
   return (
-    <Dropdown small disabled={disabled} label={fontSize} className="FontSizeOptions">
+    <MenuButton
+      size="sm"
+      kind="ghost"
+      disabled={disabled}
+      label={fontSize}
+      className="FontSizeOptions"
+    >
       {FONT_SIZES.map((size) => (
-        <Dropdown.Option active={fontSize === size} onClick={() => handleClick(size)} key={size}>
-          {size}
-        </Dropdown.Option>
+        <MenuItemSelectable
+          selected={fontSize === size}
+          onChange={() => handleClick(size)}
+          key={size}
+          label={size}
+        />
       ))}
-    </Dropdown>
+    </MenuButton>
   );
 }

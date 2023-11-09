@@ -12,10 +12,10 @@ import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.writer.DecisionDefinitionXmlWriter;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.DecisionDefinitionXmlElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.DecisionDefinitionXmlWriter;
 import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionNotFoundException;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -62,7 +62,7 @@ public class DecisionDefinitionXmlImportService implements ImportService<Decisio
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
     return elasticsearchImportJobExecutor;
   }
 

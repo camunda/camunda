@@ -6,9 +6,10 @@
  */
 
 import React from 'react';
-import classnames from 'classnames';
+import {Accordion, AccordionItem} from '@carbon/react';
+import {Db2Database, Factor, Filter as FilterIcon} from '@carbon/icons-react';
 
-import {DefinitionSelection, Icon, Button} from 'components';
+import {DefinitionSelection} from 'components';
 import {DecisionFilter} from 'filter';
 import {loadInputVariables, loadOutputVariables, loadDecisionDefinitionXml} from 'services';
 import {t} from 'translation';
@@ -24,9 +25,6 @@ export class DecisionControlPanel extends React.Component {
       inputVariable: null,
       outputVariable: null,
     },
-    showSource: true,
-    showSetup: true,
-    showFilter: false,
   };
 
   componentDidMount() {
@@ -142,7 +140,6 @@ export class DecisionControlPanel extends React.Component {
       filter,
       configuration: {xml},
     } = data;
-    const {showSource, showSetup, showFilter} = this.state;
 
     const {key, versions, tenantIds} = definitions?.[0] ?? {};
 
@@ -150,83 +147,72 @@ export class DecisionControlPanel extends React.Component {
       <div className="DecisionControlPanel ReportControlPanel">
         <div className="controlSections" style={{overflow: 'initial'}}>
           {/* manual style override will be removed once decision reports use multi-definition setup */}
-          <section className={classnames('select', 'source', {collapsed: !showSource})}>
-            <Button
-              className="sectionTitle"
-              onClick={() => {
-                this.setState({showSource: !showSource});
-              }}
+          <Accordion>
+            <AccordionItem
+              title={
+                <>
+                  <Db2Database />
+                  {t('common.dataSource')}
+                </>
+              }
+              open
             >
-              <Icon type="data-source" />
-              {t('common.dataSource')}
-              <span className={classnames('sectionToggle', {open: showSource})}>
-                <Icon type="down" />
-              </span>
-            </Button>
-            <DefinitionSelection
-              type="decision"
-              definitionKey={key}
-              versions={versions}
-              tenants={tenantIds}
-              xml={xml}
-              onChange={this.changeDefinition}
-            />
-          </section>
-          <section className={classnames('reportSetup', {collapsed: !showSetup})}>
-            <Button
-              className="sectionTitle"
-              onClick={() => {
-                this.setState({showSetup: !showSetup});
-              }}
+              <DefinitionSelection
+                type="decision"
+                definitionKey={key}
+                versions={versions}
+                tenants={tenantIds}
+                xml={xml}
+                onChange={this.changeDefinition}
+              />
+            </AccordionItem>
+            <AccordionItem
+              title={
+                <>
+                  <Factor />
+                  {t('report.reportSetup')}
+                </>
+              }
+              open
             >
-              <Icon type="report" />
-              {t('report.reportSetup')}
-              <span className={classnames('sectionToggle', {open: showSetup})}>
-                <Icon type="down" />
-              </span>
-            </Button>
-            <ul>
-              <li className="select">
-                <span className="label">{t(`report.view.label`)}</span>
-                <View
+              <ul className="reportSetup">
+                <li className="select">
+                  <span className="label">{t(`report.view.label`)}</span>
+                  <View
+                    type="decision"
+                    report={this.props.report.data}
+                    onChange={(change) => this.props.updateReport(change, true)}
+                    variables={this.state.variables}
+                  />
+                </li>
+                <GroupBy
                   type="decision"
                   report={this.props.report.data}
-                  onChange={(change) => this.props.updateReport(change, true)}
                   variables={this.state.variables}
+                  onChange={(change) => this.props.updateReport(change, true)}
                 />
-              </li>
-              <GroupBy
-                type="decision"
-                report={this.props.report.data}
-                variables={this.state.variables}
-                onChange={(change) => this.props.updateReport(change, true)}
-              />
-            </ul>
-          </section>
-          <section className={classnames('filter', {collapsed: !showFilter})}>
-            <Button
-              className="sectionTitle"
-              onClick={() => {
-                this.setState({showFilter: !showFilter});
-              }}
+              </ul>
+            </AccordionItem>
+            <AccordionItem
+              title={
+                <>
+                  <FilterIcon />
+                  {t('common.filter.label')}
+                  {filter?.length > 0 && <span className="filterCount">{filter.length}</span>}
+                </>
+              }
             >
-              <Icon type="filter" />
-              {t('common.filter.label')}
-              <span className={classnames('sectionToggle', {open: showFilter})}>
-                <Icon type="down" />
-              </span>
-              {filter?.length > 0 && <span className="filterCount">{filter.length}</span>}
-            </Button>
-            <DecisionFilter
-              definitions={definitions}
-              data={filter}
-              onChange={this.props.updateReport}
-              decisionDefinitionKey={key}
-              decisionDefinitionVersions={versions}
-              tenants={tenantIds}
-              variables={this.state.variables}
-            />
-          </section>
+              <DecisionFilter
+                definitions={definitions}
+                data={filter}
+                onChange={this.props.updateReport}
+                decisionDefinitionKey={key}
+                decisionDefinitionVersions={versions}
+                tenants={tenantIds}
+                variables={this.state.variables}
+              />
+            </AccordionItem>
+          </Accordion>
         </div>
         {result && typeof result.instanceCount !== 'undefined' && (
           <div className="instanceCount">

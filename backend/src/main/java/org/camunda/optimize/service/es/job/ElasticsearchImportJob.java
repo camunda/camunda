@@ -18,6 +18,7 @@ import java.util.List;
  * to elasticsearch.
  */
 public abstract class ElasticsearchImportJob<OPT extends OptimizeDto> implements Runnable {
+
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private final BackoffCalculator backoffCalculator = new BackoffCalculator(1L, 30L);

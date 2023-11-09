@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.collection;
 
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.NotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -15,30 +17,25 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestD
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateRequestDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
-import org.camunda.optimize.service.es.reader.CollectionReader;
-import org.camunda.optimize.service.es.writer.CollectionWriter;
+import org.camunda.optimize.service.db.reader.CollectionReader;
+import org.camunda.optimize.service.db.writer.CollectionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeUserOrGroupIdNotFoundException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
-import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
-import jakarta.ws.rs.NotAuthorizedException;
-import jakarta.ws.rs.NotFoundException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.toList;
 
 @Component
 @AllArgsConstructor
 @Slf4j
 public class CollectionRoleService {
+
   private final AuthorizedCollectionService authorizedCollectionService;
-  private final DataSourceDefinitionAuthorizationService definitionAuthorizationService;
   private final CollectionWriter collectionWriter;
   private final CollectionReader collectionReader;
   private final AbstractIdentityService identityService;
@@ -49,38 +46,6 @@ public class CollectionRoleService {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
     final List<CollectionRoleRequestDto> resolvedRolesToAdd = validateAndResolveIdentities(userId, rolesToAdd);
     collectionWriter.addRoleToCollection(collectionId, resolvedRolesToAdd, userId);
-  }
-
-  public void addUserAsEditorToAutomaticallyCreatedCollection(final String collectionId,
-                                                              final IdentityDto user) {
-    Optional<CollectionDefinitionDto> collectionDefinition = collectionReader.getCollection(collectionId);
-    collectionDefinition.ifPresent(collectionDefinitionDto -> {
-      CollectionRoleRequestDto roleRequestDto = new CollectionRoleRequestDto(user, RoleType.EDITOR);
-      if (collectionDefinitionDto.isAutomaticallyCreated()) {
-        if (!userAlreadyHasAtLeastEditorAccessToCollection(roleRequestDto, collectionDefinitionDto.getData().getRoles())) {
-
-          final List<CollectionRoleRequestDto> resolvedRolesToAdd = validateAndResolveIdentities(
-            user.getId(),
-            List.of(roleRequestDto)
-          );
-          collectionWriter.addRoleToCollection(collectionId, resolvedRolesToAdd, user.getId());
-        }
-      } else {
-        throw new NotAuthorizedException("User " + user.getId() + " is not authorized to edit membership for " +
-                                           "collection " + collectionId);
-      }
-    });
-  }
-
-  private boolean userAlreadyHasAtLeastEditorAccessToCollection(final CollectionRoleRequestDto roleRequestDto,
-                                                                final List<CollectionRoleRequestDto> roles) {
-    for (CollectionRoleRequestDto role : roles) {
-      if (role.getIdentity().equals(roleRequestDto.getIdentity()) &&
-        role.getRole().compareTo(roleRequestDto.getRole()) >= 0) {
-        return true;
-      }
-    }
-    return false;
   }
 
   private List<CollectionRoleRequestDto> validateAndResolveIdentities(final String userId,

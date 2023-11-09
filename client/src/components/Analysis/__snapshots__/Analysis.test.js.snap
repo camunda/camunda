@@ -5,17 +5,17 @@ exports[`should render sub navigation 1`] = `
   className="Analysis"
 >
   <SubNav>
-    <withRouter(NavItem)
+    <SubNavItem
       active={
         Array [
           "/analysis",
-          "/analysis/outlierAnalysis",
+          "/analysis/taskAnalysis",
         ]
       }
-      linksTo="/analysis/outlierAnalysis"
-      name="Outlier Analysis"
+      linksTo="/analysis/taskAnalysis"
+      name="Task Analysis"
     />
-    <withRouter(NavItem)
+    <SubNavItem
       active={
         Array [
           "/analysis/branchAnalysis",
@@ -37,7 +37,7 @@ exports[`should render sub navigation 1`] = `
     />
     <Route
       component={[Function]}
-      path="/analysis/outlierAnalysis"
+      path="/analysis/taskAnalysis"
     />
     <Route
       component={[Function]}

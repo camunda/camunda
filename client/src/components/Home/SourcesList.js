@@ -5,11 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {Component} from 'react';
 import {Button} from '@carbon/react';
 
 import {t} from 'translation';
-import {EntityList, Deleter, BulkDeleter, Modal, Button as LegacyButton} from 'components';
+import {EntityList, Deleter, BulkDeleter, Modal} from 'components';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
 import {formatters, addSources} from 'services';
@@ -31,7 +31,7 @@ import './SourcesList.scss';
 const {formatTenantName} = formatters;
 
 export default withErrorHandling(
-  class SourcesList extends React.Component {
+  class SourcesList extends Component {
     state = {
       sources: null,
       deleting: null,
@@ -112,13 +112,13 @@ export default withErrorHandling(
             name={t('home.sources.title')}
             action={(bulkActive) =>
               !readOnly && (
-                <LegacyButton
-                  main
-                  primary={!bulkActive}
+                <Button
+                  kind={bulkActive ? 'tertiary' : 'primary'}
                   onClick={() => this.setState({addingSource: true})}
+                  size="md"
                 >
                   {t('common.add')}
-                </LegacyButton>
+                </Button>
               )
             }
             bulkActions={
@@ -210,7 +210,7 @@ export default withErrorHandling(
               {conflict && conflict.length > 0 && (
                 <>
                   <p>{t('home.sources.saveConflict.header')}</p>
-                  <ul>
+                  <ul className="conflictList">
                     {conflict.map(({id, name}) => (
                       <li key={id}>'{name || id}'</li>
                     ))}

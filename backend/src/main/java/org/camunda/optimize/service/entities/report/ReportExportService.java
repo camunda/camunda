@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
-import org.camunda.optimize.service.es.reader.ReportReader;
+import org.camunda.optimize.service.db.reader.ReportReader;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.ReportAuthorizationService;
@@ -26,12 +26,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static java.util.stream.Collectors.toList;
-
 @AllArgsConstructor
 @Component
 @Slf4j
 public class ReportExportService {
+
   private final ReportReader reportReader;
   private final ReportAuthorizationService reportAuthorizationService;
   private final AuthorizedCollectionService authorizedCollectionService;

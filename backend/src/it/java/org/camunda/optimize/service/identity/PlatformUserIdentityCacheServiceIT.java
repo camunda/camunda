@@ -8,7 +8,7 @@ package org.camunda.optimize.service.identity;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.service.MaxEntryLimitHitException;
+import org.camunda.optimize.service.exceptions.MaxEntryLimitHitException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.UserIdentityCacheConfiguration;

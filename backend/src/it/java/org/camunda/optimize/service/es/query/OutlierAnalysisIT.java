@@ -35,7 +35,7 @@ import static org.camunda.optimize.test.engine.OutlierDistributionClient.SPLITTI
 import static org.camunda.optimize.test.engine.OutlierDistributionClient.VARIABLE_2_NAME;
 import static org.camunda.optimize.test.engine.OutlierDistributionClient.VARIABLE_VALUE_NORMAL;
 import static org.camunda.optimize.test.engine.OutlierDistributionClient.VARIABLE_VALUE_OUTLIER;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 
 public class OutlierAnalysisIT extends AbstractPlatformIT {
   private static final int NUMBER_OF_DATAPOINTS = 40;

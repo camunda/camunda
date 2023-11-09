@@ -5,13 +5,13 @@
  */
 package com.camunda.optimize.test.upgrade
 
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex
+import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex
 import org.junit.jupiter.api.Test
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import static org.assertj.core.api.Assertions.assertThat
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.*
+import static org.camunda.optimize.service.db.DatabaseConstants.*
 
 class UpgradeEsSchemaIT extends BaseUpgradeIT {
   private static final Logger log = LoggerFactory.getLogger(UpgradeEsSchemaIT.class);

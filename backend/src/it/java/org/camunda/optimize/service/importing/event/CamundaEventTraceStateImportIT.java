@@ -14,8 +14,8 @@ import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCount
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.TracedEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
+import org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex;
+import org.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.events.CamundaEventService;
 import org.camunda.optimize.util.BpmnModels;
@@ -31,9 +31,9 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskEndEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -294,11 +294,11 @@ public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImpor
   }
 
   private String getSequenceCountIndexNameForDefinitionKey(final String definitionKey) {
-    return new EventSequenceCountIndex(definitionKey).getIndexName();
+    return EventSequenceCountIndex.constructIndexName(definitionKey);
   }
 
   private String getTraceStateIndexNameForDefinitionKey(final String definitionKey) {
-    return new EventTraceStateIndex(definitionKey).getIndexName();
+    return EventTraceStateIndex.constructIndexName(definitionKey);
   }
 
 }

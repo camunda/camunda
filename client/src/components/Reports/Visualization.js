@@ -6,7 +6,7 @@
  */
 
 import {reportConfig, createReportUpdate} from 'services';
-import {Select} from 'components';
+import {CarbonSelect} from 'components';
 
 import './Visualization.scss';
 
@@ -15,7 +15,7 @@ export default function Visualization({type, report, onChange}) {
   const selectedOption = report.view ? visualizations.find(({matcher}) => matcher(report)) : null;
 
   return (
-    <Select
+    <CarbonSelect
       className="Visualization"
       onChange={(value) => {
         onChange(createReportUpdate(type, report, 'visualization', value));
@@ -27,10 +27,13 @@ export default function Visualization({type, report, onChange}) {
         visualizations
           .filter(({visible}) => visible(report))
           .map(({key, enabled, label}) => (
-            <Select.Option key={key} value={key} disabled={!enabled(report)}>
-              {label()}
-            </Select.Option>
+            <CarbonSelect.Option
+              key={key}
+              value={key}
+              label={label()}
+              disabled={!enabled(report)}
+            />
           ))}
-    </Select>
+    </CarbonSelect>
   );
 }

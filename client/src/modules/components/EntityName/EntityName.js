@@ -7,6 +7,8 @@
 
 import React from 'react';
 import {Link} from 'react-router-dom';
+import {ChevronDown} from '@carbon/icons-react';
+import {t} from 'translation';
 
 import {Popover, Tooltip} from 'components';
 
@@ -26,7 +28,18 @@ export default function EntityName({children, details, linkTo, onClick}) {
           )}
         </Tooltip>
         {details && (
-          <Popover icon="down" floating>
+          <Popover
+            trigger={
+              <Popover.Button
+                size="sm"
+                iconDescription={t('common.details')}
+                hasIconOnly
+                renderIcon={ChevronDown}
+                className="DetailsPopoverButton"
+              />
+            }
+            floating
+          >
             {details}
           </Popover>
         )}

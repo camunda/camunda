@@ -12,7 +12,8 @@ import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
 import org.junit.jupiter.api.Test;
 
 import jakarta.ws.rs.core.Response;
@@ -28,7 +29,7 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 
 public class AnalysisRestServiceIT extends AbstractPlatformIT {
 
@@ -112,7 +113,7 @@ public class AnalysisRestServiceIT extends AbstractPlatformIT {
     embeddedOptimizeExtension.getElasticSearchSchemaManager()
       .createIndexIfMissing(
         elasticSearchIntegrationTestExtension.getOptimizeElasticClient(),
-        new ProcessInstanceIndex(PROCESS_DEFINITION_KEY)
+        new ProcessInstanceIndexES(PROCESS_DEFINITION_KEY)
       );
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
       getProcessInstanceIndexAliasName(PROCESS_DEFINITION_KEY), PROCESS_INSTANCE_ID, procInst);

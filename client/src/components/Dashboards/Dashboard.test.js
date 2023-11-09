@@ -123,7 +123,7 @@ it('should show a notification error if dashboard fails to load on refresh', () 
 it('should display a loading indicator', () => {
   const node = shallow(<Dashboard {...props} />);
 
-  expect(node.find('LoadingIndicator')).toExist();
+  expect(node.find('Loading')).toExist();
 });
 
 it('should initially load data', async () => {

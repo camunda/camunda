@@ -18,12 +18,10 @@ import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.metadata.OptimizeVersionService;
 import org.camunda.optimize.service.tenant.TenantService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +31,7 @@ import java.util.Optional;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CCSM_PROFILE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CLOUD_PROFILE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.optimizeModeProfiles;
 
 @Component
 @Slf4j
@@ -100,19 +99,15 @@ public class UIConfigurationService {
   }
 
   private String determineOptimizeProfile() {
-    // Although this looks non-sensical it is necessary because Arrays.asList(...) creates an immutable list
-    final List<String> activeProfiles = new ArrayList<>(Arrays.asList(environment.getActiveProfiles()));
-    activeProfiles.removeAll(ConfigurationServiceConstants.optimizeDatabaseProfiles);
-    if (activeProfiles.isEmpty()) {
+    final List<String> optimizeProfilesFound = Arrays.stream(environment.getActiveProfiles())
+      .filter(optimizeModeProfiles::contains).toList();
+    if (optimizeProfilesFound.isEmpty()) {
       return PLATFORM_PROFILE;
     }
-    if (activeProfiles.size() > 1) {
+    if (optimizeProfilesFound.size() > 1) {
       throw new OptimizeConfigurationException("Cannot configure more than one profile for Optimize");
     }
-    if (!Arrays.asList(CLOUD_PROFILE, CCSM_PROFILE, PLATFORM_PROFILE).contains(activeProfiles.get(0))) {
-      throw new OptimizeConfigurationException("Invalid profile configured");
-    }
-    return activeProfiles.get(0);
+    return optimizeProfilesFound.get(0);
   }
 
   private Map<String, WebappsEndpointDto> getCamundaWebappsEndpoints() {

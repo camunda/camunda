@@ -15,15 +15,16 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Flow
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
-import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.DistributedByPart;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.view.ViewPart;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.service.util.DefinitionQueryUtil;
 import org.camunda.optimize.service.util.InstanceIndexUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -38,7 +39,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_DEFINITIONS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
@@ -142,9 +143,14 @@ public class ProcessReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T, 
   @Override
   protected String[] getIndexNames(final ExecutionContext<ProcessReportDataDto> context) {
     if (context.getReportData().isManagementReport()) {
-      return new String[]{PROCESS_INSTANCE_MULTI_ALIAS};
+      getMultiIndexAlias();
     }
     return InstanceIndexUtil.getProcessInstanceIndexAliasNames(context.getReportData());
+  }
+
+  @Override
+  protected String[] getMultiIndexAlias() {
+    return new String[]{PROCESS_INSTANCE_MULTI_ALIAS};
   }
 
   @Override
@@ -157,7 +163,7 @@ public class ProcessReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T, 
       definitionDto.getKey(),
       definitionDto.getVersions(),
       definitionDto.getTenantIds(),
-      new ProcessInstanceIndex(definitionDto.getKey()),
+      new ProcessInstanceIndexES(definitionDto.getKey()),
       processDefinitionReader::getLatestVersionToKey
     );
   }

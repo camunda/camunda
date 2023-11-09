@@ -7,6 +7,18 @@
 
 import {SerializedEditorState} from 'lexical';
 
+export type GenericEntity<D extends Record<string, unknown> = Record<string, unknown>> = {
+  id: string | null;
+  name: string;
+  lastModified: string;
+  created: string;
+  owner: string;
+  entityType: string;
+  lastModifier: string;
+  currentUserRole: string;
+  data: D;
+};
+
 type ReportType = 'process' | 'decision';
 
 interface Report<Data> {
@@ -24,7 +36,7 @@ interface Report<Data> {
 
 type FilterFilterApplicationLevel = 'instance' | 'view';
 
-interface ProcessFilter<DATA> {
+export interface ProcessFilter<DATA = unknown> {
   type:
     | 'assignee'
     | 'canceledFlowNodes'
@@ -363,7 +375,16 @@ export interface Definition {
   tenantIds?: (string | null)[];
   versions?: string[];
   flowNodeIds?: string[];
+  type?: string;
 }
+
+export type Tenant = {id: string | null; name?: string};
+
+export type Source = {
+  definitionKey: string;
+  definitionType?: string;
+  tenants: (string | null)[];
+};
 
 export type Variable = {id?: string; name: string; type: string; label?: string | null};
 

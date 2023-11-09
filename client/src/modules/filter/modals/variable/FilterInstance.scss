@@ -4,17 +4,15 @@
   margin-bottom: 10px;
 
   .sectionTitle {
-    padding-bottom: 5px;
-    position: relative;
     font-size: 12px;
+    display: flex;
+    align-items: center;
 
     &.clickable {
       cursor: pointer;
     }
 
     .sectionToggle {
-      color: var(--grey-darken-23);
-      float: right;
       margin-top: 3px;
       transition: transform 0.1s;
 
@@ -23,25 +21,18 @@
       }
     }
 
-    .highlighted {
-      @include highlighted;
+    > .cds--tooltip,
+    > svg {
+      margin-left: auto;
     }
 
-    .removeButton {
-      position: absolute;
-      right: 45px;
-      bottom: 2px;
+    .cds--tooltip + svg {
+      margin-left: 0;
     }
-  }
-
-  .collapsed .sectionTitle {
-    margin-bottom: 0;
   }
 
   &.collapsed {
-    margin-bottom: 0;
-
-    > :not(.sectionTitle) {
+    > * > :not(.sectionTitle) {
       display: none;
     }
   }

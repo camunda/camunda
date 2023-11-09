@@ -36,7 +36,8 @@
     "username": "Nutzername",
     "password": "Passwort",
     "btn": "Einloggen",
-    "error": "Bei der Anmeldung ist ein Fehler aufgetreten.",
+    "errorMessage": "Bei der Anmeldung ist ein Fehler aufgetreten.",
+    "closeError": "Login-Fehlermeldung schließen",
     "timeout": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an, um die Aktion abzuschließen.",
     "telemetry": "Durch Anmelden akzeptieren Sie unsere <a href=\"https://camunda.com/legal/terms/\" target=\"_blank\" rel=\"noopener noreferrer\">AGB</a> und <a href=\"https://camunda.com/legal/privacy/\" target=\"_blank\" rel=\"noopener noreferrer\">Datenschutzerklärung</a>"
   },
@@ -52,7 +53,8 @@
     "label": "Lizenz",
     "licensedFor": "Lizenziert für",
     "validUntil": "Gültig bis",
-    "redirectMessage": "Sie werden in Kürze zur Anmeldeseite weitergeleitet. <a href=\"./\">Klicken Sie hier, um sofort zur Anmeldeseite zu gelangen</a> ",
+    "redirectMessage": "Sie werden in Kürze zur Anmeldeseite weitergeleitet.",
+    "clickToLogin": "Klicken Sie hier, um sofort zur Anmeldeseite zu gelangen",
     "licenseKey": "Lizenzschlüssel",
     "enterLicense": "Bitte geben Sie den Lizenzschlüssel ein",
     "submit": "Absenden",
@@ -367,7 +369,7 @@
       "compareProcessesAndVersionsInABarChart-description": "Vergleiche Prozesse und Versionen in einem Balken Diagramm. (Wähle mindestens zwei Prozesse)",
       "correlateDurationAndCountInPieChart": "Korreliere Metriken in einem Kuchendiagram",
       "correlateDurationAndCountInPieChart-description": "Korreliere zeitliche und zählbare Metriken eines Prozesses, von Zwischenfällen, von Benutzeraufgaben und Prozessknoten.",
-      "correlateMetricsInLineBarChart": "Korreliere Metriken in einem Kuchendiagram",
+      "correlateMetricsInLineBarChart": "Korreliere Metriken in einem Linien / Balken Diagramm",
       "correlateMetricsInLineBarChart-description": "Korreliere zeitliche und zählbare Metriken eines Prozesses, von Zwischenfällen, von Benutzeraufgaben und Prozessknoten.",
       "listIncidentsAsTable": "Liste Zwischenfälle in einer Tabelle",
       "listIncidentsAsTable-description": "Liste Zwischenfälle pro Prozessknoten in einer Tabelle.",
@@ -573,6 +575,9 @@
         "inputVariable": "EingabeVar",
         "outputVariable": "AusgabeVar",
         "objectVariable": "Objektvariable",
+        "openIncidents": "Offener Zwischenfälle",
+        "incidents": "Zwischenfälle",
+        "userTasks": "Benutzeraufgaben",
         "flowNodeDuration": "Dauer",
         "count": "Anzahl"
       },
@@ -598,6 +603,7 @@
         "evaluation": "Zeige Evaluierungsanzahl"
       },
       "aggregation": {
+        "label": "Aggregation",
         "userTaskLegend": "Benutzeraufgabendauer",
         "durationLegend": "Basis-Aggregationen",
         "variableLegend": "Variablenaggregationen",
@@ -689,7 +695,8 @@
     "missingVariable": "Fehlende Variable",
     "nonExistingVariable": "Variable existiert nicht",
     "nonExistingFlowNode": "Prozessknoten existiert nicht",
-    "percentageOfInstances": "% der gesamten Instanzen, die dem Filter entsprechen"
+    "percentageOfInstances": "% der gesamten Instanzen, die dem Filter entsprechen",
+    "addDescription": "Beschreibung hinzufügen"
   },
   "dashboard": {
     "label": "Dashboard",
@@ -831,43 +838,10 @@
       "acceleration_text3_line4": "Zielzeiten für Aufgaben",
       "processDashboard": "Process Übersicht",
       "processDashboard-description": "Dieses Dashboard bietet eine Übersicht der Metriken und Anwendungsfälle, die mit Optimize abgedeckt werden können.",
-      "processPerformance": "Prozessleistungsübersicht",
-      "processPerformance_subTitle": "Prozess- und Zwischenfall-Performance",
-      "humanPerformance": "Benutzeraufgabenübersicht",
-      "humanPerformance_subTitle": "Benutzeraufgabenanzahlen und -Dauern",
-      "humanBottleneckAnalysis": "Engpassanalyse für Benutzeraufgaben",
-      "humanBottleneckAnalysis_subTitle": "Beheben Sie Engpässe, um die Gesamtprozesszeit zu reduzieren",
       "portfolioPerformance": "Portfolio-Performance-Übersicht",
       "portfolioPerformance_subTitle": "Eine Zusammenfassung von bis zu 10 Prozessen anzeigen",
       "operationsMonitoring": "Betriebsüberwachung",
       "operationsMonitoring_subTitle": "Aktive Prozesse und Vorfälle überwachen",
-      "30DayThroughput": "Durchsatz (30 Tage fortlaufend)",
-      "p75Duration": "75. Perzentil Dauer",
-      "p99Duration": "99. Perzentil Dauer",
-      "percentSLAMet": "% SLA erfüllt",
-      "percentNoIncidents": "Prozent ohne Zwischenfällen",
-      "percentSuccess": "Erfolgsrate (Filter bearbeiten, um nur erfolgreiche Endereignisse anzuzeigen)",
-      "percentAutomated": "Automatisierungsrate (Filter bearbeiten, um Benutzeraufgaben auszuschließen)",
-      "flownodeDuration": "Welche Prozessschritte nehmen zu viel Zeit in Anspruch? (ToDo: Zielwerte für diese Prozessschritte hinzufügen)",
-      "controlChart": "Ist mein Prozess unter Kontrolle?",
-      "flownodeFrequency": "Wie oft wird jeder Prozessschritt ausgeführt?",
-      "instanceTrends": "Wie oft wird dieser Prozess ausgeführt?",
-      "activeIncidentsHeatmap": "Wo sind die aktiven Zwischenfälle?",
-      "incidentDurationHeatmap": "Wo sind die schlimmsten Zwischenfälle?",
-      "incidentDurationTrend": "Verbessern wir die Behandlung von Zwischenfällen?",
-      "idleTime": "Wartezeit",
-      "workTime": "Arbeitszeit",
-      "tasksStarted": "Gestartete Aufgaben pro Monat",
-      "tasksCompleted": "Abgeschlossene Aufgaben pro Monat",
-      "bottleneckLocation": "Wo ist mein Engpass?",
-      "bottleneckSeverity": "Wie schlimm ist mein Engpass?",
-      "assigneeVariation": "Wie wirkt sich der Bearbeiter auf den Engpass aus?",
-      "durationImprovement": "Verbessert sich der Engpass?",
-      "userTaskImprovement": "Werden Benutzeraufgaben effizienter?",
-      "upstreamWork": "Wird Arbeit reibungslos an den Engpass geliefert? (Zu tun: Bearbeiten Sie den Filter, um alle Prozessknoten VOR dem Engpass einzuschließen)",
-      "bottleneckQueue": "Wie viele Aufgaben warten an meinem Engpass? (Zu tun: Bearbeiten Sie den Filter, um den Prozessknoten AM Engpass auszuwählen)",
-      "workerProductivity": "Wie produktiv sind meine Arbeiter?",
-      "workDuration": "Wie lange dauert jede Benutzeraufgabe?",
       "completedProcesses": "Abgeschlossene Prozesse",
       "activeIncidents": "Aktive Zwischenfälle",
       "runningProcesses": "Welche Prozesse laufen?",
@@ -978,14 +952,13 @@
     "contactManager": "Bitte wenden Sie sich an den Sammelmanager, um neue Alarme zu erstellen",
     "inactiveStatus": "Alarm inaktiv",
     "activateInfo": "Zum Aktivieren fügen Sie eine E-Mail oder ein Zielsystem hinzu",
-    "existingAlerts": "Vorhandene Alarme",
     "updated": "\"{name}\" aktualisiert.",
     "removed": "\"{name}\" entfernt."
   },
   "analysis": {
     "branchAnalysis": "Verlaufsanalyse",
-    "outlier": {
-      "label": "Ausreißeranalyse",
+    "task": {
+      "label": "Aufgabeanalyse",
       "totalInstances": "Instanzen insgesamt",
       "tooltip": {
         "outlier": {
@@ -1110,6 +1083,11 @@
     "less": "Weniger",
     "configure": "Konfigurieren",
     "new": "Neuer",
+    "error": "Fehler",
+    "closeError": "Fehlerbenachrichtigung schließen",
+    "units": "Einheiten",
+    "link": "Link",
+    "details": "Details",
     "process": {
       "label": "Prozess",
       "label-plural": "Prozesse"
@@ -1429,6 +1407,9 @@
             "view": "Nur Daten von Prozessknoten anzeigen, die in diesem Zeitraum geendet sind"
           }
         }
+      },
+      "assignee": {
+        "allowCustomValues": "Betrachter können Filterwerte hinzufügen"
       },
       "assigneeModal": {
         "includeOnly": "Nur einschließen",

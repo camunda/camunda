@@ -66,16 +66,16 @@ test('should deselect elements by clicking on the node or on the control panel',
   await t.click(Analysis.flowNode('ExclusiveGateway_0rta6cr'));
   await t.click(Analysis.flowNode('msLeadIsOpp'));
 
-  await t.expect(Analysis.gatewayInput.textContent).eql('Call them right away?');
-  await t.expect(Analysis.endEventInput.textContent).eql('Lead is Opp');
+  await t.expect(Analysis.gatewayInput.textContent).contains('Call them right away?');
+  await t.expect(Analysis.endEventInput.textContent).contains('Lead is Opp');
 
   await t.click(Analysis.flowNode('msLeadIsOpp'));
 
-  await t.expect(Analysis.endEventInput.textContent).eql('Select End Event');
+  await t.expect(Analysis.endEventInput.textContent).contains('Select End Event');
 
   await t.click(Analysis.gatewayCancelButton);
 
-  await t.expect(Analysis.gatewayInput.textContent).eql('Select Gateway');
+  await t.expect(Analysis.gatewayInput.textContent).contains('Select Gateway');
 });
 
 test('should show outliers heatmap when selecting a process definition', async (t) => {

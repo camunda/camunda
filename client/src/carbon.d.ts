@@ -29,6 +29,7 @@ import {
   ChangeEventHandler,
   AnchorHTMLAttributes,
   InputHTMLAttributes,
+  UIEvent,
 } from 'react';
 
 declare module '@carbon/react' {
@@ -589,27 +590,6 @@ declare module '@carbon/react' {
     newValue?: boolean
   ) => void;
 
-  export interface TableToolbarSearchProps
-    extends Omit<SearchElementProps, 'labelText' | 'onBlur' | 'onFocus'>,
-      InternationalProps<TableToolbarTranslationKey> {
-    defaultExpanded?: boolean | undefined;
-    expanded?: boolean | undefined;
-    labelText?: ReactNode | undefined;
-    onBlur?(
-      event: FocusEvent<HTMLInputElement>,
-      handleExpand: TableToolbarSearchHandleExpand
-    ): void;
-    onExpand?(event: FocusEvent<HTMLInputElement>, newExpand: boolean): void;
-    onFocus?(
-      event: FocusEvent<HTMLInputElement>,
-      handleExpand: TableToolbarSearchHandleExpand
-    ): void;
-    persistent?: boolean | undefined;
-    searchContainerClass?: string | undefined;
-  }
-
-  declare const TableToolbarSearch: FC<TableToolbarSearchProps>;
-
   export interface TabListProps extends DivAttributes {
     leftOverflowButtonProps?: HTMLAttributes<HTMLButtonElement>;
     rightOverflowButtonProps?: HTMLAttributes<HTMLButtonElement>;
@@ -638,5 +618,67 @@ declare module '@carbon/react' {
 
   declare function FilterableMultiSelect<T>(
     props: ForwardRefProps<HTMLElement, FilterableMultiSelectProps<T>>
+  ): JSX.Element;
+
+  interface PasswordInputProps extends ReactInputAttr {
+    defaultValue?: string | number;
+    helperText?: ReactNode;
+    hideLabel?: boolean;
+    hidePasswordLabel?: string;
+    id: string;
+    inline?: boolean;
+    invalid?: boolean;
+    invalidText?: ReactNode;
+    labelText: ReactNode;
+    onTogglePasswordVisibility?: () => void;
+    showPasswordLabel?: string;
+    size?: 'sm' | 'md' | 'lg';
+    tooltipAlignment?: 'start' | 'center' | 'end';
+    tooltipPosition?: 'top' | 'right' | 'bottom' | 'left';
+    value?: string | number;
+    warn?: boolean;
+    warnText?: ReactNode;
+  }
+
+  declare function PasswordInput(
+    props: ForwardRefProps<HTMLInputElement, PasswordInputProps>
+  ): JSX.Element;
+
+  declare function Stack(props: {gap: number; children: ReactNode}): JSX.Element;
+
+  interface MenuItemProps {
+    children?: ReactNode;
+    className?: string;
+    disabled?: boolean;
+    kind?: 'default' | 'danger';
+    label: string;
+    onClick?: () => void;
+    renderIcon?: (() => ReactNode) | ReactNode;
+    shortcut?: string;
+  }
+
+  declare function MenuItem(props: ForwardRefProps<HTMLElement, MenuItemProps>): JSX.Element;
+
+  interface MenuButtonProps {
+    children: ReactNode;
+    className?: string;
+    disabled?: boolean;
+    kind?: 'primary' | 'tertiary' | 'ghost';
+    label: string;
+    size?: 'sm' | 'md' | 'lg';
+  }
+
+  declare function MenuButton(props: ForwardRefProps<HTMLElement, MenuButtonProps>): JSX.Element;
+
+  function MenuItemSelectable(
+    props: ForwardRefProps<
+      HTMLElement,
+      {
+        label: string;
+        selected?: boolean;
+        className?: string;
+        onChange?: (evt: UIEvent<HTMLElement>) => void;
+      } & Omit<MenuItemProps, 'renderIcon'>
+    >
   ): JSX.Element;
 }

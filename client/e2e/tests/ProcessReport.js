@@ -23,8 +23,8 @@ fixture('Process Report')
 
 test('create a report from a template', async (t) => {
   await t.resizeWindow(1300, 750);
-  await t.click(Common.createNewMenu);
-  await t.click(Common.newReportOption);
+  await t.click(Common.createNewButton);
+  await t.hover(Common.newReportOption);
   await t.click(Common.submenuOption('Process Report'));
 
   await t.click(Common.templateModalProcessField);
@@ -292,17 +292,17 @@ test('should only enable valid combinations for process instance count grouped b
 
   await t.click(e.groupbyDropdown);
 
-  await t.expect(Common.option('Start Date').hasClass('disabled')).notOk();
-  await t.expect(Common.option('Variable').hasClass('disabled')).notOk();
-  await t.expect(Common.option('Flow Nodes').hasClass('disabled')).ok();
+  await t.expect(Common.menuOption('Start Date').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Variable').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Flow Nodes').hasAttribute('aria-disabled')).ok();
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(Common.option('Number').hasClass('disabled')).notOk();
-  await t.expect(Common.option('Table').hasClass('disabled')).ok();
-  await t.expect(Common.option('Bar Chart').hasClass('disabled')).ok();
-  await t.expect(Common.option('Heatmap').hasClass('disabled')).ok();
-  await t.expect(Common.option('Bar/Line Chart').hasClass('disabled')).ok();
+  await t.expect(Common.menuOption('Number').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Table').hasAttribute('aria-disabled')).ok();
+  await t.expect(Common.menuOption('Bar Chart').hasAttribute('aria-disabled')).ok();
+  await t.expect(Common.menuOption('Heatmap').hasAttribute('aria-disabled')).ok();
+  await t.expect(Common.menuOption('Bar/Line Chart').hasAttribute('aria-disabled')).ok();
 
   await t.expect(e.reportNumber.visible).ok();
 });
@@ -341,10 +341,6 @@ test('Limit the precision in chart type reports', async (t) => {
   await t.click(e.configurationButton);
   await t.click(e.limitPrecisionSwitch);
   await t.typeText(e.limitPrecisionInput, '2', {replace: true});
-
-  await u.selectVisualization(t, 'Bar Chart');
-  await t.click(e.configurationButton);
-  await t.expect(e.limitPrecisionInput.visible).ok();
   await t.expect(e.reportChart.visible).ok();
 
   // Heatmap
@@ -380,13 +376,14 @@ test('select process instance count grouped by end date', async (t) => {
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(Common.option('Number').hasClass('disabled')).ok();
-  await t.expect(Common.option('Table').hasClass('disabled')).notOk();
-  await t.expect(Common.option('Bar Chart').hasClass('disabled')).notOk();
-  await t.expect(Common.option('Line Chart').hasClass('disabled')).notOk();
-  await t.expect(Common.option('Pie Chart').hasClass('disabled')).notOk();
-  await t.expect(Common.option('Heatmap').hasClass('disabled')).ok();
-  await t.expect(Common.option('Bar/Line Chart').hasClass('disabled')).ok();
+  await t.expect(Common.menuOption('Number').hasAttribute('aria-disabled')).ok();
+  await t.expect(Common.menuOption('Table').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Bar Chart').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Line Chart').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Pie Chart').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Heatmap').hasAttribute('aria-disabled')).ok();
+  await t.expect(Common.menuOption('Bar/Line Chart').hasAttribute('aria-disabled')).ok();
+
   await t.click(e.visualizationDropdown);
 
   await u.selectVisualization(t, 'Table');
@@ -403,13 +400,13 @@ test('select process instance count grouped by variable', async (t) => {
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(Common.option('Number').hasClass('disabled')).ok();
-  await t.expect(Common.option('Table').hasClass('disabled')).notOk();
-  await t.expect(Common.option('Bar Chart').hasClass('disabled')).notOk();
-  await t.expect(Common.option('Line Chart').hasClass('disabled')).notOk();
-  await t.expect(Common.option('Pie Chart').hasClass('disabled')).notOk();
-  await t.expect(Common.option('Heatmap').hasClass('disabled')).ok();
-  await t.expect(Common.option('Bar/Line Chart').hasClass('disabled')).ok();
+  await t.expect(Common.menuOption('Number').hasAttribute('aria-disabled')).ok();
+  await t.expect(Common.menuOption('Table').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Bar Chart').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Line Chart').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Pie Chart').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Heatmap').hasAttribute('aria-disabled')).ok();
+  await t.expect(Common.menuOption('Bar/Line Chart').hasAttribute('aria-disabled')).ok();
 
   await t.click(e.visualizationDropdown);
 
@@ -440,10 +437,10 @@ test('should only enable valid combinations for Flow Node Count', async (t) => {
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(Common.option('Number').hasClass('disabled')).ok();
-  await t.expect(Common.option('Table').hasClass('disabled')).notOk();
-  await t.expect(Common.option('Bar Chart').hasClass('disabled')).notOk();
-  await t.expect(Common.option('Heatmap').hasClass('disabled')).notOk();
+  await t.expect(Common.menuOption('Number').hasAttribute('aria-disabled')).ok();
+  await t.expect(Common.menuOption('Table').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Bar Chart').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Heatmap').hasAttribute('aria-disabled')).notOk();
 });
 
 test('bar chart and line chart configuration', async (t) => {
@@ -497,7 +494,7 @@ test('bar chart and line chart configuration', async (t) => {
   await t.click(e.configurationButton);
 
   await t.click(e.distributedBySelect);
-  await t.click(e.dropdownOption('Variable'));
+  await t.hover(Common.menuOption('Variable'));
   await t.click(Common.submenuOption('boolVar'));
   await u.selectVisualization(t, 'Bar Chart');
 
@@ -512,7 +509,7 @@ test('bar chart and line chart configuration', async (t) => {
   await t.click(e.configurationButton);
 
   await t.click(e.addMeasureButton);
-  await t.click(e.dropdownOption('Duration'));
+  await t.click(Common.menuOption('Duration'));
   await u.selectVisualization(t, 'Bar/Line Chart');
 
   await t.click(e.configurationButton);
@@ -752,28 +749,28 @@ test('should only enable valid combinations for user task', async (t) => {
 
   await t.click(e.groupbyDropdown);
 
-  await t.expect(Common.option('Flow Nodes').hasClass('disabled')).ok();
-  await t.expect(Common.option('User Task').hasClass('disabled')).notOk();
-  await t.expect(Common.option('Assignee').hasClass('disabled')).notOk();
-  await t.expect(Common.option('Candidate Group').hasClass('disabled')).notOk();
-  await t.expect(Common.option('Start Date').hasClass('disabled')).notOk();
+  await t.expect(Common.menuOption('Flow Nodes').hasAttribute('aria-disabled')).ok();
+  await t.expect(Common.menuOption('User Task').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Assignee').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Candidate Group').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Start Date').hasAttribute('aria-disabled')).notOk();
 
-  await t.click(Common.option('User Tasks'));
+  await t.click(Common.menuOption('User Tasks'));
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(Common.option('Number').hasClass('disabled')).ok();
-  await t.expect(Common.option('Table').hasClass('disabled')).notOk();
-  await t.expect(Common.option('Bar Chart').hasClass('disabled')).notOk();
-  await t.expect(Common.option('Heatmap').hasClass('disabled')).notOk();
+  await t.expect(Common.menuOption('Number').hasAttribute('aria-disabled')).ok();
+  await t.expect(Common.menuOption('Table').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Bar Chart').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Heatmap').hasAttribute('aria-disabled')).notOk();
 
   await u.selectGroupby(t, 'Assignee');
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(Common.option('Heatmap').hasClass('disabled')).ok();
+  await t.expect(Common.menuOption('Heatmap').hasAttribute('aria-disabled')).ok();
 
-  await t.click(Common.option('Table'));
+  await t.click(Common.menuOption('Table'));
 
   await t.expect(e.reportTable.visible).ok();
 });
@@ -789,7 +786,7 @@ test('should be able to distribute candidate group by user task', async (t) => {
 
   await t.click(e.distributedBySelect);
 
-  await t.click(e.dropdownOption('User Task'));
+  await t.click(Common.menuOption('User Task'));
 
   await t.expect(e.visualizationDropdown.textContent).contains('Bar Chart');
 
@@ -800,13 +797,13 @@ test('should be able to distribute candidate group by user task', async (t) => {
 
   await t.click(e.visualizationDropdown);
 
-  await t.expect(Common.option('Table').hasClass('disabled')).notOk();
-  await t.expect(Common.option('Bar Chart').hasClass('disabled')).notOk();
-  await t.expect(Common.option('Line Chart').hasClass('disabled')).notOk();
-  await t.expect(Common.option('Number').hasClass('disabled')).ok();
-  await t.expect(Common.option('Pie Chart').hasClass('disabled')).ok();
+  await t.expect(Common.menuOption('Table').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Bar Chart').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Line Chart').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Number').hasAttribute('aria-disabled')).ok();
+  await t.expect(Common.menuOption('Pie Chart').hasAttribute('aria-disabled')).ok();
 
-  await t.click(Common.option('Table'));
+  await t.click(Common.menuOption('Table'));
   await t.expect(e.reportTable.visible).ok();
 });
 
@@ -916,7 +913,7 @@ test('group by duration', async (t) => {
   await t.expect(e.reportChart.visible).ok();
 
   await t.click(e.distributedBySelect);
-  await t.click(e.dropdownOption('Flow Node'));
+  await t.click(Common.menuOption('Flow Node'));
   await u.selectVisualization(t, 'Table');
 
   await t.expect(e.reportRenderer.textContent).contains('Invoice\nprocessed');
@@ -935,7 +932,7 @@ test('distribute by variable', async (t) => {
   await u.selectVisualization(t, 'Bar Chart');
 
   await t.click(e.distributedBySelect);
-  await t.click(e.dropdownOption('Variable'));
+  await t.click(Common.menuOption('Variable'));
   await t.click(Common.submenuOption('approved'));
   await t
     .resizeWindow(1650, 900)
@@ -946,7 +943,7 @@ test('distribute by variable', async (t) => {
     .maximizeWindow();
 
   await t.click(e.distributedBySelect);
-  await t.click(e.dropdownOption('Variable'));
+  await t.click(Common.menuOption('Variable'));
   await t.click(Common.submenuOption('invoiceCategory'));
   await u.selectVisualization(t, 'Table');
 
@@ -964,10 +961,10 @@ test('distribute by start/end date', async (t) => {
   await u.selectGroupby(t, 'Variable', 'invoiceCategory');
   await u.selectVisualization(t, 'Bar Chart');
   await t.click(e.distributedBySelect);
-  await t.click(e.dropdownOption('Start Date'));
+  await t.click(Common.menuOption('Start Date'));
   await t.click(Common.submenuOption('Month'));
   await t.click(e.distributedBySelect);
-  await t.click(e.dropdownOption('End Date'));
+  await t.click(Common.menuOption('End Date'));
   await t.click(Common.submenuOption('Automatic'));
   await u.selectGroupby(t, 'Variable', 'boolVar');
 
@@ -1002,14 +999,14 @@ test('multi-measure reports', async (t) => {
   await u.selectView(t, 'Process Instance', 'Count');
 
   await t.click(e.addMeasureButton);
-  await t.click(e.dropdownOption('Percentage'));
+  await t.click(Common.menuOption('Percentage'));
   await t.expect(e.reportNumber.visible).ok();
   await t.expect(e.reportRenderer.textContent).contains('Process Instance Count');
   await t.expect(e.reportRenderer.textContent).contains('% of total instances');
   await t.click(e.removeMeasureButton);
 
   await t.click(e.addMeasureButton);
-  await t.click(e.dropdownOption('Duration'));
+  await t.click(Common.menuOption('Duration'));
 
   await t.expect(e.reportNumber.visible).ok();
   await t.expect(e.reportRenderer.textContent).contains('Process Instance Count');
@@ -1087,11 +1084,11 @@ test('distributed multi-measure reports', async (t) => {
   await u.selectVisualization(t, 'Bar Chart');
 
   await t.click(e.distributedBySelect);
-  await t.click(e.dropdownOption('Variable'));
+  await t.click(Common.menuOption('Variable'));
   await t.click(Common.submenuOption('invoiceCategory'));
 
   await t.click(e.addMeasureButton);
-  await t.click(e.dropdownOption('Count'));
+  await t.click(Common.menuOption('Count'));
 
   await t.expect(e.reportChart.visible).ok();
 
@@ -1164,7 +1161,7 @@ test('variable renaming', async (t) => {
   await t.click(Common.modalConfirmButton);
   await t.click(e.definitionEditor);
 
-  await t.expect(e.viewSelect.textContent).contains('renamed amount');
+  await t.expect(e.viewDropdown.textContent).contains('renamed amount');
   await t.expect(e.numberReportInfo.textContent).contains('renamed amount');
 
   // remove the added label since the label changes are global
@@ -1175,7 +1172,7 @@ test('variable renaming', async (t) => {
   await t.click(Common.modalConfirmButton);
   await t.click(e.definitionEditor);
 
-  await t.expect(e.viewSelect.textContent).contains('amount');
+  await t.expect(e.viewDropdown.textContent).contains('amount');
 });
 
 test('create report with two versions of the same process', async (t) => {
@@ -1234,7 +1231,7 @@ test('Display precision properly', async (t) => {
 
   await u.selectView(t, 'Flow Node', 'Duration');
   await t.click(e.addMeasureButton);
-  await t.click(e.dropdownOption('Count'));
+  await t.click(Common.menuOption('Count'));
   await u.selectVisualization(t, 'Table');
 
   await u.selectGroupby(t, 'Start Date', 'Automatic');
@@ -1277,7 +1274,7 @@ test('add, edit and remove reports description', async (t) => {
 
   // Add description
   await t.expect(Common.descriptionParagraph.exists).notOk();
-  await t.expect(Common.addDescriptionButton.textContent).contains('Add Description');
+  await t.expect(Common.addDescriptionButton.textContent).contains('Add description');
   const description = 'This is a description of the report.';
   await u.addEditEntityDescription(t, description, 'img/report-descriptionModal.png');
 
@@ -1294,10 +1291,10 @@ test('add, edit and remove reports description', async (t) => {
   await t.resizeWindow(1200, 600);
   await t.click(Common.editButton);
 
-  await t.expect(Common.addDescriptionButton.textContent).contains('Edit');
-
   const newDescription =
-    'This is a new description of the report. This time the description is very long and it will not fit in one line. It will display ellipsis and More button.';
+    'This is a new description of the report. This time the description is very long and it will not fit in one line. It will display ellipsis and More button.'.repeat(
+      2
+    );
   await u.addEditEntityDescription(t, newDescription);
 
   await t.expect(Common.descriptionField.textContent).contains(newDescription);
@@ -1329,7 +1326,7 @@ test('add, edit and remove reports description', async (t) => {
   await t.click(Common.editButton);
   await u.addEditEntityDescription(t);
   await t.expect(Common.descriptionParagraph.exists).notOk();
-  await t.expect(Common.addDescriptionButton.textContent).contains('Add Description');
+  await t.expect(Common.addDescriptionButton.textContent).contains('Add description');
 
   await u.save(t);
 

@@ -14,8 +14,8 @@ export const multiSelectOption = (text) =>
   multiSelect.find('.cds--list-box__menu-item').withText(text);
 export const multiSelectOptionNumber = (idx) => multiSelect.find('.DropdownOption').nth(idx);
 export const variableFilterOperatorButton = (text) =>
-  Selector('.Modal .buttonRow .Button').withText(text);
-export const variableTypeahead = Selector('.variableContainer:last-of-type .Typeahead .Input');
+  Selector('.Modal .buttonRow .cds--radio-button-wrapper').withText(text);
+export const variableTypeahead = Selector('.variableContainer:last-of-type .cds--combo-box input');
 export const variableFilterValueInput = Selector('.Modal .ValueListInput input').nth(0);
 export const variableOrButton = Selector('.MultipleVariableFilterModal .orButton');
 export const removeVariableBtn = Selector('.MultipleVariableFilterModal .removeButton');

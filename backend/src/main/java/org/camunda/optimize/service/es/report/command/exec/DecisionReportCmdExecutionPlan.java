@@ -8,14 +8,14 @@ package org.camunda.optimize.service.es.report.command.exec;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.service.db.reader.DecisionDefinitionReader;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.DecisionQueryFilterEnhancer;
-import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.DistributedByPart;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.view.ViewPart;
-import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndexES;
 import org.camunda.optimize.service.util.DefinitionQueryUtil;
 import org.camunda.optimize.service.util.InstanceIndexUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -23,6 +23,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 @Slf4j
@@ -65,7 +66,7 @@ public class DecisionReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T,
           definitionDto.getKey(),
           definitionDto.getVersions(),
           definitionDto.getTenantIds(),
-          new DecisionInstanceIndex(definitionDto.getKey()),
+          new DecisionInstanceIndexES(definitionDto.getKey()),
           decisionDefinitionReader::getLatestVersionToKey
         )
       ));
@@ -75,6 +76,11 @@ public class DecisionReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T,
   @Override
   protected String[] getIndexNames(final ExecutionContext<DecisionReportDataDto> context) {
     return InstanceIndexUtil.getDecisionInstanceIndexAliasName(context.getReportData());
+  }
+
+  @Override
+  protected String[] getMultiIndexAlias() {
+    return new String[]{DECISION_INSTANCE_MULTI_ALIAS};
   }
 
   @Override

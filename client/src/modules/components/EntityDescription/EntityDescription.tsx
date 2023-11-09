@@ -8,8 +8,9 @@
 import {useEffect, useRef, useState} from 'react';
 import {Button} from '@carbon/react';
 import classnames from 'classnames';
+import {Edit, Add} from '@carbon/icons-react';
 
-import {Button as LegacyButton, Icon, Modal, TextEditor} from 'components';
+import {Modal, TextEditor} from 'components';
 import {t} from 'translation';
 
 import './EntityDescription.scss';
@@ -90,8 +91,6 @@ export default function EntityDescription({description, onEdit}: EntityDescripti
     return () => window.removeEventListener('resize', calculateShowLessButton);
   }, []);
 
-  const {className, icon, text} = getButtonProperties(description);
-
   return (
     <>
       <div className="EntityDescription">
@@ -106,15 +105,25 @@ export default function EntityDescription({description, onEdit}: EntityDescripti
           </p>
         )}
         {!onEdit && showToggleButton && (
-          <LegacyButton onClick={toggleDescription} className="toggle" link>
+          <Button kind="ghost" size="sm" onClick={toggleDescription} className="toggle">
             {isDescriptionOpen ? t('common.less') : t('common.more')}
-          </LegacyButton>
+          </Button>
         )}
-        {onEdit && (
-          <LegacyButton className={className} link onClick={openModal}>
-            <Icon size={12} type={icon} />
-            {text}
-          </LegacyButton>
+        {onEdit && description && (
+          <Button
+            kind="ghost"
+            size="sm"
+            className="edit"
+            onClick={openModal}
+            renderIcon={Edit}
+            hasIconOnly
+            iconDescription={t('common.edit').toString()}
+          />
+        )}
+        {onEdit && !description && (
+          <Button kind="tertiary" size="sm" className="add" onClick={openModal} renderIcon={Add}>
+            {t('report.addDescription')}
+          </Button>
         )}
       </div>
       <Modal className="EntityDescriptionEditModal" open={isEditModalOpen} onClose={handleCancel}>
@@ -146,20 +155,4 @@ export default function EntityDescription({description, onEdit}: EntityDescripti
       </Modal>
     </>
   );
-}
-
-function getButtonProperties(description: string | null) {
-  if (description) {
-    return {
-      className: 'edit',
-      icon: 'edit',
-      text: t('common.edit'),
-    };
-  }
-
-  return {
-    className: 'add',
-    icon: 'plus',
-    text: `${t('common.add')} ${t('common.description')}`,
-  };
 }

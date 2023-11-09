@@ -7,10 +7,10 @@ package org.camunda.optimize.service.telemetry.mixpanel;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.ReportType;
-import org.camunda.optimize.service.es.reader.AlertReader;
-import org.camunda.optimize.service.es.reader.DashboardReader;
-import org.camunda.optimize.service.es.reader.ReportReader;
-import org.camunda.optimize.service.es.reader.SharingReader;
+import org.camunda.optimize.service.db.reader.AlertReader;
+import org.camunda.optimize.service.db.reader.DashboardReader;
+import org.camunda.optimize.service.db.reader.ReportReader;
+import org.camunda.optimize.service.db.reader.SharingReader;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelEntityEventProperties;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelHeartbeatMetrics;
 import org.camunda.optimize.service.telemetry.mixpanel.client.MixpanelHeartbeatProperties;
@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
 @Component
 @AllArgsConstructor
 public class MixpanelDataService {
+
   private final ConfigurationService configurationService;
   private final ReportReader reportReader;
   private final DashboardReader dashboardReader;
@@ -57,4 +58,5 @@ public class MixpanelDataService {
   private MixpanelConfiguration.TrackingProperties getMixpanelProperties() {
     return configurationService.getAnalytics().getMixpanel().getProperties();
   }
+
 }

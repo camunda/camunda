@@ -11,10 +11,10 @@ import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogEntryDto;
 import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogType;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.AssigneeCandidateGroupService;
+import org.camunda.optimize.service.db.writer.usertask.IdentityLinkLogWriter;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.IdentityLinkLogImportJob;
-import org.camunda.optimize.service.es.writer.usertask.IdentityLinkLogWriter;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class IdentityLinkLogImportService implements ImportService<HistoricIdentityLinkLogDto> {
+
   private static final Set<IdentityLinkLogType> SUPPORTED_TYPES = Set.of(
     IdentityLinkLogType.ASSIGNEE, IdentityLinkLogType.CANDIDATE
   );
@@ -67,7 +68,7 @@ public class IdentityLinkLogImportService implements ImportService<HistoricIdent
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
     return elasticsearchImportJobExecutor;
   }
 

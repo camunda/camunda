@@ -10,7 +10,7 @@ import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.TenantDto;
-import org.camunda.optimize.service.es.reader.TenantReader;
+import org.camunda.optimize.service.db.reader.TenantReader;
 import org.camunda.optimize.service.security.util.tenant.DataSourceTenantAuthorizationService;
 import org.camunda.optimize.service.util.configuration.CacheConfiguration;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 @Component
 @Conditional(CamundaPlatformCondition.class)
 public class CamundaPlatformTenantService implements TenantService, ConfigurationReloadable {
+
   public static final TenantDto TENANT_NOT_DEFINED = new TenantDto(null, "Not defined", null);
 
   private final TenantReader tenantReader;

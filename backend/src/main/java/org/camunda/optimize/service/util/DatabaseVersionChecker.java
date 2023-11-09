@@ -8,7 +8,6 @@ package org.camunda.optimize.service.util;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.client.RequestOptions;
@@ -16,8 +15,8 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.List;
 
 import static org.camunda.optimize.service.metadata.Version.getMajorAndMinor;
@@ -31,35 +30,18 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBu
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public abstract class DatabaseVersionChecker {
-  @Getter
-  @Setter
-  private static List<String> supportedVersionsES = new ArrayList<>();
-  @Getter
-  @Setter
-  private static List<String> supportedVersionsOS = new ArrayList<>();
 
-  public final static String ELASTICSEARCH = "Elasticsearch"; //TODO will be moved to DatabaseConstants in OPT-7229
-  public final static String OPENSEARCH = "Opensearch"; //TODO will be moved to DatabaseConstants in OPT-7229
+  @Getter
+  private static final EnumMap<Database, List<String>> databaseSupportedVersionsMap = new EnumMap<>(Database.class);
 
   static {
-    // Elasticsearch versions
-    supportedVersionsES.add("7.10.0");
-    supportedVersionsES.add("7.11.0");
-    supportedVersionsES.add("7.12.0");
-    supportedVersionsES.add("7.13.0");
-    supportedVersionsES.add("7.14.0");
-    supportedVersionsES.add("7.15.0");
-    supportedVersionsES.add("7.16.2");
-    supportedVersionsES.add("7.17.0");
-    supportedVersionsES.add("8.7.0");
-    supportedVersionsES.add("8.8.0");
-
-    // Opensearch versions
-    supportedVersionsOS.add("2.5.0");
-    supportedVersionsOS.add("2.6.0");
-    supportedVersionsOS.add("2.7.0");
-    supportedVersionsOS.add("2.8.0");
-    supportedVersionsOS.add("2.9.0");
+    databaseSupportedVersionsMap.put(
+      Database.ELASTICSEARCH,
+      List.of("7.10.0", "7.11.0", "7.12.0", "7.13.0", "7.14.0", "7.15.0", "7.16.2", "7.17.0", "8.8.0")
+    );
+    databaseSupportedVersionsMap.put(
+      Database.OPENSEARCH, List.of("2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0")
+    );
   }
 
   private static final Comparator<String> MAJOR_COMPARATOR = Comparator.comparingInt(major -> Integer.parseInt(
@@ -73,24 +55,24 @@ public abstract class DatabaseVersionChecker {
 
   public static void checkESVersionSupport(final RestHighLevelClient esClient,
                                            final RequestOptions requestOptions) throws IOException {
-    checkDatabaseVersionSupported(getCurrentESVersion(esClient, requestOptions), ELASTICSEARCH);
+    checkDatabaseVersionSupported(getCurrentESVersion(esClient, requestOptions), Database.ELASTICSEARCH);
   }
 
   public static void checkOSVersionSupport(final OpenSearchClient osClient,
                                            final RequestOptions requestOptions) throws IOException {
-    checkDatabaseVersionSupported(getCurrentOSVersion(osClient), OPENSEARCH);
+    checkDatabaseVersionSupported(getCurrentOSVersion(osClient), Database.OPENSEARCH);
   }
 
   private static void checkDatabaseVersionSupported(final String currentVersion,
-                                                    final String database) {
-    List<String> supportedVersions = ELASTICSEARCH.equals(database) ? supportedVersionsES : supportedVersionsOS;
+                                                    final Database database) {
+    List<String> supportedVersions = databaseSupportedVersionsMap.get(database);
     if (!isCurrentVersionSupported(currentVersion, supportedVersions)) {
       if (doesVersionNeedWarning(currentVersion, getLatestSupportedVersion(supportedVersions))) {
         log.warn(String.format("""
-                  The version of %1$s you're using is not officially supported by Camunda Optimize.
-                  We can not guarantee full functionality.
-                  Please check the technical guide for the list of supported %1$s versions
-                 """, database));
+                                  The version of %1$s you're using is not officially supported by Camunda Optimize.
+                                  We can not guarantee full functionality.
+                                  Please check the technical guide for the list of supported %1$s versions
+                                 """, database));
 
       } else {
         throw new OptimizeRuntimeException(buildUnsupportedErrorMessage(currentVersion, database, supportedVersions));
@@ -105,11 +87,11 @@ public abstract class DatabaseVersionChecker {
   }
 
   public static boolean isCurrentElasticsearchVersionSupported(String currentVersion) {
-    return isCurrentVersionSupported(currentVersion, supportedVersionsES);
+    return isCurrentVersionSupported(currentVersion, databaseSupportedVersionsMap.get(Database.ELASTICSEARCH));
   }
 
   public static boolean isCurrentOpensearchVersionSupported(String currentVersion) {
-    return isCurrentVersionSupported(currentVersion, supportedVersionsOS);
+    return isCurrentVersionSupported(currentVersion, databaseSupportedVersionsMap.get(Database.OPENSEARCH));
   }
 
   private static boolean isCurrentVersionSupported(String currentVersion, List<String> supportedVersions) {
@@ -125,11 +107,11 @@ public abstract class DatabaseVersionChecker {
   }
 
   public static String getLatestSupportedESVersion() {
-    return getLatestSupportedVersion(supportedVersionsES);
+    return getLatestSupportedVersion(databaseSupportedVersionsMap.get(Database.ELASTICSEARCH));
   }
 
   public static String getLatestSupportedOSVersion() {
-    return getLatestSupportedVersion(supportedVersionsOS);
+    return getLatestSupportedVersion(databaseSupportedVersionsMap.get(Database.OPENSEARCH));
   }
 
   private static String getLatestSupportedVersion(List<String> supportedVersions) {
@@ -138,8 +120,8 @@ public abstract class DatabaseVersionChecker {
       .orElseThrow(() -> new IllegalStateException("No supported versions found"));
   }
 
-  private static String buildUnsupportedErrorMessage(String dbVersion, String database,
-                                                     List<String> supportedVersions ) {
+  private static String buildUnsupportedErrorMessage(String dbVersion, Database database,
+                                                     List<String> supportedVersions) {
     StringBuilder message = new StringBuilder(database + " version is not supported by Optimize.\n");
 
     message.append("Current version of Optimize supports the following ").append(database).append(" versions:\n");
@@ -149,6 +131,11 @@ public abstract class DatabaseVersionChecker {
 
     message.append("Your current ").append(database).append(" version is: ").append(dbVersion);
     return message.toString();
+  }
+
+  enum Database {
+    ELASTICSEARCH,
+    OPENSEARCH;
   }
 
 }

@@ -25,7 +25,8 @@ fixture('German Optimize')
   });
 
 test('Create a report in the german version of optimize', async (t) => {
-  await t.click(Common.createNewMenu).hover(Common.newReportOption);
+  await t.click(Common.createNewButton);
+  await t.hover(Common.newReportOption);
   await t.click(Common.submenuOption('Prozessbericht'));
 
   await t.click(Common.templateModalProcessField);

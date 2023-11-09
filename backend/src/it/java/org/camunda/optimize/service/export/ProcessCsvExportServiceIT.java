@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.export;
 
+import jakarta.ws.rs.core.Response;
 import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -17,22 +18,21 @@ import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.VariableDto;
+import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.service.util.configuration.users.AuthorizedUserType;
 import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.util.FileReaderUtil;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import jakarta.ws.rs.core.Response;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -180,7 +180,8 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
   @Test
   public void durationIsSetCorrectlyEvenWhenNotSortingByDurationOnCsvExport() {
     // given
-    OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+    OffsetDateTime now = OffsetDateTime.parse("2023-01-01T00:00:00+01:00");
+    DateCreationFreezer.dateFreezer().dateToFreeze(now).freezeDateAndReturn();
     OffsetDateTime twoWeeksAgo = now.minusWeeks(2L);
     long expectedDuration = now.toInstant().toEpochMilli() - twoWeeksAgo.toInstant().toEpochMilli();
 
@@ -258,7 +259,8 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
   @ParameterizedTest
   public void runningAndCompletedProcessInstancesSortByDuration(SortOrder order) {
     // given
-    OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
+    OffsetDateTime now = OffsetDateTime.parse("2023-01-01T00:00:00+01:00");
+    DateCreationFreezer.dateFreezer().dateToFreeze(now).freezeDateAndReturn();
     OffsetDateTime twoDaysAgo = now.minusDays(2L);
     OffsetDateTime threeDaysAgo = now.minusDays(3L);
     OffsetDateTime oneWeekAgo = now.minusWeeks(1L);
@@ -493,6 +495,12 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
     singleProcessReportDefinitionDto.setCreated(someDate);
     singleProcessReportDefinitionDto.setLastModified(someDate);
     singleProcessReportDefinitionDto.setOwner("something");
+    singleProcessReportDefinitionDto.getData().getConfiguration().getTableColumns().setIncludeNewVariables(true);
+    singleProcessReportDefinitionDto.getData()
+      .getConfiguration()
+      .getTableColumns()
+      .getIncludedColumns()
+      .addAll(CSVUtils.extractAllPrefixedCountKeys());
     return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
@@ -503,6 +511,11 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
     singleProcessReportDefinitionDto.setData(reportData);
     singleProcessReportDefinitionDto.setId("something");
     singleProcessReportDefinitionDto.getData().getConfiguration().setSorting(order);
+    singleProcessReportDefinitionDto.getData().getConfiguration().getTableColumns().setIncludeNewVariables(true);
+    singleProcessReportDefinitionDto.getData()
+      .getConfiguration()
+      .getTableColumns()
+      .setIncludedColumns(new ArrayList<>(CSVUtils.extractAllPrefixedCountKeys()));
     return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 

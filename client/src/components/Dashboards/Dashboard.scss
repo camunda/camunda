@@ -35,18 +35,17 @@
 
       .tools {
         flex-wrap: nowrap;
-        align-items: baseline;
+        align-items: center;
         display: flex;
         flex-shrink: 0;
-
-        .tool-button {
-          margin-right: 6px;
-        }
-
-        .tool-button:last-child {
-          margin-right: 0;
-        }
       }
     }
   }
+}
+
+.DashboardLoading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, 50%);
 }

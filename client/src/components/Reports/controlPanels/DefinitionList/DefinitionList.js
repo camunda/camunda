@@ -10,8 +10,10 @@ import {withRouter} from 'react-router-dom';
 import classnames from 'classnames';
 import useDeepCompareEffect from 'use-deep-compare-effect';
 import deepEqual from 'fast-deep-equal';
+import {Button} from '@carbon/react';
+import {Close, Copy, Edit} from '@carbon/icons-react';
 
-import {Button, Icon, Popover, Tooltip} from 'components';
+import {Popover, Tooltip} from 'components';
 import {withDocs, withErrorHandling} from 'HOC';
 import {getCollection, formatters} from 'services';
 import {t} from 'translation';
@@ -96,20 +98,31 @@ export function DefinitionList({
                   })}
                   position="bottom"
                 >
-                  <Button icon onClick={() => onCopy(idx)}>
-                    <Icon type="copy-small" size="14px" />
-                  </Button>
+                  <Button
+                    kind="ghost"
+                    size="sm"
+                    className="actionBtn"
+                    onClick={() => onCopy(idx)}
+                    iconDescription="Copy"
+                    renderIcon={Copy}
+                    hasIconOnly
+                  />
                 </Tooltip>
               )}
               <Popover
                 className="DefinitionList"
                 onOpen={() => setOpenPopover(idx)}
                 onClose={() => setOpenPopover()}
-                title={<Icon type="edit-small" size="14px" />}
-                tabIndex="0"
-                tooltip={t('common.editName', {name: t('common.process.label')})}
-                tooltipPosition="bottom"
                 floating
+                trigger={
+                  <Popover.Button
+                    size="sm"
+                    className="actionBtn"
+                    iconDescription={t('common.edit')}
+                    renderIcon={Edit}
+                    hasIconOnly
+                  />
+                }
               >
                 <DefinitionEditor
                   collection={collection}
@@ -119,14 +132,15 @@ export function DefinitionList({
                   type={type}
                 />
               </Popover>
-              <Tooltip
-                content={t('common.removeEntity', {entity: t('common.process.label')})}
-                position="bottom"
-              >
-                <Button icon onClick={() => onRemove(idx)}>
-                  <Icon type="close-small" size="14px" />
-                </Button>
-              </Tooltip>
+              <Button
+                kind="ghost"
+                size="sm"
+                className="actionBtn"
+                iconDescription={t('common.remove')}
+                onClick={() => onRemove(idx)}
+                renderIcon={Close}
+                hasIconOnly
+              />
             </div>
           </li>
         );

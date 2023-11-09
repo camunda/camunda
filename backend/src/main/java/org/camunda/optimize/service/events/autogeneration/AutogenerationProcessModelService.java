@@ -22,8 +22,8 @@ import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceE
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
-import org.camunda.optimize.service.EventTraceStateService;
-import org.camunda.optimize.service.EventTraceStateServiceFactory;
+import org.camunda.optimize.service.events.EventTraceStateService;
+import org.camunda.optimize.service.db.events.EventTraceStateServiceFactory;
 import org.camunda.optimize.service.util.EventModelBuilderUtil;
 import org.springframework.stereotype.Component;
 
@@ -39,7 +39,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
 @Component
 @Slf4j

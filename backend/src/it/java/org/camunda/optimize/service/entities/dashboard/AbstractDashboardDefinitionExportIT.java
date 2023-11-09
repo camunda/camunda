@@ -18,7 +18,7 @@ import org.camunda.optimize.dto.optimize.rest.export.report.CombinedProcessRepor
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 import org.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
-import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndexES;
 import org.junit.jupiter.api.Test;
 
 import jakarta.ws.rs.core.Response;
@@ -153,7 +153,7 @@ public abstract class AbstractDashboardDefinitionExportIT extends AbstractExport
       Collections.emptyList()
     );
     final String dashboardId = dashboardClient.createDashboard(null, Collections.singletonList(reportId));
-    elasticSearchIntegrationTestExtension.deleteAllDocsInIndex(new SingleProcessReportIndex());
+    elasticSearchIntegrationTestExtension.deleteAllDocsInIndex(new SingleProcessReportIndexES());
 
     // when
     Response response = exportDashboardDefinitionAndReturnResponse(dashboardId);

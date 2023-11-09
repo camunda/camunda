@@ -7,7 +7,8 @@
 
 import {Selector} from 'testcafe';
 
-export const createNewMenu = Selector('.CreateNewButton');
+export const createNewButton = Selector('.CreateNewButton');
+export const menu = (text) => Selector('ul').withAttribute('aria-label', text);
 export const editButton = Selector('.edit-button');
 export const confirmButton = Selector('button.confirm');
 export const modalConfirmButton = Selector('.Modal.is-visible')
@@ -22,9 +23,11 @@ export const descriptionModalInput = descriptionModal.find('textarea');
 export const modalNameInput = Selector('.Modal.is-visible input[type="text"]');
 export const option = (text) => Selector('.DropdownOption').withText(text);
 export const carbonOption = (text) => Selector('.cds--list-box__menu-item').withText(text);
+export const menuOption = (text) => Selector('.cds--menu-item').withText(text);
+export const submenuOption = (text) =>
+  Selector('.cds--menu-item[aria-expanded=true] > .cds--menu > *').withText(text);
 export const selectedOption = (text) =>
   Selector('.cds--list-box__menu-item--active').withText(text);
-export const submenuOption = (text) => Selector('.Submenu .DropdownOption').withText(text);
 export const entityList = Selector('.EntityList');
 export const edit = (element) => element.find('.DropdownOption').withText('Edit');
 export const copy = (element) => element.find('.DropdownOption').withText('Copy');
@@ -47,23 +50,27 @@ export const processItem = listItem.filter(
 );
 export const reportLabel = reportItem.find('.name .type');
 export const listItemCheckbox = (item) => item.find('input[type="checkbox"]');
-export const newReportOption = createNewMenu.find('.Submenu');
+export const newReportOption = Selector('.cds--menu--shown .cds--menu-item[aria-haspopup=true]');
 export const templateModalProcessField = Selector('.Modal .DefinitionSelection input');
 export const firstOption = Selector('.TemplateModal .cds--list-box__menu-item');
 export const modalContainer = Selector('div:not([aria-hidden="true"]) > .cds--modal-container');
 export const controlPanel = Selector('.ReportControlPanel');
-export const nameEditField = Selector('.EntityNameForm .name-input');
+export const nameEditField = Selector('.EntityNameForm .name-input input');
 export const typeahead = Selector('.Typeahead');
 export const typeaheadOption = (text) => typeahead.find('.DropdownOption').withText(text);
 export const notification = Selector('.Notification');
 export const notificationCloseButton = notification.find('.close');
-export const shareButton = Selector('.share-button .Button');
-export const shareSwitch = Selector('.ShareEntity .Switch');
+export const shareButton = Selector('.share-button .buttonWrapper button');
+export const shareSwitch = Selector('.ShareEntity .cds--toggle__switch');
 export const shareHeader = Selector('.Sharing .header');
 export const shareTitle = shareHeader.find('.name-container');
 export const shareLink = shareHeader.find('.title-button');
-export const shareUrl = Selector('.ShareEntity .linkText');
+export const shareUrl = Selector('.ShareEntity input[type="text"]');
 export const shareOptimizeIcon = Selector('.Sharing.compact .iconLink');
 export const addButton = Selector('.AddButton');
 export const deleteButton = Selector('.delete-button');
 export const usersTypeahead = Selector('.MultiUserInput input');
+export const comboBox = Selector('.cds--combo-box input');
+export const overflowMenuOptions = Selector('.cds--overflow-menu-options');
+export const overflowMenuOption = (text) => overflowMenuOptions.find('button').withText(text);
+export const toggleElement = (text) => Selector('.cds--toggle__label').withText(text);

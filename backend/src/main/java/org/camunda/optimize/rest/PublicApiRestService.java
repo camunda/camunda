@@ -42,6 +42,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import jakarta.validation.Valid;
+
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
@@ -113,6 +114,7 @@ public class PublicApiRestService {
         timezone,
         PaginationScrollableDto.fromPaginationRequest(paginationRequestDto)
       );
+      //TODO this would be handled in the OPT-7236
     } catch (ElasticsearchStatusException e) {
       // In case the user provides a parsable but invalid scroll id (e.g. scroll id was earlier valid, but now
       // expired) the message from ElasticSearch is a bit cryptic. Therefore, we extract the useful information so

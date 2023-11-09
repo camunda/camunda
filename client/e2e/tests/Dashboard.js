@@ -26,17 +26,17 @@ fixture('Dashboard')
   .afterEach(cleanEntities);
 
 test('create a dashboard and reports from a template', async (t) => {
-  await t.click(Common.createNewMenu).click(Common.option('Collection'));
+  await t.click(Common.createNewButton).click(Common.menuOption('Collection'));
   await t.click(Common.modalConfirmButton);
   await t.click(Common.modalConfirmButton);
 
   await t.resizeWindow(1300, 750);
-  await t.click(Common.createNewMenu);
-  await t.click(Common.option('Dashboard'));
+  await t.click(Common.createNewButton);
+  await t.click(Common.menuOption('Dashboard'));
 
   await t.click(Common.templateModalProcessField);
   await t.click(Common.carbonOption('Invoice Receipt with alternative correlation variable'));
-  await t.click(e.templateOption('Process performance overview'));
+  await t.click(e.templateOption('Improve Productivity'));
 
   await t.takeScreenshot('img/dashboardTemplate.png', {fullPage: true});
   await t.resizeWindow(1200, 600);
@@ -74,13 +74,15 @@ test('create a dashboard and reports from a template', async (t) => {
   await clearAllAnnotations();
 
   await t.click(e.autoRefreshButton);
-  await t.click(Common.option('1 minute'));
+  await t.click(Common.menuOption('1 minute'));
 
   await u.save(t);
 
-  await t.expect(e.dashboardName.textContent).eql('Process performance overview');
-  await t.expect(e.reportTile.nth(0).textContent).contains('Throughput (30-day rolling)');
-  await t.expect(e.reportTile.nth(2).textContent).contains('99th Percentile Duration');
+  await t.expect(e.dashboardName.textContent).eql('Improve Productivity');
+  await t
+    .expect(e.reportTile.nth(0).textContent)
+    .contains('Max number of processes in progress per day');
+  await t.expect(e.reportTile.nth(2).textContent).contains('Finished in the last 2 weeks');
 
   await t.click(e.autoRefreshButton);
 
@@ -144,10 +146,10 @@ test('cancel changes', async (t) => {
 
 test('sharing', async (t) => {
   await t.resizeWindow(1300, 750);
-  await t.click(Common.createNewMenu);
-  await t.click(Common.option('Dashboard'));
+  await t.click(Common.createNewButton);
+  await t.click(Common.menuOption('Dashboard'));
 
-  await t.click(e.templateOption('Process performance overview'));
+  await t.click(e.templateOption('Improve Productivity'));
 
   await t.click(Common.templateModalProcessField);
   await t.click(Common.carbonOption('Invoice Receipt with alternative correlation variable'));
@@ -167,7 +169,9 @@ test('sharing', async (t) => {
   await t.navigateTo(shareUrl);
 
   await t.expect(e.reportTile.nth(0).visible).ok();
-  await t.expect(e.reportTile.nth(0).textContent).contains('Throughput (30-day rolling)');
+  await t
+    .expect(e.reportTile.nth(0).textContent)
+    .contains('Max number of processes in progress per day');
 });
 
 test('sharing header parameters', async (t) => {
@@ -216,7 +220,7 @@ test('sharing with filters', async (t) => {
   await u.save(t);
 
   await t.click(e.instanceStateFilter);
-  await t.click(e.switchElement('Suspended'));
+  await t.click(e.toggleElement('Suspended'));
 
   await t.expect(Common.shareButton.hasAttribute('disabled')).notOk();
 
@@ -285,13 +289,13 @@ test('text report', async (t) => {
   await t.click(e.textReportToolButton('Italic'));
 
   await t.click(e.textReportInsertDropdown);
-  await t.click(Common.option('Link'));
+  await t.click(Common.menuOption('Link'));
   await t.typeText(e.textReportUrlInput, 'https://example.com/');
   await t.typeText(e.textReportAltInput, 'This is a link to example.com');
   await t.click(e.textReportInsertAddButton);
 
   await t.click(e.textReportInsertDropdown);
-  await t.click(Common.option('Image'));
+  await t.click(Common.menuOption('Image'));
   await t.typeText(e.textReportUrlInput, 'https://avatars3.githubusercontent.com/u/2443838');
   await t.typeText(e.textReportAltInput, 'This is a camunda logo');
   await t.click(e.textReportInsertAddButton);
@@ -339,8 +343,8 @@ test('filters', async (t) => {
   await t.click(e.addFilterButton);
   await t.click(Common.option('Variable'));
 
-  await t.typeText(Filter.typeaheadInput, 'invoiceCategory', {replace: true});
-  await t.click(Common.typeaheadOption('invoiceCategory'));
+  await t.typeText(Common.comboBox, 'invoiceCategory', {replace: true});
+  await t.click(Common.carbonOption('invoiceCategory'));
   await t.click(Filter.multiSelectValue('Software License Costs'));
   await t.click(Filter.multiSelectValue('Travel Expenses'));
   await t.click(Filter.multiSelectValue('Misc'));
@@ -355,7 +359,7 @@ test('filters', async (t) => {
   });
 
   await t.click(e.instanceStateFilter);
-  await t.click(e.switchElement('Running'));
+  await t.click(e.toggleElement('Running'));
 
   await u.save(t);
 
@@ -363,16 +367,16 @@ test('filters', async (t) => {
   await t.expect(e.instanceStateFilter.textContent).contains('Running');
 
   await t.click(e.selectionFilter);
-  await t.click(e.switchElement('Software License Costs'));
-  await t.click(e.switchElement('Misc'));
+  await t.click(Common.toggleElement('Software License Costs'));
+  await t.click(Common.toggleElement('Misc'));
 
   await t.takeElementScreenshot(e.dashboardContainer, 'img/filter-viewMode.png', {
     crop: {bottom: 450},
   });
 
   await t.click(e.customValueAddButton);
-  await t.typeText(e.typeaheadInput, 'Other', {replace: true});
-  await t.click(Common.typeaheadOption('Other'));
+  await t.typeText(Common.comboBox, 'Other', {replace: true});
+  await t.click(Common.carbonOption('Other'));
 
   await t.maximizeWindow();
 
@@ -385,8 +389,8 @@ test('filters', async (t) => {
 
   await t.click(Common.editButton);
   await t.click(e.instanceStateFilter);
-  await t.click(e.switchElement('Running'));
-  await t.click(e.switchElement('Suspended'));
+  await t.click(e.toggleElement('Running'));
+  await t.click(e.toggleElement('Suspended'));
 
   await u.save(t);
 
@@ -402,7 +406,7 @@ test('filters', async (t) => {
 });
 
 test('version selection', async (t) => {
-  await t.click(Common.createNewMenu).click(Common.option('Collection'));
+  await t.click(Common.createNewButton).click(Common.menuOption('Collection'));
   await t.click(Common.modalConfirmButton);
   await t.click(Common.modalConfirmButton);
 
@@ -419,24 +423,24 @@ test('version selection', async (t) => {
 
   // Creating
   await t.click(e.alertsDropdown);
-  await t.click(Common.option('New Alert'));
+  await t.click(Common.overflowMenuOption('Create New Alert'));
   await t.typeText(Alert.inputWithLabel('Alert Name'), 'Test alert', {replace: true});
-  await t.click(Common.typeahead);
-  await t.click(Common.typeaheadOption('Number Report'));
+  await t.click(Common.comboBox);
+  await t.click(Common.carbonOption('Number Report'));
   await t.typeText(Alert.inputWithLabel('Send Email to'), 'test@email.com ');
   await t.click(Common.modalConfirmButton);
   await t.click(Common.notificationCloseButton);
 
   // editing
   await t.click(e.alertsDropdown);
-  await t.click(Common.option('Test alert'));
+  await t.click(Common.overflowMenuOption('Test alert'));
   await t.typeText(Alert.inputWithLabel('Alert Name'), 'another alert name', {replace: true});
   await t.click(Common.modalConfirmButton);
   await t.click(Common.notificationCloseButton);
 
   // deleting
   await t.click(e.alertsDropdown);
-  await t.click(Common.option('another alert name'));
+  await t.click(Common.overflowMenuOption('another alert name'));
   await t.click(e.alertDeleteButton);
   await t.click(Common.modalConfirmButton);
   await t.click(Common.notificationCloseButton);
@@ -449,8 +453,8 @@ test('add a report from the dashboard', async (t) => {
 
   await t
     .click(Common.addButton)
-    .click(e.reportModalOptionsButton)
-    .click(e.reportModalDropdownOption.withText('New Report from a template'))
+    .click(e.createTileModalReportOptions)
+    .click(Common.carbonOption('New Report from a template'))
     .click(e.addTileButton);
 
   await t
@@ -462,8 +466,8 @@ test('add a report from the dashboard', async (t) => {
 
   await t
     .click(Common.addButton)
-    .click(e.reportModalOptionsButton)
-    .click(e.reportModalDropdownOption.withText('New Report from a template'))
+    .click(e.createTileModalReportOptions)
+    .click(Common.carbonOption('New Report from a template'))
     .click(e.addTileButton);
 
   await t.click(Common.templateModalProcessField);
@@ -487,7 +491,7 @@ test('add, edit and remove dashboards description', async (t) => {
 
   // Add description
   await t.expect(Common.descriptionParagraph.exists).notOk();
-  await t.expect(Common.addDescriptionButton.textContent).contains('Add Description');
+  await t.expect(Common.addDescriptionButton.textContent).contains('Add description');
   const description = 'This is a description of the dashboard.';
   await u.addEditEntityDescription(t, description, 'img/dashboad-descriptionModal.png');
 
@@ -502,8 +506,6 @@ test('add, edit and remove dashboards description', async (t) => {
 
   // Edit description
   await t.click(Common.editButton);
-
-  await t.expect(Common.addDescriptionButton.textContent).contains('Edit');
 
   const newDescription =
     'This is a new description of the dashboard. This time the description is very long and will not fit in one line. It will display ellipsis and More button.';
@@ -534,7 +536,7 @@ test('add, edit and remove dashboards description', async (t) => {
   await t.click(Common.editButton);
   await u.addEditEntityDescription(t);
   await t.expect(Common.descriptionParagraph.exists).notOk();
-  await t.expect(Common.addDescriptionButton.textContent).contains('Add Description');
+  await t.expect(Common.addDescriptionButton.textContent).contains('Add description');
 
   await u.save(t);
 

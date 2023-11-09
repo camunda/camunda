@@ -32,7 +32,7 @@ function DurationChart({data, colors}: DurationChartProps) {
       let key = 'common.instance';
       const idx = tooltipData[0]?.dataIndex;
       if (idx && data[idx]?.outlier) {
-        key = 'analysis.outlier.tooltip.outlier';
+        key = 'analysis.task.tooltip.outlier';
       }
 
       const unitLabel = t(`${key}.label${+tooltipData[0]!.formattedValue !== 1 ? '-plural' : ''}`);
@@ -75,8 +75,7 @@ function DurationChart({data, colors}: DurationChartProps) {
               label: ({label, dataset, dataIndex}) => {
                 const isSingleInstance = dataset.data[dataIndex] === 1;
                 return ` ${t(
-                  'analysis.outlier.tooltip.tookDuration.' +
-                    (isSingleInstance ? 'singular' : 'plural')
+                  'analysis.task.tooltip.tookDuration.' + (isSingleInstance ? 'singular' : 'plural')
                 )} ${duration(label)}`;
               },
             },
@@ -87,7 +86,7 @@ function DurationChart({data, colors}: DurationChartProps) {
           x: {
             title: {
               display: true,
-              text: t('analysis.outlier.detailsModal.axisLabels.duration').toString(),
+              text: t('analysis.task.detailsModal.axisLabels.duration').toString(),
               font: {weight: 'bold'},
             },
             ticks: {
@@ -97,7 +96,7 @@ function DurationChart({data, colors}: DurationChartProps) {
           y: {
             title: {
               display: true,
-              text: t('analysis.outlier.detailsModal.axisLabels.instanceCount').toString(),
+              text: t('analysis.task.detailsModal.axisLabels.instanceCount').toString(),
               font: {weight: 'bold'},
             },
           },

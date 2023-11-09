@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.rest.export.report;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -12,9 +13,7 @@ import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
-import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
-
-import jakarta.validation.constraints.NotNull;
+import org.camunda.optimize.service.db.schema.index.report.SingleDecisionReportIndex;
 
 import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SINGLE_DECISION_REPORT;
 

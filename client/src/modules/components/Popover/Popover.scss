@@ -3,6 +3,10 @@
 @use '@carbon/styles/scss/spacing';
 @import 'shared-styles/shared-styles.scss';
 
+.dark .Popover {
+  @include theme.theme(themes.$g100);
+}
+
 .Popover {
   display: block;
   @include theme.theme(themes.$g10);
@@ -38,9 +42,31 @@
         padding-right: 30px;
       }
     }
+
+    .ListBoxTrigger .cds--list-box__label {
+      display: flex;
+      align-items: center;
+
+      svg {
+        margin-right: 0.5rem;
+      }
+    }
+
+    .ListBoxTrigger,
+    .ButtonTrigger {
+      min-width: 100%;
+    }
+
+    .ButtonTrigger.active {
+      box-shadow: 0 2px 6px var(--cds-shadow, rgba(0, 0, 0, 0.3));
+
+      &:not(.cds--btn--tertiary) {
+        background-color: var(--cds-layer);
+      }
+    }
   }
 }
 
-.cds--modal .Popover .cds--list-box {
+.Modal .Popover .cds--list-box {
   background-color: var(--cds-field-02, #ffffff);
 }

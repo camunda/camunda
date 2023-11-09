@@ -7,7 +7,7 @@ package org.camunda.optimize.service.importing;
 
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.datasource.EventsDataSourceDto;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
@@ -18,7 +18,7 @@ public abstract class TimestampBasedEventDataImportIndexHandler
 
   @Override
   public String getEngineAlias() {
-    return ElasticsearchConstants.ENGINE_ALIAS_OPTIMIZE;
+    return DatabaseConstants.ENGINE_ALIAS_OPTIMIZE;
   }
 
   @Override

@@ -22,10 +22,10 @@ import org.camunda.optimize.plugin.importing.variable.DecisionOutputImportAdapte
 import org.camunda.optimize.plugin.importing.variable.PluginDecisionInputDto;
 import org.camunda.optimize.plugin.importing.variable.PluginDecisionOutputDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.DecisionInstanceElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionNotFoundException;
 import org.camunda.optimize.service.importing.engine.service.definition.DecisionDefinitionResolverService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -76,7 +76,7 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
     return elasticsearchImportJobExecutor;
   }
 

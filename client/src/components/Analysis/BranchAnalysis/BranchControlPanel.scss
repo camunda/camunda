@@ -5,65 +5,58 @@
   padding: 12px;
   margin-bottom: 1em;
 
-  .list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+  .list .item {
     display: inline;
+    position: relative;
+    padding-right: 20px;
 
-    .item {
-      display: inline;
-      position: relative;
-      padding-right: 20px;
+    &.summary {
+      line-height: 50px;
 
-      &.summary {
-        line-height: 50px;
-
-        .DefinitionSelection {
-          display: inline-block;
-          margin: 0 0.5em;
-          line-height: normal;
-          width: 220px;
-        }
-      }
-
-      .config {
-        cursor: default;
+      .DefinitionSelection {
         display: inline-block;
         margin: 0 0.5em;
-        line-height: 20px;
+        line-height: normal;
+        width: 220px;
       }
     }
 
-    .Filter {
-      .filterHeader {
-        position: relative;
-        display: inline-block;
-        margin-right: 20px;
+    .config {
+      cursor: default;
+      display: inline-block;
+      margin: 0 0.5em;
+      line-height: 20px;
+    }
+  }
 
-        .dropdownLabel {
-          margin-right: 10px;
-          flex-grow: 1;
-        }
+  .Filter {
+    .filterHeader {
+      position: relative;
+      display: inline-block;
+      margin-right: 20px;
 
-        .explanation {
-          display: none;
-        }
+      .dropdownLabel {
+        margin-right: 10px;
+        flex-grow: 1;
       }
 
-      .emptyMessage,
-      .linkingTip {
+      .explanation {
         display: none;
       }
+    }
 
-      .FilterList {
-        display: inline;
+    .emptyMessage,
+    .linkingTip {
+      display: none;
+    }
 
-        > .listItem {
-          display: inline-flex;
-          width: auto;
-          margin-right: 10px;
-        }
+    .FilterList {
+      display: inline;
+
+      > .listItem {
+        display: inline-flex;
+        width: auto;
+        margin-right: 10px;
       }
     }
   }

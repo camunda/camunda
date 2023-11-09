@@ -5,19 +5,17 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {Component} from 'react';
+import {RadioButton, RadioButtonGroup, Stack} from '@carbon/react';
 
-import {ButtonGroup, Button} from 'components';
 import {t} from 'translation';
 
 import ValueListInput from '../ValueListInput';
 
-export default class NumberInput extends React.Component {
+export default class NumberInput extends Component {
   static defaultFilter = {operator: 'in', values: [], includeUndefined: false};
 
-  setOperator = (newOperator) => (evt) => {
-    evt.preventDefault();
-
+  setOperator = (newOperator) => {
     let {operator, values, includeUndefined} = this.props.filter;
 
     const equalityToComparison = !['>', '<'].includes(operator) && ['>', '<'].includes(newOperator);
@@ -49,21 +47,17 @@ export default class NumberInput extends React.Component {
     const hasInvalidValue = values.length > 0 && !this.selectionIsValid();
 
     return (
-      <div className="NumberInput">
-        <ButtonGroup className="buttonRow">
-          <Button onClick={this.setOperator('in')} active={operator === 'in'}>
-            {t('common.filter.list.operators.is')}
-          </Button>
-          <Button onClick={this.setOperator('not in')} active={operator === 'not in'}>
-            {t('common.filter.list.operators.not')}
-          </Button>
-          <Button onClick={this.setOperator('<')} active={operator === '<'}>
-            {t('common.filter.list.operators.less')}
-          </Button>
-          <Button onClick={this.setOperator('>')} active={operator === '>'}>
-            {t('common.filter.list.operators.greater')}
-          </Button>
-        </ButtonGroup>
+      <Stack gap={6} className="NumberInput">
+        <RadioButtonGroup
+          className="buttonRow"
+          name="number-filter-type"
+          onChange={this.setOperator}
+        >
+          <RadioButton labelText={t('common.filter.list.operators.is')} value="in" />
+          <RadioButton labelText={t('common.filter.list.operators.not')} value="not in" />
+          <RadioButton labelText={t('common.filter.list.operators.less')} value="<" />
+          <RadioButton labelText={t('common.filter.list.operators.greater')} value=">" />
+        </RadioButtonGroup>
         <ValueListInput
           filter={filter}
           isValid={this.isValid}
@@ -72,7 +66,7 @@ export default class NumberInput extends React.Component {
           allowMultiple={operator !== '<' && operator !== '>'}
           errorMessage={hasInvalidValue ? t('common.filter.variableModal.invalidInput') : undefined}
         />
-      </div>
+      </Stack>
     );
   }
 

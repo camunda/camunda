@@ -6,87 +6,61 @@ jobs:
   e2e-cloud-test:
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    services:
-      elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:7.17.13@sha256:67b2d720621da7092ef18fe5ccca2eeb7b863b55d4bcee30108224520aebd92c
-        env:
-          discovery.type: single-node
-          ES_JAVA_OPTS: -Xms1024m -Xmx1024m
-        ports:
-          - 9200:9200
-          - 9300:9300
-
     steps:
     - name: Checkout code
-      uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
-
+      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
     - name: Import secrets
       id: secrets
-      uses: hashicorp/vault-action@86c7f837eb43794c7dc56f74d9cffac710679b28
+      uses: hashicorp/vault-action@caba6efd0e9cf0623814dd75bba0ec053be80ff5
       with:
         url: ${{ secrets.VAULT_ADDR }}
         method: approle
         roleId: ${{ secrets.VAULT_ROLE_ID }}
         secretId: ${{ secrets.VAULT_SECRET_ID }}
         secrets: |
-          secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
-          secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
           secret/data/products/optimize/ci/jenkins AUTH0_CLIENTSECRET;
           secret/data/products/optimize/ci/jenkins AUTH0_USEREMAIL;
           secret/data/products/optimize/ci/jenkins AUTH0_USERPASSWORD;
-
-    - name: Install Chrome
-      uses: browser-actions/setup-chrome@v1
-
-    - name: Install Maven
-      uses: actions/setup-java@v3
+    - name: Setup Maven
+      uses: ./.github/actions/setup-maven
       with:
-        distribution: "adopt"
-        java-version: "17"
-        cache: "maven"
-
+          secrets: ${{ toJSON(secrets) }}
+          java-version: 17
+          distribution: zulu
+    - name: "Read Java / Version Info"
+      id: "pom-info"
+      uses: YunaBraska/java-info-action@main
+    - name: Start Elastic search
+      uses: ./.github/actions/compose
+      with:
+        compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch.yml
+        project_name: elasticsearch
+      env:
+        ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch8_test_version }}
+        ELASTIC_JVM_MEMORY: 1
+        ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
     - name: Setup yarn cache
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65 # v4
       with:
         node-version: "16"
         cache: "yarn"
-        cache-dependency-path: client/yarn.lock
-        
+        cache-dependency-path: client/yarn.lock    
     - name: Install node dependencies
       working-directory: ./client
       run: yarn install
-
-    # SET UP MAVEN XML
-    - name: 'Create settings.xml'
-      uses: s4u/maven-settings-action@v2.8.0
-      with:
-        githubServer: false
-        servers: |
-          [{
-            "id": "camunda-nexus",
-            "username": "${{ steps.secrets.outputs.NEXUS_USERNAME }}",
-            "password": "${{ steps.secrets.outputs.NEXUS_PASSWORD }}"
-          }]
-        mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
-
     - name: 'build backend & frontend'
       run: mvn clean install -DskipTests -Dskip.docker -pl backend,qa/data-generation -am
-
     - name: 'start backend'
       working-directory: ./client
       run: |
         yarn run start-backend-cloud ci &
-
     - name: Start frontend app
       working-directory: ./client
       run: yarn start &
-
     - name: Wait for backend to start
       run: ./.github/scripts/wait-for.sh http://localhost:8090/api/readyz
-
     - name: Wait for frontend to start
       run: ./.github/scripts/wait-for.sh http://localhost:3000/ready
-
     - name: 'start e2e test'
       working-directory: ./client
       env:

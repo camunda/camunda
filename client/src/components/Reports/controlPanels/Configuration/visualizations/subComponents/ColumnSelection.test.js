@@ -220,5 +220,5 @@ it('should create section for count columns', () => {
 
   expect(node.find('CollapsibleSection').prop('sectionKey')).toBe('counts');
   expect(node.find('ColumnSwitch').length).toBe(1);
-  expect(node.find('ColumnSwitch').prop('label')).toBe('incidents');
+  expect(node.find('ColumnSwitch').prop('label')).toBe('Incidents');
 });

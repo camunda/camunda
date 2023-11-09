@@ -11,10 +11,13 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 public class ElasticsearchImportJobExecutor extends ImportJobExecutor {
 
   private final ConfigurationService configurationService;
+  //todo fix it in the scope of the executor's ticket OPT-7244
+  //private final String dbProfile;
 
   public ElasticsearchImportJobExecutor(final String name, final ConfigurationService configurationService) {
     super(name);
     this.configurationService = configurationService;
+   // this.dbProfile = dbProfile;
     startExecutingImportJobs();
   }
 
@@ -27,4 +30,5 @@ public class ElasticsearchImportJobExecutor extends ImportJobExecutor {
   protected int getMaxQueueSize() {
     return configurationService.getElasticsearchJobExecutorQueueSize();
   }
+
 }

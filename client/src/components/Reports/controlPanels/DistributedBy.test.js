@@ -8,7 +8,7 @@
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {Select, Input} from 'components';
+import {CarbonSelect} from 'components';
 import {reportConfig, createReportUpdate} from 'services';
 import {getOptimizeProfile} from 'config';
 
@@ -90,13 +90,13 @@ it('should disable options which would create a wrong combination', () => {
 
   const node = shallow(<DistributedBy {...config} />);
 
-  expect(node.find(Select.Option).first()).toBeDisabled();
+  expect(node.find(CarbonSelect.Option).first()).toBeDisabled();
 });
 
 it('should disable the variable view submenu if there are no variables', () => {
   const node = shallow(<DistributedBy {...config} />);
 
-  expect(node.find(Select.Submenu)).toBeDisabled();
+  expect(node.find(CarbonSelect.Submenu)).toBeDisabled();
 });
 
 it('invoke configUpdate with the correct variable data', async () => {
@@ -109,17 +109,17 @@ it('invoke configUpdate with the correct variable data', async () => {
     />
   );
 
-  const selectedOption = {
+  const CarbonselectedOption = {
     type: 'variable',
     value: {id: 'test', name: 'testName', type: 'date'},
   };
 
   createReportUpdate.mockReturnValue({content: 'change'});
 
-  node.find(Select).simulate('change', 'variable_testName');
+  node.find(CarbonSelect).simulate('change', 'variable_testName');
 
   expect(createReportUpdate.mock.calls[0][4].distributedBy.value.$set).toEqual(
-    selectedOption.value
+    CarbonselectedOption.value
   );
   expect(spy).toHaveBeenCalledWith({content: 'change'});
 });
@@ -143,22 +143,6 @@ it('should hide assignee option in cloud environment', async () => {
   await runAllEffects();
 
   expect(node.find({value: 'assignee'})).not.toExist();
-});
-
-it('should filter variables based on search query', () => {
-  const node = shallow(<DistributedBy {...config} variables={[{name: 'a'}, {name: 'b'}]} />);
-
-  expect(node.find({value: 'variable_a'})).not.toHaveClassName('hidden');
-  expect(node.find({value: 'variable_b'})).not.toHaveClassName('hidden');
-
-  node.find(Input).simulate('change', {target: {value: 'b'}});
-
-  expect(node.find({value: 'variable_a'})).toHaveClassName('hidden');
-  expect(node.find({value: 'variable_b'})).not.toHaveClassName('hidden');
-
-  node.find(Input).simulate('change', {target: {value: 'notFoundValue'}});
-
-  expect(node.find({disabled: true}).children()).toIncludeText('No variables found');
 });
 
 it('should not fail if variables are null', () => {

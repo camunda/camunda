@@ -9,12 +9,12 @@ import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
+import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.db.reader.EventProcessPublishStateReader;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.reader.EventProcessPublishStateReader;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndexES;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
@@ -25,13 +25,14 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_PREFIX;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 
 @AllArgsConstructor
 @Slf4j
 @Component
 public class EventProcessInstanceIndexManager implements ConfigurationReloadable {
+
   private final OptimizeElasticsearchClient elasticsearchClient;
   private final ElasticSearchSchemaManager elasticSearchSchemaManager;
   private final EventProcessPublishStateReader eventProcessPublishStateReader;
@@ -55,7 +56,9 @@ public class EventProcessInstanceIndexManager implements ConfigurationReloadable
     eventProcessPublishStateReader.getAllEventProcessPublishStatesWithDeletedState(false)
       .forEach(publishStateDto -> {
         try {
-          final EventProcessInstanceIndex processInstanceIndex = new EventProcessInstanceIndex(publishStateDto.getId());
+          // TODO Needs to be handled properly in OPT-7244
+          final EventProcessInstanceIndexES processInstanceIndex =
+            new EventProcessInstanceIndexES(publishStateDto.getId());
           final boolean indexAlreadyExists =
             elasticSearchSchemaManager.indexExists(elasticsearchClient, processInstanceIndex);
           if (!indexAlreadyExists) {
@@ -84,7 +87,8 @@ public class EventProcessInstanceIndexManager implements ConfigurationReloadable
     eventProcessPublishStateReader.getAllEventProcessPublishStatesWithDeletedState(true)
       .forEach(publishStateDto -> {
         try {
-          final ProcessInstanceIndex processInstanceIndex = new EventProcessInstanceIndex(publishStateDto.getId());
+          // TODO Needs to be handled properly in OPT-7244
+          final ProcessInstanceIndex processInstanceIndex = new EventProcessInstanceIndexES(publishStateDto.getId());
           final boolean indexAlreadyExists = elasticSearchSchemaManager.indexExists(
             elasticsearchClient, processInstanceIndex
           );
@@ -127,4 +131,5 @@ public class EventProcessInstanceIndexManager implements ConfigurationReloadable
     publishedInstanceIndices.clear();
     usageCountPerIndex.clear();
   }
+
 }

@@ -39,7 +39,7 @@ import static org.camunda.optimize.service.util.EventModelBuilderUtil.generateGa
 import static org.camunda.optimize.service.util.EventModelBuilderUtil.generateNodeId;
 import static org.camunda.optimize.service.util.EventModelBuilderUtil.prepareModelBuilderForCurrentSource;
 import static org.camunda.optimize.service.util.EventModelBuilderUtil.prepareModelBuilderForNextSource;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
 @RequiredArgsConstructor
 @Component

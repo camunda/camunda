@@ -17,7 +17,9 @@ exports[`should create two Charts 1`] = `
       key="3"
     />
   </p>
-  <ul>
+  <ul
+    className="branchDistribution"
+  >
     <li
       key="a"
     >
@@ -147,7 +149,9 @@ exports[`should show a summary after loading is complete 1`] = `
       key="3"
     />
   </p>
-  <ul>
+  <ul
+    className="branchDistribution"
+  >
     <li
       key="testLabel"
     >

@@ -6,22 +6,24 @@
  */
 
 import React, {useState, useEffect} from 'react';
+import {Form, TextArea, Button, InlineNotification, Grid, Column, Stack, Link} from '@carbon/react';
 
-import {Form, Labeled, Button, MessageBox, PageTitle} from 'components';
+import {PageTitle} from 'components';
 import {t} from 'translation';
-import {withErrorHandling} from 'HOC';
 import {addHandler, removeHandler} from 'request';
 import {resetOutstandingRequests, createOutstandingRequestPromise} from 'services';
+import {useErrorHandling} from 'hooks';
 
 import {Header, Footer} from '..';
 import {validateLicense, storeLicense} from './service';
 
 import './License.scss';
 
-export function License({mightFail, error, resetError}) {
+export default function License() {
   const [licenseInfo, setLicenseInfo] = useState(null);
   const [licenseText, setLicenseText] = useState('');
   const [willReload, setWillReload] = useState(false);
+  const {mightFail, error, resetError} = useErrorHandling();
 
   useEffect(() => {
     mightFail(validateLicense(), setLicenseInfo);
@@ -56,50 +58,79 @@ export function License({mightFail, error, resetError}) {
       <PageTitle pageName={t('license.label')} />
       <Header noActions />
       <main className="License">
-        {(licenseInfo || error) && (
-          <MessageBox type={error ? 'error' : 'success'}>
-            {error ? (
-              error.message
-            ) : (
-              <>
-                {t('license.licensedFor')} {licenseInfo.customerId}.{' '}
-                {!licenseInfo.unlimited && (
-                  <>
-                    {t('license.validUntil')} {new Date(licenseInfo.validUntil).toUTCString()}.{' '}
-                  </>
-                )}
-                {willReload && <span>{t('license.redirectMessage')}</span>}
-              </>
-            )}
-          </MessageBox>
-        )}
-        <Form
-          compact
-          onSubmit={(evt) => {
-            evt.preventDefault();
+        <Grid>
+          <Column
+            sm={{
+              start: 1,
+              end: 8,
+            }}
+            md={{
+              start: 2,
+              end: 8,
+            }}
+            lg={{
+              start: 5,
+              end: 13,
+            }}
+          >
+            <Form
+              onSubmit={(evt) => {
+                evt.preventDefault();
 
-            mightFail(storeLicense(licenseText), (license) => {
-              resetError();
-              setLicenseInfo(license);
-              setTimeout(() => (window.location.href = './'), 10000);
-              setWillReload(true);
-            });
-          }}
-        >
-          <Labeled label={t('license.licenseKey')}>
-            <textarea
-              rows="12"
-              placeholder={t('license.enterLicense')}
-              value={licenseText}
-              onChange={(evt) => setLicenseText(evt.target.value)}
-            ></textarea>
-          </Labeled>
-          <Button type="submit">{t('license.submit')}</Button>
-        </Form>
+                mightFail(storeLicense(licenseText), (license) => {
+                  resetError();
+                  setLicenseInfo(license);
+                  setTimeout(() => (window.location.href = './'), 10000);
+                  setWillReload(true);
+                });
+              }}
+            >
+              <Stack gap={8}>
+                {licenseInfo && !error && (
+                  <InlineNotification
+                    kind="success"
+                    hideCloseButton
+                    subtitle={formatLicenseInfo(licenseInfo)}
+                  />
+                )}
+                {willReload && <Link href="./">{t('license.clickToLogin')}</Link>}
+                {error && (
+                  <InlineNotification
+                    kind="error"
+                    aria-label={t('common.closeError')}
+                    statusIconDescription={t('common.error')}
+                    onCloseButtonClick={() => {
+                      resetError();
+                    }}
+                    subtitle={error.message}
+                  />
+                )}
+                <TextArea
+                  id="LicenseTextArea"
+                  rows={12}
+                  labelText={t('license.licenseKey')}
+                  placeholder={t('license.enterLicense')}
+                  value={licenseText}
+                  onChange={(evt) => setLicenseText(evt.target.value)}
+                />
+                <Button type="submit">{t('license.submit')}</Button>
+              </Stack>
+            </Form>
+          </Column>
+        </Grid>
       </main>
       <Footer />
     </>
   );
 }
 
-export default withErrorHandling(License);
+function formatLicenseInfo({customerId, unlimited, validUntil}) {
+  let formattedInfo = `${t('license.licensedFor')} ${customerId}.`;
+  if (!unlimited) {
+    formattedInfo += ` ${t('license.validUntil')} ${t('license.validUntil')} ${new Date(
+      validUntil
+    ).toUTCString()}`;
+  }
+
+  return formattedInfo;
+}

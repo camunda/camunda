@@ -9,13 +9,13 @@ import com.google.common.collect.ImmutableList;
 import org.apache.commons.collections.ListUtils;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.PageResultDto;
-import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
-import org.camunda.optimize.service.es.reader.ProcessInstanceReader;
-import org.camunda.optimize.service.es.writer.BusinessKeyWriter;
-import org.camunda.optimize.service.es.writer.CamundaActivityEventWriter;
-import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
-import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
-import org.camunda.optimize.service.es.writer.variable.VariableUpdateInstanceWriter;
+import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
+import org.camunda.optimize.service.db.reader.ProcessInstanceReader;
+import org.camunda.optimize.service.db.writer.BusinessKeyWriter;
+import org.camunda.optimize.service.db.writer.CamundaActivityEventWriter;
+import org.camunda.optimize.service.db.writer.CompletedProcessInstanceWriter;
+import org.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWriter;
+import org.camunda.optimize.service.db.writer.variable.VariableUpdateInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
@@ -53,6 +53,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class OptimizeProcessCleanupServiceTest {
+
   private static final List<String> INSTANCE_IDS = ImmutableList.of("1", "2");
   private static final PageResultDto<String> FIRST_PAGE = new PageResultDto<>("1", 1, INSTANCE_IDS.subList(0, 1));
   private static final PageResultDto<String> SECOND_PAGE = new PageResultDto<>("1", 1, INSTANCE_IDS.subList(1, 2));

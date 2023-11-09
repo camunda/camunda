@@ -11,10 +11,10 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.writer.ProcessDefinitionXmlWriter;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.ProcessDefinitionXmlElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.ProcessDefinitionXmlWriter;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
@@ -27,6 +27,7 @@ import static org.camunda.optimize.service.util.BpmnModelUtil.parseBpmnModel;
 
 @Slf4j
 public class ProcessDefinitionXmlImportService implements ImportService<ProcessDefinitionXmlEngineDto> {
+
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final EngineContext engineContext;
   private final ProcessDefinitionXmlWriter processDefinitionXmlWriter;
@@ -57,7 +58,7 @@ public class ProcessDefinitionXmlImportService implements ImportService<ProcessD
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
     return elasticsearchImportJobExecutor;
   }
 
@@ -93,4 +94,5 @@ public class ProcessDefinitionXmlImportService implements ImportService<ProcessD
       extractUserTaskNames(bpmnModelInstance)
     );
   }
+
 }

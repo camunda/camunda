@@ -13,7 +13,7 @@ import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
-import org.camunda.optimize.service.es.reader.ReportReader;
+import org.camunda.optimize.service.db.reader.ReportReader;
 
 import jakarta.ws.rs.NotFoundException;
 import java.time.ZoneId;

@@ -35,7 +35,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
-import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.EVALUATION_DATE_TIME;
+import static org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.EVALUATION_DATE_TIME;
 
 @RequiredArgsConstructor
 @Component

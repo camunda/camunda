@@ -32,7 +32,7 @@ import java.util.stream.Stream;
 
 import static org.camunda.optimize.service.es.filter.util.IncidentFilterQueryUtil.createIncidentAggregationFilter;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.INCIDENTS;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENTS;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 

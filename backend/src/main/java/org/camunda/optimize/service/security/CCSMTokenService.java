@@ -41,7 +41,7 @@ import static org.camunda.optimize.rest.AuthenticationRestService.CALLBACK;
 import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_REFRESH_TOKEN;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ZEEBE_DATA_SOURCE;
+import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_DATA_SOURCE;
 
 @AllArgsConstructor
 @Component
@@ -108,8 +108,9 @@ public class CCSMTokenService {
 
   public URI buildAuthorizeUri(final String redirectUri) {
     // If a redirect root URL is explicitly set, we use that. Otherwise, we use the one provided
-    final String authorizeUri = getConfiguredRedirectUri().orElse(redirectUri);
-    return authentication().authorizeUriBuilder(appendCallbackSubpath(authorizeUri)).build();
+    final String authorizeUri = appendCallbackSubpath(getConfiguredRedirectUri().orElse(redirectUri));
+    log.trace("Authorizing with authorizeUri: {}", authorizeUri);
+    return authentication().authorizeUriBuilder(authorizeUri).build();
   }
 
   public Tokens exchangeAuthCode(final AuthCodeDto authCode, final ContainerRequestContext requestContext) {
@@ -118,6 +119,7 @@ public class CCSMTokenService {
     final String redirectUri = getConfiguredRedirectUri()
       .map(CCSMTokenService::appendCallbackSubpath)
       .orElse(requestContext.getUriInfo().getAbsolutePath().toString());
+    log.trace("Exchanging auth code with redirectUri: {}", redirectUri);
     return authentication().exchangeAuthCode(authCode, redirectUri);
   }
 

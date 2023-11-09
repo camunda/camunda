@@ -11,8 +11,21 @@ import {shallow} from 'enzyme';
 
 import {User, UserTypeahead} from 'components';
 
-import {AssigneeFilter} from './AssigneeFilter';
+import AssigneeFilter from './AssigneeFilter';
 import {loadUsersByDefinition, loadUsersByReportIds, getUsersById} from './service';
+
+jest.mock('hooks', () => ({
+  useErrorHandling: jest.fn().mockImplementation(() => ({
+    mightFail: jest.fn().mockImplementation(async (data, cb, err) => {
+      try {
+        const awaitedData = await data;
+        return cb(awaitedData);
+      } catch (e) {
+        err?.(e);
+      }
+    }),
+  })),
+}));
 
 jest.mock('./service', () => ({
   loadUsersByDefinition: jest.fn().mockReturnValue(['demo', 'john']),
@@ -24,7 +37,6 @@ jest.mock('./service', () => ({
 }));
 
 const props: ComponentProps<typeof AssigneeFilter> = {
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   definitions: [{identifier: 'definition', key: 'key', versions: ['1'], tenantIds: ['tenant1']}],
   filterType: 'assignee',
   filterLevel: 'view',

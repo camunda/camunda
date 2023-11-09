@@ -1,47 +1,27 @@
 .StringInput {
   .valueSelection {
-    width: 100%;
-    position: relative;
-
     .Checklist {
-      border-bottom: 1px solid var(--silver-darken-87);
+      border-bottom: 1px solid var(--cds-border-subtle);
 
       tbody {
-        max-height: calc(100vh - 600px);
+        max-height: calc(100vh - 650px);
       }
     }
   }
 
-  .loadMore {
-    display: block;
-    margin: 10px 0 15px 0;
-    font-size: 14px;
-  }
-
   .customValueInput {
-    margin-top: 15px;
     display: flex;
 
-    .Input {
-      flex: 1;
-      margin-right: 11px;
+    .cds--btn {
+      margin-left: 1rem;
     }
   }
 
-  .customValueButtonRow {
+  .buttonsRow {
     display: flex;
-    margin-top: 15px;
 
     .customValueButton {
       margin-left: auto;
-    }
-
-    .notification {
-      flex: 1;
-      text-align: center;
-      align-self: center;
-      font-size: 12px;
-      color: var(--grey-lighten-50);
     }
   }
 }

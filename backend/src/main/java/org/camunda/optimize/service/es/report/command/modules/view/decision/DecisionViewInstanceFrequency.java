@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 import java.util.Collections;
 import java.util.List;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.FREQUENCY_AGGREGATION;
+import static org.camunda.optimize.service.db.DatabaseConstants.FREQUENCY_AGGREGATION;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 
 @Component

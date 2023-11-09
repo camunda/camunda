@@ -7,16 +7,14 @@ package org.camunda.optimize.service.variable;
 
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
-import org.camunda.optimize.service.es.writer.variable.ExternalProcessVariableWriter;
+import org.camunda.optimize.service.db.writer.variable.ExternalProcessVariableWriter;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 
 import static java.util.stream.Collectors.toMap;
@@ -56,4 +54,5 @@ public class ExternalVariableService {
         (var1, var2) -> var2
       )).values();
   }
+
 }

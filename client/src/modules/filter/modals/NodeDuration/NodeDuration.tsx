@@ -69,10 +69,11 @@ export class NodeDuration extends Component<NodeDurationProps, NodeDurationState
       validDefinitions.find(({identifier}) => this.props.filterData?.appliedTo[0] === identifier) ||
       validDefinitions[0];
 
-    const {values, nodeNames, xml} = await this.constructValues(
-      applyTo,
-      this.props.filterData?.data
-    );
+    const {
+      values = {},
+      nodeNames = {},
+      xml = null,
+    } = (await this.constructValues(applyTo, this.props.filterData?.data)) || {};
     this.setState({
       focus: null,
       values,
@@ -87,7 +88,11 @@ export class NodeDuration extends Component<NodeDurationProps, NodeDurationState
     if (prevState.applyTo && prevState.applyTo !== this.state.applyTo) {
       this.setState({loading: true});
 
-      const {values, nodeNames, xml} = await this.constructValues(this.state.applyTo);
+      const {
+        values = {},
+        nodeNames = {},
+        xml = null,
+      } = (await this.constructValues(this.state.applyTo)) || {};
       this.setState({
         focus: null,
         values,
@@ -106,9 +111,13 @@ export class NodeDuration extends Component<NodeDurationProps, NodeDurationState
     return this.props.mightFail(
       loadProcessDefinitionXml(key, versions?.[0], tenantIds?.[0]),
       async (xml) => {
+        if (!xml) {
+          return;
+        }
+
         const viewer = new Viewer();
         await viewer.importXML(xml);
-        const values: Record<string, object | undefined> = {};
+        const values: Record<string, FilterData> = {};
         const nodeNames: Record<string, string> = {};
 
         const set = new Set<RegistryElement>();
@@ -119,7 +128,9 @@ export class NodeDuration extends Component<NodeDurationProps, NodeDurationState
           .forEach((element) => set.add(element));
 
         set.forEach((element) => {
-          values[element.id] = copyObjectIfExistsAndStringifyValue(predefinedValues[element.id]);
+          values[element.id] = copyObjectIfExistsAndStringifyValue(
+            predefinedValues[element.id]
+          ) as FilterData;
           nodeNames[element.id] = element.name || element.id;
         });
 

@@ -34,7 +34,7 @@ it('should select a variable from the list of available variables', () => {
   const node = shallow(<FilterInstance {...props} />);
   runAllEffects();
 
-  node.find('Typeahead').prop('onChange')(testVar.name + '_' + testVar.type);
+  node.find('ComboBox').prop('onChange')({selectedItem: testVar});
 
   expect(props.updateFilterData).toHaveBeenCalledWith({
     data: StringInput.defaultFilter,
@@ -66,7 +66,7 @@ it('should show the header of the filter if there exists a filter after it', () 
   node.setProps({filter: testFilter, filters: [testFilter, {}]});
   runAllEffects();
 
-  expect(node.find('.sectionTitle .highlighted')).toIncludeText(props.variables[0].label);
+  expect(node.find('.sectionTitle Tag').dive()).toIncludeText(props.variables[0].label);
 });
 
 it('should show the filter header on the last collapsed filter', () => {
@@ -81,7 +81,7 @@ it('should show the filter header on the last collapsed filter', () => {
   );
   runAllEffects();
 
-  expect(node.find('.sectionTitle .highlighted')).toIncludeText(validFilter.name);
+  expect(node.find('.sectionTitle Tag').dive()).toIncludeText(validFilter.name);
 });
 
 it('should prevent collapsing the invalid filter', () => {

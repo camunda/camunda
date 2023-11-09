@@ -1,22 +1,22 @@
+@use '@carbon/colors';
+
 .UserList {
   height: 100%;
 }
 
 .AddUserModal,
 .EditUserModal {
-  .FormGroup {
-    .LabeledInput {
-      display: inline-block;
-      width: 90%;
+  .cds--radio-button-group {
+    .cds--radio-button-wrapper {
+      .cds--radio-button__label-text {
+        span {
+          display: block;
 
-      .checkLabel {
-        align-items: unset;
-      }
-
-      label p {
-        font-size: 0.8em;
-        color: var(--grey-lighten-50);
-        margin-top: 0;
+          &.subtitle {
+            font-size: 0.75rem;
+            color: colors.$gray-60;
+          }
+        }
       }
     }
   }

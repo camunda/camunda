@@ -30,7 +30,7 @@ export async function login(t, userHandle = 'user1') {
     .maximizeWindow()
     .typeText('input[name="username"]', user.username)
     .typeText('input[name="password"]', user.password)
-    .click('.primary');
+    .click('button[type="submit"]');
 }
 
 export function getUser(t, userHandle) {
@@ -45,30 +45,30 @@ export function getUser(t, userHandle) {
 }
 
 export async function createNewReport(t) {
-  await t.click(Common.createNewMenu);
-  await t.click(Selector('.Submenu').withText('Report'));
-  await t.click(Selector('.Submenu .DropdownOption').withText('Process Report'));
+  await t.click(Common.createNewButton);
+  await t.hover(Common.newReportOption);
+  await t.click(Common.submenuOption('Process Report'));
   await t.click(Selector('.Button').withText('Blank report'));
   await t.click(Selector(Common.modalConfirmButton));
   await toggleReportAutoPreviewUpdate(t);
 }
 
 export async function createNewDecisionReport(t) {
-  await t.click(Common.createNewMenu);
-  await t.click(Common.option('Report'));
+  await t.click(Common.createNewButton);
+  await t.hover(Common.newReportOption);
   await t.click(Common.submenuOption('Decision Report'));
   await toggleReportAutoPreviewUpdate(t);
 }
 
 export async function createNewCombinedReport(t) {
-  await t.click(Common.createNewMenu);
-  await t.click(Common.option('Report'));
+  await t.click(Common.createNewButton);
+  await t.hover(Common.newReportOption);
   await t.click(Common.submenuOption('Combined Process Report'));
   await toggleReportAutoPreviewUpdate(t);
 }
 
 export async function selectVersion(t, selector, version) {
-  await t.click(selector.find('.Popover .Button'));
+  await t.click(selector.find('.Popover .buttonWrapper button'));
   await t.click('.VersionPopover');
 
   if (typeof version === 'string') {
@@ -80,7 +80,7 @@ export async function selectVersion(t, selector, version) {
     }
   }
 
-  await t.click(selector.find('.Popover .Button'));
+  await t.click(selector.find('.Popover .buttonWrapper button'));
 }
 
 export async function selectReportDefinition(t, name, version) {
@@ -97,8 +97,8 @@ export async function selectReportDefinition(t, name, version) {
 export async function selectDefinition(t, name, version = 'Specific version') {
   await t
     .click('.Popover.DefinitionSelection')
-    .typeText('.Typeahead input', name, {replace: true})
-    .click(Common.typeaheadOption(name));
+    .typeText('.popoverContent input[type="text"]', name, {replace: true})
+    .click(Common.carbonOption(name));
 
   await t.expect(Selector('.VersionPopover button').hasAttribute('disabled')).notOk();
 
@@ -122,12 +122,17 @@ const selectControlPanelOption = (type) => async (t, name, subname) => {
     await selectView(t, name);
     await selectControlPanelOption('Measure')(t, subname);
   } else {
-    const dropdown = Selector('.label').withText(type).nextSibling();
+    const dropdownButton = Selector('.label').withText(type).nextSibling().find('button');
+    const selectedOption = await dropdownButton.innerText;
+    if (selectedOption === name) {
+      return;
+    }
 
-    await t.click(dropdown.find('button')).click(dropdown.find('.DropdownOption').withText(name));
+    await t.click(dropdownButton).click(Common.menuOption(name));
 
     if (subname) {
-      await t.click(dropdown.find('.Submenu .DropdownOption').withText(subname));
+      await t.hover(Common.menuOption(name));
+      await t.click(Common.submenuOption(subname));
     }
   }
 };
@@ -151,8 +156,8 @@ export async function gotoOverview(t) {
 }
 
 export async function createNewDashboard(t) {
-  await t.click(Common.createNewMenu);
-  await t.click(Common.option('Dashboard'));
+  await t.click(Common.createNewButton);
+  await t.click(Common.menuOption('Dashboard'));
   await t.click(Homepage.blankDashboardButton);
   await t.click(Common.modalConfirmButton);
 }
@@ -160,8 +165,8 @@ export async function createNewDashboard(t) {
 export async function addReportToDashboard(t, name) {
   await t
     .click('.AddButton')
-    .click('.CreateTileModal .optionsButton')
-    .click(Selector('.CreateTileModal .DropdownOption').withText(name))
+    .click('.CreateTileModal #addReportSelector')
+    .click(Common.carbonOption(name))
     .click(Selector('.CreateTileModal button').withText('Add Tile'))
     .click('.DashboardRenderer');
 }
@@ -175,8 +180,8 @@ export async function bulkDeleteAllItems(t) {
 }
 
 export async function toggleReportAutoPreviewUpdate(t) {
-  const isToggleOn = await Selector('.updatePreview .Switch input').checked;
-  !isToggleOn && (await t.click('.updatePreview .Switch'));
+  const isToggleOn = await Selector('.updatePreview button')['aria-checked'];
+  !isToggleOn && (await t.click('.updatePreview'));
 }
 
 export async function addEditEntityDescription(t, description, screenshotPath) {

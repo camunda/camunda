@@ -1,37 +1,21 @@
+@use '@carbon/colors';
+@use '@carbon/styles/scss/spacing';
+
 .SelectionPreview {
-  border: 1px solid var(--silver-darken-87);
-  background-color: var(--white);
-  border-radius: 3px;
-  background: var(--white);
-  padding-left: 10px;
+  height: auto;
   display: inline-flex;
   align-items: center;
-  font-size: 0.875em;
+  justify-content: space-between;
+  padding-right: 0;
+  background-color: var(--cds-field-02, #ffffff);
+  gap: spacing.$spacing-05;
 
   &.disabled {
-    color: var(--grey-lighten-56);
-
-    .Button.icon:disabled,
-    .Button.icon[disabled] {
-      background-color: transparent;
-    }
+    color: colors.$gray-50;
   }
 
   &.highlighted {
-    background: var(--blue-base-65);
-    color: var(--white);
-
-    .Button {
-      color: var(--white);
-
-      &:hover {
-        background-color: var(--blue-lighten-75);
-      }
-    }
-  }
-
-  .Button {
-    margin-left: 5px;
-    border-radius: 0;
+    background: colors.$blue-60;
+    color: colors.$white;
   }
 }

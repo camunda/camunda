@@ -7,9 +7,9 @@ package org.camunda.optimize.service.importing.engine.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.index.EngineImportIndexDto;
+import org.camunda.optimize.service.db.writer.ImportIndexWriter;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.importing.StoreIndexesElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.ImportIndexWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
@@ -40,7 +40,7 @@ public class StoreIndexesEngineImportService implements ImportService<EngineImpo
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
     return elasticsearchImportJobExecutor;
   }
 

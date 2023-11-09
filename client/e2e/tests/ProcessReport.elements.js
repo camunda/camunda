@@ -13,10 +13,13 @@ export const reportContainer = Selector('.Report');
 export const reportName = Selector('.ReportView .name');
 export const reportRenderer = Selector('.ReportRenderer');
 export const report = Selector('.ListItem.report');
-export const definitionCopyButton = (definition) => definition.find('.Button').nth(0);
-export const definitionEditButton = (definition) => definition.find('.Popover .Button');
+export const definitionCopyButton = (definition) => definition.find('.actionBtn').nth(0);
+export const definitionEditButton = (definition) =>
+  definition.find('.Popover .buttonWrapper button');
 export const checkbox = (name) => Selector('.label').withText(name);
 export const groupbyDropdown = checkbox('Group By').nextSibling();
+export const viewDropdown = checkbox('View').nextSibling();
+export const distributedBySelect = checkbox('and').nextSibling();
 export const groupbyDropdownButton = groupbyDropdown.find('button');
 export const removeGroupButton = Selector('.removeGrouping');
 export const visualizationDropdown = checkbox('Visualization').nextSibling();
@@ -76,7 +79,6 @@ export const limitPrecisionSwitch = Selector('.PrecisionConfig .Switch').withTex
 export const limitPrecisionInput = Selector('.precision input');
 export const flowNodeStatusSelect = Selector('.NodeStatus .Select');
 export const nodeTableCell = (text) => Selector('.Table tbody td').withText(text);
-export const distributedBySelect = Selector('.DistributedBy .Select');
 export const cyanColor = Selector('div[color="#00bcd4"]');
 export const axisInputs = (label) => Selector(`input[placeholder="${label}"]`);
 export const chartGoalInput = Selector('input[placeholder="Goal value"]');
@@ -85,7 +87,7 @@ export const controlPanelFilter = Selector('.ActionItem');
 export const filterRemoveButton = controlPanelFilter.find('.Button:last-child');
 export const definitionElement = (name) => Selector('.DefinitionList li').withText(name);
 export const definitionEditorPopover = Selector('.DefinitionList .Popover');
-export const definitionEditor = definitionEditorPopover.find('.Button');
+export const definitionEditor = definitionEditorPopover.find('.buttonWrapper button');
 export const definitionEditorDialog = definitionEditorPopover.find('.popoverContent');
 export const versionPopover = Selector('.VersionPopover');
 export const versionAll = Selector('input[type="radio"]').nth(0);
@@ -96,7 +98,7 @@ export const versionCheckbox = (number) =>
 export const tenantPopover = Selector('.TenantPopover');
 export const aggregationTypeSelect = Selector('.AggregationType');
 export const aggregationOption = (text) => Selector('.AggregationType .Switch').withText(text);
-export const detailsPopoverButton = Selector('.EntityName .Popover .buttonWrapper .Button');
+export const detailsPopoverButton = Selector('.EntityName .Popover .buttonWrapper button');
 export const modalButton = (text) => Selector('.ReportDetails .modalButton').withText(text);
 export const rawDataTable = Selector('.RawDataModal .Table');
 export const modalDiagram = Selector('.DiagramModal .BPMNDiagram');
@@ -108,12 +110,10 @@ export const nextPageButton = Selector('.Table .cds--pagination__button--forward
 export const rowsPerPageButton = Selector('.Table .cds--select-input');
 export const rowsPerPageOption = (text) => Selector('.Table .cds--select-option').withText(text);
 export const addMeasureButton = Selector('.addMeasure button');
-export const removeMeasureButton = Selector('.Measure').nth(1).find('.SelectionPreview .Button');
+export const removeMeasureButton = Selector('.Measure').nth(1).find('.SelectionPreview button');
 export const heatDropdown = Selector('.Heatmap .Select');
 export const sectionToggle = (sectionName) =>
-  Selector('.ReportControlPanel .sectionTitle')
-    .withText(new RegExp(sectionName, 'i')) // we are using CSS text-transform uppercase, which is handled inconsistently across browsers: https://github.com/DevExpress/testcafe/issues/3335
-    .find('.sectionToggle');
+  Selector('button.cds--accordion__heading').withText(sectionName);
 export const deselectAllButton = Selector('.Button').withText('Deselect All');
 export const addDefinitionButton = Selector('.AddDefinition');
 export const definitionEntry = (name) => Selector('.Checklist tr').withText(name);
@@ -121,8 +121,8 @@ export const lineButton = Selector('.measureContainer .Button').withText('Line')
 export const tableScrollableContainer = reportTable.find('table');
 export const objectViewBtn = reportTable.find('.ObjectViewBtn').nth(0);
 export const objectVariableModal = Selector('.ObjectVariableModal');
-export const renameVariablesBtn = Selector('.actionBar .Button').withText('Rename Variables');
+export const renameVariablesBtn = Selector('button').withText('Rename Variables');
 export const newNameInput = (name) =>
   Selector('.RenameVariablesModal tbody tr').withText(name).find('.Input');
-export const viewSelect = Selector('.View .activateButton');
 export const numberReportInfo = reportRenderer.find('.Number .label');
+export const variableSubmenuOption = (text) => Selector('.Submenu .DropdownOption').withText(text);

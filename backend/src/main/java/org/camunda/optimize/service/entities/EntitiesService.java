@@ -22,7 +22,7 @@ import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
-import org.camunda.optimize.service.es.reader.EntitiesReader;
+import org.camunda.optimize.service.db.reader.EntitiesReader;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;

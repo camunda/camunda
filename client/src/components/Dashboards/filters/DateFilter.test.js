@@ -7,8 +7,10 @@
 
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
+import {MenuItem, MenuItemSelectable} from '@carbon/react';
+import {MenuDropdown} from '@camunda/camunda-optimize-composite-components';
 
-import {Dropdown, DatePicker} from 'components';
+import {DatePicker} from 'components';
 
 import DateFilter from './DateFilter';
 import RollingFilter from './RollingFilter';
@@ -34,9 +36,9 @@ beforeEach(() => {
 it('should contain a dropdown to set startDateFilter', () => {
   const node = shallow(<DateFilter {...props} />);
 
-  expect(node.find(Dropdown)).toExist();
+  expect(node.find(MenuDropdown)).toExist();
 
-  node.find(Dropdown.Option).at(3).simulate('click');
+  node.find(MenuItemSelectable).at(0).simulate('change');
 
   expect(props.setFilter).toHaveBeenCalledWith(todayFilter);
 });
@@ -44,7 +46,7 @@ it('should contain a dropdown to set startDateFilter', () => {
 it('should show a datepicker when switching to fixed state', () => {
   const node = shallow(<DateFilter {...props} />);
 
-  node.find(Dropdown.Option).at(0).simulate('click');
+  node.find(MenuItem).at(0).simulate('click');
 
   expect(node.find(DatePicker)).toExist();
 });
@@ -62,7 +64,7 @@ it('should invoke setFilter when updating the rolling filter', () => {
 
   node.setProps({filter});
 
-  const options = node.find(Dropdown.Option);
+  const options = node.find(MenuItem);
   options.at(options.length - 2).simulate('click');
   expect(spy).toHaveBeenCalledWith(filter);
 
@@ -73,26 +75,26 @@ it('should invoke setFilter when updating the rolling filter', () => {
 it('should show the dropdown again after an external reset', () => {
   const node = shallow(<DateFilter {...props} />);
 
-  node.find(Dropdown.Option).at(0).simulate('click');
+  node.find(MenuItem).at(0).simulate('click');
   node.setProps({resetTrigger: true});
 
   runAllEffects();
 
   expect(node.find(DatePicker)).not.toExist();
-  expect(node.find(Dropdown)).toExist();
+  expect(node.find(MenuDropdown)).toExist();
 });
 
 it('should show the filter state', () => {
   const node = shallow(<DateFilter {...props} filter={todayFilter} />);
 
-  expect(node.find(Dropdown).prop('label')).toMatchSnapshot();
-  expect(node.find(Dropdown.Option).at(3)).toHaveProp('checked', true);
+  expect(node.find(MenuDropdown).prop('label')).toMatchSnapshot();
+  expect(node.find(MenuItemSelectable).at(0)).toHaveProp('selected', true);
 });
 
 it('should reset the filter state', () => {
   const node = shallow(<DateFilter {...props} filter={todayFilter} />);
 
-  node.find(Dropdown.Option).last().simulate('click');
+  node.find(MenuItem).last().simulate('click');
 
   expect(props.setFilter).toHaveBeenCalledWith();
 });
@@ -100,13 +102,13 @@ it('should reset the filter state', () => {
 it('should disable the reset button if no filter is set', () => {
   const node = shallow(<DateFilter {...props} />);
 
-  expect(node.find(Dropdown.Option).last()).toHaveProp('disabled', true);
+  expect(node.find(MenuItem).last()).toHaveProp('disabled', true);
 });
 
 it('should allow providing a custom icon and empty text', () => {
   const node = shallow(<DateFilter {...props} icon="customIcon" emptyText="customText" />);
 
-  expect(node.find(Dropdown).prop('label')).toMatchSnapshot();
+  expect(node.find(MenuDropdown).prop('label')).toMatchSnapshot();
 });
 
 it('should render children', () => {

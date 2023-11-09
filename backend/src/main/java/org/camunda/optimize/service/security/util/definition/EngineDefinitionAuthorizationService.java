@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
-import org.camunda.optimize.service.es.reader.DefinitionReader;
+import org.camunda.optimize.service.db.reader.DefinitionReader;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.AbstractCachingAuthorizationService;
 import org.camunda.optimize.service.security.ApplicationAuthorizationService;

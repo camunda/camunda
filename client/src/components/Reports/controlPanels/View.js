@@ -6,7 +6,7 @@
  */
 
 import {createReportUpdate, reportConfig} from 'services';
-import {Select} from 'components';
+import {CarbonSelect} from 'components';
 
 import './View.scss';
 
@@ -16,7 +16,7 @@ export default function View({type, report, onChange, variables}) {
   const selectedOption = report.view ? views.find(({matcher}) => matcher(report)) : null;
 
   return (
-    <Select
+    <CarbonSelect
       className="View"
       onChange={(selection) => {
         let type = selection;
@@ -47,30 +47,30 @@ export default function View({type, report, onChange, variables}) {
             );
 
             return (
-              <Select.Submenu
+              <CarbonSelect.Submenu
                 key="variable"
                 value="variable"
                 label={label()}
                 disabled={!enabled(report) || !numberVariables || !numberVariables?.length}
-                openToLeft
               >
                 {numberVariables?.map(({name, label}, idx) => {
                   return (
-                    <Select.Option key={idx} value={key + '_' + name}>
-                      {label || name}
-                    </Select.Option>
+                    <CarbonSelect.Option key={idx} value={key + '_' + name} label={label || name} />
                   );
                 })}
-              </Select.Submenu>
+              </CarbonSelect.Submenu>
             );
           }
           return (
-            <Select.Option key={key} value={key} disabled={!enabled(report)}>
-              {label()}
-            </Select.Option>
+            <CarbonSelect.Option
+              key={key}
+              value={key}
+              disabled={!enabled(report)}
+              label={label()}
+            />
           );
         })}
-    </Select>
+    </CarbonSelect>
   );
 }
 

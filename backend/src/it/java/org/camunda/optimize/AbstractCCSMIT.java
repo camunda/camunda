@@ -22,7 +22,7 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.it.extension.ZeebeExtension;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -85,11 +85,6 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     return zeebeExtension.startProcessInstanceForProcess(deployedProcess.getBpmnProcessId());
   }
 
-  protected void waitUntilMinimumDataExportedCount(final int minExportedEventCount, final String indexName,
-                                                   final BoolQueryBuilder boolQueryBuilder) {
-    waitUntilMinimumDataExportedCount(minExportedEventCount, indexName, boolQueryBuilder, 15);
-  }
-
   protected BoolQueryBuilder getQueryForProcessableEvents() {
     return boolQuery().must(termsQuery(
       ZeebeProcessInstanceRecordDto.Fields.intent,
@@ -103,10 +98,15 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     return embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().getName();
   }
 
+  protected void waitUntilMinimumDataExportedCount(final int minExportedEventCount, final String indexName,
+                                                   final BoolQueryBuilder boolQueryBuilder) {
+    waitUntilMinimumDataExportedCount(minExportedEventCount, indexName, boolQueryBuilder, 15);
+  }
+
   protected void waitUntilMinimumProcessInstanceEventsExportedCount(final int minExportedEventCount) {
     waitUntilMinimumDataExportedCount(
       minExportedEventCount,
-      ElasticsearchConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
+      DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
       getQueryForProcessableEvents()
     );
   }
@@ -114,7 +114,7 @@ public abstract class AbstractCCSMIT extends AbstractIT {
   protected void waitUntilNumberOfDefinitionsExported(final int expectedDefinitionsCount) {
     waitUntilMinimumDataExportedCount(
       expectedDefinitionsCount,
-      ElasticsearchConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME,
+      DatabaseConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME,
       boolQuery().must(termQuery(ZeebeProcessDefinitionRecordDto.Fields.intent, ProcessIntent.CREATED.name()))
     );
   }
@@ -123,8 +123,31 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     waitUntilRecordMatchingQueryExported(1, indexName, boolQuery);
   }
 
-  protected void waitUntilRecordMatchingQueryExported(final long minRecordCount, final String indexName, final BoolQueryBuilder boolQuery) {
+  protected void waitUntilRecordMatchingQueryExported(final long minRecordCount, final String indexName,
+                                                      final BoolQueryBuilder boolQuery) {
     waitUntilMinimumDataExportedCount(minRecordCount, indexName, boolQuery, 10);
+  }
+
+  protected void waitUntilInstanceRecordWithElementIdExported(final String instanceElementId) {
+    waitUntilRecordMatchingQueryExported(
+      DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
+      boolQuery().must(termQuery(
+        ZeebeProcessInstanceRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.elementId,
+        instanceElementId
+      ))
+    );
+  }
+
+  protected void waitUntilDefinitionWithIdExported(final String processDefinitionId) {
+    waitUntilRecordMatchingQueryExported(
+      DatabaseConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME,
+      boolQuery()
+        .must(termQuery(ZeebeProcessDefinitionRecordDto.Fields.intent, ProcessIntent.CREATED.name()))
+        .must(termQuery(
+          ZeebeProcessDefinitionRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.bpmnProcessId,
+          processDefinitionId
+        ))
+    );
   }
 
   protected String getFlowNodeInstanceIdFromProcessInstanceForActivity(final ProcessInstanceDto processInstanceDto,
@@ -153,6 +176,15 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     return Bpmn.readModelFromStream(inputStream);
   }
 
+  protected void setTenantIdForExportedZeebeRecords(final String indexName, final String tenantId) {
+    elasticSearchIntegrationTestExtension.updateZeebeRecordsForPrefix(
+      zeebeExtension.getZeebeRecordPrefix(),
+      indexName,
+      boolQuery(),
+      String.format("ctx._source.value.tenantId = \"%s\";", tenantId)
+    );
+  }
+
   protected static boolean isZeebeVersionPre81() {
     final Pattern zeebeVersionPreSequenceField = Pattern.compile("8.0.*");
     return zeebeVersionPreSequenceField.matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion()).matches();
@@ -163,17 +195,13 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     return zeebeVersionPreSequenceField.matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion()).matches();
   }
 
-  protected static boolean isZeebeVersionWithMultiTenancy() {
-    // multi tenancy is introduced with zeebe 8.3.0
+  protected static boolean isZeebeVersionPre83() {
     final Pattern zeebeVersionPattern = Pattern.compile("8.0.*|8.1.*|8.2.*");
-    return !zeebeVersionPattern.matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion()).matches();
+    return zeebeVersionPattern.matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion()).matches();
   }
 
-  private BoolQueryBuilder getInstanceRecordIdQuery(final String expectedRecordId) {
-    return boolQuery().must(termQuery(
-      ZeebeProcessInstanceRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.elementId,
-      expectedRecordId
-    ));
+  protected static boolean isZeebeVersionWithMultiTenancy() {
+    return !isZeebeVersionPre83();
   }
 
   @SneakyThrows

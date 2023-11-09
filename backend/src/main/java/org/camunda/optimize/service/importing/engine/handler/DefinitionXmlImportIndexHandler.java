@@ -7,8 +7,8 @@ package org.camunda.optimize.service.importing.engine.handler;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.index.AllEntitiesBasedImportIndexDto;
+import org.camunda.optimize.service.db.reader.ImportIndexReader;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.reader.ImportIndexReader;
 import org.camunda.optimize.service.importing.EngineImportIndexHandler;
 import org.camunda.optimize.service.importing.page.IdSetBasedImportPage;
 import org.camunda.optimize.service.util.EsHelper;
@@ -32,6 +32,7 @@ public abstract class DefinitionXmlImportIndexHandler
   protected ConfigurationService configurationService;
   @Autowired
   private ImportIndexReader importIndexReader;
+
   private Long importIndex = 0L;
 
   @Override

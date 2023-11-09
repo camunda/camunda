@@ -11,7 +11,7 @@ import {SubNav, ErrorPage} from 'components';
 import {t} from 'translation';
 import {Route, Switch} from 'react-router-dom';
 import {BranchAnalysis} from './BranchAnalysis';
-import {OutlierAnalysis} from './OutlierAnalysis';
+import {TaskAnalysis} from './TaskAnalysis';
 
 import './Analysis.scss';
 
@@ -20,9 +20,9 @@ export default function Analysis() {
     <div className="Analysis">
       <SubNav>
         <SubNav.Item
-          name={t('analysis.outlier.label')}
-          linksTo="/analysis/outlierAnalysis"
-          active={['/analysis', '/analysis/outlierAnalysis']}
+          name={t('analysis.task.label')}
+          linksTo="/analysis/taskAnalysis"
+          active={['/analysis', '/analysis/taskAnalysis']}
         />
         <SubNav.Item
           name={t('analysis.branchAnalysis')}
@@ -31,9 +31,9 @@ export default function Analysis() {
         />
       </SubNav>
       <Switch>
-        <Route path="/analysis/" exact component={OutlierAnalysis} />
+        <Route path="/analysis/" exact component={TaskAnalysis} />
         <Route path="/analysis/branchAnalysis" component={BranchAnalysis} />
-        <Route path="/analysis/outlierAnalysis" component={OutlierAnalysis} />
+        <Route path="/analysis/taskAnalysis" component={TaskAnalysis} />
         <Route path="*" component={() => <ErrorPage noLink />} />
       </Switch>
     </div>

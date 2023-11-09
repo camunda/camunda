@@ -8,8 +8,8 @@ package org.camunda.optimize.service;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
-import org.camunda.optimize.service.es.reader.EventProcessDefinitionReader;
-import org.camunda.optimize.service.es.writer.EventProcessDefinitionWriter;
+import org.camunda.optimize.service.db.reader.EventProcessDefinitionReader;
+import org.camunda.optimize.service.db.writer.EventProcessDefinitionWriter;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;

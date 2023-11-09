@@ -7,14 +7,16 @@
 
 import {ChangeEventHandler, ReactNode, useState} from 'react';
 import {Link} from 'react-router-dom';
+import {Button, TextInput} from '@carbon/react';
+import {Error, Save} from '@carbon/icons-react';
 
-import {Input, Icon, Button, EntityDescription} from 'components';
-import {withErrorHandling, WithErrorHandlingProps} from 'HOC';
-
-import './EntityNameForm.scss';
+import {EntityDescription} from 'components';
+import {useErrorHandling} from 'hooks';
 import {t} from 'translation';
 
-interface EntityNameFormProps extends WithErrorHandlingProps {
+import './EntityNameForm.scss';
+
+interface EntityNameFormProps {
   entity: string;
   name: string;
   description?: string | null;
@@ -26,7 +28,7 @@ interface EntityNameFormProps extends WithErrorHandlingProps {
   children?: ReactNode;
 }
 
-export function EntityNameForm({
+export default function EntityNameForm({
   entity,
   name,
   description = null,
@@ -36,9 +38,9 @@ export function EntityNameForm({
   onChange,
   onDescriptionChange,
   children,
-  mightFail,
 }: EntityNameFormProps) {
   const [loading, setLoading] = useState(false);
+  const {mightFail} = useErrorHandling();
 
   const homeLink = entity === 'Process' ? '../' : '../../';
 
@@ -46,13 +48,14 @@ export function EntityNameForm({
     <div className="EntityNameForm head">
       <div className="info">
         <div className="name-container">
-          <Input
+          <TextInput
             id="name"
-            type="text"
             onChange={onChange}
             value={name || ''}
             className="name-input"
-            placeholder={t(`common.entity.namePlaceholder.${entity}`)}
+            hideLabel
+            labelText={t(`common.entity.namePlaceholder.${entity}`).toString()}
+            placeholder={t(`common.entity.namePlaceholder.${entity}`).toString()}
             autoComplete="off"
           />
         </div>
@@ -63,29 +66,30 @@ export function EntityNameForm({
       <div className="tools">
         {children}
         <Button
-          main
-          primary
-          className="tool-button save-button"
+          size="md"
+          kind="primary"
+          renderIcon={Save}
+          className="save-button"
           disabled={!name || loading}
           onClick={async () => {
             setLoading(true);
             mightFail(onSave(), () => setLoading(false));
           }}
         >
-          <Icon type="check" />
-          {t('common.save')}
+          {t('common.save').toString()}
         </Button>
-        <Link
-          className="Button main tool-button cancel-button"
+        <Button
+          kind="secondary"
+          size="md"
+          renderIcon={Error}
+          as={Link}
+          className="cancel-button"
           to={isNew ? homeLink : './'}
           onClick={loading ? undefined : onCancel}
         >
-          <Icon type="stop" />
-          {t('common.cancel')}
-        </Link>
+          {t('common.cancel').toString()}
+        </Button>
       </div>
     </div>
   );
 }
-
-export default withErrorHandling(EntityNameForm);

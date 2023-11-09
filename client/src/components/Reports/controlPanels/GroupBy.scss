@@ -1,94 +1,19 @@
+@use '@carbon/colors';
+
 .GroupBy {
   display: flex;
 
-  .removeGrouping {
-    flex: 0 0 51px;
+  .hasNoGrouping .cds--list-box {
+    background-color: transparent;
+    border-bottom: none;
+    border: 1.5px dashed colors.$gray-30;
 
-    border-left: none;
-    padding: 7px 0;
-    text-align: center;
-    font-size: 11px;
-    color: var(--grey-base-40);
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-
-    .Icon {
-      margin: 0;
-    }
-  }
-
-  .Select {
-    flex: 1;
-
-    .activateButton {
-      height: 32px;
-      padding-left: 10px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .cds--list-box__label {
+      color: colors.$gray-50;
     }
 
-    &.hasNoGrouping {
-      .activateButton {
-        background-color: var(--silver-darken-94);
-        border: 1.5px dashed var(--silver-darken-80);
-        text-align: left;
-        color: var(--grey-base-40);
-        height: 32px;
-        font-size: 11px;
-
-        .downIcon {
-          display: none;
-        }
-      }
-    }
-
-    &.canRemoveGrouping {
-      .activateButton {
-        border-top-right-radius: 0;
-        border-bottom-right-radius: 0;
-        max-width: 149px;
-
-        span:not(.Icon) {
-          overflow: hidden;
-          width: 100%;
-          display: inline-block;
-          text-overflow: ellipsis;
-        }
-      }
-    }
-
-    .Submenu .childrenContainer {
-      min-width: 191px;
-
-      .DropdownOption.hidden {
-        visibility: hidden;
-        height: 0;
-        padding: 0;
-        overflow: hidden;
-      }
-
-      .searchContainer {
-        position: relative;
-        border-bottom: 1px solid var(--silver-darken-80);
-        margin-bottom: 5px;
-        padding: 0 5px;
-
-        .searchIcon {
-          position: absolute;
-          left: 10px;
-          top: 0;
-          bottom: 0;
-          margin: auto;
-          color: var(--grey-base-40);
-        }
-
-        .searchInput {
-          padding: 7px 35px;
-          border: none;
-          width: 100%;
-        }
-      }
+    .cds--list-box__menu-icon {
+      display: none;
     }
   }
 }

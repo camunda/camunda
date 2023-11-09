@@ -16,7 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.REPORT_TYPE;
+import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.REPORT_TYPE;
 
 public class CustomCollectionEntityDeserializer extends StdDeserializer<CollectionEntity> {
 

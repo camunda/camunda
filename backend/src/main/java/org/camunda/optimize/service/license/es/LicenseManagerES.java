@@ -23,8 +23,8 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.service.es.schema.index.LicenseIndex.LICENSE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LICENSE_INDEX_NAME;
+import static org.camunda.optimize.service.db.schema.index.LicenseIndex.LICENSE;
+import static org.camunda.optimize.service.db.DatabaseConstants.LICENSE_INDEX_NAME;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
 

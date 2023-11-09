@@ -6,17 +6,10 @@
  */
 
 import {useEffect, useState} from 'react';
+import {TextInput, Button, Stack, Form} from '@carbon/react';
+import {Edit, Maximize} from '@carbon/icons-react';
 
-import {
-  Button as LegacyButton,
-  Icon,
-  Labeled,
-  Input,
-  BPMNDiagram,
-  VersionPopover,
-  TenantPopover,
-  TenantInfo,
-} from 'components';
+import {BPMNDiagram, VersionPopover, TenantPopover, TenantInfo} from 'components';
 import {withErrorHandling} from 'HOC';
 import {loadProcessDefinitionXml} from 'services';
 import {t} from 'translation';
@@ -79,13 +72,15 @@ export function DefinitionEditor({mightFail, collection, type, definition, tenan
 
   return (
     <>
-      <div className="DefinitionEditor">
-        <div className="definitionLabel">{t('report.definition.' + type)}</div>
-        <div className="definitionName">{definition.name}</div>
-        <div className="selectionPanel">
+      <Stack gap={6} className="DefinitionEditor">
+        <div className="title">
+          <div className="cds--label">{t('report.definition.' + type)}</div>
+          <div className="definitionName">{definition.name}</div>
+        </div>
+        <Form className="selectionPanel">
           <div className="version entry">
-            <Labeled label={t('common.definitionSelection.version.label')} />
             <VersionPopover
+              label={t('common.definitionSelection.version.label')}
               versions={availableVersions}
               selected={definition.versions}
               selectedSpecificVersions={selectedSpecificVersions}
@@ -124,7 +119,6 @@ export function DefinitionEditor({mightFail, collection, type, definition, tenan
           </div>
           {availableTenants?.length > 1 && (
             <div className="tenant entry">
-              <Labeled label={t('common.tenant.label')} />
               <TenantPopover
                 tenants={availableTenants}
                 selected={definition.tenantIds}
@@ -135,67 +129,69 @@ export function DefinitionEditor({mightFail, collection, type, definition, tenan
                   setLoadingTenants(false);
                 }}
                 align="bottom-right"
+                label={t('common.tenant.label')}
               />
             </div>
           )}
-          {showOnlyTenant && <TenantInfo tenant={availableTenants[0]} />}
-          <div className="displayName">
-            <Labeled label={t('report.displayName')} />
-            <Input
-              placeholder={t('report.displayNamePlaceholder')}
-              value={displayName}
-              onChange={(evt) => setDisplayName(evt.target.value)}
-              onBlur={(evt) => {
-                // This input field is inside a Popover. When the user click outside of the Popover, we want to close it.
-                // Popovers close, when they receive a click event outside of the Popover. However, click events are
-                // only triggered after the mouseup, while the blur event fires after mousedown. The onChange handler
-                // we call here causes a react state update that rerenders the ReportRenderer. So if a user clicks on
-                // the ReportRenderer to close the popover, we get a blur event that causes the original target of the click to
-                // disappear because of the rerender, so that the click event is never generated and the Popover stays open.
-                //
-                // To fix that, we need to identify that the blur event was caused by a click rather than a key event (1) and
-                // then delay the execution of the onChange update until after the click has been processed (2). (1) can be
-                // handled with the relatedTarget property of the event. For keyboard blur events this is always set to the new
-                // element to receive focus. Some mouse events can also set this, if the clicked element is focusable. But as the
-                // ReportRenderer does not have any focusable elements, we can use this to identify a click in the ReportRenderer
-                // For (2), we register a one time mouseup event listener on the body. As the click handler fires after mouseup,
-                // we further delay the execution of onChange using setTimeout to give the Popover time to process the click event.
-                if (!evt.relatedTarget) {
-                  document.body.addEventListener(
-                    'mouseup',
-                    () => setTimeout(() => onChange({...definition, displayName})),
-                    {once: true}
-                  );
-                } else {
-                  onChange({...definition, displayName});
-                }
-              }}
-            />
-          </div>
-        </div>
+          {showOnlyTenant && <TenantInfo tenant={availableTenants[0]} useCarbonVariant />}
+          <TextInput
+            id="ProcessRenameInput"
+            size="sm"
+            placeholder={t('report.displayNamePlaceholder')}
+            value={displayName}
+            onChange={(evt) => setDisplayName(evt.target.value)}
+            labelText={t('report.displayName')}
+            onBlur={(evt) => {
+              // This input field is inside a Popover. When the user click outside of the Popover, we want to close it.
+              // Popovers close, when they receive a click event outside of the Popover. However, click events are
+              // only triggered after the mouseup, while the blur event fires after mousedown. The onChange handler
+              // we call here causes a react state update that rerenders the ReportRenderer. So if a user clicks on
+              // the ReportRenderer to close the popover, we get a blur event that causes the original target of the click to
+              // disappear because of the rerender, so that the click event is never generated and the Popover stays open.
+              //
+              // To fix that, we need to identify that the blur event was caused by a click rather than a key event (1) and
+              // then delay the execution of the onChange update until after the click has been processed (2). (1) can be
+              // handled with the relatedTarget property of the event. For keyboard blur events this is always set to the new
+              // element to receive focus. Some mouse events can also set this, if the clicked element is focusable. But as the
+              // ReportRenderer does not have any focusable elements, we can use this to identify a click in the ReportRenderer
+              // For (2), we register a one time mouseup event listener on the body. As the click handler fires after mouseup,
+              // we further delay the execution of onChange using setTimeout to give the Popover time to process the click event.
+              if (!evt.relatedTarget) {
+                document.body.addEventListener(
+                  'mouseup',
+                  () => setTimeout(() => onChange({...definition, displayName})),
+                  {once: true}
+                );
+              } else {
+                onChange({...definition, displayName});
+              }
+            }}
+          />
+        </Form>
         <div className="diagram">
           <BPMNDiagram xml={xml} disableNavigation loading={loadingXml} />
-          <LegacyButton
-            small
+          <Button
+            kind="tertiary"
             disabled={loadingXml || !xml}
             onClick={() => setDiagramModalOpen(true)}
+            renderIcon={Maximize}
+            size="sm"
+            className="diagramExpandBtn"
           >
-            <Icon type="fullscreen" />
             {t('common.entity.viewModel.model')}
-          </LegacyButton>
+          </Button>
         </div>
-        <div className="actionBar">
-          <LegacyButton
-            small
-            onClick={() => {
-              setVariableModalOpen(true);
-            }}
-          >
-            <Icon type="edit" />
-            {t('report.definition.variables.rename')}
-          </LegacyButton>
-        </div>
-      </div>
+        <Button
+          kind="tertiary"
+          size="sm"
+          onClick={() => {
+            setVariableModalOpen(true);
+          }}
+          renderIcon={Edit}
+        >
+          {t('report.definition.variables.rename')}
+        </Button>
+      </Stack>
       <RenameVariablesModal
         open={variableModalOpen}
         definitionKey={definition.key}

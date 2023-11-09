@@ -9,10 +9,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.writer.usertask.RunningUserTaskInstanceWriter;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.RunningUserTaskElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.usertask.RunningUserTaskInstanceWriter;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
@@ -56,7 +56,7 @@ public class RunningUserTaskInstanceImportService implements ImportService<Histo
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
     return elasticsearchImportJobExecutor;
   }
 

@@ -8,10 +8,11 @@
 import React, {useState, useEffect} from 'react';
 import useDeepCompareEffect from 'use-deep-compare-effect';
 import update from 'immutability-helper';
+import {Checkbox} from '@carbon/react';
 
 import {getVariableNames, getVariableValues} from './service';
 
-import {Dropdown, Icon, LabeledInput, Tooltip} from 'components';
+import {Dropdown, Icon, Tooltip} from 'components';
 import {VariableFilter, AssigneeFilter} from 'filter';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
@@ -177,9 +178,9 @@ export function AddFiltersButton({
           getPosttext={(variable) => {
             if (variable && !['Date', 'Boolean'].includes(variable.type)) {
               return (
-                <LabeledInput
-                  type="checkbox"
-                  label={t('dashboard.filter.modal.allowCustomValues')}
+                <Checkbox
+                  id="allowCustomValues"
+                  labelText={t('dashboard.filter.modal.allowCustomValues')}
                   className="customValueCheckbox"
                   checked={allowCustomValues}
                   onChange={(evt) => setAllowCustomValues(evt.target.checked)}
@@ -223,9 +224,9 @@ export function AddFiltersButton({
           }}
           getPosttext={() => {
             return (
-              <LabeledInput
-                type="checkbox"
-                label={t('dashboard.filter.modal.allowCustomValues')}
+              <Checkbox
+                id="allowCustomValues"
+                labelText={t('dashboard.filter.modal.allowCustomValues')}
                 className="customValueCheckbox"
                 checked={allowCustomValues}
                 onChange={(evt) => setAllowCustomValues(evt.target.checked)}

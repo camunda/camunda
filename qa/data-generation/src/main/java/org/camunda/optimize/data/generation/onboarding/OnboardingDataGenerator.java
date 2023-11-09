@@ -14,12 +14,14 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndexES;
+
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.service.exceptions.DataGenerationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
@@ -41,9 +43,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_PROFILE;
 
 @Slf4j
 public class OnboardingDataGenerator {
@@ -56,13 +59,13 @@ public class OnboardingDataGenerator {
 
   public OnboardingDataGenerator() {
     final ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
-    this.optimizeIndexNameService = new OptimizeIndexNameService(configurationService);
+    this.optimizeIndexNameService = new OptimizeIndexNameService(configurationService, ELASTICSEARCH_PROFILE);
     ElasticsearchMetadataService elasticsearchMetadataService = new ElasticsearchMetadataService(OBJECT_MAPPER);
     this.elasticSearchSchemaManager = new ElasticSearchSchemaManager(
       elasticsearchMetadataService,
       configurationService,
       optimizeIndexNameService,
-      List.of(new ProcessDefinitionIndex())
+      List.of(new ProcessDefinitionIndexES())
     );
     this.elasticsearchClient = new OptimizeElasticsearchClient(
       ElasticsearchHighLevelRestClientBuilder.build(configurationService),
@@ -120,7 +123,7 @@ public class OnboardingDataGenerator {
     BulkRequest bulkRequest = new BulkRequest();
     elasticSearchSchemaManager.createOrUpdateOptimizeIndex(
       elasticsearchClient,
-      new ProcessInstanceIndex(processInstanceDto.getProcessDefinitionKey()),
+      new ProcessInstanceIndexES(processInstanceDto.getProcessDefinitionKey()),
       Collections.singleton(PROCESS_INSTANCE_MULTI_ALIAS)
     );
     try {
@@ -131,7 +134,7 @@ public class OnboardingDataGenerator {
           .forEach(flowNodeInstanceDto -> flowNodeInstanceDto.setProcessInstanceId(processInstanceId));
         String json = OBJECT_MAPPER.writeValueAsString(processInstanceDto);
         IndexRequest request =
-          new IndexRequest(new ProcessInstanceIndex(processInstanceDto.getProcessDefinitionKey()).getIndexName())
+          new IndexRequest(ProcessInstanceIndex.constructIndexName(processInstanceDto.getProcessDefinitionKey()))
             .id(processInstanceDto.getProcessInstanceId())
             .source(json, XContentType.JSON);
         bulkRequest.add(request);

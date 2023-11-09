@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.importing.LastKpiEvaluationResultsDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.KpiResultDto;
-import org.camunda.optimize.service.es.writer.ProcessOverviewWriter;
+import org.camunda.optimize.service.db.writer.ProcessOverviewWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;

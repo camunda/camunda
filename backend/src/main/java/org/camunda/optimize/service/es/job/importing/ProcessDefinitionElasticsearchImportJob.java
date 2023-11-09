@@ -6,8 +6,8 @@
 package org.camunda.optimize.service.es.job.importing;
 
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 
 import java.util.List;
 

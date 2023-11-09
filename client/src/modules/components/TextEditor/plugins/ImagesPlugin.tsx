@@ -6,7 +6,7 @@
  */
 
 import {useEffect, useState} from 'react';
-import {Button} from '@carbon/react';
+import {Button, Form, Stack, TextInput} from '@carbon/react';
 import {
   $createParagraphNode,
   $insertNodes,
@@ -18,7 +18,7 @@ import {
 import {$wrapNodeInElement, mergeRegister} from '@lexical/utils';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
 
-import {Form, Input, Labeled, Modal} from 'components';
+import {Modal} from 'components';
 import {t} from 'translation';
 
 import {validateUrl} from './service';
@@ -43,25 +43,23 @@ export function InsertImageModal({editor, onClose}: {editor: LexicalEditor; onCl
       <Modal.Header>{t('textEditor.plugins.images.title')}</Modal.Header>
       <Modal.Content>
         <Form>
-          <Form.Group>
-            <Labeled label={t('textEditor.plugins.images.urlLabel')}>
-              <Input
-                placeholder={t('textEditor.plugins.images.urlPlaceholder')}
-                onChange={({target: {value}}) => setSrc(value)}
-                value={src}
-                data-modal-primary-focus
-              />
-            </Labeled>
-          </Form.Group>
-          <Form.Group>
-            <Labeled label={t('textEditor.plugins.images.altTextLabel')}>
-              <Input
-                placeholder={t('textEditor.plugins.images.altTextPlaceholder')}
-                onChange={({target: {value}}) => setAltText(value)}
-                value={altText}
-              />
-            </Labeled>
-          </Form.Group>
+          <Stack gap={6}>
+            <TextInput
+              id="imageUrl"
+              labelText={t('textEditor.plugins.images.urlLabel')}
+              placeholder={t('textEditor.plugins.images.urlPlaceholder').toString()}
+              onChange={({target: {value}}) => setSrc(value)}
+              value={src}
+              data-modal-primary-focus
+            />
+            <TextInput
+              id="imageAltText"
+              labelText={t('textEditor.plugins.images.altTextLabel')}
+              placeholder={t('textEditor.plugins.images.altTextPlaceholder').toString()}
+              onChange={({target: {value}}) => setAltText(value)}
+              value={altText}
+            />
+          </Stack>
         </Form>
       </Modal.Content>
       <Modal.Footer>

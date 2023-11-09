@@ -6,6 +6,7 @@
  */
 
 import {useCallback, useEffect, useState} from 'react';
+import {Button} from '@carbon/react';
 import {
   $getSelection,
   $isRangeSelection,
@@ -24,7 +25,6 @@ import {
 } from '@carbon/icons-react';
 import {mergeRegister} from '@lexical/utils';
 
-import {Button} from 'components';
 import {t} from 'translation';
 
 export default function InlineStylesButtons({
@@ -65,31 +65,33 @@ export default function InlineStylesButtons({
     );
   }, [editor, updateStyles]);
 
-  type ButtonState = {Icon: CarbonIconType; active: boolean};
+  type ButtonState = {Icon: CarbonIconType; isSelected: boolean};
 
   const BUTTONS: {[k in TextFormatType]?: ButtonState} = {
-    bold: {Icon: TextBold, active: isBold},
-    italic: {Icon: TextItalic, active: isItalic},
-    underline: {Icon: TextUnderline, active: isUnderline},
-    strikethrough: {Icon: TextStrikethrough, active: isStrikethrough},
+    bold: {Icon: TextBold, isSelected: isBold},
+    italic: {Icon: TextItalic, isSelected: isItalic},
+    underline: {Icon: TextUnderline, isSelected: isUnderline},
+    strikethrough: {Icon: TextStrikethrough, isSelected: isStrikethrough},
   };
 
   return (
     <>
       {(Object.entries(BUTTONS) as [key: TextFormatType, value: ButtonState][]).map(
-        ([key, {Icon, active}]) => (
+        ([key, {Icon, isSelected}]) => (
           <Button
             key={key}
-            small
-            title={t(`textEditor.toolbar.styles.${key}`) as string}
+            size="sm"
+            kind="ghost"
+            hasIconOnly
+            iconDescription={t(`textEditor.toolbar.styles.${key}`).toString()}
             disabled={disabled}
-            active={active}
+            isSelected={isSelected}
             onClick={() => {
               editor.dispatchCommand(FORMAT_TEXT_COMMAND, key);
             }}
-          >
-            <Icon />
-          </Button>
+            renderIcon={Icon}
+            tooltipPosition="bottom"
+          />
         )
       )}
     </>

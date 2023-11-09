@@ -7,8 +7,8 @@ package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
-import org.camunda.optimize.service.es.writer.ProcessDefinitionXmlWriter;
+import org.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
+import org.camunda.optimize.service.db.writer.ProcessDefinitionXmlWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.definition.ProcessDefinitionFetcher;

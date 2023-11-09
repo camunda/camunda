@@ -23,7 +23,7 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedSingleReportEvaluationResponseDto
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService
-import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex
+import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndexES
 import org.camunda.optimize.service.exceptions.evaluation.TooManyBucketsException
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder
 import org.camunda.optimize.test.optimize.AlertClient
@@ -50,7 +50,8 @@ import java.util.stream.Collectors
 
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.fail
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_PROFILE
 
 class PostMigrationTest {
   private static final String DEFAULT_USER = "demo";
@@ -70,7 +71,7 @@ class PostMigrationTest {
     def configurationService = ConfigurationServiceBuilder.createDefaultConfiguration()
     elasticsearchClient = new OptimizeElasticsearchClient(
       ElasticsearchHighLevelRestClientBuilder.build(configurationService),
-      new OptimizeIndexNameService(configurationService)
+      new OptimizeIndexNameService(configurationService, ELASTICSEARCH_PROFILE)
     );
 
     alertClient = new AlertClient(() -> requestExecutor);
@@ -232,7 +233,7 @@ class PostMigrationTest {
       .map(hit -> hit.getSourceAsMap())
       .filter(publishState -> processMappingId.equals(publishState.get(EventProcessPublishStateDto.Fields.processMappingId)))
       .map(publishState -> (String) publishState.get(EventProcessPublishStateDto.Fields.id))
-      .map(publishStateId -> new EventProcessInstanceIndex(publishStateId).getIndexName())
+      .map(publishStateId -> new EventProcessInstanceIndexES(publishStateId).getIndexName())
       .collect(Collectors.toList());
     boolean singleIndexExists = false;
     while (!singleIndexExists) {

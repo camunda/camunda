@@ -193,7 +193,7 @@ public class DashboardRestService {
       .filter(String.class::isInstance)
       .map(String.class::cast)
       .filter(externalLinkString -> !isValidURL(externalLinkString))
-      .collect(Collectors.toList());
+      .toList();
     if (!invalidExternalLinks.isEmpty()) {
       throw new OptimizeValidationException("Cannot save dashboard as the following external links are invalid: " + invalidExternalLinks);
     }

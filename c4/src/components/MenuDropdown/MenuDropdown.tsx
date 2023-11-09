@@ -32,6 +32,7 @@ export interface MenuDropdownProps extends ComponentPropsWithoutRef<"div"> {
 	label: ReactNode
 	invalid?: boolean
 	invalidText?: string
+	menuTarget?: Element | null
 }
 
 export default forwardRef(function MenuDropdown(
@@ -43,6 +44,7 @@ export default forwardRef(function MenuDropdown(
 		size = "sm",
 		invalid,
 		invalidText,
+		menuTarget,
 		...rest
 	}: MenuDropdownProps,
 	forwardRef: ForwardedRef<HTMLDivElement>,
@@ -103,7 +105,6 @@ export default forwardRef(function MenuDropdown(
 	return (
 		<div
 			{...rest}
-			ref={ref}
 			aria-owns={open ? id : undefined}
 			className={classnames(className, "MenuDropdown")}
 		>
@@ -113,6 +114,7 @@ export default forwardRef(function MenuDropdown(
 				disabled={disabled}
 				invalid={invalid}
 				invalidText={invalidText}
+				ref={ref}
 			>
 				<button
 					type="button"
@@ -131,6 +133,7 @@ export default forwardRef(function MenuDropdown(
 			</ListBox>
 			<Menu
 				id={id}
+				target={menuTarget || undefined}
 				className="MenuDropdownMenu"
 				ref={menuRef}
 				label={label}

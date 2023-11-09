@@ -66,13 +66,14 @@ test('navigate to dashboard view and edit pages', async (t) => {
 });
 
 test('complex Homepage actions', async (t) => {
-  await t.click(Common.createNewMenu).hover(Common.newReportOption);
+  await t.click(Common.createNewButton).hover(Common.newReportOption);
+  const createNewMenu = Common.menu('Create New').textContent;
 
-  await t.expect(Common.createNewMenu.textContent).contains('Collection');
-  await t.expect(Common.createNewMenu.textContent).contains('Dashboard');
-  await t.expect(Common.createNewMenu.textContent).contains('Process Report');
-  await t.expect(Common.createNewMenu.textContent).contains('Combined Process Report');
-  await t.expect(Common.createNewMenu.textContent).contains('Decision Report');
+  await t.expect(createNewMenu).contains('Collection');
+  await t.expect(createNewMenu).contains('Dashboard');
+  await t.expect(createNewMenu).contains('Process Report');
+  await t.expect(createNewMenu).contains('Combined Process Report');
+  await t.expect(createNewMenu).contains('Decision Report');
 
   await t.click(Common.submenuOption('Process Report'));
   await t.click(Common.templateModalProcessField);
@@ -83,7 +84,7 @@ test('complex Homepage actions', async (t) => {
   await save(t);
   await t.click(e.homepageLink);
 
-  await t.click(Common.createNewMenu).hover(Common.newReportOption);
+  await t.click(Common.createNewButton).hover(Common.newReportOption);
   await t.click(Common.submenuOption('Process Report'));
   await t.click(Common.templateModalProcessField);
   await t.click(Common.firstOption);
@@ -120,7 +121,7 @@ test('complex Homepage actions', async (t) => {
 
   await t.click(e.homepageLink);
 
-  await t.click(Common.createNewMenu).click(Common.option('Collection'));
+  await t.click(Common.createNewButton).click(Common.menuOption('Collection'));
   await t.typeText(Common.modalNameInput, 'Marketing', {replace: true});
   await t.click(Common.modalConfirmButton);
   await t.click(Common.modalConfirmButton);
@@ -130,12 +131,12 @@ test('complex Homepage actions', async (t) => {
 
   await t.click(e.homepageLink);
 
-  await t.click(Common.createNewMenu).click(Common.option('Collection'));
+  await t.click(Common.createNewButton).click(Common.menuOption('Collection'));
   await t.typeText(Common.modalNameInput, 'Sales', {replace: true});
   await t.click(Common.modalConfirmButton);
   await t.click(Common.modalConfirmButton);
 
-  await t.click(Common.createNewMenu).hover(Common.newReportOption);
+  await t.click(Common.createNewButton).hover(Common.newReportOption);
   await t.click(Common.submenuOption('Process Report'));
   await t.click(Common.templateModalProcessField);
   await t.click(Common.firstOption);
@@ -145,7 +146,7 @@ test('complex Homepage actions', async (t) => {
   await save(t);
   await t.click(e.breadcrumb('Sales'));
 
-  await t.click(Common.createNewMenu).hover(Common.newReportOption);
+  await t.click(Common.createNewButton).hover(Common.newReportOption);
   await t.click(Common.submenuOption('Process Report'));
   await t.click(Common.templateModalProcessField);
   await t.click(Common.firstOption);
@@ -206,7 +207,7 @@ test('complex Homepage actions', async (t) => {
 
   await t.click(e.moveCopySwitch);
   await t.click(e.copyTargetsInput);
-  await t.click(e.copyTarget('Sales'));
+  await t.click(Common.carbonOption('Sales'));
 
   await t.takeElementScreenshot(Common.modalContainer, 'img/copy.png');
 
@@ -224,8 +225,8 @@ test('complex Homepage actions', async (t) => {
 });
 
 test('multi definition selection', async (t) => {
-  await t.click(Common.createNewMenu);
-  await t.click(Common.newReportOption);
+  await t.click(Common.createNewButton);
+  await t.hover(Common.newReportOption);
   await t.click(Common.submenuOption('Process Report'));
 
   const firstDefinition = 'Invoice Receipt with alternative correlation variable';

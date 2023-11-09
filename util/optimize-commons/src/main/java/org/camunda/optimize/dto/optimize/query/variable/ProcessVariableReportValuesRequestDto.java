@@ -9,7 +9,7 @@ import lombok.Data;
 
 import java.util.List;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
 
 @Data
 public class ProcessVariableReportValuesRequestDto {

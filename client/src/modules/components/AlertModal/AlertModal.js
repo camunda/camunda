@@ -7,20 +7,19 @@
 
 import React from 'react';
 import update from 'immutability-helper';
-import {Button} from '@carbon/react';
-
 import {
-  Modal,
-  Message,
-  Button as LegacyButton,
-  Labeled,
-  Input,
-  LabeledInput,
-  Select,
-  Typeahead,
-  MessageBox,
+  Button,
+  Checkbox,
+  ComboBox,
+  TextInput,
   Form,
-} from 'components';
+  Stack,
+  ActionableNotification,
+  Grid,
+  Column,
+} from '@carbon/react';
+
+import {Modal, CarbonSelect} from 'components';
 import {formatters, evaluateReport, getReportResult} from 'services';
 import {isEmailEnabled} from 'config';
 import {t} from 'translation';
@@ -251,224 +250,237 @@ export class AlertModal extends React.Component {
     const reportMeasure = this.getReportMeasure(reportId);
 
     return (
-      <Modal open onClose={onClose} className="AlertModal" isOverflowVisible>
+      <Modal open onClose={onClose} className="AlertModal">
         <Modal.Header>
           {this.isInEditingMode() ? t('alert.edit') : t('alert.createNew')}
         </Modal.Header>
         <Modal.Content>
-          <Form horizontal autoComplete="off">
-            {!emailNotificationIsEnabled && (
-              <MessageBox type="warning">
-                {t('alert.emailWarning', {
-                  docsLink:
-                    this.props.docsLink +
-                    'self-managed/optimize-deployment/configuration/system-configuration/#email',
-                })}
-              </MessageBox>
-            )}
-            {inactive && (
-              <MessageBox type="warning">
-                {t('alert.inactiveStatus')}
-                <br />
-                {t('alert.activateInfo')}
-              </MessageBox>
-            )}
-            <Form.Group>
-              <LabeledInput
-                label={t('alert.form.name')}
-                value={name}
-                onChange={({target: {value}}) => this.setState({name: value})}
-                autoComplete="off"
-              />
-            </Form.Group>
-            <Form.Group>
-              <Labeled label={t('alert.form.report')}>
-                <Typeahead
-                  disabled={!!this.props.initialReport}
-                  initialValue={selectedReport.id}
-                  placeholder={t('alert.form.reportPlaceholder')}
-                  onChange={this.updateReport}
-                  noValuesMessage={t('alert.form.noReports')}
-                >
-                  {reports.map(({id, name}) => (
-                    <Typeahead.Option key={id} value={id}>
-                      {name}
-                    </Typeahead.Option>
-                  ))}
-                </Typeahead>
-              </Labeled>
-              <Message>
-                {report
-                  ? t('alert.form.value', {
-                      value: reportId === report.id ? getReportValue(report) : '...',
-                    })
-                  : t('alert.form.reportInfo')}
-              </Message>
-            </Form.Group>
-            <Form.Group>
-              <span>{t('alert.form.threshold')}</span>
-              <Form.InputGroup>
-                <Select
-                  value={thresholdOperator}
-                  onChange={(value) => this.setState({thresholdOperator: value})}
-                >
-                  <Select.Option value=">">{t('common.above')}</Select.Option>
-                  <Select.Option value="<">{t('common.below')}</Select.Option>
-                </Select>
-                <ThresholdInput
-                  value={threshold}
-                  onChange={(threshold) => this.setState({threshold})}
-                  type={reportMeasure}
-                  isInvalid={!this.isThresholdValid()}
-                />
-              </Form.InputGroup>
-              {!this.isThresholdValid() && (
-                <Message error>
-                  {reportMeasure === 'percentage'
-                    ? t('common.errors.percentage')
-                    : t('common.errors.number')}
-                </Message>
-              )}
-            </Form.Group>
-            <Form.Group>
-              <Labeled label={t('alert.form.frequency')}>
-                <Form.InputGroup>
-                  <Input
-                    value={checkInterval.value}
-                    onChange={({target: {value}}) =>
-                      this.setState(update(this.state, {checkInterval: {value: {$set: value}}}))
-                    }
-                    maxLength="8"
+          <Grid>
+            <Column sm={4} md={8} lg={16}>
+              <Form autoComplete="off">
+                <Stack gap={6}>
+                  {!emailNotificationIsEnabled && (
+                    <ActionableNotification inline kind="warning" hideCloseButton>
+                      {t('alert.emailWarning', {
+                        docsLink:
+                          this.props.docsLink +
+                          'self-managed/optimize-deployment/configuration/system-configuration/#email',
+                      })}
+                    </ActionableNotification>
+                  )}
+                  {inactive && (
+                    <ActionableNotification inline kind="warning" hideCloseButton>
+                      {t('alert.inactiveStatus')}
+                      <br />
+                      {t('alert.activateInfo')}
+                    </ActionableNotification>
+                  )}
+                  <TextInput
+                    id="alertName"
+                    labelText={t('alert.form.name')}
+                    value={name}
+                    onChange={({target: {value}}) => this.setState({name: value})}
+                    autoComplete="off"
                   />
-                  <Select
-                    value={checkInterval.unit}
-                    onChange={(value) =>
-                      this.setState(update(this.state, {checkInterval: {unit: {$set: value}}}))
+                  <ComboBox
+                    id="report"
+                    size="sm"
+                    items={reports}
+                    selectedItem={selectedReport}
+                    itemToString={(item) => item.name || item.id}
+                    disabled={!!this.props.initialReport || !reports?.length}
+                    placeholder={t('alert.form.reportPlaceholder')}
+                    titleText={t('alert.form.report')}
+                    onChange={({selectedItem}) => {
+                      if (selectedItem) {
+                        this.updateReport(selectedItem.id);
+                      }
+                    }}
+                    helperText={
+                      report
+                        ? t('alert.form.value', {
+                            value: reportId === report.id ? getReportValue(report) : '...',
+                          })
+                        : t('alert.form.reportInfo')
                     }
-                  >
-                    <Select.Option value="seconds">
-                      {t('common.unit.second.label-plural')}
-                    </Select.Option>
-                    <Select.Option value="minutes">
-                      {t('common.unit.minute.label-plural')}
-                    </Select.Option>
-                    <Select.Option value="hours">
-                      {t('common.unit.hour.label-plural')}
-                    </Select.Option>
-                    <Select.Option value="days">{t('common.unit.day.label-plural')}</Select.Option>
-                    <Select.Option value="weeks">
-                      {t('common.unit.week.label-plural')}
-                    </Select.Option>
-                    <Select.Option value="months">
-                      {t('common.unit.month.label-plural')}
-                    </Select.Option>
-                  </Select>
-                </Form.InputGroup>
-              </Labeled>
-              {!numberParser.isPositiveInt(checkInterval.value) && (
-                <Message error>{t('common.errors.positiveInt')}</Message>
-              )}
-            </Form.Group>
-            <Form.Group>
-              <Labeled label={t('alert.form.email')}>
-                <MultiEmailInput
-                  placeholder={t('alert.form.emailPlaceholder')}
-                  emails={emails}
-                  onChange={(emails, validEmails) => this.setState({emails, validEmails})}
-                />
-              </Labeled>
-              <Message>{t('alert.form.emailThreshold')}</Message>
-              {!validEmails && <Message error>{t('alert.form.invalidEmail')}</Message>}
-            </Form.Group>
-            {webhooks?.length > 0 && (
-              <Form.Group>
-                <Labeled label={t('alert.form.webhook')}>
-                  <Form.InputGroup>
-                    <Typeahead
-                      value={webhook}
-                      placeholder={t('alert.form.webookPlaceholder')}
-                      onChange={this.updateWebhook}
+                  />
+                  <Stack gap={6} orientation="horizontal">
+                    <CarbonSelect
+                      id="threshold"
+                      labelText={t('alert.form.threshold')}
+                      value={thresholdOperator}
+                      onChange={(value) => this.setState({thresholdOperator: value})}
                     >
-                      {webhooks.map((webhook) => (
-                        <Typeahead.Option key={webhook} value={webhook}>
-                          {webhook}
-                        </Typeahead.Option>
-                      ))}
-                    </Typeahead>
-                    <LegacyButton
-                      disabled={!webhook}
-                      onClick={() => this.setState({webhook: undefined})}
-                      className="reset"
-                    >
-                      {t('common.reset')}
-                    </LegacyButton>
-                  </Form.InputGroup>
-                </Labeled>
-              </Form.Group>
-            )}
-            <Form.Group noSpacing className="notifications">
-              <LabeledInput
-                label={t('alert.form.sendNotification')}
-                type="checkbox"
-                checked={fixNotification}
-                onChange={({target: {checked}}) => this.setState({fixNotification: checked})}
-              />
-              <LabeledInput
-                label={t('alert.form.reminder')}
-                type="checkbox"
-                checked={!!reminder}
-                onChange={this.updateReminder}
-              />
-            </Form.Group>
-            {reminder && (
-              <Form.Group noSpacing>
-                <Labeled label={t('alert.form.reminderFrequency')}>
-                  <Form.InputGroup>
-                    <Input
-                      value={reminder.value}
-                      onChange={({target: {value}}) =>
-                        this.setState(update(this.state, {reminder: {value: {$set: value}}}))
+                      <CarbonSelect.Option value=">" label={t('common.above')} />
+                      <CarbonSelect.Option value="<" label={t('common.below')} />
+                    </CarbonSelect>
+                    <ThresholdInput
+                      className="labelHidden"
+                      value={threshold}
+                      onChange={(threshold) => this.setState({threshold})}
+                      type={reportMeasure}
+                      labelText={t('common.value')}
+                      invalid={!this.isThresholdValid()}
+                      invalidText={
+                        reportMeasure === 'percentage'
+                          ? t('common.errors.percentage')
+                          : t('common.errors.number')
                       }
-                      maxLength="8"
                     />
-                    <Select
-                      value={reminder.unit}
-                      onChange={(value) =>
-                        this.setState(update(this.state, {reminder: {unit: {$set: value}}}))
-                      }
-                    >
-                      <Select.Option value="minutes">
-                        {t('common.unit.minute.label-plural')}
-                      </Select.Option>
-                      <Select.Option value="hours">
-                        {t('common.unit.hour.label-plural')}
-                      </Select.Option>
-                      <Select.Option value="days">
-                        {t('common.unit.day.label-plural')}
-                      </Select.Option>
-                      <Select.Option value="weeks">
-                        {t('common.unit.week.label-plural')}
-                      </Select.Option>
-                      <Select.Option value="months">
-                        {t('common.unit.month.label-plural')}
-                      </Select.Option>
-                    </Select>
-                  </Form.InputGroup>
-                </Labeled>
-              </Form.Group>
-            )}
-          </Form>
+                  </Stack>
+                  <Stack gap={6}>
+                    <Stack gap={6} orientation="horizontal">
+                      <TextInput
+                        id="frequency"
+                        size="sm"
+                        labelText={t('alert.form.frequency')}
+                        value={checkInterval.value}
+                        onChange={({target: {value}}) =>
+                          this.setState(update(this.state, {checkInterval: {value: {$set: value}}}))
+                        }
+                        maxLength="8"
+                        invalid={!numberParser.isPositiveInt(checkInterval.value)}
+                        invalidText={t('common.errors.positiveInt')}
+                      />
+                      <CarbonSelect
+                        id="frequencyUnits"
+                        labelText={t('common.units')}
+                        className="labelHidden"
+                        value={checkInterval.unit}
+                        onChange={(value) =>
+                          this.setState(update(this.state, {checkInterval: {unit: {$set: value}}}))
+                        }
+                      >
+                        <CarbonSelect.Option
+                          value="seconds"
+                          label={t('common.unit.second.label-plural')}
+                        />
+                        <CarbonSelect.Option
+                          value="minutes"
+                          label={t('common.unit.minute.label-plural')}
+                        />
+                        <CarbonSelect.Option
+                          value="hours"
+                          label={t('common.unit.hour.label-plural')}
+                        />
+                        <CarbonSelect.Option
+                          value="days"
+                          label={t('common.unit.day.label-plural')}
+                        />
+                        <CarbonSelect.Option
+                          value="weeks"
+                          label={t('common.unit.week.label-plural')}
+                        />
+                        <CarbonSelect.Option
+                          value="months"
+                          label={t('common.unit.month.label-plural')}
+                        />
+                      </CarbonSelect>
+                    </Stack>
+                  </Stack>
+                  <MultiEmailInput
+                    titleText={t('alert.form.email')}
+                    placeholder={t('alert.form.emailPlaceholder')}
+                    emails={emails}
+                    onChange={(emails, validEmails) => this.setState({emails, validEmails})}
+                    helperText={t('alert.form.emailThreshold')}
+                    invalid={!validEmails}
+                    invalidText={t('alert.form.invalidEmail')}
+                  />
+                  {webhooks?.length > 0 && (
+                    <Stack gap={6} orientation="horizontal">
+                      <ComboBox
+                        id="webhooks"
+                        key={webhook}
+                        size="sm"
+                        items={webhooks}
+                        selectedItem={webhook}
+                        titleText={t('alert.form.webhook')}
+                        placeholder={t('alert.form.webookPlaceholder')}
+                        onChange={({selectedItem}) => this.updateWebhook(selectedItem || undefined)}
+                      />
+                      <Button
+                        size="sm"
+                        disabled={!webhook}
+                        kind="secondary"
+                        onClick={() => this.setState({webhook: undefined})}
+                        className="reset"
+                      >
+                        {t('common.reset')}
+                      </Button>
+                    </Stack>
+                  )}
+                  <Checkbox
+                    id="sendNotification"
+                    labelText={t('alert.form.sendNotification')}
+                    checked={fixNotification}
+                    onChange={({target: {checked}}) => this.setState({fixNotification: checked})}
+                  />
+                  <Checkbox
+                    id="sendReminder"
+                    labelText={t('alert.form.reminder')}
+                    checked={!!reminder}
+                    onChange={this.updateReminder}
+                  />
+                  {reminder && (
+                    <Stack gap={6} orientation="horizontal">
+                      <TextInput
+                        id="reminderFrequency"
+                        size="sm"
+                        labelText={t('alert.form.reminderFrequency')}
+                        value={reminder.value}
+                        onChange={({target: {value}}) =>
+                          this.setState(update(this.state, {reminder: {value: {$set: value}}}))
+                        }
+                        maxLength="8"
+                      />
+                      <CarbonSelect
+                        id="reminderFrequencyUnits"
+                        labelText={t('common.units')}
+                        className="labelHidden"
+                        value={reminder.unit}
+                        onChange={(value) =>
+                          this.setState(update(this.state, {reminder: {unit: {$set: value}}}))
+                        }
+                      >
+                        <CarbonSelect.Option
+                          value="minutes"
+                          label={t('common.unit.minute.label-plural')}
+                        />
+                        <CarbonSelect.Option
+                          value="hours"
+                          label={t('common.unit.hour.label-plural')}
+                        />
+                        <CarbonSelect.Option
+                          value="days"
+                          label={t('common.unit.day.label-plural')}
+                        />
+                        <CarbonSelect.Option
+                          value="weeks"
+                          label={t('common.unit.week.label-plural')}
+                        />
+                        <CarbonSelect.Option
+                          value="months"
+                          label={t('common.unit.month.label-plural')}
+                        />
+                      </CarbonSelect>
+                    </Stack>
+                  )}
+                </Stack>
+              </Form>
+            </Column>
+          </Grid>
         </Modal.Content>
         <Modal.Footer>
           {onRemove && (
-            <Button kind="danger--ghost" className="deleteButton" onClick={onRemove}>
+            <Button kind="danger--ghost" className="deleteAlertButton" onClick={onRemove}>
               {t('common.delete')}
             </Button>
           )}
-          <Button kind="secondary" onClick={onClose}>
+          <Button className="cancel" kind="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-          <Button onClick={this.confirm} disabled={invalid || disabled}>
+          <Button className="confirm" onClick={this.confirm} disabled={invalid || disabled}>
             {this.isInEditingMode() ? t('alert.apply') : t('alert.create')}
           </Button>
         </Modal.Footer>

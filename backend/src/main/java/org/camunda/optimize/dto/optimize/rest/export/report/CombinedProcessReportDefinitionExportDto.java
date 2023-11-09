@@ -12,9 +12,10 @@ import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
-import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
+
 
 import jakarta.validation.constraints.NotNull;
+import org.camunda.optimize.service.db.schema.index.report.CombinedReportIndex;
 
 import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.COMBINED_REPORT;
 

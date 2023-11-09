@@ -11,10 +11,10 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessEventDt
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType;
-import org.camunda.optimize.service.es.reader.BusinessKeyReader;
-import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
-import org.camunda.optimize.service.es.reader.VariableUpdateInstanceReader;
-import org.camunda.optimize.service.es.writer.EventProcessInstanceWriterFactory;
+import org.camunda.optimize.service.db.reader.BusinessKeyReader;
+import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
+import org.camunda.optimize.service.db.reader.VariableUpdateInstanceReader;
+import org.camunda.optimize.service.db.writer.EventProcessInstanceWriterFactory;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.importing.eventprocess.handler.EventProcessInstanceImportSourceIndexHandler;
@@ -34,6 +34,7 @@ import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 @Component
 @RequiredArgsConstructor
 public class EventProcessInstanceImportMediatorFactory {
+
   private final BeanFactory beanFactory;
 
   private final ConfigurationService configurationService;

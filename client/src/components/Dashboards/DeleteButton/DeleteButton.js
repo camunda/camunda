@@ -6,18 +6,26 @@
  */
 
 import React from 'react';
+import {Button} from '@carbon/react';
+import {Close} from '@carbon/icons-react';
 
-import {Button, Icon} from 'components';
+import {t} from 'translation';
 
 import './DeleteButton.scss';
 
-export default function DeleteButton(props) {
+export default function DeleteButton({tile, deleteTile}) {
   return (
-    <Button
-      className="DeleteButton"
-      onClick={(event) => props.deleteTile({event, tile: props.tile})}
-    >
-      <Icon type="close-small" />
-    </Button>
+    <div className="deleteButton">
+      <Button
+        size="sm"
+        kind="ghost"
+        hasIconOnly
+        iconDescription={t('common.delete')}
+        renderIcon={Close}
+        tooltipPosition="bottom"
+        className="DeleteButton"
+        onClick={(event) => deleteTile({event, tile})}
+      />
+    </div>
   );
 }

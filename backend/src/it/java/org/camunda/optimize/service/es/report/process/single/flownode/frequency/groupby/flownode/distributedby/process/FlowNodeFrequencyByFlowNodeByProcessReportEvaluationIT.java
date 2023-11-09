@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.report.process.single.flownode.frequency.groupby.flownode.distributedby.process;
 
 import org.camunda.optimize.AbstractPlatformIT;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
@@ -154,6 +155,61 @@ public class FlowNodeFrequencyByFlowNodeByProcessReportEvaluationIT extends Abst
           START_EVENT,
           new MapResultEntryDto(firstIdentifier, 1.0, firstDisplayName),
           new MapResultEntryDto(secondIdentifier, 1.0, secondDisplayName)
+        ),
+        createHyperMapResult(
+          USER_TASK_1,
+          new MapResultEntryDto(firstIdentifier, 1.0, firstDisplayName),
+          new MapResultEntryDto(secondIdentifier, null, secondDisplayName)
+        )
+      ));
+  }
+
+  @Test
+  public void reportEvaluationWithMultipleProcessDefinitionSources_oneWithoutInstanceStarted() {
+    // given
+    final ProcessInstanceEngineDto firstDefinitionInstance =
+      engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram("first"));
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    final ProcessDefinitionEngineDto secondDefinitionNoInstance =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleServiceTaskProcess("second"));
+    // We deploy this to create an index, but it is not part of the report definition so should be excluded
+    engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram("third"));
+    importAllEngineEntitiesFromScratch();
+    final String firstDisplayName = "firstName";
+    final String secondDisplayName = "secondName";
+    final String firstIdentifier = "first";
+    final String secondIdentifier = "second";
+    ReportDataDefinitionDto firstDefinition =
+      new ReportDataDefinitionDto(firstIdentifier, firstDefinitionInstance.getProcessDefinitionKey(), firstDisplayName);
+    ReportDataDefinitionDto secondDefinition =
+      new ReportDataDefinitionDto(secondIdentifier, secondDefinitionNoInstance.getKey(), secondDisplayName);
+
+    // when
+    final ProcessReportDataDto reportData = createReport(List.of(firstDefinition, secondDefinition));
+    final AuthorizedProcessReportEvaluationResponseDto<List<HyperMapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateHyperMapReport(reportData);
+
+    // then
+    final ReportResultResponseDto<List<HyperMapResultEntryDto>> result = evaluationResponse.getResult();
+    assertThat(result.getInstanceCount()).isEqualTo(1);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(1);
+    assertThat(result.getMeasures()).hasSize(1)
+      .extracting(MeasureResponseDto::getData)
+      .containsExactly(List.of(
+        createHyperMapResult(
+          END_EVENT,
+          new MapResultEntryDto(firstIdentifier, 1.0, firstDisplayName),
+          new MapResultEntryDto(secondIdentifier, null, secondDisplayName)
+        ),
+        createHyperMapResult(
+          SERVICE_TASK,
+          new MapResultEntryDto(firstIdentifier, null, firstDisplayName),
+          new MapResultEntryDto(secondIdentifier, null, secondDisplayName)
+        ),
+        createHyperMapResult(
+          START_EVENT,
+          new MapResultEntryDto(firstIdentifier, 1.0, firstDisplayName),
+          new MapResultEntryDto(secondIdentifier, null, secondDisplayName)
         ),
         createHyperMapResult(
           USER_TASK_1,

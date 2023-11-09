@@ -8,8 +8,8 @@ package org.camunda.optimize.service.archive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.AbstractScheduledService;
-import org.camunda.optimize.service.es.reader.ProcessInstanceReader;
-import org.camunda.optimize.service.es.writer.ArchiveProcessInstanceWriter;
+import org.camunda.optimize.service.db.reader.ProcessInstanceReader;
+import org.camunda.optimize.service.db.writer.ArchiveProcessInstanceWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.context.ApplicationContext;
@@ -21,7 +21,6 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
 @Component

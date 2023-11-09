@@ -12,13 +12,13 @@ import java.util.List;
 public interface ImportService<T> {
   void executeImport(List<T> pageOfEngineEntities, Runnable importCompleteCallback);
 
-  ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor();
+  ElasticsearchImportJobExecutor getDatabaseImportJobExecutor();
 
   default void shutdown() {
-    getElasticsearchImportJobExecutor().shutdown();
+    getDatabaseImportJobExecutor().shutdown();
   }
 
   default boolean hasPendingImportJobs() {
-    return getElasticsearchImportJobExecutor().isActive();
+    return getDatabaseImportJobExecutor().isActive();
   }
 }

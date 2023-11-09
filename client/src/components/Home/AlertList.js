@@ -5,10 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {Component} from 'react';
+import {Button} from '@carbon/react';
 
 import {t} from 'translation';
-import {Button, EntityList, Deleter, BulkDeleter, AlertModal} from 'components';
+import {EntityList, Deleter, BulkDeleter, AlertModal} from 'components';
 import {showError} from 'notifications';
 import {
   loadAlerts,
@@ -31,7 +32,7 @@ import './AlertList.scss';
 const {duration, frequency} = formatters;
 
 export default withErrorHandling(
-  class AlertList extends React.Component {
+  class AlertList extends Component {
     state = {
       deleting: null,
       editing: null,
@@ -131,7 +132,12 @@ export default withErrorHandling(
             name={t('alert.label-plural')}
             action={(bulkActive) =>
               !readOnly && (
-                <Button main primary={!bulkActive} onClick={this.openAddAlertModal}>
+                <Button
+                  className="createAlert"
+                  size="md"
+                  kind={bulkActive ? 'tertiary' : 'primary'}
+                  onClick={this.openAddAlertModal}
+                >
                   {t('alert.createNew')}
                 </Button>
               )

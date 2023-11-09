@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.rest.Page;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.SortRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -238,7 +238,7 @@ public class EventListRestServiceIT extends AbstractEventRestServiceIT {
   public void getEventCounts_pageSizeLargerThanAllowed() {
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetEventListRequest(eventRequestDto(GROUP, null, 0, ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT + 1))
+      .buildGetEventListRequest(eventRequestDto(GROUP, null, 0, DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT + 1))
       .execute();
 
     // then

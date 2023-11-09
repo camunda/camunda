@@ -5,6 +5,22 @@
  */
 package org.camunda.optimize.rest;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.UriInfo;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
@@ -27,22 +43,6 @@ import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.springframework.stereotype.Component;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
-import jakarta.ws.rs.BeanParam;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.DELETE;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.PUT;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.UriInfo;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
@@ -124,8 +124,7 @@ public class ReportRestService {
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public List<AuthorizedReportDefinitionResponseDto> getAuthorizedPrivateReports(@Context UriInfo uriInfo,
-                                                                                 @Context ContainerRequestContext requestContext) {
+  public List<AuthorizedReportDefinitionResponseDto> getAuthorizedPrivateReports(@Context ContainerRequestContext requestContext) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     List<AuthorizedReportDefinitionResponseDto> reportDefinitions =
       reportService.findAndFilterPrivateReports(userId);

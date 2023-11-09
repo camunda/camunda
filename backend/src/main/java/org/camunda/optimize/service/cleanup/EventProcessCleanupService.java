@@ -8,9 +8,9 @@ package org.camunda.optimize.service.cleanup;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
-import org.camunda.optimize.service.es.reader.EventProcessPublishStateReader;
-import org.camunda.optimize.service.es.writer.EventProcessInstanceWriter;
-import org.camunda.optimize.service.es.writer.EventProcessInstanceWriterFactory;
+import org.camunda.optimize.service.db.reader.EventProcessPublishStateReader;
+import org.camunda.optimize.service.db.writer.EventProcessInstanceWriter;
+import org.camunda.optimize.service.db.writer.EventProcessInstanceWriterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
@@ -24,6 +24,7 @@ import java.util.Collection;
 @Component
 @Slf4j
 public class EventProcessCleanupService implements CleanupService {
+
   private final ConfigurationService configurationService;
   private final EventProcessPublishStateReader eventProcessPublishStateReader;
   private final EventProcessInstanceWriterFactory eventProcessInstanceWriterFactory;
@@ -83,4 +84,5 @@ public class EventProcessCleanupService implements CleanupService {
   private CleanupConfiguration getCleanupConfiguration() {
     return this.configurationService.getCleanupServiceConfiguration();
   }
+
 }

@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterD
 import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import org.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
-import org.camunda.optimize.service.es.schema.index.DashboardIndex;
+import org.camunda.optimize.service.db.schema.index.DashboardIndex;
 import org.camunda.optimize.service.util.IdGenerator;
 
 import jakarta.validation.constraints.NotNull;

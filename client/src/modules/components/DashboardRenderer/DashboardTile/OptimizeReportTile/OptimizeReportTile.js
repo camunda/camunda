@@ -8,6 +8,7 @@
 import React from 'react';
 import {withRouter} from 'react-router';
 import classnames from 'classnames';
+import {Filter} from '@carbon/icons-react';
 
 import {
   ReportRenderer,
@@ -15,10 +16,12 @@ import {
   EntityName,
   ReportDetails,
   InstanceCount,
+  Popover,
 } from 'components';
 import {withErrorHandling} from 'HOC';
 import deepEqual from 'fast-deep-equal';
 import {track} from 'tracking';
+import {t} from 'translation';
 
 import {themed} from 'theme';
 
@@ -139,7 +142,22 @@ export class OptimizeReportTile extends React.Component {
             >
               {data.name}
             </EntityName>
-            <InstanceCount report={data} additionalFilter={filter} useIcon="filter" showHeader />
+            <InstanceCount
+              key="instanceCount"
+              trigger={
+                <Popover.Button
+                  size="sm"
+                  kind="ghost"
+                  hasIconOnly
+                  iconDescription={t('common.filter.label').toString()}
+                  renderIcon={Filter}
+                  tooltipPosition="bottom"
+                />
+              }
+              report={data}
+              additionalFilter={filter}
+              showHeader
+            />
           </div>
         )}
         <div className="visualization">

@@ -179,7 +179,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractPlatformIT {
     // given
     final String unauthorizedTenant = "unauthorizedTenant";
     engineIntegrationExtension.createTenant(unauthorizedTenant);
-    // import tenant so he's available in the tenant cache
+    // import tenant so it's available in the tenant cache
     importAllEngineEntitiesFromScratch();
     final List<String> tenants = newArrayList(null, unauthorizedTenant);
 

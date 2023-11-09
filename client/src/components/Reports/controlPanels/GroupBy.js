@@ -7,17 +7,18 @@
 
 import {useState, useEffect} from 'react';
 import classnames from 'classnames';
+import {Button} from '@carbon/react';
+import {Close} from '@carbon/icons-react';
 
 import {t} from 'translation';
-import {formatters, reportConfig, createReportUpdate} from 'services';
-import {Select, Button, Icon, Input} from 'components';
+import {reportConfig, createReportUpdate} from 'services';
+import {CarbonSelect} from 'components';
 import {getOptimizeProfile} from 'config';
 
 import './GroupBy.scss';
 
 export default function GroupBy({type, report, onChange, variables}) {
   const [optimizeProfile, setOptimizeProfile] = useState();
-  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -52,69 +53,33 @@ export default function GroupBy({type, report, onChange, variables}) {
     )
     .map(({key, enabled, label}) => {
       if (['variable', 'inputVariable', 'outputVariable'].includes(key)) {
-        const matchQuery = ({name, label}) =>
-          (label || name).toLowerCase().includes(searchQuery.toLowerCase());
-
         return (
-          <Select.Submenu
+          <CarbonSelect.Submenu
             key={key}
             label={label()}
             disabled={!enabled(report) || !variables || !variables[key]?.length}
-            onClose={() => setSearchQuery('')}
-            openToLeft
           >
-            <div className="searchContainer">
-              <Icon className="searchIcon" type="search" />
-              <Input
-                type="text"
-                className="searchInput"
-                placeholder={t('report.groupBy.searchForVariable')}
-                value={searchQuery}
-                onChange={({target: {value}}) => setSearchQuery(value)}
-                onClick={(evt) => evt.stopPropagation()}
-                onKeyDown={(evt) => evt.stopPropagation()}
-                // We progmatically trigger a click on the variable submenu on focus
-                // This prevents closing it when moving the mouse outside it
-                onFocus={(evt) => evt.target.closest('.Submenu:not(.fixed)')?.click()}
-              />
-            </div>
             {variables?.[key]?.map(({name, label}, idx) => {
               return (
-                <Select.Option
-                  className={classnames({
-                    hidden: !matchQuery({name, label}),
-                  })}
-                  key={idx}
-                  value={key + '_' + name}
-                  label={label || name}
-                >
-                  {formatters.getHighlightedText(label || name, searchQuery)}
-                </Select.Option>
+                <CarbonSelect.Option key={idx} value={key + '_' + name} label={label || name} />
               );
             })}
-            {variables?.[key]?.filter(matchQuery).length === 0 && (
-              <Select.Option disabled>{t('common.filter.variableModal.noVariables')}</Select.Option>
-            )}
-          </Select.Submenu>
+          </CarbonSelect.Submenu>
         );
       } else if (['startDate', 'endDate', 'runningDate', 'evaluationDate'].includes(key)) {
         return (
-          <Select.Submenu key={key} label={label()} disabled={!enabled(report)} openToLeft>
-            <Select.Option value={key + '_automatic'}>
-              {t('report.groupBy.automatic')}
-            </Select.Option>
-            <Select.Option value={key + '_year'}>{t('report.groupBy.year')}</Select.Option>
-            <Select.Option value={key + '_month'}>{t('report.groupBy.month')}</Select.Option>
-            <Select.Option value={key + '_week'}>{t('report.groupBy.week')}</Select.Option>
-            <Select.Option value={key + '_day'}>{t('report.groupBy.day')}</Select.Option>
-            <Select.Option value={key + '_hour'}>{t('report.groupBy.hour')}</Select.Option>
-          </Select.Submenu>
+          <CarbonSelect.Submenu key={key} label={label()} disabled={!enabled(report)}>
+            <CarbonSelect.Option label={t('report.groupBy.automatic')} value={key + '_automatic'} />
+            <CarbonSelect.Option label={t('report.groupBy.year')} value={key + '_year'} />
+            <CarbonSelect.Option label={t('report.groupBy.month')} value={key + '_month'} />
+            <CarbonSelect.Option label={t('report.groupBy.week')} value={key + '_week'} />
+            <CarbonSelect.Option label={t('report.groupBy.day')} value={key + '_day'} />
+            <CarbonSelect.Option label={t('report.groupBy.hour')} value={key + '_hour'} />
+          </CarbonSelect.Submenu>
         );
       }
       return (
-        <Select.Option key={key} value={key} disabled={!enabled(report)}>
-          {label()}
-        </Select.Option>
+        <CarbonSelect.Option key={key} value={key} disabled={!enabled(report)} label={label()} />
       );
     });
 
@@ -125,7 +90,7 @@ export default function GroupBy({type, report, onChange, variables}) {
   return (
     <li className="GroupBy">
       <span className="label">{t('report.groupBy.label')}</span>
-      <Select
+      <CarbonSelect
         className={classnames({hasNoGrouping: !hasGroup})}
         label={!hasGroup && '+ ' + t('report.addGrouping')}
         onChange={(selection) => {
@@ -155,10 +120,13 @@ export default function GroupBy({type, report, onChange, variables}) {
         value={getValue(selectedOption.key, report.groupBy)}
       >
         {options}
-      </Select>
+      </CarbonSelect>
       {((hasGroup && groups.find(({key}) => key === 'none').enabled(report)) ||
         hasDistribution) && (
         <Button
+          size="sm"
+          kind="ghost"
+          iconDescription={t('common.reset')}
           className="removeGrouping"
           onClick={() =>
             onChange(
@@ -173,9 +141,9 @@ export default function GroupBy({type, report, onChange, variables}) {
               })
             )
           }
-        >
-          <Icon type="close-small" />
-        </Button>
+          hasIconOnly
+          renderIcon={Close}
+        />
       )}
     </li>
   );

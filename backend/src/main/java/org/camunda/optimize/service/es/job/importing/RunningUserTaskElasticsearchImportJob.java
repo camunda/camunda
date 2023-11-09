@@ -7,9 +7,9 @@ package org.camunda.optimize.service.es.job.importing;
 
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import org.camunda.optimize.service.db.writer.usertask.RunningUserTaskInstanceWriter;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
-import org.camunda.optimize.service.es.writer.usertask.RunningUserTaskInstanceWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
@@ -37,5 +37,6 @@ public class RunningUserTaskElasticsearchImportJob extends ElasticsearchImportJo
       configurationService.getSkipDataAfterNestedDocLimitReached()
     );
   }
+
 }
 

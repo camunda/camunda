@@ -8,9 +8,9 @@
 import React from 'react';
 
 import ValueListInput from './ValueListInput';
-import {LabeledInput, MultiValueInput} from 'components';
 
 import {shallow} from 'enzyme';
+import {Checkbox} from '@carbon/react';
 
 const props = {
   filter: {operator: 'in', values: [], includeUndefined: false},
@@ -38,7 +38,8 @@ it('should add a new value to the filter using the single input', () => {
 it('should add a new a value to the filter using the multi value input', () => {
   const node = shallow(<ValueListInput {...props} filter={{operator: 'in', values: ['1']}} />);
 
-  node.find(MultiValueInput).prop('onAdd')('newValue');
+  node.find('MultiValueInput').simulate('change', {target: {value: 'newValue'}});
+  node.find('MultiValueInput').simulate('blur');
 
   expect(props.onChange).toHaveBeenCalledWith({
     operator: 'in',
@@ -49,7 +50,7 @@ it('should add a new a value to the filter using the multi value input', () => {
 it('should remove a value from the filter', () => {
   const node = shallow(<ValueListInput {...props} filter={{operator: 'in', values: ['1', '2']}} />);
 
-  node.find(MultiValueInput).prop('onRemove')('1', 0);
+  node.find('MultiValueInput').prop('onRemove')('1', 0);
 
   expect(props.onChange).toHaveBeenCalledWith({
     operator: 'in',
@@ -60,7 +61,7 @@ it('should remove a value from the filter', () => {
 it('should add multiple values at once using multiValueInput paste', () => {
   const node = shallow(<ValueListInput {...props} />);
 
-  node.find(MultiValueInput).simulate('paste', {
+  node.find('MultiValueInput').simulate('paste', {
     preventDefault: jest.fn(),
     clipboardData: {getData: () => `value1 value.2  value3`},
   });
@@ -81,7 +82,7 @@ it('use the passed isValid function to validate passed values to multiValueInput
     />
   );
 
-  expect(node.find(MultiValueInput).prop('values')).toEqual([
+  expect(node.find('MultiValueInput').prop('values')).toEqual([
     {invalid: false, value: 0},
     {invalid: false, value: 1},
     {invalid: true, value: 2},
@@ -92,7 +93,7 @@ it('should set includeUndefined to true when enabling the checkbox"', () => {
   const filter = {operator: 'in', values: ['123', '12', '17'], includeUndefined: false};
   const node = shallow(<ValueListInput {...props} filter={filter} />);
 
-  node.find(LabeledInput).prop('onChange')({target: {checked: true}});
+  node.find(Checkbox).prop('onChange')({target: {checked: true}});
   expect(props.onChange).toHaveBeenCalledWith({...filter, includeUndefined: true});
 });
 

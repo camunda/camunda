@@ -22,7 +22,7 @@ fixture('Alerts')
   .afterEach(cleanEntities);
 
 test('create, edit, copy and remove an alert', async (t) => {
-  await t.click(Common.createNewMenu).click(Common.option('Collection'));
+  await t.click(Common.createNewButton).click(Common.menuOption('Collection'));
   await t.typeText(Common.modalNameInput, 'Test Collection', {replace: true});
   await t.click(Common.modalConfirmButton);
   await t.click(Common.modalConfirmButton);
@@ -48,10 +48,10 @@ test('create, edit, copy and remove an alert', async (t) => {
   });
 
   await t.click(Alert.webhookDropdown);
-  await t.click(Common.typeaheadOption('testWebhook'));
+  await t.click(Common.carbonOption('testWebhook'));
 
-  await t.click(Common.typeahead);
-  await t.click(Common.typeaheadOption('Number Report'));
+  await t.click(Common.comboBox);
+  await t.click(Common.carbonOption('Number Report'));
 
   await t.takeElementScreenshot(
     Common.modalContainer,
@@ -70,9 +70,10 @@ test('create, edit, copy and remove an alert', async (t) => {
     .maximizeWindow();
 
   // EDIT
-  await t.hover(Common.listItem);
-  await t.click(Common.contextMenu(Common.listItem));
-  await t.click(Common.edit(Common.listItem));
+  const listItem = Common.listItem.filterVisible();
+  await t.hover(listItem);
+  await t.click(Common.contextMenu(listItem));
+  await t.click(Common.edit(listItem));
 
   await t.typeText(Alert.inputWithLabel('Alert Name'), 'Edited Alert', {replace: true});
 
@@ -80,9 +81,9 @@ test('create, edit, copy and remove an alert', async (t) => {
 
   await t.expect(Alert.list.textContent).notContains('Edited Alert');
 
-  await t.hover(Common.listItem);
-  await t.click(Common.contextMenu(Common.listItem));
-  await t.click(Common.edit(Common.listItem));
+  await t.hover(listItem);
+  await t.click(Common.contextMenu(listItem));
+  await t.click(Common.edit(listItem));
   await t.typeText(Alert.inputWithLabel('Alert Name'), 'Saved Alert', {replace: true});
 
   await t.click(Common.modalConfirmButton);
@@ -90,17 +91,17 @@ test('create, edit, copy and remove an alert', async (t) => {
   await t.expect(Alert.list.textContent).contains('Saved Alert');
 
   // COPY
-  await t.hover(Common.listItem);
-  await t.click(Common.contextMenu(Common.listItem));
-  await t.click(Common.copy(Common.listItem));
+  await t.hover(listItem);
+  await t.click(Common.contextMenu(listItem));
+  await t.click(Common.copy(listItem));
   await t.typeText(Alert.copyNameInput, 'Copied Alert', {replace: true});
   await t.click(Common.modalConfirmButton);
   await t.expect(Alert.list.textContent).contains('Copied Alert');
 
   // DELETE
-  await t.hover(Common.listItem);
-  await t.click(Common.contextMenu(Common.listItem));
-  await t.click(Common.del(Common.listItem));
+  await t.hover(listItem);
+  await t.click(Common.contextMenu(listItem));
+  await t.click(Common.del(listItem));
 
   await t.click(Common.modalConfirmButton);
 

@@ -1,31 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`should pass an id for every entry to the typeahead 1`] = `
-<Typeahead
-  className="name"
-  initialValue={null}
-  noValuesMessage="No definitions found"
-  onChange={[Function]}
-  onClose={[Function]}
-  onOpen={[Function]}
-  onSearch={[Function]}
-  placeholder="Select..."
->
-  <ForwardRef(DropdownOption)
-    key="foo"
-    value="foo"
-  >
-    Foo Definition
-  </ForwardRef(DropdownOption)>
-  <ForwardRef(DropdownOption)
-    key="bar"
-    value="bar"
-  >
-    Bar Definition
-  </ForwardRef(DropdownOption)>
-</Typeahead>
-`;
-
 exports[`should show a note if more than one version is selected 1`] = `
 <Message>
   Note: data from the older versions can deviate, therefore the report data can be inconsistent

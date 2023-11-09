@@ -5,10 +5,14 @@
  */
 package org.camunda.optimize.dto.optimize.rest;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.service.exceptions.OptimizeAlertEmailValidationException;
 
+@Data
 @EqualsAndHashCode(callSuper = true)
+@FieldNameConstants
 public class AlertEmailValidationResponseDto extends ErrorResponseDto {
   private final String invalidAlertEmails;
 

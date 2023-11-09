@@ -27,12 +27,44 @@ jobs:
     uses: ./.github/workflows/unit-tests.yml
     secrets: inherit
 
+  docker:
+    if: github.event_name == 'pull_request'
+    name: Docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+    - name: "Read Java / Version Info"
+      id: pom-info
+      uses: YunaBraska/java-info-action@eee73ae36952eafc3520d2714562f3e1e7a13407 # 1.12.0
+    - name: Login to Harbor registry
+      uses: ./.github/actions/login-registry
+      with:
+        secrets: ${{ toJSON(secrets) }}
+    - name: Setup Maven
+      uses: ./.github/actions/setup-maven
+      with:
+        secrets: ${{ toJSON(secrets) }}
+    - name: Generate production .tar.gz
+      uses: ./.github/actions/run-maven
+      with:
+        parameters: install -DskipTests -Dskip.docker
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        build-args: |
+          VERSION=${{ steps.pom-info.outputs.project_version }}
+          REVISION=${{ github.event.pull_request.head.sha }}
+        tags: "registry.camunda.cloud/team-optimize/optimize:pr-${{ github.event.pull_request.head.sha }}"
+        push: true
+
   migration:
     name: Migration
     runs-on: gcp-core-8-default
     timeout-minutes: 30
     steps:
-    - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
     - name: Setup Maven
       uses: ./.github/actions/setup-maven
       with:
@@ -108,7 +140,7 @@ jobs:
     runs-on: gcp-core-8-default
     timeout-minutes: 30
     steps:
-    - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
     - name: Setup Maven
       uses: ./.github/actions/setup-maven
       with:
@@ -198,7 +230,7 @@ jobs:
           profiles: 'it,engine-latest'
           requiresCambpm: true
     steps:
-    - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
     - name: Setup Maven
       uses: ./.github/actions/setup-maven
       with:
@@ -264,20 +296,3 @@ jobs:
     needs: [unit-tests, migration, data-upgrade-test, integration-tests]
     uses: ./.github/workflows/deploy-artifacts.yml
     secrets: inherit
-
-  publish-test-results:
-    name: "Publish Test Results"
-    runs-on: ubuntu-latest
-    needs: [unit-tests, migration, data-upgrade-test, integration-tests]
-    if: always()
-    steps:
-    - name: Download Artifacts
-      uses: actions/download-artifact@v3
-      with:
-        path: artifacts
-    - name: Publish Test Results
-      uses: EnricoMi/publish-unit-test-result-action@v2
-      with:
-        files: |
-          artifacts/**/*.xml
-          !artifacts/**/failsafe-summary.xml

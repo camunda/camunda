@@ -7,18 +7,36 @@
 
 import React from 'react';
 import classnames from 'classnames';
+import {Button} from '@carbon/react';
+import {Close} from '@carbon/icons-react';
 
-import {Button, Icon} from 'components';
+import {t} from 'translation';
 
 import './SelectionPreview.scss';
 
 export default function SelectionPreview({disabled, onClick, highlighted, className, children}) {
   return (
-    <span className={classnames('SelectionPreview', {highlighted}, {disabled}, className)}>
+    <span
+      className={classnames(
+        'SelectionPreview',
+        'cds--text-input',
+        'cds--text-input__field-wrapper',
+        {highlighted},
+        {disabled},
+        className
+      )}
+    >
       {children}
-      <Button disabled={disabled} onClick={onClick} icon>
-        <Icon type="close-small" />
-      </Button>
+      <Button
+        size="sm"
+        renderIcon={Close}
+        kind={highlighted ? 'primary' : 'ghost'}
+        hasIconOnly
+        disabled={disabled}
+        onClick={onClick}
+        iconDescription={t('common.remove')}
+        className="closeBtn"
+      />
     </span>
   );
 }

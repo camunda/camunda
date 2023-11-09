@@ -7,8 +7,9 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
+import {Button, Toggle} from '@carbon/react';
 
-import {Switch, Button, Popover} from 'components';
+import {Popover} from 'components';
 
 import InstanceStateFilter from './InstanceStateFilter';
 
@@ -34,9 +35,9 @@ it('should contain a popover to set instance state filters', () => {
   expect(node.find(Popover)).toExist();
 
   node
-    .find(Switch)
+    .find(Toggle)
     .at(0)
-    .simulate('change', {target: {checked: true}});
+    .simulate('toggle', {target: {checked: true}});
   expect(props.setFilter).toHaveBeenCalledWith([
     {type: 'runningInstancesOnly', data: null, filterLevel: 'instance'},
   ]);
@@ -47,8 +48,10 @@ it('should show the filter state', () => {
     <InstanceStateFilter {...props} filter={[{type: 'runningInstancesOnly'}]} />
   );
 
-  expect(node.find(Switch).at(0)).toHaveProp('checked', true);
-  expect(node.find(Popover).prop('title')).toMatchSnapshot();
+  expect(node.find(Toggle).at(0)).toHaveProp('toggled', true);
+  const popoverButton = shallow(node.find(Popover).prop('trigger'));
+  expect(popoverButton.text()).toContain('Running');
+  expect(popoverButton.find('span.indicator.active')).toExist();
 });
 
 it('should reset the filter state', () => {
@@ -73,8 +76,8 @@ it('should disable the reset button if no filter is active', () => {
 it('should disable incompatible filters', () => {
   const node = shallow(<InstanceStateFilter {...props} />);
 
-  expect(node.find(Switch).at(0)).toHaveProp('disabled', false);
-  expect(node.find(Switch).at(1)).toHaveProp('disabled', true);
+  expect(node.find(Toggle).at(0)).toHaveProp('disabled', false);
+  expect(node.find(Toggle).at(1)).toHaveProp('disabled', true);
 });
 
 it('should render children', () => {

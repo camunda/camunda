@@ -7,13 +7,13 @@ package org.camunda.optimize.upgrade.indices;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
 @AllArgsConstructor
-public class UserTestWithTemplateIndex extends DefaultIndexMappingCreator {
+public class UserTestWithTemplateIndex extends DefaultIndexMappingCreator<XContentBuilder> {
 
   private static final int VERSION = 1;
 
@@ -24,7 +24,7 @@ public class UserTestWithTemplateIndex extends DefaultIndexMappingCreator {
 
   @Override
   public String getIndexNameInitialSuffix() {
-    return ElasticsearchConstants.INDEX_SUFFIX_PRE_ROLLOVER;
+    return DatabaseConstants.INDEX_SUFFIX_PRE_ROLLOVER;
   }
 
   @Override
@@ -47,5 +47,12 @@ public class UserTestWithTemplateIndex extends DefaultIndexMappingCreator {
       .startObject("username")
       .field("type", "keyword")
       .endObject();
+  }
+
+  @Override
+  public XContentBuilder addStaticSetting(final String key,
+                                          final int value,
+                                          final XContentBuilder contentBuilder) throws IOException {
+    return contentBuilder.field(key, value);
   }
 }

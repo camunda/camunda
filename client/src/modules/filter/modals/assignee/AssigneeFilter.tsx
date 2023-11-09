@@ -7,26 +7,23 @@
 
 import {ReactNode, useCallback, useEffect, useState} from 'react';
 import classnames from 'classnames';
-import {Button} from '@carbon/react';
+import {Button, Form, FormGroup, RadioButton, RadioButtonGroup, Stack} from '@carbon/react';
 
-import {Modal, Button as LegacyButton, ButtonGroup, UserTypeahead, User, Form} from 'components';
+import {Modal, UserTypeahead, User} from 'components';
 import {t} from 'translation';
 import {showError} from 'notifications';
-import {WithErrorHandlingProps, withErrorHandling} from 'HOC';
+import {useErrorHandling} from 'hooks';
 
 import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
 import {FilterProps} from '../types';
 
 import {loadUsersByDefinition, loadUsersByReportIds, getUsersById} from './service';
 
-import './AssigneeFilter.scss';
-
 interface AssigneeFilterProps
-  extends WithErrorHandlingProps,
-    FilterProps<{
-      values?: (string | null)[];
-      operator?: string;
-    }> {
+  extends FilterProps<{
+    values?: (string | null)[];
+    operator?: string;
+  }> {
   filterType: 'assignee' | 'candidateGroup';
   filterLevel: 'view';
   forceEnabled?: () => boolean;
@@ -34,7 +31,7 @@ interface AssigneeFilterProps
   getPosttext?: () => ReactNode;
 }
 
-export function AssigneeFilter(props: AssigneeFilterProps) {
+export default function AssigneeFilter(props: AssigneeFilterProps) {
   const {
     filterData,
     close,
@@ -44,7 +41,6 @@ export function AssigneeFilter(props: AssigneeFilterProps) {
     getPosttext,
     className,
     forceEnabled,
-    mightFail,
     filterType,
     addFilter,
   } = props;
@@ -59,6 +55,7 @@ export function AssigneeFilter(props: AssigneeFilterProps) {
     validDefinitions?.find(({identifier}) => filterData?.appliedTo[0] === identifier) ||
       validDefinitions?.[0]
   );
+  const {mightFail} = useErrorHandling();
 
   useEffect(() => {
     (async () => {
@@ -80,16 +77,19 @@ export function AssigneeFilter(props: AssigneeFilterProps) {
           });
         }
         if (existingUsers.length > 0) {
-          const users: User[] = await mightFail(
+          const users: User[] | undefined = await mightFail(
             getUsersById(filterType, existingUsers),
             (users: User[]) =>
-              users.map((user) => ({
-                id: `${user.type?.toUpperCase()}:${user.id}`,
-                identity: user,
-              })),
+              users.map(
+                (user) =>
+                  ({
+                    id: `${user.type?.toUpperCase()}:${user.id}`,
+                    identity: user,
+                  }) as unknown as User
+              ),
             showError
           );
-          combined.push(...users);
+          combined.push(...(users || []));
         }
 
         setUsers(combined);
@@ -158,40 +158,48 @@ export function AssigneeFilter(props: AssigneeFilterProps) {
         })}
       </Modal.Header>
       <Modal.Content>
-        {!reportIds && (
-          <FilterSingleDefinitionSelection
-            availableDefinitions={definitions}
-            applyTo={applyTo}
-            setApplyTo={(applyTo) => {
-              setApplyTo(applyTo);
-              resetUserSelection();
-            }}
-          />
-        )}
-        {getPretext?.()}
-        <ButtonGroup>
-          <LegacyButton active={operator === 'in'} onClick={() => setOperator('in')}>
-            {t('common.filter.assigneeModal.includeOnly')}
-          </LegacyButton>
-          <LegacyButton active={operator === 'not in'} onClick={() => setOperator('not in')}>
-            {t('common.filter.assigneeModal.excludeOnly')}
-          </LegacyButton>
-        </ButtonGroup>
-        <Form>
-          <Form.InputGroup>
-            <UserTypeahead
-              // The carbon multi-select cannot be controlled from outside
-              // Remove this when this issue get resolved: https://github.com/carbon-design-system/carbon/issues/10340
-              key={selectionResetIdx}
-              titleText={t(`common.filter.assigneeModal.type.${filterType}`)}
-              users={users}
-              onChange={setUsers}
-              fetchUsers={fetchUsers}
-              optionsOnly
+        <Stack gap={6}>
+          {!reportIds && (
+            <FilterSingleDefinitionSelection
+              availableDefinitions={definitions}
+              applyTo={applyTo}
+              setApplyTo={(applyTo) => {
+                setApplyTo(applyTo);
+                resetUserSelection();
+              }}
             />
-          </Form.InputGroup>
-        </Form>
-        {getPosttext?.()}
+          )}
+          {getPretext?.()}
+          <RadioButtonGroup
+            name="include-exclude"
+            onChange={(selected) => setOperator(selected as string)}
+          >
+            <RadioButton
+              labelText={t('common.filter.assigneeModal.includeOnly')}
+              checked={operator === 'in'}
+              value="in"
+            />
+            <RadioButton
+              labelText={t('common.filter.assigneeModal.excludeOnly')}
+              checked={operator === 'not in'}
+              value="not in"
+            />
+          </RadioButtonGroup>
+          <Form>
+            <FormGroup legendText={t(`common.filter.assigneeModal.type.${filterType}`)}>
+              <UserTypeahead
+                // The carbon multi-select cannot be controlled from outside
+                // Remove this when this issue get resolved: https://github.com/carbon-design-system/carbon/issues/10340
+                key={selectionResetIdx}
+                users={users}
+                onChange={setUsers}
+                fetchUsers={fetchUsers}
+                optionsOnly
+              />
+            </FormGroup>
+          </Form>
+          {getPosttext?.()}
+        </Stack>
       </Modal.Content>
       <Modal.Footer>
         <Button kind="secondary" className="cancel" onClick={close}>
@@ -208,5 +216,3 @@ export function AssigneeFilter(props: AssigneeFilterProps) {
     </Modal>
   );
 }
-
-export default withErrorHandling(AssigneeFilter);

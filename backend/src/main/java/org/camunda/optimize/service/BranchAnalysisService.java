@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
-import org.camunda.optimize.service.es.reader.BranchAnalysisReader;
+import org.camunda.optimize.service.db.reader.BranchAnalysisReader;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.springframework.stereotype.Component;

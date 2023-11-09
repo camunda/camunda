@@ -6,14 +6,14 @@
 package org.camunda.optimize.service.es.job.importing;
 
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
+import org.camunda.optimize.service.db.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
 
 import java.util.List;
 
 public class DecisionInstanceElasticsearchImportJob extends ElasticsearchImportJob<DecisionInstanceDto> {
 
-  private DecisionInstanceWriter decisionInstanceWriter;
+  private final DecisionInstanceWriter decisionInstanceWriter;
 
   public DecisionInstanceElasticsearchImportJob(DecisionInstanceWriter decisionInstanceWriter, Runnable callback) {
     super(callback);

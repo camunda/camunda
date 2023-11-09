@@ -238,7 +238,7 @@ export function formatFileName(name: string) {
   return name.replace(/[^a-zA-Z0-9-_.]/gi, '_').toLowerCase();
 }
 
-export function formatTenantName({id, name}: {id?: string; name?: string}) {
+export function formatTenantName({id, name}: {id?: string | null; name?: string}) {
   if (!id) {
     return t('common.definitionSelection.tenant.notDefined');
   }

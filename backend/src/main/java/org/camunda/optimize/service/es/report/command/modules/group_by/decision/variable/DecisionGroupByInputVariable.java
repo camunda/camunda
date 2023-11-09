@@ -20,7 +20,7 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.INPUTS;
+import static org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.INPUTS;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableClauseIdField;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableTypeField;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;

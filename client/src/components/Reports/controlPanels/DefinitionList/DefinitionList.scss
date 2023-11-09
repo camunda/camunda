@@ -1,23 +1,8 @@
-@mixin button-styles {
-  width: 20px;
-  height: 20px;
-  margin: 3px;
-
-  .Icon {
-    margin: 3px;
-    vertical-align: initial;
-
-    width: 14px;
-    height: 14px;
-    min-width: 14px;
-    min-height: 14px;
-  }
-}
+@use '@carbon/styles/scss/spacing';
+@use '@carbon/type';
+@use '@carbon/colors';
 
 .DefinitionList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
   flex-grow: 1;
 
   &.empty {
@@ -39,8 +24,7 @@
       background: var(--silver-lighten-99);
 
       > .actions {
-        > .Button,
-        > .Popover > .buttonWrapper .Button {
+        .actionBtn {
           opacity: 1;
         }
       }
@@ -50,56 +34,26 @@
       font-size: 13px;
       color: var(--grey-darken-33);
       margin-bottom: 3px;
-      margin-right: 75px;
+      margin-right: 90px;
     }
 
     > .info {
       font-size: 11px;
       color: var(--grey-lighten-56);
+      margin-right: 90px;
     }
 
     > .actions {
+      display: flex;
       position: absolute;
       top: 7px;
       right: 7px;
 
-      > .Button,
-      > .Popover > .buttonWrapper .Button {
+      .actionBtn {
         opacity: 0;
 
         &.focus-visible {
           opacity: 1;
-        }
-      }
-
-      > .Button {
-        @include button-styles;
-      }
-
-      > .Popover {
-        display: inline-block;
-
-        > .buttonWrapper {
-          .Button {
-            padding: 0;
-            background: none;
-            border: none;
-            border-radius: 50%;
-            @include button-styles;
-
-            &:hover {
-              background-color: var(--silver-darken-94);
-            }
-
-            &:active,
-            &.active {
-              background-color: var(--silver-darken-80);
-            }
-
-            .downIcon {
-              display: none;
-            }
-          }
         }
       }
     }
@@ -110,50 +64,20 @@
       > .popoverContent {
         width: 680px;
         max-width: 680px;
+        padding-bottom: spacing.$spacing-06;
 
-        .definitionLabel {
-          padding: 20px 20px 0 40px;
-          color: var(--grey-lighten-56);
-          font-size: 12px;
-        }
         .definitionName {
-          margin-left: 40px;
-          color: var(--grey-darken-23);
-          font-size: 15px;
-          font-weight: 500;
-          margin-bottom: 20px;
+          color: colors.$black;
+          font-size: type.type-scale(2);
         }
 
         .selectionPanel {
           display: flex;
-          margin: 0 20px 20px 40px;
+          align-items: flex-end;
 
           .entry {
             width: 108px;
-
-            &:not(:first-child) {
-              margin-left: 10px;
-            }
-          }
-
-          .displayName {
-            margin-left: 4px;
-            flex: 1;
-
-            .Input {
-              width: 100%;
-            }
-          }
-        }
-
-        .actionBar {
-          height: 65px;
-          border-top: 1px solid var(--silver-darken-80);
-          border-radius: 0 0 8px 8px;
-          padding: 21px 46px;
-
-          .Button {
-            margin-right: 15px;
+            margin-right: spacing.$spacing-06;
           }
         }
       }

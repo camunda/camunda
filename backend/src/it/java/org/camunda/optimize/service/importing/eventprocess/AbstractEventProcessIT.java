@@ -30,10 +30,11 @@ import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEven
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.db.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndexES;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndexES;
 import org.camunda.optimize.service.importing.BackoffImportMediator;
 import org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler;
 import org.camunda.optimize.service.util.IdGenerator;
@@ -78,9 +79,9 @@ import static org.camunda.optimize.service.events.CamundaEventService.EVENT_SOUR
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventAllGroupsSourceEntry;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntryForGroup;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
@@ -289,10 +290,10 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(
         boolQuery()
-          .must(termQuery(EventProcessPublishStateIndex.PROCESS_MAPPING_ID, processMappingId))
-          .must(termQuery(EventProcessPublishStateIndex.DELETED, false))
+          .must(termQuery(EventProcessPublishStateIndexES.PROCESS_MAPPING_ID, processMappingId))
+          .must(termQuery(EventProcessPublishStateIndexES.DELETED, false))
       )
-      .sort(SortBuilders.fieldSort(EventProcessPublishStateIndex.PUBLISH_DATE_TIME).order(SortOrder.DESC))
+      .sort(SortBuilders.fieldSort(EventProcessPublishStateIndexES.PUBLISH_DATE_TIME).order(SortOrder.DESC))
       .size(1);
     final SearchResponse searchResponse = elasticSearchIntegrationTestExtension
       .getOptimizeElasticClient()
@@ -334,7 +335,7 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
   protected List<EventProcessInstanceDto> getEventProcessInstancesFromElasticsearchForProcessPublishStateId(final String publishStateId) {
     final List<EventProcessInstanceDto> results = new ArrayList<>();
     final SearchResponse searchResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
-      .search(new SearchRequest(new EventProcessInstanceIndex(publishStateId).getIndexName()));
+      .search(new SearchRequest(EventProcessInstanceIndex.constructIndexName(publishStateId)));
     for (SearchHit hit : searchResponse.getHits().getHits()) {
       results.add(
         elasticSearchIntegrationTestExtension.getObjectMapper()
@@ -559,7 +560,7 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
                                                                           final String indexId) {
     final ProcessInstanceDto eventInstanceContainingEvent =
       eventProcessClient.createEventInstanceWithEvents(eventsToAdd);
-    final EventProcessInstanceIndex eventInstanceIndex = createEventInstanceIndex(indexId);
+    final EventProcessInstanceIndexES eventInstanceIndex = createEventInstanceIndex(indexId);
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
       eventInstanceIndex.getIndexName(),
       IdGenerator.getNextId(),
@@ -572,7 +573,7 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
     return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
       embeddedOptimizeExtension.getOptimizeElasticClient()
         .getIndexNameService()
-        .getOptimizeIndexNameWithVersionWithWildcardSuffix(new EventProcessInstanceIndex("*")),
+        .getOptimizeIndexNameWithVersionWithWildcardSuffix(new EventProcessInstanceIndexES("*")),
       EventProcessInstanceDto.class
     );
   }
@@ -590,8 +591,8 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
   }
 
   @SneakyThrows
-  protected EventProcessInstanceIndex createEventInstanceIndex(final String indexId) {
-    final EventProcessInstanceIndex newIndex = new EventProcessInstanceIndex(indexId);
+  protected EventProcessInstanceIndexES createEventInstanceIndex(final String indexId) {
+    final EventProcessInstanceIndexES newIndex = new EventProcessInstanceIndexES(indexId);
     final boolean indexExists = embeddedOptimizeExtension.getElasticSearchSchemaManager()
       .indicesExist(embeddedOptimizeExtension.getOptimizeElasticClient(), Collections.singletonList(newIndex));
     if (!indexExists) {
@@ -898,7 +899,7 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
     }
     return currentIndices.containsKey(
       embeddedOptimizeExtension.getIndexNameService()
-        .getOptimizeIndexNameWithVersion(new EventProcessInstanceIndex(publishState.getId())));
+        .getOptimizeIndexNameWithVersion(new EventProcessInstanceIndexES(publishState.getId())));
   }
 
   protected void publishMappingAndExecuteImport(final String eventProcessId) {

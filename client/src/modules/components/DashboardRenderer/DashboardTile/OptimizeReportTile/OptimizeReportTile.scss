@@ -13,7 +13,7 @@
     padding: 10px 10px 0px 10px;
     min-height: 45px;
 
-    .Popover .buttonWrapper .Button {
+    .Popover .buttonWrapper .ButtonTrigger {
       opacity: 0;
 
       &.active,
@@ -21,28 +21,28 @@
         opacity: 1;
       }
     }
-  }
 
-  .EntityName {
-    padding-right: 0;
+    .EntityName {
+      padding-right: 0;
 
-    .Popover {
-      margin-top: -2px;
-      .buttonWrapper .Button {
-        margin-left: 2px;
+      .Popover {
+        margin-top: 0;
       }
     }
 
     .name-container .name {
       font-size: 14px;
       line-height: 18px;
-      font-weight: 500;
-      color: var(--grey-darken-23);
     }
   }
 
   .InstanceCount {
+    height: auto;
     margin-top: 0;
+    position: absolute;
+    top: 0;
+    right: 0;
+
     > .countString {
       display: none;
     }
@@ -53,12 +53,6 @@
 
     .Popover {
       display: inline-block;
-      margin-top: -2px;
-
-      .buttonWrapper .Button {
-        width: 20px;
-        height: 20px;
-      }
     }
   }
 
@@ -78,5 +72,11 @@
       table-layout: fixed;
       min-width: 100%;
     }
+  }
+}
+
+.DashboardView .OptimizeReportTile:hover {
+  .Popover .buttonWrapper .ButtonTrigger {
+    opacity: 1;
   }
 }

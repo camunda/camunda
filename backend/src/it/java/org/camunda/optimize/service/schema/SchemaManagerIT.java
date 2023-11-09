@@ -8,17 +8,19 @@ package org.camunda.optimize.service.schema;
 import org.apache.http.client.methods.HttpGet;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
-import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
+import org.camunda.optimize.service.es.schema.IndexSettingsBuilderES;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
-import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndexES;
+
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
+import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndexES;
 import org.camunda.optimize.service.schema.type.MyUpdatedEventIndex;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
@@ -49,11 +51,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager.INDEX_EXIST_BATCH_SIZE;
-import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.DYNAMIC_SETTING_MAX_NGRAM_DIFF;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_NESTED_OBJECTS_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_REPLICAS_SETTING;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REFRESH_INTERVAL_SETTING;
+import static org.camunda.optimize.service.es.schema.IndexSettingsBuilderES.DYNAMIC_SETTING_MAX_NGRAM_DIFF;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_NESTED_OBJECTS_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.METADATA_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_REPLICAS_SETTING;
+import static org.camunda.optimize.service.db.DatabaseConstants.REFRESH_INTERVAL_SETTING;
 import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.verify.VerificationTimes.exactly;
@@ -73,7 +75,6 @@ public class SchemaManagerIT extends AbstractPlatformIT {
 
   @Test
   public void schemaIsNotInitializedTwice() {
-
     // when I initialize schema twice
     initializeSchema();
     initializeSchema();
@@ -95,7 +96,7 @@ public class SchemaManagerIT extends AbstractPlatformIT {
   public void doNotFailIfSomeIndexesAlreadyExist() {
     // given
     initializeSchema();
-    embeddedOptimizeExtension.getOptimizeElasticClient().deleteIndex(new SingleDecisionReportIndex());
+    embeddedOptimizeExtension.getOptimizeElasticClient().deleteIndex(new SingleDecisionReportIndexES());
 
     // when
     initializeSchema();
@@ -110,7 +111,7 @@ public class SchemaManagerIT extends AbstractPlatformIT {
     initializeSchema();
 
     // then
-    final List<IndexMappingCreator> mappings = getSchemaManager().getMappings();
+    final List<IndexMappingCreator<?>> mappings = getSchemaManager().getMappings();
     assertThat(mappings).hasSize(29);
     for (IndexMappingCreator mapping : mappings) {
       assertIndexExists(mapping.getIndexName());
@@ -143,7 +144,7 @@ public class SchemaManagerIT extends AbstractPlatformIT {
     initializeSchema();
 
     // with a different dynamic setting than default
-    final List<IndexMappingCreator> mappings = getSchemaManager().getMappings();
+    final List<IndexMappingCreator<?>> mappings = getSchemaManager().getMappings();
     modifyDynamicIndexSetting(mappings);
 
     // when
@@ -193,9 +194,9 @@ public class SchemaManagerIT extends AbstractPlatformIT {
 
     // then the settings contain the updated dynamic values
     final GetSettingsResponse getSettingsResponse =
-      getIndexSettingsFor(Collections.singletonList(new ProcessDefinitionIndex()));
+      getIndexSettingsFor(Collections.singletonList(new ProcessDefinitionIndexES()));
     final String indexName =
-      indexNameService.getOptimizeIndexNameWithVersion(new ProcessDefinitionIndex());
+      indexNameService.getOptimizeIndexNameWithVersion(new ProcessDefinitionIndexES());
     final Settings settings = getSettingsResponse.getIndexToSettings().get(indexName);
     assertThat(settings.get("index." + REFRESH_INTERVAL_SETTING)).isEqualTo("100s");
     assertThat(settings.getAsInt("index." + NUMBER_OF_REPLICAS_SETTING, 111)).isEqualTo(2);
@@ -228,7 +229,7 @@ public class SchemaManagerIT extends AbstractPlatformIT {
 
     // then the settings contain the updated dynamic values
     final ProcessInstanceIndex dynamicIndex =
-      new ProcessInstanceIndex(processInstanceEngineDto.getProcessDefinitionKey());
+      new ProcessInstanceIndexES(processInstanceEngineDto.getProcessDefinitionKey());
     final GetSettingsResponse getSettingsResponse =
       getIndexSettingsFor(Collections.singletonList(dynamicIndex));
     final String indexName = indexNameService.getOptimizeIndexNameWithVersion(dynamicIndex);
@@ -250,11 +251,11 @@ public class SchemaManagerIT extends AbstractPlatformIT {
     initializeSchema();
 
     // with a different dynamic setting than default
-    final List<IndexMappingCreator> mappings = getSchemaManager().getMappings();
+    final List<IndexMappingCreator<?>> mappings = getSchemaManager().getMappings();
     modifyDynamicIndexSetting(mappings);
 
     // one index is missing so recreating of indexes is triggered
-    embeddedOptimizeExtension.getOptimizeElasticClient().deleteIndex(new SingleDecisionReportIndex());
+    embeddedOptimizeExtension.getOptimizeElasticClient().deleteIndex(new SingleDecisionReportIndexES());
 
     // when
     initializeSchema();
@@ -273,7 +274,7 @@ public class SchemaManagerIT extends AbstractPlatformIT {
     // then an exception is thrown when we add an event with an undefined type in schema
     ExtendedFlowNodeEventDto extendedEventDto = new ExtendedFlowNodeEventDto();
     assertThatThrownBy(() -> elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
-      ElasticsearchConstants.METADATA_INDEX_NAME,
+      DatabaseConstants.METADATA_INDEX_NAME,
       "12312412",
       extendedEventDto
     )).isInstanceOf(ElasticsearchStatusException.class);
@@ -283,10 +284,10 @@ public class SchemaManagerIT extends AbstractPlatformIT {
     return embeddedOptimizeExtension.getElasticSearchSchemaManager();
   }
 
-  private void assertMappingSettings(final List<IndexMappingCreator> mappings,
+  private void assertMappingSettings(final List<IndexMappingCreator<?>> mappings,
                                      final GetSettingsResponse getSettingsResponse) throws IOException {
-    for (IndexMappingCreator mapping : mappings) {
-      Settings dynamicSettings = IndexSettingsBuilder.buildDynamicSettings(
+    for (IndexMappingCreator<?> mapping : mappings) {
+      Settings dynamicSettings = IndexSettingsBuilderES.buildDynamicSettings(
         embeddedOptimizeExtension.getConfigurationService());
       dynamicSettings.names().forEach(
         settingName -> {
@@ -313,19 +314,21 @@ public class SchemaManagerIT extends AbstractPlatformIT {
     }
   }
 
-  private static Settings buildStaticSettings(IndexMappingCreator indexMappingCreator,
+  private static Settings buildStaticSettings(IndexMappingCreator<?> indexMappingCreator,
                                               ConfigurationService configurationService) throws IOException {
     XContentBuilder builder = jsonBuilder();
+    IndexMappingCreator<XContentBuilder> castedIndexMappingCreator =
+      (IndexMappingCreator<XContentBuilder>) indexMappingCreator; // TODO solve this more elegantly
     // @formatter:off
     builder
       .startObject();
-        indexMappingCreator.getStaticSettings(builder, configurationService)
+        castedIndexMappingCreator.getStaticSettings(builder, configurationService)
       .endObject();
     // @formatter:on
     return Settings.builder().loadFromSource(Strings.toString(builder), XContentType.JSON).build();
   }
 
-  private void modifyDynamicIndexSetting(final List<IndexMappingCreator> mappings) throws IOException {
+  private void modifyDynamicIndexSetting(final List<IndexMappingCreator<?>> mappings) throws IOException {
     for (IndexMappingCreator mapping : mappings) {
       final String indexName = indexNameService.getOptimizeIndexNameWithVersion(mapping);
       final UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest(indexName);
@@ -335,7 +338,7 @@ public class SchemaManagerIT extends AbstractPlatformIT {
     }
   }
 
-  private GetSettingsResponse getIndexSettingsFor(final List<IndexMappingCreator> mappings) throws IOException {
+  private GetSettingsResponse getIndexSettingsFor(final List<IndexMappingCreator<?>> mappings) throws IOException {
     final String indices = mappings.stream()
       .map(indexNameService::getOptimizeIndexNameWithVersion)
       .collect(Collectors.joining(","));

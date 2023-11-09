@@ -1,10 +1,9 @@
 .DateFields {
   position: relative;
-  margin-bottom: 15px;
 
   .inputContainer {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     flex-wrap: nowrap;
 
     .PickerDateInput:first-child {
@@ -33,20 +32,20 @@
 
     &.dateRangeContainerLeft {
       &::before {
-        left: 20px;
+        left: 50px;
       }
 
       &::after {
-        left: 0;
+        left: 30px;
       }
     }
 
     &.dateRangeContainerRight {
       &::before {
-        left: 160px;
+        left: 200px;
       }
       &::after {
-        left: 140px;
+        left: 180px;
       }
     }
 

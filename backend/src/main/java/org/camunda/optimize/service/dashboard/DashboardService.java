@@ -37,9 +37,9 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizationType;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
-import org.camunda.optimize.service.es.reader.DashboardReader;
-import org.camunda.optimize.service.es.reader.ReportReader;
-import org.camunda.optimize.service.es.writer.DashboardWriter;
+import org.camunda.optimize.service.db.reader.DashboardReader;
+import org.camunda.optimize.service.db.reader.ReportReader;
+import org.camunda.optimize.service.db.writer.DashboardWriter;
 import org.camunda.optimize.service.exceptions.InvalidDashboardVariableFilterException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
@@ -247,8 +247,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
             .stream()
             // since the filter is being applied across variables with same name and type in different definitions
             // independently of the label, we can exclude the label from here.
-            .peek(variableName -> variableName.setLabel(null))
-            .collect(Collectors.toList());
+            .peek(variableName -> variableName.setLabel(null)).toList();
         final List<DashboardVariableFilterDto> filtersToRemove =
           extractDashboardVariableFilters(dashboard.getAvailableFilters()).stream()
             .filter(variableFilter -> {
@@ -257,8 +256,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
                 new ProcessVariableNameResponseDto(filterData.getName(), filterData.getType(), null);
               return !varNamesForReportsToRemain.contains(processVariableForFilter) &&
                 filters.contains(processVariableForFilter);
-            })
-            .collect(Collectors.toList());
+            }).toList();
         if (!filtersToRemove.isEmpty()) {
           dashboard.getAvailableFilters().removeAll(filtersToRemove);
           dashboardWriter.updateDashboard(convertToUpdateDto(dashboard), dashboard.getId());
@@ -427,7 +425,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     final List<DashboardFilterDto<?>> filtersWithoutData = availableFilters
       .stream()
       .filter(filter -> filter.getData() == null)
-      .collect(Collectors.toList());
+      .toList();
     if (!filtersWithoutData.isEmpty()) {
       throw new BadRequestException(String.format(
         "All filters need to supply Filter data, but Filters %s supplied no data field.", filtersWithoutData)

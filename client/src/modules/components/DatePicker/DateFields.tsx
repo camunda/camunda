@@ -10,6 +10,7 @@ import classnames from 'classnames';
 import {parseISO} from 'date-fns';
 
 import {format} from 'dates';
+import {t} from 'translation';
 
 import DateRange from './DateRange';
 import PickerDateInput from './PickerDateInput';
@@ -17,7 +18,7 @@ import {isDateValid} from './service';
 
 import './DateFields.scss';
 
-const POPPUP_CLASSNAME = 'dateRangeContainer';
+const POPUP_CLASSNAME = 'dateRangeContainer';
 
 interface DateFieldsProps {
   startDate: string;
@@ -86,9 +87,9 @@ export default class DateFields extends PureComponent<DateFieldsProps, DateField
         <div className="inputContainer">
           {type !== 'before' && (
             <PickerDateInput
-              className={classnames({
-                highlight: this.isFieldSelected('startDate'),
-              })}
+              id="dateFieldsBefore"
+              labelText={t('common.filter.dateModal.unit.before')}
+              hideLabel
               onChange={this.setDate('startDate')}
               onFocus={() => {
                 this.setState({currentlySelectedField: 'startDate'});
@@ -96,14 +97,14 @@ export default class DateFields extends PureComponent<DateFieldsProps, DateField
               onSubmit={this.submitStart}
               onClick={() => this.toggleDateRangePopup('startDate')}
               value={startDate}
-              isInvalid={!isDateValid(startDate)}
+              invalid={!isDateValid(startDate)}
             />
           )}
           {type !== 'after' && (
             <PickerDateInput
-              className={classnames({
-                highlight: this.isFieldSelected('endDate'),
-              })}
+              id="dateFieldsAfter"
+              labelText={t('common.filter.dateModal.unit.after')}
+              hideLabel
               ref={this.endDateField}
               onChange={this.setDate('endDate')}
               onFocus={() => {
@@ -112,13 +113,13 @@ export default class DateFields extends PureComponent<DateFieldsProps, DateField
               onSubmit={this.submitEnd}
               onClick={() => this.toggleDateRangePopup('endDate')}
               value={endDate}
-              isInvalid={!isDateValid(endDate)}
+              invalid={!isDateValid(endDate)}
             />
           )}
         </div>
         {(this.state.popupOpen || forceOpen) && (
           <div
-            className={classnames(POPPUP_CLASSNAME, {
+            className={classnames(POPUP_CLASSNAME, {
               dateRangeContainerLeft: this.isFieldSelected('startDate'),
               dateRangeContainerRight: this.isFieldSelected('endDate'),
             })}
@@ -174,7 +175,7 @@ export default class DateFields extends PureComponent<DateFieldsProps, DateField
   };
 
   hidePopup = (evt?: Event) => {
-    if (!(evt?.target as HTMLElement)?.closest('.' + POPPUP_CLASSNAME)) {
+    if (!(evt?.target as HTMLElement)?.closest('.' + POPUP_CLASSNAME)) {
       this.setState({
         popupOpen: false,
         currentlySelectedField: null,

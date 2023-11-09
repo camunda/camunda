@@ -15,9 +15,9 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.INCIDENTS;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.INCIDENT_CREATE_TIME;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.INCIDENT_DURATION_IN_MS;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENTS;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENT_CREATE_TIME;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENT_DURATION_IN_MS;
 
 @Slf4j
 @RequiredArgsConstructor

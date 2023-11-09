@@ -12,14 +12,15 @@ import {Popover} from 'components';
 import {FilterList} from 'filter';
 import {loadVariables, loadInputVariables, loadOutputVariables} from 'services';
 import {t} from 'translation';
-import {withErrorHandling} from 'HOC';
+import {useErrorHandling} from 'hooks';
 import {showError} from 'notifications';
 
 import './InstanceCount.scss';
 
-export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFilter, showHeader}) {
+export default function InstanceCount({report, noInfo, additionalFilter, showHeader, trigger}) {
   const [hasLoaded, setHasLoaded] = useState(false);
   const [variables, setVariables] = useState();
+  const {mightFail} = useErrorHandling();
 
   const {data, reportType} = report;
 
@@ -97,8 +98,8 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
           }}
         >
           <Popover
-            icon={useIcon}
-            title={!useIcon && t('report.instanceCount.appliedFilters')}
+            title={t('report.instanceCount.appliedFilters')}
+            trigger={trigger}
             disabled={noInfo}
             className="instanceCountPopover"
             floating
@@ -161,8 +162,6 @@ export function InstanceCount({report, noInfo, useIcon, mightFail, additionalFil
     </div>
   );
 }
-
-export default withErrorHandling(InstanceCount);
 
 function haveDateFilter(filters) {
   return filters?.some((filter) => filter.type.toLowerCase().includes('date'));

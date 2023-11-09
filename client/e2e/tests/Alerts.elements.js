@@ -8,11 +8,11 @@
 import {Selector} from 'testcafe';
 
 export const list = Selector('.AlertList .content');
-export const newAlertButton = Selector('.AlertList .header .Button.primary');
+export const newAlertButton = Selector('.AlertList .header button.createAlert');
 export const inputWithLabel = (label) =>
-  Selector('.AlertModal .label').withText(label).nextSibling();
+  Selector('.AlertModal label').withText(label).parent().find('input');
 export const copyNameInput = Selector('.Modal.is-visible input');
 export const editButton = Selector('[title="Edit Alert"]');
 export const cancelButton = Selector('.Modal.is-visible .cds--modal-footer .cds--btn:nth-child(1)');
 export const deleteButton = Selector('[title="Delete Alert"]');
-export const webhookDropdown = Selector('.typeaheadInput').nth(1);
+export const webhookDropdown = Selector('#webhooks');

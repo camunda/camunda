@@ -24,9 +24,8 @@ fixture('Decision Report')
 test('create a dmn js table report', async (t) => {
   await t.resizeWindow(1400, 700);
 
-  await t.click(Common.createNewMenu);
-  await t.click(Common.option('Report'));
-
+  await t.click(Common.createNewButton);
+  await t.hover(Common.newReportOption);
   await t.hover(Common.submenuOption('Decision Report'));
 
   await t.takeElementScreenshot(Common.entityList, 'decision-analysis/img/dmn_report_create.png', {
@@ -122,7 +121,7 @@ test('create a report grouped by evaluation date', async (t) => {
 
   await checkVisualizations(t);
 
-  await t.click(Common.option('Table'));
+  await t.click(Common.menuOption('Table'));
 
   await t.expect(ProcessReport.reportTable.visible).ok();
 
@@ -147,7 +146,7 @@ test('create a report grouped by Input variable', async (t) => {
 
   await checkVisualizations(t);
 
-  await t.click(Common.option('Line Chart'));
+  await t.click(Common.menuOption('Line Chart'));
 
   await t.expect(ProcessReport.reportChart.visible).ok();
 
@@ -169,7 +168,7 @@ test('filters', async (t) => {
   await u.selectView(t, 'Evaluation Count');
   await u.selectGroupby(t, 'Rules');
 
-  await t.click(Report.sectionToggle('Filters'));
+  await t.click(ProcessReport.sectionToggle('Filters'));
 
   await t
     .resizeWindow(1400, 700)
@@ -201,9 +200,9 @@ test('show raw data and decision table', async (t) => {
 });
 
 async function checkVisualizations(t) {
-  await t.expect(Common.option('Number').hasClass('disabled')).ok();
-  await t.expect(Common.option('Table').hasClass('disabled')).notOk();
-  await t.expect(Common.option('Bar Chart').hasClass('disabled')).notOk();
-  await t.expect(Common.option('Line Chart').hasClass('disabled')).notOk();
-  await t.expect(Common.option('Pie Chart').hasClass('disabled')).notOk();
+  await t.expect(Common.menuOption('Number').hasAttribute('aria-disabled')).ok();
+  await t.expect(Common.menuOption('Table').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Bar Chart').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Line Chart').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Pie Chart').hasAttribute('aria-disabled')).notOk();
 }

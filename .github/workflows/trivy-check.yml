@@ -24,6 +24,7 @@ jobs:
         branch:
           [
             "master",
+            "maintenance/3.11",
             "maintenance/3.10",
             "maintenance/3.9",
             "maintenance/3.7",
@@ -31,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
         with:
           ref: ${{ matrix.branch }}
 
@@ -45,7 +46,7 @@ jobs:
           secrets: ${{ toJSON(secrets) }}
 
       - name: Checkout code 2 # we do it cause setup maven step does the checkout to current branch
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
         with:
           ref: ${{ matrix.branch}}
 
@@ -70,7 +71,7 @@ jobs:
 
       - name: Import secrets
         id: secrets
-        uses: hashicorp/vault-action@86c7f837eb43794c7dc56f74d9cffac710679b28
+        uses: hashicorp/vault-action@caba6efd0e9cf0623814dd75bba0ec053be80ff5
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -160,11 +161,11 @@ jobs:
       - trivy-check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
 
       - name: Import secrets
         id: secrets
-        uses: hashicorp/vault-action@86c7f837eb43794c7dc56f74d9cffac710679b28
+        uses: hashicorp/vault-action@caba6efd0e9cf0623814dd75bba0ec053be80ff5
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle

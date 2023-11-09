@@ -5,16 +5,6 @@
  */
 package org.camunda.optimize.rest;
 
-import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.processoverview.InitialProcessOwnerDto;
-import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
-import org.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
-import org.camunda.optimize.dto.optimize.rest.sorting.ProcessOverviewSorter;
-import org.camunda.optimize.service.ProcessOverviewService;
-import org.camunda.optimize.service.security.SessionService;
-import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.RequestBody;
-
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.BeanParam;
@@ -29,6 +19,16 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
+import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.processoverview.InitialProcessOwnerDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
+import org.camunda.optimize.dto.optimize.rest.sorting.ProcessOverviewSorter;
+import org.camunda.optimize.service.ProcessOverviewService;
+import org.camunda.optimize.service.security.SessionService;
+import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.RequestBody;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -68,17 +68,19 @@ public class ProcessOverviewRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public void setInitialProcessOwner(@Context final ContainerRequestContext requestContext,
                                      @NotNull @Valid @RequestBody InitialProcessOwnerDto ownerDto) {
-    String userId;
+    Optional<String> userId;
     try {
-      userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      userId = Optional.ofNullable(sessionService.getRequestUserOrFailNotAuthorized(requestContext));
     } catch (NotAuthorizedException e) {
       // If we are using a CloudSaaS Token
-      userId = Optional.ofNullable(requestContext.getSecurityContext().getUserPrincipal().getName()).orElse("");
+      userId = Optional.ofNullable(requestContext.getSecurityContext().getUserPrincipal().getName());
     }
-    if (userId.isEmpty()) {
-      throw new NotAuthorizedException("Could not resolve user for this request");
-    }
-    processOverviewService.updateProcessOwnerIfNotSet(userId, ownerDto.getProcessDefinitionKey(), ownerDto.getOwner());
+    userId.ifPresentOrElse(
+      id -> processOverviewService.updateProcessOwnerIfNotSet(id, ownerDto.getProcessDefinitionKey(), ownerDto.getOwner()),
+      () -> {
+        throw new NotAuthorizedException("Could not resolve user for this request");
+      }
+    );
   }
 
 }

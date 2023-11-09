@@ -8,9 +8,9 @@ package org.camunda.optimize.service.importing.engine.service.incident;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.writer.incident.OpenIncidentWriter;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.OpenIncidentElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.incident.OpenIncidentWriter;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 

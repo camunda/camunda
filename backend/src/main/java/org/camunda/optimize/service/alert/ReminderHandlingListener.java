@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.alert;
 
+import lombok.extern.slf4j.Slf4j;
 import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -15,9 +16,9 @@ import org.quartz.TriggerKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+@Slf4j
 public class ReminderHandlingListener implements JobListener {
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+
   private static final String LISTENER_NAME = "alert-reminder-handler";
 
   private final AlertReminderJobFactory alertReminderJobFactory;
@@ -25,7 +26,6 @@ public class ReminderHandlingListener implements JobListener {
   public ReminderHandlingListener(AlertReminderJobFactory reminderJobFactory) {
     this.alertReminderJobFactory = reminderJobFactory;
   }
-
 
   @Override
   public String getName() {
@@ -48,11 +48,11 @@ public class ReminderHandlingListener implements JobListener {
     if (result != null && result.isStatusChanged()) {
       // create reminders if needed
       if (result.getAlert().isTriggered() && result.getAlert().getReminder() != null) {
-        logger.debug("Creating reminder job for [{}]", result.getAlert().getId());
+        log.debug("Creating reminder job for [{}]", result.getAlert().getId());
         JobDetail jobDetails = alertReminderJobFactory.createJobDetails(result.getAlert());
         try {
           if (context.getScheduler().checkExists(jobDetails.getKey())){
-            logger.debug("Skipping creating new job with key [{}] as it already exists", jobDetails.getKey());
+            log.debug("Skipping creating new job with key [{}] as it already exists", jobDetails.getKey());
             return;
           }
           context.getScheduler().scheduleJob(
@@ -60,7 +60,7 @@ public class ReminderHandlingListener implements JobListener {
               alertReminderJobFactory.createTrigger(result.getAlert(),jobDetails)
           );
         } catch (Exception e) {
-          logger.error("can't schedule reminder for [{}]", result.getAlert().getId(), e);
+          log.error("can't schedule reminder for [{}]", result.getAlert().getId(), e);
         }
       } else {
         // remove reminders
@@ -71,7 +71,7 @@ public class ReminderHandlingListener implements JobListener {
           context.getScheduler().unscheduleJob(triggerKey);
           context.getScheduler().deleteJob(jobKey);
         } catch (SchedulerException e) {
-          logger.error("can't remove reminders for alert [{}]", result.getAlert().getId());
+          log.error("can't remove reminders for alert [{}]", result.getAlert().getId());
         }
       }
 

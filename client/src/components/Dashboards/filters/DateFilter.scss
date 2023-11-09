@@ -4,32 +4,32 @@
     width: max-content;
   }
 
-  .Dropdown {
+  .filterMenu {
     width: 100%;
+
+    .cds--list-box__label {
+      display: flex;
+      align-items: center;
+
+      svg {
+        margin-right: 0.5rem;
+      }
+    }
   }
 
   .to {
-    color: var(--silver-darken-80);
+    margin-inline: 2px;
   }
 
   .Popover .popoverContent {
-    padding: 0;
     width: auto;
     max-width: unset;
   }
 
   .DateFields {
-    padding: 10px 20px 0;
-    margin: 0;
-
     .PickerDateInput {
       &::after {
         display: none;
-      }
-
-      .PickerDateInputWarning {
-        top: 35px;
-        font-size: 10px;
       }
     }
     .dateRangeContainer {

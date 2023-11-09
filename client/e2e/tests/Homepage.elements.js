@@ -7,7 +7,7 @@
 
 import {Selector} from 'testcafe';
 
-export const createNewDashboardButton = Selector('.Button').withText('Create New Dashboard');
+export const createNewDashboardButton = Selector('button').withText('Create New Dashboard');
 export const emptyStateComponent = Selector('.EmptyState');
 export const blankDashboardButton = Selector('.Button').withText('Blank Dashboard');
 export const homepageLink = Selector('.NavItem a').withText('Collections');
@@ -17,9 +17,8 @@ export const breadcrumb = (text) => Selector('.cds--header__menu-bar a').withTex
 export const dashboardView = Selector('.DashboardView');
 export const searchButton = Selector('.SearchField .Button');
 export const searchField = Selector('.SearchField input');
-export const moveCopySwitch = Selector('.moveSection .Switch');
-export const copyTargetsInput = Selector('.CopyModal .Typeahead .Input');
-export const copyTarget = (text) => Selector('.CopyModal .Typeahead .OptionsList').withText(text);
+export const moveCopySwitch = Selector('.CopyModal .cds--toggle');
+export const copyTargetsInput = Selector('.CopyModal .cds--combo-box .cds--text-input');
 export const copyModal = Selector('.CopyModal');
 export const bulkDelete = Selector('.bulkMenu .DropdownOption');
 export const definitionSelection = Selector('.DefinitionSelection');

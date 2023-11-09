@@ -5,6 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
+import {MenuButton, MenuItemSelectable} from '@carbon/react';
 import {
   $createParagraphNode,
   $getSelection,
@@ -20,7 +21,6 @@ import {
 import {$createHeadingNode, HeadingTagType} from '@lexical/rich-text';
 import {$setBlocksType} from '@lexical/selection';
 
-import {Dropdown} from 'components';
 import {t} from 'translation';
 
 export const BLOCK_TYPES = ['paragraph', 'h1', 'h2', 'h3', 'number', 'bullet'] as const;
@@ -86,19 +86,23 @@ export default function BlockTypeDropdown({
   }
 
   return (
-    <Dropdown
-      small
+    <MenuButton
       disabled={disabled}
-      label={t(`textEditor.toolbar.blockStyles.${blockType}`)}
+      label={t(`textEditor.toolbar.blockStyles.${blockType}`).toString()}
       className="BlockTypeOptions"
+      size="sm"
+      kind="ghost"
     >
       {BLOCK_TYPES.map((key) => {
         return (
-          <Dropdown.Option key={key} active={blockType === key} onClick={FORMATTERS[key]}>
-            {t(`textEditor.toolbar.blockStyles.${key}`)}
-          </Dropdown.Option>
+          <MenuItemSelectable
+            key={key}
+            selected={blockType === key}
+            onChange={FORMATTERS[key]}
+            label={t(`textEditor.toolbar.blockStyles.${key}`).toString()}
+          />
         );
       })}
-    </Dropdown>
+    </MenuButton>
   );
 }

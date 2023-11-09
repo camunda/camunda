@@ -10,9 +10,9 @@ import {shallow} from 'enzyme';
 
 import {Button} from 'components';
 import {get} from 'request';
+import {useUser} from 'hooks';
 
 import {DownloadButton, DownloadButtonProps} from './DownloadButton';
-import {User} from 'HOC';
 
 HTMLAnchorElement.prototype.click = jest.fn();
 
@@ -22,24 +22,25 @@ jest.mock('config', () => ({
   getExportCsvLimit: jest.fn().mockReturnValue(3),
 }));
 
+jest.mock('hooks', () => ({
+  useErrorHandling: jest.fn(() => ({
+    mightFail: jest.fn((data, cb) => cb(data)),
+  })),
+  useUser: jest.fn().mockReturnValue({user: {authorizations: ['csv_export']}}),
+}));
+
 const props: DownloadButtonProps = {
   href: '',
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
-  user: {authorizations: ['csv_export']} as unknown as User,
   totalCount: 0,
-  getUser: () =>
-    Promise.resolve({
-      authorizations: ['csv_export'],
-    } as unknown as User),
-  refreshUser: () =>
-    Promise.resolve({
-      authorizations: ['csv_export'],
-    } as User),
   docsLink: '',
 };
 
 beforeAll(() => {
   window.URL.createObjectURL = jest.fn();
+});
+
+beforeEach(() => {
+  jest.clearAllMocks();
 });
 
 it('invoke get with the provided href', async () => {
@@ -76,9 +77,8 @@ it('should display a modal if total download count is more than csv limit', asyn
 });
 
 it('should not display the button if the user is not authorized to export csv data', async () => {
-  const node = shallow(
-    <DownloadButton fileName="testName" {...props} user={{authorizations: []} as unknown as User} />
-  );
+  (useUser as jest.Mock).mockReturnValue({user: {authorizations: []}});
+  const node = shallow(<DownloadButton fileName="testName" {...props} />);
 
   await runAllEffects();
 

@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRe
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
-import org.camunda.optimize.service.es.writer.CollectionWriter;
+import org.camunda.optimize.service.db.writer.CollectionWriter;
 import org.junit.jupiter.api.Test;
 
 import jakarta.ws.rs.core.Response;

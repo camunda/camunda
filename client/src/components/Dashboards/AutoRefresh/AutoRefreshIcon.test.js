@@ -20,10 +20,10 @@ jest.mock('components', () => {
   };
 });
 
-it('should show normal autorefreshicon when no interval is set', () => {
+it('should show normal refresh icon when no interval is set', () => {
   const node = mount(<AutoRefreshIcon />);
 
-  expect(node).toIncludeText('Type: autorefresh');
+  expect(node.find('ForwardRef(UpdateNow)')).toExist();
 });
 
 it('should show a custom svg when interval is set', () => {

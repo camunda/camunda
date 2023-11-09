@@ -7,7 +7,7 @@ package org.camunda.optimize.service.importing.engine.fetcher.instance;
 
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
+import org.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;

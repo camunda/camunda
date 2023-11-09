@@ -73,16 +73,16 @@ export default function ColumnSelection({report, onChange}) {
           onChange({tableColumns: {includeNewVariables: {$set: checked}}})
         }
       />
-      {groupedColumns.map(({key, value}) => {
-        const isSection = typeof value === 'object' && value !== null;
+      {groupedColumns.map(({key: groupKey, value: groupValue}) => {
+        const isSection = typeof groupValue === 'object' && groupValue !== null;
 
-        if (isSection && Object.keys(value).length === 0) {
+        if (isSection && Object.keys(groupValue).length === 0) {
           return null;
         }
 
         if (isSection) {
           let sectionType = 'variable';
-          switch (key) {
+          switch (groupKey) {
             case 'inputVariables':
               sectionType = 'inputVariable';
               break;
@@ -100,19 +100,19 @@ export default function ColumnSelection({report, onChange}) {
           }
 
           const sectionTitle = `${t(`common.filter.types.${sectionType}-plural`)}:`;
-          const sectionKey = labels[key] || key;
+          const sectionKey = labels[groupKey] || groupKey;
 
           return (
             <CollapsibleSection
-              key={key}
-              sectionKey={key}
-              isSectionOpen={isSectionOpen[key]}
+              key={groupKey}
+              sectionKey={groupKey}
+              isSectionOpen={isSectionOpen[groupKey]}
               sectionTitle={sectionTitle}
-              toggleSectionOpen={() => toggleSectionOpen(key)}
+              toggleSectionOpen={() => toggleSectionOpen(groupKey)}
             >
-              {Object.keys(value).map((key) => {
-                const label = value[key]?.name || getVariableLabel(key) || key;
-                const columnId = `${sectionKey}:${key}`;
+              {Object.entries(groupValue).map(([sectionEntryKey, sectionEntryValue]) => {
+                const label = getSwitchLabel(sectionEntryKey, sectionEntryValue, sectionType);
+                const columnId = `${sectionKey}:${sectionEntryKey}`;
 
                 return (
                   <ColumnSwitch
@@ -129,12 +129,12 @@ export default function ColumnSelection({report, onChange}) {
           );
         }
 
-        const label = t('report.table.rawData.' + key);
+        const label = t('report.table.rawData.' + groupKey);
 
         return (
           <ColumnSwitch
-            key={key}
-            switchId={key}
+            key={groupKey}
+            switchId={groupKey}
             excludedColumns={excludedColumns}
             includedColumns={includedColumns}
             label={label}
@@ -171,4 +171,12 @@ function groupColumns(columns) {
   }, []);
 
   return [...palinColumns, ...sectionColumns];
+}
+
+function getSwitchLabel(sectionEntryKey, sectionEntryValue, sectionType) {
+  if (sectionType === 'count') {
+    return t('report.table.rawData.' + sectionEntryKey);
+  }
+
+  return sectionEntryValue?.name || getVariableLabel(sectionEntryKey) || sectionEntryKey;
 }

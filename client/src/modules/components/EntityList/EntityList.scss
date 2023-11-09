@@ -187,8 +187,7 @@
   }
 
   .itemsList {
-    padding: 0;
-    margin: 0 0 20px 0;
+    margin-bottom: 20px;
     transition: 0.1s opacity;
 
     &.isLoading {

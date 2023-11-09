@@ -8,8 +8,8 @@ package org.camunda.optimize.service.importing.engine.mediator.factory;
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.plugin.BusinessKeyImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
-import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
+import org.camunda.optimize.service.db.writer.CompletedProcessInstanceWriter;
+import org.camunda.optimize.service.db.writer.RunningProcessInstanceWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.CompletedProcessInstanceFetcher;
@@ -28,6 +28,7 @@ import java.util.List;
 
 @Component
 public class ProcessInstanceEngineImportMediatorFactory extends AbstractEngineImportMediatorFactory {
+
   private final CamundaEventImportServiceFactory camundaEventImportServiceFactory;
   private final CompletedProcessInstanceWriter completedProcessInstanceWriter;
   private final RunningProcessInstanceWriter runningProcessInstanceWriter;

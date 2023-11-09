@@ -54,7 +54,7 @@ it('should handle change in edit mode', () => {
   const addEditButton = node.find('.EntityDescription .add').dive();
 
   expect(node.find('.EntityDescription .description')).not.toExist();
-  expect(addEditButton.text()).toContain('Add Description');
+  expect(addEditButton.text()).toContain('Add description');
 
   addEditButton.simulate('click');
 

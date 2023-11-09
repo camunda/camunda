@@ -8,7 +8,7 @@ package org.camunda.optimize.service.importing;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
-import org.camunda.optimize.service.es.reader.importindex.TimestampBasedImportIndexReader;
+import org.camunda.optimize.service.db.reader.importindex.TimestampBasedImportIndexReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;

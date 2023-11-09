@@ -18,7 +18,7 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRespo
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValuesQueryDto;
-import org.camunda.optimize.service.es.reader.ProcessVariableReader;
+import org.camunda.optimize.service.db.reader.ProcessVariableReader;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.util.tenant.DataSourceTenantAuthorizationService;
 import org.springframework.stereotype.Component;
@@ -68,7 +68,7 @@ public class ProcessVariableService {
       .filter(definition -> definition.getData().getProcessDefinitionKey() != null)
       .map(this::convertToProcessVariableNameRequest)
       .flatMap(Collection::stream)
-      .collect(Collectors.toList());
+      .toList();
     return processVariableReader.getVariableNames(processVariableNameRequests);
   }
 

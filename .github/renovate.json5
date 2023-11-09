@@ -37,7 +37,7 @@
   // When renovate should do the checks
   schedule: ["every weekday"],
   // How many PRs can exist at once
-  prConcurrentLimit: 30,
+  prConcurrentLimit: 60,
   // Additional notes added to PRs
   prBodyNotes: [
     // Add warning note to each major version PR
@@ -48,9 +48,7 @@
   // Branches to be checked
   baseBranches: [
     "master",
-    "maintenance/3.10",
-    "maintenance/3.9",
-    "maintenance/3.7",
+    "maintenance/3.11",
   ],
   // This ignores are the ones comming by default from config:base with exception to **/test/**
   // We do this to be able to test files in docker/test directory
@@ -87,6 +85,21 @@
     },
   },
   packageRules: [
+    // Ignore deps
+    {
+      "matchPackageNames": [
+        "org.camunda.optimize:optimize-data-generator",
+        "org.camunda.optimize:camunda-optimize",
+        "org.camunda.optimize:util",
+        "org.camunda.optimize:qa",
+        "org.camunda.optimize:optimize-plugin-parent",
+        "io.camunda:identity-sdk",
+        "io.camunda:zeebe-client-java",
+        "io.camunda:zeebe-protocol",
+        "ant-contrib:ant-contrib"
+      ],
+      "enabled": false
+    },
     // Frontend deps
     {
       addLabels: ["frontend"],

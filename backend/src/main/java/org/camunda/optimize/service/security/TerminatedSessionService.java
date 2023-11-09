@@ -11,8 +11,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.TerminatedUserSessionDto;
 import org.camunda.optimize.service.AbstractScheduledService;
-import org.camunda.optimize.service.es.reader.TerminatedUserSessionReader;
-import org.camunda.optimize.service.es.writer.TerminatedUserSessionWriter;
+import org.camunda.optimize.service.db.reader.TerminatedUserSessionReader;
+import org.camunda.optimize.service.db.writer.TerminatedUserSessionWriter;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.scheduling.Trigger;
@@ -26,6 +26,7 @@ import java.time.temporal.ChronoUnit;
 @Component
 @Slf4j
 public class TerminatedSessionService extends AbstractScheduledService {
+
   private static final int CLEANUP_INTERVAL_HOURS = 8;
 
   private final TerminatedUserSessionReader terminatedUserSessionReader;
@@ -69,4 +70,5 @@ public class TerminatedSessionService extends AbstractScheduledService {
         .minus(configurationService.getAuthConfiguration().getTokenLifeTimeMinutes(), ChronoUnit.MINUTES)
     );
   }
+
 }

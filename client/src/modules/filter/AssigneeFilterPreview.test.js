@@ -10,7 +10,13 @@ import {shallow} from 'enzyme';
 
 import {loadUserNames} from './service';
 
-import {AssigneeFilterPreview} from './AssigneeFilterPreview';
+import AssigneeFilterPreview from './AssigneeFilterPreview';
+
+jest.mock('hooks', () => ({
+  useErrorHandling: jest.fn().mockImplementation(() => ({
+    mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  })),
+}));
 
 jest.mock('./service', () => ({
   loadUserNames: jest.fn().mockReturnValue([
@@ -22,7 +28,6 @@ jest.mock('./service', () => ({
 }));
 
 const props = {
-  mightFail: (data, cb) => cb(data),
   filter: {
     type: 'assignee',
     filterLevel: 'instance',

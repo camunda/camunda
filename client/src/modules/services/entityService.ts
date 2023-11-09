@@ -6,7 +6,7 @@
  */
 
 import {get} from 'request';
-import {GenericReport} from 'types';
+import {GenericEntity, GenericReport} from 'types';
 
 export async function loadReports(collection?: string | null): Promise<GenericReport[]> {
   let url = 'api/report';
@@ -15,4 +15,27 @@ export async function loadReports(collection?: string | null): Promise<GenericRe
   }
   const response = await get(url);
   return await response.json();
+}
+
+export async function loadEntities<T extends Record<string, unknown>>(
+  sortBy?: string,
+  sortOrder?: string
+): Promise<GenericEntity<T>[]> {
+  const params: Record<string, unknown> = {};
+  if (sortBy && sortOrder) {
+    params.sortBy = sortBy;
+    params.sortOrder = sortOrder;
+  }
+
+  const response = await get('api/entities', params);
+  return await response.json();
+}
+
+export function createEventName(action: string, entityType: string) {
+  const type = getEntityType(entityType);
+  return action + type.charAt(0).toUpperCase() + type.slice(1);
+}
+
+function getEntityType(entityType: string) {
+  return entityType === 'dashboard/instant' ? 'instantPreviewDashboard' : entityType;
 }

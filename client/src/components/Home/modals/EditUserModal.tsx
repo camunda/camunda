@@ -6,9 +6,9 @@
  */
 
 import {useState} from 'react';
-import {Button} from '@carbon/react';
+import {Button, RadioButton, Form, RadioButtonGroup} from '@carbon/react';
 
-import {LabeledInput, Modal, Form} from 'components';
+import {Modal} from 'components';
 import {t} from 'translation';
 
 interface EditUserModalProps {
@@ -32,42 +32,48 @@ export default function EditUserModal({
       <Modal.Header>{t('common.editName', {name: name || id})}</Modal.Header>
       <Modal.Content>
         <Form>
-          {t('home.roles.userRole')}
-          <Form.Group>
-            <LabeledInput
+          <RadioButtonGroup
+            name="userRole"
+            legendText={t('home.roles.userRole')}
+            orientation="vertical"
+          >
+            <RadioButton
+              value="viewer"
               checked={role === 'viewer'}
-              onChange={() => setRole('viewer')}
-              label={
+              onClick={() => setRole('viewer')}
+              labelText={
                 <>
-                  <h2>{t('home.roles.viewer')}</h2>
-                  <p>{t('home.roles.viewer-description')}</p>
+                  <span>{t('home.roles.viewer')}</span>
+                  <span className="subtitle">{t('home.roles.viewer-description')}</span>
                 </>
               }
               type="radio"
             />
-            <LabeledInput
+            <RadioButton
+              value="editor"
               checked={role === 'editor'}
-              onChange={() => setRole('editor')}
-              label={
+              onClick={() => setRole('editor')}
+              labelText={
                 <>
-                  <h2>{t('home.roles.editor')}</h2>
-                  <p>{t('home.roles.editor-description')}</p>
+                  <span>{t('home.roles.editor')}</span>
+                  <span className="subtitle">{t('home.roles.editor-description')}</span>
                 </>
               }
               type="radio"
             />
-            <LabeledInput
+            <RadioButton
+              value="manager"
               checked={role === 'manager'}
-              onChange={() => setRole('manager')}
-              label={
+              onClick={() => setRole('manager')}
+              labelText={
                 <>
-                  <h2>{t('home.roles.manager')}</h2>
-                  <p>{t('home.roles.manager-description')}</p>
+                  <span>{t('home.roles.manager')}</span>
+                  <span className="subtitle">{t('home.roles.manager-description')}</span>
                 </>
               }
               type="radio"
             />
-          </Form.Group>
+          </RadioButtonGroup>
         </Form>
       </Modal.Content>
       <Modal.Footer>

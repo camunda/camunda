@@ -65,6 +65,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_PROFILE;
 
 @Slf4j
 public class Generator {
@@ -87,7 +88,7 @@ public class Generator {
 
     elasticsearchClient = new OptimizeElasticsearchClient(
       ElasticsearchHighLevelRestClientBuilder.build(configurationService),
-      new OptimizeIndexNameService(configurationService)
+      new OptimizeIndexNameService(configurationService, ELASTICSEARCH_PROFILE)
     );
 
     final OptimizeRequestExecutor requestExecutor = new OptimizeRequestExecutor(

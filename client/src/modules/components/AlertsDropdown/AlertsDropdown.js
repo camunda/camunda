@@ -7,10 +7,10 @@
 
 import React, {useState, useEffect, useCallback} from 'react';
 import {withRouter} from 'react-router-dom';
-import classnames from 'classnames';
+import {OverflowMenu, OverflowMenuItem} from '@carbon/react';
+import {Notification, Add} from '@carbon/icons-react';
 
-import {AlertModal, Deleter, Dropdown, Icon, Tooltip} from 'components';
-import {withErrorHandling} from 'HOC';
+import {AlertModal, Deleter} from 'components';
 import {addNotification, showError} from 'notifications';
 import {
   loadAlerts,
@@ -23,10 +23,11 @@ import {
 } from 'services';
 import {t} from 'translation';
 import {getWebhooks} from 'config';
+import {useErrorHandling} from 'hooks';
 
 import './AlertsDropdown.scss';
 
-export function AlertsDropdown({mightFail, dashboardTiles, numberReport, location}) {
+export function AlertsDropdown({dashboardTiles, numberReport, location}) {
   const [alerts, setAlerts] = useState([]);
   const [reports, setReports] = useState([]);
   const [openAlert, setOpenAlert] = useState();
@@ -34,6 +35,7 @@ export function AlertsDropdown({mightFail, dashboardTiles, numberReport, locatio
   const [webhooks, setWebhooks] = useState();
   const [loading, setLoading] = useState(false);
   const collection = React.useMemo(() => getCollection(location.pathname), [location]);
+  const {mightFail} = useErrorHandling();
 
   const loadEntityAlerts = useCallback(() => {
     mightFail(loadAlerts(collection), setAlerts, showError);
@@ -105,34 +107,35 @@ export function AlertsDropdown({mightFail, dashboardTiles, numberReport, locatio
 
   return (
     <div className="AlertsDropdown tool-button">
-      <Tooltip content={!reportsInScope.length && t('alert.form.reportInfo')} position="bottom">
-        <div>
-          <Dropdown
-            main
-            label={
+      <OverflowMenu
+        aria-label={t('alert.label-plural')}
+        iconDescription={t('alert.label-plural')}
+        renderIcon={Notification}
+        size="lg"
+        flipped
+      >
+        {alertsInScope.map((alert) => (
+          <OverflowMenuItem
+            key={alert.id}
+            itemText={alert.name}
+            onClick={() => setOpenAlert(alert)}
+          />
+        ))}
+        {reportsInScope.length ? (
+          <OverflowMenuItem
+            itemText={
               <>
-                <Icon type="alert" /> {t('alert.label-plural')}
+                <Add /> {t('alert.createNew')}
               </>
             }
-            disabled={!reportsInScope.length}
-          >
-            <Dropdown.Option
-              className={classnames('createNew', {bottomBorder: alertsInScope.length > 0})}
-              onClick={() => setOpenAlert({})}
-            >
-              {t('alert.newAlert')}
-            </Dropdown.Option>
-            {alertsInScope.length > 0 && (
-              <div className="subTitle">{t('alert.existingAlerts')}</div>
-            )}
-            {alertsInScope.map((alert) => (
-              <Dropdown.Option key={alert.id} onClick={() => setOpenAlert(alert)}>
-                {alert.name}
-              </Dropdown.Option>
-            ))}
-          </Dropdown>
-        </div>
-      </Tooltip>
+            onClick={() => setOpenAlert({})}
+            className="NewAlertDropdownOption"
+            hasDivider
+          />
+        ) : (
+          <OverflowMenuItem disabled requireTitle itemText={t('alert.form.reportInfo')} />
+        )}
+      </OverflowMenu>
       <Deleter
         type="alert"
         entity={deleting}
@@ -169,4 +172,4 @@ export function AlertsDropdown({mightFail, dashboardTiles, numberReport, locatio
   );
 }
 
-export default withRouter(withErrorHandling(AlertsDropdown));
+export default withRouter(AlertsDropdown);
