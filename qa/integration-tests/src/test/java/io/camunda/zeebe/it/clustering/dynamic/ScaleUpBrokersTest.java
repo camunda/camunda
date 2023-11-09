@@ -7,9 +7,6 @@
  */
 package io.camunda.zeebe.it.clustering.dynamic;
 
-import static io.camunda.zeebe.it.clustering.dynamic.Utils.assertBrokerDoesNotHavePartition;
-import static io.camunda.zeebe.it.clustering.dynamic.Utils.assertBrokerHasPartition;
-import static io.camunda.zeebe.it.clustering.dynamic.Utils.assertChangeIsApplied;
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.assertChangeIsPlanned;
 
 import io.atomix.cluster.MemberId;
@@ -23,6 +20,7 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
@@ -38,7 +36,7 @@ import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
 @AutoCloseResources
-class ScaleUpBrokersTest {
+final class ScaleUpBrokersTest {
 
   private static final int PARTITIONS_COUNT = 3;
   private static final String JOB_TYPE = "job";
@@ -88,9 +86,10 @@ class ScaleUpBrokersTest {
 
     // then
     // verify partition 2 is moved from broker 0 to 1
-    assertBrokerHasPartition(cluster, newBrokerId, 2);
-    assertBrokerDoesNotHavePartition(cluster, 0, 2);
-    assertBrokerHasPartition(cluster, 0, 1);
+    ClusterActuatorAssert.assertThat(cluster)
+        .brokerHasPartition(newBrokerId, 2)
+        .brokerDoesNotHavePartition(0, 2)
+        .brokerHasPartition(0, 1);
 
     // Changes are reflected in the topology returned by grpc query
     cluster.awaitCompleteTopology(newClusterSize, 3, 1, Duration.ofSeconds(10));
@@ -110,7 +109,7 @@ class ScaleUpBrokersTest {
     // then - verify topology changes are completed
     Awaitility.await()
         .timeout(Duration.ofMinutes(2))
-        .untilAsserted(() -> assertChangeIsApplied(cluster, response));
+        .untilAsserted(() -> ClusterActuatorAssert.assertThat(cluster).hasAppliedChanges(response));
   }
 
   @Test
@@ -131,7 +130,7 @@ class ScaleUpBrokersTest {
     scale(finalClusterSize);
 
     // then -- partition 3 must be moved to new broker
-    assertBrokerHasPartition(cluster, broker3, 3);
+    ClusterActuatorAssert.assertThat(cluster).brokerHasPartition(broker3, 3);
 
     // Changes are reflected in the topology returned by grpc query
     cluster.awaitCompleteTopology(finalClusterSize, 3, 1, Duration.ofSeconds(10));
