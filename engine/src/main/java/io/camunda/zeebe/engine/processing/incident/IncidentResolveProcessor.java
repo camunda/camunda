@@ -24,7 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.util.Either;
 
-public final class ResolveIncidentProcessor implements TypedRecordProcessor<IncidentRecord> {
+public final class IncidentResolveProcessor implements TypedRecordProcessor<IncidentRecord> {
 
   public static final String NO_INCIDENT_FOUND_MSG =
       "Expected to resolve incident with key '%d', but no such incident was found";
@@ -41,7 +41,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
   private final ElementInstanceState elementInstanceState;
   private final TypedResponseWriter responseWriter;
 
-  public ResolveIncidentProcessor(
+  public IncidentResolveProcessor(
       final ProcessingState processingState,
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
       final Writers writers) {

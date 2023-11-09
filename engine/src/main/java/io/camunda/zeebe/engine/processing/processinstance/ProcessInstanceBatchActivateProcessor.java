@@ -21,14 +21,14 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 
-public final class ActivateProcessInstanceBatchProcessor
+public final class ProcessInstanceBatchActivateProcessor
     implements TypedRecordProcessor<ProcessInstanceBatchRecord> {
   private final TypedCommandWriter commandWriter;
   private final KeyGenerator keyGenerator;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
 
-  public ActivateProcessInstanceBatchProcessor(
+  public ProcessInstanceBatchActivateProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
       final ElementInstanceState elementInstanceState,
