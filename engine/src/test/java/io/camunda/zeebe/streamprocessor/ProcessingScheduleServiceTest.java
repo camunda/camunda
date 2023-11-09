@@ -334,9 +334,9 @@ class ProcessingScheduleServiceTest {
 
     // then - it's sufficient to assert it was staged for caching, and then the staged cache was
     // persisted
-    assertThat(commandCache.stagedCache().isCached(ACTIVATE_ELEMENT, 1)).isTrue();
+    assertThat(commandCache.stagedCache().contains(ACTIVATE_ELEMENT, 1)).isTrue();
     assertThat(commandCache.stagedCache().persisted()).isTrue();
-    assertThat(commandCache.isCached(ACTIVATE_ELEMENT, 1)).isTrue();
+    assertThat(commandCache.contains(ACTIVATE_ELEMENT, 1)).isTrue();
   }
 
   @Test
@@ -381,9 +381,9 @@ class ProcessingScheduleServiceTest {
     actorScheduler.workUntilDone();
 
     // then - write was staged for caching, but not persisted due to error
-    assertThat(commandCache.stagedCache().isCached(ACTIVATE_ELEMENT, 1)).isTrue();
+    assertThat(commandCache.stagedCache().contains(ACTIVATE_ELEMENT, 1)).isTrue();
     assertThat(commandCache.stagedCache().persisted()).isFalse();
-    assertThat(commandCache.isCached(ACTIVATE_ELEMENT, 1)).isFalse();
+    assertThat(commandCache.contains(ACTIVATE_ELEMENT, 1)).isFalse();
   }
 
   /**

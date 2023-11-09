@@ -22,7 +22,7 @@ public class TestScheduledCommandCache implements ScheduledCommandCache {
   }
 
   @Override
-  public boolean isCached(final Intent intent, final long key) {
+  public boolean contains(final Intent intent, final long key) {
     return cacheForIntent(intent).contains(key);
   }
 
@@ -55,8 +55,8 @@ public class TestScheduledCommandCache implements ScheduledCommandCache {
       private volatile boolean persisted;
 
       @Override
-      public boolean isCached(final Intent intent, final long key) {
-        return super.isCached(intent, key) || TestCommandCache.this.isCached(intent, key);
+      public boolean contains(final Intent intent, final long key) {
+        return super.contains(intent, key) || TestCommandCache.this.contains(intent, key);
       }
 
       @Override

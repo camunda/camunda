@@ -148,7 +148,7 @@ public class ProcessingScheduleServiceImpl
               entry -> {
                 final var intent = entry.recordMetadata().getIntent();
                 final var key = entry.key();
-                if (stagedCache.isCached(intent, key)) {
+                if (stagedCache.contains(intent, key)) {
                   return;
                 }
 
