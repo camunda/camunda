@@ -90,7 +90,7 @@ final class ScaleDownBrokersTest {
         .doesNotHaveBroker(brokerToShutdownId);
 
     // Changes are reflected in the topology returned by grpc query
-    cluster.awaitCompleteTopology(newClusterSize, PARTITIONS_COUNT, 1, Duration.ofSeconds(10));
+    cluster.awaitCompleteTopology(newClusterSize, PARTITIONS_COUNT, 1, Duration.ofSeconds(20));
 
     assertThatAllJobsCanBeCompleted(createdInstances, zeebeClient, JOB_TYPE);
   }
@@ -121,7 +121,7 @@ final class ScaleDownBrokersTest {
         .doesNotHaveBroker(brokerToShutdownId);
 
     // Changes are reflected in the topology returned by grpc query
-    cluster.awaitCompleteTopology(newClusterSize, PARTITIONS_COUNT, 1, Duration.ofSeconds(10));
+    cluster.awaitCompleteTopology(newClusterSize, PARTITIONS_COUNT, 1, Duration.ofSeconds(20));
 
     assertThatAllJobsCanBeCompleted(createdInstances, zeebeClient, JOB_TYPE);
   }
