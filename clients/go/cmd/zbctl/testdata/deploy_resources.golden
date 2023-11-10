@@ -6,7 +6,8 @@
         "bpmnProcessId": "process",
         "version": 1,
         "processDefinitionKey": "2251799813685249",
-        "resourceName": "model.bpmn"
+        "resourceName": "model.bpmn",
+        "tenantId": "<default>"
       }
     },
     {
@@ -16,7 +17,8 @@
         "version": 1,
         "decisionKey": "2251799813685251",
         "dmnDecisionRequirementsId": "force_users",
-        "decisionRequirementsKey": "2251799813685250"
+        "decisionRequirementsKey": "2251799813685250",
+        "tenantId": "<default>"
       }
     },
     {
@@ -26,7 +28,8 @@
         "version": 1,
         "decisionKey": "2251799813685252",
         "dmnDecisionRequirementsId": "force_users",
-        "decisionRequirementsKey": "2251799813685250"
+        "decisionRequirementsKey": "2251799813685250",
+        "tenantId": "<default>"
       }
     },
     {
@@ -35,8 +38,10 @@
         "dmnDecisionRequirementsName": "force_users",
         "version": 1,
         "decisionRequirementsKey": "2251799813685250",
-        "resourceName": "drg-force-user.dmn"
+        "resourceName": "drg-force-user.dmn",
+        "tenantId": "<default>"
       }
     }
-  ]
+  ],
+  "tenantId": "<default>"
 }

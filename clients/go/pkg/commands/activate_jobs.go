@@ -44,6 +44,7 @@ type ActivateJobsCommandStep2 interface {
 type ActivateJobsCommandStep3 interface {
 	DispatchActivateJobsCommand
 
+	TenantIds(...string) ActivateJobsCommandStep3
 	Timeout(time.Duration) ActivateJobsCommandStep3
 	WorkerName(string) ActivateJobsCommandStep3
 	FetchVariables(...string) ActivateJobsCommandStep3
@@ -61,6 +62,11 @@ func (cmd *ActivateJobsCommand) JobType(jobType string) ActivateJobsCommandStep2
 
 func (cmd *ActivateJobsCommand) MaxJobsToActivate(maxJobsToActivate int32) ActivateJobsCommandStep3 {
 	cmd.request.MaxJobsToActivate = maxJobsToActivate
+	return cmd
+}
+
+func (cmd *ActivateJobsCommand) TenantIds(tenantIds ...string) ActivateJobsCommandStep3 {
+	cmd.request.TenantIds = tenantIds
 	return cmd
 }
 

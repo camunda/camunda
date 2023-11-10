@@ -167,6 +167,39 @@ func TestCreateProcessInstanceWithStartBeforeElementDirective(t *testing.T) {
 	}
 }
 
+func TestCreateProcessInstanceCommandWithTenantId(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	request := &pb.CreateProcessInstanceRequest{
+		ProcessDefinitionKey: 123,
+		TenantId:             "1234",
+	}
+	stub := &pb.CreateProcessInstanceResponse{
+		ProcessDefinitionKey: 123,
+		BpmnProcessId:        "foo",
+		Version:              4545,
+	}
+
+	client.EXPECT().CreateProcessInstance(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewCreateInstanceCommand(client, func(context.Context, error) bool { return false })
+
+	variablesCommand := command.ProcessDefinitionKey(123).TenantId("1234")
+
+	response, err := variablesCommand.Send(context.Background())
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
 func TestCreateProcessInstanceCommandWithVariablesFromString(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

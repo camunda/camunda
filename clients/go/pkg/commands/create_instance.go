@@ -44,6 +44,7 @@ type CreateInstanceCommandStep2 interface {
 type CreateInstanceCommandStep3 interface {
 	DispatchCreateInstanceCommand
 
+	TenantId(string) CreateInstanceCommandStep3
 	// Expected to be valid JSON string
 	VariablesFromString(string) (CreateInstanceCommandStep3, error)
 
@@ -74,6 +75,12 @@ type CreateInstanceCommand struct {
 type CreateInstanceWithResultCommand struct {
 	Command
 	request pb.CreateProcessInstanceWithResultRequest
+}
+
+//nolint:revive
+func (cmd *CreateInstanceCommand) TenantId(tenantId string) CreateInstanceCommandStep3 {
+	cmd.request.TenantId = tenantId
+	return cmd
 }
 
 func (cmd *CreateInstanceCommand) VariablesFromString(variables string) (CreateInstanceCommandStep3, error) {

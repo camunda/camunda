@@ -33,9 +33,11 @@
       		"inputName": "Lightsaber color",
       		"inputValue": "\"blue\""
       	  }
-      	]
+      	],
+      	"tenantId": "<default>"
       }
     ],
     "failedDecisionId": "",
-    "failureMessage": ""
+    "failureMessage": "",
+    "tenantId": "<default>"
 }

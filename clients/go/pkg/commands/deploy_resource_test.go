@@ -104,3 +104,44 @@ func TestDeployResourceCommand_AddResource(t *testing.T) {
 		t.Errorf("Failed to receive response")
 	}
 }
+
+func TestDeployResourceCommand_TenantId(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	demoName := "../../../java/src/test/resources/processes/demo-process.bpmn"
+	demoBytes := readBytes(t, demoName)
+
+	request := &pb.DeployResourceRequest{
+		Resources: []*pb.Resource{
+			{
+				Name:    demoName,
+				Content: demoBytes,
+			},
+		},
+		TenantId: "1234",
+	}
+	stub := &pb.DeployResourceResponse{}
+
+	client.EXPECT().DeployResource(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewDeployResourceCommand(client, func(context.Context, error) bool { return false })
+
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := command.
+		AddResource(demoBytes, demoName).
+		TenantId("1234").
+		Send(ctx)
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
