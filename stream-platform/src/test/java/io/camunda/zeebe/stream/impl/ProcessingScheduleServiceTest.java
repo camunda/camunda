@@ -25,11 +25,13 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
+import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.NoopScheduledCommandCache;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
+import io.camunda.zeebe.stream.impl.TestScheduledCommandCache.TestCommandCache;
 import io.camunda.zeebe.stream.impl.records.RecordBatch;
 import io.camunda.zeebe.stream.util.Records;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
@@ -50,6 +52,7 @@ class ProcessingScheduleServiceTest {
   @RegisterExtension
   ControlledActorSchedulerExtension actorScheduler = new ControlledActorSchedulerExtension();
 
+  private final TestCommandCache commandCache = new TestCommandCache();
   private LifecycleSupplier lifecycleSupplier;
   private WriterAsyncSupplier writerAsyncSupplier;
   private TestScheduleServiceActorDecorator scheduleService;
@@ -60,7 +63,7 @@ class ProcessingScheduleServiceTest {
     writerAsyncSupplier = new WriterAsyncSupplier();
     final var processingScheduleService =
         new ProcessingScheduleServiceImpl(
-            lifecycleSupplier, lifecycleSupplier, writerAsyncSupplier);
+            lifecycleSupplier, lifecycleSupplier, writerAsyncSupplier, commandCache);
 
     scheduleService = new TestScheduleServiceActorDecorator(processingScheduleService);
     actorScheduler.submitActor(scheduleService);
@@ -150,7 +153,10 @@ class ProcessingScheduleServiceTest {
     lifecycleSupplier.currentPhase = Phase.PAUSED;
     final var notOpenScheduleService =
         new ProcessingScheduleServiceImpl(
-            lifecycleSupplier, lifecycleSupplier, writerAsyncSupplier);
+            lifecycleSupplier,
+            lifecycleSupplier,
+            writerAsyncSupplier,
+            new NoopScheduledCommandCache());
     final var mockedTask = spy(new DummyTask());
 
     // when
@@ -169,7 +175,10 @@ class ProcessingScheduleServiceTest {
     final var notOpenScheduleService =
         new TestScheduleServiceActorDecorator(
             new ProcessingScheduleServiceImpl(
-                lifecycleSupplier, lifecycleSupplier, writerAsyncSupplier));
+                lifecycleSupplier,
+                lifecycleSupplier,
+                writerAsyncSupplier,
+                new NoopScheduledCommandCache()));
 
     // when
     final var actorFuture = actorScheduler.submitActor(notOpenScheduleService);
@@ -284,6 +293,70 @@ class ProcessingScheduleServiceTest {
 
     // then
     verify(mockedTask, never()).execute(any());
+  }
+
+  @Test
+  void shouldCacheWrittenCommands() {
+    // given
+
+    // when
+    scheduleService.runDelayed(
+        Duration.ZERO,
+        (builder) -> {
+          builder.appendCommandRecord(1, ACTIVATE_ELEMENT, Records.processInstance(1));
+          return builder.build();
+        });
+    actorScheduler.workUntilDone();
+
+    // then - it's sufficient to assert it was staged for caching, and then the staged cache was
+    // persisted
+    assertThat(commandCache.stagedCache().contains(ACTIVATE_ELEMENT, 1)).isTrue();
+    assertThat(commandCache.stagedCache().persisted()).isTrue();
+    assertThat(commandCache.contains(ACTIVATE_ELEMENT, 1)).isTrue();
+    assertThat(writerAsyncSupplier.writer.entries)
+        .extracting(LogAppendEntry::key)
+        .containsExactly(1L);
+  }
+
+  @Test
+  void shouldNotWriteCachedCommands() {
+    // given
+    commandCache.add(ACTIVATE_ELEMENT, 1);
+
+    // when
+    scheduleService.runDelayed(
+        Duration.ZERO,
+        (builder) -> {
+          builder.appendCommandRecord(1, ACTIVATE_ELEMENT, Records.processInstance(1));
+          return builder.build();
+        });
+    actorScheduler.workUntilDone();
+
+    // then
+    assertThat(writerAsyncSupplier.writer.entries).isEmpty();
+  }
+
+  @Test
+  void shouldNotCacheWrittenCommandsIfWriteFails() {
+    // given
+    writerAsyncSupplier.writer.acceptWrites.set(
+        () -> {
+          throw new RuntimeException("failure");
+        });
+
+    // when
+    scheduleService.runDelayed(
+        Duration.ZERO,
+        (builder) -> {
+          builder.appendCommandRecord(1, ACTIVATE_ELEMENT, Records.processInstance(1));
+          return builder.build();
+        });
+    actorScheduler.workUntilDone();
+
+    // then - write was staged for caching, but not persisted due to error
+    assertThat(commandCache.stagedCache().contains(ACTIVATE_ELEMENT, 1)).isTrue();
+    assertThat(commandCache.stagedCache().persisted()).isFalse();
+    assertThat(commandCache.contains(ACTIVATE_ELEMENT, 1)).isFalse();
   }
 
   /**

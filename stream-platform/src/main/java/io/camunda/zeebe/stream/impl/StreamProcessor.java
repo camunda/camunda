@@ -22,6 +22,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StageableScheduledCommandCache;
 import io.camunda.zeebe.stream.impl.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
@@ -87,6 +88,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private final List<StreamProcessorLifecycleAware> lifecycleAwareListeners;
   private final Set<FailureListener> failureListeners = new HashSet<>();
   private final StreamProcessorMetrics metrics;
+  private final StageableScheduledCommandCache scheduledCommandCache;
 
   // log stream
   private final LogStream logStream;
@@ -110,12 +112,12 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private ProcessingScheduleServiceImpl processorActorService;
   private ProcessingScheduleServiceImpl asyncScheduleService;
   private AsyncProcessingScheduleServiceActor asyncActor;
-  private final int nodeId;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorSchedulingService = processorBuilder.getActorSchedulingService();
     lifecycleAwareListeners = new ArrayList<>(processorBuilder.getLifecycleListeners());
     zeebeDb = processorBuilder.getZeebeDb();
+    scheduledCommandCache = processorBuilder.scheduledCommandCache();
 
     streamProcessorContext =
         processorBuilder
@@ -125,7 +127,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             .abortCondition(this::isClosed);
     logStream = streamProcessorContext.getLogStream();
     partitionId = logStream.getPartitionId();
-    nodeId = processorBuilder.getNodeId();
     actorName = buildActorName("StreamProcessor", partitionId);
     metrics = new StreamProcessorMetrics(partitionId);
     recordProcessors.addAll(processorBuilder.getRecordProcessors());
@@ -166,12 +167,14 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
           new ProcessingScheduleServiceImpl(
               streamProcessorContext::getStreamProcessorPhase,
               streamProcessorContext.getAbortCondition(),
-              logStream::newLogStreamWriter);
+              logStream::newLogStreamWriter,
+              scheduledCommandCache);
       asyncScheduleService =
           new ProcessingScheduleServiceImpl(
               streamProcessorContext::getStreamProcessorPhase, // this is volatile
               () -> false, // we will just stop the actor in this case, no need to provide this
-              logStream::newLogStreamWriter);
+              logStream::newLogStreamWriter,
+              scheduledCommandCache);
       asyncActor = new AsyncProcessingScheduleServiceActor(asyncScheduleService, partitionId);
       final var extendedProcessingScheduleService =
           new ExtendedProcessingScheduleServiceImpl(
@@ -322,7 +325,10 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private void startProcessing(final LastProcessingPositions lastProcessingPositions) {
     processingStateMachine =
         new ProcessingStateMachine(
-            streamProcessorContext, this::shouldProcessNext, recordProcessors);
+            streamProcessorContext,
+            this::shouldProcessNext,
+            recordProcessors,
+            scheduledCommandCache);
 
     logStream.registerRecordAvailableListener(this);
 
