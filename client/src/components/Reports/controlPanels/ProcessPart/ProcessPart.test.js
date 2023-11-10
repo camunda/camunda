@@ -5,23 +5,24 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {shallow} from 'enzyme';
+
+import {BPMNDiagram} from 'components';
 
 import ProcessPart from './ProcessPart';
-
-import {shallow} from 'enzyme';
-import {Button, BPMNDiagram} from 'components';
 
 it('should display a button if no process part is set', () => {
   const node = shallow(<ProcessPart />);
 
-  expect(node.find(Button).filterWhere((n) => n.text() === 'Process Instance Part')).toExist();
+  expect(node.find('Button').filterWhere((n) => n.text() === 'Process Instance Part')).toExist();
 });
 
 it('should not display the button if process part is set', () => {
   const node = shallow(<ProcessPart processPart={{start: 'a', end: 'b'}} />);
 
-  expect(node.find(Button).filterWhere((n) => n.text() === 'Process Instance Part')).not.toExist();
+  expect(
+    node.find('Button').filterWhere((n) => n.text() === 'Process Instance Part')
+  ).not.toExist();
 });
 
 it('should show a preview of the process part', () => {
@@ -84,7 +85,7 @@ it('should display a warning if there is no path between start and end node', ()
     hasPath: false,
   });
 
-  expect(node.find('MessageBox').dive()).toIncludeText(
+  expect(node.find('InlineNotification').dive()).toIncludeText(
     'Report results may be empty or misleading.'
   );
 });

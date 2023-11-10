@@ -13,7 +13,7 @@ import GradientBarsSwitch from './subComponents/GradientBarsSwitch';
 import {isDurationReport} from 'services';
 import {Form} from 'components';
 
-export default function TableConfig({report, onChange}) {
+export default function TableConfig({report, onChange, autoPreviewDisabled}) {
   let typeSpecificComponent = null;
 
   const property = (report.combined ? Object.values(report.result.data)[0] : report).data.view
@@ -23,7 +23,9 @@ export default function TableConfig({report, onChange}) {
 
   switch (property) {
     case 'rawData':
-      typeSpecificComponent = <ColumnSelection report={report} onChange={onChange} />;
+      typeSpecificComponent = (
+        <ColumnSelection report={report} onChange={onChange} disabled={autoPreviewDisabled} />
+      );
       break;
     case 'frequency':
       typeSpecificComponent = (

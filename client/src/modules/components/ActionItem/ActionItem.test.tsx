@@ -7,8 +7,6 @@
 
 import {shallow} from 'enzyme';
 
-import {Button} from 'components';
-
 import ActionItem from './ActionItem';
 
 it('should match snapshot', () => {
@@ -27,7 +25,7 @@ it('should call the onClick handler', () => {
   const spy = jest.fn();
   const node = shallow(<ActionItem onClick={spy}>Content</ActionItem>);
 
-  node.find(Button).simulate('click');
+  node.find('Button').simulate('click');
 
   expect(spy).toHaveBeenCalled();
 });
@@ -36,7 +34,7 @@ it('should call the onClick handler', () => {
   const spy = jest.fn();
   const node = shallow(<ActionItem onEdit={spy}>Content</ActionItem>);
 
-  node.find(Button).at(0).simulate('click');
+  node.find('Button').at(0).simulate('click');
 
   expect(spy).toHaveBeenCalled();
 });
@@ -51,6 +49,6 @@ it('should prevent editing the action item if warning prop is specified', () => 
   const spy = jest.fn();
   const node = shallow(<ActionItem warning="There is an error" onEdit={spy} />);
 
-  node.find(Button).at(0).simulate('click');
+  node.find('Button').at(0).simulate('click');
   expect(spy).not.toHaveBeenCalled();
 });

@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   actions: read
+  pull-requests: read
 
 jobs:
   health-status-report:
@@ -33,7 +34,7 @@ jobs:
         run: |
           cd ${{ github.workspace }}/.github/scripts/healthStatusReport
           yarn
-          npx ts-node createHealtStatusConfig.ts
+          npx ts-node createHealthStatusConfig.ts
           cat config.json
 
         env:
@@ -42,7 +43,7 @@ jobs:
           SNYK_TOKEN: ${{ steps.secrets.outputs.SNYK_TOKEN }}
 
       - name: Get health status report
-        uses: misiekhardcore/infra-report-action@2fd767efd51156126fba0e40c421d73922b701f4 # v1.2.0
+        uses: misiekhardcore/infra-report-action@508e8db6dc6ff192373513c4380b972c09f2b9ab # v1.3.1
         id: get-report
         with:
           config_file_path: ${{ github.workspace }}/.github/scripts/healthStatusReport/config.json

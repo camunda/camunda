@@ -21,11 +21,13 @@ jest.mock('./Tooltip', () => 'foo');
 
 const appendSpy = jest.fn();
 const removeSpy = jest.fn();
+const eventSpy = jest.fn();
 
 const viewer = {
   get: () => {
     return {
       _viewport: {appendChild: appendSpy, removeChild: removeSpy},
+      on: eventSpy,
     };
   },
 };
@@ -59,4 +61,10 @@ it('should update heatmap if data changes', () => {
   expect(removeSpy).toHaveBeenCalledWith(heatmap);
   expect(appendSpy).toHaveBeenCalledTimes(2);
   expect(appendSpy).toHaveBeenLastCalledWith(anotherHeatmap);
+});
+
+it('should attach onClick if passed', () => {
+  const spy = jest.fn();
+  shallow(<HeatmapOverlay viewer={viewer} data={data} onNodeClick={spy} />);
+  expect(eventSpy).toHaveBeenCalledWith('element.click', spy);
 });

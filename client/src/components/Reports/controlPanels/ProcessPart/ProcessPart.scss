@@ -1,7 +1,7 @@
-@import 'shared-styles/shared-styles.scss';
-
 .ProcessPart {
-  > .Button {
+  flex-grow: 1;
+
+  > button {
     width: 100%;
   }
 
@@ -10,10 +10,10 @@
     white-space: pre-wrap;
 
     .ActionItem .content {
-      margin-top: -20px;
+      margin-top: -24px;
 
-      span.highlighted {
-        @include highlighted;
+      .cds--tag {
+        margin-left: 0;
       }
     }
   }
@@ -33,8 +33,13 @@
       flex-grow: 1;
     }
 
-    .MessageBox {
-      margin-top: 8px;
+    .SelectionPreview {
+      width: auto;
+    }
+
+    .notification {
+      margin-bottom: 8px;
+      max-width: 100%;
     }
   }
 }

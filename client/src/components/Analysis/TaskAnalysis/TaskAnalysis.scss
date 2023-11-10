@@ -24,35 +24,9 @@
       opacity: 0.2;
       pointer-events: none;
     }
-  }
 
-  .Tooltip__text-top,
-  .Tooltip__text-bottom {
-    padding: 10px;
-  }
-
-  .nodeTooltip {
-    text-align: left;
-    overflow: hidden;
-    padding: 0 1px;
-
-    .tooltipTitle {
-      font-weight: normal;
-      white-space: nowrap;
-    }
-
-    .description {
-      font-weight: normal;
-      width: max-content;
-    }
-
-    .Button {
-      float: right;
-      margin-left: 10px;
-
-      .Icon {
-        min-height: 14px;
-      }
+    .clickable * {
+      cursor: pointer;
     }
   }
 }

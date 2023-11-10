@@ -15,7 +15,6 @@ export const gatewayInput = Selector('[name="gateway"] .SelectionPreview');
 export const endEventInput = Selector('[name="endEvent"] .SelectionPreview');
 export const branchAnalysisLink = Selector('.NavItem').withText('Branch Analysis');
 export const heatmapEl = Selector('svg .viewport image');
-export const tooltipDetailsButton = Selector('.Tooltip button').withText('View Details');
 export const chart = Selector('.DurationChart canvas');
 export const commonVariablesButton = Selector('.cds--tabs button').withText(
   'Common Significant Variables Table'

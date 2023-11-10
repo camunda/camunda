@@ -202,6 +202,7 @@ export default function AssigneeFilter({
                     disabled={!users.length}
                   />
                   <UserTypeahead
+                    key={users.length ? 'hasUsers' : 'noUsers'}
                     users={users}
                     onChange={(users) => {
                       setUsers(users);
@@ -232,7 +233,10 @@ export default function AssigneeFilter({
             kind="ghost"
             className="reset-button"
             disabled={!filter}
-            onClick={() => setFilter()}
+            onClick={() => {
+              setFilter();
+              setUsers([]);
+            }}
           >
             {t('common.off')}
           </Button>

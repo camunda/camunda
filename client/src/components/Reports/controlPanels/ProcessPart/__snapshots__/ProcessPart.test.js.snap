@@ -5,11 +5,12 @@ exports[`should show a preview of the process part 1`] = `
   onClick={[Function]}
   onEdit={[Function]}
 >
-  <span
-    className="highlighted"
+  <Tag
+    size="sm"
+    type="blue"
   >
     Process Instance Part
-  </span>
+  </Tag>
   <div>
     <b>
       Start Node

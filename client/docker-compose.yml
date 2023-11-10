@@ -55,7 +55,7 @@ services:
     depends_on:
       - postgres
   postgres:
-    image: postgres:16.0@sha256:d8048a55b0952189c0f6fcc89ec46d78e1b56ac25eae0b2b85e449a57aa0ce44
+    image: postgres:16.0@sha256:a80d0c1b119cf3d6bab27f72782f16e47ab8534ced937fa813ec2ab26e1fd81e
     profiles: ['platform']
     container_name: postgres
     command: ["postgres", "-c", "max_connections=200", "-c", "effective_cache_size=4GB", "-c", "shared_buffers=2GB", "-c", "synchronous_commit=off", "-c", "log_statement=none", "-c", "checkpoint_timeout=600", "-c", "max_wal_size=30GB"]
@@ -91,13 +91,15 @@ services:
       - elasticsearch
   keycloak:
     container_name: keycloak
-    image: jboss/keycloak:16.1.1
+    image: bitnami/keycloak:22.0.5@sha256:1d1519d49dba9ff7360605928697ca865b8066506ad1a92570634f7a7316a81e
     profiles: ['self-managed']
     ports:
       - "18080:8080"
     environment:
-      KEYCLOAK_USER: admin
-      KEYCLOAK_PASSWORD: admin
+      KEYCLOAK_ADMIN_USER: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KEYCLOAK_DATABASE_VENDOR: dev-mem
+      KEYCLOAK_HTTP_RELATIVE_PATH: /auth
   identity:
     depends_on:
       - keycloak

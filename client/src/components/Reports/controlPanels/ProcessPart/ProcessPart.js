@@ -6,21 +6,19 @@
  */
 
 import React from 'react';
-import {Button} from '@carbon/react';
+import {Button, InlineNotification, Tag} from '@carbon/react';
 
 import {
-  Button as LegacyButton,
   Modal,
   BPMNDiagram,
   ClickBehavior,
   PartHighlight,
   ActionItem,
-  MessageBox,
   SelectionPreview,
 } from 'components';
+import {t} from 'translation';
 
 import './ProcessPart.scss';
-import {t} from 'translation';
 
 export default class ProcessPart extends React.Component {
   state = {
@@ -43,7 +41,11 @@ export default class ProcessPart extends React.Component {
 
   renderButton() {
     if (!this.props.processPart) {
-      return <LegacyButton onClick={this.openModal}>{t('report.processPart.label')}</LegacyButton>;
+      return (
+        <Button size="sm" kind="tertiary" onClick={this.openModal}>
+          {t('report.processPart.label')}
+        </Button>
+      );
     }
   }
 
@@ -62,7 +64,9 @@ export default class ProcessPart extends React.Component {
             }}
             onEdit={this.openModal}
           >
-            <span className="highlighted">{t('report.processPart.label')}</span>
+            <Tag size="sm" type="blue">
+              {t('report.processPart.label')}
+            </Tag>
             <div>
               <b>{this.renderFlowNodeName(this.props.processPart.start)}</b>
               <span> {t('common.and')} </span>
@@ -89,6 +93,14 @@ export default class ProcessPart extends React.Component {
       <Modal open={modalOpen} onClose={this.closeModal} size="lg" className="ProcessPartModal">
         <Modal.Header>{t('report.processPart.title')}</Modal.Header>
         <Modal.Content>
+          {start && end && !hasPath && (
+            <InlineNotification
+              className="notification"
+              kind="warning"
+              hideCloseButton
+              subtitle={t('report.processPart.noPathWarning')}
+            />
+          )}
           <span>
             {t('report.processPart.description')}{' '}
             <SelectionPreview
@@ -111,9 +123,6 @@ export default class ProcessPart extends React.Component {
               {end ? end.name || end.id : t('report.processPart.selectEnd')}
             </SelectionPreview>
           </span>
-          {start && end && !hasPath && (
-            <MessageBox type="warning">{t('report.processPart.noPathWarning')}</MessageBox>
-          )}
           <div className="diagram-container">
             <BPMNDiagram xml={this.props.xml}>
               <ClickBehavior

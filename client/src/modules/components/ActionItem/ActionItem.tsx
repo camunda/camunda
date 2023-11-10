@@ -7,8 +7,11 @@
 
 import {ReactNode} from 'react';
 import classnames from 'classnames';
+import {Button} from '@carbon/react';
+import {Close, Edit, Warning} from '@carbon/icons-react';
 
-import {Message, Icon, Button} from 'components';
+import {Message} from 'components';
+import {t} from 'translation';
 
 import './ActionItem.scss';
 
@@ -34,13 +37,23 @@ export default function ActionItem({
         {type && <div className="type">{type}</div>}
         <div className="buttons">
           {!warning && onEdit && (
-            <Button onClick={onEdit} icon>
-              <Icon size="15" type="edit-small" />
-            </Button>
+            <Button
+              size="sm"
+              kind="ghost"
+              onClick={onEdit}
+              hasIconOnly
+              renderIcon={Edit}
+              iconDescription={t('common.edit').toString()}
+            />
           )}
-          <Button onClick={onClick} icon>
-            <Icon size="15" type="close-small" />
-          </Button>
+          <Button
+            size="sm"
+            kind="ghost"
+            onClick={onClick}
+            hasIconOnly
+            renderIcon={Close}
+            iconDescription={t('common.delete').toString()}
+          />
         </div>
       </div>
       <div {...props} className={classnames('content', props.className)}>
@@ -48,7 +61,7 @@ export default function ActionItem({
       </div>
       {warning && (
         <Message error>
-          <Icon type="warning" /> {warning}
+          <Warning /> {warning}
         </Message>
       )}
     </div>

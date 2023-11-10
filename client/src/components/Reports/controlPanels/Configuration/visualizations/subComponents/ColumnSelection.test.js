@@ -222,3 +222,18 @@ it('should create section for count columns', () => {
   expect(node.find('ColumnSwitch').length).toBe(1);
   expect(node.find('ColumnSwitch').prop('label')).toBe('Incidents');
 });
+
+it('should disable the switch and set the tooltip message when disabled', () => {
+  const node = shallow(
+    <ColumnSelection
+      report={{
+        result: {data: [{counts: {incidents: 1}}]},
+        data,
+      }}
+      disabled
+    />
+  );
+
+  expect(node.text()).toContain('This function only works with automatic preview update turned on');
+  expect(node.find('AllColumnsButtons')).not.toExist();
+});

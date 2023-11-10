@@ -15,8 +15,7 @@ jobs:
     strategy:
       fail-fast: false # Don't disrupt other deployments because of failure
       matrix:
-        product_context: [c7]
-        # TODO: product_context: [c7,c8sm,c8saas]
+        product_context: [c7,c8sm]
 
     steps:
     #########################################################################
@@ -25,7 +24,7 @@ jobs:
       uses: camunda/infra-global-github-actions/sanitize-branch-name@main
       with:
         branch: ${{ env.BRANCH_NAME }}
-        max_length: '40'
+        max_length: '15'
     #########################################################################
     # Setup: import secrets from vault
     - name: Import secrets

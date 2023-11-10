@@ -52,3 +52,20 @@ it('should render GradientBarsSwitch for group by rules', () => {
 
   expect(node.find('GradientBarsSwitch')).toExist();
 });
+
+it('should disable the column selection component when automatic preview is off', () => {
+  const node = shallow(
+    <TableConfig
+      report={{
+        data: {
+          configuration: {tableColumns: {columnOrder: ['test']}},
+          groupBy: {type: 'matchedRule'},
+          view: {properties: ['rawData']},
+        },
+      }}
+      autoPreviewDisabled
+    />
+  );
+
+  expect(node.find('ColumnSelection').prop('disabled')).toBe(true);
+});

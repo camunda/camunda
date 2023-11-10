@@ -93,12 +93,10 @@ test('should show outliers heatmap when selecting a process definition', async (
   await t.expect(Analysis.heatmapEl.visible).ok();
 });
 
-test('should show outlier details modal when clicking view details on a flow node', async (t) => {
+test('should show outlier details modal when clicking on a flow node', async (t) => {
   await u.selectDefinition(t, 'Analysis Testing Process', [6, 5, 4, 3]);
 
-  await t.hover(Analysis.flowNode('AE0010P0030'));
-
-  await t.click(Analysis.tooltipDetailsButton);
+  await t.click(Analysis.flowNode('AE0010P0030'));
 
   await t
     .resizeWindow(1600, 800)
@@ -114,9 +112,7 @@ test('should show outlier details modal when clicking view details on a flow nod
 test('should show common outliers variables as a table', async (t) => {
   await u.selectDefinition(t, 'Analysis Testing Process', [6, 5, 4, 3]);
 
-  await t.hover(Analysis.flowNode('AE0010P0030'));
-
-  await t.click(Analysis.tooltipDetailsButton);
+  await t.click(Analysis.flowNode('AE0010P0030'));
 
   await t.click(Analysis.commonVariablesButton);
 

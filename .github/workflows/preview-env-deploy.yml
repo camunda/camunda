@@ -19,8 +19,7 @@ jobs:
     strategy:
       fail-fast: false # Don't disrupt other deployments because of failure
       matrix:
-        product_context: [c7]
-        # TODO: product_context: [c7,c8sm,c8saas]
+        product_context: [c7,c8sm]
 
     steps:
     #########################################################################
@@ -29,7 +28,7 @@ jobs:
       uses: camunda/infra-global-github-actions/sanitize-branch-name@main
       with:
         branch: ${{ env.BRANCH_NAME }}
-        max_length: '40'
+        max_length: '15'
     #########################################################################
     # Setup: import secrets from vault
     - name: Import secrets
@@ -53,7 +52,8 @@ jobs:
       uses: YunaBraska/java-info-action@main
     #########################################################################
     # Determine the argocd arguments that need to be passed to the create app command
-    - name: Determine Argocd Arguments
+    - name: Determine Argocd Arguments for ${{ matrix.product_context }}
+      if: matrix.product_context == 'c7'
       shell: bash
       run: |
         echo "argocd_arguments=--dest-namespace ${app_name} \
@@ -73,6 +73,30 @@ jobs:
         argocd_app_file_name: ${{ matrix.product_context }}
         cambpm_image_tag: ${{ steps.pom-info.outputs.x_camunda_engine_version }}
         elasticsearch_image_tag: ${{ steps.pom-info.outputs.x_elasticsearch_version }}
+
+    - name: Determine Argocd Arguments for ${{ matrix.product_context }}
+      if: matrix.product_context == 'c8sm'
+      shell: bash
+      run: |
+        echo "argocd_arguments=--dest-namespace ${app_name} \
+          --file .ci/preview-environments/argo/${argocd_app_file_name}.yml \
+          --helm-set camunda-platform.optimize.image.tag=${docker_tag} \
+          --helm-set camunda-platform.elasticsearch.image.tag=${elasticsearch_image_tag} \
+          --helm-set git.branch=${revision} \
+          --helm-set global.labels.app=${app_name} \
+          --helm-set global.identity.auth.publicIssuerUrl=${app_keycloak_url} \
+          --helm-set global.identity.auth.optimize.redirectUrl=${app_url} \
+          --name ${app_name} \
+          --revision ${revision} \
+          --upsert" >> $GITHUB_ENV
+      env:
+        docker_tag: "pr-${{ github.event.pull_request.head.sha }}" # commit id of latest PR event
+        revision: ${{ env.BRANCH_NAME }}
+        app_name: optimize-${{ steps.sanitize.outputs.branch_name }}-${{ matrix.product_context }}
+        argocd_app_file_name: ${{ matrix.product_context }}
+        elasticsearch_image_tag: ${{ steps.pom-info.outputs.x_elasticsearch8_test_version }}
+        app_keycloak_url: https://keycloak-${{ steps.sanitize.outputs.branch_name }}-${{ matrix.product_context }}.optimize.camunda.cloud/auth/realms/camunda-platform
+        app_url: https://${{ steps.sanitize.outputs.branch_name }}-${{ matrix.product_context }}.optimize.camunda.cloud
     #########################################################################
     # Create a preview environment
     - name: Deploy Preview Environment for ${{ matrix.product_context }}

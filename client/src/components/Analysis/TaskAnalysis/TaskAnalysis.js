@@ -11,14 +11,13 @@ import classnames from 'classnames';
 
 import {t} from 'translation';
 import {showError} from 'notifications';
-import {BPMNDiagram, HeatmapOverlay, Button, PageTitle} from 'components';
+import {BPMNDiagram, HeatmapOverlay, PageTitle} from 'components';
 import {loadProcessDefinitionXml, getFlowNodeNames} from 'services';
 import {withErrorHandling, withUser} from 'HOC';
 import {track} from 'tracking';
 
 import OutlierControlPanel from './OutlierControlPanel';
 import OutlierDetailsModal from './OutlierDetailsModal';
-import InstancesButton from './InstancesButton';
 import {loadNodesOutliers, loadDurationData} from './service';
 
 import './TaskAnalysis.scss';
@@ -82,7 +81,18 @@ export class TaskAnalysis extends React.Component {
     if (procDefConfigured && (procDefChanged || tenantsChanged)) {
       this.loadOutlierData(config);
     }
+    this.indicateClickableNodes();
   }
+
+  indicateClickableNodes = () => {
+    const {heatData} = this.state;
+    if (heatData) {
+      Object.keys(heatData).forEach((id) => {
+        const node = document.body.querySelector(`[data-element-id=${id}]`);
+        node?.classList.add('clickable');
+      });
+    }
+  };
 
   loadOutlierData = (config) => {
     this.setState({loading: true, heatData: {}});
@@ -105,39 +115,12 @@ export class TaskAnalysis extends React.Component {
     );
   };
 
-  renderTooltip = (data, id) => {
-    const {flowNodeNames, config} = this.state;
+  onNodeClick = ({element: {id}}) => {
     const nodeData = this.state.data[id];
-    if (!data || !nodeData.higherOutlier) {
-      return undefined;
+    if (!nodeData?.higherOutlier) {
+      return;
     }
-    const {
-      higherOutlier: {count, relation, boundValue},
-      totalCount,
-    } = nodeData;
-
-    return (
-      <div className="nodeTooltip">
-        <div className="tooltipTitle">
-          <b>{flowNodeNames[id] || id} :</b> {t('analysis.task.totalInstances')} {totalCount}
-        </div>
-        <p className="description">
-          {t(`analysis.task.tooltipText.${count === 1 ? 'singular' : 'plural'}`, {
-            count,
-            percentage: Math.round(relation * 100),
-          })}
-        </p>
-        <Button onClick={() => this.loadChartData(id, nodeData)}>{t('common.viewDetails')}</Button>
-        <InstancesButton
-          id={id}
-          name={flowNodeNames[id]}
-          value={boundValue}
-          config={config}
-          totalCount={totalCount}
-          user={this.props.user}
-        />
-      </div>
-    );
+    this.loadChartData(id, nodeData);
   };
 
   loadChartData = (id, nodeData) => {
@@ -174,12 +157,7 @@ export class TaskAnalysis extends React.Component {
         <div className={classnames('TaskAnalysis__diagram', {empty})}>
           {xml && (
             <BPMNDiagram xml={xml} loading={loading}>
-              <HeatmapOverlay
-                tooltipOptions={{theme: 'light'}}
-                noSequenceHighlight
-                data={heatData}
-                formatter={this.renderTooltip}
-              />
+              <HeatmapOverlay data={heatData} onNodeClick={this.onNodeClick} />
             </BPMNDiagram>
           )}
           {empty && <div className="noOutliers">{t('analysis.task.notFound')}</div>}

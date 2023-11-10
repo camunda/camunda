@@ -38,7 +38,7 @@ it('should call the addFilter prop with the selected filter option', () => {
 
   const node = shallow(<StateFilter {...props} addFilter={spy} />);
 
-  node.find({label: 'Filter Option 2'}).simulate('change');
+  node.find({labelText: 'Filter Option 2'}).simulate('click');
   node.find('.confirm').simulate('click');
 
   expect(spy).toHaveBeenCalledWith({type: 'option2', appliedTo: ['all']});

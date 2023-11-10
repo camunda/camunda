@@ -1,14 +1,20 @@
+@use '@carbon/colors';
+
 .dark .Message {
   &.error {
-    color: var(--red-darken-42);
+    color: var(--cds-text-error);
   }
 }
 
 .Message {
-  color: var(--grey-lighten-50);
+  color: colors.$gray-60;
   font-size: 0.8em;
 
+  svg {
+    vertical-align: bottom;
+  }
+
   &.error {
-    color: var(--red-darken-52);
+    color: var(--cds-text-error);
   }
 }

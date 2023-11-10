@@ -28,7 +28,12 @@ export default class HeatmapOverlay extends React.Component {
   }
 
   componentDidMount() {
+    const {viewer, onNodeClick} = this.props;
     this.renderHeatmap();
+
+    if (onNodeClick) {
+      viewer.get('eventBus').on('element.click', onNodeClick);
+    }
   }
 
   componentDidUpdate() {

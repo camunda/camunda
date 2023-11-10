@@ -61,6 +61,13 @@ test('create raw data report', async (t) => {
   await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Raw Data');
 
+  await t.click(ProcessReport.configurationButton);
+  await t.click(ProcessReport.selectSectionWithLabel('INPUT VARIABLES'));
+  await t.click(ProcessReport.selectSwitchLabel('Invoice Amount'));
+  await t.click(ProcessReport.selectSectionWithLabel('OUTPUT VARIABLES'));
+  await t.click(ProcessReport.selectSwitchLabel('Classification'));
+  await t.click(ProcessReport.configurationButton);
+
   await t.expect(ProcessReport.reportTable.textContent).contains('Decision Definition Key');
   await t.expect(ProcessReport.reportTable.textContent).contains('InputVar');
   await t.expect(ProcessReport.reportTable.textContent).contains('OutputVar');

@@ -181,6 +181,11 @@ test('sort table columns', async (t) => {
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Raw Data');
 
+  await t.click(e.configurationButton);
+  await t.click(e.selectSectionWithLabel('VARIABLES'));
+  await t.click(e.selectSwitchLabel('invoice'));
+  await t.click(e.configurationButton);
+
   await t.typeText(Common.nameEditField, 'Table Report', {replace: true});
 
   await t.expect(e.reportRenderer.textContent).contains('invoice');
@@ -227,6 +232,11 @@ test('view a variable object in rawdata table', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Raw Data');
+
+  await t.click(e.configurationButton);
+  await t.click(e.selectSectionWithLabel('VARIABLES'));
+  await t.click(e.selectSwitchLabel('person'));
+  await t.click(e.configurationButton);
 
   await t.scrollIntoView(e.objectViewBtn);
 

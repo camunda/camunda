@@ -15,6 +15,8 @@ import com.fasterxml.jackson.databind.ser.std.DateSerializer;
 import com.fasterxml.jackson.databind.util.StdDateFormat;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.collect.ImmutableSet;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONArray;
@@ -75,8 +77,6 @@ import org.camunda.optimize.test.util.client.dto.VariableValueDto;
 import org.elasticsearch.common.io.Streams;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;

@@ -15,14 +15,21 @@ exports[`should match snapshot 1`] = `
     <div
       className="buttons"
     >
-      <ForwardRef(Button)
-        icon={true}
-      >
-        <Icon
-          size="15"
-          type="close-small"
-        />
-      </ForwardRef(Button)>
+      <Button
+        hasIconOnly={true}
+        iconDescription="Delete"
+        kind="ghost"
+        renderIcon={
+          Object {
+            "$$typeof": Symbol(react.forward_ref),
+            "propTypes": Object {
+              "size": [Function],
+            },
+            "render": [Function],
+          }
+        }
+        size="sm"
+      />
     </div>
   </div>
   <div
