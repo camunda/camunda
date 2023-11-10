@@ -47,7 +47,7 @@ public final class TimerValidationTest {
         process,
         expect(
             timerEventElementId,
-            "Invalid timer duration expression (Invalid duration format 'foo' for expression 'foo')"));
+            "Invalid timer duration expression (Invalid duration format 'foo' for expression 'foo'.)"));
   }
 
   @ParameterizedTest(name = "[{index}] {0}")
@@ -62,7 +62,7 @@ public final class TimerValidationTest {
         process,
         expect(
             timerEventElementId,
-            "Invalid timer date expression (Invalid date-time format 'foo' for expression 'foo')"));
+            "Invalid timer date expression (Invalid date-time format 'foo' for expression 'foo'.)"));
   }
 
   @ParameterizedTest(name = "[{index}] {1}")

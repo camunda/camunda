@@ -167,7 +167,10 @@ public class BusinessRuleTaskIncidentTest {
     assertIncidentCreated(processInstanceKey, taskActivating.getKey())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Expected result of the expression 'decisionIdVariable' to be 'STRING', but was 'NULL'.");
+            """
+            Expected result of the expression 'decisionIdVariable' to be 'STRING', but was 'NULL'. \
+            The evaluation reported the following warnings:
+            [NO_VARIABLE_FOUND] No variable found with name 'decisionIdVariable'""");
   }
 
   @Test
