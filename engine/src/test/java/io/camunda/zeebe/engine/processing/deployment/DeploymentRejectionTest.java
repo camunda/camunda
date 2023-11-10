@@ -197,7 +197,7 @@ public class DeploymentRejectionTest {
             Expected to deploy new resources, but encountered the following errors:
             'p1.bpmn': - Element: start-event-1
                 - ERROR: Invalid timer cycle expression (Expected result of the expression 'INVALID_CYCLE_EXPRESSION' to be 'STRING', but was 'NULL'. \
-            The evaluation reported the following warnings: \
+            The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'INVALID_CYCLE_EXPRESSION')
             """);
   }

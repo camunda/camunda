@@ -100,9 +100,9 @@ public class UserTaskIncidentTest {
             """
             Assertion failure on evaluate the expression \
             'assert(MISSING_VAR, MISSING_VAR != null)': The condition is not fulfilled \
-            The evaluation reported the following warnings: \
-            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'; \
-            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'; \
+            The evaluation reported the following warnings:
+            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'
+            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'
             [ASSERT_FAILURE] The condition is not fulfilled""");
   }
 
@@ -239,9 +239,9 @@ public class UserTaskIncidentTest {
             """
             Assertion failure on evaluate the expression \
             'assert(MISSING_VAR, MISSING_VAR != null)': The condition is not fulfilled \
-            The evaluation reported the following warnings: \
-            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'; \
-            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'; \
+            The evaluation reported the following warnings:
+            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'
+            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'
             [ASSERT_FAILURE] The condition is not fulfilled""");
   }
 
@@ -367,9 +367,9 @@ public class UserTaskIncidentTest {
             """
             Assertion failure on evaluate the expression \
             'assert(MISSING_VAR, MISSING_VAR != null)': The condition is not fulfilled \
-            The evaluation reported the following warnings: \
-            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'; \
-            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'; \
+            The evaluation reported the following warnings:
+            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'
+            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'
             [ASSERT_FAILURE] The condition is not fulfilled""");
   }
 
@@ -498,9 +498,9 @@ public class UserTaskIncidentTest {
             """
             Assertion failure on evaluate the expression \
             'assert(MISSING_VAR, MISSING_VAR != null)': The condition is not fulfilled \
-            The evaluation reported the following warnings: \
-            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'; \
-            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'; \
+            The evaluation reported the following warnings:
+            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'
+            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'
             [ASSERT_FAILURE] The condition is not fulfilled""");
   }
 
@@ -641,9 +641,9 @@ public class UserTaskIncidentTest {
             """
             Assertion failure on evaluate the expression \
             'assert(MISSING_VAR, MISSING_VAR != null)': The condition is not fulfilled \
-            The evaluation reported the following warnings: \
-            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'; \
-            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'; \
+            The evaluation reported the following warnings:
+            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'
+            [NO_VARIABLE_FOUND] No variable found with name 'MISSING_VAR'
             [ASSERT_FAILURE] The condition is not fulfilled""");
   }
 
