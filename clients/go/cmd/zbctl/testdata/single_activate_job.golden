@@ -13,7 +13,8 @@
       "worker": "zbctl",
       "retries": 3,
       "deadline": "1574352413604",
-      "variables": "{}"
+      "variables": "{}",
+      "tenantId": "<default>"
     }
   ]
 }
