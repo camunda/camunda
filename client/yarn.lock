@@ -2487,7 +2487,14 @@
   resolved "https://registry.yarnpkg.com/@types/carbon__icons-react/-/carbon__icons-react-11.26.2.tgz#e906b687337b0f22ce68be038bdb2d478147c75c"
   integrity sha512-/ZuJEZT+9e0CNAfwlnYhuar6eyQjcPIKmPSHZ8OBaBO9DMKBSdUMuadaqAAeaGnRV17zUiQSVsYL7++nSA1KPg==
 
-"@types/cheerio@*", "@types/cheerio@^0.22.22":
+"@types/cheerio@*":
+  version "0.22.34"
+  resolved "https://registry.yarnpkg.com/@types/cheerio/-/cheerio-0.22.34.tgz#a2becca3fff0b33697a0e8db20b77d0f8b65894f"
+  integrity sha512-uoi5gQGpH5vdNrGOexnNm+19YZLdIRMF/IW8V6w1kIeoXaO1m2mVUMV4dl76tvRRKoIp9d/Z97ZYeIE4lacEsA==
+  dependencies:
+    "@types/node" "*"
+
+"@types/cheerio@^0.22.22":
   version "0.22.33"
   resolved "https://registry.yarnpkg.com/@types/cheerio/-/cheerio-0.22.33.tgz#e4792408b107384d7d7469e3b4d31408078ec620"
   integrity sha512-XUlu2BK4q3xJsccRLK69m/cABZd7m60o+cDEPUTG6jTpuG2vqN35UioeF99MQ/HoSOEPq0Bgil8g3jtzE0oH9A==
@@ -2517,16 +2524,16 @@
     "@types/ms" "*"
 
 "@types/enzyme-adapter-react-16@^1.0.6":
-  version "1.0.8"
-  resolved "https://registry.yarnpkg.com/@types/enzyme-adapter-react-16/-/enzyme-adapter-react-16-1.0.8.tgz#85bec6a9827110fb7299be8eed3a092f101c1dcc"
-  integrity sha512-nzYumRvxSh2Vbk7mkseYbInmpMbVZRc1EJQVeQmXhNCNVmLg2VOKAJujc7YJ/gDdPW+X03wYrDGa1Bj0Q/NTaw==
+  version "1.0.9"
+  resolved "https://registry.yarnpkg.com/@types/enzyme-adapter-react-16/-/enzyme-adapter-react-16-1.0.9.tgz#337d85f0e91be2654b246ec11701dcf75af30afc"
+  integrity sha512-z24MMxGtUL8HhXdye3tWzjp+19QTsABqLaX2oOZpxMPHRJgLfahQmOeTTrEBQd9ogW20+UmPBXD9j+XOasFHvw==
   dependencies:
     "@types/enzyme" "*"
 
 "@types/enzyme@*", "@types/enzyme@^3.10.13":
-  version "3.10.15"
-  resolved "https://registry.yarnpkg.com/@types/enzyme/-/enzyme-3.10.15.tgz#56d1167bb11a2c3f65af790de0cbb0e990b21489"
-  integrity sha512-Tdm2XXW7TfyKhb/ddSLMpj8W0UgxbCOOauFNeLJH7+KzsfOBrHF6XPctw11SwGoOPyUglYQpvMoQNFXOF0uTwg==
+  version "3.10.16"
+  resolved "https://registry.yarnpkg.com/@types/enzyme/-/enzyme-3.10.16.tgz#100c49093f694545fc903266b2eb410df08859a9"
+  integrity sha512-17uMdJjSKjvdn/MhO/G2lRNPZGvJxFpvgONrsRoS1+khtJ6UcnCwC9v3gk2UqPyAkMZb6a1VYxScc/vOgkDl9w==
   dependencies:
     "@types/cheerio" "*"
     "@types/react" "^16"
@@ -2799,9 +2806,9 @@
     csstype "^3.0.2"
 
 "@types/react@^16":
-  version "16.14.50"
-  resolved "https://registry.yarnpkg.com/@types/react/-/react-16.14.50.tgz#ec9c30f2f0c7d9aa748949536d88e3439526a25d"
-  integrity sha512-7TWZ/HjhXsRK3BbhSFxTinbSft3sUXJAU3ONngT0rpcKJaIOlxkRke4bidqQTopUbEv1ApC5nlSEkIpX43MkTg==
+  version "16.14.51"
+  resolved "https://registry.yarnpkg.com/@types/react/-/react-16.14.51.tgz#2bf66518ee13947bb5074de6c14e6b3ac343cfe0"
+  integrity sha512-4T/wsDXStA5OUGTj6w2INze3ZCz22IwQiWcApgqqNRU2A6vNUIPXpNkjAMUFxx6diYPVkvz+d7gEtU7AZ+0Xqg==
   dependencies:
     "@types/prop-types" "*"
     "@types/scheduler" "*"
