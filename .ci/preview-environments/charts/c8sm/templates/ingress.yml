@@ -13,6 +13,7 @@ spec:
   tls:
   - hosts:
     - {{ include "ingress.domain" $ | quote }}
+    - {{ include "ingress.domain" $ | printf "identity-%s" | quote }}
     - {{ include "ingress.domain" $ | printf "keycloak-%s" | quote }}
     - {{ include "ingress.domain" $ | printf "operate-%s" | quote }}
     - {{ include "ingress.domain" $ | printf "tasklist-%s" | quote }}
@@ -28,6 +29,16 @@ spec:
             name: optimize
             port:
               number: 8090
+  - host: {{ include "ingress.domain" $ | printf "identity-%s" | quote }}
+    http:
+      paths:
+      - path: /
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: identity
+            port:
+              number: 80
   - host: {{ include "ingress.domain" $ | printf "keycloak-%s" | quote }}
     http:
       paths:
