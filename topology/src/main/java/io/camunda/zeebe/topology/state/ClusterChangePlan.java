@@ -73,11 +73,16 @@ public record ClusterChangePlan(
     return !pendingOperations().isEmpty();
   }
 
+  public CompletedChange cancel() {
+    return new CompletedChange(id, Status.CANCELLED, startedAt(), Instant.now());
+  }
+
   public record CompletedOperation(TopologyChangeOperation operation, Instant completedAt) {}
 
   public enum Status {
     IN_PROGRESS,
     COMPLETED,
-    FAILED;
+    FAILED,
+    CANCELLED;
   }
 }

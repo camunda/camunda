@@ -250,4 +250,25 @@ public record ClusterTopology(
     }
     return pendingChanges.orElseThrow().nextPendingOperation();
   }
+
+  /**
+   * Cancel any pending changes and return a new topology with the already applied changes.
+   *
+   * @note This is a dangerous operation that can lead to an inconsistent cluster topology. This
+   *     should be only called as a last resort when the topology change is stuck and not able to
+   *     make progress on its own.
+   * @return a new topology with the already applied changes and no pending changes.
+   */
+  public ClusterTopology cancelPendingChanges() {
+    if (hasPendingChanges()) {
+      final var cancelledChange = pendingChanges.orElseThrow().cancel();
+      // Increment version by 2 to avoid conflicts with other members who are applying the change.
+      // A conflict would not happen if the cancel is only called when the operation is truly stuck.
+      final var newVersion = version + 2;
+      return new ClusterTopology(
+          newVersion, members, Optional.of(cancelledChange), Optional.empty());
+    } else {
+      return this;
+    }
+  }
 }
