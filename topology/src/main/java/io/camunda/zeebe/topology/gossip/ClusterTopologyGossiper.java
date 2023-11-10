@@ -284,19 +284,29 @@ public final class ClusterTopologyGossiper
 
   @Override
   public boolean isRelevant(final ClusterMembershipEvent event) {
-    return event.type() == Type.MEMBER_ADDED;
+    return event.type() == Type.MEMBER_ADDED || event.type() == Type.MEMBER_REMOVED;
   }
 
   @Override
   public void event(final ClusterMembershipEvent event) {
-    // When a new member is added to the cluster, immediately sync with it so that the new member
-    // receives the latest topology as fast as possible.
-    executor.run(
-        () -> {
-          if (config.enableSync()) {
-            sync(event.subject().id());
-          }
-        });
+    switch (event.type()) {
+      case MEMBER_ADDED ->
+      // When a new member is added to the cluster, immediately sync with it so that the new member
+      // receives the latest topology as fast as possible.
+      executor.run(
+          () -> {
+            if (config.enableSync()) {
+              sync(event.subject().id());
+            }
+          });
+      case MEMBER_REMOVED ->
+      // When a member is removed, remove it from the list of members to sync so that we don't try
+      // to sync with it in the next round. This is only for optimization.
+      executor.run(() -> membersToSync.remove(event.subject().id()));
+      default -> {
+        // ignore
+      }
+    }
   }
 
   @Override
