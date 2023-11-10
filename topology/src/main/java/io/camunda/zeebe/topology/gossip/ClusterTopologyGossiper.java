@@ -48,7 +48,7 @@ public final class ClusterTopologyGossiper
   private final Set<TopologyUpdateListener> topologyUpdateListeners = new HashSet<>();
 
   // Reuse the same random ordered list for both sync and gossip
-  private List<MemberId> membersToSync = List.of();
+  private List<MemberId> membersToSync = new LinkedList<>();
 
   // The handler which can merge topology updates and reacts to the changes.
   private final Function<ClusterTopology, ActorFuture<ClusterTopology>>
