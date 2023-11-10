@@ -10,6 +10,7 @@ package io.camunda.zeebe.it.gateway;
 import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.qa.util.testcontainers.DefaultTestContainers;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
@@ -60,23 +62,14 @@ public class GatewayAuthenticationIdentityIT {
   private static final String ZEEBE_CLIENT_SECRET = "zecret";
   private static final Network NETWORK = Network.newNetwork();
 
-  @SuppressWarnings("resource")
   @Container
-  private static final GenericContainer<?> KEYCLOAK =
-      new GenericContainer<>("bitnami/keycloak:22.0.1")
-          .withEnv("KC_HEALTH_ENABLED", "true")
+  private static final KeycloakContainer KEYCLOAK =
+      DefaultTestContainers.createDefaultKeycloak()
           .withEnv("KEYCLOAK_ADMIN_USER", KEYCLOAK_USER)
           .withEnv("KEYCLOAK_ADMIN_PASSWORD", KEYCLOAK_PASSWORD)
           .withEnv("KEYCLOAK_DATABASE_VENDOR", "dev-mem")
           .withNetwork(NETWORK)
-          .withNetworkAliases("keycloak")
-          .withExposedPorts(8080)
-          .waitingFor(
-              new HttpWaitStrategy()
-                  .forPort(8080)
-                  .forPath("/health/ready")
-                  .allowInsecure()
-                  .forStatusCode(200));
+          .withNetworkAliases("keycloak");
 
   @SuppressWarnings("resource")
   @Container
