@@ -21,6 +21,7 @@ import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 
 import jakarta.ws.rs.core.Response;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -168,7 +169,6 @@ public class CandidateGroupsRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(3);
     assertThat(searchResponse.getResult())
       .hasSize(3)
       .containsExactlyInAnyOrder(
@@ -198,7 +198,6 @@ public class CandidateGroupsRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(3);
     assertThat(searchResponse.getResult())
       .hasSize(3)
       .containsExactlyInAnyOrder(
@@ -232,7 +231,6 @@ public class CandidateGroupsRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(2);
     assertThat(searchResponse.getResult())
       .hasSize(2)
       .containsExactlyInAnyOrder(
@@ -264,14 +262,12 @@ public class CandidateGroupsRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(1);
     assertThat(searchResponse.getResult())
       .singleElement()
       .isEqualTo(
         new GroupDto(CANDIDATE_GROUP_ID_IMPOSTERS, CANDIDATE_GROUP_NAME_IMPOSTERS)
       );
 
-    assertThat(otherDefinitionSearchResponse.getTotal()).isEqualTo(1);
     assertThat(otherDefinitionSearchResponse.getResult())
       .singleElement()
       .isEqualTo(
@@ -305,14 +301,12 @@ public class CandidateGroupsRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(1);
     assertThat(searchResponse.getResult())
       .singleElement()
       .isEqualTo(
         new GroupDto(CANDIDATE_GROUP_ID_IMPOSTERS, CANDIDATE_GROUP_NAME_IMPOSTERS)
       );
 
-    assertThat(otherReportSearchResponse.getTotal()).isEqualTo(1);
     assertThat(otherReportSearchResponse.getResult())
       .singleElement()
       .isEqualTo(
@@ -347,14 +341,12 @@ public class CandidateGroupsRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(noTenantSearchResponse.getTotal()).isEqualTo(1);
     assertThat(noTenantSearchResponse.getResult())
       .singleElement()
       .isEqualTo(
         new GroupDto(CANDIDATE_GROUP_ID_IMPOSTERS, CANDIDATE_GROUP_NAME_IMPOSTERS)
       );
 
-    assertThat(tenant1SearchResponse.getTotal()).isEqualTo(1);
     assertThat(tenant1SearchResponse.getResult())
       .singleElement()
       .isEqualTo(
@@ -393,14 +385,12 @@ public class CandidateGroupsRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(noTenantSearchResponse.getTotal()).isEqualTo(1);
     assertThat(noTenantSearchResponse.getResult())
       .singleElement()
       .isEqualTo(
         new GroupDto(CANDIDATE_GROUP_ID_IMPOSTERS, CANDIDATE_GROUP_NAME_IMPOSTERS)
       );
 
-    assertThat(tenant1SearchResponse.getTotal()).isEqualTo(1);
     assertThat(tenant1SearchResponse.getResult())
       .singleElement()
       .isEqualTo(
@@ -427,7 +417,6 @@ public class CandidateGroupsRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(1);
     assertThat(searchResponse.getResult())
       .hasSize(1)
       .containsExactlyInAnyOrder(
@@ -454,7 +443,6 @@ public class CandidateGroupsRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(1);
     assertThat(searchResponse.getResult())
       .hasSize(1)
       .containsExactlyInAnyOrder(
@@ -481,7 +469,6 @@ public class CandidateGroupsRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(1);
     assertThat(searchResponse.getResult())
       .singleElement()
       .isEqualTo(
@@ -508,7 +495,6 @@ public class CandidateGroupsRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(1);
     assertThat(searchResponse.getResult())
       .singleElement()
       .isEqualTo(
@@ -534,7 +520,6 @@ public class CandidateGroupsRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(2);
     assertThat(searchResponse.getResult())
       .hasSize(2)
       .containsExactlyInAnyOrder(
@@ -562,7 +547,6 @@ public class CandidateGroupsRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(2);
     assertThat(searchResponse.getResult())
       .hasSize(2)
       .containsExactlyInAnyOrder(
@@ -590,7 +574,6 @@ public class CandidateGroupsRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(2);
     assertThat(searchResponse.getResult()).hasSize(1);
   }
 
@@ -614,7 +597,6 @@ public class CandidateGroupsRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(2);
     assertThat(searchResponse.getResult()).hasSize(1);
   }
 
@@ -636,7 +618,6 @@ public class CandidateGroupsRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(1);
     assertThat(searchResponse.getResult())
       .singleElement()
       .isEqualTo(
@@ -664,7 +645,6 @@ public class CandidateGroupsRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(1);
     assertThat(searchResponse.getResult())
       .singleElement()
       .isEqualTo(
@@ -693,7 +673,6 @@ public class CandidateGroupsRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(2);
     assertThat(searchResponse.getResult())
       .hasSize(2)
       .containsExactly(
@@ -723,7 +702,6 @@ public class CandidateGroupsRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(2);
     assertThat(searchResponse.getResult())
       .hasSize(2)
       .containsExactly(
@@ -751,7 +729,6 @@ public class CandidateGroupsRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(1);
     assertThat(searchResponse.getResult())
       .singleElement()
       .isEqualTo(
@@ -777,7 +754,6 @@ public class CandidateGroupsRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(1);
     assertThat(searchResponse.getResult())
       .singleElement()
       .isEqualTo(
@@ -802,7 +778,6 @@ public class CandidateGroupsRestServiceIT extends AbstractPlatformIT {
         .build()
     );
     // then
-    assertThat(searchResponse.getTotal()).isZero();
     assertThat(searchResponse.getResult()).isEmpty();
   }
 

@@ -30,6 +30,7 @@ import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpRequest;
 
 import jakarta.ws.rs.core.Response;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
@@ -73,7 +74,7 @@ public class IdentityRestServiceIT extends AbstractPlatformIT {
     final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity("frodo");
 
     // then
-    assertThat(searchResult).isEqualTo(new IdentitySearchResultResponseDto(1L, Lists.newArrayList(userIdentity)));
+    assertThat(searchResult).isEqualTo(new IdentitySearchResultResponseDto(Lists.newArrayList(userIdentity)));
   }
 
   @Test
@@ -89,7 +90,7 @@ public class IdentityRestServiceIT extends AbstractPlatformIT {
     final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity("frodo");
 
     // then
-    assertThat(searchResult).isEqualTo(new IdentitySearchResultResponseDto(1L, Lists.newArrayList(userIdentity)));
+    assertThat(searchResult).isEqualTo(new IdentitySearchResultResponseDto(Lists.newArrayList(userIdentity)));
   }
 
   @Test
@@ -103,7 +104,7 @@ public class IdentityRestServiceIT extends AbstractPlatformIT {
     final IdentitySearchResultResponseDto searchResult = identityClient.searchForIdentity("hobbit");
 
     // then
-    assertThat(searchResult).isEqualTo(new IdentitySearchResultResponseDto(1L, Lists.newArrayList(groupIdentity)));
+    assertThat(searchResult).isEqualTo(new IdentitySearchResultResponseDto(Lists.newArrayList(groupIdentity)));
   }
 
   @Test
@@ -124,7 +125,7 @@ public class IdentityRestServiceIT extends AbstractPlatformIT {
     // then
     assertThat(searchResult)
       // user is first as name and email contains baggins
-      .isEqualTo(new IdentitySearchResultResponseDto(2L, Lists.newArrayList(userIdentity, groupIdentity)));
+      .isEqualTo(new IdentitySearchResultResponseDto(Lists.newArrayList(userIdentity, groupIdentity)));
   }
 
   @Test
@@ -140,7 +141,7 @@ public class IdentityRestServiceIT extends AbstractPlatformIT {
 
     // then the result does not contain the user group that matches
     assertThat(searchResult)
-      .isEqualTo(new IdentitySearchResultResponseDto(1L, Lists.newArrayList(userIdentity)));
+      .isEqualTo(new IdentitySearchResultResponseDto(Lists.newArrayList(userIdentity)));
   }
 
   @Test
@@ -186,9 +187,7 @@ public class IdentityRestServiceIT extends AbstractPlatformIT {
     assertThat(searchResult)
       // user is first as name and email contains baggins, empty user is second because name == id and is `testUser2`
       // group is last because it starts with `Th`
-      .isEqualTo(new IdentitySearchResultResponseDto(
-        3L, Lists.newArrayList(userIdentity, emptyMetaDataUserIdentity, groupIdentity)
-      ));
+      .isEqualTo(new IdentitySearchResultResponseDto(Lists.newArrayList(userIdentity, emptyMetaDataUserIdentity, groupIdentity)));
   }
 
   @Test
@@ -209,9 +208,7 @@ public class IdentityRestServiceIT extends AbstractPlatformIT {
     assertThat(searchResult)
       // user is first as name and email contains baggins
       // total count reflects only what the user is being shown, therefore 1
-      .isEqualTo(new IdentitySearchResultResponseDto(
-        1L, Lists.newArrayList(userIdentity)
-      ));
+      .isEqualTo(new IdentitySearchResultResponseDto(Lists.newArrayList(userIdentity)));
   }
 
   @ParameterizedTest

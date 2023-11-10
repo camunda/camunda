@@ -78,10 +78,10 @@ public class CCSaaSIdentityService extends AbstractIdentityService {
         .limit(maxResults)
         .map(this::mapToUserDto)
         .collect(Collectors.toList());
-      return new IdentitySearchResultResponseDto(0, users);
+      return new IdentitySearchResultResponseDto(users);
     } catch (OptimizeRuntimeException e) {
       log.warn("Failed retrieving users.", e);
-      return new IdentitySearchResultResponseDto(0, Collections.emptyList());
+      return new IdentitySearchResultResponseDto(Collections.emptyList());
     }
   }
 

@@ -264,7 +264,6 @@ public class SearchableIdentityCache implements AutoCloseable {
           termsAndIdFilterQuery.build(), resultLimit, createNameSorting()
         );
 
-        result.setTotal(topDocs.totalHits.value);
         for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
           final Document document = searcher.doc(scoreDoc.doc);
           final IdentityWithMetadataResponseDto identityRestDto = mapDocumentToIdentityDto(document);

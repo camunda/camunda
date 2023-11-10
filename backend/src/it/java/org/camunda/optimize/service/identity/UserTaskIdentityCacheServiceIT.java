@@ -186,7 +186,6 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
 
     // then
     final IdentitySearchResultResponseDto allEntries = getUserTaskIdentityCacheService().searchIdentities("", 10);
-    assertThat(allEntries.getTotal()).isEqualTo(2);
     assertThat(allEntries.getResult())
       .extracting(IdentityWithMetadataResponseDto::toIdentityDto)
       .extracting(IdentityDto::getId)
@@ -341,7 +340,6 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
 
     // then
     final IdentitySearchResultResponseDto allEntries = getUserTaskIdentityCacheService().searchIdentities("", 10);
-    assertThat(allEntries.getTotal()).isEqualTo(2);
     assertThat(allEntries.getResult())
       .extracting(IdentityWithMetadataResponseDto::toIdentityDto)
       .extracting(IdentityDto::getId)

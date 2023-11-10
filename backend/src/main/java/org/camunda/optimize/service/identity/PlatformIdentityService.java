@@ -163,7 +163,7 @@ public class PlatformIdentityService extends AbstractIdentityService implements 
       filteredIdentities.addAll(filterIdentitySearchResultByUserAuthorizations(userId, result));
       result = syncedIdentityCache.searchIdentitiesAfter(searchString, identityTypesToSearch, maxResults, result);
     }
-    return new IdentitySearchResultResponseDto(filteredIdentities.size(), filteredIdentities);
+    return new IdentitySearchResultResponseDto(filteredIdentities);
   }
 
   private void initUserGroupCache() {
