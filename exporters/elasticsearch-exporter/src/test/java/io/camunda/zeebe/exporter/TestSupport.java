@@ -10,9 +10,11 @@ package io.camunda.zeebe.exporter;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import java.time.Duration;
 import java.util.EnumSet;
 import java.util.stream.Stream;
 import org.elasticsearch.client.RestClient;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -32,11 +34,20 @@ final class TestSupport {
    *
    * <p>Additionally, security is explicitly disabled to avoid having tons of warning printed out.
    */
+  @SuppressWarnings("resource")
   static ElasticsearchContainer createDefaultContainer() {
     return new ElasticsearchContainer(ELASTIC_IMAGE)
-        .withEnv("ES_JAVA_OPTS", "-Xms256m -Xmx512m -XX:MaxDirectMemorySize=536870912")
+        // use JVM option files to avoid overwriting default options set by the ES container class
+        .withClasspathResourceMapping(
+            "elasticsearch-fast-startup.options",
+            "/usr/share/elasticsearch/config/jvm.options.d/ elasticsearch-fast-startup.options",
+            BindMode.READ_ONLY)
+        // can be slow in CI
+        .withStartupTimeout(Duration.ofMinutes(5))
         .withEnv("action.auto_create_index", "true")
-        .withEnv("xpack.security.enabled", "false");
+        .withEnv("xpack.security.enabled", "false")
+        .withEnv("xpack.watcher.enabled", "false")
+        .withEnv("xpack.ml.enabled", "false");
   }
 
   /**
