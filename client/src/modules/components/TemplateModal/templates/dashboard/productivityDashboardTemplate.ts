@@ -7,8 +7,9 @@
 
 import {t} from 'translation';
 
-import productivity from '../images/productivity.png';
-import {getExternalResourcePath} from './service';
+import {getExternalResourcePath} from '../service';
+
+import productivity from './images/productivity.png';
 
 export function productivityDashboardTemplate(docsLink: string) {
   return {

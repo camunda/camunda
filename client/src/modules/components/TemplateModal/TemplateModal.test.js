@@ -12,7 +12,7 @@ import {DefinitionSelection, Button, BPMNDiagram, Modal} from 'components';
 import {loadProcessDefinitionXml} from 'services';
 import {track} from 'tracking';
 
-import {TemplateModal} from './TemplateModal';
+import TemplateModal from './TemplateModal';
 
 jest.mock('services', () => {
   return {
@@ -22,6 +22,13 @@ jest.mock('services', () => {
 });
 
 jest.mock('tracking', () => ({track: jest.fn()}));
+
+jest.mock('hooks', () => ({
+  ...jest.requireActual('hooks'),
+  useErrorHandling: () => ({
+    mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  }),
+}));
 
 beforeEach(() => {
   Object.defineProperty(global, 'ResizeObserver', {
@@ -35,7 +42,6 @@ beforeEach(() => {
 
 const props = {
   onClose: jest.fn(),
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   entity: 'report',
   templateGroups: [
     {
@@ -162,7 +168,7 @@ it('should call the templateToState prop to determine link state', async () => {
   expect(confirmButton.prop('to').state).toEqual({data: 'stateData'});
 });
 
-it('should show templates with subTitles', () => {
+it('should show templates with descriptions', () => {
   const node = shallow(
     <TemplateModal
       {...props}
@@ -170,18 +176,18 @@ it('should show templates with subTitles', () => {
       templateGroups={[
         {
           name: 'singleProcessGroup',
-          templates: [{name: 'portfolioPerformance', disableDescription: true, hasSubtitle: true}],
+          templates: [{name: 'portfolioPerformance'}],
         },
         {
           name: 'multiProcessGroup',
-          templates: [{name: 'operationsMonitoring', disableDescription: true, hasSubtitle: true}],
+          templates: [{name: 'operationsMonitoring'}],
         },
       ]}
     />
   );
 
-  expect(node.find('.templateContainer').find(Button)).toHaveClassName('hasSubtitle');
-  expect(node.find('.subTitle')).toExist();
+  expect(node.find('.templateContainer').find(Button)).toHaveClassName('hasDescription');
+  expect(node.find('.description')).toExist();
 });
 
 it('should update the selected template if it is disabled for the selected definitions', async () => {

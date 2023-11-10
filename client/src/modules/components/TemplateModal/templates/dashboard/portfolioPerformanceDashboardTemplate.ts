@@ -7,13 +7,11 @@
 
 import {t} from 'translation';
 
-import portfolioPerformance from '../images/portfolioPerformance.png';
+import portfolioPerformance from './images/portfolioPerformance.png';
 
 export function portfolioPerformanceDashboardTemplate() {
   return {
     name: 'portfolioPerformance',
-    disableDescription: true,
-    hasSubtitle: true,
     img: portfolioPerformance,
     disabled: (definitions: unknown[]) => definitions.length < 2,
     config: [

@@ -7,9 +7,9 @@
 
 import {t} from 'translation';
 
-import efficiency from '../images/efficiency.png';
+import {getExternalResourcePath} from '../service';
 
-import {getExternalResourcePath} from './service';
+import efficiency from './images/efficiency.png';
 
 export function efficiencyDashboardTemplate(docsLink: string) {
   return {

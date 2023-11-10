@@ -7,13 +7,11 @@
 
 import {t} from 'translation';
 
-import operationsMonitoring from '../images/operationsMonitoring.png';
+import operationsMonitoring from './images/operationsMonitoring.png';
 
 export function operationsMonitoringDashboardTemplate() {
   return {
     name: 'operationsMonitoring',
-    disableDescription: true,
-    hasSubtitle: true,
     img: operationsMonitoring,
     disabled: (definitions: unknown[]) => definitions.length < 2,
     config: [

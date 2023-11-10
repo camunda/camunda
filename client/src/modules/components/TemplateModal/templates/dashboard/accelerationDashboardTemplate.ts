@@ -7,9 +7,9 @@
 
 import {t} from 'translation';
 
-import acceleration from '../images/acceleration.png';
+import {getExternalResourcePath} from '../service';
 
-import {getExternalResourcePath} from './service';
+import acceleration from './images/acceleration.png';
 
 export function accelerationDashboardTemplate(docsLink: string) {
   return {

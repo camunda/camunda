@@ -7,9 +7,9 @@
 
 import {t} from 'translation';
 
-import processDashboard from '../images/processDashboard.png';
+import {getExternalResourcePath} from '../service';
 
-import {getExternalResourcePath} from './service';
+import processDashboard from './images/processDashboard.png';
 
 export function processDashboardTemplate(docsLink: string) {
   return {

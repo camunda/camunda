@@ -19,7 +19,8 @@ import {
   portfolioPerformanceDashboardTemplate,
   processDashboardTemplate,
   productivityDashboardTemplate,
-} from './templates';
+} from './templates/dashboard';
+
 export default function DashboardTemplateModal({
   onClose,
   onConfirm,
