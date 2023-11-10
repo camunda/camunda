@@ -29,11 +29,12 @@ import (
 )
 
 type jobPoller struct {
-	client         pb.GatewayClient
-	request        *pb.ActivateJobsRequest
-	requestTimeout time.Duration
-	maxJobsActive  int
-	pollInterval   time.Duration
+	client              pb.GatewayClient
+	request             *pb.ActivateJobsRequest
+	requestTimeout      time.Duration
+	maxJobsActive       int
+	initialPollInterval time.Duration
+	pollInterval        time.Duration
 
 	jobQueue       chan entities.Job
 	workerFinished chan bool
@@ -42,6 +43,8 @@ type jobPoller struct {
 	threshold      int
 	metrics        JobWorkerMetrics
 	shouldRetry    func(context.Context, error) bool
+
+	backoffSupplier BackoffSupplier
 }
 
 func (poller *jobPoller) poll(closeWait *sync.WaitGroup) {
@@ -56,6 +59,7 @@ func (poller *jobPoller) poll(closeWait *sync.WaitGroup) {
 		case <-poller.workerFinished:
 			poller.remaining--
 			poller.setJobsRemainingCountMetric(poller.remaining)
+			poller.pollInterval = poller.initialPollInterval
 		// or the poll interval exceeded
 		case <-time.After(poller.pollInterval):
 		// or poller should stop
@@ -102,6 +106,11 @@ func (poller *jobPoller) activateJobs() {
 				log.Printf("Failed to activate jobs for worker '%s': %v\n", poller.request.Worker, err)
 			}
 
+			switch status.Code(err) {
+			case codes.ResourceExhausted, codes.Unavailable, codes.Internal:
+				poller.backoff()
+			}
+
 			break
 		}
 
@@ -129,4 +138,9 @@ func (poller *jobPoller) setJobsRemainingCountMetric(count int) {
 	if poller.metrics != nil {
 		poller.metrics.SetJobsRemainingCount(poller.request.GetType(), count)
 	}
+}
+
+func (poller *jobPoller) backoff() {
+	prevInterval := poller.pollInterval
+	poller.pollInterval = poller.backoffSupplier.SupplyRetryDelay(prevInterval)
 }
