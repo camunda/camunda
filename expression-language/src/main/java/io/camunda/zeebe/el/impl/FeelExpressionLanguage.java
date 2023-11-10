@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.EnsureUtil.ensureNotNull;
 
 import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.el.EvaluationResult;
+import io.camunda.zeebe.el.EvaluationWarning;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.impl.feel.FeelEvaluationResult;
@@ -18,6 +19,8 @@ import io.camunda.zeebe.el.impl.feel.FeelVariableContext;
 import io.camunda.zeebe.feel.impl.FeelFunctionProvider;
 import io.camunda.zeebe.feel.impl.FeelToMessagePackTransformer;
 import io.camunda.zeebe.feel.impl.MessagePackValueMapper;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Pattern;
 import org.camunda.feel.FeelEngine;
 import org.camunda.feel.FeelEngine.Failure;
@@ -109,18 +112,18 @@ public final class FeelExpressionLanguage implements ExpressionLanguage {
     final var parsedExpression = feelExpression.getParsedExpression();
     final var feelContext = new FeelVariableContext(context);
 
-    final Either<Failure, Object> evalResult = feelEngine.eval(parsedExpression, feelContext);
+    final var evaluationResult = feelEngine.evaluate(parsedExpression, feelContext);
 
-    if (evalResult.isLeft()) {
-      final var failure = evalResult.left().get();
-      return new EvaluationFailure(expression, failure.message());
+    final var evaluationWarnings = extractEvaluationWarning(evaluationResult);
+    if (evaluationResult.isFailure()) {
+      final var failureMessage = evaluationResult.failure().message();
+      return new EvaluationFailure(expression, failureMessage, evaluationWarnings);
     }
 
-    final var result = evalResult.right().get();
-
+    final var result = evaluationResult.result();
     if (result instanceof Val) {
       return new FeelEvaluationResult(
-          expression, (Val) result, messagePackTransformer::toMessagePack);
+          expression, (Val) result, evaluationWarnings, messagePackTransformer::toMessagePack);
 
     } else {
       throw new IllegalStateException(
@@ -128,5 +131,21 @@ public final class FeelExpressionLanguage implements ExpressionLanguage {
               "Expected FEEL evaluation result to be of type '%s' but was '%s'",
               Val.class, result.getClass()));
     }
+  }
+
+  private List<EvaluationWarning> extractEvaluationWarning(
+      final org.camunda.feel.api.EvaluationResult evaluationResult) {
+    final var warnings = new ArrayList<EvaluationWarning>();
+    evaluationResult
+        .suppressedFailures()
+        .foreach(
+            suppressedFailure -> {
+              final var warning =
+                  new FeelEvaluationWarning(
+                      suppressedFailure.failureType().toString(),
+                      suppressedFailure.failureMessage());
+              return warnings.add(warning);
+            });
+    return warnings;
   }
 }

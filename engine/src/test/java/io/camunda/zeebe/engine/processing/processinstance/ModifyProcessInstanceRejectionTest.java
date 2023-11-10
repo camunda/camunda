@@ -180,7 +180,9 @@ public class ModifyProcessInstanceRejectionTest {
             """
             Expected to subscribe to catch event(s) of 'sp' but \
             Failed to extract the correlation key for 'missingVariable': \
-            The value must be either a string or a number, but was NULL.""");
+            The value must be either a string or a number, but was 'NULL'. \
+            The evaluation reported the following warnings:
+            [NO_VARIABLE_FOUND] No variable found with name 'missingVariable'""");
   }
 
   @Test

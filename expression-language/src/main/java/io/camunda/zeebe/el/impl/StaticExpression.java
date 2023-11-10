@@ -10,12 +10,14 @@ package io.camunda.zeebe.el.impl;
 import static io.camunda.zeebe.el.impl.Loggers.LOGGER;
 
 import io.camunda.zeebe.el.EvaluationResult;
+import io.camunda.zeebe.el.EvaluationWarning;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ResultType;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Period;
 import java.time.ZonedDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
@@ -78,6 +80,11 @@ public final class StaticExpression implements Expression, EvaluationResult {
   @Override
   public boolean isFailure() {
     return false;
+  }
+
+  @Override
+  public List<EvaluationWarning> getWarnings() {
+    return Collections.emptyList();
   }
 
   @Override
