@@ -26,7 +26,7 @@ on:
         description: 'Any additional tag that should be added to the docker image.'
       DRY_RUN:
         required: true
-        description: 'Check if this is an actual release or a dry run.'
+        description: 'Is dry run.'
         default: 'true'
       RELEASE_EXAMPLES:
         required: true
@@ -62,6 +62,16 @@ jobs:
             secret/data/products/infra/ci/common CAMUNDA_NEXUS_PSW;
             secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_USR;
             secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_PSW;
+
+      - name: Log Input Variables
+        run: |
+          echo "RELEASE_VERSION: ${{ inputs.RELEASE_VERSION }}"
+          echo "DEVELOPMENT_VERSION: ${{ inputs.DEVELOPMENT_VERSION }}"
+          echo "BRANCH: ${{ inputs.BRANCH }}"
+          echo "DOCKER_LATEST: ${{ inputs.DOCKER_LATEST }}"
+          echo "ADDITIONAL_DOCKER_TAG: ${{ inputs.ADDITIONAL_DOCKER_TAG }}"
+          echo "DRY_RUN: ${{ inputs.DRY_RUN }}"
+          echo "RELEASE_EXAMPLES: ${{ inputs.RELEASE_EXAMPLES }}"
 
       - name: "Read Java / Version Info"
         id: "pom-info"
