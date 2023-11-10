@@ -30,6 +30,7 @@ import io.camunda.zeebe.stream.api.EmptyProcessingResult;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.stream.impl.TestScheduledCommandCache.TestCommandCache;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import io.camunda.zeebe.stream.impl.state.DbLastProcessedPositionState;
 import io.camunda.zeebe.stream.util.RecordToWrite;
@@ -70,6 +71,7 @@ public final class StreamPlatform {
   private final ZeebeDbFactory zeebeDbFactory;
   private final StreamProcessorLifecycleAware mockProcessorLifecycleAware;
   private final StreamProcessorListener mockStreamProcessorListener;
+  private TestCommandCache scheduledCommandCache;
 
   public StreamPlatform(
       final Path dataDirectory,
@@ -231,6 +233,10 @@ public final class StreamPlatform {
     return mockProcessorLifecycleAware;
   }
 
+  public TestCommandCache scheduledCommandCache() {
+    return scheduledCommandCache;
+  }
+
   public StreamProcessor buildStreamProcessor(
       final SynchronousLogStream stream, final boolean awaitOpening) {
     return buildStreamProcessor(stream, awaitOpening, defaultStreamProcessorMode);
@@ -242,6 +248,7 @@ public final class StreamPlatform {
       final StreamProcessorMode processorMode) {
     final var storage = createRuntimeFolder(stream);
     final var snapshot = storage.getParent().resolve(SNAPSHOT_FOLDER);
+    scheduledCommandCache = new TestCommandCache();
 
     final ZeebeDb<?> zeebeDb;
     if (snapshotWasTaken) {
@@ -259,6 +266,7 @@ public final class StreamPlatform {
             .recordProcessors(recordProcessors)
             .streamProcessorMode(processorMode)
             .listener(mockStreamProcessorListener)
+            .scheduledCommandCache(scheduledCommandCache)
             .partitionCommandSender(mock(InterPartitionCommandSender.class));
 
     builder.addLifecycleListener(mockProcessorLifecycleAware);
