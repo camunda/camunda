@@ -136,7 +136,7 @@ public final class CallActivityIncidentTest {
         .hasErrorMessage(
             """
             Expected result of the expression 'wfChild' to be 'STRING', but was 'NULL'. \
-            The evaluation reported the following warnings: \
+            The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'wfChild'""");
   }
 
@@ -193,7 +193,7 @@ public final class CallActivityIncidentTest {
         .hasErrorMessage(
             """
             Expected result of the expression 'wfChild' to be 'STRING', but was 'NULL'. \
-            The evaluation reported the following warnings: \
+            The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'wfChild'""");
   }
 

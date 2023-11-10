@@ -404,8 +404,9 @@ public final class ExpressionProcessor {
       final var formattedWarnings =
           evaluationWarnings.stream()
               .map(warning -> "[%s] %s".formatted(warning.getType(), warning.getMessage()))
-              .collect(Collectors.joining("; "));
-      message += " The evaluation reported the following warnings: %s".formatted(formattedWarnings);
+              .collect(Collectors.joining("\n"));
+      message +=
+          " The evaluation reported the following warnings:\n%s".formatted(formattedWarnings);
     }
 
     return new Failure(message, ErrorType.EXTRACT_VALUE_ERROR, variableScopeKey);

@@ -90,7 +90,7 @@ public final class MessageIncidentTest {
         .hasErrorMessage(
             """
             Expected result of the expression 'nameLookup' to be 'STRING', but was 'NULL'. \
-            The evaluation reported the following warnings: \
+            The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'nameLookup'""")
         .hasBpmnProcessId("UNRESOLVABLE_NAME_EXPRESSION")
         .hasProcessInstanceKey(processInstanceKey)
@@ -204,7 +204,7 @@ public final class MessageIncidentTest {
             """
             Failed to extract the correlation key for 'orderId': \
             The value must be either a string or a number, but was 'NULL'. \
-            The evaluation reported the following warnings: \
+            The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'orderId'""")
         .hasBpmnProcessId(PROCESS_ID)
         .hasProcessInstanceKey(processInstanceKey)

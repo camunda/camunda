@@ -441,7 +441,7 @@ public final class ErrorEventIncidentTest {
         .hasErrorMessage(
             """
             Expected result of the expression 'unknown_error_code' to be 'STRING', but was 'NULL'. \
-            The evaluation reported the following warnings: \
+            The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'unknown_error_code'""")
         .hasBpmnProcessId(endEvent.getValue().getBpmnProcessId())
         .hasProcessDefinitionKey(endEvent.getValue().getProcessDefinitionKey())

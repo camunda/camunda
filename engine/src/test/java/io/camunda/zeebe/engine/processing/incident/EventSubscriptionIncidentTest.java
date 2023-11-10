@@ -289,7 +289,7 @@ public final class EventSubscriptionIncidentTest {
             """
             Failed to extract the correlation key for 'key2': \
             The value must be either a string or a number, but was 'NULL'. \
-            The evaluation reported the following warnings: \
+            The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'key2'""")
         .hasBpmnProcessId(processId)
         .hasProcessInstanceKey(processInstanceKey)

@@ -105,7 +105,7 @@ class ExpressionProcessorTest {
           .isEqualTo(
               """
               Expected result of the expression 'x' to be 'STRING', but was 'NULL'. \
-              The evaluation reported the following warnings: \
+              The evaluation reported the following warnings:
               [NO_VARIABLE_FOUND] No variable found with name 'x'""");
     }
 
@@ -119,7 +119,7 @@ class ExpressionProcessorTest {
           .isEqualTo(
               """
               Expected result of the expression 'x' to be 'NUMBER', but was 'NULL'. \
-              The evaluation reported the following warnings: \
+              The evaluation reported the following warnings:
               [NO_VARIABLE_FOUND] No variable found with name 'x'""");
     }
 
@@ -133,7 +133,7 @@ class ExpressionProcessorTest {
           .isEqualTo(
               """
               Expected result of the expression 'x' to be 'BOOLEAN', but was 'NULL'. \
-              The evaluation reported the following warnings: \
+              The evaluation reported the following warnings:
               [NO_VARIABLE_FOUND] No variable found with name 'x'""");
     }
 
@@ -147,7 +147,7 @@ class ExpressionProcessorTest {
           .isEqualTo(
               """
               Expected result of the expression 'x' to be one of '[DURATION, PERIOD, STRING]', but was 'NULL'. \
-              The evaluation reported the following warnings: \
+              The evaluation reported the following warnings:
               [NO_VARIABLE_FOUND] No variable found with name 'x'""");
     }
 
@@ -161,7 +161,7 @@ class ExpressionProcessorTest {
           .isEqualTo(
               """
               Expected result of the expression 'x' to be one of '[DATE_TIME, STRING]', but was 'NULL'. \
-              The evaluation reported the following warnings: \
+              The evaluation reported the following warnings:
               [NO_VARIABLE_FOUND] No variable found with name 'x'""");
     }
 
@@ -175,7 +175,7 @@ class ExpressionProcessorTest {
           .isEqualTo(
               """
               Expected result of the expression 'x' to be 'ARRAY', but was 'NULL'. \
-              The evaluation reported the following warnings: \
+              The evaluation reported the following warnings:
               [NO_VARIABLE_FOUND] No variable found with name 'x'""");
     }
 
@@ -190,7 +190,7 @@ class ExpressionProcessorTest {
               """
               Expected result of the expression '[x]' to be 'ARRAY' containing 'STRING' items, \
               but was 'ARRAY' containing at least one non-'STRING' item. \
-              The evaluation reported the following warnings: \
+              The evaluation reported the following warnings:
               [NO_VARIABLE_FOUND] No variable found with name 'x'""");
     }
 
@@ -205,7 +205,7 @@ class ExpressionProcessorTest {
               """
               Failed to extract the correlation key for 'x': \
               The value must be either a string or a number, but was 'NULL'. \
-              The evaluation reported the following warnings: \
+              The evaluation reported the following warnings:
               [NO_VARIABLE_FOUND] No variable found with name 'x'""");
     }
 
@@ -219,7 +219,7 @@ class ExpressionProcessorTest {
           .isEqualTo(
               """
               Expected result of the expression 'x' to be 'OBJECT', but was 'NULL'. \
-              The evaluation reported the following warnings: \
+              The evaluation reported the following warnings:
               [NO_VARIABLE_FOUND] No variable found with name 'x'""");
     }
   }
