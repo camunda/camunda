@@ -2660,10 +2660,10 @@
   dependencies:
     "@types/istanbul-lib-report" "*"
 
-"@types/jest@29.5.7":
-  version "29.5.7"
-  resolved "https://registry.yarnpkg.com/@types/jest/-/jest-29.5.7.tgz#2c0dafe2715dd958a455bc10e2ec3e1ec47b5036"
-  integrity sha512-HLyetab6KVPSiF+7pFcUyMeLsx25LDNDemw9mGsJBkai/oouwrjTycocSDYopMEwFhN2Y4s9oPyOCZNofgSt2g==
+"@types/jest@29.5.8":
+  version "29.5.8"
+  resolved "https://registry.yarnpkg.com/@types/jest/-/jest-29.5.8.tgz#ed5c256fe2bc7c38b1915ee5ef1ff24a3427e120"
+  integrity sha512-fXEFTxMV2Co8ZF5aYFJv+YeA08RTYJfhtN5c9JSv/mFEMe+xxjufCb+PHL+bJcMs/ebPUsBu+UNTEz+ydXrR6g==
   dependencies:
     expect "^29.0.0"
     pretty-format "^29.0.0"
@@ -2758,17 +2758,17 @@
   integrity sha512-xrO9OoVPqFuYyR/loIHjnbvvyRZREYKLjxV4+dY6v3FQR3stQ9ZxIGkaclF7YhI9hfjpuTbu14hZEy94qKLtOA==
 
 "@types/react-date-range@^1.4.4":
-  version "1.4.7"
-  resolved "https://registry.yarnpkg.com/@types/react-date-range/-/react-date-range-1.4.7.tgz#a2d603f23ea009bab0a3d72ea3fb3fbdb02bb7d7"
-  integrity sha512-ZBfzFuM9Dris3PwB6qQSnKrJwlxIq+e/+3Cpr14/NH9OLRTe9YI3cB+MCiD54sOcEgmN1G0s7HxUVdcqJrIAUw==
+  version "1.4.8"
+  resolved "https://registry.yarnpkg.com/@types/react-date-range/-/react-date-range-1.4.8.tgz#7d3b659a1ee81d0fcefc7245ef84d5e0301cd5fd"
+  integrity sha512-tQ+kaEHbMNp63W1kd9MAkAneLXC18TxZPshLwKhkksGPd698N2y7gR0YtFlh2QOlPK6xISj5Fwe5WsK+GsM+Ig==
   dependencies:
     "@types/react" "*"
     date-fns "^2.16.1"
 
 "@types/react-dom@^18.0.11":
-  version "18.2.14"
-  resolved "https://registry.yarnpkg.com/@types/react-dom/-/react-dom-18.2.14.tgz#c01ba40e5bb57fc1dc41569bb3ccdb19eab1c539"
-  integrity sha512-V835xgdSVmyQmI1KLV2BEIUgqEuinxp9O4G6g3FqO/SqLac049E53aysv0oEFD2kHfejeKU+ZqL2bcFWj9gLAQ==
+  version "18.2.15"
+  resolved "https://registry.yarnpkg.com/@types/react-dom/-/react-dom-18.2.15.tgz#921af67f9ee023ac37ea84b1bc0cc40b898ea522"
+  integrity sha512-HWMdW+7r7MR5+PZqJF6YFNSCtjz1T0dsvo/f1BV6HkV+6erD/nA7wd9NM00KVG83zf2nJ7uATPO9ttdIPvi3gg==
   dependencies:
     "@types/react" "*"
 
@@ -2790,9 +2790,9 @@
     "@types/react" "*"
 
 "@types/react-table@^7.7.14":
-  version "7.7.17"
-  resolved "https://registry.yarnpkg.com/@types/react-table/-/react-table-7.7.17.tgz#4b58dee39d2bb585013536b519e6414591029c73"
-  integrity sha512-25/SDkn0qnvxBvxSPnMO1vf1ymvcSmwPr7qcFuYyWElTGcsOWQsV+sCFq1dVhGYdd2fSsOnP4MkZUl/q9MlG+g==
+  version "7.7.18"
+  resolved "https://registry.yarnpkg.com/@types/react-table/-/react-table-7.7.18.tgz#603541083dd01328b576ab4373f7dcbe22033c31"
+  integrity sha512-OncztdDERQ35pjcQCpNoQe8KPOE8Rg2Ox4PlZHMGNgHTEaM1JyT2lWfNNbj2sCnOtQOHrOH7SzUnGUAXzqdksg==
   dependencies:
     "@types/react" "*"
 
