@@ -47,8 +47,17 @@ final class CommandApiRequestHandler
       final CommandApiRequestReader requestReader,
       final CommandApiResponseWriter responseWriter,
       final ErrorResponseWriter errorWriter) {
+    if (isProcessingPaused()) {
+      final String errorMessage = "Requests cannot be handled while processing is paused.";
+      LOG.warn(errorMessage);
+      return CompletableActorFuture.completed(Either.left(errorWriter.customError(errorMessage)));
+    }
     return CompletableActorFuture.completed(
         handle(partitionId, requestId, requestReader, responseWriter, errorWriter));
+  }
+
+  public boolean isProcessingPaused() {
+    return !isDiskSpaceAvailable;
   }
 
   private Either<ErrorResponseWriter, CommandApiResponseWriter> handle(
