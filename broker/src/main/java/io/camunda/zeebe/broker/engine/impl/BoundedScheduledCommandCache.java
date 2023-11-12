@@ -12,6 +12,7 @@ import io.camunda.zeebe.streamprocessor.ScheduledCommandCache.StageableScheduled
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.agrona.collections.LongHashSet;
@@ -80,6 +81,11 @@ public final class BoundedScheduledCommandCache implements StageableScheduledCom
   }
 
   @Override
+  public void clear() {
+    caches.values().forEach(BoundedCommandCache::clear);
+  }
+
+  @Override
   public StagedScheduledCommandCache stage() {
     return new StagedCache();
   }
@@ -101,6 +107,11 @@ public final class BoundedScheduledCommandCache implements StageableScheduledCom
     @Override
     public void remove(final Intent intent, final long key) {
       stagedKeys(intent).remove(key);
+    }
+
+    @Override
+    public void clear() {
+      stagedKeys.values().forEach(Set::clear);
     }
 
     @Override
