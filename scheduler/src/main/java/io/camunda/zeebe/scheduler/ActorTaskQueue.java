@@ -9,6 +9,7 @@ package io.camunda.zeebe.scheduler;
 
 import static org.agrona.UnsafeAccess.UNSAFE;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 /** Adapted from Agrona's {@link ManyToOneConcurrentLinkedQueue}. */
@@ -134,7 +135,14 @@ class ActorTaskQueueNode {
     }
   }
 
+  @SuppressFBWarnings(
+      value = "UWF_UNWRITTEN_FIELD",
+      justification = "Written using UNSAFE (see NEXT_OFFSET usage)")
   volatile ActorTaskQueueNode next;
+
+  @SuppressFBWarnings(
+      value = "UWF_UNWRITTEN_FIELD",
+      justification = "Written using UNSAFE (see PREV_OFFSET usage)")
   volatile ActorTaskQueueNode prev;
 
   long stateCount;
