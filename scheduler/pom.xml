@@ -35,6 +35,12 @@
       <artifactId>simpleclient</artifactId>
     </dependency>
     <dependency>
+      <groupId>com.github.spotbugs</groupId>
+      <artifactId>spotbugs-annotations</artifactId>
+      <scope>provided</scope>
+      <!-- only used at compile time -->
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
@@ -72,7 +78,6 @@
       <groupId>org.jetbrains</groupId>
       <artifactId>annotations</artifactId>
     </dependency>
-
   </dependencies>
   <build>
     <plugins>
