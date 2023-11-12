@@ -31,6 +31,11 @@ public class TestScheduledCommandCache implements ScheduledCommandCache {
     cacheForIntent(intent).remove(key);
   }
 
+  @Override
+  public void clear() {
+    cachedKeys.values().forEach(Set::clear);
+  }
+
   private Set<Long> cacheForIntent(final Intent intent) {
     return cachedKeys.computeIfAbsent(intent, ignored -> new ConcurrentSkipListSet<>());
   }
