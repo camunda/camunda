@@ -83,7 +83,7 @@
     "eslint-plugin-prettier": "5.0.1",
     "eslint-plugin-react-hooks": "4.6.0",
     "eslint-plugin-react-refresh": "0.4.4",
-    "eslint-plugin-testing-library": "6.1.0",
+    "eslint-plugin-testing-library": "6.1.2",
     "http-proxy-middleware": "2.0.6",
     "husky": "8.0.3",
     "jsdom": "22.1.0",
@@ -95,10 +95,10 @@
     "source-map-explorer": "2.5.3",
     "ts-toolbelt": "9.6.0",
     "typescript": "5.2.2",
-    "vite": "5.0.0-beta.17",
+    "vite": "5.0.0-beta.18",
     "vite-plugin-svgr": "4.1.0",
     "vite-tsconfig-paths": "4.2.1",
-    "vitest": "1.0.0-beta.3",
+    "vitest": "1.0.0-beta.4",
     "zeebe-node": "8.3.1"
   },
   "lint-staged": {
