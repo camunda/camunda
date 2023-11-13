@@ -1181,6 +1181,57 @@
             "name": "ModifyProcessInstanceResponse"
           },
           {
+            "name": "MigrateProcessInstanceRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "processInstanceKey",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "migrationPlan",
+                "type": "MigrationPlan"
+              }
+            ],
+            "messages": [
+              {
+                "name": "MigrationPlan",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "targetProcessDefinitionKey",
+                    "type": "int64"
+                  },
+                  {
+                    "id": 2,
+                    "name": "mappingInstructions",
+                    "type": "MappingInstruction",
+                    "is_repeated": true
+                  }
+                ]
+              },
+              {
+                "name": "MappingInstruction",
+                "fields": [
+                  {
+                    "id": 1,
+                    "name": "sourceElementId",
+                    "type": "string"
+                  },
+                  {
+                    "id": 2,
+                    "name": "targetElementId",
+                    "type": "string"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "MigrateProcessInstanceResponse"
+          },
+          {
             "name": "DeleteResourceRequest",
             "fields": [
               {
@@ -1325,6 +1376,11 @@
                 "name": "ModifyProcessInstance",
                 "in_type": "ModifyProcessInstanceRequest",
                 "out_type": "ModifyProcessInstanceResponse"
+              },
+              {
+                "name": "MigrateProcessInstance",
+                "in_type": "MigrateProcessInstanceRequest",
+                "out_type": "MigrateProcessInstanceResponse"
               },
               {
                 "name": "UpdateJobTimeout",

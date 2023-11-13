@@ -19,6 +19,7 @@ import static io.camunda.zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.camunda.zeebe.client.api.command.MigrationPlan;
 import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.ActivateInstruction;
@@ -41,6 +42,25 @@ public class ModifyProcessInstanceTest extends ClientTest {
   private static final String EMPTY_ELEMENT_ID = "";
   private static final String ELEMENT_ID_A = "elementId_A";
   private static final String ELEMENT_ID_B = "elementId_B";
+
+  @Test
+  public void shouldMigrate() {
+    // when
+    final MigrationPlan migrationPlan =
+        MigrationPlan.newBuilder()
+            .withTargetProcessDefinitionKey(EMPTY_KEY)
+            .addMappingInstruction("a", "b")
+            .build();
+
+    client.newMigrateProcessInstanceCommand(PI_KEY).migrationPlan(migrationPlan);
+    client.newModifyProcessInstanceCommand(PI_KEY).activateElement(ELEMENT_ID_A).send().join();
+
+    // then
+    final ModifyProcessInstanceRequest request = gatewayService.getLastRequest();
+    assertRequest(request, 1, 0);
+    final ActivateInstruction activateInstruction = request.getActivateInstructions(0);
+    assertActivateInstruction(activateInstruction, ELEMENT_ID_A, EMPTY_KEY, 0);
+  }
 
   @Test
   public void shouldActivateSingleElement() {

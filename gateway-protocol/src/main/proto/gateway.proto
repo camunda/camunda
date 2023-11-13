@@ -621,6 +621,31 @@ message ModifyProcessInstanceResponse {
 
 }
 
+message MigrateProcessInstanceRequest {
+  // key of the source process instance to migrate
+  int64 processInstanceKey = 1;
+  // the migration plan that defines target process and element mappings
+  MigrationPlan migrationPlan = 2;
+
+  message MigrationPlan {
+    // the process definition key to migrate into
+    int64 targetProcessDefinitionKey = 1;
+    // list of source (to migrate from) element id and target element id (to migrate into)
+    repeated MappingInstruction mappingInstructions = 2;
+  }
+
+  message MappingInstruction {
+    // the element id to migrate from
+    string sourceElementId = 1;
+    // the element id to migrate into
+    string targetElementId = 2;
+  }
+}
+
+message MigrateProcessInstanceResponse {
+
+}
+
 message DeleteResourceRequest {
   // The key of the resource that should be deleted. This can either be the key
   // of a process definition, the key of a decision requirements definition or the key of a form.
@@ -885,6 +910,10 @@ service Gateway {
         - scope of variable is unknown
    */
   rpc ModifyProcessInstance (ModifyProcessInstanceRequest) returns (ModifyProcessInstanceResponse) {
+
+  }
+
+  rpc MigrateProcessInstance (MigrateProcessInstanceRequest) returns (MigrateProcessInstanceResponse) {
 
   }
 

@@ -31,6 +31,7 @@ import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.EvaluateDecisionCommandStep1;
 import io.camunda.zeebe.client.api.command.FailJobCommandStep1;
+import io.camunda.zeebe.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
@@ -267,6 +268,12 @@ public final class ZeebeClientImpl implements ZeebeClient {
         asyncStub,
         config.getDefaultRequestTimeout(),
         credentialsProvider::shouldRetryRequest);
+  }
+
+  @Override
+  public MigrateProcessInstanceCommandStep1 newMigrateProcessInstanceCommand(
+      final long processInstanceKey) {
+    return null;
   }
 
   @Override

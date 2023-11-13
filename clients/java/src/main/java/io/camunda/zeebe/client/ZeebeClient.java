@@ -22,6 +22,7 @@ import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.EvaluateDecisionCommandStep1;
+import io.camunda.zeebe.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
@@ -166,6 +167,27 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   ModifyProcessInstanceCommandStep1 newModifyProcessInstanceCommand(long processInstanceKey);
+
+  /**
+   * Command to migrate a process instance.
+   *
+   * <pre>
+   *   zeebeClient
+   *    .newMigrateProcessInstanceCommand(processInstanceKey)
+   *    .activateElement("element1")
+   *    .and()
+   *    .activateElement("element2")
+   *    .withVariables(globalScopedVariables)
+   *    .withVariables(localScopedVariables, "element2")
+   *    .and()
+   *    .terminateElement("element3")
+   *    .send();
+   * </pre>
+   *
+   * @param processInstanceKey the key which identifies the source process instance
+   * @return a builder for the command
+   */
+  MigrateProcessInstanceCommandStep1 newMigrateProcessInstanceCommand(long processInstanceKey);
 
   /**
    * Command to cancel a process instance.
