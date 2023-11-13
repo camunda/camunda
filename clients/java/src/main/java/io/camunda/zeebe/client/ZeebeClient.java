@@ -30,6 +30,7 @@ import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
+import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
@@ -357,6 +358,10 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(ActivatedJob job);
+
+  UpdateTimeoutJobCommandStep1 newUpdateTimeoutCommand(long jobKey);
+
+  UpdateTimeoutJobCommandStep1 newUpdateTimeoutCommand(ActivatedJob job);
 
   /**
    * Registers a new job worker for jobs of a given type.
