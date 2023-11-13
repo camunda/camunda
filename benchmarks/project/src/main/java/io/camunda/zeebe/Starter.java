@@ -19,6 +19,7 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.StarterCfg;
+import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -37,6 +38,8 @@ import org.slf4j.LoggerFactory;
 
 public class Starter extends App {
 
+  private static final Logger THROTTLED_LOGGER =
+      new ThrottledLogger(LoggerFactory.getLogger(Starter.class), Duration.ofSeconds(5));
   private static final Logger LOG = LoggerFactory.getLogger(Starter.class);
 
   private final AppCfg appCfg;
@@ -143,7 +146,7 @@ public class Starter extends App {
         }
 
       } catch (final Exception e) {
-        LOG.error("Error on creating new process instance", e);
+        THROTTLED_LOGGER.error("Error on creating new process instance", e);
       }
     } else {
       countDownLatch.countDown();
@@ -199,7 +202,7 @@ public class Starter extends App {
         client.newDeployResourceCommand().addResourceFromClasspath(bpmnXmlPath).send().join();
         break;
       } catch (final Exception e) {
-        LOG.warn("Failed to deploy process, retrying", e);
+        THROTTLED_LOGGER.warn("Failed to deploy process, retrying", e);
         try {
           Thread.sleep(200);
         } catch (final InterruptedException ex) {
