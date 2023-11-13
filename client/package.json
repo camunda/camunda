@@ -6,7 +6,7 @@
   "dependencies": {
     "@bpmn-io/dmn-migrate": "^0.4.3",
     "@bpmn-io/element-templates-icons-renderer": "^0.3.0",
-    "@camunda/camunda-composite-components": "^0.2.4",
+    "@camunda/camunda-composite-components": "^0.3.0",
     "@camunda/camunda-optimize-composite-components": "^0.0.15-rc4",
     "@carbon/icons-react": "^11.25.0",
     "@carbon/react": "^1.38.0",
