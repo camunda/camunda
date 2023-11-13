@@ -62,6 +62,33 @@ final class BoundedCommandCacheTest {
     assertThat(reportedSize).hasValue(3);
   }
 
+  @Test
+  void shouldReportSizeToResetMetricOnCreation() {
+    // given
+    final var reportedSize = new AtomicInteger(200);
+
+    // when
+    final var ignored = new BoundedCommandCache(reportedSize::set);
+
+    // then
+    assertThat(reportedSize).hasValue(0);
+  }
+
+  @Test
+  void shouldClearCache() {
+    // given
+    final var reportedSize = new AtomicInteger();
+    final var cache = new BoundedCommandCache(reportedSize::set);
+    cache.add(setOf(1, 2, 3, 4));
+
+    // when
+    cache.clear();
+
+    // then
+    assertThat(cache.size()).isZero();
+    assertThat(reportedSize).hasValue(0);
+  }
+
   private LongHashSet setOf(final long... keys) {
     final var set = new LongHashSet();
     set.addAll(Arrays.stream(keys).boxed().toList());
