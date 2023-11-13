@@ -18,6 +18,7 @@ import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.topology.TopologyUpdateNotifier;
+import io.camunda.zeebe.topology.metrics.TopologyMetrics;
 import io.camunda.zeebe.topology.serializer.ClusterTopologySerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import java.util.Collections;
@@ -190,6 +191,7 @@ public final class ClusterTopologyGossiper
     LOGGER.trace("Updated local gossipState to {}", updatedTopology);
     gossip();
     notifyListeners(updatedTopology);
+    TopologyMetrics.updateFromTopology(updatedTopology);
   }
 
   private void notifyListeners(final ClusterTopology updatedTopology) {
