@@ -12,6 +12,7 @@ import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
+import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StageableScheduledCommandCache;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
@@ -31,6 +32,7 @@ public class ProcessingScheduleServiceImpl
   private final Supplier<StreamProcessor.Phase> streamProcessorPhaseSupplier;
   private final BooleanSupplier abortCondition;
   private final Supplier<ActorFuture<LogStreamWriter>> writerAsyncSupplier;
+  private final StageableScheduledCommandCache commandCache;
   private LogStreamWriter logStreamWriter;
   private ActorControl actorControl;
   private AbortableRetryStrategy writeRetryStrategy;
@@ -39,10 +41,12 @@ public class ProcessingScheduleServiceImpl
   public ProcessingScheduleServiceImpl(
       final Supplier<Phase> streamProcessorPhaseSupplier,
       final BooleanSupplier abortCondition,
-      final Supplier<ActorFuture<LogStreamWriter>> writerAsyncSupplier) {
+      final Supplier<ActorFuture<LogStreamWriter>> writerAsyncSupplier,
+      final StageableScheduledCommandCache commandCache) {
     this.streamProcessorPhaseSupplier = streamProcessorPhaseSupplier;
     this.abortCondition = abortCondition;
     this.writerAsyncSupplier = writerAsyncSupplier;
+    this.commandCache = commandCache;
   }
 
   @Override
@@ -131,7 +135,10 @@ public class ProcessingScheduleServiceImpl
         actorControl.submit(toRunnable(task));
         return;
       }
-      final var builder = new BufferedTaskResultBuilder(logStreamWriter::canWriteEvents);
+
+      final var stagedCache = commandCache.stage();
+      final var builder =
+          new BufferedTaskResultBuilder(logStreamWriter::canWriteEvents, stagedCache);
       final var result = task.execute(builder);
       final var recordBatch = result.getRecordBatch();
 
@@ -146,13 +153,16 @@ public class ProcessingScheduleServiceImpl
                 if (recordBatch.isEmpty()) {
                   return true;
                 }
+
                 return logStreamWriter.tryWrite(recordBatch.entries()).isRight();
               },
               abortCondition);
 
       writeFuture.onComplete(
           (v, t) -> {
-            if (t != null) {
+            if (t == null) {
+              stagedCache.persist();
+            } else {
               // todo handle error;
               //   can happen if we tried to write a too big batch of records
               //   this should resolve if we use the buffered writer were we detect these errors

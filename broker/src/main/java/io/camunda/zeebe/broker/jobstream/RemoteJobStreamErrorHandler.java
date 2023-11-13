@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob;
+import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.NoopScheduledCommandCache;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.impl.BufferedTaskResultBuilder;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamErrorHandler;
@@ -62,7 +63,8 @@ final class RemoteJobStreamErrorHandler implements RemoteStreamErrorHandler<Acti
       return;
     }
 
-    final var resultBuilder = new BufferedTaskResultBuilder(writer::canWriteEvents);
+    final var resultBuilder =
+        new BufferedTaskResultBuilder(writer::canWriteEvents, new NoopScheduledCommandCache());
     errorHandler.handleError(job, error, resultBuilder);
 
     final var result = resultBuilder.build();

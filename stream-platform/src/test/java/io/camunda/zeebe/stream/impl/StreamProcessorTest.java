@@ -1346,6 +1346,26 @@ public final class StreamProcessorTest {
     inOrder.verifyNoMoreInteractions();
   }
 
+  @Test
+  void shouldRemoveCachedScheduledCommandOnProcess() {
+    // given
+    final var testProcessor = spy(new TestProcessor());
+    streamPlatform.withRecordProcessors(List.of(testProcessor)).startStreamProcessor();
+    final var commandCache = streamPlatform.scheduledCommandCache();
+    commandCache.add(ACTIVATE_ELEMENT, 1);
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.command()
+            .key(1)
+            .processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+
+    // then
+    verify(testProcessor, timeout(5000)).process(any(), any());
+    Awaitility.await("until command is removed from cache after processing")
+        .untilAsserted(() -> assertThat(commandCache.contains(ACTIVATE_ELEMENT, 1)).isFalse());
+  }
+
   private static final class TestProcessor implements RecordProcessor {
 
     ProcessingResult processingResult = EmptyProcessingResult.INSTANCE;
