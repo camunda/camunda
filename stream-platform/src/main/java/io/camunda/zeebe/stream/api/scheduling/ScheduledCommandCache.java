@@ -30,6 +30,7 @@ public interface ScheduledCommandCache {
   /** Removes the given intent/key pair from the cache. */
   void remove(final Intent intent, final long key);
 
+  /** Clears the underlying cache of all intent/key pairs. */
   void clear();
 
   /** A dummy cache implementation which does nothing, i.e. caches nothing. */
@@ -94,6 +95,8 @@ public interface ScheduledCommandCache {
    *
    * <p>A staged {@link #contains(Intent, long)} first looks up the buffered intent/key pairs, and
    * if not found, will also perform a look-up in the main cache.
+   *
+   * <p>A staged {@link #clear()} only removes the staged keys, and does not touch the main cache.
    */
   interface StagedScheduledCommandCache
       extends ScheduledCommandCache, ScheduledCommandCacheChanges {}
