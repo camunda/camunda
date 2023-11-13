@@ -752,6 +752,7 @@
         #     processInstance: true
         #     processInstanceBatch: false
         #     processInstanceCreation: true
+        #     processInstanceMigration: true
         #     processInstanceModification: true
         #     processMessageSubscription: true
         #     resourceDeletion: true
