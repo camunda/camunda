@@ -88,6 +88,8 @@ public class ElasticsearchExporterConfiguration {
         return index.processInstanceBatch;
       case PROCESS_INSTANCE_CREATION:
         return index.processInstanceCreation;
+      case PROCESS_INSTANCE_MIGRATION:
+        return index.processInstanceMigration;
       case PROCESS_INSTANCE_MODIFICATION:
         return index.processInstanceModification;
       case PROCESS_MESSAGE_SUBSCRIPTION:
@@ -168,6 +170,7 @@ public class ElasticsearchExporterConfiguration {
     public boolean processInstance = true;
     public boolean processInstanceBatch = false;
     public boolean processInstanceCreation = true;
+    public boolean processInstanceMigration = true;
     public boolean processInstanceModification = true;
     public boolean processMessageSubscription = true;
     public boolean variable = true;
@@ -250,6 +253,8 @@ public class ElasticsearchExporterConfiguration {
           + processInstanceBatch
           + ", processInstanceCreation="
           + processInstanceCreation
+          + ", processInstanceMigration="
+          + processInstanceMigration
           + ", processInstanceModification="
           + processInstanceModification
           + ", processMessageSubscription="
