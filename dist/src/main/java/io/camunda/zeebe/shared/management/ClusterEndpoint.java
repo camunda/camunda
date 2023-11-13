@@ -88,7 +88,13 @@ public class ClusterEndpoint {
 
   @PostMapping(path = "/{resource}/{id}")
   public ResponseEntity<?> add(
-      @PathVariable("resource") final Resource resource, @PathVariable final int id) {
+      @PathVariable("resource") final Resource resource,
+      @PathVariable final int id,
+      @RequestParam(defaultValue = "false") final boolean dryRun) {
+    if (dryRun) {
+      return ResponseEntity.status(501).body("This operation does not support dry run");
+    }
+
     return switch (resource) {
       case brokers -> mapOperationResponse(
           requestSender
@@ -100,7 +106,12 @@ public class ClusterEndpoint {
 
   @DeleteMapping(path = "/{resource}/{id}")
   public ResponseEntity<?> remove(
-      @PathVariable("resource") final Resource resource, @PathVariable final int id) {
+      @PathVariable("resource") final Resource resource,
+      @PathVariable final int id,
+      @RequestParam(defaultValue = "false") final boolean dryRun) {
+    if (dryRun) {
+      return ResponseEntity.status(501).body("This operation does not support dry run");
+    }
     return switch (resource) {
       case brokers -> mapOperationResponse(
           requestSender
@@ -148,7 +159,12 @@ public class ClusterEndpoint {
       @PathVariable final int resourceId,
       @PathVariable("subResource") final Resource subResource,
       @PathVariable final int subResourceId,
-      @RequestBody final PartitionAddRequest request) {
+      @RequestBody final PartitionAddRequest request,
+      @RequestParam(defaultValue = "false") final boolean dryRun) {
+    if (dryRun) {
+      return ResponseEntity.status(501).body("This operation does not support dry run");
+    }
+
     final int priority = request.priority();
     return switch (resource) {
       case brokers -> switch (subResource) {
@@ -181,7 +197,12 @@ public class ClusterEndpoint {
       @PathVariable("resource") final Resource resource,
       @PathVariable final int resourceId,
       @PathVariable("subResource") final Resource subResource,
-      @PathVariable final int subResourceId) {
+      @PathVariable final int subResourceId,
+      @RequestParam(defaultValue = "false") final boolean dryRun) {
+    if (dryRun) {
+      return ResponseEntity.status(501).body("This operation does not support dry run");
+    }
+
     return switch (resource) {
       case brokers -> switch (subResource) {
         case partitions -> mapOperationResponse(
