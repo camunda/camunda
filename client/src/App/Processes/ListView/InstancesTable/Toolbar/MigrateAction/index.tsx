@@ -7,7 +7,7 @@
 
 import {observer} from 'mobx-react';
 import {useLocation} from 'react-router-dom';
-import {TableBatchAction} from '@carbon/react';
+import {Link, OrderedList, Stack, TableBatchAction} from '@carbon/react';
 import {MigrateAlt} from '@carbon/react/icons';
 import {Restricted} from 'modules/components/Restricted';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
@@ -17,6 +17,8 @@ import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigra
 import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/processXml/processXml.migration.source';
 import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {processesStore} from 'modules/stores/processes/processes.list';
+import {ModalStateManager} from 'modules/components/ModalStateManager';
+import {ListItem, Modal} from './styled';
 
 const MigrateAction: React.FC = observer(() => {
   const location = useLocation();
@@ -53,19 +55,66 @@ const MigrateAction: React.FC = observer(() => {
         permissions: processesStore.getPermissions(process, tenant),
       }}
     >
-      <TableBatchAction
-        renderIcon={MigrateAlt}
-        onClick={() => {
-          processXmlMigrationSourceStore.setProcessXml(
-            processXmlStore.state.xml,
-          );
-          processInstanceMigrationStore.enable();
-        }}
-        disabled={isDisabled}
-        title={getTooltipText()}
+      <ModalStateManager
+        renderLauncher={({setOpen}) => (
+          <TableBatchAction
+            renderIcon={MigrateAlt}
+            onClick={() => {
+              setOpen(true);
+            }}
+            disabled={isDisabled}
+            title={getTooltipText()}
+          >
+            Migrate
+          </TableBatchAction>
+        )}
       >
-        Migrate
-      </TableBatchAction>
+        {({open, setOpen}) => (
+          <Modal
+            open={open}
+            preventCloseOnClickOutside
+            modalHeading="Migrate process instance versions"
+            primaryButtonText="Continue"
+            secondaryButtonText="Cancel"
+            onRequestSubmit={() => {
+              processXmlMigrationSourceStore.setProcessXml(
+                processXmlStore.state.xml,
+              );
+              processInstanceMigrationStore.enable();
+            }}
+            onRequestClose={() => setOpen(false)}
+            onSecondarySubmit={() => setOpen(false)}
+            size="md"
+          >
+            <Stack as={OrderedList} nested gap={5}>
+              <ListItem>
+                Migrate is used to move a process to a newer (or older) version
+                of the process.
+              </ListItem>
+              <ListItem>
+                When Migrate steps are run, all process instances will be
+                affected. Interruptions, delays or changes may happen as a
+                result.
+              </ListItem>
+              <ListItem>
+                To minimize interruptions or delays, schedule Migrate during
+                periods of low system usage.
+              </ListItem>
+            </Stack>
+            <p>
+              Questions or concerns? Check our{' '}
+              <Link
+                href="https://docs.camunda.io/docs/components/operate/operate-introduction/"
+                target="_blank"
+                inline
+              >
+                migration documentation
+              </Link>{' '}
+              for guidance and best practices.
+            </p>
+          </Modal>
+        )}
+      </ModalStateManager>
     </Restricted>
   );
 });

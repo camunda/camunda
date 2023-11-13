@@ -8,7 +8,8 @@
 import {useEffect} from 'react';
 import {observer} from 'mobx-react';
 import {MemoryRouter} from 'react-router-dom';
-import {act, render, screen, waitFor} from '@testing-library/react';
+import {act} from '@testing-library/react';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {Paths} from 'modules/Routes';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processInstancesStore} from 'modules/stores/processInstances';
@@ -135,5 +136,44 @@ describe('<MigrateAction />', () => {
     });
 
     expect(screen.getByRole('button', {name: /migrate/i})).toBeEnabled();
+  });
+
+  it('should display migration helper modal on button click', async () => {
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
+
+    const {user} = render(<MigrateAction />, {
+      wrapper: getWrapper(
+        `/processes?process=eventBasedGatewayProcess&version=1`,
+      ),
+    });
+
+    await fetchProcessInstances();
+
+    const instance = getProcessInstance('ACTIVE');
+
+    act(() => {
+      processInstancesSelectionStore.selectProcessInstance(instance.id);
+    });
+
+    await user.click(screen.getByRole('button', {name: /migrate/i}));
+
+    expect(
+      screen.getByText(
+        'Migrate is used to move a process to a newer (or older) version of the process.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'When Migrate steps are run, all process instances will be affected. Interruptions, delays or changes may happen as a result.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'To minimize interruptions or delays, schedule Migrate during periods of low system usage.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', {name: 'migration documentation'}),
+    ).toBeInTheDocument();
   });
 });
