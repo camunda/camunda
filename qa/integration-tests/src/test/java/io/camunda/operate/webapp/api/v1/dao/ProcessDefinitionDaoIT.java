@@ -14,7 +14,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.operate.util.OperateZeebeAbstractIT;
-import io.camunda.operate.webapp.api.v1.dao.elasticsearch.ElasticsearchProcessDefinitionDao;
 import io.camunda.operate.webapp.api.v1.entities.ChangeStatus;
 import io.camunda.operate.webapp.api.v1.entities.ProcessDefinition;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
@@ -35,10 +34,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-public class ElasticsearchProcessDefinitionDaoIT extends OperateZeebeAbstractIT {
+public class ProcessDefinitionDaoIT extends OperateZeebeAbstractIT {
 
   @Autowired
-  ElasticsearchProcessDefinitionDao dao;
+  private ProcessDefinitionDao dao;
 
   private Results<ProcessDefinition> processDefinitionResults;
   private ProcessDefinition processDefinition;

@@ -11,6 +11,7 @@ import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
+import io.camunda.operate.webapp.api.v1.exceptions.ValidationException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
 import org.opensearch.client.opensearch._types.SortOrder;
@@ -20,6 +21,8 @@ import org.opensearch.client.opensearch.core.search.HitsMetadata;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
 
 public abstract class OpensearchDao<T> {
   protected final OpensearchQueryDSLWrapper queryDSLWrapper;
@@ -97,5 +100,25 @@ public abstract class OpensearchDao<T> {
       return new Results<T>()
           .setTotal(results.total().value());
     }
+  }
+
+  protected org.opensearch.client.opensearch._types.query_dsl.Query buildTermQuery(String name, Number value) {
+    if (value != null) {
+      if (value instanceof Long) {
+        return queryDSLWrapper.term(name, value.longValue());
+      } else if (value instanceof Integer) {
+        return queryDSLWrapper.term(name, value.intValue());
+      } else {
+        throw new ValidationException("Type " + value.getClass().getName() + " not supported");
+      }
+    }
+    return null;
+  }
+
+  protected org.opensearch.client.opensearch._types.query_dsl.Query buildTermQuery(final String name, final String value) {
+    if (!stringIsEmpty(value)) {
+      return queryDSLWrapper.term(name, value);
+    }
+    return null;
   }
 }

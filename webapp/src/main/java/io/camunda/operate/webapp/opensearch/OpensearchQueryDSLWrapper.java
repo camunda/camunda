@@ -17,6 +17,7 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.search.SourceConfig;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,9 @@ public class OpensearchQueryDSLWrapper {
     public Query and(Query... queries) {
         return QueryDSL.and(queries);
     }
+
+
+    public Query and(ArrayList<Query> queries) { return QueryDSL.and(queries); }
 
     public Query withTenantCheck(Query query) {
         return QueryDSL.withTenantCheck(query);
@@ -188,4 +192,5 @@ public class OpensearchQueryDSLWrapper {
     public Query wildcardQuery(String field, String value) {
         return QueryDSL.wildcardQuery(field, value);
     }
+
 }

@@ -55,6 +55,10 @@ public interface QueryDSL {
     return BoolQuery.of(q -> q.must(nonNull(queries)))._toQuery();
   }
 
+  static Query and(List<Query> queries) {
+    return BoolQuery.of(q -> q.must(nonNull(queries)))._toQuery();
+  }
+
   static Query withTenantCheck(Query query) {
     try {
       return TenantCheckApplierHolder.getOpenSearchTenantCheckApplier()
