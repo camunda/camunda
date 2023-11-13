@@ -24,8 +24,13 @@ import java.time.Duration;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.jmock.lib.concurrent.DeterministicScheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class DeterministicSingleThreadContext implements ThreadContext {
+
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(DeterministicSingleThreadContext.class);
 
   private final DeterministicScheduler deterministicScheduler;
 
@@ -108,8 +113,8 @@ public final class DeterministicSingleThreadContext implements ThreadContext {
       try {
         command.run();
       } catch (final Exception e) {
-        e.printStackTrace();
-        fail("Uncaught exception");
+        LOGGER.error("Uncaught exception", e);
+        fail("Uncaught exception" + e);
       }
     }
   }
