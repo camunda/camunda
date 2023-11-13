@@ -8,7 +8,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {loadProcessDefinitionXml, getFlowNodeNames} from 'services';
+import {loadProcessDefinitionXml, getFlowNodeNames, incompatibleFilters} from 'services';
 import {track} from 'tracking';
 
 import {loadNodesOutliers, loadDurationData} from './service';
@@ -29,6 +29,7 @@ jest.mock('services', () => {
     ...jest.requireActual('services'),
     loadProcessDefinitionXml: jest.fn(),
     getFlowNodeNames: jest.fn().mockReturnValue({nodeKey: 'nodeName'}),
+    incompatibleFilters: jest.fn(),
   };
 });
 
@@ -72,6 +73,58 @@ it('should load outlier data and flownode names when the process definition vers
   };
   node.instance().updateConfig(prevConfig);
   node.instance().updateConfig({...prevConfig, processDefinitionVersions: ['anotherVersion']});
+
+  await flushPromises();
+
+  expect(getFlowNodeNames).toHaveBeenCalled();
+  expect(loadNodesOutliers).toHaveBeenCalled();
+});
+
+it('should load outlier data and flownode names when the tenants change', async () => {
+  loadNodesOutliers.mockClear();
+  getFlowNodeNames.mockClear();
+  const node = shallow(<TaskAnalysis {...props} />);
+  const prevConfig = {
+    processDefinitionKey: 'someKey',
+    processDefinitionVersions: ['someVersion'],
+    tenantIds: [],
+    filters: [],
+  };
+  node.instance().updateConfig(prevConfig);
+  node.instance().updateConfig({
+    ...prevConfig,
+    tenantIds: ['a', 'b'],
+  });
+
+  await flushPromises();
+
+  expect(getFlowNodeNames).toHaveBeenCalled();
+  expect(loadNodesOutliers).toHaveBeenCalled();
+});
+
+it('should load outlier data and flownode names when filters change', async () => {
+  loadNodesOutliers.mockClear();
+  getFlowNodeNames.mockClear();
+  const node = shallow(<TaskAnalysis {...props} />);
+  const prevConfig = {
+    processDefinitionKey: 'someKey',
+    processDefinitionVersions: ['someVersion'],
+    tenantIds: [],
+    filters: [],
+  };
+  node.instance().updateConfig(prevConfig);
+  node.instance().updateConfig({
+    ...prevConfig,
+    filters: [
+      {
+        type: 'completedInstancesOnly',
+        appliedTo: ['all'],
+        filterLevel: 'instance',
+      },
+    ],
+  });
+
+  await flushPromises();
 
   expect(getFlowNodeNames).toHaveBeenCalled();
   expect(loadNodesOutliers).toHaveBeenCalled();
@@ -159,5 +212,14 @@ it('should display an empty state if no outliers found', async () => {
     tenantIds: ['a', 'b'],
   });
 
+  await flushPromises();
+
   expect(node.find('.noOutliers')).toExist();
+});
+
+it('should show a warning message when there are incompatible filters', async () => {
+  incompatibleFilters.mockReturnValue(true);
+  const node = await shallow(<TaskAnalysis {...props} />);
+  await node.update();
+  expect(node.find('MessageBox')).toExist();
 });

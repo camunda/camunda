@@ -11,8 +11,8 @@ import classnames from 'classnames';
 
 import {t} from 'translation';
 import {showError} from 'notifications';
-import {BPMNDiagram, HeatmapOverlay, PageTitle} from 'components';
-import {loadProcessDefinitionXml, getFlowNodeNames} from 'services';
+import {BPMNDiagram, HeatmapOverlay, MessageBox, PageTitle} from 'components';
+import {loadProcessDefinitionXml, getFlowNodeNames, incompatibleFilters} from 'services';
 import {withErrorHandling, withUser} from 'HOC';
 import {track} from 'tracking';
 
@@ -28,6 +28,9 @@ export class TaskAnalysis extends React.Component {
       processDefinitionKey: '',
       processDefinitionVersions: [],
       tenantIds: [],
+      minimumDeviationFromAvg: 50,
+      disconsiderAutomatedTasks: false,
+      filters: [],
     },
     xml: null,
     data: {},
@@ -52,11 +55,15 @@ export class TaskAnalysis extends React.Component {
     const newConfig = {...this.state.config, ...updates};
     const {processDefinitionKey, processDefinitionVersions, tenantIds} = updates;
 
+    const changes = {
+      config: newConfig,
+    };
+
     if (processDefinitionKey && processDefinitionVersions && tenantIds) {
       await this.props.mightFail(
         loadProcessDefinitionXml(processDefinitionKey, processDefinitionVersions[0], tenantIds[0]),
         (xml) => {
-          this.setState({config: newConfig, xml});
+          changes.xml = xml;
           track('startOutlierAnalysis', {processDefinitionKey});
         },
         showError
@@ -66,8 +73,10 @@ export class TaskAnalysis extends React.Component {
       !newConfig.processDefinitionVersions ||
       !newConfig.tenantIds
     ) {
-      this.setState({config: newConfig, xml: null});
+      changes.xml = null;
     }
+
+    this.setState(changes);
   };
 
   componentDidUpdate(_, prevState) {
@@ -78,7 +87,9 @@ export class TaskAnalysis extends React.Component {
       prevConfig.processDefinitionKey !== config.processDefinitionKey ||
       !equal(prevConfig.processDefinitionVersions, config.processDefinitionVersions);
     const tenantsChanged = !equal(prevConfig.tenantIds, config.tenantIds);
-    if (procDefConfigured && (procDefChanged || tenantsChanged)) {
+    const filtersChanged = !equal(prevConfig.filters, config.filters);
+
+    if (procDefConfigured && (procDefChanged || tenantsChanged || filtersChanged)) {
       this.loadOutlierData(config);
     }
     this.indicateClickableNodes();
@@ -154,6 +165,9 @@ export class TaskAnalysis extends React.Component {
       <div className="TaskAnalysis">
         <PageTitle pageName={t('analysis.task.label')} />
         <OutlierControlPanel {...config} onChange={this.updateConfig} xml={xml} />
+        {config.filters && incompatibleFilters(config.filters) && (
+          <MessageBox type="warning">{t('common.filter.incompatibleFilters')}</MessageBox>
+        )}
         <div className={classnames('TaskAnalysis__diagram', {empty})}>
           {xml && (
             <BPMNDiagram xml={xml} loading={loading}>

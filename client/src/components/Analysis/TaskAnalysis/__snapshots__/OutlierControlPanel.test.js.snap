@@ -29,6 +29,30 @@ exports[`show display a definition selection and an info message 1`] = `
     >
       Heatmap displays the incidence of higher outliers based on duration. Calculated by z-score.
     </li>
+    <li
+      className="item itemFilter"
+    >
+      <Filter
+        data={Array []}
+        definitions={
+          Array [
+            Object {
+              "displayName": "aKey",
+              "identifier": "definition",
+              "key": "aKey",
+              "name": "aKey",
+              "tenantIds": Array [],
+              "versions": Array [
+                "aVersion",
+              ],
+            },
+          ]
+        }
+        filterLevel="instance"
+        onChange={[Function]}
+        variables={Array []}
+      />
+    </li>
   </ul>
 </div>
 `;

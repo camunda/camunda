@@ -5,13 +5,58 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
+import update from 'immutability-helper';
 import {DefinitionSelection} from 'components';
 
-import './OutlierControlPanel.scss';
 import {t} from 'translation';
+import {Filter} from 'filter';
+import {loadVariables} from 'services';
 
-export default function OutlierControlPanel(props) {
+import './OutlierControlPanel.scss';
+import {showError} from 'notifications';
+import {useErrorHandling} from 'hooks';
+
+export default function OutlierControlPanel({
+  processDefinitionKey,
+  processDefinitionVersions,
+  tenantIds,
+  xml,
+  onChange,
+  filters,
+}) {
+  const [variables, setVariables] = useState([]);
+  const {mightFail} = useErrorHandling();
+
+  const definitions = [];
+  if (processDefinitionKey) {
+    definitions.push({
+      identifier: 'definition',
+      key: processDefinitionKey,
+      versions: processDefinitionVersions,
+      tenantIds: tenantIds,
+      name: processDefinitionKey,
+      displayName: processDefinitionKey,
+    });
+  }
+
+  const fetchVariables = useCallback(
+    function () {
+      if (processDefinitionKey && processDefinitionVersions) {
+        mightFail(
+          loadVariables([{processDefinitionKey, processDefinitionVersions, tenantIds}]),
+          setVariables,
+          showError
+        );
+      }
+    },
+    [processDefinitionKey, processDefinitionVersions, tenantIds, mightFail]
+  );
+
+  useEffect(() => {
+    fetchVariables();
+  }, [fetchVariables]);
+
   return (
     <div className="OutlierControlPanel">
       <ul className="list">
@@ -19,12 +64,12 @@ export default function OutlierControlPanel(props) {
           <DefinitionSelection
             type="process"
             infoMessage={t('analysis.task.onlyCompletedHint')}
-            definitionKey={props.processDefinitionKey}
-            versions={props.processDefinitionVersions}
-            tenants={props.tenantIds}
-            xml={props.xml}
+            definitionKey={processDefinitionKey}
+            versions={processDefinitionVersions}
+            tenants={tenantIds}
+            xml={xml}
             onChange={({key, versions, tenantIds}) =>
-              props.onChange({
+              onChange({
                 processDefinitionKey: key,
                 processDefinitionVersions: versions,
                 tenantIds,
@@ -33,6 +78,17 @@ export default function OutlierControlPanel(props) {
           />
         </li>
         <li className="item">{t('analysis.task.info')}</li>
+        <li className="item itemFilter">
+          <Filter
+            data={filters}
+            onChange={({filter: updatedFilter}) =>
+              onChange({filters: update(filters, updatedFilter)})
+            }
+            definitions={definitions}
+            filterLevel="instance"
+            variables={variables}
+          />
+        </li>
       </ul>
     </div>
   );
