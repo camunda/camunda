@@ -51,6 +51,12 @@ final class RecordingChangeCoordinator implements TopologyChangeCoordinator {
             operations));
   }
 
+  @Override
+  public ActorFuture<TopologyChangeResult> simulateOperations(
+      final TopologyChangeRequest requestTransformer) {
+    throw new UnsupportedOperationException("Simulating changes is not supported in tests");
+  }
+
   public List<TopologyChangeOperation> getLastAppliedOperation() {
     return lastAppliedOperation;
   }

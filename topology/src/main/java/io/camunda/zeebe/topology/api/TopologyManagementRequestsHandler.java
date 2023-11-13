@@ -17,11 +17,13 @@ import io.camunda.zeebe.topology.api.TopologyManagementRequest.RemoveMembersRequ
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.ScaleRequest;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator.TopologyChangeRequest;
+import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator.TopologyChangeResult;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * Handles the requests for the topology management. This is expected be running on the coordinator
@@ -40,40 +42,42 @@ public final class TopologyManagementRequestsHandler implements TopologyManageme
 
   @Override
   public ActorFuture<TopologyChangeResponse> addMembers(final AddMembersRequest addMembersRequest) {
-    return handleRequest(new AddMembersTransformer(addMembersRequest.members()));
+    return handleRequest(
+        coordinator::applyOperations, new AddMembersTransformer(addMembersRequest.members()));
   }
 
   @Override
   public ActorFuture<TopologyChangeResponse> removeMembers(
       final RemoveMembersRequest removeMembersRequest) {
-    return handleRequest(new RemoveMembersTransformer(removeMembersRequest.members()));
+    return handleRequest(
+        coordinator::applyOperations, new RemoveMembersTransformer(removeMembersRequest.members()));
   }
 
   @Override
   public ActorFuture<TopologyChangeResponse> joinPartition(
       final JoinPartitionRequest joinPartitionRequest) {
-    final TopologyChangeRequest requestTransformer =
+    return handleRequest(
+        coordinator::applyOperations,
         ignore ->
             Either.right(
                 List.of(
                     new PartitionJoinOperation(
                         joinPartitionRequest.memberId(),
                         joinPartitionRequest.partitionId(),
-                        joinPartitionRequest.priority())));
-    return handleRequest(requestTransformer);
+                        joinPartitionRequest.priority()))));
   }
 
   @Override
   public ActorFuture<TopologyChangeResponse> leavePartition(
       final LeavePartitionRequest leavePartitionRequest) {
 
-    final TopologyChangeRequest requestTransformer =
+    return handleRequest(
+        coordinator::applyOperations,
         ignore ->
             Either.right(
                 List.of(
                     new PartitionLeaveOperation(
-                        leavePartitionRequest.memberId(), leavePartitionRequest.partitionId())));
-    return handleRequest(requestTransformer);
+                        leavePartitionRequest.memberId(), leavePartitionRequest.partitionId()))));
   }
 
   @Override
@@ -81,12 +85,18 @@ public final class TopologyManagementRequestsHandler implements TopologyManageme
       final ReassignPartitionsRequest reassignPartitionsRequest) {
     final var transformer =
         new PartitionReassignRequestTransformer(reassignPartitionsRequest.members());
-    return handleRequest(transformer);
+    return handleRequest(coordinator::applyOperations, transformer);
   }
 
   @Override
   public ActorFuture<TopologyChangeResponse> scaleMembers(final ScaleRequest scaleRequest) {
-    return handleRequest(new ScaleRequestTransformer(scaleRequest.members()));
+    final var transformer = new ScaleRequestTransformer(scaleRequest.members());
+
+    if (scaleRequest.dryRun()) {
+      return handleRequest(coordinator::simulateOperations, transformer);
+    } else {
+      return handleRequest(coordinator::applyOperations, transformer);
+    }
   }
 
   @Override
@@ -95,12 +105,13 @@ public final class TopologyManagementRequestsHandler implements TopologyManageme
   }
 
   private ActorFuture<TopologyChangeResponse> handleRequest(
-      final TopologyChangeRequest transformer) {
+      final Function<TopologyChangeRequest, ActorFuture<TopologyChangeResult>> handler,
+      final TopologyChangeRequest request) {
     final ActorFuture<TopologyChangeResponse> responseFuture = executor.createFuture();
     executor.run(
         () ->
-            coordinator
-                .applyOperations(transformer)
+            handler
+                .apply(request)
                 .onComplete(
                     (result, error) -> {
                       if (error == null) {
