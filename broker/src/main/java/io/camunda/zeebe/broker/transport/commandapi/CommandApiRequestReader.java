@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
@@ -60,6 +61,7 @@ public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequ
     RECORDS_BY_TYPE.put(ValueType.PROCESS_INSTANCE_BATCH, ProcessInstanceBatchRecord::new);
     RECORDS_BY_TYPE.put(ValueType.RESOURCE_DELETION, ResourceDeletionRecord::new);
     RECORDS_BY_TYPE.put(ValueType.USER_TASK, UserTaskRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.PROCESS_INSTANCE_MIGRATION, ProcessInstanceMigrationRecord::new);
   }
 
   private UnifiedRecordValue value;
