@@ -14,7 +14,13 @@
 
 	<dependencies>
 
-		<!-- SPRING BOOT -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>opensearch-java-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <!-- SPRING BOOT -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
@@ -62,20 +68,20 @@
 		</dependency>
 
 		<!-- Opensearch -->
-		<dependency>
-			<groupId>org.apache.httpcomponents.core5</groupId>
-			<artifactId>httpcore5</artifactId>
-		</dependency>
+<!--		<dependency>-->
+<!--			<groupId>org.apache.httpcomponents.core5</groupId>-->
+<!--			<artifactId>httpcore5</artifactId>-->
+<!--		</dependency>-->
 
-		<dependency>
-			<groupId>org.apache.httpcomponents.core5</groupId>
-			<artifactId>httpcore5-h2</artifactId>
-		</dependency>
+<!--		<dependency>-->
+<!--			<groupId>org.apache.httpcomponents.core5</groupId>-->
+<!--			<artifactId>httpcore5-h2</artifactId>-->
+<!--		</dependency>-->
 
-		<dependency>
-			<groupId>org.opensearch.client</groupId>
-			<artifactId>opensearch-java</artifactId>
-		</dependency>
+<!--		<dependency>-->
+<!--			<groupId>org.opensearch.client</groupId>-->
+<!--			<artifactId>opensearch-java</artifactId>-->
+<!--		</dependency>-->
 
 		<!-- End Opensearch -->
 

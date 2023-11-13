@@ -28,6 +28,7 @@
     <module>qa</module>
     <module>distro</module>
     <module>mvc-auth-commons</module>
+    <module>opensearch-java-client</module>
   </modules>
 
   <properties>
