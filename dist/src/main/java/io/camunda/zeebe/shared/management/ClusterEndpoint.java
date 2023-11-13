@@ -57,6 +57,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Component
 @RestControllerEndpoint(id = "cluster")
@@ -111,15 +112,17 @@ public class ClusterEndpoint {
 
   @PostMapping(path = "/{resource}", consumes = "application/json")
   public ResponseEntity<?> scale(
-      @PathVariable("resource") final Resource resource, @RequestBody final List<Integer> ids) {
+      @PathVariable("resource") final Resource resource,
+      @RequestBody final List<Integer> ids,
+      @RequestParam(defaultValue = "false") final boolean dryRun) {
     return switch (resource) {
-      case brokers -> scaleBrokers(ids);
+      case brokers -> scaleBrokers(ids, dryRun);
       case partitions -> new ResponseEntity<>(
           "Scaling partitions is not supported", HttpStatusCode.valueOf(501));
     };
   }
 
-  private ResponseEntity<?> scaleBrokers(final List<Integer> ids) {
+  private ResponseEntity<?> scaleBrokers(final List<Integer> ids, final boolean dryRun) {
     try {
       final var response =
           requestSender
@@ -128,7 +131,8 @@ public class ClusterEndpoint {
                       ids.stream()
                           .map(String::valueOf)
                           .map(MemberId::from)
-                          .collect(Collectors.toSet())))
+                          .collect(Collectors.toSet()),
+                      dryRun))
               .join();
       return mapOperationResponse(response);
     } catch (final Exception error) {
