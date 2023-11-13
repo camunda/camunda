@@ -22,6 +22,7 @@ import com.typesafe.config.ConfigFactory;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.config.AppCfg;
+import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.grpc.ClientInterceptor;
 import io.micrometer.core.instrument.binder.grpc.MetricCollectingClientInterceptor;
 import io.micrometer.prometheus.PrometheusConfig;
@@ -34,6 +35,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +44,8 @@ abstract class App implements Runnable {
 
   protected static ClientInterceptor monitoringInterceptor;
   protected static PrometheusMeterRegistry prometheusRegistry;
+  private static final Logger THROTTLED_LOGGER =
+      new ThrottledLogger(LoggerFactory.getLogger(App.class), Duration.ofSeconds(5));
   private static final Logger LOG = LoggerFactory.getLogger(App.class);
   private static HTTPServer monitoringServer;
 
@@ -81,7 +85,6 @@ abstract class App implements Runnable {
   }
 
   void printTopology(final ZeebeClient client) {
-    var failureCount = 0;
     while (true) {
       try {
         final Topology topology = client.newTopologyRequest().send().join();
@@ -95,10 +98,7 @@ abstract class App implements Runnable {
                 });
         break;
       } catch (final Exception e) {
-        // retry
-        if ((failureCount++ % 1000) == 0) {
-          LOG.warn("Topology request failed", e);
-        }
+        THROTTLED_LOGGER.warn("Topology request failed", e);
       }
     }
   }
