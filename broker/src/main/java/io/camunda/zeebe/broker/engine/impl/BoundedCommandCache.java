@@ -61,6 +61,7 @@ public final class BoundedCommandCache {
     final var resizeThreshold = (int) Math.ceil(capacity * 0.9f);
     final var capacityToPreventResize = 2 * capacity - resizeThreshold;
     cache = new LongHashSet(capacityToPreventResize, 0.9f, true);
+    sizeReporter.accept(0);
   }
 
   public void add(final LongHashSet keys) {
@@ -82,6 +83,15 @@ public final class BoundedCommandCache {
 
   public int size() {
     return LockUtil.withLock(lock, cache::size);
+  }
+
+  public void clear() {
+    LockUtil.withLock(
+        lock,
+        () -> {
+          cache.clear();
+          sizeReporter.accept(0);
+        });
   }
 
   private void lockedAdd(final LongHashSet keys) {

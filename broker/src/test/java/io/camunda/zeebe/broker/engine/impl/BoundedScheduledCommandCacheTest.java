@@ -109,6 +109,23 @@ final class BoundedScheduledCommandCacheTest {
     assertThat(metrics.get(JobIntent.TIME_OUT)).hasValue(1);
   }
 
+  @Test
+  void shouldClearCaches() {
+    // given
+    final var cache =
+        BoundedScheduledCommandCache.ofIntent(
+            NOOP_METRICS, TimerIntent.TRIGGER, JobIntent.TIME_OUT);
+    cache.add(JobIntent.TIME_OUT, 1);
+    cache.add(TimerIntent.TRIGGER, 1);
+
+    // when
+    cache.clear();
+
+    // then
+    assertThat(cache.contains(JobIntent.TIME_OUT, 1)).isFalse();
+    assertThat(cache.contains(TimerIntent.TRIGGER, 1)).isFalse();
+  }
+
   @Nested
   final class StagedTest {
     @Test
@@ -176,6 +193,22 @@ final class BoundedScheduledCommandCacheTest {
       staged.remove(TimerIntent.TRIGGER, 1);
 
       // then
+      assertThat(cache.contains(TimerIntent.TRIGGER, 1)).isTrue();
+    }
+
+    @Test
+    void shouldClearOnlyStagedKeys() {
+      // given
+      final var cache = BoundedScheduledCommandCache.ofIntent(NOOP_METRICS, TimerIntent.TRIGGER);
+      final var staged = cache.stage();
+      cache.add(TimerIntent.TRIGGER, 1);
+      staged.add(TimerIntent.TRIGGER, 2);
+
+      // when
+      staged.clear();
+
+      // then
+      assertThat(staged.contains(TimerIntent.TRIGGER, 2)).isFalse();
       assertThat(cache.contains(TimerIntent.TRIGGER, 1)).isTrue();
     }
   }
