@@ -111,7 +111,8 @@ final class TopologyManagementApiTest {
   @Test
   void shouldAddMembers() {
     // given
-    final var request = new TopologyManagementRequest.AddMembersRequest(Set.of(MemberId.from("1")));
+    final var request =
+        new TopologyManagementRequest.AddMembersRequest(Set.of(MemberId.from("1")), false);
 
     // when
     final var changeStatus = clientApi.addMembers(request).join().get();
@@ -130,7 +131,7 @@ final class TopologyManagementApiTest {
             .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of())));
     final var request =
         new TopologyManagementRequest.RemoveMembersRequest(
-            Set.of(MemberId.from("1"), MemberId.from("2")));
+            Set.of(MemberId.from("1"), MemberId.from("2")), false);
 
     // when
     final var changeStatus = clientApi.removeMembers(request).join().get();
@@ -147,7 +148,7 @@ final class TopologyManagementApiTest {
   void shouldJoinPartition() {
     // given
     final var request =
-        new TopologyManagementRequest.JoinPartitionRequest(MemberId.from("1"), 1, 3);
+        new TopologyManagementRequest.JoinPartitionRequest(MemberId.from("1"), 1, 3, false);
 
     // when
     final var changeStatus = clientApi.joinPartition(request).join().get();
@@ -160,7 +161,8 @@ final class TopologyManagementApiTest {
   @Test
   void shouldLeavePartition() {
     // given
-    final var request = new TopologyManagementRequest.LeavePartitionRequest(MemberId.from("1"), 1);
+    final var request =
+        new TopologyManagementRequest.LeavePartitionRequest(MemberId.from("1"), 1, false);
 
     // when
     final var changeStatus = clientApi.leavePartition(request).join().get();
@@ -175,7 +177,7 @@ final class TopologyManagementApiTest {
     // given
     final var request =
         new TopologyManagementRequest.ReassignPartitionsRequest(
-            Set.of(MemberId.from("1"), MemberId.from("2")));
+            Set.of(MemberId.from("1"), MemberId.from("2")), false);
     final ClusterTopology currentTopology =
         ClusterTopology.init()
             .addMember(
