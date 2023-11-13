@@ -238,6 +238,9 @@ public class OpensearchExporter implements Exporter {
       if (index.processInstanceCreation) {
         createValueIndexTemplate(ValueType.PROCESS_INSTANCE_CREATION);
       }
+      if (index.processInstanceMigration) {
+        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_MIGRATION);
+      }
       if (index.processInstanceModification) {
         createValueIndexTemplate(ValueType.PROCESS_INSTANCE_MODIFICATION);
       }
