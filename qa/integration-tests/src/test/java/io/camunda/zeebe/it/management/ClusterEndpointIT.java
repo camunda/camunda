@@ -152,6 +152,26 @@ final class ClusterEndpointIT {
     }
   }
 
+  @Test
+  void canDryRunScale() {
+    try (final var cluster = createCluster(1)) {
+      // given
+      cluster.awaitCompleteTopology();
+      final var actuator = ClusterActuator.of(cluster.availableGateway());
+      final var initialTopology = actuator.getTopology();
+
+      // when
+      final var dryRun = actuator.scaleBrokers(List.of(1, 2), true);
+
+      // then -- dry run response looks as expected
+      assertThat(dryRun.getExpectedTopology()).hasSize(2);
+      assertThat(dryRun.getPlannedChanges()).isNotEmpty();
+      assertThat(dryRun.getCurrentTopology()).isEqualTo(initialTopology.getBrokers());
+      // then -- topology did not change
+      assertThat(actuator.getTopology()).isEqualTo(initialTopology);
+    }
+  }
+
   private static void movePartition(final ClusterActuator actuator) {
     actuator.joinPartition(0, 2, 1);
     Awaitility.await()
