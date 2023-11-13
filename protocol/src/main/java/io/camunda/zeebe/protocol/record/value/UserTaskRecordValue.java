@@ -30,7 +30,7 @@ import org.immutables.value.Value;
 public interface UserTaskRecordValue
     extends RecordValueWithVariables, ProcessInstanceRelated, TenantOwned {
 
-  String getUserTaskKey();
+  long getUserTaskKey();
 
   String getAssignee();
 
@@ -42,7 +42,7 @@ public interface UserTaskRecordValue
 
   String getFollowUpDate();
 
-  String getFormKey();
+  long getFormKey();
 
   /**
    * @return the element id of the corresponding user task
