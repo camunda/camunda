@@ -29,6 +29,9 @@ describe('Footer', () => {
 
     expect(screen.getByRole('button', {name: 'Next'})).toBeInTheDocument();
     expect(
+      screen.getByRole('button', {name: 'Exit migration'}),
+    ).toBeInTheDocument();
+    expect(
       screen.queryByRole('button', {name: 'Back'}),
     ).not.toBeInTheDocument();
     expect(
@@ -42,6 +45,9 @@ describe('Footer', () => {
     ).not.toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Back'})).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Confirm'})).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: 'Exit migration'}),
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'Back'}));
 
@@ -52,5 +58,39 @@ describe('Footer', () => {
     expect(
       screen.queryByRole('button', {name: 'Confirm'}),
     ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: 'Exit migration'}),
+    ).toBeInTheDocument();
+  });
+
+  it('should display confirmation modal on exit migration click', async () => {
+    const {user} = render(<Footer />, {wrapper: Wrapper});
+
+    await user.click(screen.getByRole('button', {name: 'Exit migration'}));
+
+    expect(
+      screen.getByText(
+        /You are about to leave ongoing migration, all planned mapping\/s will be discarded./,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Click “Exit” to proceed./)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Cancel'}));
+
+    expect(
+      screen.queryByText(
+        /You are about to leave ongoing migration, all planned mapping\/s will be discarded./,
+      ),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Click “Exit” to proceed./),
+    ).not.toBeInTheDocument();
+
+    expect(processInstanceMigrationStore.isEnabled).toBe(true);
+
+    await user.click(screen.getByRole('button', {name: 'Exit migration'}));
+
+    await user.click(screen.getByRole('button', {name: 'danger Exit'}));
+    expect(processInstanceMigrationStore.isEnabled).toBe(false);
   });
 });

@@ -5,14 +5,51 @@
  * except in compliance with the proprietary license.
  */
 
-import {Button} from '@carbon/react';
+import {Button, Modal} from '@carbon/react';
 import {observer} from 'mobx-react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {Container} from './styled';
+import {ModalStateManager} from 'modules/components/ModalStateManager';
 
 const Footer: React.FC = observer(() => {
   return (
     <Container orientation="horizontal" gap={5}>
+      <ModalStateManager
+        renderLauncher={({setOpen}) => (
+          <Button
+            kind="secondary"
+            size="sm"
+            onClick={() => {
+              setOpen(true);
+            }}
+          >
+            Exit migration
+          </Button>
+        )}
+      >
+        {({open, setOpen}) => (
+          <Modal
+            open={open}
+            danger
+            preventCloseOnClickOutside
+            modalHeading="Exit migration"
+            primaryButtonText="Exit"
+            secondaryButtonText="Cancel"
+            onRequestSubmit={() => {
+              setOpen(false);
+              processInstanceMigrationStore.disable();
+            }}
+            onRequestClose={() => setOpen(false)}
+            size="md"
+          >
+            <p>
+              You are about to leave ongoing migration, all planned mapping/s
+              will be discarded.
+            </p>
+            <p>Click “Exit” to proceed.</p>
+          </Modal>
+        )}
+      </ModalStateManager>
       {processInstanceMigrationStore.state.currentStep === 'elementMapping' && (
         <Button
           size="sm"

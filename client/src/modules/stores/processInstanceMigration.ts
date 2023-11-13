@@ -51,6 +51,10 @@ class ProcessInstanceMigration {
     this.state.currentStep = 'elementMapping';
   };
 
+  disable = () => {
+    this.state.currentStep = null;
+  };
+
   reset = () => {
     this.state = {...DEFAULT_STATE};
   };
