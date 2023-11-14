@@ -28,7 +28,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 
@@ -61,7 +60,6 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   // job queue state
   private final int maxJobsActive;
   private final int activationThreshold;
-  private final AtomicInteger remainingJobs;
 
   // job execution facilities
   private final ScheduledExecutorService executor;
@@ -92,7 +90,6 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     this.maxJobsActive = maxJobsActive;
     jobsQueue = new ArrayBlockingQueue<>(maxJobsActive);
     activationThreshold = Math.round(maxJobsActive * 0.3f);
-    remainingJobs = new AtomicInteger(0);
 
     this.executor = executor;
     this.jobHandlerFactory = jobHandlerFactory;
@@ -119,7 +116,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
 
   @Override
   public boolean isClosed() {
-    return !isOpen() && claimableJobPoller.get() != null && remainingJobs.get() <= 0;
+    return !isOpen() && claimableJobPoller.get() != null && jobsQueue.isEmpty();
   }
 
   @Override
@@ -141,10 +138,13 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   /** Frees up the scheduler and polls for new jobs. */
   private void onScheduledPoll() {
     isPollScheduled.set(false);
-    final int actualRemainingJobs = remainingJobs.get();
-    if (shouldPoll(actualRemainingJobs)) {
+    if (shouldPoll(actualPendingJobs())) {
       tryPoll();
     }
+  }
+
+  private int actualPendingJobs() {
+    return jobsQueue.size(); // TODO need to take into account the current handling jobs
   }
 
   private boolean shouldPoll(final int remainingJobs) {
@@ -179,14 +179,15 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   private void poll(final JobPoller jobPoller) {
     // check the condition again within the critical section
     // to avoid race conditions that would let us exceed the buffer size
-    final int actualRemainingJobs = remainingJobs.get();
+    final int actualRemainingJobs = actualPendingJobs();
     if (!shouldPoll(actualRemainingJobs)) {
       LOG.trace("Expected to activate for jobs, but still enough remain. Reschedule poll.");
       releaseJobPoller(jobPoller);
       schedulePoll();
       return;
     }
-    final int maxJobsToActivate = maxJobsActive - actualRemainingJobs;
+    final int maxJobsToActivate =
+        maxJobsActive - actualRemainingJobs; // TODO could I use jobsQueue.remainingCapacity(); ?
     jobPoller.poll(
         maxJobsToActivate,
         this::handleJob,
@@ -198,7 +199,6 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   private void onPollSuccess(final JobPoller jobPoller, final int activatedJobs) {
     // first release, then lookup remaining jobs, to allow handleJobFinished() to poll
     releaseJobPoller(jobPoller);
-    final int actualRemainingJobs = remainingJobs.addAndGet(activatedJobs);
 
     if (jobStreamer.isOpen() && activatedJobs == 0) {
       // to keep polling requests to a minimum, if streaming is enabled, and the response is empty,
@@ -207,7 +207,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       LOG.trace("No jobs to activate via polling, will backoff and poll in {}", pollInterval);
     } else {
       pollInterval = initialPollInterval;
-      if (actualRemainingJobs <= 0) {
+      if (actualPendingJobs() <= 0) {
         schedulePoll();
       }
       // if jobs were activated, then successive polling happens due to handleJobFinished
@@ -239,7 +239,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   }
 
   private void handleJob(final ActivatedJob job) {
-    final boolean notEnqueued = !tryToEnqueJob(job);
+    final boolean notEnqueued = !tryToEnqueueJob(job);
     if (notEnqueued) {
       // TODO logic to handle the faults?
       // The job is likely to timed out anyway, so we potentially just skip it and don't need to do
@@ -254,7 +254,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     scheduleConsumeJob(this::handleJobFinished);
   }
 
-  private boolean tryToEnqueJob(final ActivatedJob job) {
+  private boolean tryToEnqueueJob(final ActivatedJob job) {
     boolean notEnqueued;
     try {
       notEnqueued = jobsQueue.offer(job, 10, TimeUnit.SECONDS);
@@ -265,7 +265,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   }
 
   private void handleStreamedJob(final ActivatedJob job) {
-    final boolean notEnqueued = !tryToEnqueJob(job);
+    final boolean notEnqueued = !tryToEnqueueJob(job);
     if (notEnqueued) {
       // TODO logic to handle the faults?
       // The job is likely to timed out anyway, so we potentially just skip it and don't need to do
@@ -313,7 +313,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   }
 
   private void handleJobFinished() {
-    final int actualRemainingJobs = remainingJobs.decrementAndGet();
+    final int actualRemainingJobs = actualPendingJobs();
     if (!isPollScheduled.get() && shouldPoll(actualRemainingJobs)) {
       tryPoll();
     }
