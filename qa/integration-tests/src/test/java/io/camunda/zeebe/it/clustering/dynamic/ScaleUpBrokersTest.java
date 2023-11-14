@@ -117,6 +117,28 @@ final class ScaleUpBrokersTest {
     cluster.awaitCompleteTopology(finalClusterSize, 3, 1, Duration.ofSeconds(10));
   }
 
+  @Test
+  void shouldScaleClusterByAddingMultipleBroker() {
+    // given
+    final int currentClusterSize = cluster.brokers().size();
+    final int newClusterSize = currentClusterSize + 2;
+
+    final var processInstanceKeys =
+        createInstanceWithAJobOnAllPartitions(zeebeClient, JOB_TYPE, PARTITIONS_COUNT);
+
+    // when
+    createNewBroker(newClusterSize, currentClusterSize);
+    createNewBroker(newClusterSize, currentClusterSize + 1);
+    scale(cluster, newClusterSize);
+
+    // then
+    // Changes are reflected in the topology returned by grpc query
+    cluster.awaitCompleteTopology(newClusterSize, 3, 1, Duration.ofSeconds(10));
+
+    // then - verify the cluster can still process
+    assertThatAllJobsCanBeCompleted(processInstanceKeys, zeebeClient, JOB_TYPE);
+  }
+
   private void createNewBroker(final int newClusterSize, final int newBrokerId) {
     final var newBroker =
         new TestStandaloneBroker()
