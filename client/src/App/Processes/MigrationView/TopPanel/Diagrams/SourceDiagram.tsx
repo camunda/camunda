@@ -12,6 +12,7 @@ import {DiagramWrapper} from './styled';
 import {observer} from 'mobx-react';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {Diagram} from 'modules/components/Diagram';
+import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 
 const SourceDiagram: React.FC = observer(() => {
   const {processName, version} = processesStore.getSelectedProcessDetails();
@@ -29,9 +30,12 @@ const SourceDiagram: React.FC = observer(() => {
           <Diagram
             xml={processXmlStore.state.xml}
             selectableFlowNodes={processXmlStore.selectableIds}
-            // TODO https://github.com/camunda/operate/issues/5732
-            selectedFlowNodeId={undefined}
-            onFlowNodeSelection={() => {}}
+            selectedFlowNodeId={
+              processInstanceMigrationStore.state.selectedSourceFlowNodeId
+            }
+            onFlowNodeSelection={(flowNodeId) => {
+              processInstanceMigrationStore.selectSourceFlowNode(flowNodeId);
+            }}
             // overlaysData={[]}
           >
             {/* overlays here  */}

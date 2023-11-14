@@ -6,12 +6,11 @@
  */
 
 import React from 'react';
-import {Container, TableHeader, TableCell} from './styled';
+import {Container, TableHeader, TableCell, TableRow} from './styled';
 import {
   DataTable as CarbonDataTable,
   Table,
   TableHead,
-  TableRow,
   TableBody,
   TableContainer,
   TableExpandRow,
@@ -29,6 +28,8 @@ type Props = {
   isExpandable?: boolean;
   expandableRowTitle?: string;
   expandedContents?: {[key: string]: React.ReactNode};
+  onRowClick?: (rowId: string) => void;
+  checkIsRowSelected?: (rowId: string) => boolean;
 };
 
 const TableCells: React.FC<{
@@ -62,6 +63,8 @@ const DataTable = React.forwardRef<HTMLDivElement, Props>(
       isExpandable,
       expandableRowTitle,
       expandedContents,
+      onRowClick,
+      checkIsRowSelected,
     },
     ref,
   ) => {
@@ -120,8 +123,25 @@ const DataTable = React.forwardRef<HTMLDivElement, Props>(
                       );
                     }
 
+                    const isSelected = checkIsRowSelected?.(row.id) ?? false;
+                    const isClickable = onRowClick !== undefined;
+
                     return (
-                      <TableRow {...getRowProps({row})}>
+                      <TableRow
+                        {...getRowProps({row})}
+                        onClick={() => {
+                          onRowClick?.(row.id);
+                        }}
+                        $isClickable={isClickable}
+                        isSelected={isSelected}
+                        aria-selected={isSelected}
+                        tabIndex={isClickable ? 0 : undefined}
+                        onKeyDown={({key}) => {
+                          if (isClickable && key === 'Enter') {
+                            onRowClick?.(row.id);
+                          }
+                        }}
+                      >
                         <TableCells
                           row={row}
                           columnsWithNoContentPadding={

@@ -80,6 +80,13 @@ const BottomPanel: React.FC = observer(() => {
                     width: '50%',
                   },
                 ]}
+                onRowClick={(rowId) => {
+                  processInstanceMigrationStore.selectSourceFlowNode(rowId);
+                }}
+                checkIsRowSelected={(
+                  (selectedSourceFlowNode) => (rowId) =>
+                    selectedSourceFlowNode === rowId
+                )(processInstanceMigrationStore.state.selectedSourceFlowNodeId)}
                 rows={processXmlStore.selectableFlowNodes.map(
                   (sourceFlowNode) => {
                     return {

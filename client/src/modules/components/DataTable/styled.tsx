@@ -9,6 +9,7 @@ import styled, {css} from 'styled-components';
 import {
   TableHeader as BaseTableHeader,
   TableCell as BaseTableCell,
+  TableRow as BaseTableRow,
 } from '@carbon/react';
 
 const Container = styled.div`
@@ -46,4 +47,15 @@ const TableCell = styled(BaseTableCell)<TableCellProps>`
   }}
 `;
 
-export {Container, TableHeader, TableCell};
+type TableRowProps = {
+  $isClickable?: boolean;
+};
+const TableRow = styled(BaseTableRow)<TableRowProps>`
+  ${({$isClickable}) => {
+    return css`
+      ${$isClickable && `cursor: pointer;`}
+    `;
+  }}
+`;
+
+export {Container, TableHeader, TableCell, TableRow};

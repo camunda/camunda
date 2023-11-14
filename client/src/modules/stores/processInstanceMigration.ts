@@ -21,11 +21,13 @@ const STEPS = {
 type State = {
   currentStep: 'elementMapping' | 'summary' | null;
   flowNodeMapping: {[sourceId: string]: string};
+  selectedSourceFlowNodeId?: string;
 };
 
 const DEFAULT_STATE: State = {
   currentStep: null,
   flowNodeMapping: {},
+  selectedSourceFlowNodeId: undefined,
 };
 
 class ProcessInstanceMigration {
@@ -46,6 +48,14 @@ class ProcessInstanceMigration {
 
     return STEPS[this.state.currentStep];
   }
+
+  selectSourceFlowNode = (flowNodeId?: string) => {
+    if (this.state.selectedSourceFlowNodeId === flowNodeId) {
+      this.state.selectedSourceFlowNodeId = undefined;
+    } else {
+      this.state.selectedSourceFlowNodeId = flowNodeId;
+    }
+  };
 
   enable = () => {
     this.state.currentStep = 'elementMapping';
