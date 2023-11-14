@@ -55,6 +55,28 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
     return applyOrDryRun(true, request);
   }
 
+  @Override
+  public ActorFuture<ClusterTopology> cancelChange(final long changeId) {
+    final ActorFuture<ClusterTopology> future = executor.createFuture();
+    executor.run(
+        () ->
+            clusterTopologyManager
+                .getClusterTopology()
+                .onComplete(
+                    (currentClusterTopology, errorOnGettingTopology) -> {
+                      if (errorOnGettingTopology != null) {
+                        failFuture(future, errorOnGettingTopology);
+                        return;
+                      }
+                      if (!canCancelOperation(changeId, currentClusterTopology, future)) {
+                        return;
+                      }
+
+                      checkAndCancel(changeId, currentClusterTopology, future);
+                    }));
+    return future;
+  }
+
   private ActorFuture<TopologyChangeResult> applyOrDryRun(
       final boolean dryRun, final TopologyChangeRequest request) {
     final ActorFuture<TopologyChangeResult> future = executor.createFuture();
@@ -240,27 +262,6 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
       future.completeExceptionally(
           new TopologyRequestFailedException.InternalError(error.getMessage()));
     }
-  }
-
-  public ActorFuture<ClusterTopology> cancelChange(final long changeId) {
-    final ActorFuture<ClusterTopology> future = executor.createFuture();
-    executor.run(
-        () ->
-            clusterTopologyManager
-                .getClusterTopology()
-                .onComplete(
-                    (currentClusterTopology, errorOnGettingTopology) -> {
-                      if (errorOnGettingTopology != null) {
-                        failFuture(future, errorOnGettingTopology);
-                        return;
-                      }
-                      if (!canCancelOperation(changeId, currentClusterTopology, future)) {
-                        return;
-                      }
-
-                      checkAndCancel(changeId, currentClusterTopology, future);
-                    }));
-    return future;
   }
 
   /**

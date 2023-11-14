@@ -45,6 +45,7 @@ public final class TopologyRequestServer implements AutoCloseable {
     registerReassignPartitionRequestHandler();
     registerScaleRequestHandler();
     registerGetTopologyQueryHandler();
+    registerTopologyCancelHandler();
   }
 
   @Override
@@ -115,6 +116,14 @@ public final class TopologyRequestServer implements AutoCloseable {
         TopologyRequestTopics.QUERY_TOPOLOGY.topic(),
         Function.identity(),
         request -> topologyManagementApi.getTopology().toCompletableFuture(),
+        serializer::encode);
+  }
+
+  private void registerTopologyCancelHandler() {
+    communicationService.replyTo(
+        TopologyRequestTopics.CANCEL_CHANGE.topic(),
+        serializer::decodeCancelChangeRequest,
+        request -> topologyManagementApi.cancelTopologyChange(request).toCompletableFuture(),
         serializer::encode);
   }
 

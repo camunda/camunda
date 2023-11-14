@@ -32,5 +32,8 @@ public interface TopologyManagementApi {
 
   ActorFuture<TopologyChangeResponse> scaleMembers(ScaleRequest scaleRequest);
 
+  ActorFuture<ClusterTopology> cancelTopologyChange(
+      TopologyManagementRequest.CancelChangeRequest cancelChangeRequest);
+
   ActorFuture<ClusterTopology> getTopology();
 }
