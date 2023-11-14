@@ -278,9 +278,15 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   }
 
   private void consumeJobFromQueue(final Runnable finalizer) {
+    if (jobsQueue.peek() == null) {
+      // stop if there is nothing - we will triggered by push/poll again
+      return;
+    }
+
     ActivatedJob job;
     try {
       job = jobsQueue.poll(10, TimeUnit.SECONDS);
+      // TODO should we really do a poll ? Maybe a peek and remove it later after handling?
     } catch (final InterruptedException ie) {
       job = null;
     }
