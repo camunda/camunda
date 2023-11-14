@@ -649,6 +649,7 @@
         #     signal: true
         #     signalSubscription: true
         #     timer: true
+        #     userTask: true
         #     variable: true
         #     variableDocument: true
         #
@@ -726,6 +727,7 @@
         #     signal: true
         #     signalSubscription: true
         #     timer: true
+        #     userTask: true
         #     variable: true
         #     variableDocument: true
 

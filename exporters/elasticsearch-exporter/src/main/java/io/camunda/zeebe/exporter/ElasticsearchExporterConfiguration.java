@@ -120,6 +120,8 @@ public class ElasticsearchExporterConfiguration {
         return index.commandDistribution;
       case FORM:
         return index.form;
+      case USER_TASK:
+        return index.userTask;
       default:
         return false;
     }
@@ -182,6 +184,7 @@ public class ElasticsearchExporterConfiguration {
     public boolean resourceDeletion = true;
     public boolean commandDistribution = true;
     public boolean form = true;
+    public boolean userTask = true;
 
     // index settings
     private Integer numberOfShards = null;
@@ -277,6 +280,8 @@ public class ElasticsearchExporterConfiguration {
           + commandDistribution
           + ", form="
           + form
+          + ", userTask="
+          + userTask
           + '}';
     }
   }

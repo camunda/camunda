@@ -119,6 +119,8 @@ public class OpensearchExporterConfiguration {
         return index.commandDistribution;
       case FORM:
         return index.form;
+      case USER_TASK:
+        return index.userTask;
       default:
         return false;
     }
@@ -182,6 +184,8 @@ public class OpensearchExporterConfiguration {
     public boolean commandDistribution = true;
 
     public boolean form = true;
+
+    public boolean userTask = true;
 
     // index settings
     private Integer numberOfShards = null;
@@ -275,6 +279,8 @@ public class OpensearchExporterConfiguration {
           + commandDistribution
           + ", form="
           + form
+          + ", userTask="
+          + userTask
           + '}';
     }
   }
