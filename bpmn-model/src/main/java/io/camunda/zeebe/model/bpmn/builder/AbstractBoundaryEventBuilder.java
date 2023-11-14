@@ -25,6 +25,7 @@ import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnEdge;
 import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
 import io.camunda.zeebe.model.bpmn.instance.dc.Bounds;
 import io.camunda.zeebe.model.bpmn.instance.di.Waypoint;
+import java.util.function.Consumer;
 
 /**
  * @author Sebastian Menski
@@ -128,6 +129,14 @@ public abstract class AbstractBoundaryEventBuilder<B extends AbstractBoundaryEve
     element.getEventDefinitions().add(escalationEventDefinition);
 
     return myself;
+  }
+
+  public AbstractFlowNodeBuilder compensation(final Consumer<AbstractFlowNodeBuilder> consumer) {
+    compensateEventDefinition();
+    compensationStart();
+    consumer.accept(myself);
+    compensationDone();
+    return compensateBoundaryEvent.getAttachedTo().builder();
   }
 
   @Override

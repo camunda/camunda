@@ -1265,6 +1265,36 @@ public class ProcessBuilderTest {
   }
 
   @Test
+  public void testCompensationTaskWithNewAPI() {
+    modelInstance =
+        Bpmn.createProcess()
+            .startEvent()
+            .userTask("task")
+            .boundaryEvent("boundary")
+            .compensation(c -> c.userTask("compensate"))
+            .moveToActivity("task")
+            .endEvent("theend")
+            .done();
+
+    // Checking Association
+    final Collection<Association> associations =
+        modelInstance.getModelElementsByType(Association.class);
+    assertThat(associations).hasSize(1);
+    final Association association = associations.iterator().next();
+    assertThat(association.getSource().getId()).isEqualTo("boundary");
+    assertThat(association.getTarget().getId()).isEqualTo("compensate");
+    assertThat(association.getAssociationDirection()).isEqualTo(AssociationDirection.One);
+
+    // Checking Sequence flow
+    final UserTask task = modelInstance.getModelElementById("task");
+    final Collection<SequenceFlow> outgoing = task.getOutgoing();
+    assertThat(outgoing).hasSize(1);
+    final SequenceFlow flow = outgoing.iterator().next();
+    assertThat(flow.getSource().getId()).isEqualTo("task");
+    assertThat(flow.getTarget().getId()).isEqualTo("theend");
+  }
+
+  @Test
   public void testOnlyOneCompensateBoundaryEventAllowed() {
     // given
     final UserTaskBuilder builder =
