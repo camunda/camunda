@@ -30,7 +30,7 @@ public final class ClusterActuatorAssert
 
   public static ClusterActuatorAssert assertThat(final TestCluster actuator) {
     return new ClusterActuatorAssert(
-        ClusterActuator.of(actuator.availableGateway()), ClusterActuatorAssert.class);
+        ClusterActuator.of(actuator.anyGateway()), ClusterActuatorAssert.class);
   }
 
   public ClusterActuatorAssert doesNotHaveBroker(final int brokerId) {
