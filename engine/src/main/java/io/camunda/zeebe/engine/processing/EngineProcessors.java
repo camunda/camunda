@@ -206,7 +206,7 @@ public final class EngineProcessors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final Writers writers,
       final DueDateTimerChecker timerChecker) {
-    return ProcessEventProcessors.addProcessProcessors(
+    return BpmnProcessors.addBpmnStreamProcessor(
         processingState,
         scheduledTaskState,
         bpmnBehaviors,

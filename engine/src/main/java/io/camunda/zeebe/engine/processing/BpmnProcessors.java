@@ -47,9 +47,9 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
-public final class ProcessEventProcessors {
+public final class BpmnProcessors {
 
-  public static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
+  public static TypedRecordProcessor<ProcessInstanceRecord> addBpmnStreamProcessor(
       final MutableProcessingState processingState,
       final Supplier<ScheduledTaskState> scheduledTaskState,
       final BpmnBehaviors bpmnBehaviors,
