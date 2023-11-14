@@ -27,7 +27,8 @@ export function useCallbackPrompt(when: boolean) {
     (nextLocation: {location: Location}) => {
       if (
         !confirmedNavigation &&
-        nextLocation.location.pathname !== location.pathname
+        (nextLocation.location.pathname !== location.pathname ||
+          nextLocation.location.search !== location.search)
       ) {
         setShowPrompt(true);
         setLastLocation(nextLocation);
@@ -35,7 +36,7 @@ export function useCallbackPrompt(when: boolean) {
       }
       return true;
     },
-    [confirmedNavigation, location.pathname],
+    [confirmedNavigation, location.pathname, location.search],
   );
 
   const confirmNavigation = useCallback(() => {

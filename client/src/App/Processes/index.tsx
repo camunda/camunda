@@ -9,12 +9,39 @@ import {observer} from 'mobx-react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {MigrationView} from './MigrationView';
 import {ListView} from './ListView';
+import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
+import {Modal} from '@carbon/react';
 
 const Processes: React.FC = observer(() => {
-  return processInstanceMigrationStore.isEnabled ? (
-    <MigrationView />
-  ) : (
-    <ListView />
+  const {showPrompt, confirmNavigation, cancelNavigation} = useCallbackPrompt(
+    processInstanceMigrationStore.isEnabled,
+  );
+
+  return (
+    <>
+      {processInstanceMigrationStore.isEnabled ? (
+        <MigrationView />
+      ) : (
+        <ListView />
+      )}
+
+      {showPrompt && (
+        <Modal
+          open={showPrompt}
+          modalHeading="Leave Migration Mode"
+          preventCloseOnClickOutside
+          onRequestClose={cancelNavigation}
+          secondaryButtonText="Stay"
+          primaryButtonText="Leave"
+          onRequestSubmit={() => {
+            processInstanceMigrationStore.reset();
+            confirmNavigation();
+          }}
+        >
+          <p>By leaving this page, all planned mapping/s will be discarded.</p>
+        </Modal>
+      )}
+    </>
   );
 });
 
