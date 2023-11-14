@@ -13,6 +13,7 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.PartitionState;
+import io.camunda.zeebe.topology.state.PartitionState.State;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -63,9 +64,13 @@ public final class TopologyUtil {
               for (final Entry<Integer, PartitionState> entry : member.partitions().entrySet()) {
                 final Integer partitionId = entry.getKey();
                 final PartitionState partitionState = entry.getValue();
-                memberPriorityByPartition
-                    .computeIfAbsent(partitionId, k -> new HashMap<>())
-                    .put(memberId, partitionState.priority());
+                if (partitionState.state().equals(State.ACTIVE)
+                    || partitionState.state().equals(State.LEAVING)) {
+                  // only add active and leaving partitions because only those has to be started
+                  memberPriorityByPartition
+                      .computeIfAbsent(partitionId, k -> new HashMap<>())
+                      .put(memberId, partitionState.priority());
+                }
               }
             });
 
