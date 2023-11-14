@@ -52,7 +52,7 @@ final class RemoteStreamPusher<P extends BufferWriter> {
     return (error, payload) -> {
       if (error != null) {
         metrics.pushFailed();
-        LOG.debug("Failed to push {} to stream {}", payload, streamId, error);
+        LOG.debug("Failed to push (size = {}) to stream {}", payload.getLength(), streamId, error);
         errorHandler.handleError(error, payload);
       }
     };
