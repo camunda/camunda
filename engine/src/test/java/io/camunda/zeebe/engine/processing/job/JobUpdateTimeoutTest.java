@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
@@ -17,10 +18,11 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -106,8 +108,76 @@ public class JobUpdateTimeoutTest {
     Assertions.assertThat(jobRecord)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-            "Expected to find a job with key '%d' and deadline '%d', but no such job was found"
-                .formatted(job.getKey(), job.getValue().getDeadline()));
+            "Expected to update the timeout of job with key '%d', but it is not active"
+                .formatted(job.getKey()));
+  }
+
+  @Test
+  public void shouldIncreaseJobTimeoutSecondTime() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final var batchRecord =
+        ENGINE.jobs().withType(jobType).withTimeout(Duration.ofMinutes(5).toMillis()).activate();
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final long firstTimeout = Duration.ofMinutes(10).toMillis();
+    final long secondTimeout = Duration.ofMinutes(20).toMillis();
+
+    // when
+    ENGINE.job().withKey(jobKey).withTimeout(firstTimeout).updateTimeout();
+    final var updatedRecord =
+        ENGINE.job().withKey(jobKey).withTimeout(secondTimeout).updateTimeout();
+
+    // then
+    assertJobDeadline(updatedRecord, jobKey, job, secondTimeout);
+  }
+
+  @Test
+  public void shouldTimeOutAfterDecreasingTimeout() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final var batchRecord =
+        ENGINE.jobs().withType(jobType).withTimeout(Duration.ofMinutes(10).toMillis()).activate();
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final long timeout = Duration.ofMinutes(5).toMillis();
+
+    // when
+    final var updatedRecord = ENGINE.job().withKey(jobKey).withTimeout(timeout).updateTimeout();
+    ENGINE.increaseTime(Duration.ofMinutes(6));
+
+    // then
+    final List<Record<JobRecordValue>> jobEvents =
+        jobRecords().withType(jobType).limit(4).collect(Collectors.toList());
+
+    assertThat(jobEvents).extracting(Record::getKey).contains(jobKey);
+    assertThat(jobEvents)
+        .extracting(Record::getIntent)
+        .containsExactly(
+            JobIntent.CREATED, JobIntent.TIMEOUT_UPDATED, JobIntent.TIME_OUT, JobIntent.TIMED_OUT);
+  }
+
+  @Test
+  public void shouldTimeOutAfterIncreasingTimeout() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final var batchRecord =
+        ENGINE.jobs().withType(jobType).withTimeout(Duration.ofMinutes(10).toMillis()).activate();
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final long timeout = Duration.ofMinutes(15).toMillis();
+
+    // when
+    ENGINE.job().withKey(jobKey).withTimeout(timeout).updateTimeout();
+    ENGINE.increaseTime(Duration.ofMinutes(16));
+
+    // then
+    final List<Record<JobRecordValue>> jobEvents =
+        jobRecords().withType(jobType).limit(4).collect(Collectors.toList());
+
+    assertThat(jobEvents).extracting(Record::getKey).contains(jobKey);
+    assertThat(jobEvents)
+        .extracting(Record::getIntent)
+        .containsExactly(
+            JobIntent.CREATED, JobIntent.TIMEOUT_UPDATED, JobIntent.TIME_OUT, JobIntent.TIMED_OUT);
   }
 
   private static void assertJobDeadline(
@@ -124,6 +194,7 @@ public class JobUpdateTimeoutTest {
 
     assertThat(updatedRecord.getValue().getDeadline())
         .isCloseTo(
-            ActorClock.currentTimeMillis() + timeout, within(Duration.ofMillis(100).toMillis()));
+            ENGINE.getClock().getCurrentTimeInMillis() + timeout,
+            within(Duration.ofMillis(100).toMillis()));
   }
 }
