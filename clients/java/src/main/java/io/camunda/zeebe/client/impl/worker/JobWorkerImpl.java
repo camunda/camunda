@@ -244,8 +244,44 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   }
 
   private void handleStreamedJob(final ActivatedJob job) {
+    boolean notEnqueued;
+    try {
+      notEnqueued = !jobsQueue.offer(job, 10, TimeUnit.SECONDS);
+    } catch (final InterruptedException e) {
+      notEnqueued = true;
+    }
+
+    if (notEnqueued) {
+      // TODO logic to handle the faults?
+      // The job is likely to timed out anyway, so we potentially just skip it and don't need to do
+      // any further error handling
+      return;
+    }
+
     metrics.jobActivated(1);
-    executor.execute(jobHandlerFactory.create(job, this::handleStreamJobFinished));
+    scheduleConsumeJob();
+  }
+
+  private void consumeJobFromQueue() {
+    ActivatedJob job;
+    try {
+      job = jobsQueue.poll(10, TimeUnit.SECONDS);
+    } catch (final InterruptedException ie) {
+      job = null;
+    }
+
+    if (job == null) {
+      // we either timed out or got an interrupt
+      // we were not able to consume any job
+      // retry
+      scheduleConsumeJob();
+    } else {
+      executor.execute(jobHandlerFactory.create(job, this::handleStreamJobFinished));
+    }
+  }
+
+  private void scheduleConsumeJob() {
+    executor.execute(this::consumeJobFromQueue);
   }
 
   private void handleJobFinished() {
@@ -257,6 +293,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   }
 
   private void handleStreamJobFinished() {
+    // TODO is it important that we have metric only for streaming?
     metrics.jobHandled(1);
   }
 }
