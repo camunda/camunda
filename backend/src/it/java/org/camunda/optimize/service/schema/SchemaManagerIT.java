@@ -180,14 +180,14 @@ public class SchemaManagerIT extends AbstractPlatformIT {
 
   @Test
   public void dynamicSettingsAreAppliedToStaticIndices() throws IOException {
-    final String oldRefreshInterval = embeddedOptimizeExtension.getConfigurationService().getEsRefreshInterval();
-    final int oldReplicaCount = embeddedOptimizeExtension.getConfigurationService().getEsNumberOfReplicas();
-    final int oldNestedDocumentLimit = embeddedOptimizeExtension.getConfigurationService().getEsNestedDocumentsLimit();
+    final String oldRefreshInterval = embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().getRefreshInterval();
+    final int oldReplicaCount = embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().getNumberOfReplicas();
+    final int oldNestedDocumentLimit = embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().getNestedDocumentsLimit();
 
     // given schema exists
-    embeddedOptimizeExtension.getConfigurationService().setEsRefreshInterval("100s");
-    embeddedOptimizeExtension.getConfigurationService().setEsNumberOfReplicas(2);
-    embeddedOptimizeExtension.getConfigurationService().setEsNestedDocumentsLimit(10);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setRefreshInterval("100s");
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setNumberOfReplicas(2);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setNestedDocumentsLimit(10);
 
     // when
     initializeSchema();
@@ -203,26 +203,26 @@ public class SchemaManagerIT extends AbstractPlatformIT {
     assertThat(settings.getAsInt("index." + MAPPING_NESTED_OBJECTS_LIMIT, 111)).isEqualTo(10);
 
     // cleanup
-    embeddedOptimizeExtension.getConfigurationService().setEsRefreshInterval(oldRefreshInterval);
-    embeddedOptimizeExtension.getConfigurationService().setEsNumberOfReplicas(oldReplicaCount);
-    embeddedOptimizeExtension.getConfigurationService().setEsNestedDocumentsLimit(oldNestedDocumentLimit);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setRefreshInterval(oldRefreshInterval);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setNumberOfReplicas(oldReplicaCount);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setNestedDocumentsLimit(oldNestedDocumentLimit);
     initializeSchema();
   }
 
   @Test
   public void dynamicSettingsAreAppliedToExistingDynamicIndices() throws IOException {
-    final String oldRefreshInterval = embeddedOptimizeExtension.getConfigurationService().getEsRefreshInterval();
-    final int oldReplicaCount = embeddedOptimizeExtension.getConfigurationService().getEsNumberOfReplicas();
-    final int oldNestedDocumentLimit = embeddedOptimizeExtension.getConfigurationService().getEsNestedDocumentsLimit();
+    final String oldRefreshInterval = embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().getRefreshInterval();
+    final int oldReplicaCount = embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().getNumberOfReplicas();
+    final int oldNestedDocumentLimit = embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().getNestedDocumentsLimit();
 
     // given a dynamic index is created by the import of process instance data
     final ProcessInstanceEngineDto processInstanceEngineDto = engineIntegrationExtension.deployAndStartProcess(
       BpmnModels.getSimpleBpmnDiagram());
     importAllEngineEntitiesFromScratch();
     // then the dynamic index settings are changed
-    embeddedOptimizeExtension.getConfigurationService().setEsRefreshInterval("100s");
-    embeddedOptimizeExtension.getConfigurationService().setEsNumberOfReplicas(2);
-    embeddedOptimizeExtension.getConfigurationService().setEsNestedDocumentsLimit(10);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setRefreshInterval("100s");
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setNumberOfReplicas(2);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setNestedDocumentsLimit(10);
 
     // when
     initializeSchema();
@@ -239,9 +239,9 @@ public class SchemaManagerIT extends AbstractPlatformIT {
     assertThat(settings.getAsInt("index." + MAPPING_NESTED_OBJECTS_LIMIT, 111)).isEqualTo(10);
 
     // cleanup
-    embeddedOptimizeExtension.getConfigurationService().setEsRefreshInterval(oldRefreshInterval);
-    embeddedOptimizeExtension.getConfigurationService().setEsNumberOfReplicas(oldReplicaCount);
-    embeddedOptimizeExtension.getConfigurationService().setEsNestedDocumentsLimit(oldNestedDocumentLimit);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setRefreshInterval(oldRefreshInterval);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setNumberOfReplicas(oldReplicaCount);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setNestedDocumentsLimit(oldNestedDocumentLimit);
     initializeSchema();
   }
 

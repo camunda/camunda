@@ -252,7 +252,7 @@ public class ExternalEventReaderES implements ExternalEventReader {
     return new CompositeAggregationBuilder(GROUP_COMPOSITE_AGG, eventGroupsAndLowercaseGroups)
       .size(Math.min(
         eventGroupRequestDto.getLimit(),
-        configurationService.getEsAggregationBucketLimit()
+        configurationService.getElasticSearchConfiguration().getAggregationBucketLimit()
       ));
   }
 

@@ -124,7 +124,7 @@ public class EntitiesReaderES implements EntitiesReader {
       .size(LIST_FETCH_LIMIT)
       .fetchSource(null, ENTITY_LIST_EXCLUDES);
     SearchRequest searchRequest = createReportAndDashboardSearchRequest().source(searchSourceBuilder)
-      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
+      .scroll(timeValueSeconds(configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
 
     SearchResponse scrollResp;
     try {
@@ -139,7 +139,7 @@ public class EntitiesReaderES implements EntitiesReader {
       CollectionEntity.class,
       objectMapper,
       esClient,
-      configurationService.getEsScrollTimeoutInSeconds()
+      configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()
     );
   }
 
@@ -299,7 +299,7 @@ public class EntitiesReaderES implements EntitiesReader {
 
   private List<CollectionEntity> runEntitiesSearchRequest(final SearchSourceBuilder searchSourceBuilder) {
     SearchRequest searchRequest = createReportAndDashboardSearchRequest().source(searchSourceBuilder)
-      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
+      .scroll(timeValueSeconds(configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
 
     SearchResponse scrollResp;
     try {
@@ -314,7 +314,7 @@ public class EntitiesReaderES implements EntitiesReader {
       CollectionEntity.class,
       objectMapper,
       esClient,
-      configurationService.getEsScrollTimeoutInSeconds()
+      configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()
     );
   }
 

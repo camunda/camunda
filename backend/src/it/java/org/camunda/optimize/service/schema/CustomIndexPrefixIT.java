@@ -45,7 +45,7 @@ public class CustomIndexPrefixIT extends AbstractPlatformIT {
   @Test
   public void optimizeCustomPrefixIndexExistsAfterSchemaInitialization() {
     // given
-    embeddedOptimizeExtension.getConfigurationService().setEsIndexPrefix(CUSTOM_PREFIX);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setIndexPrefix(CUSTOM_PREFIX);
     embeddedOptimizeExtension.reloadConfiguration();
 
     // when
@@ -60,7 +60,7 @@ public class CustomIndexPrefixIT extends AbstractPlatformIT {
   @Test
   public void allTypesWithPrefixExistAfterSchemaInitialization() throws IOException {
     // given
-    embeddedOptimizeExtension.getConfigurationService().setEsIndexPrefix(CUSTOM_PREFIX);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setIndexPrefix(CUSTOM_PREFIX);
     embeddedOptimizeExtension.reloadConfiguration();
 
     // when
@@ -96,7 +96,7 @@ public class CustomIndexPrefixIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    embeddedOptimizeExtension.getConfigurationService().setEsIndexPrefix(
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setIndexPrefix(
       customPrefixElasticSearchIntegrationTestExtension.getOptimizeElasticClient()
         .getIndexNameService()
         .getIndexPrefix()

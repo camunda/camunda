@@ -48,7 +48,7 @@ public class TenantReaderES implements TenantReader {
       .size(LIST_FETCH_LIMIT);
     final SearchRequest searchRequest = new SearchRequest(TENANT_INDEX_NAME)
       .source(searchSourceBuilder)
-      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
+      .scroll(timeValueSeconds(configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
 
     SearchResponse scrollResp;
     try {
@@ -62,7 +62,7 @@ public class TenantReaderES implements TenantReader {
       TenantDto.class,
       objectMapper,
       esClient,
-      configurationService.getEsScrollTimeoutInSeconds()
+      configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()
     ));
   }
 }

@@ -156,7 +156,7 @@ public class CorrelatedCamundaProcessInstanceReaderES  implements CorrelatedCamu
       .size(MAX_RESPONSE_SIZE_LIMIT);
     SearchRequest searchRequest = new SearchRequest(getInstanceIndexNames(camundaSources))
       .source(searchSourceBuilder)
-      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
+      .scroll(timeValueSeconds(configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
 
     SearchResponse searchResponse;
     try {
@@ -178,7 +178,7 @@ public class CorrelatedCamundaProcessInstanceReaderES  implements CorrelatedCamu
       CorrelatableProcessInstanceDto.class,
       objectMapper,
       esClient,
-      configurationService.getEsScrollTimeoutInSeconds()
+      configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()
     );
   }
 

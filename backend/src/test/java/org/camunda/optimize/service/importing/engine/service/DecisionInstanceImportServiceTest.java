@@ -63,8 +63,8 @@ public class DecisionInstanceImportServiceTest {
 
   @BeforeEach
   public void init() {
-    when(configurationService.getElasticsearchJobExecutorThreadCount()).thenReturn(1);
-    when(configurationService.getElasticsearchJobExecutorQueueSize()).thenReturn(1);
+    when(configurationService.getJobExecutorThreadCount()).thenReturn(1);
+    when(configurationService.getJobExecutorQueueSize()).thenReturn(1);
     when(decisionDefinitionResolverService.getDefinition(any(), any()))
       .thenReturn(Optional.of(
         DecisionDefinitionOptimizeDto.builder()

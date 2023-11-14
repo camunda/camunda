@@ -5,14 +5,14 @@
  */
 package com.camunda.optimize.test.upgrade
 
+import jakarta.ws.rs.ProcessingException
+import jakarta.ws.rs.core.Response
 import org.camunda.optimize.OptimizeRequestExecutor
 import org.camunda.optimize.test.optimize.HealthClient
 import org.camunda.optimize.test.optimize.StatusClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import jakarta.ws.rs.ProcessingException
-import jakarta.ws.rs.core.Response
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 
@@ -21,6 +21,7 @@ import static java.util.concurrent.TimeUnit.SECONDS
 import static org.awaitility.Awaitility.await
 
 class OptimizeWrapper {
+
   private static final Logger log = LoggerFactory.getLogger(OptimizeWrapper.class);
 
   String optimizeVersion

@@ -32,6 +32,7 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 public class OptimizeElasticsearchClientTest {
+
   @Mock(answer = Answers.RETURNS_DEEP_STUBS, strictness = Mock.Strictness.LENIENT)
   private RestHighLevelClient highLevelRestClient;
   @Mock

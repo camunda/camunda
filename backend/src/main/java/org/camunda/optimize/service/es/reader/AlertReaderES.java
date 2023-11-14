@@ -63,7 +63,7 @@ public class AlertReaderES implements AlertReader {
     searchSourceBuilder.size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest = new SearchRequest(ALERT_INDEX_NAME)
       .source(searchSourceBuilder)
-      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
+      .scroll(timeValueSeconds(configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
 
 
     SearchResponse scrollResp;
@@ -79,7 +79,7 @@ public class AlertReaderES implements AlertReader {
       AlertDefinitionDto.class,
       objectMapper,
       esClient,
-      configurationService.getEsScrollTimeoutInSeconds()
+      configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()
     );
   }
 

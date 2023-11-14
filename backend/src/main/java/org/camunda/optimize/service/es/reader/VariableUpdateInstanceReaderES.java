@@ -63,7 +63,7 @@ public class VariableUpdateInstanceReaderES implements VariableUpdateInstanceRea
       .size(MAX_RESPONSE_SIZE_LIMIT);
     SearchRequest searchRequest = new SearchRequest(DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder)
-      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
+      .scroll(timeValueSeconds(configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
 
     SearchResponse searchResponse;
     try {
@@ -78,7 +78,7 @@ public class VariableUpdateInstanceReaderES implements VariableUpdateInstanceRea
       VariableUpdateInstanceDto.class,
       objectMapper,
       esClient,
-      configurationService.getEsScrollTimeoutInSeconds()
+      configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()
     );
   }
 

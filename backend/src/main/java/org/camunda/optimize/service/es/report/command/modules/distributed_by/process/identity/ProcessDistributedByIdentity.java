@@ -59,7 +59,7 @@ public abstract class ProcessDistributedByIdentity extends ProcessDistributedByP
   public List<AggregationBuilder> createAggregations(final ExecutionContext<ProcessReportDataDto> context) {
     final TermsAggregationBuilder identityTermsAggregation = AggregationBuilders
       .terms(DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION)
-      .size(configurationService.getEsAggregationBucketLimit())
+      .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
       .order(BucketOrder.key(true))
       .field(FLOW_NODE_INSTANCES + "." + getIdentityField())
       .missing(DISTRIBUTE_BY_IDENTITY_MISSING_KEY);

@@ -114,6 +114,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class OptimizeElasticsearchClient extends DatabaseClient {
+
   private static final int DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY = 30;
 
   // we had to introduce our own options due to a regression with the client's behaviour with the 7.16

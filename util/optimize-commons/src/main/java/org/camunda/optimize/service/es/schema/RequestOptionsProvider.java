@@ -50,7 +50,7 @@ public class RequestOptionsProvider {
   }
 
   private int getElasticsearchResponseConsumerBufferLimitInBytes() {
-    return configurationService.getElasticsearchResponseConsumerBufferLimitInMb() * 1024 * 1024;
+    return configurationService.getElasticSearchConfiguration().getResponseConsumerBufferLimitInMb() * 1024 * 1024;
   }
 
 }

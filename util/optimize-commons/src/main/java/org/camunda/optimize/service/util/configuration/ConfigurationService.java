@@ -19,7 +19,6 @@ import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.analytics.AnalyticsConfiguration;
 import org.camunda.optimize.service.util.configuration.archive.DataArchiveConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
-import org.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineAuthenticationConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EventIngestionConfiguration;
@@ -32,21 +31,17 @@ import org.camunda.optimize.service.util.configuration.users.UsersConfiguration;
 import org.camunda.optimize.util.SuppressionConstants;
 
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.util.configuration.ConfigurationParser.parseConfigFromLocations;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ANALYTICS_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.AVAILABLE_LOCALES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CACHES_CONFIGURATION;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_PROFILE;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.EVENT_BASED_PROCESS_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.EXTERNAL_VARIABLE_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
@@ -54,14 +49,12 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IMPORT_USER_TASK_IDENTITY_META_DATA;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.M2M_CLIENT_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ONBOARDING_CONFIGURATION;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPENSEARCH_PROFILE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPTIMIZE_API_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PANEL_NOTIFICATION_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.TELEMETRY_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.getLocationsAsInputStream;
-import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.resolvePathAsAbsoluteUrl;
 import static org.camunda.optimize.util.SuppressionConstants.OPTIONAL_ASSIGNED_TO_NULL;
 import static org.camunda.optimize.util.SuppressionConstants.OPTIONAL_FIELD_OR_PARAM;
 
@@ -75,6 +68,10 @@ public class ConfigurationService {
   private static final TypeRef<List<String>> LIST_OF_STRINGS_TYPE_REF = new TypeRef<>() {};
   private static final TypeRef<HashMap<String, WebhookConfiguration>> WEBHOOKS_MAP_TYPEREF = new TypeRef<>() {};
   // @formatter:on
+
+  private ElasticSearchConfiguration elasticSearchConfiguration;
+
+  private OpenSearchConfiguration openSearchConfiguration;
 
   private ReadContext configJsonContext;
 
@@ -90,47 +87,6 @@ public class ConfigurationService {
   private String engineDateFormat;
   private Long initialBackoff;
   private Long maximumBackoff;
-
-  // opensearch connection
-  private List<DatabaseConnectionNodeConfiguration> opensearchConnectionNodes;
-
-  // elasticsearch connection
-  private List<DatabaseConnectionNodeConfiguration> elasticsearchConnectionNodes;
-
-  private Integer esScrollTimeoutInSeconds;
-  private Integer elasticsearchConnectionTimeout;
-  private Integer elasticsearchResponseConsumerBufferLimitInMb;
-  private String elasticsearchPathPrefix;
-  private ProxyConfiguration elasticsearchProxyConfig;
-  private Boolean elasticsearchSkipHostnameVerification;
-
-  // elasticsearch connection security
-  private String elasticsearchSecurityUsername;
-  private String elasticsearchSecurityPassword;
-  private Boolean elasticsearchSecuritySSLEnabled;
-  private Boolean elasticsearchSecuritySslSelfSigned;
-  private String elasticsearchSecuritySSLCertificate;
-  private List<String> elasticsearchSecuritySSLCertificateAuthorities;
-
-  // elasticsearch cluster settings
-  private Integer esNumberOfReplicas;
-  private Integer esNumberOfShards;
-  private String esRefreshInterval;
-  private String esIndexPrefix;
-  private Integer esNestedDocumentsLimit;
-
-  // opensearch cluster settings
-  private String osIndexPrefix;
-
-  // elasticsearch snapshot settings
-  private String esSnapshotRepositoryName;
-
-  // elastic query settings
-  private Integer esAggregationBucketLimit;
-
-  // job executor settings
-  private Integer elasticsearchJobExecutorQueueSize;
-  private Integer elasticsearchJobExecutorThreadCount;
 
   // engine import settings
   private Integer engineConnectTimeout;
@@ -245,17 +201,42 @@ public class ConfigurationService {
 
   private Boolean multiTenancyEnabled;
 
+  // job executor settings
+  protected Integer jobExecutorQueueSize;
+  protected Integer jobExecutorThreadCount;
+
   @JsonCreator
   public static ConfigurationService createDefault() {
     return ConfigurationServiceBuilder.createDefaultConfiguration();
   }
 
-  ConfigurationService(String[] configLocations, ConfigurationValidator configurationValidator) {
+  public ConfigurationService(final String[] configLocations,
+                              final ConfigurationValidator configurationValidator) {
     List<InputStream> configStreams = getLocationsAsInputStream(configLocations);
     this.configJsonContext = parseConfigFromLocations(configStreams)
       .orElseThrow(() -> new OptimizeConfigurationException("No single configuration source could be read"));
     Optional.ofNullable(configurationValidator)
       .ifPresent(validator -> validator.validate(this));
+  }
+
+  public ElasticSearchConfiguration getElasticSearchConfiguration() {
+    if (elasticSearchConfiguration == null) {
+      elasticSearchConfiguration = configJsonContext.read(
+        ConfigurationServiceConstants.ELASTICSEARCH,
+        ElasticSearchConfiguration.class
+      );
+    }
+    return elasticSearchConfiguration;
+  }
+
+  public OpenSearchConfiguration getOpenSearchConfiguration() {
+    if (openSearchConfiguration == null) {
+      openSearchConfiguration = configJsonContext.read(
+        ConfigurationServiceConstants.OPENSEARCH,
+        OpenSearchConfiguration.class
+      );
+    }
+    return openSearchConfiguration;
   }
 
   ReadContext getConfigJsonContext() {
@@ -314,42 +295,6 @@ public class ConfigurationService {
     return getSecurityConfiguration().getAuth();
   }
 
-  public List<DatabaseConnectionNodeConfiguration> getElasticsearchConnectionNodes() {
-    if (elasticsearchConnectionNodes == null) {
-      // @formatter:off
-      TypeRef<List<DatabaseConnectionNodeConfiguration>> typeRef =
-        new TypeRef<>() {};
-      // @formatter:on
-      elasticsearchConnectionNodes = configJsonContext.read(
-        ConfigurationServiceConstants.ELASTICSEARCH_CONNECTION_NODES, typeRef
-      );
-    }
-    return elasticsearchConnectionNodes;
-  }
-
-  public List<DatabaseConnectionNodeConfiguration> getOpensearchConnectionNodes() {
-    if (opensearchConnectionNodes == null) {
-      // @formatter:off
-      TypeRef<List<DatabaseConnectionNodeConfiguration>> typeRef =
-        new TypeRef<>() {};
-      // @formatter:on
-      opensearchConnectionNodes = configJsonContext.read(
-        ConfigurationServiceConstants.OPENSEARCH_CONNECTION_NODES, typeRef
-      );
-    }
-    return opensearchConnectionNodes;
-  }
-
-  @JsonIgnore
-  public DatabaseConnectionNodeConfiguration getFirstElasticsearchConnectionNode() {
-    return getElasticsearchConnectionNodes().get(0);
-  }
-
-  @JsonIgnore
-  public DatabaseConnectionNodeConfiguration getFirstOpensearchConnectionNode() {
-    return getOpensearchConnectionNodes().get(0);
-  }
-
   public List<String> getDecisionOutputImportPluginBasePackages() {
     if (decisionOutputImportPluginBasePackages == null) {
       decisionOutputImportPluginBasePackages = configJsonContext.read(
@@ -387,79 +332,6 @@ public class ConfigurationService {
       maximumBackoff = configJsonContext.read(ConfigurationServiceConstants.MAXIMUM_BACK_OFF, Long.class);
     }
     return maximumBackoff;
-  }
-
-  public int getElasticsearchJobExecutorQueueSize() {
-    if (elasticsearchJobExecutorQueueSize == null) {
-      elasticsearchJobExecutorQueueSize = configJsonContext.read(
-        ConfigurationServiceConstants.ELASTICSEARCH_MAX_JOB_QUEUE_SIZE, Integer.class
-      );
-    }
-    return elasticsearchJobExecutorQueueSize;
-  }
-
-  public int getElasticsearchJobExecutorThreadCount() {
-    if (elasticsearchJobExecutorThreadCount == null) {
-      elasticsearchJobExecutorThreadCount = configJsonContext.read(
-        ConfigurationServiceConstants.ELASTICSEARCH_IMPORT_EXECUTOR_THREAD_COUNT, Integer.class
-      );
-    }
-    return elasticsearchJobExecutorThreadCount;
-  }
-
-  public int getEsScrollTimeoutInSeconds() {
-    if (esScrollTimeoutInSeconds == null) {
-      esScrollTimeoutInSeconds = configJsonContext.read(
-        ConfigurationServiceConstants.ELASTICSEARCH_SCROLL_TIMEOUT_IN_SECONDS, Integer.class
-      );
-    }
-    return esScrollTimeoutInSeconds;
-  }
-
-  public int getElasticsearchConnectionTimeout() {
-    if (elasticsearchConnectionTimeout == null) {
-      elasticsearchConnectionTimeout = configJsonContext.read(
-        ConfigurationServiceConstants.ELASTICSEARCH_CONNECTION_TIMEOUT, Integer.class
-      );
-    }
-    return elasticsearchConnectionTimeout;
-  }
-
-  public int getElasticsearchResponseConsumerBufferLimitInMb() {
-    if (elasticsearchResponseConsumerBufferLimitInMb == null) {
-      elasticsearchResponseConsumerBufferLimitInMb = configJsonContext.read(
-        ConfigurationServiceConstants.ELASTICSEARCH_RESPONSE_CONSUMER_BUFFER_LIMIT_MB, Integer.class
-      );
-    }
-    return elasticsearchResponseConsumerBufferLimitInMb;
-  }
-
-  public ProxyConfiguration getElasticsearchProxyConfig() {
-    if (elasticsearchProxyConfig == null) {
-      elasticsearchProxyConfig = configJsonContext.read(
-        ConfigurationServiceConstants.ELASTICSEARCH_PROXY, ProxyConfiguration.class
-      );
-      elasticsearchProxyConfig.validate();
-    }
-    return elasticsearchProxyConfig;
-  }
-
-  public boolean getElasticsearchSkipHostnameVerification() {
-    if (elasticsearchSkipHostnameVerification == null) {
-      elasticsearchSkipHostnameVerification = configJsonContext.read(
-        ConfigurationServiceConstants.ELASTICSEARCH_SKIP_HOSTNAME_VERIFICATION, Boolean.class
-      );
-    }
-    return elasticsearchSkipHostnameVerification;
-  }
-
-  public String getElasticsearchPathPrefix() {
-    if (elasticsearchPathPrefix == null) {
-      elasticsearchPathPrefix = configJsonContext.read(
-        ConfigurationServiceConstants.ELASTICSEARCH_PATH_PREFIX, String.class
-      );
-    }
-    return elasticsearchPathPrefix;
   }
 
   public int getEngineConnectTimeout() {
@@ -514,75 +386,6 @@ public class ConfigurationService {
       );
     }
     return engineImportVariableIncludeObjectVariableValue;
-  }
-
-  public int getEsAggregationBucketLimit() {
-    if (esAggregationBucketLimit == null) {
-      esAggregationBucketLimit = configJsonContext.read(
-        ConfigurationServiceConstants.ES_AGGREGATION_BUCKET_LIMIT, Integer.class
-      );
-    }
-    return esAggregationBucketLimit;
-  }
-
-  public String getEsRefreshInterval() {
-    if (esRefreshInterval == null) {
-      esRefreshInterval = configJsonContext.read(ConfigurationServiceConstants.ES_REFRESH_INTERVAL);
-    }
-    return esRefreshInterval;
-  }
-
-  public int getEsNumberOfReplicas() {
-    if (esNumberOfReplicas == null) {
-      esNumberOfReplicas = configJsonContext.read(ConfigurationServiceConstants.ES_NUMBER_OF_REPLICAS, Integer.class);
-    }
-    return esNumberOfReplicas;
-  }
-
-  public int getEsNumberOfShards() {
-    if (esNumberOfShards == null) {
-      esNumberOfShards = configJsonContext.read(ConfigurationServiceConstants.ES_NUMBER_OF_SHARDS, Integer.class);
-    }
-    return esNumberOfShards;
-  }
-
-  public String getEsIndexPrefix() {
-    if (esIndexPrefix == null) {
-      esIndexPrefix = configJsonContext.read(ConfigurationServiceConstants.ES_INDEX_PREFIX, String.class);
-    }
-    return esIndexPrefix;
-  }
-
-  // TODO change to configurationService.getIndexPrefix() with OPT-7349
-  public String getOsIndexPrefix() {
-    if (osIndexPrefix == null) {
-      osIndexPrefix = configJsonContext.read(ConfigurationServiceConstants.OS_INDEX_PREFIX, String.class);
-    }
-    return osIndexPrefix;
-  }
-
-  public String getIndexPrefix(final String dbProfile) {
-    if (dbProfile.equals(OPENSEARCH_PROFILE)) {
-      return this.getOsIndexPrefix();
-    }
-    return this.getEsIndexPrefix();
-  }
-
-  public int getEsNestedDocumentsLimit() {
-    if (esNestedDocumentsLimit == null) {
-      esNestedDocumentsLimit = configJsonContext.read(
-        ConfigurationServiceConstants.ES_INDEX_NESTED_DOCUMENTS_LIMIT, Integer.class
-      );
-    }
-    ensureGreaterThanZero(esNestedDocumentsLimit);
-    return esNestedDocumentsLimit;
-  }
-
-  public String getEsSnapshotRepositoryName() {
-    if (esSnapshotRepositoryName == null) {
-      esSnapshotRepositoryName = configJsonContext.read(ConfigurationServiceConstants.ELASTICSEARCH_SNAPSHOT_REPO, String.class);
-    }
-    return esSnapshotRepositoryName;
   }
 
   public int getEngineImportProcessDefinitionXmlMaxPageSize() {
@@ -1115,62 +918,6 @@ public class ConfigurationService {
     return csvConfiguration;
   }
 
-  public String getElasticsearchSecurityUsername() {
-    if (elasticsearchSecurityUsername == null) {
-      elasticsearchSecurityUsername =
-        configJsonContext.read(ConfigurationServiceConstants.ELASTICSEARCH_SECURITY_USERNAME);
-    }
-    return elasticsearchSecurityUsername;
-  }
-
-  public String getElasticsearchSecurityPassword() {
-    if (elasticsearchSecurityPassword == null) {
-      elasticsearchSecurityPassword =
-        configJsonContext.read(ConfigurationServiceConstants.ELASTICSEARCH_SECURITY_PASSWORD);
-    }
-    return elasticsearchSecurityPassword;
-  }
-
-  public Boolean getElasticsearchSecuritySSLEnabled() {
-    if (elasticsearchSecuritySSLEnabled == null) {
-      elasticsearchSecuritySSLEnabled =
-        configJsonContext.read(ConfigurationServiceConstants.ELASTICSEARCH_SECURITY_SSL_ENABLED, Boolean.class);
-    }
-    return elasticsearchSecuritySSLEnabled;
-  }
-
-  public Boolean getElasticsearchSecuritySslSelfSigned() {
-    if (elasticsearchSecuritySslSelfSigned == null && getElasticsearchSecuritySSLEnabled()) {
-      elasticsearchSecuritySslSelfSigned =
-        configJsonContext.read(ConfigurationServiceConstants.ELASTICSEARCH_SECURITY_SSL_SELF_SIGNED, Boolean.class);
-    }
-    return elasticsearchSecuritySslSelfSigned;
-  }
-
-  public String getElasticsearchSecuritySSLCertificate() {
-    if (elasticsearchSecuritySSLCertificate == null && getElasticsearchSecuritySSLEnabled()) {
-      elasticsearchSecuritySSLCertificate = configJsonContext.read(
-        ConfigurationServiceConstants.ELASTICSEARCH_SECURITY_SSL_CERTIFICATE
-      );
-      if (elasticsearchSecuritySSLCertificate != null) {
-        elasticsearchSecuritySSLCertificate = resolvePathAsAbsoluteUrl(elasticsearchSecuritySSLCertificate).getPath();
-      }
-    }
-    return elasticsearchSecuritySSLCertificate;
-  }
-
-  public List<String> getElasticsearchSecuritySSLCertificateAuthorities() {
-    if (elasticsearchSecuritySSLCertificateAuthorities == null && getElasticsearchSecuritySSLEnabled()) {
-      List<String> authoritiesAsList = configJsonContext.read(
-        ELASTICSEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES, LIST_OF_STRINGS_TYPE_REF
-      );
-      elasticsearchSecuritySSLCertificateAuthorities = authoritiesAsList.stream()
-        .map(a -> resolvePathAsAbsoluteUrl(a).getPath())
-        .collect(Collectors.toList());
-    }
-    return Optional.ofNullable(elasticsearchSecuritySSLCertificateAuthorities).orElse(new ArrayList<>());
-  }
-
   public CleanupConfiguration getCleanupServiceConfiguration() {
     if (cleanupServiceConfiguration == null) {
       cleanupServiceConfiguration = configJsonContext.read(
@@ -1349,6 +1096,24 @@ public class ConfigurationService {
         configJsonContext.read(ConfigurationServiceConstants.MULTITENANCY_ENABLED, Boolean.class);
     }
     return multiTenancyEnabled;
+  }
+
+  public Integer getJobExecutorQueueSize() {
+    if (jobExecutorQueueSize == null) {
+      jobExecutorQueueSize = configJsonContext.read(
+        ConfigurationServiceConstants.DATABASE_MAX_JOB_QUEUE_SIZE, Integer.class
+      );
+    }
+    return jobExecutorQueueSize;
+  }
+
+  public Integer getJobExecutorThreadCount() {
+    if (jobExecutorThreadCount == null) {
+      jobExecutorThreadCount = configJsonContext.read(
+        ConfigurationServiceConstants.DATABASE_IMPORT_EXECUTOR_THREAD_COUNT, Integer.class
+      );
+    }
+    return jobExecutorThreadCount;
   }
 
 }

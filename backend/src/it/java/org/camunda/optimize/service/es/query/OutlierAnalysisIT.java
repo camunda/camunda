@@ -214,7 +214,7 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
   public void outlierAnalysisRespectsBucketLimit() {
     // given the bucket limit is set to something smaller than the amount of flow nodes present
     final int bucketLimit = 1;
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(bucketLimit);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setAggregationBucketLimit(bucketLimit);
 
     ProcessDefinitionEngineDto processDefinition =
       engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(

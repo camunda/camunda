@@ -153,7 +153,7 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
   public void getVariableNames_worksDespiteBucketLimitExceeded() {
     // given
     final int bucketLimit = 2;
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(bucketLimit);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setAggregationBucketLimit(bucketLimit);
 
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
@@ -479,7 +479,7 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
   public void getVariableNamesForReport_correctDespiteBucketLimitExceeded() {
     // given
     final int bucketLimit = 2;
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(bucketLimit);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setAggregationBucketLimit(bucketLimit);
 
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();

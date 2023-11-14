@@ -53,7 +53,7 @@ public class BackupWriterES implements BackupWriter {
   @Override
   public void deleteOptimizeSnapshots(final Long backupId) {
     final DeleteSnapshotRequest deleteSnapshotRequest = new DeleteSnapshotRequest()
-      .repository(configurationService.getEsSnapshotRepositoryName())
+      .repository(configurationService.getElasticSearchConfiguration().getSnapshotRepositoryName())
       .snapshots(getSnapshotPrefixWithBackupId(backupId) + "*");
     esClient.deleteSnapshotAsync(deleteSnapshotRequest, getDeleteSnapshotActionListener(backupId));
   }
@@ -62,7 +62,7 @@ public class BackupWriterES implements BackupWriter {
     log.info("Triggering async snapshot {}.", snapshotName);
     esClient.triggerSnapshotAsync(
       new CreateSnapshotRequest()
-        .repository(configurationService.getEsSnapshotRepositoryName())
+        .repository(configurationService.getElasticSearchConfiguration().getSnapshotRepositoryName())
         .snapshot(snapshotName)
         .indices(indexNames)
         .includeGlobalState(false)

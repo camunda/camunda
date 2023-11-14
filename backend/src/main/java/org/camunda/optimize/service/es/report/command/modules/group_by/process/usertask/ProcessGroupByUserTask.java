@@ -57,7 +57,7 @@ public class ProcessGroupByUserTask extends AbstractGroupByUserTask {
                                                     final ExecutionContext<ProcessReportDataDto> context) {
     final TermsAggregationBuilder userTaskTermsAggregation = AggregationBuilders
       .terms(USER_TASK_ID_TERMS_AGGREGATION)
-      .size(configurationService.getEsAggregationBucketLimit())
+      .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
       .field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID);
     distributedByPart.createAggregations(context).forEach(userTaskTermsAggregation::subAggregation);
     return Collections.singletonList(createFilteredUserTaskAggregation(context, userTaskTermsAggregation));

@@ -143,7 +143,7 @@ public class ProcessVariableReaderES implements ProcessVariableReader {
 
     CompositeAggregationBuilder varNameAndTypeAgg =
       new CompositeAggregationBuilder(VAR_NAME_AND_TYPE_COMPOSITE_AGG, variableNameAndTypeTerms)
-        .size(configurationService.getEsAggregationBucketLimit());
+        .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit());
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(baseQuery)

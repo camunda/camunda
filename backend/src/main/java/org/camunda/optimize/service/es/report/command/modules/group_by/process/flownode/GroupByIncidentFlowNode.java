@@ -56,7 +56,7 @@ public class GroupByIncidentFlowNode extends ProcessGroupByPart {
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
     final TermsAggregationBuilder incidentTermsAggregation = terms(GROUPED_BY_FLOW_NODE_ID_AGGREGATION)
-      .size(configurationService.getEsAggregationBucketLimit())
+      .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
       .field(INCIDENTS + "." + INCIDENT_ACTIVITY_ID);
     distributedByPart.createAggregations(context).forEach(incidentTermsAggregation::subAggregation);
     return Collections.singletonList(

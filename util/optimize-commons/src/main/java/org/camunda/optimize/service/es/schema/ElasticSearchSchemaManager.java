@@ -67,8 +67,8 @@ import java.util.stream.StreamSupport;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
-import static org.camunda.optimize.service.es.schema.IndexSettingsBuilderES.buildDynamicSettings;
 import static org.camunda.optimize.service.db.DatabaseConstants.INDEX_ALREADY_EXISTS_EXCEPTION_TYPE;
+import static org.camunda.optimize.service.es.schema.IndexSettingsBuilderES.buildDynamicSettings;
 
 @Component
 @Slf4j

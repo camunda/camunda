@@ -221,7 +221,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
       .subAggregation(
         AggregationBuilders
           .terms(FLOW_NODE_ID_AGG).field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID)
-          .size(configurationService.getEsAggregationBucketLimit())
+          .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
           .subAggregation(stats)
       );
 
@@ -360,7 +360,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
     final SearchRequest scrollSearchRequest =
       new SearchRequest(getProcessInstanceIndexAliasName(outlierParams.getProcessDefinitionKey()))
         .source(searchSourceBuilder)
-        .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
+        .scroll(timeValueSeconds(configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
 
     try {
       final SearchResponse response = esClient.search(scrollSearchRequest);
@@ -369,7 +369,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
         ProcessInstanceIdDto.class,
         objectMapper,
         esClient,
-        configurationService.getEsScrollTimeoutInSeconds(),
+        configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds(),
         recordLimit
       );
     } catch (IOException e) {

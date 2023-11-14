@@ -98,7 +98,7 @@ public class DecisionViewRawData extends DecisionViewPart {
         search.size(
          pag.getLimit() > MAX_RESPONSE_SIZE_LIMIT ?
             MAX_RESPONSE_SIZE_LIMIT : pag.getLimit());
-        searchRequest.scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
+        searchRequest.scroll(timeValueSeconds(configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
       } else {
         if (pag.getLimit() > MAX_RESPONSE_SIZE_LIMIT) {
           pag.setLimit(MAX_RESPONSE_SIZE_LIMIT);
@@ -129,7 +129,7 @@ public class DecisionViewRawData extends DecisionViewPart {
           DecisionInstanceDto.class,
           objectMapper,
           esClient,
-          configurationService.getEsScrollTimeoutInSeconds(),
+          configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds(),
           context.getPagination().orElse(new PaginationDto()).getLimit()
         );
     } else {

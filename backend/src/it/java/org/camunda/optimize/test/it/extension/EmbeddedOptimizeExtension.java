@@ -127,6 +127,7 @@ public class EmbeddedOptimizeExtension
   private static final ObjectMapper configObjectMapper = new ObjectMapper().registerModules(
     new JavaTimeModule(), new Jdk8Module()
   );
+
   private static String serializedDefaultConfiguration;
 
   public EmbeddedOptimizeExtension() {
@@ -218,8 +219,8 @@ public class EmbeddedOptimizeExtension
   }
 
   public void configureEsHostAndPort(final String host, final int esPort) {
-    getConfigurationService().getElasticsearchConnectionNodes().get(0).setHost(host);
-    getConfigurationService().getElasticsearchConnectionNodes().get(0).setHttpPort(esPort);
+    getConfigurationService().getElasticSearchConfiguration().getConnectionNodes().get(0).setHost(host);
+    getConfigurationService().getElasticSearchConfiguration().getConnectionNodes().get(0).setHttpPort(esPort);
     reloadConfiguration();
   }
 

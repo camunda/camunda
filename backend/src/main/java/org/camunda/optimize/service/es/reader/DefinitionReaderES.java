@@ -265,7 +265,7 @@ public class DefinitionReaderES implements DefinitionReader {
 
     CompositeAggregationBuilder keyAndTypeAndTenantAggregation =
       new CompositeAggregationBuilder(DEFINITION_KEY_AND_TYPE_AND_TENANT_AGGREGATION, keyAndTypeAndTenantSources)
-        .size(configurationService.getEsAggregationBucketLimit())
+        .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
         .subAggregation(nameAggregation)
         .subAggregation(enginesAggregation);
 
@@ -378,7 +378,7 @@ public class DefinitionReaderES implements DefinitionReader {
       .size(1);
     final TermsAggregationBuilder versionAggregation = terms(VERSION_AGGREGATION)
       .field(DEFINITION_VERSION)
-      .size(configurationService.getEsAggregationBucketLimit())
+      .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
       .subAggregation(versionTagAggregation);
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
@@ -455,7 +455,7 @@ public class DefinitionReaderES implements DefinitionReader {
     final SearchRequest searchRequest =
       new SearchRequest(resolveIndexNameForType(type))
         .source(searchSourceBuilder)
-        .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
+        .scroll(timeValueSeconds(configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
 
     final SearchResponse scrollResp;
     try {
@@ -472,7 +472,7 @@ public class DefinitionReaderES implements DefinitionReader {
       typeClass,
       createMappingFunctionForDefinitionType(typeClass),
       esClient,
-      configurationService.getEsScrollTimeoutInSeconds()
+      configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()
     );
   }
 
@@ -657,7 +657,7 @@ public class DefinitionReaderES implements DefinitionReader {
 
     CompositeAggregationBuilder keyAndTypeAggregation =
       new CompositeAggregationBuilder(DEFINITION_KEY_AND_TYPE_AGGREGATION, keyAndTypeSources)
-        .size(configurationService.getEsAggregationBucketLimit())
+        .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
         .subAggregation(tenantsAggregation)
         .subAggregation(nameAggregation)
         .subAggregation(enginesAggregation);

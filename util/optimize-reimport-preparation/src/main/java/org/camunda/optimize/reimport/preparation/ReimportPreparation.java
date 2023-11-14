@@ -44,7 +44,6 @@ import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_TRACE_STAT
 import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_PROFILE;
 
 /**
  * Deletes all engine data and the import indexes from Elasticsearch such that Optimize reimports all data from the
@@ -71,12 +70,10 @@ public class ReimportPreparation {
 
   public static void main(String[] args) {
     log.info("Start to prepare Elasticsearch such that Optimize reimports engine data!");
-
     log.info("Reading configuration...");
     LoggingConfigurationReader loggingConfigurationReader = new LoggingConfigurationReader();
     loggingConfigurationReader.defineLogbackLoggingConfiguration();
     log.info("Successfully read configuration.");
-
     performReimport(ConfigurationServiceBuilder.createDefaultConfiguration());
   }
 
@@ -85,13 +82,12 @@ public class ReimportPreparation {
     try (final RestHighLevelClient restHighLevelClient =
            ElasticsearchHighLevelRestClientBuilder.build(configurationService)) {
       log.info("Successfully created connection to Elasticsearch.");
-
       ElasticsearchCustomHeaderProvider customHeaderProvider = new ElasticsearchCustomHeaderProvider(
         configurationService, new PluginJarFileLoader(configurationService));
       customHeaderProvider.initPlugins();
       final OptimizeElasticsearchClient prefixAwareClient = new OptimizeElasticsearchClient(
         restHighLevelClient,
-        new OptimizeIndexNameService(configurationService, ELASTICSEARCH_PROFILE),
+        new OptimizeIndexNameService(configurationService),
         new RequestOptionsProvider(customHeaderProvider.getPlugins(), configurationService)
       );
 

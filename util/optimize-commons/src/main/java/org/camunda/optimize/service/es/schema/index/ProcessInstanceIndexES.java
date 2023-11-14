@@ -27,6 +27,7 @@ public class ProcessInstanceIndexES extends ProcessInstanceIndex<XContentBuilder
   @Override
   public XContentBuilder getStaticSettings(XContentBuilder xContentBuilder,
                                            ConfigurationService configurationService) throws IOException {
-    return addStaticSetting(NUMBER_OF_SHARDS_SETTING, configurationService.getEsNumberOfShards(), xContentBuilder);
+    return addStaticSetting(NUMBER_OF_SHARDS_SETTING, configurationService.getElasticSearchConfiguration().getNumberOfShards(), xContentBuilder);
   }
+
 }

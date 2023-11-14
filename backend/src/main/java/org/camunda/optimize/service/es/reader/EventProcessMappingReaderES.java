@@ -90,7 +90,7 @@ public class EventProcessMappingReaderES implements EventProcessMappingReader {
       .fetchSource(null, fieldsToExclude);
     final SearchRequest searchRequest = new SearchRequest(EVENT_PROCESS_MAPPING_INDEX_NAME)
       .source(searchSourceBuilder)
-      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
+      .scroll(timeValueSeconds(configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
 
     final SearchResponse scrollResp;
     try {
@@ -105,7 +105,7 @@ public class EventProcessMappingReaderES implements EventProcessMappingReader {
       EsEventProcessMappingDto.class,
       objectMapper,
       esClient,
-      configurationService.getEsScrollTimeoutInSeconds()
+      configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()
     ).stream().map(EsEventProcessMappingDto::toEventProcessMappingDto).toList();
   }
 

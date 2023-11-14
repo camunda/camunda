@@ -338,19 +338,85 @@ import:
 
 # everything that is related with configuring OpenSearch or creating
 # a connection to it.
-os:
+opensearch:
   connection:
+    # Maximum time without connection to Opensearch, Optimize should
+    # wait until a timeout triggers.
+    timeout: 10000
+    # Maximum size of the Opensearch response consumer heap buffer.
+    responseConsumerBufferLimitInMb: 100
+    # The path prefix under which Opensearch is available
+    pathPrefix: ''
+    # a list of Opensearch nodes Optimize can connect to. If you  have built
+    # an Opensearch cluster with several nodes it is recommended to define
+    # several connection points in case one node fails.
     nodes:
       # the address/hostname under which the OpenSearch node is available.
       - host: '${CAMUNDA_OPTIMIZE_OPENSEARCH_HOST:localhost}'
         # A port number used by OpenSearch to accept HTTP connections.
         httpPort: ${CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT:9205}
-
+    proxy:
+      # whether an HTTP proxy should be used for requests to opensearch
+      enabled: false
+      # the host of the proxy to use
+      host: null
+      # the port of the proxy to use
+      port: null
+      # whether this proxy is using a secured connection
+      sslEnabled: false
+    # Determines whether the hostname verification should be skipped
+    skipHostnameVerification: ${CAMUNDA_OPTIMIZE_OPENSEARCH_CONNECTION_SKIP_HOSTNAME_VERIFICATION:false}
+    # Configuration relating to OS backup
+  backup:
+    # The repository name in which the backups should be stored
+    repositoryName: ${CAMUNDA_OPTIMIZE_BACKUP_REPOSITORY_NAME:}
+  # Opensearch security settings
+  security:
+    # the basic auth (x-pack) username
+    username: ${CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_USERNAME:null}
+    # the basic auth (x-pack) password
+    password: ${CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD:null}
+    # SSL/HTTPS secured connection settings
+    ssl:
+      # path to a PEM encoded file containing the certificate (or certificate chain)
+      # that will be presented to clients when they connect.
+      certificate: ${CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_SSL_CERTIFICATE:null}
+      # A list of paths to PEM encoded CA certificate files that should be trusted, e.g. ['/path/to/ca.crt'].
+      # Note: if you are using a public CA that is already trusted by the Java runtime,
+      # you do not need to set the certificate_authorities.
+      certificate_authorities: ${CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES:[]}
+      # used to enable or disable TLS/SSL for the HTTP connection
+      enabled: ${CAMUNDA_OPTIMIZE_OPENSEARCH_SSL_ENABLED:false}
+      # used to specify that the certificate was self-signed
+      selfSigned: ${CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_SSL_SELF_SIGNED:false}
+  # Maximum time in seconds a request to opensearch should last, before a timeout
+  # triggers.
+  scrollTimeoutInSeconds: 60
   settings:
+    # the maximum number of buckets returned for an aggregation
+    aggregationBucketLimit: 1000
     index:
       # the prefix prepended to all Optimize index and alias names
       # NOTE: Changing this after Optimize was already run before, will create new empty indexes
       prefix: 'optimize'
+      # How often should the data replicated in case of node failure.
+      number_of_replicas: ${CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_NUMBER_OF_REPLICAS:1}
+      # How many shards should be used in the cluster for process instance and decision instance indices.
+      # All other indices will be made up of a single shard
+      # NOTE: this property only applies the first time Optimize is started and
+      # the schema/mapping is deployed on Opensearch. If you want to take
+      # this property to take effect again, you need to delete all indexes (with it all data)
+      # and restart Optimize. This configuration will also only be applied to the current write instance indices. Archive
+      # indices will have a single shard regardless
+      number_of_shards: ${CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_NUMBER_OF_SHARDS:1}
+      # How long Elasticsearch waits until the documents are available
+      # for search. A positive value defines the duration in seconds.
+      # A value of -1 means that a refresh needs to be done manually.
+      refresh_interval: 2s
+      # Optimize uses nested documents to store list information such as activities or variables belonging to a
+      # process instance. So this setting defines the maximum number of activities/variables that a single
+      # process instance can contain. This limit helps to prevent out of memory errors and should be used with care.
+      nested_documents_limit: ${CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_NESTED_DOCUMENTS_LIMIT:10000}
 
 # everything that is related with configuring Elasticsearch or creating
 # a connection to it.

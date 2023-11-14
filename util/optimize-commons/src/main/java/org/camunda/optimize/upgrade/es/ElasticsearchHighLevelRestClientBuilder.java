@@ -55,7 +55,7 @@ public class ElasticsearchHighLevelRestClientBuilder {
 
   public static RestHighLevelClient build(final ConfigurationService configurationService) {
     requestOptions = getRequestOptions(configurationService);
-    if (configurationService.getElasticsearchSecuritySSLEnabled()) {
+    if (configurationService.getElasticSearchConfiguration().getSecuritySSLEnabled()) {
       return buildHttpsRestClient(configurationService);
     }
     return buildHttpRestClient(configurationService);
@@ -85,7 +85,7 @@ public class ElasticsearchHighLevelRestClientBuilder {
 
       if (truststore.size() > 0) {
         final TrustStrategy trustStrategy =
-          configurationService.getElasticsearchSecuritySslSelfSigned() == Boolean.TRUE ?
+          configurationService.getElasticSearchConfiguration().getSecuritySslSelfSigned() == Boolean.TRUE ?
           new TrustSelfSignedStrategy() : null;
         sslContext = SSLContexts.custom().loadTrustMaterial(truststore, trustStrategy).build();
       } else {
@@ -115,14 +115,14 @@ public class ElasticsearchHighLevelRestClientBuilder {
 
       httpClientBuilder.setSSLContext(sslContext);
 
-      final ProxyConfiguration proxyConfig = configurationService.getElasticsearchProxyConfig();
+      final ProxyConfiguration proxyConfig = configurationService.getElasticSearchConfiguration().getProxyConfig();
       if (proxyConfig.isEnabled()) {
         httpClientBuilder.setProxy(new HttpHost(
           proxyConfig.getHost(), proxyConfig.getPort(), proxyConfig.isSslEnabled() ? HTTPS : HTTP
         ));
       }
 
-      if (configurationService.getElasticsearchSkipHostnameVerification()) {
+      if (configurationService.getElasticSearchConfiguration().getSkipHostnameVerification()) {
         // setting this to always be true essentially skips the hostname verification
         httpClientBuilder.setSSLHostnameVerifier((s, sslSession) -> true);
       }
@@ -136,11 +136,11 @@ public class ElasticsearchHighLevelRestClientBuilder {
         buildElasticsearchConnectionNodes(configurationService, protocol))
       .setRequestConfigCallback(
         requestConfigBuilder -> requestConfigBuilder
-          .setConnectTimeout(configurationService.getElasticsearchConnectionTimeout())
+          .setConnectTimeout(configurationService.getElasticSearchConfiguration().getConnectionTimeout())
           .setSocketTimeout(0)
       );
-    if (!StringUtils.isEmpty(configurationService.getElasticsearchPathPrefix())) {
-      restClientBuilder.setPathPrefix(configurationService.getElasticsearchPathPrefix());
+    if (!StringUtils.isEmpty(configurationService.getElasticSearchConfiguration().getPathPrefix())) {
+      restClientBuilder.setPathPrefix(configurationService.getElasticSearchConfiguration().getPathPrefix());
     }
 
     restClientBuilder.setHttpClientConfigCallback(createHttpClientConfigCallback(configurationService));
@@ -150,7 +150,7 @@ public class ElasticsearchHighLevelRestClientBuilder {
 
   private static HttpHost[] buildElasticsearchConnectionNodes(ConfigurationService configurationService,
                                                               String protocol) {
-    return configurationService.getElasticsearchConnectionNodes()
+    return configurationService.getElasticSearchConfiguration().getConnectionNodes()
       .stream()
       .map(conf -> new HttpHost(
              conf.getHost(),
@@ -164,14 +164,14 @@ public class ElasticsearchHighLevelRestClientBuilder {
   private static Optional<CredentialsProvider> buildCredentialsProviderIfConfigured(
     final ConfigurationService configurationService) {
     CredentialsProvider credentialsProvider = null;
-    if (configurationService.getElasticsearchSecurityUsername() != null
-      && configurationService.getElasticsearchSecurityPassword() != null) {
+    if (configurationService.getElasticSearchConfiguration().getSecurityUsername() != null
+      && configurationService.getElasticSearchConfiguration().getSecurityPassword() != null) {
       credentialsProvider = new BasicCredentialsProvider();
       credentialsProvider.setCredentials(
         AuthScope.ANY,
         new UsernamePasswordCredentials(
-          configurationService.getElasticsearchSecurityUsername(),
-          configurationService.getElasticsearchSecurityPassword()
+          configurationService.getElasticSearchConfiguration().getSecurityUsername(),
+          configurationService.getElasticSearchConfiguration().getSecurityPassword()
         )
       );
     } else {
@@ -186,7 +186,7 @@ public class ElasticsearchHighLevelRestClientBuilder {
       trustStore.load(null);
 
       // load custom es server certificate if configured
-      final String serverCertificate = configurationService.getElasticsearchSecuritySSLCertificate();
+      final String serverCertificate = configurationService.getElasticSearchConfiguration().getSecuritySSLCertificate();
       if (serverCertificate != null) {
         try {
           Certificate cert = loadCertificateFromPath(serverCertificate);
@@ -199,7 +199,7 @@ public class ElasticsearchHighLevelRestClientBuilder {
 
       // load trusted CA certificates
       int caCertificateCounter = 0;
-      for (String caCertificatePath : configurationService.getElasticsearchSecuritySSLCertificateAuthorities()) {
+      for (String caCertificatePath : configurationService.getElasticSearchConfiguration().getSecuritySSLCertificateAuthorities()) {
         try {
           Certificate cert = loadCertificateFromPath(caCertificatePath);
           trustStore.setCertificateEntry("custom-elasticsearch-ca-" + caCertificateCounter, cert);
@@ -290,4 +290,5 @@ public class ElasticsearchHighLevelRestClientBuilder {
     );
     return requestOptionsProvider.getRequestOptions();
   }
+
 }

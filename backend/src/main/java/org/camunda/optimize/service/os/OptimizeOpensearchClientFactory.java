@@ -67,28 +67,28 @@ public class OptimizeOpensearchClientFactory {
 
   // TODO add the Schema manager when implementing OPT-7229
   public static OptimizeOpensearchClient create(final ConfigurationService configurationService,
-                                                   final OptimizeIndexNameService optimizeIndexNameService,
-                                                   final OpensearchCustomHeaderProvider opensearchCustomHeaderProvider,
-                                                   final BackoffCalculator backoffCalculator) throws IOException {
+                                                final OptimizeIndexNameService optimizeIndexNameService,
+                                                final OpensearchCustomHeaderProvider opensearchCustomHeaderProvider,
+                                                final BackoffCalculator backoffCalculator) throws IOException {
 
     log.info("Creating OpenSearch connection...");
     final RequestOptionsProvider requestOptionsProvider =
       new RequestOptionsProvider(opensearchCustomHeaderProvider.getPlugins(), configurationService);
-    final HttpHost host = getHttpHost(configurationService.getFirstOpensearchConnectionNode());
+    final HttpHost host = getHttpHost(configurationService.getOpenSearchConfiguration().getFirstConnectionNode());
     final ApacheHttpClient5TransportBuilder builder =
-        ApacheHttpClient5TransportBuilder.builder(host);
+      ApacheHttpClient5TransportBuilder.builder(host);
 
     builder.setHttpClientConfigCallback(
-        httpClientBuilder -> {
-          configureHttpClient(httpClientBuilder, configurationService);
-          return httpClientBuilder;
-        });
+      httpClientBuilder -> {
+        configureHttpClient(httpClientBuilder, configurationService);
+        return httpClientBuilder;
+      });
 
     builder.setRequestConfigCallback(
-        requestConfigBuilder -> {
-          setTimeouts(requestConfigBuilder, configurationService);
-          return requestConfigBuilder;
-        });
+      requestConfigBuilder -> {
+        setTimeouts(requestConfigBuilder, configurationService);
+        return requestConfigBuilder;
+      });
 
     final JacksonJsonpMapper jsonpMapper = new JacksonJsonpMapper(new ObjectMapper());
     builder.setMapper(jsonpMapper);
@@ -102,8 +102,8 @@ public class OptimizeOpensearchClientFactory {
   }
 
   private static void waitForOpensearch(final OpenSearchClient osClient,
-                                       final BackoffCalculator backoffCalculator,
-                                       final RequestOptions requestOptions) throws IOException {
+                                        final BackoffCalculator backoffCalculator,
+                                        final RequestOptions requestOptions) throws IOException {
     boolean isConnected = false;
     while (!isConnected) {
       try {
@@ -148,22 +148,22 @@ public class OptimizeOpensearchClientFactory {
   }
 
   private static HttpAsyncClientBuilder setupAuthentication(
-      final HttpAsyncClientBuilder builder, ConfigurationService configurationService) {
-    // TODO change to opensearch?
-    String username = configurationService.getElasticsearchSecurityUsername();
-    String password = configurationService.getElasticsearchSecurityPassword();
+    final HttpAsyncClientBuilder builder, ConfigurationService configurationService) {
+    String username = configurationService.getOpenSearchConfiguration().getSecurityUsername();
+    String password = configurationService.getOpenSearchConfiguration().getSecurityPassword();
     if (!StringUtils.hasText(username)
-        || !StringUtils.hasText(password)) {
+      || !StringUtils.hasText(password)) {
       log.warn(
-          "Username and/or password for are empty. Basic authentication for OpenSearch is not used.");
+        "Username and/or password for are empty. Basic authentication for OpenSearch is not used.");
       return builder;
     }
 
     final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
     credentialsProvider.setCredentials(
-        new AuthScope(getHttpHost(configurationService.getFirstOpensearchConnectionNode())),
-        new UsernamePasswordCredentials(
-            username, password.toCharArray()));
+      new AuthScope(getHttpHost(configurationService.getOpenSearchConfiguration().getFirstConnectionNode())),
+      new UsernamePasswordCredentials(
+        username, password.toCharArray())
+    );
 
     builder.setDefaultCredentialsProvider(credentialsProvider);
     return builder;
@@ -174,13 +174,13 @@ public class OptimizeOpensearchClientFactory {
     try {
       final ClientTlsStrategyBuilder tlsStrategyBuilder = ClientTlsStrategyBuilder.create();
       tlsStrategyBuilder.setSslContext(getSSLContext(configurationService));
-      if (configurationService.getElasticsearchSkipHostnameVerification()) {
+      if (configurationService.getOpenSearchConfiguration().getSkipHostnameVerification()) {
         tlsStrategyBuilder.setHostnameVerifier(NoopHostnameVerifier.INSTANCE);
       }
 
       final TlsStrategy tlsStrategy = tlsStrategyBuilder.build();
       final PoolingAsyncClientConnectionManager connectionManager =
-          PoolingAsyncClientConnectionManagerBuilder.create().setTlsStrategy(tlsStrategy).build();
+        PoolingAsyncClientConnectionManagerBuilder.create().setTlsStrategy(tlsStrategy).build();
 
       httpAsyncClientBuilder.setConnectionManager(connectionManager);
 
@@ -191,10 +191,11 @@ public class OptimizeOpensearchClientFactory {
 
   private static SSLContext getSSLContext(ConfigurationService configurationService)
 
-      throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException {
+    throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException {
     final KeyStore truststore = loadCustomTrustStore(configurationService);
     final TrustStrategy trustStrategy =
-        configurationService.getElasticsearchSecuritySslSelfSigned() ? new TrustSelfSignedStrategy() : null; // default;
+      configurationService.getOpenSearchConfiguration()
+        .getSecuritySslSelfSigned() ? new TrustSelfSignedStrategy() : null; // default;
     if (truststore.size() > 0) {
       return SSLContexts.custom().loadTrustMaterial(truststore, trustStrategy).build();
     } else {
@@ -208,14 +209,14 @@ public class OptimizeOpensearchClientFactory {
       final KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
       trustStore.load(null);
       // load custom es server certificate if configured
-      final String serverCertificate = configurationService.getElasticsearchSecuritySSLCertificate();
+      final String serverCertificate = configurationService.getOpenSearchConfiguration().getSecuritySSLCertificate();
       if (serverCertificate != null) {
         setCertificateInTrustStore(trustStore, serverCertificate);
       }
       return trustStore;
     } catch (Exception e) {
       final String message =
-          "Could not create certificate trustStore for the secured OpenSearch Connection!";
+        "Could not create certificate trustStore for the secured OpenSearch Connection!";
       throw new OptimizeRuntimeException(message, e);
     }
   }
@@ -227,13 +228,13 @@ public class OptimizeOpensearchClientFactory {
       trustStore.setCertificateEntry("opensearch-host", cert);
     } catch (Exception e) {
       final String message =
-          "Could not load configured server certificate for the secured OpenSearch Connection!";
+        "Could not load configured server certificate for the secured OpenSearch Connection!";
       throw new OptimizeRuntimeException(message, e);
     }
   }
 
   private static Certificate loadCertificateFromPath(final String certificatePath)
-      throws IOException, CertificateException {
+    throws IOException, CertificateException {
     final Certificate cert;
     try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(certificatePath))) {
       final CertificateFactory cf = CertificateFactory.getInstance("X.509");
@@ -243,48 +244,47 @@ public class OptimizeOpensearchClientFactory {
         log.debug("Found certificate: {}", cert);
       } else {
         throw new OptimizeRuntimeException(
-            "Could not load certificate from file, file is empty. File: " + certificatePath);
+          "Could not load certificate from file, file is empty. File: " + certificatePath);
       }
     }
     return cert;
   }
 
   private static HttpAsyncClientBuilder configureHttpClient(HttpAsyncClientBuilder httpAsyncClientBuilder,
-                                                     ConfigurationService configurationService) {
+                                                            ConfigurationService configurationService) {
     setupAuthentication(httpAsyncClientBuilder, configurationService);
-    if (configurationService.getElasticsearchSecuritySSLEnabled()) {
+    if (configurationService.getOpenSearchConfiguration().getSecuritySSLEnabled()) {
       setupSSLContext(httpAsyncClientBuilder, configurationService);
     }
     return httpAsyncClientBuilder;
   }
 
   private static RequestConfig.Builder setTimeouts(
-      final RequestConfig.Builder builder, final ConfigurationService configurationService) {
-
-    builder.setResponseTimeout(Timeout.ofMilliseconds(configurationService.getElasticsearchConnectionTimeout()));
-    //TODO check
-
-    builder.setConnectTimeout(Timeout.ofMilliseconds(configurationService.getElasticsearchConnectionTimeout()));
-    //TODO check
+    final RequestConfig.Builder builder, final ConfigurationService configurationService) {
+    builder.setResponseTimeout(Timeout.ofMilliseconds(configurationService.getOpenSearchConfiguration().getConnectionTimeout()));
+    builder.setConnectTimeout(Timeout.ofMilliseconds(configurationService.getOpenSearchConfiguration().getConnectionTimeout()));
     return builder;
   }
 
   private RetryPolicy<Boolean> getConnectionRetryPolicy(ConfigurationService configurationService) {
-    final String logMessage = String.format("connect to OpenSearch at %s",
-                                            configurationService.getFirstOpensearchConnectionNode().getHost());
+    final String logMessage = String.format(
+      "connect to OpenSearch at %s",
+      configurationService.getOpenSearchConfiguration().getFirstConnectionNode().getHost()
+    );
     return new RetryPolicy<Boolean>()
-        .handle(IOException.class, OpenSearchException.class)
-        .withDelay(Duration.ofSeconds(3))
-        .withMaxAttempts(50)
-        .onRetry(
-            e ->
-                log.info(
-                    "Retrying #{} {} due to {}",
-                    e.getAttemptCount(),
-                    logMessage,
-                    e.getLastFailure()))
-        .onAbort(e -> log.error("Abort {} by {}", logMessage, e.getFailure()))
-        .onRetriesExceeded(
-            e -> log.error("Retries {} exceeded for {}", e.getAttemptCount(), logMessage));
+      .handle(IOException.class, OpenSearchException.class)
+      .withDelay(Duration.ofSeconds(3))
+      .withMaxAttempts(50)
+      .onRetry(
+        e ->
+          log.info(
+            "Retrying #{} {} due to {}",
+            e.getAttemptCount(),
+            logMessage,
+            e.getLastFailure()
+          ))
+      .onAbort(e -> log.error("Abort {} by {}", logMessage, e.getFailure()))
+      .onRetriesExceeded(
+        e -> log.error("Retries {} exceeded for {}", e.getAttemptCount(), logMessage));
   }
 }

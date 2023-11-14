@@ -54,7 +54,7 @@ public abstract class ProcessDistributedByModelElement extends ProcessDistribute
   public List<AggregationBuilder> createAggregations(final ExecutionContext<ProcessReportDataDto> context) {
     final TermsAggregationBuilder modelElementTermsAggregation = AggregationBuilders
       .terms(MODEL_ELEMENT_ID_TERMS_AGGREGATION)
-      .size(configurationService.getEsAggregationBucketLimit())
+      .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
       .order(BucketOrder.key(true))
       .field(getModelElementIdPath());
     viewPart.createAggregations(context).forEach(modelElementTermsAggregation::subAggregation);

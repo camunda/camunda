@@ -53,7 +53,7 @@ public class ProcessGroupByFlowNode extends AbstractGroupByFlowNode {
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
     final TermsAggregationBuilder flowNodeTermsAggregation = terms(NESTED_EVENTS_AGGREGATION)
-      .size(configurationService.getEsAggregationBucketLimit())
+      .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
       .field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID);
     distributedByPart.createAggregations(context).forEach(flowNodeTermsAggregation::subAggregation);
     return Collections.singletonList(createFilteredFlowNodeAggregation(context, flowNodeTermsAggregation));

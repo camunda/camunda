@@ -20,7 +20,6 @@ import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndexES;
-
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.service.exceptions.DataGenerationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -46,7 +45,6 @@ import java.util.UUID;
 import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_PROFILE;
 
 @Slf4j
 public class OnboardingDataGenerator {
@@ -59,7 +57,7 @@ public class OnboardingDataGenerator {
 
   public OnboardingDataGenerator() {
     final ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
-    this.optimizeIndexNameService = new OptimizeIndexNameService(configurationService, ELASTICSEARCH_PROFILE);
+    this.optimizeIndexNameService = new OptimizeIndexNameService(configurationService);
     ElasticsearchMetadataService elasticsearchMetadataService = new ElasticsearchMetadataService(OBJECT_MAPPER);
     this.elasticSearchSchemaManager = new ElasticSearchSchemaManager(
       elasticsearchMetadataService,

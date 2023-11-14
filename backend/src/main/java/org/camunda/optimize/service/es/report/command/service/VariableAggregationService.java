@@ -62,7 +62,7 @@ public class VariableAggregationService {
       case BOOLEAN:
         final TermsAggregationBuilder variableTermsAggregation = AggregationBuilders
           .terms(VARIABLES_AGGREGATION)
-          .size(configurationService.getEsAggregationBucketLimit())
+          .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
           .field(context.getNestedVariableValueFieldLabel());
         context.getSubAggregations().forEach(variableTermsAggregation::subAggregation);
         return Optional.of(variableTermsAggregation);

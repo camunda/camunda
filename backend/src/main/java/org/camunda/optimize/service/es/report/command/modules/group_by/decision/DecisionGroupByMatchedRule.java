@@ -43,7 +43,7 @@ public class DecisionGroupByMatchedRule extends DecisionGroupByPart {
                                                     final ExecutionContext<DecisionReportDataDto> context) {
     final TermsAggregationBuilder byMatchedRuleAggregation = AggregationBuilders
       .terms(MATCHED_RULES_AGGREGATION)
-      .size(configurationService.getEsAggregationBucketLimit())
+      .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
       .field(MATCHED_RULES);
     distributedByPart.createAggregations(context).forEach(byMatchedRuleAggregation::subAggregation);
     return Collections.singletonList(byMatchedRuleAggregation);

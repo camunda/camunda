@@ -70,9 +70,9 @@ public class IndexSettingsBuilderES {
                                                     final XContentBuilder builder) throws IOException {
     return builder
       .field(DYNAMIC_SETTING_MAX_NGRAM_DIFF, MAX_GRAM - 1)
-      .field(REFRESH_INTERVAL_SETTING, configurationService.getEsRefreshInterval())
-      .field(NUMBER_OF_REPLICAS_SETTING, configurationService.getEsNumberOfReplicas())
-      .field(MAPPING_NESTED_OBJECTS_LIMIT, configurationService.getEsNestedDocumentsLimit());
+      .field(REFRESH_INTERVAL_SETTING, configurationService.getElasticSearchConfiguration().getRefreshInterval())
+      .field(NUMBER_OF_REPLICAS_SETTING, configurationService.getElasticSearchConfiguration().getNumberOfReplicas())
+      .field(MAPPING_NESTED_OBJECTS_LIMIT, configurationService.getElasticSearchConfiguration().getNestedDocumentsLimit());
   }
 
   private static XContentBuilder addAnalysis(XContentBuilder builder) throws IOException {
@@ -120,4 +120,5 @@ public class IndexSettingsBuilderES {
   private static Settings toSettings(final XContentBuilder builder) {
     return Settings.builder().loadFromSource(Strings.toString(builder), XContentType.JSON).build();
   }
+
 }

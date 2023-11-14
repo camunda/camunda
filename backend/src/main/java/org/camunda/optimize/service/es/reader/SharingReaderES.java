@@ -233,7 +233,7 @@ public class SharingReaderES implements SharingReader {
       .size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest = new SearchRequest(REPORT_SHARE_INDEX_NAME)
       .source(searchSourceBuilder)
-      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
+      .scroll(timeValueSeconds(configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
 
     SearchResponse scrollResp;
     try {
@@ -248,7 +248,7 @@ public class SharingReaderES implements SharingReader {
       ReportShareRestDto.class,
       objectMapper,
       esClient,
-      configurationService.getEsScrollTimeoutInSeconds()
+      configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()
     );
 
     return reportShareDtos.stream().collect(Collectors.toMap(
@@ -263,7 +263,7 @@ public class SharingReaderES implements SharingReader {
       .size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest = new SearchRequest(DASHBOARD_SHARE_INDEX_NAME)
       .source(searchSourceBuilder)
-      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
+      .scroll(timeValueSeconds(configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
 
     SearchResponse scrollResp;
     try {
@@ -278,7 +278,7 @@ public class SharingReaderES implements SharingReader {
       DashboardShareRestDto.class,
       objectMapper,
       esClient,
-      configurationService.getEsScrollTimeoutInSeconds()
+      configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()
     );
 
     return dashboardShareDtos.stream().collect(Collectors.toMap(

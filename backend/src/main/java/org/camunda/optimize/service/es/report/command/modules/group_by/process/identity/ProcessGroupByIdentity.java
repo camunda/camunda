@@ -70,7 +70,7 @@ public abstract class ProcessGroupByIdentity extends ProcessGroupByPart {
                                                     final ExecutionContext<ProcessReportDataDto> context) {
     final TermsAggregationBuilder identityTermsAggregation = AggregationBuilders
       .terms(GROUP_BY_IDENTITY_TERMS_AGGREGATION)
-      .size(configurationService.getEsAggregationBucketLimit())
+      .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
       .order(BucketOrder.key(true))
       .field(FLOW_NODE_INSTANCES + "." + getIdentityField())
       .missing(GROUP_BY_IDENTITY_MISSING_KEY);

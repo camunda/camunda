@@ -110,7 +110,7 @@ public class EventProcessPublishStateReaderES implements EventProcessPublishStat
       .size(LIST_FETCH_LIMIT);
     final SearchRequest searchRequest = new SearchRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME)
       .source(searchSourceBuilder)
-      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
+      .scroll(timeValueSeconds(configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
 
     final SearchResponse scrollResp;
     try {
@@ -124,7 +124,7 @@ public class EventProcessPublishStateReaderES implements EventProcessPublishStat
       EsEventProcessPublishStateDto.class,
       objectMapper,
       esClient,
-      configurationService.getEsScrollTimeoutInSeconds()
+      configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()
     ).stream().map(EsEventProcessPublishStateDto::toEventProcessPublishStateDto).collect(Collectors.toList());
   }
 

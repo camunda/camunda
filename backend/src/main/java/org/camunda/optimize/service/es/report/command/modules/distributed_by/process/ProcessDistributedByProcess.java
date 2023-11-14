@@ -63,7 +63,7 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
   @Override
   public List<AggregationBuilder> createAggregations(final ExecutionContext<ProcessReportDataDto> context) {
     final TermsAggregationBuilder tenantAgg = AggregationBuilders.terms(TENANT_AGG)
-      .size(configurationService.getEsAggregationBucketLimit())
+      .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
       .order(BucketOrder.key(true))
       .missing(MISSING_TENANT_KEY)
       .field(tenantField(context));
@@ -71,12 +71,12 @@ public class ProcessDistributedByProcess extends ProcessDistributedByPart {
     return Collections.singletonList(
       AggregationBuilders
         .terms(PROC_DEF_KEY_AGG)
-        .size(configurationService.getEsAggregationBucketLimit())
+        .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
         .order(BucketOrder.key(true))
         .field(definitionKeyField(context))
         .subAggregation(
           AggregationBuilders.terms(PROC_DEF_VERSION_AGG)
-            .size(configurationService.getEsAggregationBucketLimit())
+            .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
             .order(BucketOrder.key(true))
             .field(definitionVersionField(context))
             .subAggregation(tenantAgg)));

@@ -150,7 +150,7 @@ public class BackupReaderES implements BackupReader {
   }
 
   private String getRepositoryName() {
-    return configurationService.getEsSnapshotRepositoryName();
+    return configurationService.getElasticSearchConfiguration().getSnapshotRepositoryName();
   }
 
 }

@@ -90,7 +90,6 @@ import org.camunda.optimize.jetty.OptimizeResourceConstants;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
@@ -153,6 +152,7 @@ import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 @Slf4j
 public class OptimizeRequestExecutor {
+
   private static final int MAX_LOGGED_BODY_SIZE = 10_000;
   private static final String ALERT = "alert";
 
@@ -2018,9 +2018,9 @@ public class OptimizeRequestExecutor {
   }
 
   private static ObjectMapper getDefaultObjectMapper() {
-    final ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
     return new ObjectMapperFactory(
-      new OptimizeDateTimeFormatterFactory().getObject(), configurationService
+      new OptimizeDateTimeFormatterFactory().getObject(),
+      ConfigurationServiceBuilder.createDefaultConfiguration()
     ).createOptimizeMapper();
   }
 

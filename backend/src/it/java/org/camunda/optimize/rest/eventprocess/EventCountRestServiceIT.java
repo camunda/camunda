@@ -215,7 +215,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
   public void getEventCounts_correctCountEventIfBucketLimitIsBeingHit() {
     // given
     final int bucketLimit = 3;
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(bucketLimit);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setAggregationBucketLimit(bucketLimit);
 
     // when
     List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestAllExternalEvents()

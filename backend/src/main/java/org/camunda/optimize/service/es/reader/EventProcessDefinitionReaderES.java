@@ -100,7 +100,7 @@ public class EventProcessDefinitionReaderES implements EventProcessDefinitionRea
       .fetchSource(null, fieldsToExclude);
     final SearchRequest searchRequest = new SearchRequest(EVENT_PROCESS_DEFINITION_INDEX_NAME)
       .source(searchSourceBuilder)
-      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
+      .scroll(timeValueSeconds(configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
 
     final SearchResponse scrollResp;
     try {
@@ -114,7 +114,7 @@ public class EventProcessDefinitionReaderES implements EventProcessDefinitionRea
       EventProcessDefinitionDto.class,
       objectMapper,
       esClient,
-      configurationService.getEsScrollTimeoutInSeconds()
+      configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()
     );
   }
 

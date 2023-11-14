@@ -36,7 +36,6 @@ import org.elasticsearch.search.aggregations.metrics.Sum;
 import org.elasticsearch.search.aggregations.metrics.SumAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.context.annotation.Conditional;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -46,6 +45,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
+import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.COUNT;
 import static org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.EVENT_NAME;
 import static org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.GROUP;
@@ -53,8 +54,6 @@ import static org.camunda.optimize.service.db.schema.index.events.EventSequenceC
 import static org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.SOURCE;
 import static org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.SOURCE_EVENT;
 import static org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.TARGET_EVENT;
-import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
-import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -67,6 +66,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.sum;
 
 @AllArgsConstructor
 @Slf4j
+@Conditional(ElasticSearchCondition.class)
 public class EventSequenceCountReaderES implements EventSequenceCountReader {
 
   private final String indexKey;
@@ -200,7 +200,7 @@ public class EventSequenceCountReaderES implements EventSequenceCountReader {
       .size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest = new SearchRequest(getIndexName())
       .source(searchSourceBuilder)
-      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
+      .scroll(timeValueSeconds(configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
 
     SearchResponse scrollResponse;
     try {
@@ -218,7 +218,7 @@ public class EventSequenceCountReaderES implements EventSequenceCountReader {
       EventSequenceCountDto.class,
       objectMapper,
       esClient,
-      configurationService.getEsScrollTimeoutInSeconds()
+      configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()
     );
   }
 
@@ -307,7 +307,7 @@ public class EventSequenceCountReaderES implements EventSequenceCountReader {
       COMPOSITE_EVENT_NAME_SOURCE_AND_GROUP_AGGREGATION,
       eventAndSourceAndGroupTerms
     )
-      .size(configurationService.getEsAggregationBucketLimit())
+      .size(configurationService.getElasticSearchConfiguration().getAggregationBucketLimit())
       .subAggregation(eventCountAggregation);
   }
 

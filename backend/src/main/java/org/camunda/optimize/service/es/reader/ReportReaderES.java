@@ -168,7 +168,7 @@ public class ReportReaderES implements ReportReader {
       ReportDefinitionDto.class,
       objectMapper,
       esClient,
-      configurationService.getEsScrollTimeoutInSeconds()
+      configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()
     );
   }
 
@@ -201,7 +201,7 @@ public class ReportReaderES implements ReportReader {
       ReportDefinitionDto.class,
       objectMapper,
       esClient,
-      configurationService.getEsScrollTimeoutInSeconds()
+      configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()
     );
   }
 
@@ -263,7 +263,7 @@ public class ReportReaderES implements ReportReader {
       ReportDefinitionDto.class,
       objectMapper,
       esClient,
-      configurationService.getEsScrollTimeoutInSeconds()
+      configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()
     );
   }
 
@@ -432,7 +432,7 @@ public class ReportReaderES implements ReportReader {
       query,
       indices,
       size
-    ).scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
+    ).scroll(timeValueSeconds(configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
 
     try {
       return esClient.search(searchRequest);

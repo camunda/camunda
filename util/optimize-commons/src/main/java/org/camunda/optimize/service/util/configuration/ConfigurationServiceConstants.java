@@ -12,7 +12,10 @@ import java.util.List;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ConfigurationServiceConstants {
+
   public static final String SECURITY = "$.security";
+  public static final String ELASTICSEARCH = "$.es";
+  public static final String OPENSEARCH = "$.opensearch";
   public static final String USERS = "$.users";
   public static final String CONFIGURED_ENGINES = "$.engines";
   public static final String CONFIGURED_ZEEBE = "$.zeebe";
@@ -30,8 +33,8 @@ public class ConfigurationServiceConstants {
   public static final String CONFIGURED_WEBHOOKS = "$.webhookAlerting.webhooks";
   public static final String DIGEST_CRON_TRIGGER = "$.digest.cronTrigger";
   //@formatter:off
-  public static final String ELASTICSEARCH_MAX_JOB_QUEUE_SIZE = "$.import.elasticsearchJobExecutorQueueSize";
-  public static final String ELASTICSEARCH_IMPORT_EXECUTOR_THREAD_COUNT = "$.import.elasticsearchJobExecutorThreadCount";
+  public static final String DATABASE_MAX_JOB_QUEUE_SIZE = "$.import.elasticsearchJobExecutorQueueSize";
+  public static final String DATABASE_IMPORT_EXECUTOR_THREAD_COUNT = "$.import.elasticsearchJobExecutorThreadCount";
 
   public static final String IMPORT_CURRENT_TIME_BACKOFF_MILLISECONDS = "$.import.currentTimeBackoffMilliseconds";
   public static final String IMPORT_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED = "$.import.skipDataAfterNestedDocLimitReached";
@@ -64,24 +67,37 @@ public class ConfigurationServiceConstants {
   public static final String DECISION_OUTPUT_IMPORT_PLUGIN_BASE_PACKAGES = "$.plugin.decisionOutputImport.basePackages";
   public static final String BUSINESS_KEY_IMPORT_PLUGIN_BASE_PACKAGES = "$.plugin.businessKeyImport.basePackages";
   public static final String ELASTICSEARCH_CUSTOM_HEADER_BASE_PACKAGES = "$.plugin.elasticsearchCustomHeader.basePackages";
-  public static final String ELASTICSEARCH_CONNECTION_TIMEOUT = "$.es.connection.timeout";
-  public static final String ELASTICSEARCH_RESPONSE_CONSUMER_BUFFER_LIMIT_MB = "$.es.connection.responseConsumerBufferLimitInMb";
-  public static final String ELASTICSEARCH_SCROLL_TIMEOUT_IN_SECONDS = "$.es.scrollTimeoutInSeconds";
-  public static final String ELASTICSEARCH_CONNECTION_NODES = "$.es.connection.nodes";
-  public static final String ELASTICSEARCH_PROXY = "$.es.connection.proxy";
-  public static final String ELASTICSEARCH_SKIP_HOSTNAME_VERIFICATION = "$.es.connection.skipHostnameVerification";
-  public static final String ELASTICSEARCH_PATH_PREFIX = "$.es.connection.pathPrefix";
-  public static final String ELASTICSEARCH_SNAPSHOT_REPO = "$.es.backup.repositoryName";
+  public static final String ELASTICSEARCH_CONNECTION_TIMEOUT = ELASTICSEARCH + ".connection.timeout";
+  public static final String ELASTICSEARCH_RESPONSE_CONSUMER_BUFFER_LIMIT_MB = ELASTICSEARCH + ".connection.responseConsumerBufferLimitInMb";
+  public static final String ELASTICSEARCH_SCROLL_TIMEOUT_IN_SECONDS = ELASTICSEARCH + ".scrollTimeoutInSeconds";
+  public static final String ELASTICSEARCH_CONNECTION_NODES = ELASTICSEARCH +  ".connection.nodes";
+  public static final String ELASTICSEARCH_PROXY = ELASTICSEARCH + ".connection.proxy";
+  public static final String ELASTICSEARCH_SKIP_HOSTNAME_VERIFICATION =ELASTICSEARCH +  ".connection.skipHostnameVerification";
+  public static final String ELASTICSEARCH_PATH_PREFIX = ELASTICSEARCH +  ".connection.pathPrefix";
+  public static final String ELASTICSEARCH_SNAPSHOT_REPO = ELASTICSEARCH + ".backup.repositoryName";
 
-  public static final String ELASTICSEARCH_SECURITY_USERNAME = "$.es.security.username";
-  public static final String ELASTICSEARCH_SECURITY_PASSWORD = "$.es.security.password";
-  public static final String ELASTICSEARCH_SECURITY_SSL_ENABLED = "$.es.security.ssl.enabled";
-  public static final String ELASTICSEARCH_SECURITY_SSL_SELF_SIGNED = "$.es.security.ssl.selfSigned";
-  public static final String ELASTICSEARCH_SECURITY_SSL_CERTIFICATE = "$.es.security.ssl.certificate";
-  public static final String ELASTICSEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES = "$.es.security.ssl.certificate_authorities";
+  public static final String ELASTICSEARCH_SECURITY_USERNAME = ELASTICSEARCH +  ".security.username";
+  public static final String ELASTICSEARCH_SECURITY_PASSWORD = ELASTICSEARCH +  ".security.password";
+  public static final String ELASTICSEARCH_SECURITY_SSL_ENABLED = ELASTICSEARCH +  ".security.ssl.enabled";
+  public static final String ELASTICSEARCH_SECURITY_SSL_SELF_SIGNED = ELASTICSEARCH +  ".security.ssl.selfSigned";
+  public static final String ELASTICSEARCH_SECURITY_SSL_CERTIFICATE = ELASTICSEARCH +  ".security.ssl.certificate";
+  public static final String ELASTICSEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES = ELASTICSEARCH +  ".security.ssl.certificate_authorities";
 
-  public static final String OPENSEARCH_CONNECTION_NODES = "$.os.connection.nodes";
+  public static final String OPENSEARCH_CONNECTION_NODES = OPENSEARCH + ".connection.nodes";
 
+  public static final String OPENSEARCH_SECURITY_USERNAME = OPENSEARCH + ".security.username";
+  public static final String OPENSEARCH_SECURITY_PASSWORD = OPENSEARCH + ".security.password";
+  public static final String OPENSEARCH_SECURITY_SSL_ENABLED = OPENSEARCH + ".security.ssl.enabled";
+  public static final String OPENSEARCH_SECURITY_SSL_SELF_SIGNED = OPENSEARCH + ".security.ssl.selfSigned";
+  public static final String OPENSEARCH_SECURITY_SSL_CERTIFICATE = OPENSEARCH + ".security.ssl.certificate";
+  public static final String OPENSEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES = OPENSEARCH + ".security.ssl.certificate_authorities";
+
+  public static final String OPENSEARCH_AGGREGATION_BUCKET_LIMIT = OPENSEARCH + ".settings.aggregationBucketLimit";
+  public static final String OPENSEARCH_REFRESH_INTERVAL = OPENSEARCH +".settings.index.refresh_interval";
+  public static final String OPENSEARCH_NUMBER_OF_REPLICAS = OPENSEARCH +".settings.index.number_of_replicas";
+  public static final String OPENSEARCH_NUMBER_OF_SHARDS = OPENSEARCH +".settings.index.number_of_shards";
+  public static final String OPENSEARCH_INDEX_NESTED_DOCUMENTS_LIMIT = OPENSEARCH +".settings.index.nested_documents_limit";
+  public static final String OPENSEARCH_INDEX_PREFIX = OPENSEARCH + ".settings.index.prefix";
 
   public static final String IMPORT_INDEX_AUTO_STORAGE_INTERVAL = "$.import.importIndexStorageIntervalInSec";
 
@@ -96,8 +112,6 @@ public class ConfigurationServiceConstants {
   public static final String ES_NUMBER_OF_SHARDS = "$.es.settings.index.number_of_shards";
   public static final String ES_INDEX_PREFIX = "$.es.settings.index.prefix";
   public static final String ES_INDEX_NESTED_DOCUMENTS_LIMIT = "$.es.settings.index.nested_documents_limit";
-
-  public static final String OS_INDEX_PREFIX = "$.os.settings.index.prefix";
 
   public static final String ENGINE_DATE_FORMAT = "$.serialization.engineDateFormat";
   public static final String CONTAINER_HOST = "$.container.host";

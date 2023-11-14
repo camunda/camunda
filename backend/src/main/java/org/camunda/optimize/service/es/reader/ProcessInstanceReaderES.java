@@ -151,7 +151,7 @@ public class ProcessInstanceReaderES implements ProcessInstanceReader {
         String.class,
         searchHit -> (String) searchHit.getSourceAsMap().get(PROCESS_INSTANCE_ID),
         esClient,
-        configurationService.getEsScrollTimeoutInSeconds(),
+        configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds(),
         previousPage.getLimit()
       );
     } catch (ElasticsearchStatusException e) {
@@ -176,7 +176,7 @@ public class ProcessInstanceReaderES implements ProcessInstanceReader {
 
     final SearchRequest scrollSearchRequest = new SearchRequest(getProcessInstanceIndexAliasName(processDefinitionKey))
       .source(searchSourceBuilder)
-      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
+      .scroll(timeValueSeconds(configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
 
     try {
       final SearchResponse response = esClient.search(scrollSearchRequest);

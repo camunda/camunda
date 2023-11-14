@@ -126,7 +126,7 @@ public class ProcessViewRawData extends ProcessViewPart {
       context.getPagination()
         .ifPresent(pag -> search.size(pag.getLimit() > MAX_RESPONSE_SIZE_LIMIT ?
                                         MAX_RESPONSE_SIZE_LIMIT : pag.getLimit()));
-      searchRequest.scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
+      searchRequest.scroll(timeValueSeconds(configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
     } else {
       context.getPagination().ifPresent(pag -> {
         if (pag.getLimit() > MAX_RESPONSE_SIZE_LIMIT) {
@@ -235,7 +235,7 @@ public class ProcessViewRawData extends ProcessViewPart {
           ProcessInstanceDto.class,
           mappingFunction,
           esClient,
-          configurationService.getEsScrollTimeoutInSeconds(),
+          configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds(),
           context.getPagination().orElse(new PaginationDto()).getLimit()
         );
     } else {
@@ -333,4 +333,5 @@ public class ProcessViewRawData extends ProcessViewPart {
     tableColumns.addNewAndRemoveUnexpectedFlowNodeDurationColumns(CSVUtils.extractAllPrefixedFlowNodeKeys(rawData));
     tableColumns.addDtoColumns(extractAllProcessInstanceDtoFieldKeys());
   }
+
 }

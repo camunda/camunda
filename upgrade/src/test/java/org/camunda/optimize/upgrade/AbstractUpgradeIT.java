@@ -107,7 +107,7 @@ public abstract class AbstractUpgradeIT {
   protected void setUp() throws Exception {
     this.configurationService = createDefaultConfiguration();
     final DatabaseConnectionNodeConfiguration elasticConfig =
-      this.configurationService.getFirstElasticsearchConnectionNode();
+      this.configurationService.getElasticSearchConfiguration().getFirstConnectionNode();
 
     this.esMockServer = createElasticMock(elasticConfig);
     elasticConfig.setHost(MockServerUtil.MOCKSERVER_HOST);

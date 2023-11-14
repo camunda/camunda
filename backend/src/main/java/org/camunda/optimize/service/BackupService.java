@@ -36,10 +36,11 @@ import static java.util.stream.Collectors.joining;
 @Slf4j
 public class BackupService {
 
+  private static final int EXPECTED_NUMBER_OF_SNAPSHOTS_PER_BACKUP = 2;
+
   private final BackupReader backupReader;
   private final BackupWriter backupWriter;
   private final ConfigurationService configurationService;
-  private static final int EXPECTED_NUMBER_OF_SNAPSHOTS_PER_BACKUP = 2;
 
   public synchronized void triggerBackup(final Long backupId) {
     validateRepositoryExists();
@@ -127,8 +128,9 @@ public class BackupService {
     }
   }
 
+  //todo extract this validation to the readers to avoid using there configuration or extract it from db configuration by OPT-7245
   private void validateRepositoryExists() {
-    if (StringUtils.isEmpty(configurationService.getEsSnapshotRepositoryName())) {
+    if (StringUtils.isEmpty(configurationService.getElasticSearchConfiguration().getSnapshotRepositoryName())) {
       final String reason =
         "Cannot execute backup request because no Elasticsearch snapshot repository name found in Optimize configuration.";
       log.error(reason);

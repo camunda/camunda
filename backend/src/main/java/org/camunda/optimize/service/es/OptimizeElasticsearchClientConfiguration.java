@@ -13,6 +13,7 @@ import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ElasticSearchConfiguration;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
@@ -23,6 +24,7 @@ import org.springframework.context.annotation.Configuration;
 @Slf4j
 @Conditional(ElasticSearchCondition.class)
 public class OptimizeElasticsearchClientConfiguration {
+
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService optimizeIndexNameService;
   private final ElasticSearchSchemaManager elasticSearchSchemaManager;

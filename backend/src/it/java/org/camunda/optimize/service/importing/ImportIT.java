@@ -50,7 +50,7 @@ public class ImportIT extends AbstractImportIT {
 
   @BeforeEach
   public void setup() {
-    originalNestedDocLimit = embeddedOptimizeExtension.getConfigurationService().getEsNestedDocumentsLimit();
+    originalNestedDocLimit = embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().getNestedDocumentsLimit();
   }
 
   @AfterEach
@@ -166,7 +166,7 @@ public class ImportIT extends AbstractImportIT {
 
   @SneakyThrows
   private void updateProcessInstanceNestedDocLimit(final String processDefinitionKey, final int nestedDocLimit) {
-    embeddedOptimizeExtension.getConfigurationService().setEsNestedDocumentsLimit(nestedDocLimit);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setNestedDocumentsLimit(nestedDocLimit);
     final OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
     final String indexName = esClient.getIndexNameService()
       .getOptimizeIndexNameWithVersionForAllIndicesOf(new ProcessInstanceIndexES(processDefinitionKey));

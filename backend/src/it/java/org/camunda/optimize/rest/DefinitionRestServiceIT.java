@@ -1636,7 +1636,7 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
     final Integer bucketLimit = 1000;
     final Integer definitionCount = bucketLimit * 2;
 
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(bucketLimit);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setAggregationBucketLimit(bucketLimit);
     Map<String, Object> definitionMap = new HashMap<>();
     IntStream
       .range(0, definitionCount)
@@ -1667,7 +1667,7 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
     final Integer bucketLimit = 1000;
     final Integer definitionCount = bucketLimit * 2;
 
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(bucketLimit);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setAggregationBucketLimit(bucketLimit);
     Map<String, Object> definitionMap = new HashMap<>();
     IntStream
       .range(0, definitionCount)

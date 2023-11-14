@@ -27,7 +27,7 @@ public class EventProcessInstanceIndexES extends EventProcessInstanceIndex<XCont
   @Override
   public XContentBuilder getStaticSettings(XContentBuilder xContentBuilder,
                                            ConfigurationService configurationService) throws IOException {
-    return addStaticSetting(NUMBER_OF_SHARDS_SETTING, configurationService.getEsNumberOfShards(), xContentBuilder);
+    return addStaticSetting(NUMBER_OF_SHARDS_SETTING, configurationService.getElasticSearchConfiguration().getNumberOfShards(), xContentBuilder);
   }
 
 }

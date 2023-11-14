@@ -53,7 +53,7 @@ public class BusinessKeyReaderES implements BusinessKeyReader {
       .size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest = new SearchRequest(DatabaseConstants.BUSINESS_KEY_INDEX_NAME)
       .source(searchSourceBuilder)
-      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
+      .scroll(timeValueSeconds(configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
 
     SearchResponse searchResponse;
     try {
@@ -67,7 +67,7 @@ public class BusinessKeyReaderES implements BusinessKeyReader {
       BusinessKeyDto.class,
       objectMapper,
       esClient,
-      configurationService.getEsScrollTimeoutInSeconds()
+      configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()
     );
   }
 
