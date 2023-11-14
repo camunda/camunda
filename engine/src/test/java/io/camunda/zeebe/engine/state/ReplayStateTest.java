@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
@@ -312,6 +313,23 @@ public final class ReplayStateTest {
                       .withElementType(BpmnElementType.PROCESS)
                       .getFirst();
                 }),
+        testCase("link deployed form")
+            .withProcess(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .userTask("task", t -> t.zeebeFormId("Form_0w7r08e"))
+                    .endEvent()
+                    .done())
+            .withForm("/form/test-form-1.form")
+            .withExecution(
+                engine -> {
+                  engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+                  final Record<JobRecordValue> job =
+                      RecordingExporter.jobRecords(JobIntent.CREATED).getFirst();
+                  assertThat(job.getValue().getCustomHeaders())
+                      .containsKey("io.camunda.zeebe:formKey");
+                  return job;
+                }),
         testCase("correlate buffered message to start event")
             .withProcess(
                 Bpmn.createExecutableProcess(PROCESS_ID)
@@ -357,6 +375,7 @@ public final class ReplayStateTest {
   public void shouldRestoreState() {
     // given
     testCase.processes.forEach(process -> engine.deployment().withXmlResource(process).deploy());
+    testCase.forms.forEach(form -> engine.deployment().withJsonClasspathResource(form).deploy());
 
     final Record<?> finalRecord = testCase.execution.apply(engine);
 
@@ -421,6 +440,7 @@ public final class ReplayStateTest {
   private static final class TestCase {
     private final String description;
     private final List<BpmnModelInstance> processes = new ArrayList<>();
+    private final List<String> forms = new ArrayList<>();
     private Function<EngineRule, Record<?>> execution =
         engine -> RecordingExporter.records().getFirst();
 
@@ -430,6 +450,11 @@ public final class ReplayStateTest {
 
     private TestCase withProcess(final BpmnModelInstance process) {
       processes.add(process);
+      return this;
+    }
+
+    public TestCase withForm(final String pathToForm) {
+      forms.add(pathToForm);
       return this;
     }
 
