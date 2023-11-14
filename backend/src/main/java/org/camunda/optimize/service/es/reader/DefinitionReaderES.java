@@ -23,7 +23,7 @@ import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.db.reader.DefinitionReader;
 import org.camunda.optimize.service.es.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndexES;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndexES;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndexES;

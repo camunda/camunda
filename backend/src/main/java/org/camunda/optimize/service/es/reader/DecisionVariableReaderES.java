@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueReq
 import org.camunda.optimize.service.db.reader.DecisionDefinitionReader;
 import org.camunda.optimize.service.db.reader.DecisionVariableReader;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.IndexSettingsBuilderES;
+import org.camunda.optimize.service.es.schema.ElasticSearchIndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndexES;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
@@ -39,6 +39,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_GRAM;
 import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndexES.INPUTS;
 import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndexES.OUTPUTS;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableClauseIdField;
@@ -238,7 +239,7 @@ public class DecisionVariableReaderES implements DecisionVariableReader {
                               final BoolQueryBuilder filterQuery) {
     if (valueFilter != null && !valueFilter.isEmpty()) {
       final String lowerCaseValue = valueFilter.toLowerCase();
-      QueryBuilder filter = (lowerCaseValue.length() > IndexSettingsBuilderES.MAX_GRAM)
+      QueryBuilder filter = (lowerCaseValue.length() > MAX_GRAM)
           /*
             using the slow wildcard query for uncommonly large filter strings (> 10 chars)
           */

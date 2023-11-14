@@ -9,7 +9,9 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Streams;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.service.db.schema.MappingMetadataUtil;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.AlertIndexES;
 import org.camunda.optimize.service.es.schema.index.BusinessKeyIndexES;
@@ -68,7 +70,7 @@ import java.util.stream.StreamSupport;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.service.db.DatabaseConstants.INDEX_ALREADY_EXISTS_EXCEPTION_TYPE;
-import static org.camunda.optimize.service.es.schema.IndexSettingsBuilderES.buildDynamicSettings;
+import static org.camunda.optimize.service.es.schema.ElasticSearchIndexSettingsBuilder.buildDynamicSettings;
 
 @Component
 @Slf4j
@@ -76,14 +78,14 @@ public class ElasticSearchSchemaManager {
     private static final String INDEX_READ_ONLY_SETTING = "index.blocks.read_only_allow_delete";
     public static final int INDEX_EXIST_BATCH_SIZE = 10;
 
-    private final ElasticsearchMetadataService metadataService;
+    private final ElasticSearchMetadataService metadataService;
     private final ConfigurationService configurationService;
     private final OptimizeIndexNameService indexNameService;
 
     private final List<IndexMappingCreator<?>> mappings;
 
     @Autowired
-    public ElasticSearchSchemaManager(final ElasticsearchMetadataService metadataService,
+    public ElasticSearchSchemaManager(final ElasticSearchMetadataService metadataService,
                                       final ConfigurationService configurationService,
                                       final OptimizeIndexNameService indexNameService) {
         this.metadataService = metadataService;
@@ -93,7 +95,7 @@ public class ElasticSearchSchemaManager {
         mappings.addAll(getAllNonDynamicMappings());
     }
 
-    public ElasticSearchSchemaManager(final ElasticsearchMetadataService metadataService,
+    public ElasticSearchSchemaManager(final ElasticSearchMetadataService metadataService,
                                       final ConfigurationService configurationService,
                                       final OptimizeIndexNameService indexNameService,
                                       final List<IndexMappingCreator<?>> mappings) {
@@ -147,7 +149,7 @@ public class ElasticSearchSchemaManager {
                 esClient,
                 mappings.stream()
                         .map(IndexMappingCreator::getIndexName)
-                        .collect(toList())
+                        .toList()
         );
     }
 
@@ -426,9 +428,8 @@ public class ElasticSearchSchemaManager {
 
     private Settings createIndexSettings(IndexMappingCreator<?> indexMappingCreator) {
         try {
-            return IndexSettingsBuilderES.buildAllSettings(configurationService,
-                                                           (IndexMappingCreator<XContentBuilder>) indexMappingCreator
-            );
+            return ElasticSearchIndexSettingsBuilder
+                    .buildAllSettings(configurationService, (IndexMappingCreator<XContentBuilder>) indexMappingCreator);
         } catch (IOException e) {
             log.error("Could not create settings!", e);
             throw new OptimizeRuntimeException("Could not create index settings");

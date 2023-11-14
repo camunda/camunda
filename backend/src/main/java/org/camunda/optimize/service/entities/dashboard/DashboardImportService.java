@@ -16,7 +16,7 @@ import org.camunda.optimize.dto.optimize.rest.export.dashboard.DashboardDefiniti
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.db.schema.index.DashboardIndex;
 import org.camunda.optimize.service.db.writer.DashboardWriter;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.exceptions.OptimizeImportFileInvalidException;
 import org.camunda.optimize.service.exceptions.OptimizeImportIncorrectIndexVersionException;
 import org.camunda.optimize.service.util.IdGenerator;

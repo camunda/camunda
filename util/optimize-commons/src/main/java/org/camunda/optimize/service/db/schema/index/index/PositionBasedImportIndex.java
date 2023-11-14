@@ -7,7 +7,7 @@ package org.camunda.optimize.service.db.schema.index.index;
 
 import org.camunda.optimize.dto.optimize.index.ImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
-import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;

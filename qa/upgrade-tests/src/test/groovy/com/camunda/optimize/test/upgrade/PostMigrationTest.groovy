@@ -23,7 +23,7 @@ import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedSingleReportEvaluationResponseDto
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndexES
 import org.camunda.optimize.service.exceptions.evaluation.TooManyBucketsException
 import org.camunda.optimize.service.util.ProcessReportDataType

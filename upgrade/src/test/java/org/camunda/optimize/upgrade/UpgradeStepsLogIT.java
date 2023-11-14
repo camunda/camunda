@@ -6,7 +6,7 @@
 package org.camunda.optimize.upgrade;
 
 import io.github.netmikey.logunit.api.LogCapturer;
-import org.camunda.optimize.service.es.schema.IndexMappingCreator;
+import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.upgrade.es.index.UpdateLogEntryIndex;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;

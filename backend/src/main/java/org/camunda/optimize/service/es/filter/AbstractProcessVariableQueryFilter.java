@@ -16,7 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.filter.util.DateFilterQueryUtil;
-import org.camunda.optimize.service.es.schema.IndexSettingsBuilderES;
+import org.camunda.optimize.service.es.schema.ElasticSearchIndexSettingsBuilder;
 import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_CONTAINS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_GRAM;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.LOWERCASE_FIELD;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.N_GRAM_FIELD;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
@@ -128,7 +129,7 @@ public abstract class AbstractProcessVariableQueryFilter extends AbstractVariabl
       .must(termQuery(getNestedVariableTypeField(), VariableType.STRING.getId()));
 
     final String lowerCaseValue = valueToContain.toLowerCase();
-    QueryBuilder filter = (lowerCaseValue.length() > IndexSettingsBuilderES.MAX_GRAM)
+    QueryBuilder filter = (lowerCaseValue.length() > MAX_GRAM)
           /*
             using the slow wildcard query for uncommonly large filter strings (> 10 chars)
           */

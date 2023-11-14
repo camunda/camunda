@@ -8,8 +8,9 @@ package org.camunda.optimize.service.os;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.plugin.OpensearchCustomHeaderProvider;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.plugin.OpenSearchCustomHeaderProvider;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.os.schema.OpenSearchSchemaManager;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
@@ -21,21 +22,21 @@ import org.springframework.context.annotation.Configuration;
 @AllArgsConstructor
 @Slf4j
 @Conditional(OpenSearchCondition.class)
-public class OptimizeOpensearchClientConfiguration {
+public class OptimizeOpenSearchClientConfiguration {
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService optimizeIndexNameService;
-  // private final OpenSearchSchemaManager openSearchSchemaManager; // TODO re-add with OPT-7229
-  private final OpensearchCustomHeaderProvider opensearchCustomHeaderProvider;
+  private final OpenSearchSchemaManager openSearchSchemaManager;
+  private final OpenSearchCustomHeaderProvider opensearchCustomHeaderProvider;
 
   @Bean(destroyMethod = "close")
-  public OptimizeOpensearchClient optimizeOpensearchClient(final BackoffCalculator backoffCalculator) {
-    return createOptimizeOpensearchClient(backoffCalculator);
+  public OptimizeOpenSearchClient optimizeOpenSearchClient(final BackoffCalculator backoffCalculator) {
+    return createOptimizeOpenSearchClient(backoffCalculator);
   }
 
   @SneakyThrows
-  public OptimizeOpensearchClient createOptimizeOpensearchClient(final BackoffCalculator backoffCalculator) {
-    return OptimizeOpensearchClientFactory.create(
-      configurationService, optimizeIndexNameService,
+  public OptimizeOpenSearchClient createOptimizeOpenSearchClient(final BackoffCalculator backoffCalculator) {
+    return OptimizeOpenSearchClientFactory.create(
+      configurationService, optimizeIndexNameService, openSearchSchemaManager,
       opensearchCustomHeaderProvider, backoffCalculator
     );
   }

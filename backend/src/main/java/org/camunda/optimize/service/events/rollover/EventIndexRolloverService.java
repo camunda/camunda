@@ -41,7 +41,6 @@ public class EventIndexRolloverService extends AbstractIndexRolloverService {
     return configurationService.getEventIndexRolloverConfiguration().getMaxIndexSizeGB();
   }
 
-  // TODO change to configurationService.getIndexPrefix() with OPT-7349
   @Override
   protected int getScheduleIntervalInMinutes() {
     return configurationService.getEventIndexRolloverConfiguration().getScheduleIntervalInMinutes();

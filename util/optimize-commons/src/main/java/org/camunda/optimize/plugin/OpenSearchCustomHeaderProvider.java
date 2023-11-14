@@ -12,9 +12,9 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class OpensearchCustomHeaderProvider extends PluginProvider<DatabaseCustomHeaderSupplier> {
+public class OpenSearchCustomHeaderProvider extends PluginProvider<DatabaseCustomHeaderSupplier> {
 // TODO needs overhauling with OPT-7229
-  public OpensearchCustomHeaderProvider(final ConfigurationService configurationService,
+  public OpenSearchCustomHeaderProvider(final ConfigurationService configurationService,
                                         final PluginJarFileLoader pluginJarLoader) {
     super(configurationService, pluginJarLoader);
   }

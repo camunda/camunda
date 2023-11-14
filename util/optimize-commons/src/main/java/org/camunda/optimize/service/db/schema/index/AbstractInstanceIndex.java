@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.db.schema.index;
 
-import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;

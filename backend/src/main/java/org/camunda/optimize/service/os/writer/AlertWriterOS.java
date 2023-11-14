@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.service.db.writer.AlertWriter;
-import org.camunda.optimize.service.os.OptimizeOpensearchClient;
+import org.camunda.optimize.service.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -23,10 +23,10 @@ import java.util.List;
 @Conditional(OpenSearchCondition.class)
 public class AlertWriterOS implements AlertWriter {
 
-  private final OptimizeOpensearchClient osClient;
+  private final OptimizeOpenSearchClient osClient;
 
   public AlertDefinitionDto createAlert(AlertDefinitionDto alertDefinitionDto) {
-//        log.debug("Writing new alert to Opensearch");
+//        log.debug("Writing new alert to OpenSearch");
 //
 //        String id = IdGenerator.getNextId();
 //        alertDefinitionDto.setId(id);
@@ -40,8 +40,8 @@ public class AlertWriterOS implements AlertWriter {
 //        IndexResponse indexResponse = osClient.index(request);
 //
 //        if (!indexResponse.result().equals(Result.Created)) {
-//            String message = "Could not write alert to Opensearch. " +
-//                    "Maybe the connection to Opensearch got lost?";
+//            String message = "Could not write alert to OpenSearch. " +
+//                    "Maybe the connection to OpenSearch got lost?";
 //            log.error(message);
 //            throw new OptimizeRuntimeException(message);
 //        }
@@ -53,7 +53,7 @@ public class AlertWriterOS implements AlertWriter {
   }
 
   public void updateAlert(AlertDefinitionDto alertUpdate) {
-//        log.debug("Updating alert with id [{}] in Opensearch", alertUpdate.getId());
+//        log.debug("Updating alert with id [{}] in OpenSearch", alertUpdate.getId());
 //        // try {
 //        UpdateRequest.Builder<Void, AlertDefinitionDto> request =
 //                new UpdateRequest.Builder<Void, AlertDefinitionDto>()
@@ -126,7 +126,7 @@ public class AlertWriterOS implements AlertWriter {
   }
 
   public void writeAlertTriggeredStatus(boolean alertStatus, String alertId) {
-//        log.debug("Writing alert status for alert with id [{}] to Opensearch", alertId);
+//        log.debug("Writing alert status for alert with id [{}] to OpenSearch", alertId);
 //        try {
 //
 //            //todo elasticsearch obj, change it to custom entity

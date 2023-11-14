@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.es.schema.IndexSettingsBuilderES.buildDynamicSettings;
+import static org.camunda.optimize.service.es.schema.ElasticSearchIndexSettingsBuilder.buildDynamicSettings;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public class ImportIT extends AbstractImportIT {

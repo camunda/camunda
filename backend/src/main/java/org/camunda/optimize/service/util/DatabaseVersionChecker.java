@@ -24,7 +24,7 @@ import static org.camunda.optimize.service.metadata.Version.getMajorVersionFrom;
 import static org.camunda.optimize.service.metadata.Version.getMinorVersionFrom;
 import static org.camunda.optimize.service.metadata.Version.getPatchVersionFrom;
 import static org.camunda.optimize.service.metadata.Version.stripToPlainVersion;
-import static org.camunda.optimize.service.os.OptimizeOpensearchClientFactory.getCurrentOSVersion;
+import static org.camunda.optimize.service.os.OptimizeOpenSearchClientFactory.getCurrentOSVersion;
 import static org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder.getCurrentESVersion;
 
 @Slf4j
@@ -90,7 +90,7 @@ public abstract class DatabaseVersionChecker {
     return isCurrentVersionSupported(currentVersion, databaseSupportedVersionsMap.get(Database.ELASTICSEARCH));
   }
 
-  public static boolean isCurrentOpensearchVersionSupported(String currentVersion) {
+  public static boolean isCurrentOpenSearchVersionSupported(String currentVersion) {
     return isCurrentVersionSupported(currentVersion, databaseSupportedVersionsMap.get(Database.OPENSEARCH));
   }
 

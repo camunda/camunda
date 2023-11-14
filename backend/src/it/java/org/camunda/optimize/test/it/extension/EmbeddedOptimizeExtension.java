@@ -40,8 +40,8 @@ import org.camunda.optimize.service.db.writer.activity.RunningActivityInstanceWr
 import org.camunda.optimize.service.digest.DigestService;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.es.schema.ElasticSearchMetadataService;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.events.rollover.EventIndexRolloverService;
 import org.camunda.optimize.service.events.rollover.ExternalProcessVariableIndexRolloverService;
@@ -714,8 +714,8 @@ public class EmbeddedOptimizeExtension
     return getBean(OptimizeElasticsearchClient.class);
   }
 
-  public ElasticsearchMetadataService getElasticsearchMetadataService() {
-    return getBean(ElasticsearchMetadataService.class);
+  public ElasticSearchMetadataService getElasticsearchMetadataService() {
+    return getBean(ElasticSearchMetadataService.class);
   }
 
   private boolean isResetImportOnStart() {

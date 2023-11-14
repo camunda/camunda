@@ -11,9 +11,9 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.schema.IndexMappingCreator;
-import org.camunda.optimize.service.es.schema.IndexSettingsBuilderES;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.db.schema.IndexMappingCreator;
+import org.camunda.optimize.service.es.schema.ElasticSearchIndexSettingsBuilder;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndexES;
 
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
@@ -50,8 +50,8 @@ import static jakarta.ws.rs.HttpMethod.HEAD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_NGRAM_DIFF;
 import static org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager.INDEX_EXIST_BATCH_SIZE;
-import static org.camunda.optimize.service.es.schema.IndexSettingsBuilderES.DYNAMIC_SETTING_MAX_NGRAM_DIFF;
 import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_NESTED_OBJECTS_LIMIT;
 import static org.camunda.optimize.service.db.DatabaseConstants.METADATA_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_REPLICAS_SETTING;
@@ -287,7 +287,7 @@ public class SchemaManagerIT extends AbstractPlatformIT {
   private void assertMappingSettings(final List<IndexMappingCreator<?>> mappings,
                                      final GetSettingsResponse getSettingsResponse) throws IOException {
     for (IndexMappingCreator<?> mapping : mappings) {
-      Settings dynamicSettings = IndexSettingsBuilderES.buildDynamicSettings(
+      Settings dynamicSettings = ElasticSearchIndexSettingsBuilder.buildDynamicSettings(
         embeddedOptimizeExtension.getConfigurationService());
       dynamicSettings.names().forEach(
         settingName -> {
@@ -332,7 +332,7 @@ public class SchemaManagerIT extends AbstractPlatformIT {
     for (IndexMappingCreator mapping : mappings) {
       final String indexName = indexNameService.getOptimizeIndexNameWithVersion(mapping);
       final UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest(indexName);
-      updateSettingsRequest.settings(Settings.builder().put(DYNAMIC_SETTING_MAX_NGRAM_DIFF, "10").build());
+      updateSettingsRequest.settings(Settings.builder().put(MAX_NGRAM_DIFF, "10").build());
       prefixAwareRestHighLevelClient.getHighLevelClient()
         .indices().putSettings(updateSettingsRequest, prefixAwareRestHighLevelClient.requestOptions());
     }

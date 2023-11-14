@@ -770,8 +770,7 @@ public class ConfigurationService {
   }
 
   public boolean isImportEnabled(final SchedulerConfig dataSourceDto) {
-    if (dataSourceDto instanceof EngineDataSourceDto) {
-      final EngineDataSourceDto engineSource = (EngineDataSourceDto) dataSourceDto;
+    if (dataSourceDto instanceof final EngineDataSourceDto engineSource) {
       return getEngineConfiguration(engineSource.getName()).map(EngineConfiguration::isImportEnabled)
         .orElseThrow(() -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineSource.getName()));
     } else if (dataSourceDto instanceof ZeebeConfigDto) {

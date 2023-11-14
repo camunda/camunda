@@ -18,7 +18,7 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.service.db.schema.index.MetadataIndex;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
+import org.camunda.optimize.service.es.schema.ElasticSearchMetadataService;
 import org.camunda.optimize.service.license.LicenseManager;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -321,7 +321,7 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
   }
 
   private Optional<MetadataDto> getMetadata() {
-    return embeddedOptimizeExtension.getBean(ElasticsearchMetadataService.class)
+    return embeddedOptimizeExtension.getBean(ElasticSearchMetadataService.class)
       .readMetadata(embeddedOptimizeExtension.getOptimizeElasticClient());
   }
 
@@ -340,7 +340,8 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
   }
 
   private String getLicense() {
-    return embeddedOptimizeExtension.getBean(LicenseManager.class).getOptimizeLicense();
+    return embeddedOptimizeExtension.getBean(LicenseManager.class).getOptimizeLicense()
+      .orElseThrow(() -> new OptimizeIntegrationTestException("Unable to retrieve Optimize license"));
   }
 
   private String getEsVersion() {

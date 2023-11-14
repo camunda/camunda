@@ -17,7 +17,6 @@ import org.camunda.optimize.service.db.reader.EventSequenceCountReader;
 import org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.es.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.IndexSettingsBuilderES;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
@@ -47,6 +46,7 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_GRAM;
 import static org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.COUNT;
 import static org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.EVENT_NAME;
 import static org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex.GROUP;
@@ -274,7 +274,7 @@ public class EventSequenceCountReaderES implements EventSequenceCountReader {
     }
 
     final String lowerCaseSearchTerm = searchTerm.toLowerCase();
-    if (searchTerm.length() > IndexSettingsBuilderES.MAX_GRAM) {
+    if (searchTerm.length() > MAX_GRAM) {
       return boolQuery()
         .should(prefixQuery(getNestedField(SOURCE_EVENT, GROUP), lowerCaseSearchTerm))
         .should(prefixQuery(getNestedField(SOURCE_EVENT, SOURCE), lowerCaseSearchTerm))
@@ -314,7 +314,7 @@ public class EventSequenceCountReaderES implements EventSequenceCountReader {
   private void addGroupFilteringForQuery(final List<String> groups, final BoolQueryBuilder query) {
     final List<String> nonNullGroups = groups.stream()
       .filter(Objects::nonNull)
-      .collect(Collectors.toList());
+      .toList();
     final boolean includeNull = groups.size() > nonNullGroups.size();
 
     final BoolQueryBuilder groupFilterQuery = boolQuery().minimumShouldMatch(1);

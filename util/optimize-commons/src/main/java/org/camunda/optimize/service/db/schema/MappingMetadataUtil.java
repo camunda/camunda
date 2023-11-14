@@ -14,13 +14,18 @@ import org.camunda.optimize.service.db.schema.index.events.EventSequenceCountInd
 import org.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndexES;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndexES;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndexES;
 import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndexES;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.os.schema.OpenSearchSchemaManager;
+import org.camunda.optimize.service.os.schema.index.DecisionInstanceIndexOS;
+import org.camunda.optimize.service.os.schema.index.ProcessInstanceIndexOS;
+import org.camunda.optimize.service.os.schema.index.events.CamundaActivityEventIndexOS;
+import org.camunda.optimize.service.os.schema.index.events.EventSequenceCountIndexOS;
+import org.camunda.optimize.service.os.schema.index.events.EventTraceStateIndexOS;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,9 +45,11 @@ import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE
 public class MappingMetadataUtil {
 
   private final DatabaseClient dbClient;
+  private final boolean isElasticSearchClient;
 
   public MappingMetadataUtil(DatabaseClient dbClient) {
     this.dbClient = dbClient;
+    isElasticSearchClient = dbClient instanceof OptimizeElasticsearchClient;
   }
 
   public List<IndexMappingCreator<?>> getAllMappings() {
@@ -53,9 +60,8 @@ public class MappingMetadataUtil {
   }
 
   private Collection<? extends IndexMappingCreator<?>> getAllNonDynamicMappings() {
-    return dbClient instanceof OptimizeElasticsearchClient ?
-      ElasticSearchSchemaManager.getAllNonDynamicMappings() : null;
-    // TODO Not implemented for OpenSearch yet, to be done with OPT-7349
+    return isElasticSearchClient ?
+      ElasticSearchSchemaManager.getAllNonDynamicMappings() : OpenSearchSchemaManager.getAllNonDynamicMappings();
   }
 
   public List<IndexMappingCreator<?>> getAllDynamicMappings() {
@@ -104,45 +110,40 @@ public class MappingMetadataUtil {
   private List<? extends DecisionInstanceIndex<?>> retrieveAllDecisionInstanceIndices() {
     return retrieveAllDynamicIndexKeysForPrefix(DECISION_INSTANCE_INDEX_PREFIX)
       .stream()
-      .map(key -> dbClient instanceof OptimizeElasticsearchClient ?
-        new DecisionInstanceIndexES(key) :
-        null)// TODO Not implemented for OpenSearch yet, to be done with OPT-7349
+      .map(key -> isElasticSearchClient ?
+        new DecisionInstanceIndexES(key) : new DecisionInstanceIndexOS(key))
       .toList();
   }
 
   private List<? extends CamundaActivityEventIndex<?>> retrieveAllCamundaActivityEventIndices() {
     return retrieveAllDynamicIndexKeysForPrefix(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX)
       .stream()
-      .map(key -> dbClient instanceof OptimizeElasticsearchClient ?
-        new CamundaActivityEventIndexES(key) :
-        null)// TODO Not implemented for OpenSearch yet, to be done with OPT-7349
+      .map(key -> isElasticSearchClient ?
+        new CamundaActivityEventIndexES(key) : new CamundaActivityEventIndexOS(key))
       .toList();
   }
 
   private List<? extends EventSequenceCountIndex<?>> retrieveAllSequenceCountIndices() {
     return retrieveAllDynamicIndexKeysForPrefix(EVENT_SEQUENCE_COUNT_INDEX_PREFIX)
       .stream()
-      .map(key -> dbClient instanceof OptimizeElasticsearchClient ?
-        new EventSequenceCountIndexES(key) :
-        null)// TODO Not implemented for OpenSearch yet, to be done with OPT-7349
+      .map(key -> isElasticSearchClient ?
+        new EventSequenceCountIndexES(key) : new EventSequenceCountIndexOS(key))
       .toList();
   }
 
   private List<? extends EventTraceStateIndex<?>> retrieveAllEventTraceIndices() {
     return retrieveAllDynamicIndexKeysForPrefix(EVENT_TRACE_STATE_INDEX_PREFIX)
       .stream()
-      .map(key -> dbClient instanceof OptimizeElasticsearchClient ?
-        new EventTraceStateIndexES(key) :
-        null)// TODO Not implemented for OpenSearch yet, to be done with OPT-7349
+      .map(key -> isElasticSearchClient ?
+        new EventTraceStateIndexES(key) : new EventTraceStateIndexOS(key))
       .toList();
   }
 
   private List<? extends ProcessInstanceIndex<?>> retrieveAllProcessInstanceIndices() {
     return retrieveProcessInstanceIndexIdentifiers(false)
       .stream()
-      .map(key -> dbClient instanceof OptimizeElasticsearchClient ?
-        new ProcessInstanceIndexES(key) :
-        null)// TODO Not implemented for OpenSearch yet, to be done with OPT-7349
+      .map(key -> isElasticSearchClient ?
+        new ProcessInstanceIndexES(key) : new ProcessInstanceIndexOS(key))
       .toList();
   }
 

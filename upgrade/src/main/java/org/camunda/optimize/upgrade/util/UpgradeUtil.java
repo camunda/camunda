@@ -12,8 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.plugin.ElasticsearchCustomHeaderProvider;
 import org.camunda.optimize.plugin.PluginJarFileLoader;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.es.schema.ElasticSearchMetadataService;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.RequestOptionsProvider;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -64,7 +64,7 @@ public class UpgradeUtil {
       ElasticsearchHighLevelRestClientBuilder.build(configurationService),
       indexNameService, new RequestOptionsProvider(customHeaderProvider.getPlugins(), configurationService)
     );
-    ElasticsearchMetadataService metadataService = new ElasticsearchMetadataService(objectMapper);
+    ElasticSearchMetadataService metadataService = new ElasticSearchMetadataService(objectMapper);
     return new UpgradeExecutionDependencies(
       configurationService,
       indexNameService,

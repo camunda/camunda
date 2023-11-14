@@ -20,8 +20,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.db.reader.EntitiesReader;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.IndexMappingCreator;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.db.schema.IndexMappingCreator;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.DashboardIndexES;
 import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndexES;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndexES;

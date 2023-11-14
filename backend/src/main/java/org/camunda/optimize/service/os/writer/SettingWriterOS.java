@@ -11,9 +11,9 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
-import org.camunda.optimize.service.db.writer.SettingsWriter;
 import org.camunda.optimize.service.db.schema.index.SettingsIndex;
-import org.camunda.optimize.service.os.OptimizeOpensearchClient;
+import org.camunda.optimize.service.db.writer.SettingsWriter;
+import org.camunda.optimize.service.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Script;
@@ -37,7 +37,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.SETTINGS_INDEX_N
 @Conditional(OpenSearchCondition.class)
 public class SettingWriterOS implements SettingsWriter {
 
-  private final OptimizeOpensearchClient osClient;
+  private final OptimizeOpenSearchClient osClient;
   private final ObjectMapper objectMapper;
 
   @Override
@@ -70,7 +70,7 @@ public class SettingWriterOS implements SettingsWriter {
       throw new BadRequestException("No settings can be updated, as no values are present!");
     }
 
-    final Script updateScript = OpensearchWriterUtil.createFieldUpdateScript(
+    final Script updateScript = OpenSearchWriterUtil.createFieldUpdateScript(
       fieldsToUpdate,
       settingsDto,
       objectMapper

@@ -20,8 +20,8 @@ import org.camunda.optimize.dto.optimize.rest.sorting.SortRequestDto;
 import org.camunda.optimize.service.db.reader.ExternalEventReader;
 import org.camunda.optimize.service.es.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.service.es.schema.IndexSettingsBuilderES;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
+import org.camunda.optimize.service.es.schema.ElasticSearchIndexSettingsBuilder;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
@@ -56,6 +56,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.query.sorting.SortOrder.DESC;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_GRAM;
 import static org.camunda.optimize.service.db.schema.index.events.EventIndex.EVENT_NAME;
 import static org.camunda.optimize.service.db.schema.index.events.EventIndex.GROUP;
 import static org.camunda.optimize.service.db.schema.index.events.EventIndex.INGESTION_TIMESTAMP;
@@ -172,7 +173,7 @@ public class ExternalEventReaderES implements ExternalEventReader {
     AbstractQueryBuilder<?> query;
     if (searchTerm == null) {
       query = matchAllQuery();
-    } else if (searchTerm.length() > IndexSettingsBuilderES.MAX_GRAM) {
+    } else if (searchTerm.length() > MAX_GRAM) {
       query = boolQuery().must(prefixQuery(GROUP, searchTerm));
     } else {
       query = boolQuery()
@@ -287,7 +288,7 @@ public class ExternalEventReaderES implements ExternalEventReader {
       return matchAllQuery();
     }
 
-    if (searchTerm.length() > IndexSettingsBuilderES.MAX_GRAM) {
+    if (searchTerm.length() > MAX_GRAM) {
       return boolQuery().minimumShouldMatch(1)
         .should(prefixQuery(GROUP, searchTerm))
         .should(prefixQuery(SOURCE, searchTerm))

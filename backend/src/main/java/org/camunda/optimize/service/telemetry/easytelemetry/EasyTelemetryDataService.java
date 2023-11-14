@@ -7,7 +7,6 @@ package org.camunda.optimize.service.telemetry.easytelemetry;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.camunda.bpm.licensecheck.InvalidLicenseException;
 import org.camunda.bpm.licensecheck.LicenseKey;
 import org.camunda.bpm.licensecheck.LicenseKeyImpl;
@@ -19,7 +18,7 @@ import org.camunda.optimize.dto.optimize.query.telemetry.ProductDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.TelemetryDataDto;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
+import org.camunda.optimize.service.es.schema.ElasticSearchMetadataService;
 import org.camunda.optimize.service.license.LicenseManager;
 import org.camunda.optimize.service.telemetry.TelemetryDataConstants;
 import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
@@ -35,7 +34,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.metadata.Version.RAW_VERSION;
 
@@ -51,7 +49,7 @@ public class EasyTelemetryDataService {
   public static final String CAWEMO_FEATURE = "cawemo";
   public static final Set<String> FEATURE_NAMES = Set.of(OPTIMIZE_FEATURE, CAMUNDA_BPM_FEATURE, CAWEMO_FEATURE);
 
-  private final ElasticsearchMetadataService elasticsearchMetadataService;
+  private final ElasticSearchMetadataService elasticsearchMetadataService;
   private final EngineContextFactory engineContextFactory;
   private final LicenseManager licenseManager;
   private final OptimizeElasticsearchClient esClient;
@@ -89,7 +87,7 @@ public class EasyTelemetryDataService {
     return engineContextFactory.getConfiguredEngines()
       .stream()
       .map(engineContext -> engineContext.getInstallationId().orElse(INFORMATION_UNAVAILABLE_STRING))
-      .collect(Collectors.toList());
+      .toList();
   }
 
   private DatabaseDto getDatabaseData() {
@@ -103,7 +101,7 @@ public class EasyTelemetryDataService {
   }
 
   private LicenseKeyDto getLicenseKeyData() {
-    final Optional<LicenseKey> licenseKey = getLicenseKeyImpl();
+    final Optional<LicenseKey> licenseKey = getLicenseKey();
     final SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd");
 
     final String customer = licenseKey.map(LicenseKey::getCustomerId).orElse(INFORMATION_UNAVAILABLE_STRING);
@@ -132,17 +130,16 @@ public class EasyTelemetryDataService {
       .build();
   }
 
-  private Optional<LicenseKey> getLicenseKeyImpl() {
-    Optional<LicenseKey> licenseKey = Optional.empty();
-    final String licenseKeyString = licenseManager.getOptimizeLicense();
-    if (StringUtils.isNotBlank(licenseKeyString)) {
-      try {
-        licenseKey = Optional.of(new LicenseKeyImpl(licenseManager.getOptimizeLicense()));
-      } catch (InvalidLicenseException e) {
-        log.info("Failed to retrieve LicenseKey information for telemetry data.");
-      }
-    }
-    return licenseKey;
+  private Optional<LicenseKey> getLicenseKey() {
+    return licenseManager.getOptimizeLicense()
+      .flatMap(licenseKeyString -> {
+        try {
+          return Optional.of(new LicenseKeyImpl(licenseKeyString));
+        } catch (InvalidLicenseException e) {
+          log.info("Failed to retrieve LicenseKey information for telemetry data.");
+          return Optional.empty();
+        }
+      });
   }
 
   private Map<String, String> mapPropertiesToFeaturesMap(final Map<String, String> properties) {

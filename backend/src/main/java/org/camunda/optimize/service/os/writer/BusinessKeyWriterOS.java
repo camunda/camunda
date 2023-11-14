@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
 import org.camunda.optimize.service.db.writer.BusinessKeyWriter;
-import org.camunda.optimize.service.os.OptimizeOpensearchClient;
+import org.camunda.optimize.service.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.springframework.context.annotation.Conditional;
@@ -29,7 +29,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.BUSINESS_KEY_IND
 public class BusinessKeyWriterOS implements BusinessKeyWriter {
 
   //todo test it
-  private final OptimizeOpensearchClient osClient;
+  private final OptimizeOpenSearchClient osClient;
 
   public List<ImportRequestDto> generateBusinessKeyImports(List<ProcessInstanceDto> processInstanceDtos) {
 //        List<BusinessKeyDto> businessKeysToSave = processInstanceDtos.stream()

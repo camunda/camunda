@@ -5,21 +5,16 @@
  */
 package org.camunda.optimize.service.es.schema.index.events;
 
-import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndexES;
-import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.db.schema.index.events.EventProcessDefinitionIndex;
+import org.elasticsearch.xcontent.XContentBuilder;
 
-public class EventProcessDefinitionIndexES extends ProcessDefinitionIndexES {
+import java.io.IOException;
 
-  public static final int VERSION = 5;
-
-  @Override
-  public String getIndexName() {
-    return DatabaseConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
-  }
+public class EventProcessDefinitionIndexES extends EventProcessDefinitionIndex<XContentBuilder> {
 
   @Override
-  public int getVersion() {
-    return VERSION;
+  public XContentBuilder addStaticSetting(String key, int value, XContentBuilder contentBuilder) throws IOException {
+    return contentBuilder.field(key, value);
   }
 
 }

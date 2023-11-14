@@ -11,9 +11,9 @@ import org.camunda.optimize.plugin.ElasticsearchCustomHeaderProvider;
 import org.camunda.optimize.plugin.PluginJarFileLoader;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
-import org.camunda.optimize.service.es.schema.IndexMappingCreator;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.es.schema.ElasticSearchMetadataService;
+import org.camunda.optimize.service.db.schema.IndexMappingCreator;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.RequestOptionsProvider;
 import org.camunda.optimize.service.es.schema.index.BusinessKeyIndexES;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndexES;
@@ -167,7 +167,7 @@ public class ReimportPreparation {
 
     final ObjectMapper objectMapper = new ObjectMapper();
     final ElasticSearchSchemaManager schemaManager = new ElasticSearchSchemaManager(
-      new ElasticsearchMetadataService(objectMapper),
+      new ElasticSearchMetadataService(objectMapper),
       configurationService,
       prefixAwareClient.getIndexNameService(),
       STATIC_INDICES_TO_DELETE

@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.db;
 
 import lombok.Getter;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 
 import java.io.IOException;
@@ -15,6 +15,8 @@ import java.util.Map;
 import java.util.Set;
 
 public abstract class DatabaseClient implements ConfigurationReloadable {
+
+  protected static final int DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY = 30;
 
   public abstract Map<String, Set<String>> getAliasesForIndex(final String indexName) throws IOException;
 

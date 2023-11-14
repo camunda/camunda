@@ -11,7 +11,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import org.camunda.optimize.service.db.writer.SharingWriter;
-import org.camunda.optimize.service.os.OptimizeOpensearchClient;
+import org.camunda.optimize.service.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -23,10 +23,10 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class SharingWriterOS implements SharingWriter {
 
-  private final OptimizeOpensearchClient osClient;
+  private final OptimizeOpenSearchClient osClient;
 
   public ReportShareRestDto saveReportShare(final ReportShareRestDto createSharingDto) {
-//    log.debug("Writing new report share to Opensearch");
+//    log.debug("Writing new report share to OpenSearch");
 //    String id = IdGenerator.getNextId();
 //    createSharingDto.setId(id);
 //
@@ -39,7 +39,7 @@ public class SharingWriterOS implements SharingWriter {
 //    IndexResponse indexResponse = osClient.index(indexRequestBuilder);
 //
 //    if (!indexResponse.result().equals(Result.Created)) {
-//      String message = "Could not write report share to Opensearch.";
+//      String message = "Could not write report share to OpenSearch.";
 //      log.error(message);
 //      throw new OptimizeRuntimeException(message);
 //    }
@@ -50,7 +50,7 @@ public class SharingWriterOS implements SharingWriter {
   }
 
   public DashboardShareRestDto saveDashboardShare(final DashboardShareRestDto createSharingDto) {
-//    log.debug("Writing new dashboard share to Opensearch");
+//    log.debug("Writing new dashboard share to OpenSearch");
 //    String id = IdGenerator.getNextId();
 //    createSharingDto.setId(id);
 //
@@ -63,7 +63,7 @@ public class SharingWriterOS implements SharingWriter {
 //    IndexResponse indexResponse = osClient.index(indexRequestBuilder);
 //
 //    if (!indexResponse.result().equals(Result.Created)) {
-//      String message = "Could not write dashboard share to Opensearch";
+//      String message = "Could not write dashboard share to OpenSearch";
 //      log.error(message);
 //      throw new OptimizeRuntimeException(message);
 //    }

@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.EngineImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.db.writer.ImportIndexWriter;
-import org.camunda.optimize.service.os.OptimizeOpensearchClient;
+import org.camunda.optimize.service.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
@@ -33,7 +33,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_
 @Conditional(OpenSearchCondition.class)
 public class ImportIndexWriterOS implements ImportIndexWriter {
 
-  private final OptimizeOpensearchClient osClient;
+  private final OptimizeOpenSearchClient osClient;
   private final ConfigurationService configurationService;
   private final DateTimeFormatter dateTimeFormatter;
 

@@ -6,7 +6,7 @@
 package org.camunda.optimize.upgrade.indices;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.xcontent.XContentBuilder;
 

@@ -20,7 +20,7 @@ import org.camunda.optimize.service.db.reader.ProcessVariableReader;
 import org.camunda.optimize.service.db.reader.VariableLabelReader;
 import org.camunda.optimize.service.es.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.IndexSettingsBuilderES;
+import org.camunda.optimize.service.es.schema.ElasticSearchIndexSettingsBuilder;
 import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -56,6 +56,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_GRAM;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.LOWERCASE_FIELD;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.N_GRAM_FIELD;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
@@ -322,7 +323,7 @@ public class ProcessVariableReaderES implements ProcessVariableReader {
     boolean valueFilterIsConfigured = valueFilter != null && !valueFilter.isEmpty();
     if (isStringVariable && valueFilterIsConfigured) {
       final String lowerCaseValue = valueFilter.toLowerCase();
-      QueryBuilder filter = (lowerCaseValue.length() > IndexSettingsBuilderES.MAX_GRAM)
+      QueryBuilder filter = (lowerCaseValue.length() > MAX_GRAM)
           /*
             using the slow wildcard query for uncommonly large filter strings (> 10 chars)
           */

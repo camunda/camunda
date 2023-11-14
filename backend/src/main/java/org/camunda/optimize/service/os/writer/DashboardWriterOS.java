@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
 import org.camunda.optimize.service.db.writer.DashboardWriter;
-import org.camunda.optimize.service.os.OptimizeOpensearchClient;
+import org.camunda.optimize.service.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.springframework.context.annotation.Conditional;
@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class DashboardWriterOS implements DashboardWriter {
 
-  private final OptimizeOpensearchClient osClient;
+  private final OptimizeOpenSearchClient osClient;
 
   public IdResponseDto createNewDashboard(@NonNull final String userId,
                                           @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto) {
@@ -35,7 +35,7 @@ public class DashboardWriterOS implements DashboardWriter {
   public IdResponseDto createNewDashboard(@NonNull final String userId,
                                           @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto,
                                           @NonNull final String id) {
-//        log.debug("Writing new dashboard to Opensearch");
+//        log.debug("Writing new dashboard to OpenSearch");
 //        dashboardDefinitionDto.setOwner(userId);
 //        dashboardDefinitionDto.setName(
 //                Optional.ofNullable(dashboardDefinitionDto.getName()).orElse(DEFAULT_DASHBOARD_NAME));
@@ -59,8 +59,8 @@ public class DashboardWriterOS implements DashboardWriter {
 //        IndexResponse indexResponse = osClient.index(request);
 //
 //        if (!indexResponse.result().equals(Result.Created)) {
-//            String message = "Could not write dashboard to Opensearch. " +
-//                    "Maybe the connection to Opensearch was lost?";
+//            String message = "Could not write dashboard to OpenSearch. " +
+//                    "Maybe the connection to OpenSearch was lost?";
 //            log.error(message);
 //            throw new OptimizeRuntimeException(message);
 //        }
@@ -71,7 +71,7 @@ public class DashboardWriterOS implements DashboardWriter {
   }
 
   public void updateDashboard(DashboardDefinitionUpdateDto dashboard, String id) {
-//        log.debug("Updating dashboard with id [{}] in Opensearch", id);
+//        log.debug("Updating dashboard with id [{}] in OpenSearch", id);
 //
 //        UpdateRequest.Builder<Void, DashboardDefinitionUpdateDto> request = new UpdateRequest.Builder<Void,
 //        DashboardDefinitionUpdateDto>()
@@ -107,7 +107,7 @@ public class DashboardWriterOS implements DashboardWriter {
 //        log.info("Removing {}}.", updateItem);
 //
 //        Script removeReportFromDashboardScript =
-//                OpensearchWriterUtil.createDefaultScriptWithSpecificDtoParams(
+//                OpenSearchWriterUtil.createDefaultScriptWithSpecificDtoParams(
 //                        "ctx._source.tiles.removeIf(report -> report.id.equals(params.idToRemove))",
 //                        Collections.singletonMap("idToRemove", JsonData.of(reportId)));
 //
@@ -133,7 +133,7 @@ public class DashboardWriterOS implements DashboardWriter {
 
 //        var query = QueryDSL.term(COLLECTION_ID, collectionId);
 //
-//        OpensearchWriterUtil.tryDeleteByQueryRequest(
+//        OpenSearchWriterUtil.tryDeleteByQueryRequest(
 //                osClient,
 //                query,
 //                String.format("dashboards of collection with ID [%s]", collectionId),
@@ -173,7 +173,7 @@ public class DashboardWriterOS implements DashboardWriter {
   public void deleteManagementDashboard() {
 //        var query = QueryDSL.term(MANAGEMENT_DASHBOARD, true);
 //
-//        OpensearchWriterUtil.tryDeleteByQueryRequest(
+//        OpenSearchWriterUtil.tryDeleteByQueryRequest(
 //                osClient,
 //                query,
 //                "Management Dashboard",

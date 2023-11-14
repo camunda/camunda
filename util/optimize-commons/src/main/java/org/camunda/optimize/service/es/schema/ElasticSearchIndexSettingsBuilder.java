@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.schema;
 
+import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
@@ -14,18 +15,19 @@ import org.elasticsearch.xcontent.XContentType;
 import java.io.IOException;
 
 import static org.camunda.optimize.service.db.DatabaseConstants.ANALYSIS_SETTING;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_NGRAM_DIFF;
+import static org.camunda.optimize.service.db.DatabaseConstants.IS_PRESENT_ANALYZER;
+import static org.camunda.optimize.service.db.DatabaseConstants.IS_PRESENT_FILTER;
 import static org.camunda.optimize.service.db.DatabaseConstants.LOWERCASE_NGRAM;
 import static org.camunda.optimize.service.db.DatabaseConstants.LOWERCASE_NORMALIZER;
 import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_NESTED_OBJECTS_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_GRAM;
+import static org.camunda.optimize.service.db.DatabaseConstants.NGRAM_TOKENIZER;
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_REPLICAS_SETTING;
 import static org.camunda.optimize.service.db.DatabaseConstants.REFRESH_INTERVAL_SETTING;
 import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
 
-public class IndexSettingsBuilderES {
-
-  public static final int MAX_GRAM = 10;
-  public static final String DYNAMIC_SETTING_MAX_NGRAM_DIFF = "max_ngram_diff";
-  public static final int DEFAULT_SHARD_NUMBER = 1;
+public class ElasticSearchIndexSettingsBuilder {
 
   public static Settings buildDynamicSettings(ConfigurationService configurationService) throws IOException {
     XContentBuilder builder = jsonBuilder();
@@ -69,7 +71,7 @@ public class IndexSettingsBuilderES {
   private static XContentBuilder addDynamicSettings(final ConfigurationService configurationService,
                                                     final XContentBuilder builder) throws IOException {
     return builder
-      .field(DYNAMIC_SETTING_MAX_NGRAM_DIFF, MAX_GRAM - 1)
+      .field(MAX_NGRAM_DIFF, MAX_GRAM - 1)
       .field(REFRESH_INTERVAL_SETTING, configurationService.getElasticSearchConfiguration().getRefreshInterval())
       .field(NUMBER_OF_REPLICAS_SETTING, configurationService.getElasticSearchConfiguration().getNumberOfReplicas())
       .field(MAPPING_NESTED_OBJECTS_LIMIT, configurationService.getElasticSearchConfiguration().getNestedDocumentsLimit());
@@ -82,16 +84,16 @@ public class IndexSettingsBuilderES {
       .startObject("analyzer")
         .startObject(LOWERCASE_NGRAM)
           .field("type", "custom")
-          .field("tokenizer", "ngram_tokenizer")
+          .field("tokenizer", NGRAM_TOKENIZER)
           .field("filter", "lowercase")
         .endObject()
         // this analyzer is supposed to be used for large text fields for which we only want to
         // query for whether they are empty or not, e.g. the xml of definitions
         // see https://app.camunda.com/jira/browse/OPT-2911
-        .startObject("is_present_analyzer")
+        .startObject(IS_PRESENT_ANALYZER)
           .field("type", "custom")
           .field("tokenizer", "keyword")
-          .field("filter", "is_present_filter")
+          .field("filter", IS_PRESENT_FILTER)
         .endObject()
       .endObject()
       .startObject("normalizer")
@@ -101,14 +103,14 @@ public class IndexSettingsBuilderES {
         .endObject()
       .endObject()
       .startObject("tokenizer")
-        .startObject("ngram_tokenizer")
+        .startObject(NGRAM_TOKENIZER)
           .field("type", "ngram")
           .field("min_gram", 1)
           .field("max_gram", MAX_GRAM)
         .endObject()
       .endObject()
       .startObject("filter")
-        .startObject("is_present_filter")
+        .startObject(IS_PRESENT_FILTER)
           .field("type", "truncate")
           .field("length", "1")
         .endObject()

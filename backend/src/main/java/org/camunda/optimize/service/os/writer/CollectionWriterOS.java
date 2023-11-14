@@ -12,14 +12,20 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
-import org.camunda.optimize.dto.optimize.query.collection.*;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateRequestDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
 import org.camunda.optimize.service.db.writer.CollectionWriter;
-import org.camunda.optimize.service.os.OptimizeOpensearchClient;
+import org.camunda.optimize.service.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.Script;
-import org.opensearch.client.opensearch.core.*;
+import org.opensearch.client.opensearch.core.UpdateResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -28,7 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.os.writer.OpensearchWriterUtil.createDefaultScriptWithPrimitiveParams;
+import static org.camunda.optimize.service.os.writer.OpenSearchWriterUtil.createDefaultScriptWithPrimitiveParams;
 
 @AllArgsConstructor
 @Component
@@ -37,7 +43,7 @@ import static org.camunda.optimize.service.os.writer.OpensearchWriterUtil.create
 public class CollectionWriterOS implements CollectionWriter {
   public static final String DEFAULT_COLLECTION_NAME = "New Collection";
 
-  private final OptimizeOpensearchClient osClient;
+  private final OptimizeOpenSearchClient osClient;
 
   private final DateTimeFormatter formatter;
 
@@ -53,7 +59,7 @@ public class CollectionWriterOS implements CollectionWriter {
                                                       @NonNull PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto,
                                                       @NonNull String id,
                                                       boolean automaticallyCreated) {
-//        log.debug("Writing new collection to Opensearch");
+//        log.debug("Writing new collection to OpenSearch");
 //        CollectionDefinitionDto collectionDefinitionDto = new CollectionDefinitionDto();
 //        collectionDefinitionDto.setId(id);
 //        collectionDefinitionDto.setCreated(LocalDateUtil.getCurrentDateTime());
@@ -88,7 +94,7 @@ public class CollectionWriterOS implements CollectionWriter {
 //        IndexResponse indexResponse = osClient.index(request);
 //
 //        if (!indexResponse.result().equals(Result.Created)) {
-//            String message = "Could not write collection to Opensearch. ";
+//            String message = "Could not write collection to OpenSearch. ";
 //            log.error(message);
 //            throw new OptimizeRuntimeException(message);
 //        }
@@ -256,7 +262,7 @@ public class CollectionWriterOS implements CollectionWriter {
 //        params.put("lastModifier", JsonData.of(userId));
 //        params.put("lastModified", JsonData.of(formatter.format(LocalDateUtil.getCurrentDateTime())));
 //
-//        final Script updateEntityScript = OpensearchWriterUtil.createDefaultScriptWithSpecificDtoParams(
+//        final Script updateEntityScript = OpenSearchWriterUtil.createDefaultScriptWithSpecificDtoParams(
 //                "boolean removed = ctx._source.data.scope.removeIf(scope -> scope.id.equals(params.id));" +
 //                        "if (removed) { " +
 //                        "  ctx._source.lastModifier = params.lastModifier;" +
@@ -379,7 +385,7 @@ public class CollectionWriterOS implements CollectionWriter {
 
   @Override
   public void addRoleToCollection(String collectionId, List<CollectionRoleRequestDto> rolesToAdd, String userId) {
-//        log.debug("Adding roles {} to collection with id [{}] in Opensearch.", rolesToAdd, collectionId);
+//        log.debug("Adding roles {} to collection with id [{}] in OpenSearch.", rolesToAdd, collectionId);
 //
 //        final Map<String, JsonData> params = new HashMap<>();
 //        params.put("rolesToAdd", JsonData.of(rolesToAdd));
@@ -431,7 +437,7 @@ public class CollectionWriterOS implements CollectionWriter {
                                      final String roleEntryId,
                                      final CollectionRoleUpdateRequestDto roleUpdateDto,
                                      final String userId) {
-//        log.debug("Updating the role [{}] in collection with id [{}] in Opensearch.", roleEntryId, collectionId);
+//        log.debug("Updating the role [{}] in collection with id [{}] in OpenSearch.", roleEntryId, collectionId);
 //
 //        //  try {
 //        final Map<String, JsonData> params = constructParamsForRoleUpdateScript(roleEntryId, userId);
@@ -513,7 +519,7 @@ public class CollectionWriterOS implements CollectionWriter {
 
   private void removeRoleFromCollection(final String collectionId, final String roleEntryId,
                                         final Map<String, JsonData> params) {
-//        log.debug("Deleting the role [{}] in collection with id [{}] in Opensearch.", roleEntryId, collectionId);
+//        log.debug("Deleting the role [{}] in collection with id [{}] in OpenSearch.", roleEntryId, collectionId);
 //
 //        final Script addEntityScript = createDefaultScriptWithSpecificDtoParams(
 //                // @formatter:off
@@ -546,7 +552,7 @@ public class CollectionWriterOS implements CollectionWriter {
 
   private void removeRoleFromCollectionUnlessIsLastManager(final String collectionId, final String roleEntryId,
                                                            final Map<String, JsonData> params) {
-//        log.debug("Deleting the role [{}] in collection with id [{}] in Opensearch.", roleEntryId, collectionId);
+//        log.debug("Deleting the role [{}] in collection with id [{}] in OpenSearch.", roleEntryId, collectionId);
 //        //try {
 //        final Script addEntityScript = createDefaultScriptWithPrimitiveParams(
 //                // @formatter:off

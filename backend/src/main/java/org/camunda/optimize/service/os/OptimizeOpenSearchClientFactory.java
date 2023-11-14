@@ -25,10 +25,11 @@ import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.ssl.TrustStrategy;
-import org.camunda.optimize.plugin.OpensearchCustomHeaderProvider;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.plugin.OpenSearchCustomHeaderProvider;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.RequestOptionsProvider;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.os.schema.OpenSearchSchemaManager;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
@@ -59,17 +60,16 @@ import java.time.Duration;
 
 import static org.camunda.optimize.service.util.DatabaseVersionChecker.checkOSVersionSupport;
 
-
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Conditional(OpenSearchCondition.class)
 @Slf4j
-public class OptimizeOpensearchClientFactory {
+public class OptimizeOpenSearchClientFactory {
 
-  // TODO add the Schema manager when implementing OPT-7229
-  public static OptimizeOpensearchClient create(final ConfigurationService configurationService,
-                                                final OptimizeIndexNameService optimizeIndexNameService,
-                                                final OpensearchCustomHeaderProvider opensearchCustomHeaderProvider,
-                                                final BackoffCalculator backoffCalculator) throws IOException {
+  public static OptimizeOpenSearchClient create(final ConfigurationService configurationService,
+                                                   final OptimizeIndexNameService optimizeIndexNameService,
+                                                   final OpenSearchSchemaManager openSearchSchemaManager,
+                                                   final OpenSearchCustomHeaderProvider opensearchCustomHeaderProvider,
+                                                   final BackoffCalculator backoffCalculator) throws IOException {
 
     log.info("Creating OpenSearch connection...");
     final RequestOptionsProvider requestOptionsProvider =
@@ -95,32 +95,37 @@ public class OptimizeOpensearchClientFactory {
 
     final OpenSearchTransport transport = builder.build();
     final OpenSearchClient openSearchClient = new OpenSearchClient(transport);
-    waitForOpensearch(openSearchClient, backoffCalculator, requestOptionsProvider.getRequestOptions());
+    waitForOpenSearch(openSearchClient, backoffCalculator, requestOptionsProvider.getRequestOptions());
     log.info("OpenSearch cluster successfully started");
 
-    return new OptimizeOpensearchClient(openSearchClient, optimizeIndexNameService, requestOptionsProvider);
+    OptimizeOpenSearchClient osClient =  new OptimizeOpenSearchClient(openSearchClient, optimizeIndexNameService,
+                                                                      requestOptionsProvider);
+    // openSearchSchemaManager.validateExistingSchemaVersion(prefixedClient); // TODO will be implemented with OPT-7229
+    openSearchSchemaManager.initializeSchema(osClient);
+
+    return osClient;
   }
 
-  private static void waitForOpensearch(final OpenSearchClient osClient,
-                                        final BackoffCalculator backoffCalculator,
-                                        final RequestOptions requestOptions) throws IOException {
+  private static void waitForOpenSearch(final OpenSearchClient osClient,
+                                       final BackoffCalculator backoffCalculator,
+                                       final RequestOptions requestOptions) throws IOException {
     boolean isConnected = false;
     while (!isConnected) {
       try {
         isConnected = getNumberOfClusterNodes(osClient) > 0;
       } catch (final Exception e) {
         log.error(
-          "Can't connect to any Opensearch node {}. Please check the connection!",
+          "Can't connect to any OpenSearch node {}. Please check the connection!",
           osClient.nodes(), e
         );
       } finally {
         if (!isConnected) {
           long sleepTime = backoffCalculator.calculateSleepTime();
-          log.info("No Opensearch nodes available, waiting [{}] ms to retry connecting", sleepTime);
+          log.info("No OpenSearch nodes available, waiting [{}] ms to retry connecting", sleepTime);
           try {
             Thread.sleep(sleepTime);
           } catch (final InterruptedException e) {
-            log.warn("Got interrupted while waiting to retry connecting to Opensearch.", e);
+            log.warn("Got interrupted while waiting to retry connecting to OpenSearch.", e);
             Thread.currentThread().interrupt();
           }
         }
@@ -253,7 +258,7 @@ public class OptimizeOpensearchClientFactory {
   private static HttpAsyncClientBuilder configureHttpClient(HttpAsyncClientBuilder httpAsyncClientBuilder,
                                                             ConfigurationService configurationService) {
     setupAuthentication(httpAsyncClientBuilder, configurationService);
-    if (configurationService.getOpenSearchConfiguration().getSecuritySSLEnabled()) {
+    if (Boolean.TRUE.equals(configurationService.getOpenSearchConfiguration().getSecuritySSLEnabled())) {
       setupSSLContext(httpAsyncClientBuilder, configurationService);
     }
     return httpAsyncClientBuilder;

@@ -49,7 +49,7 @@ public class DatabaseVersionCheckerTest {
   @ParameterizedTest
   @MethodSource("validOSVersions")
   public void testValidOSVersions(final String version) {
-    final boolean isSupported = DatabaseVersionChecker.isCurrentOpensearchVersionSupported(version);
+    final boolean isSupported = DatabaseVersionChecker.isCurrentOpenSearchVersionSupported(version);
     assertThat(isSupported).isTrue();
   }
 
@@ -63,7 +63,7 @@ public class DatabaseVersionCheckerTest {
   @ParameterizedTest
   @MethodSource("invalidOSVersions")
   public void testInvalidOSVersions(final String version) {
-    final boolean isSupported = DatabaseVersionChecker.isCurrentOpensearchVersionSupported(version);
+    final boolean isSupported = DatabaseVersionChecker.isCurrentOpenSearchVersionSupported(version);
     assertThat(isSupported).isFalse();
   }
 
