@@ -26,7 +26,7 @@ public class JobUpdateTimeoutProcessor implements TypedRecordProcessor<JobRecord
       "Expected to update job deadline with key '%d', but no such job was found";
 
   public static final String NO_DEADLINE_FOUND_MESSAGE =
-      "Expected to find a job with key '%d' and deadline '%d', but no such job was found";
+      "Expected to update the timeout of job with key '%d', but it is not active";
 
   private final JobState jobState;
   private final StateWriter stateWriter;
