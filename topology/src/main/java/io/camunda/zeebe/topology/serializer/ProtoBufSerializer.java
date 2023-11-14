@@ -24,6 +24,7 @@ import io.camunda.zeebe.topology.protocol.Requests.ErrorCode;
 import io.camunda.zeebe.topology.protocol.Requests.Response;
 import io.camunda.zeebe.topology.protocol.Requests.TopologyChangeResponse.Builder;
 import io.camunda.zeebe.topology.protocol.Topology;
+import io.camunda.zeebe.topology.protocol.Topology.ChangeStatus;
 import io.camunda.zeebe.topology.protocol.Topology.CompletedChange;
 import io.camunda.zeebe.topology.protocol.Topology.MemberState;
 import io.camunda.zeebe.topology.state.ClusterChangePlan;
@@ -599,7 +600,7 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
       case IN_PROGRESS -> Topology.ChangeStatus.IN_PROGRESS;
       case COMPLETED -> Topology.ChangeStatus.COMPLETED;
       case FAILED -> Topology.ChangeStatus.FAILED;
-      case CANCELLED -> Topology.ChangeStatus.FAILED; // TODO: Define cancelled status
+      case CANCELLED -> ChangeStatus.CANCELLED;
     };
   }
 
@@ -608,6 +609,7 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
       case IN_PROGRESS -> ClusterChangePlan.Status.IN_PROGRESS;
       case COMPLETED -> ClusterChangePlan.Status.COMPLETED;
       case FAILED -> ClusterChangePlan.Status.FAILED;
+      case CANCELLED -> ClusterChangePlan.Status.CANCELLED;
       default -> throw new IllegalStateException("Unknown status: " + status);
     };
   }

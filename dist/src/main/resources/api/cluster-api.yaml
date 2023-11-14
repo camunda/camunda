@@ -243,6 +243,7 @@ components:
             - IN_PROGRESS
             - COMPLETED
             - FAILED
+            - CANCELLED
         startedAt:
           type: string
           format: date-time
