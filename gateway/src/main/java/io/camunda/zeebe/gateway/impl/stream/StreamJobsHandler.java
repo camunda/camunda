@@ -17,6 +17,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.transport.stream.api.ClientStreamBlockedException;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.transport.stream.api.ClientStreamId;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
@@ -115,40 +116,60 @@ public class StreamJobsHandler extends Actor {
 
   @VisibleForTesting("Allow unit testing behavior")
   static final class JobStreamConsumer implements ClientStreamConsumer {
-    private final StreamObserver<ActivatedJob> responseObserver;
+    private final ServerCallStreamObserver<ActivatedJob> responseObserver;
     private final ConcurrencyControl executor;
 
     @VisibleForTesting("Allow unit testing behavior")
     JobStreamConsumer(
-        final StreamObserver<ActivatedJob> responseObserver, final ConcurrencyControl executor) {
+        final ServerCallStreamObserver<ActivatedJob> responseObserver,
+        final ConcurrencyControl executor) {
       this.responseObserver = responseObserver;
       this.executor = executor;
     }
 
     @Override
     public ActorFuture<Void> push(final DirectBuffer payload) {
+      final var result = new CompletableActorFuture<Void>();
       try {
-        return executor.call(
-            () -> {
-              handlePushedJob(payload);
-              return null;
-            });
+        executor.run(() -> handlePushedJob(payload, result));
       } catch (final Exception e) {
-        // in case the actor is closed
+        // only possible failure here is that the actor is not running, so close the stream
+        // preemptively
         responseObserver.onError(e);
-        return CompletableActorFuture.completedExceptionally(e);
+        result.completeExceptionally(e);
       }
+
+      return result;
     }
 
-    private void handlePushedJob(final DirectBuffer payload) {
-      final ActivatedJobImpl deserializedJob = new ActivatedJobImpl();
-      deserializedJob.wrap(payload);
-      final ActivatedJob activatedJob = ResponseMapper.toActivatedJob(deserializedJob);
+    private void handlePushedJob(
+        final DirectBuffer payload, final CompletableActorFuture<Void> result) {
+      final var deserializedJob = new ActivatedJobImpl();
+      final ActivatedJob activatedJob;
+
+      if (!responseObserver.isReady()) {
+        result.completeExceptionally(
+            new ClientStreamBlockedException(
+                "Expected to push payload (size = '%d') to stream, but stream is blocked"
+                    .formatted(payload.capacity())));
+        return;
+      }
+
+      // fail push on serialization errors, but no need to close the client stream
+      try {
+        deserializedJob.wrap(payload);
+        activatedJob = ResponseMapper.toActivatedJob(deserializedJob);
+      } catch (final Exception e) {
+        result.completeExceptionally(e);
+        return;
+      }
+
       try {
         responseObserver.onNext(activatedJob);
+        result.complete(null);
       } catch (final Exception e) {
         responseObserver.onError(e);
-        throw e;
+        result.completeExceptionally(e);
       }
     }
   }
