@@ -19,19 +19,23 @@ import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {ListItem, Modal} from './styled';
+import {processStatisticsStore as processStatisticsMigrationSourceStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
 
 const MigrateAction: React.FC = observer(() => {
   const location = useLocation();
   const {version, process, tenant} = getProcessInstanceFilters(location.search);
+  const {
+    selectedProcessInstanceIds,
+    state: {isAllChecked},
+  } = processInstancesSelectionStore;
 
   const isVersionSelected = version !== undefined && version !== 'all';
   const hasSelectedFinishedInstances =
     processInstancesSelectionStore.state.selectionMode === 'ALL' ||
     processInstancesStore.state.processInstances.some((processInstance) => {
       return (
-        processInstancesSelectionStore.selectedProcessInstanceIds.includes(
-          processInstance.id,
-        ) && ['ACTIVE', 'INCIDENT'].includes(processInstance.state)
+        selectedProcessInstanceIds.includes(processInstance.id) &&
+        ['ACTIVE', 'INCIDENT'].includes(processInstance.state)
       );
     });
 
@@ -80,6 +84,10 @@ const MigrateAction: React.FC = observer(() => {
               processXmlMigrationSourceStore.setProcessXml(
                 processXmlStore.state.xml,
               );
+              processStatisticsMigrationSourceStore.fetchProcessStatistics({
+                ids: isAllChecked ? [] : selectedProcessInstanceIds,
+                excludeIds: isAllChecked ? selectedProcessInstanceIds : [],
+              });
               processInstanceMigrationStore.enable();
             }}
             onRequestClose={() => setOpen(false)}

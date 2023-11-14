@@ -22,4 +22,22 @@ const mockProcessStatistics = [
   },
 ];
 
-export {mockProcessStatistics};
+const mockProcessStatisticsWithFinished = [
+  ...mockProcessStatistics,
+  {
+    activityId: 'serviceTask',
+    active: 0,
+    canceled: 0,
+    incidents: 0,
+    completed: 10,
+  },
+  {
+    activityId: 'endEvent2',
+    active: 0,
+    canceled: 4,
+    incidents: 0,
+    completed: 0,
+  },
+];
+
+export {mockProcessStatistics, mockProcessStatisticsWithFinished};

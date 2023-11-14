@@ -30,4 +30,11 @@ const DataTable = styled(BaseDataTable)`
   }
 `;
 
-export {BottomSection, LeftColumn, DataTable};
+const ErrorMessageContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+`;
+
+export {BottomSection, LeftColumn, DataTable, ErrorMessageContainer};

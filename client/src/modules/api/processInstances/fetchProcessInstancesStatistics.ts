@@ -6,6 +6,7 @@
  */
 
 import {requestAndParse} from 'modules/request';
+import {RequestFilters} from 'modules/utils/filter';
 
 type ProcessInstancesStatisticsDto = {
   activityId: string;
@@ -15,7 +16,13 @@ type ProcessInstancesStatisticsDto = {
   completed: number;
 };
 
-const fetchProcessInstancesStatistics = async (payload: any) => {
+type ProcessInstancesStatisticsRequest = RequestFilters & {
+  excludeIds?: string[];
+};
+
+const fetchProcessInstancesStatistics = async (
+  payload: ProcessInstancesStatisticsRequest,
+) => {
   return requestAndParse<ProcessInstancesStatisticsDto[]>({
     url: '/api/process-instances/statistics',
     method: 'POST',
@@ -24,4 +31,4 @@ const fetchProcessInstancesStatistics = async (payload: any) => {
 };
 
 export {fetchProcessInstancesStatistics};
-export type {ProcessInstancesStatisticsDto};
+export type {ProcessInstancesStatisticsDto, ProcessInstancesStatisticsRequest};

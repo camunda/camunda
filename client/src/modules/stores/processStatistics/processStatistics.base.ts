@@ -6,12 +6,12 @@
  */
 
 import {makeObservable, action, observable, override, computed} from 'mobx';
-import {
-  fetchProcessInstancesStatistics,
-  ProcessInstancesStatisticsDto,
-} from 'modules/api/processInstances/fetchProcessInstancesStatistics';
-import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {logger} from 'modules/logger';
+import {
+  ProcessInstancesStatisticsDto,
+  ProcessInstancesStatisticsRequest,
+  fetchProcessInstancesStatistics,
+} from 'modules/api/processInstances/fetchProcessInstancesStatistics';
 import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
 import {
   ACTIVE_BADGE,
@@ -19,13 +19,19 @@ import {
   COMPLETED_BADGE,
   INCIDENTS_BADGE,
 } from 'modules/bpmn-js/badgePositions';
+import {
+  RequestFilters,
+  getProcessInstancesRequestFilters,
+} from 'modules/utils/filter';
 
 type State = {
   statistics: ProcessInstancesStatisticsDto[];
+  status: 'initial' | 'fetching' | 'fetched' | 'error';
 };
 
 const DEFAULT_STATE: State = {
   statistics: [],
+  status: 'initial',
 };
 
 const overlayPositions = {
@@ -42,42 +48,53 @@ class ProcessStatistics extends NetworkReconnectionHandler {
     makeObservable(this, {
       state: observable,
       reset: override,
-      startFetching: action,
-      handleFetchStatisticsSuccess: action,
+      statistics: computed,
+      setStatistics: action,
       flowNodeStates: computed,
       resetState: action,
       overlaysData: computed,
     });
   }
 
-  fetchProcessStatistics = this.retryOnConnectionLost(async () => {
-    this.startFetching();
-    const response = await fetchProcessInstancesStatistics(
-      getProcessInstancesRequestFilters(),
-    );
-
-    if (response.isSuccess) {
-      this.handleFetchStatisticsSuccess(response.data);
-    } else {
-      this.handleFetchError();
-    }
-  });
-
   startFetching = () => {
+    this.state.status = 'fetching';
     this.state.statistics = [];
   };
 
-  handleFetchStatisticsSuccess = (
-    statistics: ProcessInstancesStatisticsDto[],
-  ) => {
-    this.state.statistics = statistics;
-  };
+  fetchProcessStatistics: (
+    requestFilters?: ProcessInstancesStatisticsRequest,
+  ) => Promise<void> = this.retryOnConnectionLost(
+    async (requestFilters?: RequestFilters) => {
+      this.startFetching();
+      const response = await fetchProcessInstancesStatistics({
+        ...getProcessInstancesRequestFilters(),
+        ...requestFilters,
+      });
+
+      if (response.isSuccess) {
+        this.setStatistics(response.data);
+        this.state.status = 'fetched';
+      } else {
+        this.state.status = 'error';
+        this.handleFetchError();
+      }
+    },
+  );
 
   handleFetchError = (error?: unknown) => {
     logger.error('Failed to fetch diagram statistics');
     if (error !== undefined) {
+      this.state.status = 'error';
       logger.error(error);
     }
+  };
+
+  get statistics() {
+    return this.state.statistics;
+  }
+
+  setStatistics = (statistics: ProcessInstancesStatisticsDto[]) => {
+    this.state.statistics = statistics;
   };
 
   get overlaysData() {
@@ -90,7 +107,7 @@ class ProcessStatistics extends NetworkReconnectionHandler {
   }
 
   get flowNodeStates() {
-    return this.state.statistics.flatMap((statistics) => {
+    return this.statistics.flatMap((statistics) => {
       const types = ['active', 'incidents', 'canceled', 'completed'] as const;
       return types.reduce<
         {

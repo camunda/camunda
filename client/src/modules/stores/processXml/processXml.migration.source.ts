@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {action, makeObservable} from 'mobx';
+import {action, makeObservable, override} from 'mobx';
 import {ProcessXmlBase} from './processXml.base';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 
@@ -15,7 +15,18 @@ class ProcessesXml extends ProcessXmlBase {
 
     makeObservable(this, {
       setProcessXml: action,
+      selectableFlowNodes: override,
     });
+  }
+
+  get selectableFlowNodes() {
+    return super.selectableFlowNodes
+      .filter((flowNode) => {
+        return flowNode.$type === 'bpmn:ServiceTask';
+      })
+      .map((flowNode) => {
+        return {...flowNode, name: flowNode.name ?? flowNode.id};
+      });
   }
 
   setProcessXml = async (xml: string | null) => {

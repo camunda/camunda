@@ -8,8 +8,16 @@
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {processInstancesStore} from '../processInstances';
 import {ProcessStatistics as ProcessStatisticsBase} from './processStatistics.base';
+import {action, makeObservable} from 'mobx';
 
 class ProcessStatistics extends ProcessStatisticsBase {
+  constructor() {
+    super();
+    makeObservable(this, {
+      startFetching: action,
+    });
+  }
+
   init = () => {
     processInstancesStore.addCompletedOperationsHandler(() => {
       const filters = getProcessInstancesRequestFilters();
