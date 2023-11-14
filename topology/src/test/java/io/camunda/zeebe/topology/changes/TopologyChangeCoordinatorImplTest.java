@@ -49,8 +49,7 @@ final class TopologyChangeCoordinatorImplTest {
     // given
     clusterTopologyManager.setClusterTopology(ClusterTopology.init());
     final var coordinator =
-        new TopologyChangeCoordinatorImpl(
-            clusterTopologyManager, syncRequester, new TestConcurrencyControl());
+        new TopologyChangeCoordinatorImpl(clusterTopologyManager, new TestConcurrencyControl());
 
     // when
 
@@ -79,8 +78,7 @@ final class TopologyChangeCoordinatorImplTest {
             .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
             .updateMember(MemberId.from("1"), m -> m.addPartition(1, PartitionState.active(1))));
     final var coordinator =
-        new TopologyChangeCoordinatorImpl(
-            clusterTopologyManager, syncRequester, new TestConcurrencyControl());
+        new TopologyChangeCoordinatorImpl(clusterTopologyManager, new TestConcurrencyControl());
 
     // when
 
@@ -108,8 +106,7 @@ final class TopologyChangeCoordinatorImplTest {
         ClusterTopology.init()
             .startTopologyChange(List.of(new PartitionLeaveOperation(MemberId.from("1"), 1))));
     final var coordinator =
-        new TopologyChangeCoordinatorImpl(
-            clusterTopologyManager, syncRequester, new TestConcurrencyControl());
+        new TopologyChangeCoordinatorImpl(clusterTopologyManager, new TestConcurrencyControl());
 
     // when
     final var applyFuture =
@@ -138,8 +135,7 @@ final class TopologyChangeCoordinatorImplTest {
         List.of(new PartitionJoinOperation(MemberId.from("1"), 1, 1));
 
     final var coordinator =
-        new TopologyChangeCoordinatorImpl(
-            clusterTopologyManager, syncRequester, new TestConcurrencyControl());
+        new TopologyChangeCoordinatorImpl(clusterTopologyManager, new TestConcurrencyControl());
 
     // when
     final var applyFuture = coordinator.applyOperations(getTransformer(operations));
@@ -166,8 +162,7 @@ final class TopologyChangeCoordinatorImplTest {
         List.of(new PartitionJoinOperation(MemberId.from("1"), 1, 1));
 
     final var coordinator =
-        new TopologyChangeCoordinatorImpl(
-            clusterTopologyManager, syncRequester, new TestConcurrencyControl());
+        new TopologyChangeCoordinatorImpl(clusterTopologyManager, new TestConcurrencyControl());
 
     // when
     final var simulationResult = coordinator.simulateOperations(getTransformer(operations));
@@ -184,8 +179,7 @@ final class TopologyChangeCoordinatorImplTest {
     // given
     clusterTopologyManager.setClusterTopology(ClusterTopology.init());
     final var coordinator =
-        new TopologyChangeCoordinatorImpl(
-            clusterTopologyManager, syncRequester, new TestConcurrencyControl());
+        new TopologyChangeCoordinatorImpl(clusterTopologyManager, new TestConcurrencyControl());
 
     // when
 
@@ -217,8 +211,7 @@ final class TopologyChangeCoordinatorImplTest {
         List.of(new PartitionJoinOperation(MemberId.from("1"), 1, 1));
 
     final var coordinator =
-        new TopologyChangeCoordinatorImpl(
-            clusterTopologyManager, syncRequester, new TestConcurrencyControl());
+        new TopologyChangeCoordinatorImpl(clusterTopologyManager, new TestConcurrencyControl());
     final var applyResult = coordinator.applyOperations(getTransformer(operations)).join();
 
     // when
@@ -254,8 +247,7 @@ final class TopologyChangeCoordinatorImplTest {
         List.of(new PartitionJoinOperation(MemberId.from("1"), 1, 1));
 
     final var coordinator =
-        new TopologyChangeCoordinatorImpl(
-            clusterTopologyManager, syncRequester, new TestConcurrencyControl());
+        new TopologyChangeCoordinatorImpl(clusterTopologyManager, new TestConcurrencyControl());
     final var applyResult = coordinator.applyOperations(getTransformer(operations)).join();
 
     // when

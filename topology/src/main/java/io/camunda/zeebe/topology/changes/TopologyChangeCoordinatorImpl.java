@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.topology.changes;
 
-import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.topology.ClusterTopologyManager;
@@ -21,7 +20,6 @@ import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.CompletedChange;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import java.util.List;
-import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,14 +27,10 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
   private static final Logger LOG = LoggerFactory.getLogger(TopologyChangeCoordinatorImpl.class);
   private final ClusterTopologyManager clusterTopologyManager;
   private final ConcurrencyControl executor;
-  private final Function<MemberId, ActorFuture<ClusterTopology>> syncRequester;
 
   public TopologyChangeCoordinatorImpl(
-      final ClusterTopologyManager clusterTopologyManager,
-      final Function<MemberId, ActorFuture<ClusterTopology>> syncRequester,
-      final ConcurrencyControl executor) {
+      final ClusterTopologyManager clusterTopologyManager, final ConcurrencyControl executor) {
     this.clusterTopologyManager = clusterTopologyManager;
-    this.syncRequester = syncRequester;
     this.executor = executor;
   }
 
