@@ -26,6 +26,7 @@ message LeavePartitionRequest {
 
 message ScaleRequest {
   repeated string memberIds = 1;
+  bool dryRun = 2;
 }
 
 message ReassignAllPartitionsRequest {

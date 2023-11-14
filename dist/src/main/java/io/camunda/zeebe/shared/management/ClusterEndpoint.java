@@ -57,6 +57,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Component
 @RestControllerEndpoint(id = "cluster")
@@ -87,7 +88,13 @@ public class ClusterEndpoint {
 
   @PostMapping(path = "/{resource}/{id}")
   public ResponseEntity<?> add(
-      @PathVariable("resource") final Resource resource, @PathVariable final int id) {
+      @PathVariable("resource") final Resource resource,
+      @PathVariable final int id,
+      @RequestParam(defaultValue = "false") final boolean dryRun) {
+    if (dryRun) {
+      return ResponseEntity.status(501).body("This operation does not support dry run");
+    }
+
     return switch (resource) {
       case brokers -> mapOperationResponse(
           requestSender
@@ -99,7 +106,12 @@ public class ClusterEndpoint {
 
   @DeleteMapping(path = "/{resource}/{id}")
   public ResponseEntity<?> remove(
-      @PathVariable("resource") final Resource resource, @PathVariable final int id) {
+      @PathVariable("resource") final Resource resource,
+      @PathVariable final int id,
+      @RequestParam(defaultValue = "false") final boolean dryRun) {
+    if (dryRun) {
+      return ResponseEntity.status(501).body("This operation does not support dry run");
+    }
     return switch (resource) {
       case brokers -> mapOperationResponse(
           requestSender
@@ -111,15 +123,17 @@ public class ClusterEndpoint {
 
   @PostMapping(path = "/{resource}", consumes = "application/json")
   public ResponseEntity<?> scale(
-      @PathVariable("resource") final Resource resource, @RequestBody final List<Integer> ids) {
+      @PathVariable("resource") final Resource resource,
+      @RequestBody final List<Integer> ids,
+      @RequestParam(defaultValue = "false") final boolean dryRun) {
     return switch (resource) {
-      case brokers -> scaleBrokers(ids);
+      case brokers -> scaleBrokers(ids, dryRun);
       case partitions -> new ResponseEntity<>(
           "Scaling partitions is not supported", HttpStatusCode.valueOf(501));
     };
   }
 
-  private ResponseEntity<?> scaleBrokers(final List<Integer> ids) {
+  private ResponseEntity<?> scaleBrokers(final List<Integer> ids, final boolean dryRun) {
     try {
       final var response =
           requestSender
@@ -128,7 +142,8 @@ public class ClusterEndpoint {
                       ids.stream()
                           .map(String::valueOf)
                           .map(MemberId::from)
-                          .collect(Collectors.toSet())))
+                          .collect(Collectors.toSet()),
+                      dryRun))
               .join();
       return mapOperationResponse(response);
     } catch (final Exception error) {
@@ -144,7 +159,12 @@ public class ClusterEndpoint {
       @PathVariable final int resourceId,
       @PathVariable("subResource") final Resource subResource,
       @PathVariable final int subResourceId,
-      @RequestBody final PartitionAddRequest request) {
+      @RequestBody final PartitionAddRequest request,
+      @RequestParam(defaultValue = "false") final boolean dryRun) {
+    if (dryRun) {
+      return ResponseEntity.status(501).body("This operation does not support dry run");
+    }
+
     final int priority = request.priority();
     return switch (resource) {
       case brokers -> switch (subResource) {
@@ -177,7 +197,12 @@ public class ClusterEndpoint {
       @PathVariable("resource") final Resource resource,
       @PathVariable final int resourceId,
       @PathVariable("subResource") final Resource subResource,
-      @PathVariable final int subResourceId) {
+      @PathVariable final int subResourceId,
+      @RequestParam(defaultValue = "false") final boolean dryRun) {
+    if (dryRun) {
+      return ResponseEntity.status(501).body("This operation does not support dry run");
+    }
+
     return switch (resource) {
       case brokers -> switch (subResource) {
         case partitions -> mapOperationResponse(

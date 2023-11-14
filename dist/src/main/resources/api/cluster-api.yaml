@@ -64,6 +64,15 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ScaleRequest"
+      parameters:
+        - name: dryRun
+          description: If true, requested changes are only simulated and not actually applied.
+          in: query
+          style: form
+          required: false
+          schema:
+            type: boolean
+            default: false
       responses:
         '202':
           $ref: "#/components/responses/ScaleBrokersResponse"

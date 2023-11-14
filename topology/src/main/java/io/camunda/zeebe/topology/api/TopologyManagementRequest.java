@@ -12,6 +12,15 @@ import java.util.Set;
 
 /** Defines the supported requests for the topology management. */
 public sealed interface TopologyManagementRequest {
+
+  /**
+   * Marks a request as dry run. Changes are planned and validated but not applied so the cluster
+   * topology remains unchanged. Requests that don't support dry-run return false by default.
+   */
+  default boolean dryRun() {
+    return false;
+  }
+
   record AddMembersRequest(Set<MemberId> members) implements TopologyManagementRequest {}
 
   record RemoveMembersRequest(Set<MemberId> members) implements TopologyManagementRequest {}
@@ -24,5 +33,5 @@ public sealed interface TopologyManagementRequest {
 
   record ReassignPartitionsRequest(Set<MemberId> members) implements TopologyManagementRequest {}
 
-  record ScaleRequest(Set<MemberId> members) implements TopologyManagementRequest {}
+  record ScaleRequest(Set<MemberId> members, boolean dryRun) implements TopologyManagementRequest {}
 }

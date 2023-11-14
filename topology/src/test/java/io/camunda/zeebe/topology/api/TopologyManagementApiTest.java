@@ -199,7 +199,8 @@ final class TopologyManagementApiTest {
   void shouldScaleBrokers() {
     // given
     final var request =
-        new TopologyManagementRequest.ScaleRequest(Set.of(MemberId.from("1"), MemberId.from("2")));
+        new TopologyManagementRequest.ScaleRequest(
+            Set.of(MemberId.from("1"), MemberId.from("2")), false);
     final ClusterTopology currentTopology =
         ClusterTopology.init()
             .addMember(
@@ -223,7 +224,8 @@ final class TopologyManagementApiTest {
   void shouldReturnInvalidErrorForInvalidRequests() {
     // given
     final var request =
-        new TopologyManagementRequest.ScaleRequest(Set.of()); // invalid request when no brokers
+        new TopologyManagementRequest.ScaleRequest(
+            Set.of(), false); // invalid request when no brokers
     recordingCoordinator.setCurrentTopology(initialTopology);
 
     // when

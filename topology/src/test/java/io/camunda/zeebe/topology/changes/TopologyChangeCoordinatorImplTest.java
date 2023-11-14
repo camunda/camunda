@@ -139,6 +139,55 @@ final class TopologyChangeCoordinatorImplTest {
         .hasPendingOperationsWithSize(1);
   }
 
+  @Test
+  void shouldNotStartOnDryRun() {
+    // given
+    final ClusterTopology initialTopology =
+        ClusterTopology.init()
+            .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
+            .addMember(
+                MemberId.from("2"),
+                MemberState.initializeAsActive(Map.of(1, PartitionState.active(1))));
+    clusterTopologyManager.setClusterTopology(initialTopology);
+
+    final List<TopologyChangeOperation> operations =
+        List.of(new PartitionJoinOperation(MemberId.from("1"), 1, 1));
+
+    final var coordinator =
+        new TopologyChangeCoordinatorImpl(clusterTopologyManager, new TestConcurrencyControl());
+
+    // when
+    final var simulationResult = coordinator.simulateOperations(getTransformer(operations));
+
+    // then
+    assertThat(simulationResult).succeedsWithin(Duration.ofMillis(100));
+    ClusterTopologyAssert.assertThatClusterTopology(
+            clusterTopologyManager.getClusterTopology().join())
+        .hasSameTopologyAs(initialTopology);
+  }
+
+  @Test
+  void shouldFailDryRunWithValidationError() {
+    // given
+    clusterTopologyManager.setClusterTopology(ClusterTopology.init());
+    final var coordinator =
+        new TopologyChangeCoordinatorImpl(clusterTopologyManager, new TestConcurrencyControl());
+
+    // when
+
+    final var simulationResult =
+        coordinator.simulateOperations(
+            getTransformer(List.of(new PartitionLeaveOperation(MemberId.from("1"), 1))));
+
+    // then
+    assertThat(simulationResult)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(TopologyRequestFailedException.InvalidRequest.class)
+        .withMessageContaining(
+            "Expected to leave partition, but the local member does not exist in the topology");
+  }
+
   private static final class TestClusterTopologyManager implements ClusterTopologyManager {
 
     private ClusterTopology clusterTopology;
