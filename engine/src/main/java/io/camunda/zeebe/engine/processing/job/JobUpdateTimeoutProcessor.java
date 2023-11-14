@@ -58,13 +58,9 @@ public class JobUpdateTimeoutProcessor implements TypedRecordProcessor<JobRecord
 
     if (!jobState.jobDeadlineExists(jobKey, oldDeadline)) {
       rejectionWriter.appendRejection(
-          command,
-          RejectionType.INVALID_STATE,
-          NO_DEADLINE_FOUND_MESSAGE.formatted(jobKey, oldDeadline));
+          command, RejectionType.INVALID_STATE, NO_DEADLINE_FOUND_MESSAGE.formatted(jobKey));
       responseWriter.writeRejectionOnCommand(
-          command,
-          RejectionType.INVALID_STATE,
-          NO_DEADLINE_FOUND_MESSAGE.formatted(jobKey, oldDeadline));
+          command, RejectionType.INVALID_STATE, NO_DEADLINE_FOUND_MESSAGE.formatted(jobKey));
       return;
     }
 

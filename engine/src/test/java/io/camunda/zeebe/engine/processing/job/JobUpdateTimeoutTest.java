@@ -142,7 +142,7 @@ public class JobUpdateTimeoutTest {
     final long timeout = Duration.ofMinutes(5).toMillis();
 
     // when
-    final var updatedRecord = ENGINE.job().withKey(jobKey).withTimeout(timeout).updateTimeout();
+    ENGINE.job().withKey(jobKey).withTimeout(timeout).updateTimeout();
     ENGINE.increaseTime(Duration.ofMinutes(6));
 
     // then
