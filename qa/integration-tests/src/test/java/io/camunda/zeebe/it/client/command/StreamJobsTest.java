@@ -10,10 +10,14 @@ package io.camunda.zeebe.it.client.command;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.response.StreamJobsResponse;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.qa.util.actuator.JobStreamActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -27,14 +31,23 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.grpc.Status;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
+import io.grpc.internal.AbstractStream.TransportState;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import org.agrona.LangUtil;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @AutoCloseResources
@@ -232,5 +245,129 @@ final class StreamJobsTest {
         .tenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .send()
         .join();
+  }
+
+  private void uncheckedLatchAwait(final CountDownLatch latch) {
+    try {
+      //noinspection ResultOfMethodCallIgnored
+      latch.await(5, TimeUnit.MINUTES);
+    } catch (final InterruptedException e) {
+      LangUtil.rethrowUnchecked(e);
+    }
+  }
+
+  @Nested
+  final class SlowClientTest {
+    private final String uniqueId = Strings.newRandomValidBpmnId();
+    private final CountDownLatch latch = new CountDownLatch(1);
+    private final List<ActivatedJob> jobs = new CopyOnWriteArrayList<>();
+    private final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(uniqueId)
+            .startEvent()
+            .serviceTask("task", b -> b.zeebeJobType(uniqueId))
+            .endEvent()
+            .done();
+
+    // Use internal gRPC constant to generate enough load to toggle the transport state faster
+    private final Map<String, Object> payload =
+        Map.of("foo", "bar".repeat(TransportState.DEFAULT_ONREADY_THRESHOLD));
+
+    private ZeebeFuture<StreamJobsResponse> stream;
+
+    @BeforeEach
+    void beforeEach() {
+      stream =
+          client
+              .newStreamJobsCommand()
+              .jobType(uniqueId)
+              .consumer(
+                  job -> {
+                    jobs.add(job);
+                    uncheckedLatchAwait(latch);
+                  })
+              .workerName("stream")
+              .send();
+
+      awaitStreamRegistered(uniqueId);
+      deployProcess(process);
+    }
+
+    @AfterEach
+    void afterEach() {
+      if (stream != null) {
+        stream.cancel(true);
+      }
+    }
+
+    @Test
+    void shouldYieldJobIfClientIsBlocked() {
+      // given
+      // disable waiting in the exporter and rely on Awaitility polling
+      RecordingExporter.setMaximumWaitTime(0);
+
+      // when
+      Awaitility.await("until transport is suspended and jobs are yielded")
+          .untilAsserted(
+              () -> {
+                createProcessInstance(uniqueId, payload);
+
+                // then
+                assertThat(RecordingExporter.jobRecords(JobIntent.YIELDED).limit(1)).hasSize(1);
+              });
+    }
+
+    @Test
+    void shouldReceiveNewJobsWhenUnblocked() {
+      // given
+      final var startedPiKeys = new CopyOnWriteArrayList<Long>();
+
+      // when
+      RecordingExporter.setMaximumWaitTime(0);
+      Awaitility.await("until transport is suspended and jobs are yielded")
+          .untilAsserted(
+              () -> {
+                startedPiKeys.add(createProcessInstance(uniqueId, payload));
+                assertThat(RecordingExporter.jobRecords(JobIntent.YIELDED).limit(1)).hasSize(1);
+              });
+      RecordingExporter.setMaximumWaitTime(5000);
+
+      final var firstYieldedPi =
+          RecordingExporter.jobRecords(JobIntent.YIELDED)
+              .limit(1)
+              .findFirst()
+              .orElseThrow()
+              .getValue()
+              .getProcessInstanceKey();
+      final var firstYieldedPiIndex = startedPiKeys.indexOf(firstYieldedPi);
+      final var expectedJobPis = new ArrayList<>(startedPiKeys.subList(0, firstYieldedPiIndex));
+      final var yieldedPis = startedPiKeys.subList(firstYieldedPiIndex, startedPiKeys.size());
+
+      // unblock the stream consumer, await the extra buffered jobs (to avoid flakiness), and
+      // create a new PI to test that we can receive new jobs
+      latch.countDown();
+      Awaitility.await("until buffered jobs are received")
+          .untilAsserted(() -> assertThat(jobs).hasSameSizeAs(expectedJobPis));
+      expectedJobPis.add(createProcessInstance(uniqueId, payload));
+
+      // then - unblock stream consumer and expect jobs for the PIs started before we yielded to
+      // have been received, and jobs for those after to not have been received
+      assertThat(yieldedPis).isNotEmpty();
+      // we expect at least 3 jobs: the first job (which always goes through), the second job which
+      // triggered the change of transport state by filling the buffers, and the last job that was
+      // created after the consumer is unblocked
+      assertThat(expectedJobPis).hasSizeGreaterThanOrEqualTo(3);
+      Awaitility.await("until last job is received")
+          .untilAsserted(
+              () ->
+                  assertThat(jobs)
+                      .extracting(ActivatedJob::getProcessInstanceKey)
+                      .hasSameSizeAs(expectedJobPis)
+                      .containsExactlyElementsOf(expectedJobPis));
+      assertThat(RecordingExporter.jobRecords(JobIntent.YIELDED).limit(yieldedPis.size()))
+          .map(Record::getValue)
+          .extracting(JobRecordValue::getProcessInstanceKey)
+          .hasSameSizeAs(yieldedPis)
+          .containsExactlyElementsOf(yieldedPis);
+    }
   }
 }
