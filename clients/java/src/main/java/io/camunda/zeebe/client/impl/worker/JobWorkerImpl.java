@@ -239,18 +239,33 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   }
 
   private void handleJob(final ActivatedJob job) {
+    final boolean notEnqueued = !tryToEnqueJob(job);
+    if (notEnqueued) {
+      // TODO logic to handle the faults?
+      // The job is likely to timed out anyway, so we potentially just skip it and don't need to do
+      // any further error handling
+
+      // Interesting is here whether we maybe want to explode, since adding other jobs from the
+      // batch also doesn't make much sense.
+      return;
+    }
+
     metrics.jobActivated(1);
-    executor.execute(jobHandlerFactory.create(job, this::handleJobFinished));
+    scheduleConsumeJob(this::handleJobFinished);
+  }
+
+  private boolean tryToEnqueJob(final ActivatedJob job) {
+    boolean notEnqueued;
+    try {
+      notEnqueued = jobsQueue.offer(job, 10, TimeUnit.SECONDS);
+    } catch (final InterruptedException e) {
+      notEnqueued = false;
+    }
+    return notEnqueued;
   }
 
   private void handleStreamedJob(final ActivatedJob job) {
-    boolean notEnqueued;
-    try {
-      notEnqueued = !jobsQueue.offer(job, 10, TimeUnit.SECONDS);
-    } catch (final InterruptedException e) {
-      notEnqueued = true;
-    }
-
+    final boolean notEnqueued = !tryToEnqueJob(job);
     if (notEnqueued) {
       // TODO logic to handle the faults?
       // The job is likely to timed out anyway, so we potentially just skip it and don't need to do
@@ -259,10 +274,10 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     }
 
     metrics.jobActivated(1);
-    scheduleConsumeJob();
+    scheduleConsumeJob(this::handleStreamJobFinished);
   }
 
-  private void consumeJobFromQueue() {
+  private void consumeJobFromQueue(final Runnable finalizer) {
     ActivatedJob job;
     try {
       job = jobsQueue.poll(10, TimeUnit.SECONDS);
@@ -274,14 +289,14 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       // we either timed out or got an interrupt
       // we were not able to consume any job
       // retry
-      scheduleConsumeJob();
+      scheduleConsumeJob(finalizer);
     } else {
-      executor.execute(jobHandlerFactory.create(job, this::handleStreamJobFinished));
+      executor.execute(jobHandlerFactory.create(job, finalizer));
     }
   }
 
-  private void scheduleConsumeJob() {
-    executor.execute(this::consumeJobFromQueue);
+  private void scheduleConsumeJob(final Runnable finalizer) {
+    executor.execute(() -> consumeJobFromQueue(finalizer));
   }
 
   private void handleJobFinished() {
