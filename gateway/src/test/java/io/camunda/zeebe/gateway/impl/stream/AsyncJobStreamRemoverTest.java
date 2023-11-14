@@ -30,12 +30,12 @@ final class AsyncJobStreamRemoverTest {
   @Test
   void shouldRemoveStreamWhenIdIsSet() {
     // given - a stream observer which is cancelled before the stream is registered
-    final var remover = new AsyncJobStreamRemover(jobStreamer);
+    final var remover = new AsyncJobStreamRemover(jobStreamer, Runnable::run);
     remover.run();
 
     // when
     final var id = jobStreamer.add(BufferUtil.wrapString("foo"), null, consumer).join();
-    remover.setStreamId(id);
+    remover.streamId(id);
 
     // then
     assertThat(jobStreamer.consumers).doesNotContainKey(id);
@@ -44,9 +44,9 @@ final class AsyncJobStreamRemoverTest {
   @Test
   void shouldRemoveStreamOnRun() {
     // given - a stream observer which is added before being cancelled
-    final var remover = new AsyncJobStreamRemover(jobStreamer);
+    final var remover = new AsyncJobStreamRemover(jobStreamer, Runnable::run);
     final var id = jobStreamer.add(BufferUtil.wrapString("foo"), null, consumer).join();
-    remover.setStreamId(id);
+    remover.streamId(id);
 
     // when
     remover.run();
