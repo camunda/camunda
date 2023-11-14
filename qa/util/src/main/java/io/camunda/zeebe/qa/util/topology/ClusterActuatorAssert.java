@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.qa.util.topology;
 
+import io.camunda.zeebe.management.cluster.BrokerStateCode;
+import io.camunda.zeebe.management.cluster.PartitionStateCode;
 import io.camunda.zeebe.management.cluster.PostOperationResponse;
 import io.camunda.zeebe.management.cluster.TopologyChange.StatusEnum;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
@@ -74,6 +76,36 @@ public final class ClusterActuatorAssert
         .matches(
             b -> b.getPartitions().stream().noneMatch(p -> p.getId() == partitionId),
             "Broker %d does not have partition %d".formatted(brokerId, partitionId));
+    return this;
+  }
+
+  public ClusterActuatorAssert hasActiveBroker(final int brokerId) {
+    Assertions.assertThat(actual.getTopology().getBrokers())
+        .filteredOn(b -> b.getId() == brokerId)
+        .singleElement()
+        .matches(
+            b -> b.getState().equals(BrokerStateCode.ACTIVE),
+            "Cluster does not have broker %d in Active state".formatted(brokerId));
+    return this;
+  }
+
+  public ClusterActuatorAssert doesNotHavePendingChanges() {
+    final var currentChange = actual.getTopology().getChange();
+    Assertions.assertThat(currentChange).isNotNull();
+    Assertions.assertThat(currentChange.getStatus()).isEqualTo(StatusEnum.COMPLETED);
+    return this;
+  }
+
+  public ClusterActuatorAssert brokerHasPartitionAtState(
+      final int brokerId, final int partitionId, final PartitionStateCode state) {
+    Assertions.assertThat(actual.getTopology().getBrokers())
+        .filteredOn(b -> b.getId() == brokerId)
+        .singleElement()
+        .matches(
+            b ->
+                b.getPartitions().stream()
+                    .anyMatch(p -> p.getId() == partitionId && p.getState().equals(state)),
+            "Broker %d has partition %d".formatted(brokerId, partitionId));
     return this;
   }
 }

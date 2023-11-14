@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.clustering.dynamic;
 
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.assertThatAllJobsCanBeCompleted;
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.createInstanceWithAJobOnAllPartitions;
-import static io.camunda.zeebe.it.clustering.dynamic.Utils.scale;
+import static io.camunda.zeebe.it.clustering.dynamic.Utils.scaleAndWait;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -83,7 +83,7 @@ final class ScaleUpBrokersTest {
 
     // when
     createNewBroker(newClusterSize, newBrokerId);
-    scale(cluster, newClusterSize);
+    scaleAndWait(cluster, newClusterSize);
 
     // then
     // verify partition 2 is moved from broker 0 to 1
@@ -108,13 +108,13 @@ final class ScaleUpBrokersTest {
 
     // scale to clusterSize 2
     createNewBroker(clusterSize2, broker2);
-    scale(cluster, clusterSize2);
+    scaleAndWait(cluster, clusterSize2);
 
     // when - scale to clusterSize 3
     final int broker3 = broker2 + 1;
     final int finalClusterSize = clusterSize2 + 1;
     createNewBroker(finalClusterSize, broker3);
-    scale(cluster, finalClusterSize);
+    scaleAndWait(cluster, finalClusterSize);
 
     // then -- partition 3 must be moved to new broker
     ClusterActuatorAssert.assertThat(cluster).brokerHasPartition(broker3, 3);
@@ -135,7 +135,7 @@ final class ScaleUpBrokersTest {
     // when
     createNewBroker(newClusterSize, currentClusterSize);
     createNewBroker(newClusterSize, currentClusterSize + 1);
-    scale(cluster, newClusterSize);
+    scaleAndWait(cluster, newClusterSize);
 
     // then
     // Changes are reflected in the topology returned by grpc query

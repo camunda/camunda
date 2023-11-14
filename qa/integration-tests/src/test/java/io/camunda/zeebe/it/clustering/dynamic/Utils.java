@@ -28,18 +28,23 @@ import org.awaitility.Awaitility;
 
 final class Utils {
 
-  static void scale(final TestCluster cluster, final int newClusterSize) {
+  static void scaleAndWait(final TestCluster cluster, final int newClusterSize) {
+    final var response = scale(cluster, newClusterSize);
+
+    // then - verify topology changes are completed
+    Awaitility.await()
+        .timeout(Duration.ofMinutes(2))
+        .untilAsserted(() -> ClusterActuatorAssert.assertThat(cluster).hasAppliedChanges(response));
+  }
+
+  static PostOperationResponse scale(final TestCluster cluster, final int newClusterSize) {
     final var actuator = ClusterActuator.of(cluster.availableGateway());
     final var newBrokerSet = IntStream.range(0, newClusterSize).boxed().toList();
 
     // when
     final var response = actuator.scaleBrokers(newBrokerSet);
     assertChangeIsPlanned(response);
-
-    // then - verify topology changes are completed
-    Awaitility.await()
-        .timeout(Duration.ofMinutes(2))
-        .untilAsserted(() -> ClusterActuatorAssert.assertThat(cluster).hasAppliedChanges(response));
+    return response;
   }
 
   static void assertChangeIsPlanned(final PostOperationResponse response) {
