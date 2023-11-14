@@ -13,6 +13,7 @@ import static io.camunda.zeebe.it.clustering.dynamic.Utils.scale;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
@@ -21,12 +22,17 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.IntStream;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 @ZeebeIntegration
 @AutoCloseResources
@@ -139,7 +145,48 @@ final class ScaleUpBrokersTest {
     assertThatAllJobsCanBeCompleted(processInstanceKeys, zeebeClient, JOB_TYPE);
   }
 
+  @Test
+  void shouldScaleAfterRestart(@TempDir final Path dataDirectory) {
+    // given
+    final int currentClusterSize = cluster.brokers().size();
+    final int newClusterSize = currentClusterSize + 1;
+    final int newBrokerId = newClusterSize - 1;
+
+    // Add new broker to the cluster without moving partitions
+    final var newBroker = createNewBroker(newClusterSize, newBrokerId, Optional.of(dataDirectory));
+    ClusterActuator.of(cluster.availableGateway()).addBroker(newBrokerId);
+
+    // when
+    newBroker.stop();
+
+    // scale
+    final var actuator = ClusterActuator.of(cluster.availableGateway());
+    final var newBrokerSet = IntStream.range(0, newClusterSize).boxed().toList();
+    final var response = actuator.scaleBrokers(newBrokerSet);
+
+    newBroker.start();
+
+    // then
+    // Scale operation is completed after the broker is started
+    Awaitility.await()
+        .timeout(Duration.ofMinutes(2))
+        .untilAsserted(() -> ClusterActuatorAssert.assertThat(cluster).hasAppliedChanges(response));
+    // verify partition 2 is moved from broker 0 to 1
+    ClusterActuatorAssert.assertThat(cluster)
+        .brokerHasPartition(newBrokerId, 2)
+        .brokerDoesNotHavePartition(0, 2)
+        .brokerHasPartition(0, 1);
+
+    // Changes are reflected in the topology returned by grpc query
+    cluster.awaitCompleteTopology(newClusterSize, 3, 1, Duration.ofSeconds(10));
+  }
+
   private void createNewBroker(final int newClusterSize, final int newBrokerId) {
+    createNewBroker(newClusterSize, newBrokerId, Optional.empty());
+  }
+
+  private TestStandaloneBroker createNewBroker(
+      final int newClusterSize, final int newBrokerId, final Optional<Path> dataDirectory) {
     final var newBroker =
         new TestStandaloneBroker()
             .withBrokerConfig(
@@ -155,7 +202,9 @@ final class ScaleUpBrokersTest {
                                   .get(MemberId.from("0"))
                                   .address(TestZeebePort.CLUSTER)));
                 });
+    dataDirectory.ifPresent(newBroker::withWorkingDirectory);
     newBrokers.add(newBroker);
     newBroker.start();
+    return newBroker;
   }
 }
