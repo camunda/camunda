@@ -13,12 +13,11 @@ import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.entities.Variable;
+import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.List;
 import java.util.Map;
 
 import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
@@ -33,7 +32,6 @@ public class VariableDaoIT extends OperateZeebeAbstractIT {
   private Results<Variable> variableResults;
   private Variable variable;
   private Long key;
-  private List<Long> variableKeys;
   private Long processInstanceKey;
 
   @Before
@@ -73,7 +71,6 @@ public class VariableDaoIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  //@Ignore("https://github.com/camunda/operate/issues/5287")
   public void shouldReturnVariables() throws Exception {
     given(() ->
         processInstanceKey = createVariablesAndGetProcessInstanceKey(
@@ -96,11 +93,22 @@ public class VariableDaoIT extends OperateZeebeAbstractIT {
               "\"23\"",
               DEFAULT_TENANT_ID
           );
+      assertThat(variableResults.getItems().get(1))
+          .extracting(
+              "processInstanceKey",
+              "name",
+              "value",
+              "tenantId")
+          .containsExactly(
+              processInstanceKey,
+              "orderId",
+              "\"5\"",
+              DEFAULT_TENANT_ID
+          );
     });
   }
 
   @Test
-  @Ignore
   public void shouldReturnByKey() throws Exception {
     given(() -> {
       processInstanceKey = createVariablesAndGetProcessInstanceKey(
@@ -115,6 +123,14 @@ public class VariableDaoIT extends OperateZeebeAbstractIT {
       assertThat(variable.getValue()).isEqualTo("\"23\"");
       assertThat(variable.getKey()).isEqualTo(key);
     });
+  }
+
+  @Test(expected=ResourceNotFoundException.class)
+  public void shouldThrowExceptionWhenNoKeyFound() {
+    processInstanceKey = createVariablesAndGetProcessInstanceKey(
+        "manual-task-process", Map.of("customerId", "23", "orderId", "5"));
+
+    variable = dao.byKey(1L);
   }
 
   @Test
@@ -161,6 +177,7 @@ public class VariableDaoIT extends OperateZeebeAbstractIT {
     then(() -> {
       assertThat(variableResults.getItems()).hasSize(2);
       assertThat(variableResults.getItems().get(0).getValue()).isEqualTo("true");
+      assertThat(variableResults.getItems().get(1).getValue()).isEqualTo("5");
     });
   }
 
