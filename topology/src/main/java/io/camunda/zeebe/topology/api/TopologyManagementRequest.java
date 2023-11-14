@@ -34,4 +34,6 @@ public sealed interface TopologyManagementRequest {
   record ReassignPartitionsRequest(Set<MemberId> members) implements TopologyManagementRequest {}
 
   record ScaleRequest(Set<MemberId> members, boolean dryRun) implements TopologyManagementRequest {}
+
+  record CancelChangeRequest(long changeId) implements TopologyManagementRequest {}
 }

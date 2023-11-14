@@ -166,7 +166,8 @@ final class TopologyChangeCoordinatorImplTest {
         List.of(new PartitionJoinOperation(MemberId.from("1"), 1, 1));
 
     final var coordinator =
-        new TopologyChangeCoordinatorImpl(clusterTopologyManager, new TestConcurrencyControl());
+        new TopologyChangeCoordinatorImpl(
+            clusterTopologyManager, syncRequester, new TestConcurrencyControl());
 
     // when
     final var simulationResult = coordinator.simulateOperations(getTransformer(operations));

@@ -28,6 +28,9 @@ public interface TopologyRequestsSerializer {
 
   byte[] encodeScaleRequest(TopologyManagementRequest.ScaleRequest scaleRequest);
 
+  byte[] encodeCancelChangeRequest(
+      TopologyManagementRequest.CancelChangeRequest cancelChangeRequest);
+
   TopologyManagementRequest.AddMembersRequest decodeAddMembersRequest(byte[] encodedState);
 
   TopologyManagementRequest.RemoveMembersRequest decodeRemoveMembersRequest(byte[] encodedState);
@@ -40,6 +43,8 @@ public interface TopologyRequestsSerializer {
       byte[] encodedState);
 
   TopologyManagementRequest.ScaleRequest decodeScaleRequest(byte[] encodedState);
+
+  TopologyManagementRequest.CancelChangeRequest decodeCancelChangeRequest(byte[] encodedState);
 
   byte[] encodeResponse(TopologyChangeResponse response);
 
