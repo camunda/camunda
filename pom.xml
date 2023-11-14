@@ -71,8 +71,8 @@
     <logback.version>1.4.11</logback.version>
     <slf4j.version>2.0.9</slf4j.version>
 
-    <version.node>v16.16.0</version.node>
-    <version.yarn>v1.22.18</version.yarn>
+    <version.node>v20.9.0</version.node>
+    <version.yarn>v1.22.19</version.yarn>
 
     <skipTests>false</skipTests>
     <skip.unit.tests>${skipTests}</skip.unit.tests>
