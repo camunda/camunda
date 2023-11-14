@@ -207,6 +207,7 @@ public final class JobWorkerBuilderImpl
     final JobWorkerImpl jobWorker =
         new JobWorkerImpl(
             maxJobsActive,
+            timeout,
             executorService,
             pollInterval,
             jobRunnableFactory,

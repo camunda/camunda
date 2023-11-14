@@ -58,6 +58,7 @@ final class JobWorkerMetricsTest {
       final JobWorkerMetrics metrics) {
     return new JobWorkerImpl(
         1,
+        Duration.ZERO,
         executor,
         Duration.ofSeconds(30),
         new TestJobRunnableFactory(autoCompleteCount),

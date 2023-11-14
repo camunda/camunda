@@ -20,6 +20,7 @@ import io.camunda.zeebe.client.api.worker.BackoffSupplier;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.api.worker.JobWorkerMetrics;
 import io.camunda.zeebe.client.impl.Loggers;
+import io.camunda.zeebe.client.impl.worker.JobWorkerImpl.RingBuffer.Claim;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.Optional;
@@ -28,7 +29,10 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 
 /**
@@ -76,10 +80,11 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
 
   private volatile long pollInterval;
 
-  private final BlockingQueue<ActivatedJob> jobsQueue;
+  private final RingBuffer jobsQueue;
 
   public JobWorkerImpl(
       final int maxJobsActive,
+      final Duration timeout,
       final ScheduledExecutorService executor,
       final Duration pollInterval,
       final JobRunnableFactory jobHandlerFactory,
@@ -88,7 +93,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       final BackoffSupplier backoffSupplier,
       final JobWorkerMetrics metrics) {
     this.maxJobsActive = maxJobsActive;
-    jobsQueue = new ArrayBlockingQueue<>(maxJobsActive);
+    jobsQueue = new RingBuffer(maxJobsActive, timeout.toMillis(), TimeUnit.MILLISECONDS);
     activationThreshold = Math.round(maxJobsActive * 0.3f);
 
     this.executor = executor;
@@ -116,7 +121,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
 
   @Override
   public boolean isClosed() {
-    return !isOpen() && claimableJobPoller.get() != null && jobsQueue.isEmpty();
+    return !isOpen() && claimableJobPoller.get() != null && jobsQueue.size() <= 0;
   }
 
   @Override
@@ -186,8 +191,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       schedulePoll();
       return;
     }
-    final int maxJobsToActivate =
-        maxJobsActive - actualRemainingJobs; // TODO could I use jobsQueue.remainingCapacity(); ?
+    final int maxJobsToActivate = jobsQueue.remainingSpace();
     jobPoller.poll(
         maxJobsToActivate,
         this::handleJob,
@@ -257,7 +261,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   private boolean tryToEnqueueJob(final ActivatedJob job) {
     boolean notEnqueued;
     try {
-      notEnqueued = jobsQueue.offer(job, 10, TimeUnit.SECONDS);
+      notEnqueued = jobsQueue.offer(job);
     } catch (final InterruptedException e) {
       notEnqueued = false;
     }
@@ -278,33 +282,27 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   }
 
   private void consumeJobFromQueue(final Runnable finalizer) {
-    if (jobsQueue.peek() == null) {
+    if (!jobsQueue.hasNext()) {
       // stop if there is nothing - we will triggered by push/poll again
       return;
     }
 
-    ActivatedJob job;
     try {
-      job = jobsQueue.poll(10, TimeUnit.SECONDS);
-      // TODO should we really do a poll ? Maybe a peek and remove it later after handling?
-    } catch (final InterruptedException ie) {
-      job = null;
-    }
+      final Claim claim = jobsQueue.claimNext();
 
-    if (job == null) {
-      // we either timed out or got an interrupt
-      // we were not able to consume any job
-      // retry
-      scheduleConsumeJob(finalizer);
-    } else {
       executor.execute(
           jobHandlerFactory.create(
-              job,
+              claim.peek(),
               () -> {
                 finalizer.run();
+                // we need to give the claim back - so we can add more jobs to our queue
+                claim.consume();
                 // we want to try to consume more
                 scheduleConsumeJob(finalizer);
               }));
+    } catch (final InterruptedException ie) {
+      // retry
+      scheduleConsumeJob(finalizer);
     }
   }
 
@@ -321,7 +319,79 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   }
 
   private void handleStreamJobFinished() {
-    // TODO is it important that we have metric only for streaming?
     metrics.jobHandled(1);
+  }
+
+  class RingBuffer {
+    private final BlockingQueue<ActivatedJob> blockingQueue;
+    private final long timeout;
+    private final TimeUnit timeUnit;
+    private final AtomicInteger claims;
+    private final Condition notFull;
+
+    public RingBuffer(final int capacity, final long timeout, final TimeUnit timeUnit) {
+      blockingQueue = new ArrayBlockingQueue<>(capacity);
+      this.timeout = timeout;
+      this.timeUnit = timeUnit;
+      claims = new AtomicInteger(0);
+      final ReentrantLock lock = new ReentrantLock();
+      notFull = lock.newCondition();
+    }
+
+    public boolean offer(final ActivatedJob job) throws InterruptedException {
+      while (size() >= maxJobsActive) {
+        final boolean elapsed = !notFull.await(timeout, timeUnit);
+        if (elapsed) {
+          return false;
+        }
+      }
+
+      // todo blocking again ?
+      return blockingQueue.offer(job, timeout, timeUnit);
+    }
+
+    public int size() {
+      return blockingQueue.size() + claims.get();
+    }
+
+    public int remainingSpace() {
+      return maxJobsActive - size();
+    }
+
+    public boolean hasNext() {
+      return blockingQueue.peek() != null;
+    }
+
+    public Claim claimNext() throws InterruptedException {
+      final ActivatedJob job = blockingQueue.poll(timeout, timeUnit);
+      final Claim claim = new Claim(job);
+      claims.incrementAndGet();
+      return claim;
+    }
+
+    public class Claim {
+      private final ActivatedJob job;
+      private boolean consumed;
+
+      public Claim(final ActivatedJob job) {
+        this.job = job;
+      }
+
+      public ActivatedJob peek() {
+        if (consumed) {
+          throw new IllegalStateException("Claim already consumed. You can't reuse the claim.");
+        }
+        return job;
+      }
+
+      public void consume() {
+        if (consumed) {
+          throw new IllegalStateException("Claim already consumed. You can't reuse the claim.");
+        }
+        claims.decrementAndGet();
+        notFull.signal();
+        consumed = true;
+      }
+    }
   }
 }
