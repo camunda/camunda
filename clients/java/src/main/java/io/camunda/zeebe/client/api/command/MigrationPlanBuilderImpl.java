@@ -15,14 +15,14 @@
  */
 package io.camunda.zeebe.client.api.command;
 
+import io.camunda.zeebe.client.api.command.MigrationPlan.MigrationPlanBuilderFinalStep;
 import io.camunda.zeebe.client.api.command.MigrationPlan.MigrationPlanBuilderStep1;
 import io.camunda.zeebe.client.api.command.MigrationPlan.MigrationPlanBuilderStep2;
-import io.camunda.zeebe.client.api.command.MigrationPlan.MigrationPlanBuilderStep3;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MigrationPlanBuilderImpl
-    implements MigrationPlanBuilderStep1, MigrationPlanBuilderStep2, MigrationPlanBuilderStep3 {
+    implements MigrationPlanBuilderStep1, MigrationPlanBuilderStep2, MigrationPlanBuilderFinalStep {
 
   private long targetProcessDefinitionKey;
   private final List<MappingInstruction> mappingInstructions;
@@ -39,7 +39,7 @@ public class MigrationPlanBuilderImpl
   }
 
   @Override
-  public MigrationPlanBuilderStep3 addMappingInstruction(
+  public MigrationPlanBuilderFinalStep addMappingInstruction(
       final String sourceElementId, final String targetElementId) {
     mappingInstructions.add(new MappingInstruction(sourceElementId, targetElementId));
     return this;

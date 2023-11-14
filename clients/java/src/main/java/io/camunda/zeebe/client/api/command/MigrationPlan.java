@@ -32,11 +32,11 @@ public interface MigrationPlan {
   }
 
   interface MigrationPlanBuilderStep2 {
-    MigrationPlanBuilderStep3 addMappingInstruction(
+    MigrationPlanBuilderFinalStep addMappingInstruction(
         final String sourceElementId, final String targetElementId);
   }
 
-  interface MigrationPlanBuilderStep3 extends MigrationPlanBuilderStep2 {
+  interface MigrationPlanBuilderFinalStep extends MigrationPlanBuilderStep2 {
     MigrationPlan build();
   }
 }

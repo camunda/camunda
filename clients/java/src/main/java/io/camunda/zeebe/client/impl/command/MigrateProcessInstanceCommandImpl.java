@@ -18,7 +18,7 @@ package io.camunda.zeebe.client.impl.command;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.command.MigrateProcessInstanceCommandStep1;
-import io.camunda.zeebe.client.api.command.MigrateProcessInstanceCommandStep1.MigrateProcessInstanceCommandStep2;
+import io.camunda.zeebe.client.api.command.MigrateProcessInstanceCommandStep1.MigrateProcessInstanceCommandFinalStep;
 import io.camunda.zeebe.client.api.command.MigrationPlan;
 import io.camunda.zeebe.client.api.response.MigrateProcessInstanceResponse;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 public class MigrateProcessInstanceCommandImpl
-    implements MigrateProcessInstanceCommandStep1, MigrateProcessInstanceCommandStep2 {
+    implements MigrateProcessInstanceCommandStep1, MigrateProcessInstanceCommandFinalStep {
 
   private final MigrateProcessInstanceRequest.Builder requestBuilder =
       MigrateProcessInstanceRequest.newBuilder();
@@ -55,7 +55,8 @@ public class MigrateProcessInstanceCommandImpl
   }
 
   @Override
-  public MigrateProcessInstanceCommandStep2 migrationPlan(final long targetProcessDefinitionKey) {
+  public MigrateProcessInstanceCommandFinalStep migrationPlan(
+      final long targetProcessDefinitionKey) {
     migrationPlanBuilder.setTargetProcessDefinitionKey(targetProcessDefinitionKey);
     return this;
   }
@@ -78,7 +79,7 @@ public class MigrateProcessInstanceCommandImpl
   }
 
   @Override
-  public MigrateProcessInstanceCommandStep2 withMappingInstruction(
+  public MigrateProcessInstanceCommandFinalStep withMappingInstruction(
       final String sourceElementId, final String targetElementId) {
     migrationPlanBuilder.addMappingInstructions(
         MappingInstruction.newBuilder()

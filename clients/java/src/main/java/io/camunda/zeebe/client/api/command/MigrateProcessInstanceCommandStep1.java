@@ -32,10 +32,16 @@ public interface MigrateProcessInstanceCommandStep1 {
 
   FinalCommandStep<MigrateProcessInstanceResponse> migrationPlan(final MigrationPlan migrationPlan);
 
-  interface MigrateProcessInstanceCommandStep2
-      extends FinalCommandStep<MigrateProcessInstanceResponse> {
+  interface MigrateProcessInstanceCommandStep2 {
+    MigrateProcessInstanceCommandFinalStep withMappingInstruction(
+        final String sourceElementId, final String targetElementId);
+  }
 
-    MigrateProcessInstanceCommandStep2 withMappingInstruction(
+  interface MigrateProcessInstanceCommandFinalStep
+      extends MigrateProcessInstanceCommandStep2, FinalCommandStep<MigrateProcessInstanceResponse> {
+
+    @Override
+    MigrateProcessInstanceCommandFinalStep withMappingInstruction(
         final String sourceElementId, final String targetElementId);
   }
 }
