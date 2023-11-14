@@ -16,8 +16,10 @@ import {Footer} from './Footer';
 import {PAGE_TITLE} from 'modules/constants';
 import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/processXml/processXml.migration.source';
 import {processXmlStore as processXmlMigrationTargetStore} from 'modules/stores/processXml/processXml.migration.target';
+import {MigrationSummaryNotification} from './MigrationSummaryNotification';
+import {observer} from 'mobx-react';
 
-const MigrationView: React.FC = () => {
+const MigrationView: React.FC = observer(() => {
   useEffect(() => {
     document.title = PAGE_TITLE.INSTANCES;
   }, []);
@@ -44,9 +46,14 @@ const MigrationView: React.FC = () => {
         topPanel={<TopPanel />}
         bottomPanel={<BottomPanel />}
         footer={<Footer />}
+        additionalTopContent={
+          processInstanceMigrationStore.isSummaryStep ? (
+            <MigrationSummaryNotification />
+          ) : undefined
+        }
       />
     </>
   );
-};
+});
 
 export {MigrationView};

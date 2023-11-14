@@ -17,7 +17,10 @@ import {
 import {Processes} from '../';
 import {AppHeader} from 'App/Layout/AppHeader';
 import {createMemoryHistory} from 'history';
+import {MigrationView} from '.';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
+import {groupedProcessesMock, mockProcessXML} from 'modules/testUtils';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 jest.mock('App/Processes/ListView', () => {
   const ListView: React.FC = () => {
@@ -204,4 +207,70 @@ describe('MigrationView', () => {
       expect(await screen.findByText(/processes page/i)).toBeInTheDocument();
     },
   );
+
+  it('should render summary notification in summary step', async () => {
+    const queryString =
+      '?active=true&incidents=true&process=demoProcess&version=3';
+
+    const originalWindow = {...window};
+
+    const locationSpy = jest.spyOn(window, 'location', 'get');
+
+    locationSpy.mockImplementation(() => ({
+      ...originalWindow.location,
+      search: queryString,
+    }));
+
+    processInstanceMigrationStore.setSelectedInstancesCount(7);
+    processInstanceMigrationStore.setCurrentStep('elementMapping');
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+
+    const {user} = render(<MigrationView />);
+
+    expect(
+      screen.queryByText('You are about to migrate'),
+    ).not.toBeInTheDocument();
+
+    mockFetchProcessXML().withSuccess(mockProcessXML);
+
+    await user.click(screen.getByRole('button', {name: 'Next'}));
+
+    expect(
+      screen.getByText(
+        /You are about to migrate 7 process instances from the process definition:/i,
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      await screen.findByText(/New demo process - version 3/i),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText(/to the process definition:/i)).toBeInTheDocument();
+
+    //
+    // TODO: check for target process and version when target flow node selection is available
+    //
+
+    expect(
+      screen.getByText(
+        /This process can take several minutes until it completes. You can observe progress of this in the operations panel./i,
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        /The flow nodes listed below will be mapped from the source on the left side to target on the right side./i,
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Back'}));
+
+    expect(
+      screen.queryByText(
+        /You are about to migrate 7 process instances from the process definition:/i,
+      ),
+    ).not.toBeInTheDocument();
+
+    locationSpy.mockClear();
+  });
 });

@@ -22,12 +22,14 @@ type State = {
   currentStep: 'elementMapping' | 'summary' | null;
   flowNodeMapping: {[sourceId: string]: string};
   selectedSourceFlowNodeId?: string;
+  seletedInstancesCount: number;
 };
 
 const DEFAULT_STATE: State = {
   currentStep: null,
   flowNodeMapping: {},
   selectedSourceFlowNodeId: undefined,
+  seletedInstancesCount: 0,
 };
 
 class ProcessInstanceMigration {
@@ -76,6 +78,10 @@ class ProcessInstanceMigration {
   get isEnabled() {
     return this.state.currentStep !== null;
   }
+
+  setSelectedInstancesCount = (seletedInstancesCount: number) => {
+    this.state.seletedInstancesCount = seletedInstancesCount;
+  };
 
   updateFlowNodeMapping = ({
     sourceId,

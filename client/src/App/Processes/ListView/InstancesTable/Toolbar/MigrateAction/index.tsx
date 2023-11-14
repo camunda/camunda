@@ -88,6 +88,9 @@ const MigrateAction: React.FC = observer(() => {
                 ids: isAllChecked ? [] : selectedProcessInstanceIds,
                 excludeIds: isAllChecked ? selectedProcessInstanceIds : [],
               });
+              processInstanceMigrationStore.setSelectedInstancesCount(
+                processInstancesSelectionStore.selectedProcessInstanceCount,
+              );
               processInstanceMigrationStore.enable();
             }}
             onRequestClose={() => setOpen(false)}

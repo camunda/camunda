@@ -17,12 +17,21 @@ type Props = {
   leftPanel?: React.ReactNode;
   topPanel: React.ReactNode;
   bottomPanel: React.ReactNode;
+  additionalTopContent?: React.ReactNode;
   footer?: React.ReactNode;
   rightPanel?: React.ReactNode;
   type: 'process' | 'decision' | 'migrate';
 };
 const InstancesList: React.FC<Props> = observer(
-  ({leftPanel, topPanel, bottomPanel, rightPanel, footer, type}) => {
+  ({
+    leftPanel,
+    topPanel,
+    bottomPanel,
+    rightPanel,
+    additionalTopContent,
+    footer,
+    type,
+  }) => {
     const [clientHeight, setClientHeight] = useState(0);
     const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -37,8 +46,10 @@ const InstancesList: React.FC<Props> = observer(
         $hasLeftPanel={leftPanel !== undefined}
         $hasRightPanel={rightPanel !== undefined}
         $hasFooter={footer !== undefined}
+        $hasAdditionalTopContent={additionalTopContent !== undefined}
       >
         {leftPanel && <section>{leftPanel}</section>}
+        {additionalTopContent && <>{additionalTopContent}</>}
         <div ref={containerRef}>
           <ResizablePanel
             panelId={`${type}-instances-vertical-panel`}
