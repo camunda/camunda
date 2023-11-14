@@ -291,7 +291,14 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       // retry
       scheduleConsumeJob(finalizer);
     } else {
-      executor.execute(jobHandlerFactory.create(job, finalizer));
+      executor.execute(
+          jobHandlerFactory.create(
+              job,
+              () -> {
+                finalizer.run();
+                // we want to try to consume more
+                scheduleConsumeJob(finalizer);
+              }));
     }
   }
 
