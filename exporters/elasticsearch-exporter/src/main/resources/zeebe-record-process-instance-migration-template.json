@@ -21,6 +21,19 @@
           "properties": {
             "processInstanceKey": {
               "type": "long"
+            },
+            "targetProcessDefinitionKey": {
+              "type": "long"
+            },
+            "mappingInstructions": {
+              "properties": {
+                "sourceElementId": {
+                  "type": "keyword"
+                },
+                "targetElementId": {
+                  "type": "keyword"
+                }
+              }
             }
           }
         }
