@@ -40,6 +40,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscri
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
@@ -2174,10 +2175,34 @@ final class JsonSerializableToJsonTest {
       {
         "ProcessInstanceMigrationRecord",
         (Supplier<UnifiedRecordValue>)
-            () -> new ProcessInstanceMigrationRecord().setProcessInstanceKey(123L),
+            () ->
+                new ProcessInstanceMigrationRecord()
+                    .setProcessInstanceKey(123L)
+                    .setTargetProcessDefinitionKey(456L)
+                    .addMappingInstruction(
+                        new ProcessInstanceMigrationMappingInstruction()
+                            .setSourceElementId("sourceId")
+                            .setTargetElementId("targetId"))
+                    .addMappingInstruction(
+                        new ProcessInstanceMigrationMappingInstruction()
+                            .setSourceElementId("sourceId2"))
+                    .addMappingInstruction(
+                        new ProcessInstanceMigrationMappingInstruction()
+                            .setTargetElementId("targetId3")),
         """
         {
-          "processInstanceKey": 123
+          "processInstanceKey": 123,
+          "targetProcessDefinitionKey": 456,
+          "mappingInstructions": [{
+            "sourceElementId": "sourceId",
+            "targetElementId": "targetId"
+          }, {
+            "sourceElementId": "sourceId2",
+            "targetElementId": ""
+          }, {
+            "sourceElementId": "",
+            "targetElementId": "targetId3"
+          }]
         }
         """
       },
@@ -2188,10 +2213,15 @@ final class JsonSerializableToJsonTest {
       {
         "Empty ProcessInstanceMigrationRecord",
         (Supplier<UnifiedRecordValue>)
-            () -> new ProcessInstanceMigrationRecord().setProcessInstanceKey(123L),
+            () ->
+                new ProcessInstanceMigrationRecord()
+                    .setProcessInstanceKey(123L)
+                    .setTargetProcessDefinitionKey(456L),
         """
         {
-          "processInstanceKey": 123
+          "processInstanceKey": 123,
+          "targetProcessDefinitionKey": 456,
+          "mappingInstructions": []
         }
         """
       },
