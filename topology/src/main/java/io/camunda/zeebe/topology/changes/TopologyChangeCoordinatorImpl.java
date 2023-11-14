@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.topology.changes;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.topology.ClusterTopologyManager;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.CompletedChange;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import java.util.List;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,10 +29,14 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
   private static final Logger LOG = LoggerFactory.getLogger(TopologyChangeCoordinatorImpl.class);
   private final ClusterTopologyManager clusterTopologyManager;
   private final ConcurrencyControl executor;
+  private final Function<MemberId, ActorFuture<ClusterTopology>> syncRequester;
 
   public TopologyChangeCoordinatorImpl(
-      final ClusterTopologyManager clusterTopologyManager, final ConcurrencyControl executor) {
+      final ClusterTopologyManager clusterTopologyManager,
+      final Function<MemberId, ActorFuture<ClusterTopology>> syncRequester,
+      final ConcurrencyControl executor) {
     this.clusterTopologyManager = clusterTopologyManager;
+    this.syncRequester = syncRequester;
     this.executor = executor;
   }
 
@@ -234,5 +240,127 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
       future.completeExceptionally(
           new TopologyRequestFailedException.InternalError(error.getMessage()));
     }
+  }
+
+  public ActorFuture<ClusterTopology> cancelChange(final long changeId) {
+    final ActorFuture<ClusterTopology> future = executor.createFuture();
+    executor.run(
+        () ->
+            clusterTopologyManager
+                .getClusterTopology()
+                .onComplete(
+                    (currentClusterTopology, errorOnGettingTopology) -> {
+                      if (errorOnGettingTopology != null) {
+                        failFuture(future, errorOnGettingTopology);
+                        return;
+                      }
+                      if (!canCancelOperation(changeId, currentClusterTopology, future)) {
+                        return;
+                      }
+
+                      checkAndCancel(changeId, currentClusterTopology, future);
+                    }));
+    return future;
+  }
+
+  /**
+   * Cancel the current operation. This is an inherently unsafe operation because there is no
+   * coordination among the nodes. To make it slightly safer, we first check if the node that is
+   * currently applying the operation is the same as that is in the local ClusterTopology. If it is
+   * not, then we have to get the latest topology from the other nodes before cancelling the change.
+   * This is still not safe if the changes are being applied while cancelling. We expect that cancel
+   * is invoked only when the operation is actually stuck and cannot make progress by itself.
+   *
+   * @param changeId id of the change to be cancelled
+   * @param currentClusterTopology current clusterTopology known to this node
+   * @param future will be completed when the change is cancelled or on failure
+   */
+  private void checkAndCancel(
+      final long changeId,
+      final ClusterTopology currentClusterTopology,
+      final ActorFuture<ClusterTopology> future) {
+    final var memberApplyingCurrentChange =
+        currentClusterTopology.nextPendingOperation().memberId();
+    syncRequester
+        .apply(memberApplyingCurrentChange)
+        .onComplete(
+            (remoteMembersTopology, errorOnQueryingTopology) -> {
+              if (errorOnQueryingTopology != null) {
+                // failed to retrieve topology from the remote member, but we will
+                // cancel anyway
+                cancelAndUpdateLocalTopology(changeId, currentClusterTopology, future);
+                return;
+              }
+
+              // merge received topology and current topology
+              final var mergedTopology = currentClusterTopology.merge(remoteMembersTopology);
+              if (!canCancelOperation(changeId, mergedTopology, future)) {
+                return;
+              }
+
+              if (memberApplyingCurrentChange.equals(
+                  mergedTopology.nextPendingOperation().memberId())) {
+                cancelAndUpdateLocalTopology(changeId, mergedTopology, future);
+              } else {
+                // the last change has been applied, so it is not safe to cancel now.
+                checkAndCancel(changeId, mergedTopology, future);
+              }
+            });
+  }
+
+  private void cancelAndUpdateLocalTopology(
+      final long changeId,
+      final ClusterTopology latestKnownTopology,
+      final ActorFuture<ClusterTopology> future) {
+    clusterTopologyManager.updateClusterTopology(
+        clusterTopology -> {
+          // If the local topology was not up-to-date, it would have received latest topology from
+          // other members via syncRequester. So merge it before cancelling otherwise, latest update
+          // will be missed.
+          final var mergedTopology = latestKnownTopology.merge(clusterTopology);
+          if (mergedTopology.hasPendingChanges()
+              && mergedTopology.pendingChanges().orElseThrow().id() == changeId) {
+            final var cancelledTopology = mergedTopology.cancelPendingChanges();
+            future.complete(cancelledTopology);
+            return cancelledTopology;
+          } else {
+            future.completeExceptionally(
+                new ConcurrentModificationException(
+                    "Cannot cancel change "
+                        + changeId
+                        + " because topology changed while cancelling"));
+            return mergedTopology;
+          }
+        });
+  }
+
+  private boolean canCancelOperation(
+      final long changeId,
+      final ClusterTopology currentClusterTopology,
+      final ActorFuture<ClusterTopology> future) {
+    if (currentClusterTopology.isUninitialized()) {
+      failFuture(
+          future,
+          new InvalidRequest(
+              "Cannot cancel change " + changeId + " because the topology is not initialized"));
+      return false;
+    }
+    if (!currentClusterTopology.hasPendingChanges()) {
+      failFuture(
+          future,
+          new InvalidRequest(
+              "Cannot cancel change " + changeId + " because no change is in progress"));
+      return false;
+    }
+
+    final var clusterChangePlan = currentClusterTopology.pendingChanges().orElseThrow();
+    if (clusterChangePlan.id() != changeId) {
+      failFuture(
+          future,
+          new InvalidRequest(
+              "Cannot cancel change " + changeId + " because it is not the current change"));
+      return false;
+    }
+    return true;
   }
 }

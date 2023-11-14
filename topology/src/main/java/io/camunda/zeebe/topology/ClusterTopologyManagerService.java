@@ -76,7 +76,9 @@ public final class ClusterTopologyManagerService extends Actor implements Topolo
     isCoordinator = localMemberId.id().equals(COORDINATOR_ID);
     if (isCoordinator) {
       // Only a coordinator can start topology change
-      topologyChangeCoordinator = new TopologyChangeCoordinatorImpl(clusterTopologyManager, this);
+      topologyChangeCoordinator =
+          new TopologyChangeCoordinatorImpl(
+              clusterTopologyManager, clusterTopologyGossiper::queryClusterTopology, this);
       topologyRequestServer =
           new TopologyRequestServer(
               communicationService,

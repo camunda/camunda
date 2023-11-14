@@ -599,6 +599,7 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
       case IN_PROGRESS -> Topology.ChangeStatus.IN_PROGRESS;
       case COMPLETED -> Topology.ChangeStatus.COMPLETED;
       case FAILED -> Topology.ChangeStatus.FAILED;
+      case CANCELLED -> Topology.ChangeStatus.FAILED; // TODO: Define cancelled status
     };
   }
 
