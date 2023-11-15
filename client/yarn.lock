@@ -5381,10 +5381,10 @@ mobx-react-lite@4.0.5:
   dependencies:
     use-sync-external-store "^1.2.0"
 
-mobx@6.10.2:
-  version "6.10.2"
-  resolved "https://registry.yarnpkg.com/mobx/-/mobx-6.10.2.tgz#96e123deef140750360ca9a5b02a8b91fbffd4d9"
-  integrity sha512-B1UGC3ieK3boCjnMEcZSwxqRDMdzX65H/8zOHbuTY8ZhvrIjTUoLRR2TP2bPqIgYRfb3+dUigu8yMZufNjn0LQ==
+mobx@6.11.0:
+  version "6.11.0"
+  resolved "https://registry.yarnpkg.com/mobx/-/mobx-6.11.0.tgz#8a748b18c140892d1d0f28b71315f1f639180006"
+  integrity sha512-qngYCmr0WJiFRSAtYe82DB7SbzvbhehkJjONs8ydynUwoazzUQHZdAlaJqUfks5j4HarhWsZrMRhV7HtSO9HOQ==
 
 monaco-editor@0.44.0:
   version "0.44.0"
