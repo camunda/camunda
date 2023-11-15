@@ -362,6 +362,7 @@ public class ClusterEndpoint {
       case IN_PROGRESS -> StatusEnum.IN_PROGRESS;
       case COMPLETED -> StatusEnum.COMPLETED;
       case FAILED -> StatusEnum.FAILED;
+      case CANCELLED -> StatusEnum.CANCELLED;
     };
   }
 

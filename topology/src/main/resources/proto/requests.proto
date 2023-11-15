@@ -34,6 +34,10 @@ message ReassignAllPartitionsRequest {
   repeated string memberIds = 1;
 }
 
+message CancelTopologyChangeRequest {
+  int64 changeId = 1;
+}
+
 message TopologyChangeResponse {
   int64 changeId = 1;
   map<string, topology_protocol.MemberState> currentTopology = 2;

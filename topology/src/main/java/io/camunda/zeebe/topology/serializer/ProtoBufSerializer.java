@@ -13,6 +13,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.topology.api.ErrorResponse;
 import io.camunda.zeebe.topology.api.TopologyChangeResponse;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.CancelChangeRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.ReassignPartitionsRequest;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.topology.protocol.Requests.ErrorCode;
 import io.camunda.zeebe.topology.protocol.Requests.Response;
 import io.camunda.zeebe.topology.protocol.Requests.TopologyChangeResponse.Builder;
 import io.camunda.zeebe.topology.protocol.Topology;
+import io.camunda.zeebe.topology.protocol.Topology.ChangeStatus;
 import io.camunda.zeebe.topology.protocol.Topology.CompletedChange;
 import io.camunda.zeebe.topology.protocol.Topology.MemberState;
 import io.camunda.zeebe.topology.state.ClusterChangePlan;
@@ -432,6 +434,14 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
   }
 
   @Override
+  public byte[] encodeCancelChangeRequest(final CancelChangeRequest cancelChangeRequest) {
+    return Requests.CancelTopologyChangeRequest.newBuilder()
+        .setChangeId(cancelChangeRequest.changeId())
+        .build()
+        .toByteArray();
+  }
+
+  @Override
   public AddMembersRequest decodeAddMembersRequest(final byte[] encodedState) {
     try {
       final var addMemberRequest = Requests.AddMembersRequest.parseFrom(encodedState);
@@ -503,6 +513,16 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
       return new ScaleRequest(
           scaleRequest.getMemberIdsList().stream().map(MemberId::from).collect(Collectors.toSet()),
           scaleRequest.getDryRun());
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  @Override
+  public CancelChangeRequest decodeCancelChangeRequest(final byte[] encodedState) {
+    try {
+      final var cancelChangeRequest = Requests.CancelTopologyChangeRequest.parseFrom(encodedState);
+      return new CancelChangeRequest(cancelChangeRequest.getChangeId());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
@@ -599,6 +619,7 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
       case IN_PROGRESS -> Topology.ChangeStatus.IN_PROGRESS;
       case COMPLETED -> Topology.ChangeStatus.COMPLETED;
       case FAILED -> Topology.ChangeStatus.FAILED;
+      case CANCELLED -> ChangeStatus.CANCELLED;
     };
   }
 
@@ -607,6 +628,7 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
       case IN_PROGRESS -> ClusterChangePlan.Status.IN_PROGRESS;
       case COMPLETED -> ClusterChangePlan.Status.COMPLETED;
       case FAILED -> ClusterChangePlan.Status.FAILED;
+      case CANCELLED -> ClusterChangePlan.Status.CANCELLED;
       default -> throw new IllegalStateException("Unknown status: " + status);
     };
   }

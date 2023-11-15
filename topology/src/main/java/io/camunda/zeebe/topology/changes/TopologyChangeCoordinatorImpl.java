@@ -49,6 +49,23 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
     return applyOrDryRun(true, request);
   }
 
+  @Override
+  public ActorFuture<ClusterTopology> cancelChange(final long changeId) {
+    final ActorFuture<ClusterTopology> future = executor.createFuture();
+    executor.run(
+        () ->
+            clusterTopologyManager.updateClusterTopology(
+                clusterTopology -> {
+                  if (!validateCancel(changeId, clusterTopology, future)) {
+                    return clusterTopology;
+                  }
+                  final var cancelledTopology = clusterTopology.cancelPendingChanges();
+                  future.complete(cancelledTopology);
+                  return cancelledTopology;
+                }));
+    return future;
+  }
+
   private ActorFuture<TopologyChangeResult> applyOrDryRun(
       final boolean dryRun, final TopologyChangeRequest request) {
     final ActorFuture<TopologyChangeResult> future = executor.createFuture();
@@ -234,5 +251,35 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
       future.completeExceptionally(
           new TopologyRequestFailedException.InternalError(error.getMessage()));
     }
+  }
+
+  private boolean validateCancel(
+      final long changeId,
+      final ClusterTopology currentClusterTopology,
+      final ActorFuture<ClusterTopology> future) {
+    if (currentClusterTopology.isUninitialized()) {
+      failFuture(
+          future,
+          new InvalidRequest(
+              "Cannot cancel change " + changeId + " because the topology is not initialized"));
+      return false;
+    }
+    if (!currentClusterTopology.hasPendingChanges()) {
+      failFuture(
+          future,
+          new InvalidRequest(
+              "Cannot cancel change " + changeId + " because no change is in progress"));
+      return false;
+    }
+
+    final var clusterChangePlan = currentClusterTopology.pendingChanges().orElseThrow();
+    if (clusterChangePlan.id() != changeId) {
+      failFuture(
+          future,
+          new InvalidRequest(
+              "Cannot cancel change " + changeId + " because it is not the current change"));
+      return false;
+    }
+    return true;
   }
 }

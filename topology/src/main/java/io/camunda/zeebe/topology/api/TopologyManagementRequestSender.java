@@ -113,4 +113,14 @@ public final class TopologyManagementRequestSender {
         coordinator,
         TIMEOUT);
   }
+
+  public CompletableFuture<ClusterTopology> cancelTopologyChange(final long changeId) {
+    return communicationService.send(
+        TopologyRequestTopics.CANCEL_CHANGE.topic(),
+        new TopologyManagementRequest.CancelChangeRequest(changeId),
+        serializer::encodeCancelChangeRequest,
+        serializer::decodeClusterTopology,
+        coordinator,
+        TIMEOUT);
+  }
 }

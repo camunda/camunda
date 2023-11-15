@@ -10,6 +10,7 @@ package io.camunda.zeebe.topology.api;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.topology.api.TopologyManagementRequest.CancelChangeRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.topology.api.TopologyManagementRequest.ReassignPartitionsRequest;
@@ -97,6 +98,12 @@ public final class TopologyManagementRequestsHandler implements TopologyManageme
     } else {
       return handleRequest(coordinator::applyOperations, transformer);
     }
+  }
+
+  @Override
+  public ActorFuture<ClusterTopology> cancelTopologyChange(
+      final CancelChangeRequest changeRequest) {
+    return coordinator.cancelChange(changeRequest.changeId());
   }
 
   @Override
