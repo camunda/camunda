@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
@@ -85,29 +85,22 @@ public class UserTaskStateTest {
 
   private void assertUserTask(
       final UserTaskRecord expectedRecord, final UserTaskRecord storedRecord) {
-    assertThat(storedRecord.getElementInstanceKey())
-        .isEqualTo(expectedRecord.getElementInstanceKey());
-    assertThat(storedRecord.getBpmnProcessIdBuffer())
-        .isEqualTo(expectedRecord.getBpmnProcessIdBuffer());
-    assertThat(storedRecord.getElementIdBuffer()).isEqualTo(expectedRecord.getElementIdBuffer());
-    assertThat(storedRecord.getProcessInstanceKey())
-        .isEqualTo(expectedRecord.getProcessInstanceKey());
-    assertThat(storedRecord.getProcessDefinitionKey())
-        .isEqualTo(expectedRecord.getProcessDefinitionKey());
-    assertThat(storedRecord.getProcessDefinitionVersion())
-        .isEqualTo(expectedRecord.getProcessDefinitionVersion());
+    assertThat(storedRecord).hasElementInstanceKey(expectedRecord.getElementInstanceKey());
+    assertThat(storedRecord).hasBpmnProcessId(expectedRecord.getBpmnProcessId());
+    assertThat(storedRecord).hasElementId(expectedRecord.getElementId());
+    assertThat(storedRecord).hasProcessInstanceKey(expectedRecord.getProcessInstanceKey());
+    assertThat(storedRecord).hasProcessDefinitionKey(expectedRecord.getProcessDefinitionKey());
+    assertThat(storedRecord)
+        .hasProcessDefinitionVersion(expectedRecord.getProcessDefinitionVersion());
 
-    assertThat(storedRecord.getAssigneeBuffer()).isEqualTo(expectedRecord.getAssigneeBuffer());
-    assertThat(storedRecord.getCandidateGroupsBuffer())
-        .isEqualTo(expectedRecord.getCandidateGroupsBuffer());
-    assertThat(storedRecord.getCandidateUsersBuffer())
-        .isEqualTo(expectedRecord.getCandidateUsersBuffer());
-    assertThat(storedRecord.getDueDateBuffer()).isEqualTo(expectedRecord.getDueDateBuffer());
-    assertThat(storedRecord.getFollowUpDateBuffer())
-        .isEqualTo(expectedRecord.getFollowUpDateBuffer());
-    assertThat(storedRecord.getFormKey()).isEqualTo(expectedRecord.getFormKey());
+    assertThat(storedRecord).hasAssignee(expectedRecord.getAssignee());
+    assertThat(storedRecord).hasCandidateGroups(expectedRecord.getCandidateGroups());
+    assertThat(storedRecord).hasCandidateUsers(expectedRecord.getCandidateUsers());
+    assertThat(storedRecord).hasDueDate(expectedRecord.getDueDate());
+    assertThat(storedRecord).hasFollowUpDate(expectedRecord.getFollowUpDate());
+    assertThat(storedRecord).hasFormKey(expectedRecord.getFormKey());
 
-    assertThat(storedRecord.getUserTaskKey()).isEqualTo(expectedRecord.getUserTaskKey());
-    assertThat(storedRecord.getTenantId()).isEqualTo(expectedRecord.getTenantId());
+    assertThat(storedRecord).hasUserTaskKey(expectedRecord.getUserTaskKey());
+    assertThat(storedRecord).hasTenantId(expectedRecord.getTenantId());
   }
 }
