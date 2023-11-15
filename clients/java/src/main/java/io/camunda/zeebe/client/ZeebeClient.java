@@ -359,8 +359,38 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    */
   UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(ActivatedJob job);
 
+  /**
+   * Command to update the timeout of a job.
+   *
+   * <pre>
+   * long jobKey = ..;
+   *
+   * zeebeClient
+   *  .newUpdateTimeoutCommand(jobKey)
+   *  .timeout(100)
+   *  .send();
+   * </pre>
+   *
+   * @param jobKey the key of the job to update
+   * @return a builder for the command
+   */
   UpdateTimeoutJobCommandStep1 newUpdateTimeoutCommand(long jobKey);
 
+  /**
+   * Command to update the timeout of a job.
+   *
+   * <pre>
+   * ActivatedJob job= ..;
+   *
+   * zeebeClient
+   *  .newUpdateTimeoutCommand(job)
+   *  .timeout(100)
+   *  .send();
+   * </pre>
+   *
+   * @param job the activated job
+   * @return a builder for the command
+   */
   UpdateTimeoutJobCommandStep1 newUpdateTimeoutCommand(ActivatedJob job);
 
   /**

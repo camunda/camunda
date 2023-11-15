@@ -19,6 +19,13 @@ import io.camunda.zeebe.client.api.response.UpdateTimeoutJobResponse;
 
 public interface UpdateTimeoutJobCommandStep1 {
 
+  /**
+   * Set the timeout of this job.
+   *
+   * @param timout the timeout of this job
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
   UpdateTimeoutJobCommandStep2 timeout(long timout);
 
   interface UpdateTimeoutJobCommandStep2 extends FinalCommandStep<UpdateTimeoutJobResponse> {
