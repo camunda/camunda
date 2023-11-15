@@ -16,6 +16,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.topology.TopologyInitializer.FileInitializer;
 import io.camunda.zeebe.topology.TopologyInitializer.GossipInitializer;
+import io.camunda.zeebe.topology.TopologyInitializer.RollingUpdateAwareInitializerV83ToV84;
 import io.camunda.zeebe.topology.TopologyInitializer.StaticInitializer;
 import io.camunda.zeebe.topology.TopologyInitializer.SyncInitializer;
 import io.camunda.zeebe.topology.api.TopologyManagementRequestsHandler;
@@ -42,7 +43,7 @@ public final class ClusterTopologyManagerService extends Actor implements Topolo
   private static final String TOPOLOGY_FILE_NAME = ".topology.meta";
   private final ClusterTopologyManagerImpl clusterTopologyManager;
   private final ClusterTopologyGossiper clusterTopologyGossiper;
-
+  private final ClusterMembershipService memberShipService;
   private final boolean isCoordinator;
   private final PersistedClusterTopology persistedClusterTopology;
   private final Path topologyFile;
@@ -54,6 +55,7 @@ public final class ClusterTopologyManagerService extends Actor implements Topolo
       final ClusterCommunicationService communicationService,
       final ClusterMembershipService memberShipService,
       final ClusterTopologyGossiperConfig config) {
+    this.memberShipService = memberShipService;
     try {
       FileUtil.ensureDirectoryExists(dataRootDirectory);
     } catch (final IOException e) {
@@ -87,8 +89,13 @@ public final class ClusterTopologyManagerService extends Actor implements Topolo
     clusterTopologyManager.setTopologyGossiper(clusterTopologyGossiper::updateClusterTopology);
   }
 
-  private TopologyInitializer getNonCoordinatorInitializer() {
+  private TopologyInitializer getNonCoordinatorInitializer(
+      final ClusterMembershipService membershipService,
+      final StaticConfiguration staticConfiguration) {
     return new FileInitializer(topologyFile, new ProtoBufSerializer())
+        // Only to support rolling update from 8.3 to 8.4. Should be removed after 8.4 release
+        .orThen(
+            new RollingUpdateAwareInitializerV83ToV84(membershipService, staticConfiguration, this))
         .orThen(
             new GossipInitializer(
                 clusterTopologyGossiper,
@@ -99,15 +106,18 @@ public final class ClusterTopologyManagerService extends Actor implements Topolo
 
   private TopologyInitializer getCoordinatorInitializer(
       final StaticConfiguration staticConfiguration) {
-    final var knownMembers =
+    final var otherKnownMembers =
         staticConfiguration.clusterMembers().stream()
             .filter(m -> !m.equals(staticConfiguration.localMemberId()))
             .toList();
     return new FileInitializer(topologyFile, new ProtoBufSerializer())
+        // Only to support rolling update from 8.3 to 8.4. Should be removed after 8.4 release
+        .orThen(
+            new RollingUpdateAwareInitializerV83ToV84(memberShipService, staticConfiguration, this))
         .orThen(
             new SyncInitializer(
                 clusterTopologyGossiper,
-                knownMembers,
+                otherKnownMembers,
                 this,
                 clusterTopologyGossiper::queryClusterTopology))
         .orThen(new StaticInitializer(staticConfiguration));
@@ -138,7 +148,7 @@ public final class ClusterTopologyManagerService extends Actor implements Topolo
     final TopologyInitializer topologyInitializer =
         isCoordinator
             ? getCoordinatorInitializer(staticConfiguration)
-            : getNonCoordinatorInitializer();
+            : getNonCoordinatorInitializer(memberShipService, staticConfiguration);
 
     if (topologyRequestServer != null) {
       topologyRequestServer.start();
