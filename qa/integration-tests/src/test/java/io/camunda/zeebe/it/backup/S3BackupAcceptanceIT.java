@@ -91,7 +91,13 @@ final class S3BackupAcceptanceIT {
     store = new S3BackupStore(config);
 
     try (final var client = S3BackupStore.buildClient(config)) {
-      client.createBucket(builder -> builder.bucket(config.bucketName()).build()).join();
+      // it's possible to query to fast and get a 503 from the server here, so simply retry after
+      Awaitility.await("unil bucket is created")
+          .untilAsserted(
+              () ->
+                  client
+                      .createBucket(builder -> builder.bucket(config.bucketName()).build())
+                      .join());
     }
 
     // we have to configure the cluster here, after minio is started, as otherwise we won't have
