@@ -67,7 +67,7 @@ public class UserTaskStateTest {
     }
   }
 
-  public UserTaskRecord createUserTask() {
+  private UserTaskRecord createUserTask() {
     return new UserTaskRecord()
         .setElementInstanceKey(1234)
         .setBpmnProcessId("process")
@@ -83,7 +83,7 @@ public class UserTaskStateTest {
         .setFormKey(5678);
   }
 
-  public void assertUserTask(
+  private void assertUserTask(
       final UserTaskRecord expectedRecord, final UserTaskRecord storedRecord) {
     assertThat(storedRecord.getElementInstanceKey())
         .isEqualTo(expectedRecord.getElementInstanceKey());
