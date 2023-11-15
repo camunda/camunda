@@ -203,8 +203,8 @@ public interface Intent {
         return FormIntent.valueOf(intent);
       case USER_TASK:
         return UserTaskIntent.valueOf(intent);
-      case PROCESS_INSTANCE_MODIFICATION:
-        return ProcessInstanceModificationIntent.valueOf(intent);
+      case PROCESS_INSTANCE_MIGRATION:
+        return ProcessInstanceMigrationIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
