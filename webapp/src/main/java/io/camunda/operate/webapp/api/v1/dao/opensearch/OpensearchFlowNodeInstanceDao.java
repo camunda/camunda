@@ -6,25 +6,128 @@
  */
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
+import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.conditions.OpensearchCondition;
+import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
+import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.FlowNodeInstanceDao;
 import io.camunda.operate.webapp.api.v1.entities.FlowNodeInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
-import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
+import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
+import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
+import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
+import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.search.Hit;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
+import java.util.LinkedList;
+import java.util.List;
+
 @Conditional(OpensearchCondition.class)
 @Component
-public class OpensearchFlowNodeInstanceDao implements FlowNodeInstanceDao {
-  @Override
-  public FlowNodeInstance byKey(Long key) throws APIException {
-    throw new UnsupportedOperationException();
+public class OpensearchFlowNodeInstanceDao extends OpensearchDao<FlowNodeInstance> implements FlowNodeInstanceDao {
+
+  private final FlowNodeInstanceTemplate flowNodeInstanceIndex;
+  private final ProcessCache processCache;
+
+  public OpensearchFlowNodeInstanceDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
+                                       FlowNodeInstanceTemplate flowNodeInstanceIndex, RichOpenSearchClient richOpenSearchClient,
+                                       ProcessCache processCache) {
+    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
+    this.flowNodeInstanceIndex = flowNodeInstanceIndex;
+    this.processCache = processCache;
   }
 
   @Override
-  public Results<FlowNodeInstance> search(Query<FlowNodeInstance> query) throws APIException {
-    throw new UnsupportedOperationException();
+  public FlowNodeInstance byKey(Long key) throws APIException {
+    List<FlowNodeInstance> flowNodeInstances;
+    try {
+      flowNodeInstances = search(new Query<FlowNodeInstance>().setFilter(new FlowNodeInstance().setKey(key))).getItems();
+    } catch (Exception e) {
+      throw new ServerException(String.format("Error in reading flownode instance for key %s", key), e);
+    }
+    if (flowNodeInstances.isEmpty()) {
+      throw new ResourceNotFoundException(String.format("No flownode instance found for key %s ", key));
+    }
+    if (flowNodeInstances.size() > 1) {
+      throw new ServerException(String.format("Found more than one flownode instances for key %s", key));
+    }
+    return flowNodeInstances.get(0);
+  }
+
+  @Override
+  protected String getIndexName() {
+    return flowNodeInstanceIndex.getAlias();
+  }
+
+  @Override
+  protected String getUniqueSortKey() {
+    return FlowNodeInstance.KEY;
+  }
+
+  @Override
+  protected Class<FlowNodeInstance> getModelClass() {
+    return FlowNodeInstance.class;
+  }
+
+  @Override
+  protected void buildFiltering(Query<FlowNodeInstance> query, SearchRequest.Builder request) {
+    FlowNodeInstance filter = query.getFilter();
+
+    if (filter != null) {
+      List<org.opensearch.client.opensearch._types.query_dsl.Query> queryTerms = new LinkedList<>();
+
+      if (filter.getKey() != null) {
+        queryTerms.add(queryDSLWrapper.term(FlowNodeInstance.KEY, filter.getKey()));
+      }
+      if (filter.getProcessInstanceKey() != null) {
+        queryTerms.add(queryDSLWrapper.term(FlowNodeInstance.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()));
+      }
+      if (filter.getProcessDefinitionKey() != null) {
+        queryTerms.add(queryDSLWrapper.term(FlowNodeInstance.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()));
+      }
+      if (filter.getStartDate() != null) {
+        queryTerms.add(queryDSLWrapper.term(FlowNodeInstance.START_DATE, filter.getStartDate()));
+      }
+      if (filter.getEndDate() != null) {
+        queryTerms.add(queryDSLWrapper.term(FlowNodeInstance.END_DATE, filter.getEndDate()));
+      }
+      if (filter.getState() != null) {
+        queryTerms.add(queryDSLWrapper.term(FlowNodeInstance.STATE, filter.getState()));
+      }
+      if (filter.getType() != null) {
+        queryTerms.add(queryDSLWrapper.term(FlowNodeInstance.TYPE, filter.getType()));
+      }
+      if (filter.getFlowNodeId() != null) {
+        queryTerms.add(queryDSLWrapper.term(FlowNodeInstance.FLOW_NODE_ID, filter.getFlowNodeId()));
+      }
+      if (filter.getIncident() != null) {
+        queryTerms.add(queryDSLWrapper.term(FlowNodeInstance.INCIDENT, filter.getIncident()));
+      }
+      if (filter.getIncidentKey() != null) {
+        queryTerms.add(queryDSLWrapper.term(FlowNodeInstance.INCIDENT_KEY, filter.getIncidentKey()));
+      }
+      if (filter.getTenantId() != null) {
+        queryTerms.add(queryDSLWrapper.term(FlowNodeInstance.TENANT_ID, filter.getTenantId()));
+      }
+
+      if (!queryTerms.isEmpty()) {
+        request.query(queryDSLWrapper.and(queryTerms));
+      }
+    }
+  }
+
+  @Override
+  protected FlowNodeInstance transformHitToItem(Hit<FlowNodeInstance> hit) {
+    FlowNodeInstance item = hit.source();
+    if (item != null && item.getFlowNodeId() != null) {
+      String flowNodeName = processCache.getFlowNodeNameOrDefaultValue(item.getProcessDefinitionKey(),
+          item.getFlowNodeId(), null);
+      item.setFlowNodeName(flowNodeName);
+    }
+    return item;
   }
 }

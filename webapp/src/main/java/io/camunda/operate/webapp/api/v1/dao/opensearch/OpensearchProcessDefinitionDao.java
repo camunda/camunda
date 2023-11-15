@@ -76,7 +76,12 @@ public class OpensearchProcessDefinitionDao extends OpensearchDao<ProcessDefinit
 
   @Override
   protected SearchRequest.Builder buildRequest(Query<ProcessDefinition> query) {
-    return requestDSLWrapper.searchRequestBuilder(processIndex.getAlias());
+    return requestDSLWrapper.searchRequestBuilder(getIndexName());
+  }
+
+  @Override
+  protected String getIndexName() {
+    return processIndex.getAlias();
   }
 
   @Override

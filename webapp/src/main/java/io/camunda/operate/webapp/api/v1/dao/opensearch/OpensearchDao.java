@@ -20,6 +20,7 @@ import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
@@ -52,11 +53,16 @@ public abstract class OpensearchDao<T> {
     }
   }
 
-  protected abstract SearchRequest.Builder buildRequest(Query<T> query);
+  protected SearchRequest.Builder buildRequest(Query<T> query) {
+    return requestDSLWrapper.searchRequestBuilder(getIndexName())
+        .query(queryDSLWrapper.withTenantCheck(queryDSLWrapper.matchAll()));
+  }
 
   protected abstract String getUniqueSortKey();
 
   protected abstract Class<T> getModelClass();
+
+  protected abstract String getIndexName();
 
   protected void buildSorting(Query<T> query, String uniqueSortKey, SearchRequest.Builder request) {
     List<Query.Sort> sorts = query.getSort();
@@ -88,7 +94,8 @@ public abstract class OpensearchDao<T> {
     List<Hit<T>> hits = results.hits();
 
     if (!hits.isEmpty()) {
-      List<T> items = hits.stream().map(Hit::source).collect(Collectors.toList());
+      List<T> items = hits.stream().map(this::transformHitToItem)
+          .filter(Objects::nonNull).collect(Collectors.toList());
 
       List<String> sortValues = hits.get(hits.size() - 1).sort();
 
@@ -100,6 +107,10 @@ public abstract class OpensearchDao<T> {
       return new Results<T>()
           .setTotal(results.total().value());
     }
+  }
+
+  protected T transformHitToItem(Hit<T> hit) {
+    return hit.source();
   }
 
   protected org.opensearch.client.opensearch._types.query_dsl.Query buildTermQuery(String name, Number value) {

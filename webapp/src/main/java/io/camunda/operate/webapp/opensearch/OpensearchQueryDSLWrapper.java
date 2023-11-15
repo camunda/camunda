@@ -35,7 +35,7 @@ public class OpensearchQueryDSLWrapper {
     }
 
 
-    public Query and(ArrayList<Query> queries) { return QueryDSL.and(queries); }
+    public Query and(List<Query> queries) { return QueryDSL.and(queries); }
 
     public Query withTenantCheck(Query query) {
         return QueryDSL.withTenantCheck(query);

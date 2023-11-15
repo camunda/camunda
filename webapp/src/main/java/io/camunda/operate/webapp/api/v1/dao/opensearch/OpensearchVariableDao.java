@@ -37,9 +37,8 @@ public class OpensearchVariableDao extends OpensearchDao<Variable> implements Va
   }
 
   @Override
-  protected SearchRequest.Builder buildRequest(Query<Variable> query) {
-    return requestDSLWrapper.searchRequestBuilder(variableIndex.getAlias())
-        .query(queryDSLWrapper.withTenantCheck(queryDSLWrapper.matchAll()));
+  protected String getIndexName() {
+    return variableIndex.getAlias();
   }
 
   @Override
@@ -97,10 +96,8 @@ public class OpensearchVariableDao extends OpensearchDao<Variable> implements Va
         queryTerms.add(queryDSLWrapper.term(Variable.TRUNCATED, filter.getTruncated()));
       }
 
-      queryTerms.toArray(new org.opensearch.client.opensearch._types.query_dsl.Query[0]);
       if (!queryTerms.isEmpty()) {
-        request.query(queryDSLWrapper.and(
-            queryTerms.toArray(new org.opensearch.client.opensearch._types.query_dsl.Query[0])));
+        request.query(queryDSLWrapper.and(queryTerms));
       }
     }
   }
