@@ -59,6 +59,21 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
                   if (!validateCancel(changeId, clusterTopology, future)) {
                     return clusterTopology;
                   }
+                  final var completedOperation =
+                      clusterTopology
+                          .pendingChanges()
+                          .map(ClusterChangePlan::completedOperations)
+                          .orElse(List.of());
+                  final var cancelledOperations =
+                      clusterTopology
+                          .pendingChanges()
+                          .map(ClusterChangePlan::pendingOperations)
+                          .orElse(List.of());
+                  LOG.info(
+                      "Cancelling topology change '{}'. Following operations have been already applied: {}. Following pending operations won't be applied: {}",
+                      changeId,
+                      completedOperation,
+                      cancelledOperations);
                   final var cancelledTopology = clusterTopology.cancelPendingChanges();
                   future.complete(cancelledTopology);
                   return cancelledTopology;
