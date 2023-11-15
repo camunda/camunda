@@ -53,7 +53,8 @@ public interface Intent {
           ResourceDeletionIntent.class,
           CommandDistributionIntent.class,
           ProcessInstanceBatchIntent.class,
-          FormIntent.class);
+          FormIntent.class,
+          UserTaskIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN = UnknownIntent.UNKNOWN;
 
@@ -126,6 +127,8 @@ public interface Intent {
         return ProcessInstanceBatchIntent.from(intent);
       case FORM:
         return FormIntent.from(intent);
+      case USER_TASK:
+        return UserTaskIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -195,6 +198,8 @@ public interface Intent {
         return ResourceDeletionIntent.valueOf(intent);
       case FORM:
         return FormIntent.valueOf(intent);
+      case USER_TASK:
+        return UserTaskIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

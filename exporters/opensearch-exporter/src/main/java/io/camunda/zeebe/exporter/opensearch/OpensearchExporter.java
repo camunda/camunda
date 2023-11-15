@@ -286,6 +286,9 @@ public class OpensearchExporter implements Exporter {
       if (index.form) {
         createValueIndexTemplate(ValueType.FORM);
       }
+      if (index.userTask) {
+        createValueIndexTemplate(ValueType.USER_TASK);
+      }
     }
 
     indexTemplatesCreated = true;

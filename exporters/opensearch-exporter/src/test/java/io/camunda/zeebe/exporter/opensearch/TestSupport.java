@@ -78,6 +78,7 @@ final class TestSupport {
       case RESOURCE_DELETION -> config.resourceDeletion = value;
       case COMMAND_DISTRIBUTION -> config.commandDistribution = value;
       case FORM -> config.form = value;
+      case USER_TASK -> config.userTask = value;
       default -> throw new IllegalArgumentException(
           "No known indexing configuration option for value type " + valueType);
     }
