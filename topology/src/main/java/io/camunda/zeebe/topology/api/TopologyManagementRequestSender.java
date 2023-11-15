@@ -44,7 +44,7 @@ public final class TopologyManagementRequestSender {
         TopologyRequestTopics.ADD_MEMBER.topic(),
         addMembersRequest,
         serializer::encodeAddMembersRequest,
-        serializer::decodeResponse,
+        serializer::decodeTopologyChangeResponse,
         coordinator,
         TIMEOUT);
   }
@@ -55,7 +55,7 @@ public final class TopologyManagementRequestSender {
         TopologyRequestTopics.REMOVE_MEMBER.topic(),
         removeMembersRequest,
         serializer::encodeRemoveMembersRequest,
-        serializer::decodeResponse,
+        serializer::decodeTopologyChangeResponse,
         coordinator,
         TIMEOUT);
   }
@@ -66,7 +66,7 @@ public final class TopologyManagementRequestSender {
         TopologyRequestTopics.JOIN_PARTITION.topic(),
         joinPartitionRequest,
         serializer::encodeJoinPartitionRequest,
-        serializer::decodeResponse,
+        serializer::decodeTopologyChangeResponse,
         coordinator,
         TIMEOUT);
   }
@@ -77,7 +77,7 @@ public final class TopologyManagementRequestSender {
         TopologyRequestTopics.LEAVE_PARTITION.topic(),
         leavePartitionRequest,
         serializer::encodeLeavePartitionRequest,
-        serializer::decodeResponse,
+        serializer::decodeTopologyChangeResponse,
         coordinator,
         TIMEOUT);
   }
@@ -88,7 +88,7 @@ public final class TopologyManagementRequestSender {
         TopologyRequestTopics.REASSIGN_PARTITIONS.topic(),
         reassignPartitionsRequest,
         serializer::encodeReassignPartitionsRequest,
-        serializer::decodeResponse,
+        serializer::decodeTopologyChangeResponse,
         coordinator,
         TIMEOUT);
   }
@@ -99,27 +99,28 @@ public final class TopologyManagementRequestSender {
         TopologyRequestTopics.SCALE_MEMBERS.topic(),
         scaleRequest,
         serializer::encodeScaleRequest,
-        serializer::decodeResponse,
+        serializer::decodeTopologyChangeResponse,
         coordinator,
         TIMEOUT);
   }
 
-  public CompletableFuture<ClusterTopology> getTopology() {
+  public CompletableFuture<Either<ErrorResponse, ClusterTopology>> getTopology() {
     return communicationService.send(
         TopologyRequestTopics.QUERY_TOPOLOGY.topic(),
         new byte[0],
         Function.identity(),
-        serializer::decodeClusterTopology,
+        serializer::decodeClusterTopologyResponse,
         coordinator,
         TIMEOUT);
   }
 
-  public CompletableFuture<ClusterTopology> cancelTopologyChange(final long changeId) {
+  public CompletableFuture<Either<ErrorResponse, ClusterTopology>> cancelTopologyChange(
+      final long changeId) {
     return communicationService.send(
         TopologyRequestTopics.CANCEL_CHANGE.topic(),
         new TopologyManagementRequest.CancelChangeRequest(changeId),
         serializer::encodeCancelChangeRequest,
-        serializer::decodeClusterTopology,
+        serializer::decodeClusterTopologyResponse,
         coordinator,
         TIMEOUT);
   }
