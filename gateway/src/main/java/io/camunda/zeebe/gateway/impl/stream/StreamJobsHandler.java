@@ -20,15 +20,12 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.transport.stream.api.ClientStreamId;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
-import io.camunda.zeebe.util.LockUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import net.jcip.annotations.GuardedBy;
+import java.util.concurrent.Executor;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,7 +67,7 @@ public class StreamJobsHandler extends Actor {
       final ServerCallStreamObserver<ActivatedJob> responseObserver) {
     final var streamType = wrapString(jobType);
     final var consumer = new JobStreamConsumer(responseObserver, actor);
-    final var cleaner = new AsyncJobStreamRemover(jobStreamer);
+    final var cleaner = new AsyncJobStreamRemover(jobStreamer, actor);
 
     // setting the handlers has to be done before the call is started, so we cannot do it in the
     // actor callbacks, which is why the remover can handle being called out of order
@@ -102,7 +99,7 @@ public class StreamJobsHandler extends Actor {
       return;
     }
 
-    cleaner.setStreamId(streamId);
+    cleaner.streamId(streamId);
   }
 
   private void handleError(
@@ -158,32 +155,30 @@ public class StreamJobsHandler extends Actor {
 
   @VisibleForTesting("Allow unit testing behavior")
   static final class AsyncJobStreamRemover implements Runnable {
-    private final Lock lock = new ReentrantLock();
     private final ClientStreamer<JobActivationProperties> jobStreamer;
+    private final Executor executor;
 
-    @GuardedBy("lock")
     private boolean isRemoved;
-
-    @GuardedBy("lock")
     private ClientStreamId streamId;
 
     @VisibleForTesting("Allow unit testing behavior")
-    AsyncJobStreamRemover(final ClientStreamer<JobActivationProperties> jobStreamer) {
+    AsyncJobStreamRemover(
+        final ClientStreamer<JobActivationProperties> jobStreamer, final Executor executor) {
       this.jobStreamer = jobStreamer;
+      this.executor = executor;
     }
 
     @Override
     public void run() {
-      LockUtil.withLock(lock, this::lockedRemove);
+      executor.execute(this::remove);
     }
 
     @VisibleForTesting("Allow unit testing behavior")
-    void setStreamId(final ClientStreamId streamId) {
-      LockUtil.withLock(lock, () -> lockedSetStreamId(streamId));
+    void streamId(final ClientStreamId streamId) {
+      executor.execute(() -> setStreamId(streamId));
     }
 
-    @GuardedBy("lock")
-    private void lockedRemove() {
+    private void remove() {
       isRemoved = true;
 
       if (streamId != null) {
@@ -191,8 +186,7 @@ public class StreamJobsHandler extends Actor {
       }
     }
 
-    @GuardedBy("lock")
-    private void lockedSetStreamId(final ClientStreamId streamId) {
+    private void setStreamId(final ClientStreamId streamId) {
       if (isRemoved) {
         jobStreamer.remove(streamId);
         return;
