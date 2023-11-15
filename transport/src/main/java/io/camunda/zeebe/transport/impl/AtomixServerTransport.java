@@ -16,9 +16,11 @@ import io.camunda.zeebe.transport.ServerResponse;
 import io.camunda.zeebe.transport.ServerTransport;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.concurrent.IdGenerator;
+import org.agrona.concurrent.SnowflakeIdGenerator;
+import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
@@ -26,18 +28,27 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
 
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
   private static final String API_TOPIC_FORMAT = "%s-api-%d";
+  // Unix epoch time for January 1, 2023 1:00:00 AM GMT+01:00
+  private static final long TIMESTAMP_OFFSET_2023 = 1672531200000L;
   private static final String ERROR_MSG_MISSING_PARTITON_MAP =
       "Node already unsubscribed from partition %d, this can only happen when atomix does not cleanly remove its handlers.";
 
   private final Int2ObjectHashMap<Long2ObjectHashMap<CompletableFuture<byte[]>>>
       partitionsRequestMap;
-  private final AtomicLong requestCount;
   private final MessagingService messagingService;
 
-  public AtomixServerTransport(final MessagingService messagingService) {
+  private final IdGenerator idGenerator;
+
+  public AtomixServerTransport(final MessagingService messagingService, final int nodeId) {
     this.messagingService = messagingService;
     partitionsRequestMap = new Int2ObjectHashMap<>();
-    requestCount = new AtomicLong(0);
+    this.idGenerator =
+        new SnowflakeIdGenerator(
+            SnowflakeIdGenerator.NODE_ID_BITS_DEFAULT,
+            SnowflakeIdGenerator.SEQUENCE_BITS_DEFAULT,
+            nodeId,
+            TIMESTAMP_OFFSET_2023,
+            SystemEpochClock.INSTANCE);
   }
 
   @Override
@@ -89,7 +100,7 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
     }
   }
 
-  private void removeRequestHandlers(final int partitionId, RequestType requestType) {
+  private void removeRequestHandlers(final int partitionId, final RequestType requestType) {
     final var topicName = topicName(partitionId, requestType);
     LOG.trace("Unsubscribe from topic {}", topicName);
     messagingService.unregisterHandler(topicName);
@@ -103,7 +114,7 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
     final var completableFuture = new CompletableFuture<byte[]>();
     actor.call(
         () -> {
-          final var requestId = requestCount.getAndIncrement();
+          final long requestId = idGenerator.nextId();
           final var requestMap = partitionsRequestMap.get(partitionId);
           if (requestMap == null) {
             final var errorMsg = String.format(ERROR_MSG_MISSING_PARTITON_MAP, partitionId);
@@ -147,7 +158,7 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
     final var length = response.getLength();
     final var bytes = new byte[length];
 
-    // here we can't reuse an buffer, because sendResponse can be called concurrently
+    // here we can't reuse a buffer, because sendResponse can be called concurrently
     final var unsafeBuffer = new UnsafeBuffer(bytes);
     response.write(unsafeBuffer, 0);
 
