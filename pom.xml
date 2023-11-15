@@ -55,7 +55,7 @@
     <version.apache.http5>5.2.1</version.apache.http5>
 
     <version.node>v20.9.0</version.node>
-    <version.yarn>v1.22.17</version.yarn>
+    <version.yarn>v1.22.21</version.yarn>
 
     <zeebe-test-container.version>3.6.0</zeebe-test-container.version>
     <elasticsearch-test-container.version>1.19.1</elasticsearch-test-container.version>

@@ -5352,10 +5352,10 @@ minimist@^1.2.0, minimist@^1.2.6:
   resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.8.tgz#c1a464e7693302e082a075cee0c057741ac4772c"
   integrity sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==
 
-mixpanel-browser@2.48.0:
-  version "2.48.0"
-  resolved "https://registry.yarnpkg.com/mixpanel-browser/-/mixpanel-browser-2.48.0.tgz#fc04ff603622611d75c2bbe787a8be3e146d724c"
-  integrity sha512-hPml898BgO3SKXfZRssAlgjxi+Ez9VyDxbxP/fjJzyouNk55aIT+1dyEhd/38JyLHNrIXi5cawdCF9HrFcxtJw==
+mixpanel-browser@2.48.1:
+  version "2.48.1"
+  resolved "https://registry.yarnpkg.com/mixpanel-browser/-/mixpanel-browser-2.48.1.tgz#0fec03d87f57fe2e72c6a4b1df5924436840ece7"
+  integrity sha512-vXTuUzZMg+ht7sRqyjtc3dUDy/81Z/H6FLFgFkUZJqKFaAqcx1JSXmOdY/2kmsxCkUdy5JN5zW9m9TMCk+rxGQ==
 
 mkdirp@^0.5.1:
   version "0.5.6"
@@ -7138,10 +7138,10 @@ vite-tsconfig-paths@4.2.1:
     globrex "^0.1.2"
     tsconfck "^2.1.0"
 
-vite@5.0.0-beta.18, "vite@^3.0.0 || ^4.0.0 || ^5.0.0-0", "vite@^3.1.0 || ^4.0.0 || ^5.0.0-0":
-  version "5.0.0-beta.18"
-  resolved "https://registry.yarnpkg.com/vite/-/vite-5.0.0-beta.18.tgz#13c7754863f6051b50220aaf2439a1f0ef989ec3"
-  integrity sha512-5QAi3LFP+l5NC890ywGe8HeWlmgd7F6d7VA+ZosCSWDr1WZ30YUJjVkwdVcJR+znBCeV0joEiXO6S+Yqp2qsIA==
+vite@5.0.0-beta.19, "vite@^3.0.0 || ^4.0.0 || ^5.0.0-0", "vite@^3.1.0 || ^4.0.0 || ^5.0.0-0":
+  version "5.0.0-beta.19"
+  resolved "https://registry.yarnpkg.com/vite/-/vite-5.0.0-beta.19.tgz#1ba1a1408d65620a666c9dbc997942a474cfbb82"
+  integrity sha512-Huoj7XUlkhSLHhIOf4FgDrxmHJMKgfvG9ocB4kJmTKSeWfLgHIQ86xYC8+eA/RBxFo9zRQXX81VUgW8l7Wri3Q==
   dependencies:
     esbuild "^0.19.3"
     postcss "^8.4.31"

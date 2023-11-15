@@ -16,7 +16,7 @@
     "final-form": "4.20.10",
     "final-form-arrays": "3.1.0",
     "lodash": "4.17.21",
-    "mixpanel-browser": "2.48.0",
+    "mixpanel-browser": "2.48.1",
     "mobx": "6.10.2",
     "mobx-react-lite": "4.0.5",
     "polished": "4.2.2",
@@ -95,7 +95,7 @@
     "source-map-explorer": "2.5.3",
     "ts-toolbelt": "9.6.0",
     "typescript": "5.2.2",
-    "vite": "5.0.0-beta.18",
+    "vite": "5.0.0-beta.19",
     "vite-plugin-svgr": "4.1.0",
     "vite-tsconfig-paths": "4.2.1",
     "vitest": "1.0.0-beta.4",
@@ -115,5 +115,5 @@
   "msw": {
     "workerDirectory": "public"
   },
-  "packageManager": "yarn@1.22.19"
+  "packageManager": "yarn@1.22.21"
 }
