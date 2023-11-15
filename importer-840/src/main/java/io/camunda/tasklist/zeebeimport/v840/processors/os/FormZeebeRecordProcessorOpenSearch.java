@@ -6,14 +6,15 @@
  */
 package io.camunda.tasklist.zeebeimport.v840.processors.os;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.entities.FormEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.schema.indices.FormIndex;
 import io.camunda.tasklist.util.ConversionUtils;
+import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.zeebeimport.v840.record.value.deployment.FormRecordImpl;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
@@ -29,8 +30,6 @@ public class FormZeebeRecordProcessorOpenSearch {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(FormZeebeRecordProcessorOpenSearch.class);
 
-  @Autowired private ObjectMapper objectMapper;
-
   @Autowired private FormIndex formIndex;
 
   public void processFormRecord(Record record, List<BulkOperation> operations)
@@ -38,15 +37,27 @@ public class FormZeebeRecordProcessorOpenSearch {
 
     final FormRecordImpl recordValue = (FormRecordImpl) record.getValue();
 
-    persistForm(
-        recordValue.getFormKey(),
-        bytesToXml(recordValue.getResource()),
-        (long) recordValue.getVersion(),
-        recordValue.getTenantId(),
-        false,
-        recordValue.getFormId(),
-        false,
-        operations);
+    if (record.getIntent().name().equals(FormIntent.CREATED.name())) {
+      persistForm(
+          recordValue.getFormKey(),
+          bytesToXml(recordValue.getResource()),
+          (long) recordValue.getVersion(),
+          recordValue.getTenantId(),
+          recordValue.getFormId(),
+          false,
+          operations);
+    } else if (record.getIntent().name().equals(FormIntent.DELETED.name())) {
+      persistForm(
+          recordValue.getFormKey(),
+          bytesToXml(recordValue.getResource()),
+          (long) recordValue.getVersion(),
+          recordValue.getTenantId(),
+          recordValue.getFormId(),
+          true,
+          operations);
+    } else {
+      LOGGER.info("Form intent {} not supported", record.getIntent().name());
+    }
   }
 
   private void persistForm(
@@ -54,25 +65,46 @@ public class FormZeebeRecordProcessorOpenSearch {
       String schema,
       Long version,
       String tenantId,
-      boolean embeeded,
       String formId,
-      boolean isDeleted,
+      boolean isDelete,
       List<BulkOperation> operations)
       throws PersistenceException {
     final FormEntity formEntity =
         new FormEntity(
-            null, formId, schema, version, tenantId, formKey.toString(), embeeded, isDeleted);
-    LOGGER.debug("Form: key {}", formKey);
+            null, formId, schema, version, tenantId, formKey.toString(), false, isDelete);
+    try {
 
-    operations.add(
-        new BulkOperation.Builder()
-            .index(
-                IndexOperation.of(
-                    io ->
-                        io.index(formIndex.getFullQualifiedName())
-                            .id(ConversionUtils.toStringOrNull(formEntity.getId()))
-                            .document(CommonUtils.getJsonObjectFromEntity(formEntity))))
-            .build());
+      if (isDelete) {
+        // Delete operation
+        final BulkOperation bulkOperation =
+            new BulkOperation.Builder()
+                .update(
+                    up ->
+                        up.index(formIndex.getFullQualifiedName())
+                            .id(formEntity.getId())
+                            .document(CommonUtils.getJsonObjectFromEntity(formEntity))
+                            .docAsUpsert(true)
+                            .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT))
+                .build();
+
+        operations.add(bulkOperation);
+      } else {
+        // Create operation
+        operations.add(
+            new BulkOperation.Builder()
+                .index(
+                    IndexOperation.of(
+                        io ->
+                            io.index(formIndex.getFullQualifiedName())
+                                .id(ConversionUtils.toStringOrNull(formEntity.getId()))
+                                .document(CommonUtils.getJsonObjectFromEntity(formEntity))))
+                .build());
+      }
+    } catch (Exception e) {
+      throw new PersistenceException(
+          String.format("Error preparing the form query for the formId: [%s]", formEntity.getId()),
+          e);
+    }
   }
 
   public static String bytesToXml(byte[] bytes) {

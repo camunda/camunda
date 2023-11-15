@@ -9,6 +9,7 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers.internal;
 import static java.util.Objects.requireNonNullElse;
 
 import io.camunda.tasklist.entities.ProcessEntity;
+import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.FormStore;
@@ -103,8 +104,12 @@ public class ProcessInternalController extends ApiErrorController {
   private String getStartEventFormIdByBpmnProcess(ProcessEntity process) {
     if (process.getIsFormEmbedded() != null && !process.getIsFormEmbedded()) {
       if (process.getFormId() != null) {
-        final var form = formStore.getForm(process.getFormId(), process.getId(), null);
-        return form.getBpmnId();
+        try {
+          final var form = formStore.getForm(process.getFormId(), process.getId(), null);
+          return form.getBpmnId();
+        } catch (NotFoundException e) {
+          return null;
+        }
       }
 
     } else {

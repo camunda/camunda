@@ -81,18 +81,20 @@ public class FormStoreElasticSearch implements FormStore {
   private FormEntity getLinkedForm(final String formId, final Long formVersion) {
     final SearchRequest searchRequest = new SearchRequest(formIndex.getFullQualifiedName());
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-    searchSourceBuilder.query(QueryBuilders.termQuery(FormIndex.BPMN_ID, formId));
+    final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+    boolQuery.must(QueryBuilders.termQuery(FormIndex.BPMN_ID, formId));
     if (formVersion != null) {
       // with the version set, you can return the form that was deleted, because of backward
       // compatibility
-      searchSourceBuilder.query(QueryBuilders.termQuery(FormIndex.VERSION, formVersion));
+      boolQuery.must(QueryBuilders.termQuery(FormIndex.VERSION, formVersion));
     } else {
       // get the latest version where isDeleted is false (highest active version)
+      boolQuery.must(QueryBuilders.termQuery(FormIndex.IS_DELETED, false));
       searchSourceBuilder.sort(FormIndex.VERSION, SortOrder.DESC);
-      searchSourceBuilder.query(QueryBuilders.termQuery(FormIndex.IS_DELETED, false));
       searchSourceBuilder.size(1);
     }
 
+    searchSourceBuilder.query(boolQuery);
     searchRequest.source(searchSourceBuilder);
 
     try {

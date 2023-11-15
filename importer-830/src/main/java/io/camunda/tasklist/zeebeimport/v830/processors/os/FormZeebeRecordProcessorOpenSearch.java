@@ -43,9 +43,7 @@ public class FormZeebeRecordProcessorOpenSearch {
         bytesToXml(recordValue.getResource()),
         (long) recordValue.getVersion(),
         recordValue.getTenantId(),
-        false,
         recordValue.getFormId(),
-        false,
         operations);
   }
 
@@ -54,14 +52,11 @@ public class FormZeebeRecordProcessorOpenSearch {
       String schema,
       Long version,
       String tenantId,
-      boolean embeeded,
       String formId,
-      boolean isDeleted,
       List<BulkOperation> operations)
       throws PersistenceException {
     final FormEntity formEntity =
-        new FormEntity(
-            null, formId, schema, version, tenantId, formKey.toString(), embeeded, isDeleted);
+        new FormEntity(null, formId, schema, version, tenantId, formKey.toString(), false, false);
     LOGGER.debug("Form: key {}", formKey);
 
     operations.add(

@@ -20,9 +20,11 @@ import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import java.io.IOException;
+import java.util.Collections;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.SortOrder;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
@@ -133,23 +135,41 @@ public class FormStoreOpenSearch implements FormStore {
 
   public FormEntity getLinkedForm(final String formId, final Long formVersion) {
     try {
+      final Query boolQuery;
       final SearchRequest.Builder searchRequest =
           OpenSearchUtil.createSearchRequest(formIndex, OpenSearchUtil.QueryType.ALL)
               .index(formIndex.getFullQualifiedName())
-              .query(q -> q.term(t -> t.field(FormIndex.BPMN_ID).value(FieldValue.of(formId))))
               .size(1);
+
+      final Query.Builder bpmnIdProcessQ = new Query.Builder();
+      bpmnIdProcessQ.terms(
+          terms ->
+              terms
+                  .field(FormIndex.BPMN_ID)
+                  .terms(t -> t.value(Collections.singletonList(FieldValue.of(formId)))));
 
       if (formVersion == null) {
         // get the latest version where isDeleted is false (highest active version)
-        searchRequest.query(
-            q -> q.term(t -> t.field(FormIndex.IS_DELETED).value(FieldValue.of(false))));
+        final Query.Builder isDeleteQ = new Query.Builder();
+        isDeleteQ.terms(
+            terms ->
+                terms
+                    .field(FormIndex.IS_DELETED)
+                    .terms(t -> t.value(Collections.singletonList(FieldValue.of(false)))));
+        boolQuery = OpenSearchUtil.joinWithAnd(bpmnIdProcessQ, isDeleteQ);
         searchRequest.sort(s -> s.field(f -> f.field(FormIndex.VERSION).order(SortOrder.Desc)));
       } else {
         // with the version set, you can return the form that was deleted, because of backward
         // compatibility
-        searchRequest.query(
-            q -> q.term(t -> t.field(FormIndex.VERSION).value(FieldValue.of(formVersion))));
+        final Query.Builder isVersionQ = new Query.Builder();
+        isVersionQ.terms(
+            terms ->
+                terms
+                    .field(FormIndex.VERSION)
+                    .terms(t -> t.value(Collections.singletonList(FieldValue.of(formVersion)))));
+        boolQuery = OpenSearchUtil.joinWithAnd(bpmnIdProcessQ, isVersionQ);
       }
+      searchRequest.query(boolQuery);
 
       final var formEntityResponse = tenantAwareClient.search(searchRequest, FormEntity.class);
 

@@ -77,7 +77,7 @@ public class FormControllerIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
-  public void getLinkedFormHighestVersion() {
+  public void getLinkedFormHighestVersionWithFormDeletion() {
     // given
     final var formId = "Form_0mik7px";
     final var bpmnProcessId = "Process_11hxie4";
@@ -88,11 +88,22 @@ public class FormControllerIT extends TasklistZeebeIntegrationTest {
         .addResourceFromClasspath("formDeployedV1.form")
         .send()
         .join();
+
     zeebeClient
         .newDeployResourceCommand()
         .addResourceFromClasspath("formDeployedV2.form")
         .send()
         .join();
+
+    final var lastVersionDeployedData =
+        zeebeClient
+            .newDeployResourceCommand()
+            .addResourceFromClasspath("formDeployedV3.form")
+            .send()
+            .join();
+
+    final var formKey = lastVersionDeployedData.getForm().stream().findFirst().get().getFormKey();
+    zeebeClient.newDeleteResourceCommand(formKey).send().join();
 
     tester
         .having()
@@ -108,7 +119,8 @@ public class FormControllerIT extends TasklistZeebeIntegrationTest {
     final var result =
         mockMvcHelper.doRequest(
             get(TasklistURIs.FORMS_URL_V1.concat("/{formId}"), formId)
-                .param("processDefinitionKey", tester.getProcessDefinitionKey()));
+                .param("processDefinitionKey", tester.getProcessDefinitionKey())
+                .param("version", "3"));
 
     // then
     assertThat(result)
@@ -118,16 +130,35 @@ public class FormControllerIT extends TasklistZeebeIntegrationTest {
         .satisfies(
             form -> {
               assertThat(form.getId()).isEqualTo(formId);
-              assertThat(form.getIsDeleted()).isEqualTo(false);
               assertThat(form.getProcessDefinitionKey())
                   .isEqualTo(tester.getProcessDefinitionKey());
-              assertThat(form.getSchema()).isNotBlank().contains("taglist");
+              assertThat(form.getIsDeleted()).isEqualTo(true);
+              assertThat(form.getTenantId()).isEqualTo(DEFAULT_TENANT_IDENTIFIER);
+            });
+
+    // when
+    final var resultAfterDelete =
+        mockMvcHelper.doRequest(
+            get(TasklistURIs.FORMS_URL_V1.concat("/{formId}"), formId)
+                .param("processDefinitionKey", tester.getProcessDefinitionKey()));
+
+    // then
+    assertThat(resultAfterDelete)
+        .hasOkHttpStatus()
+        .hasApplicationJsonContentType()
+        .extractingContent(objectMapper, FormResponse.class)
+        .satisfies(
+            form -> {
+              assertThat(form.getId()).isEqualTo(formId);
+              assertThat(form.getProcessDefinitionKey())
+                  .isEqualTo(tester.getProcessDefinitionKey());
+              assertThat(form.getVersion()).isEqualTo(2);
               assertThat(form.getTenantId()).isEqualTo(DEFAULT_TENANT_IDENTIFIER);
             });
   }
 
   @Test
-  public void getLinkedFormHighestVersionV1() {
+  public void getLinkedFormVersionV1() {
     // given
     final var formId = "Form_0mik7px";
     final var bpmnProcessId = "Process_11hxie4";
@@ -169,9 +200,9 @@ public class FormControllerIT extends TasklistZeebeIntegrationTest {
         .satisfies(
             form -> {
               assertThat(form.getId()).isEqualTo(formId);
-              assertThat(form.getIsDeleted()).isEqualTo(false);
               assertThat(form.getProcessDefinitionKey())
                   .isEqualTo(tester.getProcessDefinitionKey());
+              assertThat(form.getIsDeleted()).isEqualTo(false);
               assertThat(form.getSchema()).isNotBlank().doesNotContain("taglist");
               assertThat(form.getTenantId()).isEqualTo(DEFAULT_TENANT_IDENTIFIER);
             });
