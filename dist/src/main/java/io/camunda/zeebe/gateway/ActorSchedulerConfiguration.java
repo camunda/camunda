@@ -25,6 +25,11 @@ public final class ActorSchedulerConfiguration {
 
   @Autowired
   public ActorSchedulerConfiguration(
+      final GatewayConfiguration config, final ActorClockConfiguration clockConfiguration) {
+    this(config.config(), clockConfiguration);
+  }
+
+  public ActorSchedulerConfiguration(
       final GatewayCfg config, final ActorClockConfiguration clockConfiguration) {
     this.config = config;
     this.clockConfiguration = clockConfiguration;

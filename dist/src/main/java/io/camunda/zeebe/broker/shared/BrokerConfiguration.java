@@ -7,37 +7,38 @@
  */
 package io.camunda.zeebe.broker.shared;
 
+import io.camunda.zeebe.broker.shared.BrokerConfiguration.BrokerProperties;
 import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Bean;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 
-/**
- * Will provide any {@link BrokerCfg} for auto-wiring, guaranteeing they are always initialized.
- *
- * <p>In order to properly initialize the configuration, there's an initial uninitialized bean
- * created on which Spring will bind all the properties. Then, a second bean is created from it
- * which is initialized. The second bean is annotated with {@link Primary}, such that any
- * non-qualified injection will always prefer it.
- */
 @Configuration(proxyBeanMethods = false)
-final class BrokerConfiguration {
+@EnableConfigurationProperties(BrokerProperties.class)
+public final class BrokerConfiguration {
 
-  @Bean("uninitializedBrokerCfg")
-  @ConfigurationProperties(prefix = "zeebe.broker")
-  private BrokerCfg rawBrokerConfig() {
-    return new BrokerCfg();
+  private final WorkingDirectory workingDirectory;
+  private final BrokerCfg properties;
+
+  @Autowired
+  public BrokerConfiguration(
+      final WorkingDirectory workingDirectory, final BrokerProperties properties) {
+    this.workingDirectory = workingDirectory;
+    this.properties = properties;
+
+    properties.init(workingDirectory.path().toAbsolutePath().toString());
   }
 
-  @Bean("initializedBrokerCfg")
-  @Primary
-  BrokerCfg brokerConfig(
-      @Qualifier("uninitializedBrokerCfg") final BrokerCfg config,
-      final WorkingDirectory workingDirectory) {
-    config.init(workingDirectory.path().toString());
-    return config;
+  public BrokerCfg config() {
+    return properties;
   }
+
+  public WorkingDirectory workingDirectory() {
+    return workingDirectory;
+  }
+
+  @ConfigurationProperties("zeebe.broker")
+  public static final class BrokerProperties extends BrokerCfg {}
 }
