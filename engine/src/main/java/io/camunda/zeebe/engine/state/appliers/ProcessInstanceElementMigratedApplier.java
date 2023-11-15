@@ -24,5 +24,16 @@ final class ProcessInstanceElementMigratedApplier
   }
 
   @Override
-  public void applyState(final long elementInstanceKey, final ProcessInstanceRecord value) {}
+  public void applyState(final long elementInstanceKey, final ProcessInstanceRecord value) {
+    elementInstanceState.updateInstance(
+        elementInstanceKey,
+        elementInstance ->
+            elementInstance
+                .getValue()
+                .setProcessDefinitionKey(value.getProcessDefinitionKey())
+                .setBpmnProcessId(value.getBpmnProcessId())
+                .setVersion(value.getVersion())
+                .setElementId(value.getElementId())
+                .setFlowScopeKey(value.getFlowScopeKey()));
+  }
 }
