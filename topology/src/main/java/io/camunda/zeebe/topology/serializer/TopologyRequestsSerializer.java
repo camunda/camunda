@@ -48,9 +48,14 @@ public interface TopologyRequestsSerializer {
 
   byte[] encodeResponse(TopologyChangeResponse response);
 
+  byte[] encodeResponse(ClusterTopology response);
+
   byte[] encodeResponse(ErrorResponse response);
 
-  Either<ErrorResponse, TopologyChangeResponse> decodeResponse(byte[] encodedResponse);
+  Either<ErrorResponse, TopologyChangeResponse> decodeTopologyChangeResponse(
+      byte[] encodedResponse);
+
+  Either<ErrorResponse, ClusterTopology> decodeClusterTopologyResponse(byte[] encodedResponse);
 
   byte[] encode(ClusterTopology clusterTopology);
 

@@ -47,8 +47,9 @@ message TopologyChangeResponse {
 
 message Response {
   oneof response {
+    ErrorResponse error = 1;
     TopologyChangeResponse topologyChangeResponse = 2;
-    ErrorResponse error = 3;
+    topology_protocol.ClusterTopology clusterTopology = 3;
   }
 }
 
