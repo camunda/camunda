@@ -22,4 +22,6 @@ public interface ScheduledTaskState {
   PendingMessageSubscriptionState getPendingMessageSubscriptionState();
 
   PendingProcessMessageSubscriptionState getPendingProcessMessageSubscriptionState();
+
+  UserTaskState getUserTaskState();
 }

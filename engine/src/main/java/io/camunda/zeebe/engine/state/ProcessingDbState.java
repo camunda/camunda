@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.state.instance.DbEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.instance.DbIncidentState;
 import io.camunda.zeebe.engine.state.instance.DbJobState;
 import io.camunda.zeebe.engine.state.instance.DbTimerInstanceState;
+import io.camunda.zeebe.engine.state.instance.DbUserTaskState;
 import io.camunda.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbMessageState;
 import io.camunda.zeebe.engine.state.message.DbMessageSubscriptionState;
@@ -48,6 +49,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableSignalSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
 import io.camunda.zeebe.engine.state.signal.DbSignalSubscriptionState;
@@ -82,6 +84,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableFormState formState;
   private final MutableSignalSubscriptionState signalSubscriptionState;
   private final MutableDistributionState distributionState;
+  private final MutableUserTaskState userTaskState;
   private final int partitionId;
 
   public ProcessingDbState(
@@ -121,6 +124,8 @@ public class ProcessingDbState implements MutableProcessingState {
     distributionState = new DbDistributionState(zeebeDb, transactionContext);
 
     mutableMigrationState = new DbMigrationState(zeebeDb, transactionContext);
+
+    userTaskState = new DbUserTaskState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -202,6 +207,11 @@ public class ProcessingDbState implements MutableProcessingState {
   }
 
   @Override
+  public MutableFormState getFormState() {
+    return formState;
+  }
+
+  @Override
   public MutableSignalSubscriptionState getSignalSubscriptionState() {
     return signalSubscriptionState;
   }
@@ -217,8 +227,8 @@ public class ProcessingDbState implements MutableProcessingState {
   }
 
   @Override
-  public MutableFormState getFormState() {
-    return formState;
+  public MutableUserTaskState getUserTaskState() {
+    return userTaskState;
   }
 
   @Override
