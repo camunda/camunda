@@ -10,11 +10,7 @@ package io.camunda.zeebe.gateway.impl.configuration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
-@Component
-@ConfigurationProperties(prefix = "zeebe.gateway")
 public class GatewayCfg {
 
   private NetworkCfg network = new NetworkCfg();
