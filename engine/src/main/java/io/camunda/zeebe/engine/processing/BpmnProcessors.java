@@ -21,7 +21,7 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCancelP
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateWithResultProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationMigrateProcessor;
-import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationModifyProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -212,8 +212,8 @@ public final class BpmnProcessors {
       final ProcessingState processingState,
       final Writers writers,
       final BpmnBehaviors bpmnBehaviors) {
-    final ProcessInstanceModificationProcessor modificationProcessor =
-        new ProcessInstanceModificationProcessor(
+    final ProcessInstanceModificationModifyProcessor modificationProcessor =
+        new ProcessInstanceModificationModifyProcessor(
             writers,
             processingState.getElementInstanceState(),
             processingState.getProcessState(),
