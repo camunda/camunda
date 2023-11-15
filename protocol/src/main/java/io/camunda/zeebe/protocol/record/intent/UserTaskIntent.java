@@ -19,7 +19,7 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
   CREATING(0),
   CREATED(1),
 
-  COMPLETE(2),
+  COMPLETE(2, false),
   COMPLETING(3),
   COMPLETED(4),
 
@@ -27,9 +27,15 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
   CANCELED(6);
 
   private final short value;
+  private final boolean shouldBanInstance;
 
   UserTaskIntent(final int value) {
+    this(value, true);
+  }
+
+  UserTaskIntent(final int value, final boolean shouldBanInstance) {
     this.value = (short) value;
+    this.shouldBanInstance = shouldBanInstance;
   }
 
   public short getIntent() {
@@ -64,6 +70,6 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
 
   @Override
   public boolean shouldBanInstanceOnError() {
-    return false;
+    return shouldBanInstance;
   }
 }
