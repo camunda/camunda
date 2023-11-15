@@ -72,8 +72,7 @@ public class ClusterEndpoint {
   @GetMapping(produces = "application/json")
   public ResponseEntity<?> clusterTopology() {
     try {
-      final GetTopologyResponse response = mapClusterTopology(requestSender.getTopology().join());
-      return new ResponseEntity<>(response, HttpStatusCode.valueOf(200));
+      return mapClusterTopologyResponse(requestSender.getTopology().join());
     } catch (final Exception error) {
       return mapError(error);
     }
@@ -230,16 +229,29 @@ public class ClusterEndpoint {
     if (response.isRight()) {
       return ResponseEntity.status(202).body(mapResponseType(response.get()));
     } else {
-      final var errorCode =
-          switch (response.getLeft().code()) {
-            case INVALID_REQUEST, OPERATION_NOT_ALLOWED -> 400;
-            case CONCURRENT_MODIFICATION -> 409;
-            case INTERNAL_ERROR -> 500;
-          };
-      final var error = new Error();
-      error.setMessage(response.getLeft().message());
-      return ResponseEntity.status(errorCode).body(error);
+      return mapErrorResponse(response.getLeft());
     }
+  }
+
+  private ResponseEntity<?> mapClusterTopologyResponse(
+      final Either<ErrorResponse, ClusterTopology> response) {
+    if (response.isRight()) {
+      return ResponseEntity.status(200).body(mapClusterTopology(response.get()));
+    } else {
+      return mapErrorResponse(response.getLeft());
+    }
+  }
+
+  private ResponseEntity<Error> mapErrorResponse(final ErrorResponse response) {
+    final var errorCode =
+        switch (response.code()) {
+          case INVALID_REQUEST, OPERATION_NOT_ALLOWED -> 400;
+          case CONCURRENT_MODIFICATION -> 409;
+          case INTERNAL_ERROR -> 500;
+        };
+    final var error = new Error();
+    error.setMessage(response.message());
+    return ResponseEntity.status(errorCode).body(error);
   }
 
   private static PostOperationResponse mapResponseType(final TopologyChangeResponse response) {
