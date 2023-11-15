@@ -22,6 +22,7 @@ import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.response.UpdateTimeoutJobResponse;
 import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
+import java.time.Duration;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -59,7 +60,19 @@ public class JobUpdateTimeoutTest extends ClientTest {
     assertThat(request.getJobKey()).isEqualTo(job.getKey());
     assertThat(request.getTimeout()).isEqualTo(timeout);
 
-    //    rule.verifyRequestTimeout();
+    rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
+  public void shouldSetRequestTimeout() {
+    // given
+    final Duration requestTimeout = Duration.ofHours(124);
+
+    // when
+    client.newUpdateTimeoutCommand(123).timeout(100).requestTimeout(requestTimeout).send().join();
+
+    // then
+    rule.verifyRequestTimeout(requestTimeout);
   }
 
   @Test

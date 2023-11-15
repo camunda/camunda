@@ -66,6 +66,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutResponse;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
@@ -107,6 +109,8 @@ public final class RecordingGatewayService extends GatewayImplBase {
     addRequestHandler(SetVariablesRequest.class, r -> SetVariablesResponse.getDefaultInstance());
     addRequestHandler(
         UpdateJobRetriesRequest.class, r -> UpdateJobRetriesResponse.getDefaultInstance());
+    addRequestHandler(
+        UpdateJobTimeoutRequest.class, r -> UpdateJobTimeoutResponse.getDefaultInstance());
     addRequestHandler(FailJobRequest.class, r -> FailJobResponse.getDefaultInstance());
     addRequestHandler(ThrowErrorRequest.class, r -> ThrowErrorResponse.getDefaultInstance());
     addRequestHandler(CompleteJobRequest.class, r -> CompleteJobResponse.getDefaultInstance());
@@ -401,6 +405,13 @@ public final class RecordingGatewayService extends GatewayImplBase {
   public void modifyProcessInstance(
       final ModifyProcessInstanceRequest request,
       final StreamObserver<ModifyProcessInstanceResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
+  @Override
+  public void updateJobTimeout(
+      final UpdateJobTimeoutRequest request,
+      final StreamObserver<UpdateJobTimeoutResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
