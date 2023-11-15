@@ -14,7 +14,7 @@ import io.camunda.zeebe.util.Environment;
 import java.util.HashMap;
 import java.util.Map;
 
-public final class BrokerCfg {
+public class BrokerCfg {
 
   static final String ENV_DEBUG_EXPORTER = "ZEEBE_DEBUG";
 
