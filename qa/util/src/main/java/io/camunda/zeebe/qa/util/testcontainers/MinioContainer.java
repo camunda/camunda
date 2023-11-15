@@ -65,7 +65,7 @@ public final class MinioContainer extends GenericContainer<MinioContainer> {
 
   public WaitStrategy defaultWaitStrategy() {
     return new HttpWaitStrategy()
-        .forPath("/minio/health/ready")
+        .forPath("/minio/health/live")
         .forPort(PORT)
         .withStartupTimeout(Duration.ofMinutes(1));
   }
