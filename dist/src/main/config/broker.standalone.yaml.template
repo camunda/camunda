@@ -1136,6 +1136,6 @@
 
         # When enabled, the broker relies on the new cluster topology management to determine partition distribution.
         # When disabled, the broker generates partition distribution on every restart from the provided cluster configuration.
-        # This feature should be enabled to use dynamic scaling feature (which is not available yet).
+        # This feature should be enabled to use dynamic scaling feature.
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLEDYNAMICCLUSTERTOPOLOGY
-        # enableDynamicClusterTopology: false
+        # enableDynamicClusterTopology: true
