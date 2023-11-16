@@ -165,8 +165,10 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
               .filter(context -> newMembers.contains(context.getMember()))
               .collect(Collectors.toCollection(ArrayList::new));
 
-      final var oldQuorum = getQuorumFor(oldContexts, calculateMemberValue);
-      final var newQuorum = getQuorumFor(newContexts, calculateMemberValue);
+      final var oldQuorum =
+          getQuorumFor(oldContexts, calculateMemberValue, oldMembers.contains(localMember));
+      final var newQuorum =
+          getQuorumFor(newContexts, calculateMemberValue, newMembers.contains(localMember));
       if (oldQuorum.isPresent() && newQuorum.isPresent()) {
         return Optional.of(Comparators.min(oldQuorum.get(), newQuorum.get()));
       } else if (oldQuorum.isPresent()) {
@@ -176,21 +178,25 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       }
     }
 
-    return getQuorumFor(contexts, calculateMemberValue);
+    return getQuorumFor(
+        contexts, calculateMemberValue, configuration.newMembers().contains(localMember));
   }
 
   private <T extends Comparable<T>> Optional<T> getQuorumFor(
       final List<RaftMemberContext> contexts,
-      final Function<RaftMemberContext, T> calculateMemberValue) {
+      final Function<RaftMemberContext, T> calculateMemberValue,
+      final boolean includeLocalMemberInQuorum) {
     if (contexts.isEmpty()) {
       return Optional.empty();
     }
     contexts.sort(Comparator.comparing(calculateMemberValue).reversed());
 
     final var remoteActiveMembers = contexts.size();
-    final var totalActiveMembers = remoteActiveMembers + 1;
+    final int includeLocalMember = includeLocalMemberInQuorum ? 1 : 0;
+    final var totalActiveMembers = remoteActiveMembers + includeLocalMember;
     final var quorum = (totalActiveMembers / 2) + 1;
-    final var remoteQuorumIndex = quorum - 1 - 1;
+
+    final var remoteQuorumIndex = quorum - 1 - includeLocalMember;
     final var context = contexts.get(remoteQuorumIndex);
     return Optional.of(calculateMemberValue.apply(context));
   }
