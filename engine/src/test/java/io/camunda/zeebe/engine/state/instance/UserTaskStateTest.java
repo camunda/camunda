@@ -93,6 +93,19 @@ public class UserTaskStateTest {
   }
 
   @Test
+  public void shouldDeleteUserTask() {
+    // given
+    final UserTaskRecord expectedRecord = createUserTask(5_000);
+    userTaskState.create(expectedRecord);
+
+    // when
+    userTaskState.delete(expectedRecord);
+
+    // then
+    assertThat(userTaskState.getUserTask(5_000)).isNull();
+  }
+
+  @Test
   public void shouldNeverPersistUserTaskVariables() {
     // given
     final long key = 1L;
@@ -108,6 +121,22 @@ public class UserTaskStateTest {
       final DirectBuffer variables = userTaskState.getUserTask(key).getVariablesBuffer();
       BufferAssert.assertThatBuffer(variables).isEqualTo(DocumentValue.EMPTY_DOCUMENT);
     }
+  }
+
+  @Test
+  public void shouldNotOverwritePersistedRecord() {
+    // given
+    final long key = 1L;
+    final UserTaskRecord writtenRecord = createUserTask(key).setAssignee("test");
+
+    // when
+    userTaskState.create(writtenRecord);
+    writtenRecord.setAssignee("foo");
+
+    // then
+    final UserTaskRecord readRecord = userTaskState.getUserTask(key);
+    assertThat(readRecord).hasAssignee("test");
+    assertThat(writtenRecord).hasAssignee("foo");
   }
 
   private UserTaskRecord createUserTask(final long userTaskKey) {
