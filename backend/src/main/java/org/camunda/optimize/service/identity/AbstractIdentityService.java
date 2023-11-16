@@ -50,7 +50,7 @@ public abstract class AbstractIdentityService implements ConfigurationReloadable
 
   public abstract Optional<UserDto> getUserById(final String userId);
 
-  public abstract Optional<UserDto> getUserById(final String userId, final ContainerRequestContext requestContext);
+  public abstract Optional<UserDto> getCurrentUserById(final String userId, final ContainerRequestContext requestContext);
 
   public abstract Optional<GroupDto> getGroupById(final String groupId);
 

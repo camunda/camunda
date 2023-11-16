@@ -52,6 +52,7 @@ public class UIConfigurationService {
     uiConfigurationDto.setEmailEnabled(configurationService.getEmailEnabled());
     uiConfigurationDto.setSharingEnabled(settingService.getSettings().getSharingEnabled().orElse(false));
     uiConfigurationDto.setTenantsAvailable(tenantService.isMultiTenantEnvironment());
+    uiConfigurationDto.setUserSearchAvailable(true); // TODO to be made dependent on identity flag with OPT-7412
     uiConfigurationDto.setOptimizeVersion(versionService.getRawVersion());
     uiConfigurationDto.setOptimizeDocsVersion(versionService.getDocsVersion());
     final String optimizeProfile = determineOptimizeProfile();

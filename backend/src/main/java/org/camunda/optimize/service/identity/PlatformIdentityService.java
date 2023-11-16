@@ -84,7 +84,7 @@ public class PlatformIdentityService extends AbstractIdentityService implements 
   }
 
   @Override
-  public Optional<UserDto> getUserById(final String userId, final ContainerRequestContext requestContext) {
+  public Optional<UserDto> getCurrentUserById(final String userId, final ContainerRequestContext requestContext) {
     return getUserById(userId);
   }
 

@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.security;
 
 import io.camunda.identity.sdk.Identity;
-import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Authentication;
 import io.camunda.identity.sdk.authentication.Tokens;
@@ -16,15 +15,13 @@ import jakarta.servlet.http.Cookie;
 import jakarta.ws.rs.NotAuthorizedException;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.NewCookie;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.UserDto;
+import org.camunda.optimize.service.util.CamundaIdentityConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSMCondition;
-import org.camunda.optimize.service.util.configuration.security.CCSMAuthConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -43,7 +40,6 @@ import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORI
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_REFRESH_TOKEN;
 import static org.camunda.optimize.service.db.DatabaseConstants.ZEEBE_DATA_SOURCE;
 
-@AllArgsConstructor
 @Component
 @Slf4j
 @Conditional(CCSMCondition.class)
@@ -54,10 +50,13 @@ public class CCSMTokenService {
 
   private final AuthCookieService authCookieService;
   private final ConfigurationService configurationService;
+  private final Identity identity;
 
-  @Bean
-  private Identity identity() {
-    return new Identity(identityConfiguration());
+  public CCSMTokenService(final AuthCookieService authCookieService, final ConfigurationService configurationService,
+                          final CamundaIdentityConfigurationService identityConfigurationProvider) {
+    this.authCookieService = authCookieService;
+    this.configurationService = configurationService;
+    this.identity = new Identity(identityConfigurationProvider.getIdentityConfiguration());
   }
 
   public List<Cookie> createOptimizeAuthCookies(final Tokens tokens, final AccessToken accessToken, final String scheme) {
@@ -179,7 +178,7 @@ public class CCSMTokenService {
 
   public List<TenantDto> getAuthorizedTenantsFromToken(final String accessToken) {
     try {
-      return identity().tenants()
+      return identity.tenants()
         .forToken(accessToken)
         .stream()
         .map(tenant -> new TenantDto(tenant.getTenantId(), tenant.getName(), ZEEBE_DATA_SOURCE))
@@ -198,19 +197,7 @@ public class CCSMTokenService {
   }
 
   private Authentication authentication() {
-    return identity().authentication();
-  }
-
-  private IdentityConfiguration identityConfiguration() {
-    final CCSMAuthConfiguration ccsmAuthConfig = configurationService.getAuthConfiguration().getCcsmAuthConfiguration();
-    return new IdentityConfiguration.Builder()
-      .withBaseUrl(ccsmAuthConfig.getBaseUrl())
-      .withIssuer(ccsmAuthConfig.getIssuerUrl())
-      .withIssuerBackendUrl(ccsmAuthConfig.getIssuerBackendUrl())
-      .withClientId(ccsmAuthConfig.getClientId())
-      .withClientSecret(ccsmAuthConfig.getClientSecret())
-      .withAudience(ccsmAuthConfig.getAudience())
-      .build();
+    return identity.authentication();
   }
 
   private static boolean userHasOptimizeAuthorization(final AccessToken accessToken) {
