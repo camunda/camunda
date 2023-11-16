@@ -13,7 +13,6 @@ import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.CompletedChange;
 import io.prometheus.client.Enumeration;
 import io.prometheus.client.Gauge;
-import java.time.Instant;
 import java.util.List;
 
 public final class TopologyMetrics {
@@ -56,18 +55,6 @@ public final class TopologyMetrics {
           .name("cluster_changes_operations_completed")
           .help("Number of completed changes in the current change plan")
           .register();
-  private static final Gauge STARTED_AT =
-      Gauge.build()
-          .name(NAMESPACE)
-          .name("cluster_changes_started_at")
-          .help("Time at which the current topology change was started")
-          .register();
-  private static final Gauge COMPLETED_AT =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .name("cluster_changes_completed_at")
-          .help("Time at which the current topology change was completed")
-          .register();
 
   public static void updateFromTopology(final ClusterTopology topology) {
     TOPOLOGY_VERSION.set(topology.version());
@@ -91,18 +78,5 @@ public final class TopologyMetrics {
             .map(ClusterChangePlan::completedOperations)
             .map(List::size)
             .orElse(0));
-    STARTED_AT.set(
-        topology
-            .pendingChanges()
-            .map(ClusterChangePlan::startedAt)
-            .or(() -> topology.lastChange().map(CompletedChange::startedAt))
-            .map(Instant::toEpochMilli)
-            .orElse(0L));
-    COMPLETED_AT.set(
-        topology
-            .lastChange()
-            .map(CompletedChange::completedAt)
-            .map(Instant::toEpochMilli)
-            .orElse(0L));
   }
 }
