@@ -107,7 +107,7 @@ func (s *integrationTestSuite) TestDeployForm() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	deployment, err := s.client.NewDeployResourceCommand().AddResourceFile("testdata/test-form-1.form").Send(ctx)
+	deployment, err := s.client.NewDeployResourceCommand().AddResourceFile("testdata/deploy_form.form").Send(ctx)
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -120,8 +120,8 @@ func (s *integrationTestSuite) TestDeployForm() {
 
 	form := deployedResource.GetForm()
 	s.NotNil(form)
-	s.EqualValues("Form_0w7r08e", form.GetFormId())
-	s.EqualValues("testdata/test-form-1.form", form.GetResourceName())
+	s.EqualValues("simple_form", form.GetFormId())
+	s.EqualValues("testdata/deploy_form.form", form.GetResourceName())
 }
 
 func (s *integrationTestSuite) TestCreateInstance() {

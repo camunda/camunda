@@ -15,7 +15,7 @@
     }
   ],
   "type": "default",
-  "id": "Form_0w7r08e",
+  "id": "simple_form",
   "executionPlatform": "Camunda Cloud",
   "executionPlatformVersion": "8.1.0",
   "exporter": {

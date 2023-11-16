@@ -33,7 +33,7 @@ func TestDeployResourceCommand_AddResourceFile(t *testing.T) {
 	demoBytes := readBytes(t, demoName)
 	anotherName := "../../cmd/zbctl/testdata/drg-force-user.dmn"
 	anotherBytes := readBytes(t, anotherName)
-	formName := "../../cmd/zbctl/testdata/test-form-1.form"
+	formName := "../../cmd/zbctl/testdata/deploy_form.form"
 	formBytes := readBytes(t, formName)
 
 	request := &pb.DeployResourceRequest{

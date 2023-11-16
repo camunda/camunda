@@ -101,13 +101,13 @@ var tests = []testCase{
 	},
 	{
 		name:       "deploy processes",
-		cmd:        strings.Fields("--insecure deploy testdata/model.bpmn testdata/job_model.bpmn testdata/test-form-1.form --resourceNames=model.bpmn,job.bpmn,test-form-1.form"),
+		cmd:        strings.Fields("--insecure deploy testdata/model.bpmn testdata/job_model.bpmn --resourceNames=model.bpmn,job.bpmn"),
 		goldenFile: "testdata/deploy.golden",
 		jsonOutput: true,
 	},
 	{
 		name:       "deploy resources",
-		cmd:        strings.Fields("--insecure deploy resource testdata/model.bpmn testdata/drg-force-user.dmn --resourceNames=model.bpmn,drg-force-user.dmn"),
+		cmd:        strings.Fields("--insecure deploy resource testdata/model.bpmn testdata/drg-force-user.dmn testdata/deploy_form.form --resourceNames=model.bpmn,drg-force-user.dmn,deploy_form.form"),
 		goldenFile: "testdata/deploy_resources.golden",
 		jsonOutput: true,
 	},
