@@ -314,7 +314,7 @@ public interface TopologyInitializer {
       }
 
       final Version version = membershipService.getLocalMember().version();
-      if (isVersion8_4(version)) {
+      if (isVersion84(version)) {
         final boolean knowOtherMembers = hasOtherReachableMembers(membershipService);
         if (knowOtherMembers && isRollingUpdate(membershipService)) {
           LOGGER.debug(
@@ -355,10 +355,10 @@ public interface TopologyInitializer {
             "Cannot determine version of local member. Assuming this is not rolling update and skip initialization.");
         return false;
       }
-      return otherMembers.stream().map(Member::version).anyMatch(this::isVersion8_3);
+      return otherMembers.stream().map(Member::version).anyMatch(this::isVersion83);
     }
 
-    private boolean isVersion8_4(final Version version) {
+    private boolean isVersion84(final Version version) {
       if (version == null) {
         // This is mainly required for testing, where the DiscoveryMembershipProvider cannot
         // determine version of remote members.
@@ -369,7 +369,7 @@ public interface TopologyInitializer {
       return version.major() == 8 && version.minor() == 4;
     }
 
-    private boolean isVersion8_3(final Version version) {
+    private boolean isVersion83(final Version version) {
       return version.major() == 8 && version.minor() == 3;
     }
   }
