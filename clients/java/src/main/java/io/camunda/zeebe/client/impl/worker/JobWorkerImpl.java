@@ -23,7 +23,9 @@ import io.camunda.zeebe.client.impl.Loggers;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -62,7 +64,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   private final AtomicInteger remainingJobs;
 
   // job execution facilities
-  private final ScheduledExecutorService executor;
+  private final BlockingExecutor executor;
   private final JobRunnableFactory jobHandlerFactory;
   private final long initialPollInterval;
   private final JobStreamer jobStreamer;
@@ -89,7 +91,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     activationThreshold = Math.round(maxJobsActive * 0.3f);
     remainingJobs = new AtomicInteger(0);
 
-    this.executor = executor;
+    this.executor = BlockingExecutor.of(executor, maxJobsActive);
     this.jobHandlerFactory = jobHandlerFactory;
     this.jobStreamer = jobStreamer;
     initialPollInterval = pollInterval.toMillis();
@@ -253,5 +255,49 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
 
   private void handleStreamJobFinished() {
     metrics.jobHandled(1);
+  }
+
+  private static class BlockingExecutor implements Executor {
+
+    public static final int TIMEOUT = 10;
+    private final ScheduledExecutorService wrappedExecutor;
+    private final Semaphore semaphore;
+
+    private BlockingExecutor(
+        final ScheduledExecutorService wrappedExecutor, final int maxActivate) {
+      this.wrappedExecutor = wrappedExecutor;
+      semaphore = new Semaphore(maxActivate);
+    }
+
+    public static BlockingExecutor of(final ScheduledExecutorService executor, final int maxJobs) {
+      return new BlockingExecutor(executor, maxJobs);
+    }
+
+    public void schedule(final Runnable runnable, final long timeout, final TimeUnit unit) {
+      wrappedExecutor.schedule(runnable, timeout, unit);
+    }
+
+    @Override
+    public void execute(final Runnable command) {
+      try {
+        if (!semaphore.tryAcquire(TIMEOUT, TimeUnit.SECONDS)) {
+          // handle timeout
+          LOG.warn(
+              "We reached the time out of {}s, we will drop the job, since it will be made available again for other workers in the meantime.",
+              TIMEOUT);
+        }
+
+        wrappedExecutor.execute(
+            () -> {
+              try {
+                command.run();
+              } finally {
+                semaphore.release();
+              }
+            });
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
   }
 }
