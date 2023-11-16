@@ -181,29 +181,12 @@ public class JobUpdateTimeoutTest {
             JobIntent.CREATED, JobIntent.TIMEOUT_UPDATED, JobIntent.TIME_OUT, JobIntent.TIMED_OUT);
   }
 
-  private static void assertJobDeadline(
-      final Record<JobRecordValue> updatedRecord,
-      final long jobKey,
-      final JobRecordValue job,
-      final long timeout) {
-    Assertions.assertThat(updatedRecord)
-        .hasRecordType(RecordType.EVENT)
-        .hasIntent(JobIntent.TIMEOUT_UPDATED);
-    assertThat(updatedRecord.getKey()).isEqualTo(jobKey);
-
-    assertThat(updatedRecord.getValue().getDeadline()).isNotEqualTo(job.getDeadline());
-
-    assertThat(updatedRecord.getValue().getDeadline())
-        .isCloseTo(
-            ENGINE.getClock().getCurrentTimeInMillis() + timeout,
-            within(Duration.ofMillis(100).toMillis()));
-  }
-
   @Test
   public void shouldUpdateJobTimeoutForCustomTenant() {
     // given
     final String tenantId = "acme";
     ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
+
     final var batchRecord =
         ENGINE
             .jobs()
@@ -236,6 +219,7 @@ public class JobUpdateTimeoutTest {
     final String tenantId = "acme";
     final String falseTenantId = "foo";
     ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
+
     final var batchRecord =
         ENGINE
             .jobs()
@@ -244,7 +228,6 @@ public class JobUpdateTimeoutTest {
             .withTenantId(tenantId)
             .activate();
 
-    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
     final long timeout = Duration.ofMinutes(10).toMillis();
 
@@ -260,5 +243,23 @@ public class JobUpdateTimeoutTest {
 
     // then
     Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.NOT_FOUND);
+  }
+
+  private static void assertJobDeadline(
+      final Record<JobRecordValue> updatedRecord,
+      final long jobKey,
+      final JobRecordValue job,
+      final long timeout) {
+    Assertions.assertThat(updatedRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(JobIntent.TIMEOUT_UPDATED);
+    assertThat(updatedRecord.getKey()).isEqualTo(jobKey);
+
+    assertThat(updatedRecord.getValue().getDeadline()).isNotEqualTo(job.getDeadline());
+
+    assertThat(updatedRecord.getValue().getDeadline())
+        .isCloseTo(
+            ENGINE.getClock().getCurrentTimeInMillis() + timeout,
+            within(Duration.ofMillis(100).toMillis()));
   }
 }
