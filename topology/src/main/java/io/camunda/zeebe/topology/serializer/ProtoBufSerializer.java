@@ -537,6 +537,14 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
   }
 
   @Override
+  public byte[] encodeResponse(final ClusterTopology response) {
+    return Response.newBuilder()
+        .setClusterTopology(encodeClusterTopology(response))
+        .build()
+        .toByteArray();
+  }
+
+  @Override
   public byte[] encodeResponse(final ErrorResponse response) {
     return Response.newBuilder()
         .setError(
@@ -548,7 +556,7 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
   }
 
   @Override
-  public Either<ErrorResponse, TopologyChangeResponse> decodeResponse(
+  public Either<ErrorResponse, TopologyChangeResponse> decodeTopologyChangeResponse(
       final byte[] encodedResponse) {
     try {
       final var response = Response.parseFrom(encodedResponse);
@@ -557,10 +565,33 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
             new ErrorResponse(
                 decodeErrorCode(response.getError().getErrorCode()),
                 response.getError().getErrorMessage()));
-      } else {
+      } else if (response.hasTopologyChangeResponse()) {
         return Either.right(decodeTopologyChangeResponse(response.getTopologyChangeResponse()));
+      } else {
+        throw new DecodingFailed(
+            "Response does not have an error or a valid topology change response");
       }
 
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  @Override
+  public Either<ErrorResponse, ClusterTopology> decodeClusterTopologyResponse(
+      final byte[] encodedResponse) {
+    try {
+      final var response = Response.parseFrom(encodedResponse);
+      if (response.hasError()) {
+        return Either.left(
+            new ErrorResponse(
+                decodeErrorCode(response.getError().getErrorCode()),
+                response.getError().getErrorMessage()));
+      } else if (response.hasClusterTopology()) {
+        return Either.right(decodeClusterTopology(response.getClusterTopology()));
+      } else {
+        throw new DecodingFailed("Response does not have an error or a valid cluster topology");
+      }
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }

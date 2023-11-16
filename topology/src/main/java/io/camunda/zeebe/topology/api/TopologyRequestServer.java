@@ -13,6 +13,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.topology.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.topology.api.TopologyRequestFailedException.ConcurrentModificationException;
 import io.camunda.zeebe.topology.serializer.TopologyRequestsSerializer;
+import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.util.Either;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -71,6 +72,14 @@ public final class TopologyRequestServer implements AutoCloseable {
     }
   }
 
+  byte[] encodeClusterTopologyResponse(final Either<ErrorResponse, ClusterTopology> response) {
+    if (response.isLeft()) {
+      return serializer.encodeResponse(response.getLeft());
+    } else {
+      return serializer.encodeResponse(response.get());
+    }
+  }
+
   private void registerRemoveMemberRequestsHandler() {
     communicationService.replyTo(
         TopologyRequestTopics.REMOVE_MEMBER.topic(),
@@ -115,16 +124,16 @@ public final class TopologyRequestServer implements AutoCloseable {
     communicationService.replyTo(
         TopologyRequestTopics.QUERY_TOPOLOGY.topic(),
         Function.identity(),
-        request -> topologyManagementApi.getTopology().toCompletableFuture(),
-        serializer::encode);
+        request -> mapClusterTopologyResponse(topologyManagementApi.getTopology()),
+        this::encodeClusterTopologyResponse);
   }
 
   private void registerTopologyCancelHandler() {
     communicationService.replyTo(
         TopologyRequestTopics.CANCEL_CHANGE.topic(),
         serializer::decodeCancelChangeRequest,
-        request -> topologyManagementApi.cancelTopologyChange(request).toCompletableFuture(),
-        serializer::encode);
+        request -> mapClusterTopologyResponse(topologyManagementApi.cancelTopologyChange(request)),
+        this::encodeClusterTopologyResponse);
   }
 
   private CompletableFuture<Either<ErrorResponse, TopologyChangeResponse>> mapResponse(
@@ -132,10 +141,18 @@ public final class TopologyRequestServer implements AutoCloseable {
     return topologyManagementApi
         .toCompletableFuture()
         .thenApply(Either::<ErrorResponse, TopologyChangeResponse>right)
-        .exceptionally(this::mapError);
+        .exceptionally(TopologyRequestServer::mapError);
   }
 
-  private Either<ErrorResponse, TopologyChangeResponse> mapError(final Throwable throwable) {
+  private CompletableFuture<Either<ErrorResponse, ClusterTopology>> mapClusterTopologyResponse(
+      final ActorFuture<ClusterTopology> topologyManagementApi) {
+    return topologyManagementApi
+        .toCompletableFuture()
+        .thenApply(Either::<ErrorResponse, ClusterTopology>right)
+        .exceptionally(TopologyRequestServer::mapError);
+  }
+
+  private static <T> Either<ErrorResponse, T> mapError(final Throwable throwable) {
     // throwable is always CompletionException
     return switch (throwable.getCause()) {
       case final TopologyRequestFailedException.OperationNotAllowed operationNotAllowed -> Either

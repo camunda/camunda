@@ -139,4 +139,8 @@ public interface ClusterActuator {
   @RequestLine("DELETE /brokers/{brokerId}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   PostOperationResponse removeBroker(@Param final int brokerId);
+
+  @RequestLine("DELETE /changes/{changeId}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  GetTopologyResponse cancelChange(@Param final long changeId);
 }

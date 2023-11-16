@@ -159,7 +159,8 @@ final class ProtoBufSerializerTest {
     final var encodedResponse = protoBufSerializer.encodeResponse(topologyChangeResponse);
 
     // then
-    final var decodedResponse = protoBufSerializer.decodeResponse(encodedResponse).get();
+    final var decodedResponse =
+        protoBufSerializer.decodeTopologyChangeResponse(encodedResponse).get();
     assertThat(decodedResponse).isEqualTo(topologyChangeResponse);
   }
 

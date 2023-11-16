@@ -105,7 +105,7 @@ final class TopologyManagementApiTest {
     final var topology = clientApi.getTopology().join();
 
     // then
-    assertThat(topology).isEqualTo(expectedTopology);
+    assertThat(topology.get()).isEqualTo(expectedTopology);
   }
 
   @Test

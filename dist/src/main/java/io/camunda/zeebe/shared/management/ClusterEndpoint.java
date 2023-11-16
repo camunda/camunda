@@ -72,8 +72,7 @@ public class ClusterEndpoint {
   @GetMapping(produces = "application/json")
   public ResponseEntity<?> clusterTopology() {
     try {
-      final GetTopologyResponse response = mapClusterTopology(requestSender.getTopology().join());
-      return new ResponseEntity<>(response, HttpStatusCode.valueOf(200));
+      return mapClusterTopologyResponse(requestSender.getTopology().join());
     } catch (final Exception error) {
       return mapError(error);
     }
@@ -84,6 +83,13 @@ public class ClusterEndpoint {
     final var errorResponse = new Error();
     errorResponse.setMessage(error.getMessage());
     return ResponseEntity.status(500).body(errorResponse);
+  }
+
+  private ResponseEntity<Error> invalidRequest(final String message) {
+    // TODO: Map error to proper HTTP status code as defined in spec
+    final var errorResponse = new Error();
+    errorResponse.setMessage(message);
+    return ResponseEntity.status(400).body(errorResponse);
   }
 
   @PostMapping(path = "/{resource}/{id}")
@@ -101,24 +107,46 @@ public class ClusterEndpoint {
               .addMembers(new AddMembersRequest(Set.of(new MemberId(String.valueOf(id)))))
               .join());
       case partitions -> ResponseEntity.status(501).body("Adding partitions is not supported");
+      case changes -> ResponseEntity.status(501)
+          .body(
+              "Changing cluster directly is not supported. Use POST /cluster/brokers for scaling the cluster");
     };
   }
 
   @DeleteMapping(path = "/{resource}/{id}")
   public ResponseEntity<?> remove(
       @PathVariable("resource") final Resource resource,
-      @PathVariable final int id,
+      @PathVariable final String id,
       @RequestParam(defaultValue = "false") final boolean dryRun) {
     if (dryRun) {
       return ResponseEntity.status(501).body("This operation does not support dry run");
     }
     return switch (resource) {
       case brokers -> mapOperationResponse(
-          requestSender
-              .removeMembers(new RemoveMembersRequest(Set.of(new MemberId(String.valueOf(id)))))
-              .join());
+          requestSender.removeMembers(new RemoveMembersRequest(Set.of(new MemberId(id)))).join());
       case partitions -> ResponseEntity.status(501).body("Removing partitions is not supported");
+      case changes -> cancelChange(id);
     };
+  }
+
+  /**
+   * Cancels a change with the given id. This is a dangerous operation and should only be used when
+   * the change is stuck and cannot make progress on its own. Cancelling a change will not revert
+   * already applied operations, so the cluster will be in an intermediate state with partially
+   * applied changes. For example, a partition might have been added to a broker, but not removed
+   * from another one; so it has a higher number of replicas than the configured value. In another
+   * case, the configuration in raft might differ from what is reflected in the ClusterTopology. So
+   * a manual intervention would be required to clean up the state.
+   */
+  private ResponseEntity<?> cancelChange(final String changeId) {
+    try {
+      return mapClusterTopologyResponse(
+          requestSender.cancelTopologyChange(Long.parseLong(changeId)).join());
+    } catch (final NumberFormatException ignore) {
+      return invalidRequest("Change id must be a number");
+    } catch (final Exception error) {
+      return mapError(error);
+    }
   }
 
   @PostMapping(path = "/{resource}", consumes = "application/json")
@@ -130,6 +158,9 @@ public class ClusterEndpoint {
       case brokers -> scaleBrokers(ids, dryRun);
       case partitions -> new ResponseEntity<>(
           "Scaling partitions is not supported", HttpStatusCode.valueOf(501));
+      case changes -> ResponseEntity.status(501)
+          .body(
+              "Changing cluster directly is not supported. Use POST /cluster/brokers for scaling the cluster");
     };
   }
 
@@ -175,7 +206,7 @@ public class ClusterEndpoint {
                     new JoinPartitionRequest(
                         MemberId.from(String.valueOf(resourceId)), subResourceId, priority))
                 .join());
-        case brokers -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
+        case brokers, changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
       };
       case partitions -> switch (subResource) {
           // POST /cluster/partitions/2/brokers/1
@@ -185,8 +216,9 @@ public class ClusterEndpoint {
                     new JoinPartitionRequest(
                         MemberId.from(String.valueOf(subResourceId)), resourceId, priority))
                 .join());
-        case partitions -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
+        case partitions, changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
       };
+      case changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
     };
   }
 
@@ -211,7 +243,7 @@ public class ClusterEndpoint {
                     new LeavePartitionRequest(
                         MemberId.from(String.valueOf(resourceId)), subResourceId))
                 .join());
-        case brokers -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
+        case brokers, changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
       };
       case partitions -> switch (subResource) {
         case brokers -> mapOperationResponse(
@@ -220,8 +252,9 @@ public class ClusterEndpoint {
                     new LeavePartitionRequest(
                         MemberId.from(String.valueOf(subResourceId)), resourceId))
                 .join());
-        case partitions -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
+        case partitions, changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
       };
+      case changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
     };
   }
 
@@ -230,16 +263,29 @@ public class ClusterEndpoint {
     if (response.isRight()) {
       return ResponseEntity.status(202).body(mapResponseType(response.get()));
     } else {
-      final var errorCode =
-          switch (response.getLeft().code()) {
-            case INVALID_REQUEST, OPERATION_NOT_ALLOWED -> 400;
-            case CONCURRENT_MODIFICATION -> 409;
-            case INTERNAL_ERROR -> 500;
-          };
-      final var error = new Error();
-      error.setMessage(response.getLeft().message());
-      return ResponseEntity.status(errorCode).body(error);
+      return mapErrorResponse(response.getLeft());
     }
+  }
+
+  private ResponseEntity<?> mapClusterTopologyResponse(
+      final Either<ErrorResponse, ClusterTopology> response) {
+    if (response.isRight()) {
+      return ResponseEntity.status(200).body(mapClusterTopology(response.get()));
+    } else {
+      return mapErrorResponse(response.getLeft());
+    }
+  }
+
+  private ResponseEntity<Error> mapErrorResponse(final ErrorResponse response) {
+    final var errorCode =
+        switch (response.code()) {
+          case INVALID_REQUEST, OPERATION_NOT_ALLOWED -> 400;
+          case CONCURRENT_MODIFICATION -> 409;
+          case INTERNAL_ERROR -> 500;
+        };
+    final var error = new Error();
+    error.setMessage(response.message());
+    return ResponseEntity.status(errorCode).body(error);
   }
 
   private static PostOperationResponse mapResponseType(final TopologyChangeResponse response) {
@@ -407,6 +453,7 @@ public class ClusterEndpoint {
 
   public enum Resource {
     brokers,
-    partitions;
+    partitions,
+    changes
   }
 }
