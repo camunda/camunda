@@ -6,14 +6,7 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
-import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
-import static io.camunda.operate.webapp.api.v1.entities.ProcessInstance.BPMN_PROCESS_ID;
-import static io.camunda.operate.webapp.api.v1.entities.ProcessInstance.PROCESS_DEFINITION_KEY;
-import static io.camunda.operate.webapp.api.v1.entities.ProcessInstance.VERSION;
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.camunda.operate.util.OperateZeebeAbstractIT;
-import io.camunda.operate.webapp.api.v1.dao.elasticsearch.ElasticsearchProcessInstanceDao;
 import io.camunda.operate.webapp.api.v1.entities.ChangeStatus;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
@@ -22,18 +15,23 @@ import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import org.junit.Ignore;
-import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+import static io.camunda.operate.webapp.api.v1.entities.ProcessInstance.BPMN_PROCESS_ID;
+import static io.camunda.operate.webapp.api.v1.entities.ProcessInstance.PROCESS_DEFINITION_KEY;
+import static io.camunda.operate.webapp.api.v1.entities.ProcessInstance.VERSION;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public class ElasticsearchProcessInstanceDaoIT extends OperateZeebeAbstractIT {
+public class ProcessInstanceDaoIT extends OperateZeebeAbstractIT {
 
   @Autowired
-  private ElasticsearchProcessInstanceDao dao;
+  private ProcessInstanceDao dao;
 
   private Results<ProcessInstance> processInstanceResults;
   private ProcessInstance processInstance;
@@ -50,7 +48,10 @@ public class ElasticsearchProcessInstanceDaoIT extends OperateZeebeAbstractIT {
       assertThat(processInstanceResults.getItems()).isEmpty();
       assertThat(processInstanceResults.getTotal()).isZero();
     });
+  }
 
+  @Test
+  public void shouldReturnProcessInstancesOnSearch() throws Exception {
     given(() -> {
       deployProcesses(
           "demoProcess_v_1.bpmn", "errorProcess.bpmn", "complexProcess_v_3.bpmn");
@@ -65,7 +66,6 @@ public class ElasticsearchProcessInstanceDaoIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/operate/issues/5287")
   public void shouldReturnByKey() throws Exception {
     given(() -> {
       deployProcesses("complexProcess_v_3.bpmn", "demoProcess_v_2.bpmn");
@@ -106,7 +106,7 @@ public class ElasticsearchProcessInstanceDaoIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void shouldReturnParentProcessKey() throws Exception {
+  public void shouldReturnParentKeys() throws Exception {
     given(() -> {
       deployProcesses("callActivityProcess.bpmn", "calledProcess.bpmn");
       processInstanceKeys = startProcesses("CallActivityProcess");
@@ -117,19 +117,6 @@ public class ElasticsearchProcessInstanceDaoIT extends OperateZeebeAbstractIT {
         .filter(x -> x.getBpmnProcessId().equals("CalledProcess")).findFirst().orElseThrow());
     then(() -> {
       assertThat(processInstance.getParentKey()).isEqualTo(key);
-    });
-  }
-
-  @Test
-  public void shouldReturnParentFlowNodeInstanceKey() throws Exception {
-    given(() -> {
-      deployProcesses("callActivityProcess.bpmn", "calledProcess.bpmn");
-      processInstanceKeys = startProcesses("CallActivityProcess");
-      processInstanceResults = dao.search(new Query<ProcessInstance>());
-    });
-    when(() -> processInstance = processInstanceResults.getItems().stream()
-        .filter(x -> x.getBpmnProcessId().equals("CalledProcess")).findFirst().orElseThrow());
-    then(() -> {
       assertThat(processInstance.getParentFlowNodeInstanceKey()).isNotNull();
     });
   }
@@ -144,13 +131,13 @@ public class ElasticsearchProcessInstanceDaoIT extends OperateZeebeAbstractIT {
   }
 
   @Test(expected = ResourceNotFoundException.class)
-  public void showThrowWhenByKeyNotExists() throws Exception {
+  public void showThrowExceptionWhenByKeyNotExists() throws Exception {
     given(() -> {});
     when(() -> dao.byKey(-27L));
   }
 
   @Test(expected = ServerException.class)
-  public void shouldThrowWhenByKeyFails() throws Exception {
+  public void shouldThrowExceptionWhenByKeyIsNull() throws Exception {
     given(() -> {});
     when(() -> dao.byKey(null));
   }

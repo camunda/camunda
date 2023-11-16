@@ -6,32 +6,25 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
-import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.camunda.operate.util.OperateZeebeAbstractIT;
-import io.camunda.operate.webapp.api.v1.dao.elasticsearch.ElasticsearchSequenceFlowDao;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
 import io.camunda.operate.webapp.api.v1.entities.Results;
-import java.util.List;
-
 import io.camunda.operate.webapp.api.v1.entities.SequenceFlow;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class ElasticsearchSequenceFlowDaoIT extends OperateZeebeAbstractIT {
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class SequenceFlowDaoIT extends OperateZeebeAbstractIT {
 
   @Autowired
-  ElasticsearchSequenceFlowDao dao;
+  private SequenceFlowDao dao;
 
   private Results<SequenceFlow> sequenceFlowResults;
-  private SequenceFlow sequenceFlow;
-  private Long key;
-  private List<Long> sequenceFlowKeys;
   private Long demoProcessKey;
   private Long singleTaskKey;
   private Long processInstanceKey;
@@ -68,7 +61,6 @@ public class ElasticsearchSequenceFlowDaoIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/operate/issues/5287")
   public void shouldReturnSequenceFlows() throws Exception {
     given(() ->
       processInstanceKey = createIncidentsAndGetProcessInstanceKey(
@@ -80,14 +72,21 @@ public class ElasticsearchSequenceFlowDaoIT extends OperateZeebeAbstractIT {
     then(() -> {
       assertThat(sequenceFlowResults.getItems()).hasSize(4);
       assertThat(sequenceFlowResults.getItems().get(0))
-          .extracting("processInstanceKey",
-             "activityId",
-              "tenantId")
+          .extracting("processInstanceKey", "activityId", "tenantId")
           .containsExactly(
-              processInstanceKey,
-              "sequenceFlow_01",
-              DEFAULT_TENANT_ID
-          );
+              processInstanceKey, "sequenceFlow_01", DEFAULT_TENANT_ID);
+      assertThat(sequenceFlowResults.getItems().get(1))
+          .extracting("processInstanceKey", "activityId", "tenantId")
+          .containsExactly(
+              processInstanceKey, "sequenceFlow_02", DEFAULT_TENANT_ID);
+      assertThat(sequenceFlowResults.getItems().get(2))
+          .extracting("processInstanceKey", "activityId", "tenantId")
+          .containsExactly(
+              processInstanceKey, "sequenceFlow_03", DEFAULT_TENANT_ID);
+      assertThat(sequenceFlowResults.getItems().get(3))
+          .extracting("processInstanceKey", "activityId", "tenantId")
+          .containsExactly(
+              processInstanceKey, "sequenceFlow_04", DEFAULT_TENANT_ID);
     });
   }
 
@@ -105,12 +104,17 @@ public class ElasticsearchSequenceFlowDaoIT extends OperateZeebeAbstractIT {
     then(() -> {
       assertThat(sequenceFlowResults.getItems()).hasSize(4);
       assertThat(sequenceFlowResults.getItems().get(0))
-          .extracting("processInstanceKey",
-              "activityId")
-          .containsExactly(
-              processInstanceKey,
-              "sequenceFlow_01"
-          );
+          .extracting("processInstanceKey", "activityId")
+          .containsExactly(processInstanceKey, "sequenceFlow_01");
+      assertThat(sequenceFlowResults.getItems().get(1))
+          .extracting("processInstanceKey", "activityId")
+          .containsExactly(processInstanceKey, "sequenceFlow_02");
+      assertThat(sequenceFlowResults.getItems().get(2))
+          .extracting("processInstanceKey", "activityId")
+          .containsExactly(processInstanceKey, "sequenceFlow_03");
+      assertThat(sequenceFlowResults.getItems().get(3))
+          .extracting("processInstanceKey", "activityId")
+          .containsExactly(processInstanceKey, "sequenceFlow_04");
     });
   }
 
@@ -125,11 +129,15 @@ public class ElasticsearchSequenceFlowDaoIT extends OperateZeebeAbstractIT {
     when(() ->
       sequenceFlowResults = dao.search(new Query<SequenceFlow>()
           .setSort(Sort.listOf(
-              SequenceFlow.PROCESS_INSTANCE_KEY, Order.DESC)))
+              SequenceFlow.ACTIVITY_ID, Order.DESC)))
     );
     then(() -> {
       assertThat(sequenceFlowResults.getItems()).hasSize(5);
-      assertThat(sequenceFlowResults.getItems().get(0).getProcessInstanceKey()).isEqualTo(processInstanceKey);
+      assertThat(sequenceFlowResults.getItems().get(0).getActivityId()).isEqualTo("sequenceFlow_04");
+      assertThat(sequenceFlowResults.getItems().get(1).getActivityId()).isEqualTo("sequenceFlow_03");
+      assertThat(sequenceFlowResults.getItems().get(2).getActivityId()).isEqualTo("sequenceFlow_02");
+      assertThat(sequenceFlowResults.getItems().get(3).getActivityId()).isEqualTo("sequenceFlow_01");
+      assertThat(sequenceFlowResults.getItems().get(4).getActivityId()).isEqualTo("SequenceFlow_04ev4jl");
     });
   }
 
