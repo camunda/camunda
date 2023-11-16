@@ -11,6 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.topology.changes.TopologyChangeAppliers;
+import io.camunda.zeebe.topology.metrics.TopologyMetrics;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
@@ -236,6 +237,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
 
   private void logAndScheduleRetry(final TopologyChangeOperation operation, final Throwable error) {
     shouldRetry = true;
+    TopologyMetrics.failedOperation(operation);
     final Duration delay = backoffRetry.nextDelay();
     LOG.error(
         "Failed to apply topology change operation {}. Will be retried in {}.",
@@ -256,6 +258,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
       final Throwable error) {
     onGoingTopologyChangeOperation = false;
     if (error == null) {
+      TopologyMetrics.appliedOperation(operation);
       backoffRetry.reset();
       updateLocalTopology(
           persistedClusterTopology.getTopology().advanceTopologyChange(localMemberId, transformer));
@@ -272,6 +275,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
     } else {
       // Retry after a delay. The failure is most likely due to timeouts such
       // as when joining a raft partition.
+      TopologyMetrics.failedOperation(operation);
       logAndScheduleRetry(operation, error);
     }
   }

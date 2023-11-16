@@ -11,12 +11,17 @@ import io.camunda.zeebe.topology.state.ClusterChangePlan;
 import io.camunda.zeebe.topology.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.CompletedChange;
+import io.camunda.zeebe.topology.state.TopologyChangeOperation;
+import io.prometheus.client.Counter;
 import io.prometheus.client.Enumeration;
 import io.prometheus.client.Gauge;
 import java.util.List;
 
 public final class TopologyMetrics {
   private static final String NAMESPACE = "zeebe";
+  private static final String LABEL_OPERATION = "operation";
+  private static final String LABEL_OUTCOME = "outcome";
+
   private static final Gauge TOPOLOGY_VERSION =
       Gauge.build()
           .namespace(NAMESPACE)
@@ -55,6 +60,13 @@ public final class TopologyMetrics {
           .name("cluster_changes_operations_completed")
           .help("Number of completed changes in the current change plan")
           .register();
+  private static final Counter OPERATION_ATTEMPTS =
+      Counter.build()
+          .namespace(NAMESPACE)
+          .name("cluster_changes_operation_attempts")
+          .help("Number of retries per operation type")
+          .labelNames(LABEL_OPERATION, LABEL_OUTCOME)
+          .register();
 
   public static void updateFromTopology(final ClusterTopology topology) {
     TOPOLOGY_VERSION.set(topology.version());
@@ -78,5 +90,13 @@ public final class TopologyMetrics {
             .map(ClusterChangePlan::completedOperations)
             .map(List::size)
             .orElse(0));
+  }
+
+  public static void failedOperation(final TopologyChangeOperation operation) {
+    OPERATION_ATTEMPTS.labels(operation.getClass().getSimpleName(), "failed").inc();
+  }
+
+  public static void appliedOperation(final TopologyChangeOperation operation) {
+    OPERATION_ATTEMPTS.labels(operation.getClass().getSimpleName(), "applied").inc();
   }
 }
