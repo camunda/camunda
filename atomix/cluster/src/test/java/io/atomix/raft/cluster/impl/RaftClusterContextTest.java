@@ -260,6 +260,29 @@ final class RaftClusterContextTest {
   }
 
   @Test
+  void shouldNotIncludeLocalMemberInQuorumWhenItIsNotPartOfNewConfiguration() {
+    // given
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var remoteMembers =
+        List.<RaftMember>of(
+            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()));
+
+    final var raft =
+        raftWithStoredConfiguration(
+            new Configuration(1, 1, Instant.now().toEpochMilli(), remoteMembers));
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
+
+    // when
+    context.getMemberContext(new MemberId("2")).setMatchIndex(2);
+    context.getMemberContext(new MemberId("3")).setMatchIndex(3);
+
+    // then
+    assertThat(context.getQuorumFor(RaftMemberContext::getMatchIndex)).hasValue(2L);
+  }
+
+  @Test
   void quorumWhenNewMembersAreAhead() {
     // given
     final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
