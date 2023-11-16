@@ -57,7 +57,9 @@ final class PartitionLeaveTest {
               clusterCfg.setPartitionsCount(1);
               clusterCfg.setReplicationFactor(2);
             });
-    CompletableFuture.allOf(broker0.start(), broker1.start()).join();
+    CompletableFuture.allOf(
+            CompletableFuture.runAsync(broker0::start), CompletableFuture.runAsync(broker1::start))
+        .join();
 
     try (final var client =
         ZeebeClient.newClientBuilder()
