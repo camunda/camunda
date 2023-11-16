@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
+import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -15,6 +16,8 @@ import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import java.util.List;
+import java.util.Map;
 
 public class DbUserTaskState implements UserTaskState, MutableUserTaskState {
 
@@ -57,5 +60,19 @@ public class DbUserTaskState implements UserTaskState, MutableUserTaskState {
     userTaskKey.wrapLong(key);
     final UserTaskRecordValue userTask = userTasksColumnFamily.get(userTaskKey);
     return userTask == null ? null : userTask.getRecord();
+  }
+
+  @Override
+  public UserTaskRecord getUserTask(final long key, final Map<String, Object> authorizations) {
+    final UserTaskRecord userTask = getUserTask(key);
+    if (userTask != null
+        && getAuthorizedTenantIds(authorizations).contains(userTask.getTenantId())) {
+      return userTask;
+    }
+    return null;
+  }
+
+  private List<String> getAuthorizedTenantIds(final Map<String, Object> authorizations) {
+    return (List<String>) authorizations.get(Authorization.AUTHORIZED_TENANTS);
   }
 }

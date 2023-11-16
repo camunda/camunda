@@ -8,7 +8,10 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import java.util.Map;
 
 public interface UserTaskState {
   UserTaskRecord getUserTask(final long userTaskKey);
+
+  UserTaskRecord getUserTask(final long userTaskKey, final Map<String, Object> authorizations);
 }
