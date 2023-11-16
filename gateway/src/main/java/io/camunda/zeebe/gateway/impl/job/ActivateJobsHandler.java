@@ -27,11 +27,4 @@ public interface ActivateJobsHandler extends Consumer<ActorControl> {
    */
   void activateJobs(
       ActivateJobsRequest request, ServerStreamObserver<ActivateJobsResponse> responseObserver);
-
-  public static InflightActivateJobsRequest toInflightActivateJobsRequest(
-      final ActivateJobsRequest request,
-      final ServerStreamObserver<ActivateJobsResponse> responseObserver) {
-    return new InflightActivateJobsRequest(
-        ACTIVATE_JOBS_REQUEST_ID_GENERATOR.getAndIncrement(), request, responseObserver);
-  }
 }
