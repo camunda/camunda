@@ -16,6 +16,8 @@
 
 package io.camunda.zeebe.client.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
@@ -75,7 +77,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -142,6 +147,13 @@ public final class ZeebeClientImpl implements ZeebeClient {
     channelBuilder.keepAliveTime(config.getKeepAlive().toMillis(), TimeUnit.MILLISECONDS);
     channelBuilder.userAgent("zeebe-client-java/" + VersionUtil.getVersion());
     channelBuilder.maxInboundMessageSize(config.getMaxMessageSize());
+
+    final Map<String, Object> serviceConfig = defaultServiceConfig();
+    if (!serviceConfig.isEmpty()) {
+      channelBuilder.defaultServiceConfig(serviceConfig);
+      channelBuilder.enableRetry();
+    }
+
     return channelBuilder.build();
   }
 
@@ -192,6 +204,27 @@ public final class ZeebeClientImpl implements ZeebeClient {
           config.getInterceptors().toArray(new ClientInterceptor[] {}));
     }
     return gatewayStub;
+  }
+
+  private static Map<String, Object> defaultServiceConfig() {
+    final ObjectMapper objectMapper = new ObjectMapper();
+    final URL defaultServiceConfig =
+        ClassLoader.getSystemClassLoader().getResource("gateway-service-config.json");
+    if (defaultServiceConfig == null) {
+      Loggers.LOGGER.warn(
+          "No default service config found on classpath; will not configure a default retry policy");
+      return new HashMap<>();
+    }
+
+    try {
+      return objectMapper.readValue(
+          defaultServiceConfig, new TypeReference<Map<String, Object>>() {});
+    } catch (final IOException e) {
+      Loggers.LOGGER.warn(
+          "Failed to read default service config from classpath; will not configure a default retry policy",
+          e);
+      return new HashMap<>();
+    }
   }
 
   private static ExecutorResource buildExecutorService(
