@@ -28,7 +28,7 @@ public record MemberState(
     long version, Instant lastUpdated, State state, Map<Integer, PartitionState> partitions) {
   public static MemberState initializeAsActive(
       final Map<Integer, PartitionState> initialPartitions) {
-    return new MemberState(0, Instant.now(), State.ACTIVE, Map.copyOf(initialPartitions));
+    return new MemberState(0, Instant.MIN, State.ACTIVE, Map.copyOf(initialPartitions));
   }
 
   public static MemberState uninitialized() {
