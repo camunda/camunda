@@ -35,7 +35,7 @@ class RaftLogUncommittedReaderTest {
   private RaftLogReader uncommittedReader;
 
   private final ByteBuffer data =
-      ByteBuffer.allocate(Integer.BYTES).order(ByteOrder.LITTLE_ENDIAN).putInt(0, 123456);
+      ByteBuffer.allocate(Integer.BYTES).order(ByteOrder.BIG_ENDIAN).putInt(0, 123456);
 
   @BeforeEach
   void setup(@TempDir final File directory) {
@@ -46,7 +46,7 @@ class RaftLogUncommittedReaderTest {
             .withMetaStore(new InMemory())
             .build();
     uncommittedReader = raftlog.openUncommittedReader();
-    data.order(ByteOrder.LITTLE_ENDIAN).putInt(123456);
+    data.order(ByteOrder.BIG_ENDIAN).putInt(123456);
   }
 
   @AfterEach

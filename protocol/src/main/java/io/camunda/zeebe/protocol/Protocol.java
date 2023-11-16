@@ -26,7 +26,7 @@ public final class Protocol {
    * The endianness of multibyte values encoded in the protocol. This MUST match the default byte
    * order in the SBE XML schema.
    */
-  public static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
+  public static final ByteOrder ENDIANNESS = ByteOrder.BIG_ENDIAN;
 
   /** By convention, the partition to deploy to */
   public static final int DEPLOYMENT_PARTITION = 1;

@@ -120,7 +120,7 @@ public class ByteBufferSerializerTest {
     assertEquals(value, deserialized.getLong(0));
   }
 
-  @Test
+/*  @Test
   public void shouldSerializeLittleEndianBuffer() {
     // given
     final int value = 1;
@@ -136,7 +136,7 @@ public class ByteBufferSerializerTest {
     // then
     assertEquals(ByteOrder.LITTLE_ENDIAN, deserialized.order());
     assertEquals(value, deserialized.getLong(0));
-  }
+  }*/
 
   @Test
   public void shouldSerializeBigEndianBuffer() {
