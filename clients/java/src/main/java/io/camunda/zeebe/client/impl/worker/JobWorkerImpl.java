@@ -80,6 +80,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
 
   public JobWorkerImpl(
       final int maxJobsActive,
+      final Duration jobActivationTimeout,
       final ScheduledExecutorService executor,
       final Duration pollInterval,
       final JobRunnableFactory jobHandlerFactory,
@@ -91,7 +92,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     activationThreshold = Math.round(maxJobsActive * 0.3f);
     remainingJobs = new AtomicInteger(0);
 
-    this.executor = BlockingExecutor.of(executor, maxJobsActive);
+    this.executor = BlockingExecutor.of(executor, maxJobsActive, jobActivationTimeout);
     this.jobHandlerFactory = jobHandlerFactory;
     this.jobStreamer = jobStreamer;
     initialPollInterval = pollInterval.toMillis();
@@ -259,18 +260,25 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
 
   private static class BlockingExecutor implements Executor {
 
-    public static final int TIMEOUT = 10;
+    public static final TimeUnit TIMEOUT_UNIT = TimeUnit.MILLISECONDS;
     private final ScheduledExecutorService wrappedExecutor;
     private final Semaphore semaphore;
+    private final long timeoutMillis;
 
     private BlockingExecutor(
-        final ScheduledExecutorService wrappedExecutor, final int maxActivate) {
+        final ScheduledExecutorService wrappedExecutor,
+        final int maxActivate,
+        final Duration jobActivationTimeout) {
       this.wrappedExecutor = wrappedExecutor;
       semaphore = new Semaphore(maxActivate);
+      timeoutMillis = jobActivationTimeout.toMillis();
     }
 
-    public static BlockingExecutor of(final ScheduledExecutorService executor, final int maxJobs) {
-      return new BlockingExecutor(executor, maxJobs);
+    public static BlockingExecutor of(
+        final ScheduledExecutorService executor,
+        final int maxJobs,
+        final Duration jobActivationTimeout) {
+      return new BlockingExecutor(executor, maxJobs, jobActivationTimeout);
     }
 
     public void schedule(final Runnable runnable, final long timeout, final TimeUnit unit) {
@@ -280,11 +288,11 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     @Override
     public void execute(final Runnable command) {
       try {
-        if (!semaphore.tryAcquire(TIMEOUT, TimeUnit.SECONDS)) {
+        if (!semaphore.tryAcquire(timeoutMillis, TIMEOUT_UNIT)) {
           // handle timeout
           LOG.warn(
-              "We reached the time out of {}s, we will drop the job, since it will be made available again for other workers in the meantime.",
-              TIMEOUT);
+              "We reached the time out after {}ms. We will drop the job, since it will be made available again for other workers in the meantime.",
+              timeoutMillis);
         }
 
         wrappedExecutor.execute(
