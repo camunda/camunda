@@ -148,10 +148,12 @@ public final class ZeebeClientImpl implements ZeebeClient {
     channelBuilder.userAgent("zeebe-client-java/" + VersionUtil.getVersion());
     channelBuilder.maxInboundMessageSize(config.getMaxMessageSize());
 
-    final Map<String, Object> serviceConfig = defaultServiceConfig();
-    if (!serviceConfig.isEmpty()) {
-      channelBuilder.defaultServiceConfig(serviceConfig);
-      channelBuilder.enableRetry();
+    if (config.useDefaultRetryPolicy()) {
+      final Map<String, Object> serviceConfig = defaultServiceConfig();
+      if (!serviceConfig.isEmpty()) {
+        channelBuilder.defaultServiceConfig(serviceConfig);
+        channelBuilder.enableRetry();
+      }
     }
 
     return channelBuilder.build();
@@ -211,7 +213,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
     final URL defaultServiceConfig =
         ClassLoader.getSystemClassLoader().getResource("gateway-service-config.json");
     if (defaultServiceConfig == null) {
-      Loggers.LOGGER.warn(
+      Loggers.LOGGER.info(
           "No default service config found on classpath; will not configure a default retry policy");
       return new HashMap<>();
     }

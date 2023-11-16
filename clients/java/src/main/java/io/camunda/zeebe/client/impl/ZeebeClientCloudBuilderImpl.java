@@ -236,7 +236,13 @@ public class ZeebeClientCloudBuilderImpl
   @Override
   public ZeebeClientBuilder defaultJobWorkerStreamEnabled(final boolean streamEnabled) {
     innerBuilder.defaultJobWorkerStreamEnabled(streamEnabled);
-    return null;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder useDefaultRetryPolicy(final boolean useDefaultRetryPolicy) {
+    innerBuilder.useDefaultRetryPolicy(useDefaultRetryPolicy);
+    return this;
   }
 
   @Override
