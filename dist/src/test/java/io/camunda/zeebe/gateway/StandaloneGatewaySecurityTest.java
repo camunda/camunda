@@ -10,10 +10,10 @@ package io.camunda.zeebe.gateway;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.zeebe.gateway.GatewayConfiguration.GatewayProperties;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
-import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
@@ -52,7 +52,7 @@ final class StandaloneGatewaySecurityTest {
   @Test
   void shouldStartWithTlsEnabled() throws Exception {
     // given
-    final GatewayCfg cfg = createGatewayCfg();
+    final var cfg = createGatewayCfg();
 
     // when
     gateway = buildGateway(cfg);
@@ -67,7 +67,7 @@ final class StandaloneGatewaySecurityTest {
   @Test
   void shouldNotStartWithTlsEnabledAndWrongCert() {
     // given
-    final GatewayCfg cfg = createGatewayCfg();
+    final var cfg = createGatewayCfg();
     cfg.getCluster().getSecurity().setCertificateChainPath(new File("/tmp/i-dont-exist.crt"));
 
     // when - then
@@ -80,7 +80,7 @@ final class StandaloneGatewaySecurityTest {
   @Test
   void shouldNotStartWithTlsEnabledAndWrongKey() {
     // given
-    final GatewayCfg cfg = createGatewayCfg();
+    final var cfg = createGatewayCfg();
     cfg.getCluster().getSecurity().setPrivateKeyPath(new File("/tmp/i-dont-exist.key"));
 
     // when - then
@@ -93,7 +93,7 @@ final class StandaloneGatewaySecurityTest {
   @Test
   void shouldNotStartWithTlsEnabledAndNoPrivateKey() {
     // given
-    final GatewayCfg cfg = createGatewayCfg();
+    final var cfg = createGatewayCfg();
     cfg.getCluster().getSecurity().setPrivateKeyPath(null);
 
     // when - then
@@ -106,7 +106,7 @@ final class StandaloneGatewaySecurityTest {
   @Test
   void shouldNotStartWithTlsEnabledAndNoCert() {
     // given
-    final GatewayCfg cfg = createGatewayCfg();
+    final var cfg = createGatewayCfg();
     cfg.getCluster().getSecurity().setCertificateChainPath(null);
 
     // when - then
@@ -116,26 +116,25 @@ final class StandaloneGatewaySecurityTest {
             "Expected a certificate chain in order to enable inter-cluster communication security, but none given");
   }
 
-  private GatewayCfg createGatewayCfg() {
+  private GatewayProperties createGatewayCfg() {
     final var gatewayAddress = SocketUtil.getNextAddress();
     final var clusterAddress = SocketUtil.getNextAddress();
-    return new GatewayCfg()
-        .setNetwork(
-            new NetworkCfg()
-                .setHost(gatewayAddress.getHostName())
-                .setPort(gatewayAddress.getPort()))
-        .setCluster(
-            new ClusterCfg()
-                .setHost(clusterAddress.getHostName())
-                .setPort(clusterAddress.getPort())
-                .setSecurity(
-                    new SecurityCfg()
-                        .setEnabled(true)
-                        .setCertificateChainPath(certificate.certificate())
-                        .setPrivateKeyPath(certificate.privateKey())));
+    final var config = new GatewayProperties();
+    config.setNetwork(
+        new NetworkCfg().setHost(gatewayAddress.getHostName()).setPort(gatewayAddress.getPort()));
+    config.setCluster(
+        new ClusterCfg()
+            .setHost(clusterAddress.getHostName())
+            .setPort(clusterAddress.getPort())
+            .setSecurity(
+                new SecurityCfg()
+                    .setEnabled(true)
+                    .setCertificateChainPath(certificate.certificate())
+                    .setPrivateKeyPath(certificate.privateKey())));
+    return config;
   }
 
-  private StandaloneGateway buildGateway(final GatewayCfg gatewayCfg) {
+  private StandaloneGateway buildGateway(final GatewayProperties gatewayCfg) {
     atomixCluster = new GatewayClusterConfiguration().atomixCluster(gatewayCfg);
     final ActorSchedulerConfiguration actorSchedulerConfiguration =
         new ActorSchedulerConfiguration(gatewayCfg, new ActorClockConfiguration(false));
@@ -150,7 +149,7 @@ final class StandaloneGatewaySecurityTest {
     jobStreamClient = new JobStreamComponent().jobStreamClient(actorScheduler, atomixCluster);
 
     return new StandaloneGateway(
-        gatewayCfg,
+        new GatewayConfiguration(gatewayCfg),
         new SpringGatewayBridge(),
         actorScheduler,
         atomixCluster,

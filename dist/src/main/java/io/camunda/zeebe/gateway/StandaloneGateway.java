@@ -11,7 +11,6 @@ import io.atomix.cluster.AtomixCluster;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
-import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.shared.MainSupport;
@@ -46,7 +45,7 @@ public class StandaloneGateway
     implements CommandLineRunner, ApplicationListener<ContextClosedEvent>, CloseableSilently {
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
 
-  private final GatewayCfg configuration;
+  private final GatewayConfiguration configuration;
   private final SpringGatewayBridge springGatewayBridge;
   private final ActorScheduler actorScheduler;
   private final AtomixCluster atomixCluster;
@@ -57,7 +56,7 @@ public class StandaloneGateway
 
   @Autowired
   public StandaloneGateway(
-      final GatewayCfg configuration,
+      final GatewayConfiguration configuration,
       final SpringGatewayBridge springGatewayBridge,
       final ActorScheduler actorScheduler,
       final AtomixCluster atomixCluster,
@@ -87,12 +86,10 @@ public class StandaloneGateway
 
   @Override
   public void run(final String... args) throws Exception {
-    configuration.init();
-
-    if (LOG.isInfoEnabled()) {
-      LOG.info("Version: {}", VersionUtil.getVersion());
-      LOG.info("Starting standalone gateway with configuration {}", configuration.toJson());
-    }
+    LOG.info(
+        "Starting standalone gateway {} with version {}",
+        configuration.config().getCluster().getMemberId(),
+        VersionUtil.getVersion());
 
     atomixCluster.start();
     jobStreamClient.start().join();
@@ -101,7 +98,9 @@ public class StandaloneGateway
     // topology to be set up, otherwise the callback may be lost
     brokerClient.getTopologyManager().addTopologyListener(jobStreamClient);
 
-    gateway = new Gateway(configuration, brokerClient, actorScheduler, jobStreamClient.streamer());
+    gateway =
+        new Gateway(
+            configuration.config(), brokerClient, actorScheduler, jobStreamClient.streamer());
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
     springGatewayBridge.registerClusterStateSupplier(
         () ->
@@ -111,6 +110,7 @@ public class StandaloneGateway
     springGatewayBridge.registerJobStreamClient(() -> jobStreamClient);
 
     gateway.start().join(30, TimeUnit.SECONDS);
+    LOG.info("Standalone gateway is started!");
   }
 
   @Override

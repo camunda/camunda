@@ -89,11 +89,10 @@ public final class Broker implements AutoCloseable {
   private void logBrokerStart() {
     if (LOG.isInfoEnabled()) {
       final BrokerCfg brokerCfg = getConfig();
-      LOG.info("Version: {}", VersionUtil.getVersion());
       LOG.info(
-          "Starting broker {} with configuration {}",
+          "Starting broker {} version {}",
           brokerCfg.getCluster().getNodeId(),
-          brokerCfg.toJson());
+          VersionUtil.getVersion());
     }
   }
 

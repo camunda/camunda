@@ -7,18 +7,10 @@
  */
 package io.camunda.zeebe.gateway.impl.configuration;
 
-import static io.camunda.zeebe.util.ObjectWriterFactory.getDefaultJsonObjectWriter;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import io.camunda.zeebe.util.exception.UncheckedExecutionException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
-@Component
-@ConfigurationProperties(prefix = "zeebe.gateway")
 public class GatewayCfg {
 
   private NetworkCfg network = new NetworkCfg();
@@ -140,13 +132,5 @@ public class GatewayCfg {
         + ", multiTenancy="
         + multiTenancy
         + '}';
-  }
-
-  public String toJson() {
-    try {
-      return getDefaultJsonObjectWriter().writeValueAsString(this);
-    } catch (final JsonProcessingException e) {
-      throw new UncheckedExecutionException("Writing to JSON failed", e);
-    }
   }
 }

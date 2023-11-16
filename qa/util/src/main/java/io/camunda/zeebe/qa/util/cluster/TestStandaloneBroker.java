@@ -9,6 +9,7 @@ package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.StandaloneBroker;
+import io.camunda.zeebe.broker.shared.BrokerConfiguration.BrokerProperties;
 import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -31,12 +32,12 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     implements TestGateway<TestStandaloneBroker> {
 
   private static final String RECORDING_EXPORTER_ID = "recordingExporter";
-  private final BrokerCfg config;
+  private final BrokerProperties config;
 
   public TestStandaloneBroker() {
     super(StandaloneBroker.class);
 
-    config = new BrokerCfg();
+    config = new BrokerProperties();
 
     config.getNetwork().getCommandApi().setPort(SocketUtil.getNextAddress().getPort());
     config.getNetwork().getInternalApi().setPort(SocketUtil.getNextAddress().getPort());
@@ -49,7 +50,22 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     config.getData().getDisk().getFreeSpace().setReplication(DataSize.ofMegabytes(64));
 
     //noinspection resource
-    withBean("uninitializedBrokerCfg", config, BrokerCfg.class);
+    withBean("config", config, BrokerProperties.class);
+  }
+
+  @Override
+  public int mappedPort(final TestZeebePort port) {
+    return switch (port) {
+      case COMMAND -> config.getNetwork().getCommandApi().getPort();
+      case GATEWAY -> config.getGateway().getNetwork().getPort();
+      case CLUSTER -> config.getNetwork().getInternalApi().getPort();
+      default -> super.mappedPort(port);
+    };
+  }
+
+  @Override
+  protected SpringApplicationBuilder createSpringBuilder() {
+    return super.createSpringBuilder().profiles(Profile.BROKER.getId());
   }
 
   @Override
@@ -75,21 +91,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   @Override
   public boolean isGateway() {
     return config.getGateway().isEnable();
-  }
-
-  @Override
-  public int mappedPort(final TestZeebePort port) {
-    return switch (port) {
-      case COMMAND -> config.getNetwork().getCommandApi().getPort();
-      case GATEWAY -> config.getGateway().getNetwork().getPort();
-      case CLUSTER -> config.getNetwork().getInternalApi().getPort();
-      default -> super.mappedPort(port);
-    };
-  }
-
-  @Override
-  protected SpringApplicationBuilder createSpringBuilder() {
-    return super.createSpringBuilder().profiles(Profile.BROKER.getId());
   }
 
   @Override

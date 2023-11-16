@@ -8,9 +8,8 @@
 package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.AtomixCluster;
-import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
+import io.camunda.zeebe.broker.shared.BrokerConfiguration;
 import io.camunda.zeebe.broker.system.SystemContext;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.shared.MainSupport;
@@ -39,8 +38,7 @@ public class StandaloneBroker
     implements CommandLineRunner, ApplicationListener<ContextClosedEvent> {
   private static final Logger LOGGER = Loggers.SYSTEM_LOGGER;
 
-  private final BrokerCfg configuration;
-  private final WorkingDirectory workingDirectory;
+  private final BrokerConfiguration configuration;
   private final SpringBrokerBridge springBrokerBridge;
   private final ActorScheduler actorScheduler;
   private final AtomixCluster cluster;
@@ -50,14 +48,12 @@ public class StandaloneBroker
 
   @Autowired
   public StandaloneBroker(
-      final BrokerCfg configuration,
-      final WorkingDirectory workingDirectory,
+      final BrokerConfiguration configuration,
       final SpringBrokerBridge springBrokerBridge,
       final ActorScheduler actorScheduler,
       final AtomixCluster cluster,
       final BrokerClient brokerClient) {
     this.configuration = configuration;
-    this.workingDirectory = workingDirectory;
     this.springBrokerBridge = springBrokerBridge;
     this.actorScheduler = actorScheduler;
     this.cluster = cluster;
@@ -81,7 +77,7 @@ public class StandaloneBroker
   @Override
   public void run(final String... args) throws IOException {
     final SystemContext systemContext =
-        new SystemContext(configuration, actorScheduler, cluster, brokerClient);
+        new SystemContext(configuration.config(), actorScheduler, cluster, brokerClient);
 
     broker = new Broker(systemContext, springBrokerBridge);
     broker.start();
@@ -97,6 +93,7 @@ public class StandaloneBroker
   }
 
   private void cleanupWorkingDirectory() {
+    final var workingDirectory = configuration.workingDirectory();
     if (!workingDirectory.isTemporary()) {
       return;
     }

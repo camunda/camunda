@@ -8,6 +8,7 @@
 package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.broker.shared.BrokerConfiguration.BrokerProperties;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.restore.RestoreApp;
@@ -18,19 +19,19 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 
 /** Represents an instance of the {@link RestoreApp} Spring application. */
 public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> {
-  private final BrokerCfg config;
+  private final BrokerProperties config;
   private Long backupId;
 
   public TestRestoreApp() {
-    this(new BrokerCfg());
+    this(new BrokerProperties());
   }
 
-  public TestRestoreApp(final BrokerCfg config) {
+  public TestRestoreApp(final BrokerProperties config) {
     super(RestoreApp.class);
     this.config = config;
 
     //noinspection resource
-    withBean("config", config, BrokerCfg.class);
+    withBean("config", config, BrokerProperties.class);
   }
 
   @Override

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.restore;
 
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.broker.shared.BrokerConfiguration;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.shared.MainSupport;
 import io.camunda.zeebe.shared.Profile;
@@ -35,8 +36,8 @@ public class RestoreApp implements ApplicationRunner {
   private long backupId;
 
   @Autowired
-  public RestoreApp(final BrokerCfg configuration, final BackupStore backupStore) {
-    this.configuration = configuration;
+  public RestoreApp(final BrokerConfiguration configuration, final BackupStore backupStore) {
+    this.configuration = configuration.config();
     this.backupStore = backupStore;
   }
 
