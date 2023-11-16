@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
@@ -423,6 +424,34 @@ final class ReconfigurationTest {
       final var expected = List.of(new DefaultRaftMember(id1, Type.ACTIVE, Instant.now()));
 
       assertThat(m1.cluster().getMembers()).containsExactlyInAnyOrderElementsOf(expected);
+    }
+
+    @Test
+    void cannotLeaveWhenNewConfigurationDoesNotHaveQuorum(@TempDir final Path tmp) {
+      // given - a cluster with 2 members
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+      final var id3 = MemberId.from("3");
+
+      final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
+      final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
+      final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
+
+      CompletableFuture.allOf(
+              m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
+          .join();
+
+      // when -  existing member try to leave, when there is no majority for the new configuration
+      m3.shutdown().join();
+      // To reduce chances of flakiness ensure that there is a leader before sending leave
+      awaitLeader(m1, m2);
+
+      // then
+      assertThat(m2.leave())
+          .describedAs(
+              "Should fail to leave because quorum not available for the new configuration")
+          .failsWithin(Duration.ofSeconds(2))
+          .withThrowableOfType(ExecutionException.class);
     }
 
     @Test
