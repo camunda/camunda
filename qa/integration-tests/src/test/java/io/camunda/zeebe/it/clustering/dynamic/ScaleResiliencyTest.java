@@ -113,7 +113,10 @@ class ScaleResiliencyTest {
       final var newClusterSize = INITIAL_CLUSTER_SIZE + 1;
       final var newBroker =
           createNewBroker(
-              newClusterSize, newClusterSize - 1, getDataDirectory(tmpDir, newClusterSize - 1));
+              newClusterSize,
+              newClusterSize - 1,
+              REPLICATION_FACTOR,
+              getDataDirectory(tmpDir, newClusterSize - 1));
 
       // scale to 3
       Utils.scale(cluster, newClusterSize);
@@ -143,7 +146,10 @@ class ScaleResiliencyTest {
     }
 
     private TestStandaloneBroker createNewBroker(
-        final int newClusterSize, final int newBrokerId, final Path dataDirectory) {
+        final int newClusterSize,
+        final int newBrokerId,
+        final int replicationFactor,
+        final Path dataDirectory) {
       final var newBroker =
           new TestStandaloneBroker()
               .withBrokerConfig(
@@ -151,6 +157,7 @@ class ScaleResiliencyTest {
                     b.getExperimental().getFeatures().setEnableDynamicClusterTopology(true);
                     b.getCluster().setClusterSize(newClusterSize);
                     b.getCluster().setNodeId(newBrokerId);
+                    b.getCluster().setReplicationFactor(replicationFactor);
                     b.getCluster()
                         .setInitialContactPoints(
                             List.of(
