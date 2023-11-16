@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21@sha256:798e8ee1da62d926613189d41448b64056428781ba659d5a70f23e7f06073f2f
+FROM eclipse-temurin:21@sha256:6054ac3d599388ceca4916f3d0e1864e24cdd14bb760e662f740dfb9b9e3bee8
 
 EXPOSE 8090
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
