@@ -553,7 +553,7 @@ public final class ProcessInstanceClient {
      * @param targetElementId The element id of the target element
      * @return this client builder for chaining
      */
-    public ProcessInstanceMigrationClient withMappingInstruction(
+    public ProcessInstanceMigrationClient addMappingInstruction(
         final String sourceElementId, final String targetElementId) {
       final var mappingInstruction =
           new ProcessInstanceMigrationMappingInstruction()

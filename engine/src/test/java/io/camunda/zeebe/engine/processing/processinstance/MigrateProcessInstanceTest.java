@@ -67,7 +67,7 @@ public class MigrateProcessInstanceTest {
             .withInstanceKey(processInstanceKey)
             .migration()
             .withTargetProcessDefinitionKey(otherProcessDefinitionKey)
-            .withMappingInstruction("A", "B")
+            .addMappingInstruction("A", "B")
             .migrate();
 
     // then
