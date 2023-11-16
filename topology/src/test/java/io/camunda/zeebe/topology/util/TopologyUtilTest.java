@@ -94,11 +94,23 @@ class TopologyUtilTest {
             .addMember(
                 member(0),
                 MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1), 2, PartitionState.active(3))))
+                    Map.of(
+                        1,
+                        PartitionState.active(1),
+                        2,
+                        PartitionState.active(3),
+                        // A joining member should not be included in the partition distribution
+                        3,
+                        PartitionState.joining(4))))
             .addMember(
                 member(1),
                 MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(2), 2, PartitionState.active(2))))
+                    Map.of(
+                        1,
+                        PartitionState.active(2),
+                        // A leaving member should be included in the partition distribution
+                        2,
+                        PartitionState.active(2).toLeaving())))
             .addMember(
                 member(2),
                 MemberState.initializeAsActive(

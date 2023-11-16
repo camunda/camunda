@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.clustering.dynamic;
 
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.assertThatAllJobsCanBeCompleted;
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.createInstanceWithAJobOnAllPartitions;
-import static io.camunda.zeebe.it.clustering.dynamic.Utils.scale;
+import static io.camunda.zeebe.it.clustering.dynamic.Utils.scaleAndWait;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -78,7 +78,7 @@ final class ScaleDownBrokersTest {
 
     // when
     final int newClusterSize = CLUSTER_SIZE - 1;
-    scale(cluster, newClusterSize);
+    scaleAndWait(cluster, newClusterSize);
     brokerToShutdown.close();
 
     // then
@@ -101,7 +101,7 @@ final class ScaleDownBrokersTest {
     final var createdInstances =
         createInstanceWithAJobOnAllPartitions(zeebeClient, JOB_TYPE, PARTITIONS_COUNT);
 
-    scale(cluster, CLUSTER_SIZE - 1);
+    scaleAndWait(cluster, CLUSTER_SIZE - 1);
     cluster.brokers().get(MemberId.from(String.valueOf(CLUSTER_SIZE - 1))).close();
 
     // when
@@ -109,7 +109,7 @@ final class ScaleDownBrokersTest {
     final int brokerToShutdownId = CLUSTER_SIZE - 2;
     final var brokerToShutdown =
         cluster.brokers().get(MemberId.from(String.valueOf(brokerToShutdownId)));
-    scale(cluster, newClusterSize);
+    scaleAndWait(cluster, newClusterSize);
     brokerToShutdown.close();
 
     // then

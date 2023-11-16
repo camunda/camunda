@@ -194,6 +194,22 @@ public final class TestCluster implements CloseableSilently {
   }
 
   /**
+   * Returns the first gateway which is running. The gateway may not be ready to accept requests.
+   *
+   * <p>NOTE: this includes brokers with embedded gateways.
+   *
+   * @return a gateway
+   * @throws NoSuchElementException if there are no such gateways (e.g. none are started, or they
+   *     are dead, etc.)
+   */
+  public TestGateway<?> anyGateway() {
+    return allGateways()
+        .filter(TestApplication::isStarted)
+        .findFirst()
+        .orElseThrow(() -> new NoSuchElementException("No available gateway for cluster"));
+  }
+
+  /**
    * Returns a map of the gateways in the cluster, where the keys are the memberIds, and the values
    * the gateway containers.
    *
