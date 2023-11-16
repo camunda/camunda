@@ -11,23 +11,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.property.*;
-
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
-import javax.net.ssl.SSLContext;
+import io.camunda.operate.opensearch.ExtendedOpenSearchClient;
+import io.camunda.operate.property.ElasticsearchProperties;
+import io.camunda.operate.property.OpensearchProperties;
+import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.property.SslProperties;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import org.apache.hc.client5.http.auth.AuthScope;
@@ -67,6 +55,22 @@ import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.Region;
+
+import javax.net.ssl.SSLContext;
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 
 
 @Configuration
@@ -207,7 +211,7 @@ public class OpensearchConnector {
     builder.setMapper(jsonpMapper);
 
     final OpenSearchTransport transport = builder.build();
-    final OpenSearchClient openSearchClient = new OpenSearchClient(transport);
+    final OpenSearchClient openSearchClient = new ExtendedOpenSearchClient(transport);
     try {
       final HealthResponse response = openSearchClient.cluster().health();
       LOGGER.info("OpenSearch cluster health: {}", response.status());
@@ -233,7 +237,7 @@ public class OpensearchConnector {
         AwsSdk2TransportOptions.builder()
             .setMapper(new JacksonJsonpMapper(objectMapper))
             .build());
-    return new OpenSearchClient(transport);
+    return new ExtendedOpenSearchClient(transport);
   }
 
   private OpenSearchAsyncClient getAwsAsyncClient(OpensearchProperties osConfig) {

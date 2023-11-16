@@ -140,7 +140,7 @@ public class OpensearchListViewReader implements ListViewReader {
 
     searchRequestBuilder.size(processInstanceRequest.getPageSize());
 
-    final SearchResponse<ProcessInstanceForListViewEntity> response = richOpenSearchClient.doc().search(searchRequestBuilder, ProcessInstanceForListViewEntity.class);
+    final SearchResponse<ProcessInstanceForListViewEntity> response = richOpenSearchClient.doc().fixedSearch(searchRequestBuilder.build(), ProcessInstanceForListViewEntity.class);
 
     result.setTotalCount(response.hits().total().value());
 

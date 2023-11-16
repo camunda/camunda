@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.store.opensearch.client.sync;
 
+import io.camunda.operate.opensearch.ExtendedOpenSearchClient;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.opensearch.client.OpenSearchFailedShardsException;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -330,5 +331,13 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
 
   public <A> UpdateResponse<Void> update(UpdateRequest.Builder<Void, A> requestBuilder, Function<Exception, String> errorMessageSupplier) {
     return safe(() -> openSearchClient.update(requestBuilder.build(), Void.class), errorMessageSupplier);
+  }
+
+  public <R> SearchResponse<R> fixedSearch(SearchRequest request, Class<R> classR) {
+    if (openSearchClient instanceof ExtendedOpenSearchClient extendedOpenSearchClient) {
+      return safe(() -> extendedOpenSearchClient.fixedSearch(request, classR), e -> defaultDeleteErrorMessage(request.index().toString()));
+    } else {
+      throw new UnsupportedOperationException("ExtendedOpenSearchClient is required to execute fixedSearch! Provided: " + openSearchClient.getClass().getName());
+    }
   }
 }
