@@ -90,8 +90,10 @@ final class Utils {
 
     final List<Long> createdProcessInstances = new ArrayList<>();
     Awaitility.await("Process instances are created in all partitions")
-        .ignoreExceptions() // Might throw exception when a partition has not yet received
-        // deployment distribution
+        // Might throw exception when a partition has not yet received deployment distribution
+        .ignoreExceptions()
+        // If deployment is not distributed, it will be retried after 10 seconds
+        .timeout(Duration.ofSeconds(20))
         .until(
             () -> {
               final var result =
