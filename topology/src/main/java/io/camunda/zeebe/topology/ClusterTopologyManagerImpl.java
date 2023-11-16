@@ -223,6 +223,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
 
     if (initialized.isLeft()) {
       // TODO: What should we do here? Retry?
+      onGoingTopologyChangeOperation = false;
       LOG.error(
           "Failed to initialize topology change operation {}", operation, initialized.getLeft());
       return;
