@@ -48,7 +48,7 @@ jobs:
       - name: Run Tests
         run: ${{ inputs.command }}
       - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2.8.0
+        uses: EnricoMi/publish-unit-test-result-action@v2.11.0
         if: always()
         with:
           comment_mode: off
