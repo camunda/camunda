@@ -213,11 +213,11 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
   }
 
   private void failFuture(final ActorFuture<?> future, final Throwable error) {
+    LOG.warn("Failed to handle topology request", error);
     if (error instanceof TopologyRequestFailedException) {
       future.completeExceptionally(error);
     } else {
-      future.completeExceptionally(
-          new TopologyRequestFailedException.InternalError(error.getMessage()));
+      future.completeExceptionally(new TopologyRequestFailedException.InternalError(error));
     }
   }
 }
