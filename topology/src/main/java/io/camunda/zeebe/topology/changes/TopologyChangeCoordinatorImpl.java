@@ -69,7 +69,7 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
                           .pendingChanges()
                           .map(ClusterChangePlan::pendingOperations)
                           .orElse(List.of());
-                  LOG.info(
+                  LOG.warn(
                       "Cancelling topology change '{}'. Following operations have been already applied: {}. Following pending operations won't be applied: {}",
                       changeId,
                       completedOperation,
