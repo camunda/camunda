@@ -20,7 +20,9 @@ import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
@@ -57,19 +59,28 @@ final class Utils {
 
   static void assertThatAllJobsCanBeCompleted(
       final List<Long> processInstanceKeys, final ZeebeClient zeebeClient, final String jobType) {
-    final var jobs =
-        zeebeClient
-            .newActivateJobsCommand()
-            .jobType(jobType)
-            .maxJobsToActivate(2 * processInstanceKeys.size())
-            .send()
-            .join();
+    final Set<ActivatedJob> activatedJobs = new HashSet<>();
+    Awaitility.await("Jobs from all partitions are activated")
+        .untilAsserted(
+            () -> {
+              final var jobs =
+                  zeebeClient
+                      .newActivateJobsCommand()
+                      .jobType(jobType)
+                      .maxJobsToActivate(2 * processInstanceKeys.size())
+                      .send()
+                      .join();
 
-    Assertions.assertThat(jobs.getJobs().stream().map(ActivatedJob::getProcessInstanceKey).toList())
-        .describedAs("Jobs from all partitions can be activated")
-        .containsExactlyInAnyOrderElementsOf(processInstanceKeys);
+              activatedJobs.addAll(jobs.getJobs());
+
+              Assertions.assertThat(
+                      activatedJobs.stream().map(ActivatedJob::getProcessInstanceKey).toList())
+                  .describedAs("Jobs for all created instances are activated")
+                  .containsExactlyInAnyOrderElementsOf(processInstanceKeys);
+            });
+
     final var jobCompleteFutures =
-        jobs.getJobs().stream()
+        activatedJobs.stream()
             .map(job -> zeebeClient.newCompleteCommand(job).send().toCompletableFuture())
             .toList();
     Assertions.assertThat(
