@@ -34,8 +34,8 @@ public sealed interface TopologyRequestFailedException {
   }
 
   final class InternalError extends RuntimeException implements TopologyRequestFailedException {
-    public InternalError(final String message) {
-      super(message);
+    public InternalError(final Throwable cause) {
+      super(cause);
     }
   }
 }
