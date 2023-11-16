@@ -44,7 +44,7 @@ public class JobUpdateTimeoutProcessor implements TypedRecordProcessor<JobRecord
   public void processRecord(final TypedRecord<JobRecord> command) {
     final var value = command.getValue();
     final long jobKey = command.getKey();
-    final var job = jobState.getJob(jobKey);
+    final var job = jobState.getJob(jobKey, command.getAuthorizations());
 
     if (job == null) {
       rejectionWriter.appendRejection(

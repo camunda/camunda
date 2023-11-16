@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.Before;
@@ -196,5 +197,68 @@ public class JobUpdateTimeoutTest {
         .isCloseTo(
             ENGINE.getClock().getCurrentTimeInMillis() + timeout,
             within(Duration.ofMillis(100).toMillis()));
+  }
+
+  @Test
+  public void shouldUpdateJobTimeoutForCustomTenant() {
+    // given
+    final String tenantId = "acme";
+    ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
+    final var batchRecord =
+        ENGINE
+            .jobs()
+            .withType(jobType)
+            .withTimeout(Duration.ofMinutes(5).toMillis())
+            .withTenantId(tenantId)
+            .activate();
+
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final long timeout = Duration.ofMinutes(10).toMillis();
+
+    // when
+    final Record<JobRecordValue> updatedRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withTimeout(timeout)
+            .withAuthorizedTenantIds(tenantId)
+            .updateTimeout();
+
+    // then
+    Assertions.assertThat(updatedRecord.getValue()).hasTenantId(tenantId);
+    assertJobDeadline(updatedRecord, jobKey, job, timeout);
+  }
+
+  @Test
+  public void shouldRejectUpdateRetriesIfTenantIsUnauthorized() {
+    // given
+    final String tenantId = "acme";
+    final String falseTenantId = "foo";
+    ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
+    final var batchRecord =
+        ENGINE
+            .jobs()
+            .withType(jobType)
+            .withTimeout(Duration.ofMinutes(5).toMillis())
+            .withTenantId(tenantId)
+            .activate();
+
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final long timeout = Duration.ofMinutes(10).toMillis();
+
+    // when
+    final Record<JobRecordValue> jobRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withTimeout(timeout)
+            .withAuthorizedTenantIds(falseTenantId)
+            .expectRejection()
+            .updateTimeout();
+
+    // then
+    Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.NOT_FOUND);
   }
 }
