@@ -8,7 +8,9 @@
 package io.camunda.zeebe.engine.state.instance;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
@@ -61,6 +63,33 @@ public class UserTaskStateTest {
     // then
     final UserTaskRecord storedRecord = userTaskState.getUserTask(5_000);
     assertUserTask(expectedRecord, "customTenantId", storedRecord);
+  }
+
+  @Test
+  public void shouldUpdateUserTask() {
+    // given
+    final UserTaskRecord expectedRecord = createUserTask(5_000);
+    userTaskState.create(expectedRecord);
+    expectedRecord.setAssignee("myNewAssignee");
+
+    // when
+    userTaskState.update(expectedRecord);
+
+    // then
+    final UserTaskRecord storedRecord = userTaskState.getUserTask(5_000);
+    assertThat(storedRecord).hasAssignee("myNewAssignee");
+  }
+
+  @Test
+  public void shouldFailOnUpdatingNonExistingUserTask() {
+    // given
+    final UserTaskRecord expectedRecord = new UserTaskRecord();
+
+    // when
+    assertThatThrownBy(() -> userTaskState.update(expectedRecord))
+        // then
+        .isInstanceOf(ZeebeDbInconsistentException.class)
+        .hasMessageContaining("does not exist");
   }
 
   @Test
