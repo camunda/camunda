@@ -10,6 +10,7 @@ import {useEffect, useRef} from 'react';
 import {Variable} from 'modules/types';
 import {FormManager} from 'modules/formManager';
 import '@bpmn-io/form-js-viewer/dist/assets/form-js-base.css';
+import '@bpmn-io/form-js-carbon-styles/src/carbon-styles.scss';
 
 type Props = {
   handleSubmit: (variables: Variable[]) => Promise<void>;

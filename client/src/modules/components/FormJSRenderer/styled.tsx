@@ -6,7 +6,6 @@
  */
 
 import styled, {css, createGlobalStyle} from 'styled-components';
-import {CARBON_STYLES} from '@bpmn-io/form-js-carbon-styles';
 import {Layer as BaseLayer} from '@carbon/react';
 import {breakpoints} from '@carbon/elements';
 
@@ -16,7 +15,6 @@ const FormRoot = styled.div`
 
 const FormJSCustomStyling = createGlobalStyle`
   ${() => css`
-    ${CARBON_STYLES}
     .fjs-container {
       .fjs-form-field button[type='submit'],
       .fjs-powered-by {
