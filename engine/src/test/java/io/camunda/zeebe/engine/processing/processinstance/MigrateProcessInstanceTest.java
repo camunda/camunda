@@ -13,8 +13,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.ClassRule;
@@ -52,11 +54,7 @@ public class MigrateProcessInstanceTest {
                     .done())
             .deploy();
     final long otherProcessDefinitionKey =
-        deployment.getValue().getProcessesMetadata().stream()
-            .filter(p -> p.getBpmnProcessId().equals(processId2))
-            .findAny()
-            .orElseThrow()
-            .getProcessDefinitionKey();
+        extractProcessDefinitionKeyByProcessId(deployment, processId2);
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId1).create();
 
@@ -83,5 +81,14 @@ public class MigrateProcessInstanceTest {
             new ProcessInstanceMigrationMappingInstruction()
                 .setSourceElementId("A")
                 .setTargetElementId("B"));
+  }
+
+  private static long extractProcessDefinitionKeyByProcessId(
+      final Record<DeploymentRecordValue> deployment, final String processId) {
+    return deployment.getValue().getProcessesMetadata().stream()
+        .filter(p -> p.getBpmnProcessId().equals(processId))
+        .findAny()
+        .orElseThrow()
+        .getProcessDefinitionKey();
   }
 }
