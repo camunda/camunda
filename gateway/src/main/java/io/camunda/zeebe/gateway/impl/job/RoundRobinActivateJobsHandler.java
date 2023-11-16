@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.gateway.impl.job;
 
-import static io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler.toInflightActivateJobsRequest;
-
 import com.google.rpc.Code;
 import com.google.rpc.Status;
 import io.camunda.zeebe.gateway.Loggers;
@@ -72,7 +70,11 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
     final var topology = topologyManager.getTopology();
     if (topology != null) {
       final var inflightRequest =
-          toInflightActivateJobsRequest(request, responseObserver, requestTimeout);
+          new InflightActivateJobsRequest(
+              ACTIVATE_JOBS_REQUEST_ID_GENERATOR.getAndIncrement(),
+              request,
+              responseObserver,
+              requestTimeout);
       activateJobs(
           topology.getPartitionsCount(),
           inflightRequest,
@@ -248,8 +250,7 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
   }
 
   private boolean wasResourceExhausted(final Throwable error) {
-    if (error instanceof BrokerErrorException) {
-      final BrokerErrorException brokerError = (BrokerErrorException) error;
+    if (error instanceof final BrokerErrorException brokerError) {
       return brokerError.getError().getCode() == ErrorCode.RESOURCE_EXHAUSTED;
     }
 
@@ -280,17 +281,8 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
         nextPartitionSupplier.determinePartition(), partitionsCount, topologyManager);
   }
 
-  private static final class ResponseObserverDelegate {
-
-    private final Consumer<Throwable> onErrorDelegate;
-    private final BiConsumer<Integer, Boolean> onCompletedDelegate;
-
-    private ResponseObserverDelegate(
-        final Consumer<Throwable> onErrorDelegate,
-        final BiConsumer<Integer, Boolean> onCompletedDelegate) {
-      this.onErrorDelegate = onErrorDelegate;
-      this.onCompletedDelegate = onCompletedDelegate;
-    }
+  private record ResponseObserverDelegate(
+      Consumer<Throwable> onErrorDelegate, BiConsumer<Integer, Boolean> onCompletedDelegate) {
 
     public void onError(final Throwable t) {
       onErrorDelegate.accept(t);
