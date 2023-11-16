@@ -14,11 +14,12 @@ import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BufferAssert;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,10 +40,10 @@ public class UserTaskStateTest {
   @Test
   public void shouldCreateUserTask() {
     // given
-    final UserTaskRecord expectedRecord = createUserTask();
+    final UserTaskRecord expectedRecord = createUserTask(5_000);
 
     // when
-    userTaskState.create(5_000, expectedRecord);
+    userTaskState.create(expectedRecord);
 
     // then
     final UserTaskRecord storedRecord = userTaskState.getUserTask(5_000);
@@ -50,24 +51,37 @@ public class UserTaskStateTest {
   }
 
   @Test
+  public void shouldCreateUserTaskWithCustomTenantId() {
+    // given
+    final UserTaskRecord expectedRecord = createUserTask(5_000).setTenantId("customTenantId");
+
+    // when
+    userTaskState.create(expectedRecord);
+
+    // then
+    final UserTaskRecord storedRecord = userTaskState.getUserTask(5_000);
+    assertUserTask(expectedRecord, "customTenantId", storedRecord);
+  }
+
+  @Test
   public void shouldNeverPersistUserTaskVariables() {
     // given
     final long key = 1L;
-    final UserTaskRecord userTask = createUserTask();
+    final UserTaskRecord userTask = createUserTask(key);
 
-    final List<BiConsumer<Long, UserTaskRecord>> stateUpdates =
+    final List<Consumer<UserTaskRecord>> stateUpdates =
         Arrays.asList(userTaskState::create, userTaskState::update);
 
     // when user task state is updated then the variables are not persisted
-    for (final BiConsumer<Long, UserTaskRecord> stateUpdate : stateUpdates) {
+    for (final Consumer<UserTaskRecord> stateUpdate : stateUpdates) {
       userTask.setVariables(MsgPackUtil.asMsgPack("foo", "bar"));
-      stateUpdate.accept(key, userTask);
+      stateUpdate.accept(userTask);
       final DirectBuffer variables = userTaskState.getUserTask(key).getVariablesBuffer();
       BufferAssert.assertThatBuffer(variables).isEqualTo(DocumentValue.EMPTY_DOCUMENT);
     }
   }
 
-  private UserTaskRecord createUserTask() {
+  private UserTaskRecord createUserTask(final long userTaskKey) {
     return new UserTaskRecord()
         .setElementInstanceKey(1234)
         .setBpmnProcessId("process")
@@ -80,27 +94,33 @@ public class UserTaskStateTest {
         .setCandidateUsers("myUsers")
         .setDueDate("2023-11-11T11:11:00+01:00")
         .setFollowUpDate("2023-11-12T11:11:00+01:00")
-        .setFormKey(5678);
+        .setFormKey(5678)
+        .setUserTaskKey(userTaskKey);
   }
 
   private void assertUserTask(
       final UserTaskRecord expectedRecord, final UserTaskRecord storedRecord) {
-    assertThat(storedRecord).hasElementInstanceKey(expectedRecord.getElementInstanceKey());
-    assertThat(storedRecord).hasBpmnProcessId(expectedRecord.getBpmnProcessId());
-    assertThat(storedRecord).hasElementId(expectedRecord.getElementId());
-    assertThat(storedRecord).hasProcessInstanceKey(expectedRecord.getProcessInstanceKey());
-    assertThat(storedRecord).hasProcessDefinitionKey(expectedRecord.getProcessDefinitionKey());
+    assertUserTask(expectedRecord, TenantOwned.DEFAULT_TENANT_IDENTIFIER, storedRecord);
+  }
+
+  private void assertUserTask(
+      final UserTaskRecord expectedRecord,
+      final String expectedTenantId,
+      final UserTaskRecord storedRecord) {
     assertThat(storedRecord)
-        .hasProcessDefinitionVersion(expectedRecord.getProcessDefinitionVersion());
-
-    assertThat(storedRecord).hasAssignee(expectedRecord.getAssignee());
-    assertThat(storedRecord).hasCandidateGroups(expectedRecord.getCandidateGroups());
-    assertThat(storedRecord).hasCandidateUsers(expectedRecord.getCandidateUsers());
-    assertThat(storedRecord).hasDueDate(expectedRecord.getDueDate());
-    assertThat(storedRecord).hasFollowUpDate(expectedRecord.getFollowUpDate());
-    assertThat(storedRecord).hasFormKey(expectedRecord.getFormKey());
-
-    assertThat(storedRecord).hasUserTaskKey(expectedRecord.getUserTaskKey());
-    assertThat(storedRecord).hasTenantId(expectedRecord.getTenantId());
+        .hasElementInstanceKey(expectedRecord.getElementInstanceKey())
+        .hasBpmnProcessId(expectedRecord.getBpmnProcessId())
+        .hasElementId(expectedRecord.getElementId())
+        .hasProcessInstanceKey(expectedRecord.getProcessInstanceKey())
+        .hasProcessDefinitionKey(expectedRecord.getProcessDefinitionKey())
+        .hasProcessDefinitionVersion(expectedRecord.getProcessDefinitionVersion())
+        .hasAssignee(expectedRecord.getAssignee())
+        .hasCandidateGroups(expectedRecord.getCandidateGroups())
+        .hasCandidateUsers(expectedRecord.getCandidateUsers())
+        .hasDueDate(expectedRecord.getDueDate())
+        .hasFollowUpDate(expectedRecord.getFollowUpDate())
+        .hasFormKey(expectedRecord.getFormKey())
+        .hasUserTaskKey(expectedRecord.getUserTaskKey())
+        .hasTenantId(expectedTenantId);
   }
 }

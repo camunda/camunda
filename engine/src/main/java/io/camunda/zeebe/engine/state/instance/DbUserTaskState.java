@@ -37,16 +37,16 @@ public class DbUserTaskState implements UserTaskState, MutableUserTaskState {
   }
 
   @Override
-  public void create(final long key, final UserTaskRecord userTask) {
-    userTaskKey.wrapLong(key);
+  public void create(final UserTaskRecord userTask) {
+    userTaskKey.wrapLong(userTask.getUserTaskKey());
     // do not persist variables in user task state
     userTaskRecordToWrite.setRecordWithoutVariables(userTask);
     userTasksColumnFamily.insert(userTaskKey, userTaskRecordToWrite);
   }
 
   @Override
-  public void update(final long key, final UserTaskRecord userTask) {
-    userTaskKey.wrapLong(key);
+  public void update(final UserTaskRecord userTask) {
+    userTaskKey.wrapLong(userTask.getUserTaskKey());
     // do not persist variables in user task state
     userTaskRecordToWrite.setRecordWithoutVariables(userTask);
     userTasksColumnFamily.update(userTaskKey, userTaskRecordToWrite);
