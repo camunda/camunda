@@ -110,7 +110,7 @@ public class StandaloneGateway
     springGatewayBridge.registerJobStreamClient(() -> jobStreamClient);
 
     gateway.start().join(30, TimeUnit.SECONDS);
-    LOG.info("Standalone gateway is ready!");
+    LOG.info("Standalone gateway is started!");
   }
 
   @Override
