@@ -6,37 +6,28 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
-import static io.camunda.operate.schema.indices.DecisionIndex.NAME;
-import static io.camunda.operate.schema.indices.DecisionIndex.VERSION;
-import static io.camunda.operate.schema.indices.DecisionIndex.DECISION_ID;
-import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
-import static io.camunda.operate.webapp.api.v1.entities.DecisionDefinition.DECISION_REQUIREMENTS_NAME;
-import static io.camunda.operate.webapp.api.v1.entities.DecisionDefinition.DECISION_REQUIREMENTS_VERSION;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
+import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.webapp.api.v1.dao.elasticsearch.ElasticsearchDecisionDefinitionDao;
 import io.camunda.operate.webapp.api.v1.entities.DecisionDefinition;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
+
+import static io.camunda.operate.schema.indices.DecisionIndex.DECISION_ID;
+import static io.camunda.operate.schema.indices.DecisionIndex.NAME;
+import static io.camunda.operate.schema.indices.DecisionIndex.VERSION;
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+import static io.camunda.operate.webapp.api.v1.entities.DecisionDefinition.DECISION_REQUIREMENTS_NAME;
+import static io.camunda.operate.webapp.api.v1.entities.DecisionDefinition.DECISION_REQUIREMENTS_VERSION;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class ElasticsearchDecisionDefinitionDaoIT extends OperateZeebeAbstractIT {
 
@@ -47,7 +38,7 @@ public class ElasticsearchDecisionDefinitionDaoIT extends OperateZeebeAbstractIT
   private DecisionIndex decisionIndex;
 
   @Autowired
-  private RestHighLevelClient esClient;
+  private TestSearchRepository searchRepository;
 
   private DecisionDefinition decisionDefinition;
   private Long key;
@@ -57,13 +48,15 @@ public class ElasticsearchDecisionDefinitionDaoIT extends OperateZeebeAbstractIT
   public void shouldReturnWhenByKey() throws Exception {
     given(() -> {
       tester.deployDecision("invoiceBusinessDecisions_v_1.dmn").waitUntil().decisionsAreDeployed(2);
-      SearchHit[] hits = searchAllDocuments(decisionIndex.getAlias());
-      Map<String, Object> decisionDefinitionDoc = Arrays.stream(hits)
-          .filter(x -> x.getSourceAsMap().get("decisionId").toString().equals("invoiceClassification"))
-          .findFirst()
-          .orElseThrow()
-          .getSourceAsMap();
-      key = Long.parseLong(decisionDefinitionDoc.get("key").toString());
+
+      List<DecisionDefinition> hits = null;
+      try {
+        hits = searchRepository.searchTerm(decisionIndex.getAlias(), "decisionId", "invoiceClassification", DecisionDefinition.class, 1);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      key = hits.get(0).getKey();
+
     });
     when(() -> decisionDefinition = dao.byKey(key));
     then(() -> {
@@ -225,16 +218,6 @@ public class ElasticsearchDecisionDefinitionDaoIT extends OperateZeebeAbstractIT
       assertThat(decisionDefinitions).extracting(NAME).containsExactly("Invoice Classification");
       assertThat(decisionDefinitions).extracting(VERSION).containsExactly(2);
     });
-  }
-
-  protected SearchHit[] searchAllDocuments(String index) {
-    SearchRequest searchRequest = new SearchRequest(index).source(new SearchSourceBuilder().query(QueryBuilders.matchAllQuery()));
-    try {
-      SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      return response.getHits().getHits();
-    } catch (IOException ex) {
-      throw new OperateRuntimeException("Search failed for index " + index, ex);
-    }
   }
 
   protected void given(Runnable conditions) throws Exception {

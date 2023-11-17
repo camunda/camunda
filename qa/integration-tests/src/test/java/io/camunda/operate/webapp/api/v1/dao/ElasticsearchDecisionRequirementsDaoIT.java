@@ -6,17 +6,9 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
-import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.DECISION_REQUIREMENTS_ID;
-import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.NAME;
-import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.RESOURCE_NAME;
-import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.VERSION;
-import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-
-import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
+import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.webapp.api.v1.dao.elasticsearch.ElasticsearchDecisionRequirementsDao;
 import io.camunda.operate.webapp.api.v1.entities.DecisionRequirements;
 import io.camunda.operate.webapp.api.v1.entities.Query;
@@ -24,13 +16,6 @@ import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.zeebeimport.util.XMLUtil;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.xml.sax.SAXException;
@@ -41,8 +26,20 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
+
+import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.DECISION_REQUIREMENTS_ID;
+import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.NAME;
+import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.RESOURCE_NAME;
+import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.VERSION;
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeAbstractIT {
 
@@ -53,7 +50,7 @@ public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeAbstract
   private DecisionRequirementsIndex decisionRequirementsIndex;
 
   @Autowired
-  private RestHighLevelClient esClient;
+  private TestSearchRepository searchRepository;
 
   private DecisionRequirements decisionRequirements;
   private Long key;
@@ -66,9 +63,8 @@ public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeAbstract
   public void shouldReturnWhenByKey() throws Exception {
     given(() -> {
       tester.deployDecision("invoiceBusinessDecisions_v_1.dmn").waitUntil().decisionsAreDeployed(2);
-      SearchHit[] hits = searchAllDocuments(decisionRequirementsIndex.getAlias());
-      Map<String, Object> decisionRequirementsDoc = hits[0].getSourceAsMap();
-      key = Long.parseLong(decisionRequirementsDoc.get("key").toString());
+      List<DecisionRequirements> hits = searchAllDocuments(decisionRequirementsIndex.getAlias());
+      key = hits.get(0).getKey();
     });
     when(() -> decisionRequirements = dao.byKey(key));
     then(() -> {
@@ -138,8 +134,8 @@ public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeAbstract
       tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
           .deployDecision("invoiceBusinessDecisions_v_2.dmn")
           .waitUntil().decisionsAreDeployed(4);
-      SearchHit[] hits = searchAllDocuments(decisionRequirementsIndex.getAlias());
-      keys = Arrays.stream(hits).map(hit -> Long.parseLong(hit.getSourceAsMap().get("key").toString())).collect(Collectors.toSet());
+      List<DecisionRequirements> hits = searchAllDocuments(decisionRequirementsIndex.getAlias());
+      keys = hits.stream().map(DecisionRequirements::getKey).collect(Collectors.toSet());
     });
     when(() -> decisionRequirementsList = dao.byKeys(keys));
     then(() -> {
@@ -155,8 +151,8 @@ public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeAbstract
       tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
           .deployDecision("invoiceBusinessDecisions_v_2.dmn")
           .waitUntil().decisionsAreDeployed(4);
-      SearchHit[] hits = searchAllDocuments(decisionRequirementsIndex.getAlias());
-      keys = Arrays.stream(hits).map(hit -> Long.parseLong(hit.getSourceAsMap().get("key").toString())).collect(Collectors.toSet());
+      List<DecisionRequirements> hits = searchAllDocuments(decisionRequirementsIndex.getAlias());
+      keys = hits.stream().map(DecisionRequirements::getKey).collect(Collectors.toSet());
     });
     when(() -> {
           Set<Long> keys2 = new HashSet<>(keys);
@@ -176,8 +172,8 @@ public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeAbstract
     given(() -> {
       tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
           .waitUntil().decisionsAreDeployed(2);
-      SearchHit[] hits = searchAllDocuments(decisionRequirementsIndex.getAlias());
-      key = Arrays.stream(hits).map(hit -> Long.parseLong(hit.getSourceAsMap().get("key").toString())).findFirst().orElseThrow();
+      List<DecisionRequirements> hits = searchAllDocuments(decisionRequirementsIndex.getAlias());
+      key = hits.get(0).getKey();
     });
     when(() -> decisionRequirementsXml = dao.xmlByKey(key));
     then(() -> {
@@ -337,13 +333,11 @@ public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeAbstract
     });
   }
 
-  protected SearchHit[] searchAllDocuments(String index) {
-    SearchRequest searchRequest = new SearchRequest(index).source(new SearchSourceBuilder().query(QueryBuilders.matchAllQuery()));
+  protected List<DecisionRequirements> searchAllDocuments(String index) {
     try {
-      SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      return response.getHits().getHits();
-    } catch (IOException ex) {
-      throw new OperateRuntimeException("Search failed for index " + index, ex);
+      return searchRepository.searchAll(index, DecisionRequirements.class);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 

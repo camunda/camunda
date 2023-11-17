@@ -6,34 +6,33 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
-import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.*;
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.camunda.operate.entities.dmn.DecisionType;
-import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
+import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.webapp.api.v1.dao.elasticsearch.ElasticsearchDecisionInstanceDao;
-import io.camunda.operate.webapp.api.v1.entities.*;
+import io.camunda.operate.webapp.api.v1.entities.DecisionInstance;
+import io.camunda.operate.webapp.api.v1.entities.DecisionInstanceState;
+import io.camunda.operate.webapp.api.v1.entities.Query;
+import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
+
+import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.DECISION_ID;
+import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.DECISION_NAME;
+import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.DECISION_TYPE;
+import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.DEFAULT_TENANT_ID;
+import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.PROCESS_DEFINITION_KEY;
+import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.PROCESS_INSTANCE_KEY;
+import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.STATE;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class ElasticsearchDecisionInstanceDaoIT extends OperateZeebeAbstractIT {
 
@@ -46,27 +45,20 @@ public class ElasticsearchDecisionInstanceDaoIT extends OperateZeebeAbstractIT {
   private DecisionInstanceTemplate decisionInstanceTemplate;
 
   @Autowired
-  private RestHighLevelClient esClient;
+  private TestSearchRepository searchRepository;
 
   private DecisionInstance decisionInstance;
   private String id;
   private Long processDefinitionKey, processInstanceKey;
   private Results<DecisionInstance> decisionInstanceResults, decisionInstanceResultsPage1, decisionInstanceResultsPage2;
-  private List<DecisionInstance> allDecisionInstances;
 
   @Test
-  @Ignore("https://github.com/camunda/operate/issues/5287")
   public void shouldReturnWhenById() throws Exception {
     given(() -> {
       processDefinitionKey = deployDecisionAndProcess();
       processInstanceKey = startProcessWithDecision(null);
-      List<SearchHit> hits = waitForDecisionInstances(1);
-      Map<String, Object> decisionInstanceDoc = hits.stream()
-              .filter(x -> x.getSourceAsMap().get("decisionId").toString().equals("invoiceClassification"))
-              .findFirst()
-              .orElseThrow()
-              .getSourceAsMap();
-      id = decisionInstanceDoc.get("id").toString();
+      List<DecisionInstance> hits = waitForDecisionInstances(1);
+      id = hits.get(0).getId();
     });
     when(() -> decisionInstance = dao.byId(id));
     then(() -> {
@@ -84,19 +76,13 @@ public class ElasticsearchDecisionInstanceDaoIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/operate/issues/5287")
   public void shouldReturnEvaluatedWhenById() throws Exception {
     given(() -> {
       String payload = "{\"amount\": 1200, \"invoiceCategory\": \"Travel Expenses\"}";
       processDefinitionKey = deployDecisionAndProcess();
       processInstanceKey = startProcessWithDecision(payload);
-      List<SearchHit> hits = waitForDecisionInstances(2);
-      Map<String, Object> decisionInstanceDoc = hits.stream()
-              .filter(x -> x.getSourceAsMap().get("decisionId").toString().equals("invoiceClassification"))
-              .findFirst()
-              .orElseThrow()
-              .getSourceAsMap();
-      id = decisionInstanceDoc.get("id").toString();
+      List<DecisionInstance> hits = waitForDecisionInstances(2);
+      id = hits.get(0).getId();
     });
     when(() -> decisionInstance = dao.byId(id));
     then(() -> {
@@ -271,18 +257,16 @@ public class ElasticsearchDecisionInstanceDaoIT extends OperateZeebeAbstractIT {
     });
   }
 
-  protected List<SearchHit> getAllDecisionInstances() {
+  protected List<DecisionInstance> getAllDecisionInstances() {
     String index = decisionInstanceTemplate.getAlias();
-    SearchRequest searchRequest = new SearchRequest(index).source(new SearchSourceBuilder().query(QueryBuilders.matchAllQuery()));
     try {
-      SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      return Arrays.asList(response.getHits().getHits());
-    } catch (IOException ex) {
-      throw new OperateRuntimeException("Search failed for index " + index, ex);
+      return searchRepository.searchAll(index, DecisionInstance.class);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 
-  protected List<SearchHit> waitForDecisionInstances(int count) {
+  protected List<DecisionInstance> waitForDecisionInstances(int count) {
     if (count <= 0) {
       throw new IllegalArgumentException("Expected number of decision instances must be positive.");
     }
