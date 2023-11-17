@@ -15,13 +15,18 @@ import io.camunda.zeebe.logstreams.impl.flowcontrol.InFlightAppend;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -130,13 +135,26 @@ final class LogStorageAppender extends Actor implements HealthMonitorable, Appen
     final var lowestPosition = sequencedBatch.firstPosition();
     final var highestPosition =
         sequencedBatch.firstPosition() + sequencedBatch.entries().size() - 1;
+    // extract only the required metadata for metrics from the batch to avoid capturing the whole
+    // batch and holding onto its memory longer than necessary.
+    final List<LogAppendEntryMetadata> metricsMetadata = copyMetricsMetadata(sequencedBatch);
     append.start(highestPosition);
     logStorage.append(
         lowestPosition,
         highestPosition,
         sequencedBatch,
-        new InstrumentedAppendListener(append, sequencedBatch, metrics));
+        new InstrumentedAppendListener(append, metricsMetadata, metrics));
     actor.submit(this::tryWriteBatch);
+  }
+
+  private List<LogAppendEntryMetadata> copyMetricsMetadata(final SequencedBatch sequencedBatch) {
+    final var entries = sequencedBatch.entries();
+    final List<LogAppendEntryMetadata> metricsMetadata = new ArrayList<>(entries.size());
+    for (final LogAppendEntry entry : entries) {
+      metricsMetadata.add(new LogAppendEntryMetadata(entry));
+    }
+
+    return metricsMetadata;
   }
 
   private void onFailure(final Throwable error) {
@@ -157,13 +175,13 @@ final class LogStorageAppender extends Actor implements HealthMonitorable, Appen
   }
 
   private record InstrumentedAppendListener(
-      AppendListener delegate, SequencedBatch batch, AppenderMetrics metrics)
+      AppendListener delegate, List<LogAppendEntryMetadata> batchMetadata, AppenderMetrics metrics)
       implements AppendListener {
 
     @Override
     public void onWrite(final long address) {
       delegate.onWrite(address);
-      batch.entries().forEach(this::recordWrite);
+      batchMetadata.forEach(this::recordAppendedEntry);
     }
 
     @Override
@@ -181,10 +199,18 @@ final class LogStorageAppender extends Actor implements HealthMonitorable, Appen
       delegate.onCommitError(address, error);
     }
 
-    private void recordWrite(final LogAppendEntry entry) {
-      final var metadata = entry.recordMetadata();
+    private void recordAppendedEntry(final LogAppendEntryMetadata metadata) {
       metrics.recordAppendedEntry(
-          1, metadata.getRecordType(), metadata.getValueType(), metadata.getIntent());
+          1, metadata.recordType(), metadata.valueType(), metadata.intent());
+    }
+  }
+
+  private record LogAppendEntryMetadata(RecordType recordType, ValueType valueType, Intent intent) {
+    private LogAppendEntryMetadata(final LogAppendEntry entry) {
+      this(
+          entry.recordMetadata().getRecordType(),
+          entry.recordMetadata().getValueType(),
+          entry.recordMetadata().getIntent());
     }
   }
 }
