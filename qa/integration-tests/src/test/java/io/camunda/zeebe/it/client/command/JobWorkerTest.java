@@ -29,8 +29,6 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.grpc.internal.AbstractStream.TransportState;
-import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -298,7 +296,6 @@ final class JobWorkerTest {
                     latch.await();
                   })
               .maxJobsActive(1)
-              .pollInterval(Duration.ofHours(1))
               .streamEnabled(true)
               .open();
 
@@ -329,7 +326,7 @@ final class JobWorkerTest {
       final var startedPiKeys = new CopyOnWriteArrayList<Long>();
 
       // when
-      RecordingExporter.setMaximumWaitTime(0);
+      RecordingExporter.setMaximumWaitTime(100);
       Awaitility.await("until transport is suspended and jobs are yielded")
           .untilAsserted(
               () -> {
@@ -346,35 +343,29 @@ final class JobWorkerTest {
               .getValue()
               .getProcessInstanceKey();
       final var firstYieldedPiIndex = startedPiKeys.indexOf(firstYieldedPi);
-      final var expectedJobPis = new ArrayList<>(startedPiKeys.subList(0, firstYieldedPiIndex));
       final var yieldedPis = startedPiKeys.subList(firstYieldedPiIndex, startedPiKeys.size());
 
-      // unblock the stream consumer, await the extra buffered jobs (to avoid flakiness), and
-      // create a new PI to test that we can receive new jobs
+      // unblock the worker, await the extra buffered jobs (to avoid flakiness), and
+      // allow to poll for yielded jobs
       latch.countDown();
-      Awaitility.await("until buffered jobs are received")
-          .untilAsserted(
-              () ->
-                  assertThat(jobHandler.getHandledJobs())
-                      .extracting(ActivatedJob::getProcessInstanceKey)
-                      .hasSameSizeAs(expectedJobPis));
+      // create a new PI to test that we can also receive new jobs
+      final var lastPI = createProcessInstance(uniqueId, payload);
 
-      expectedJobPis.add(createProcessInstance(uniqueId, payload));
-
-      // then - unblock stream consumer and expect jobs for the PIs started before we yielded to
-      // have been received, and jobs for those after to not have been received
+      // then - unblock worker and expect that all jobs have been received
       assertThat(yieldedPis).isNotEmpty();
       // we expect at least 3 jobs: the first job (which always goes through), the second job which
       // triggered the change of transport state by filling the buffers, and the last job that was
       // created after the consumer is unblocked
-      assertThat(expectedJobPis).hasSizeGreaterThanOrEqualTo(3);
-      Awaitility.await("until last job is received")
+      assertThat(startedPiKeys).hasSizeGreaterThanOrEqualTo(3);
+      Awaitility.await("until all jobs are received")
           .untilAsserted(
               () ->
                   assertThat(jobHandler.getHandledJobs())
                       .extracting(ActivatedJob::getProcessInstanceKey)
-                      .hasSameSizeAs(expectedJobPis)
-                      .containsExactlyElementsOf(expectedJobPis));
+                      .hasSize(startedPiKeys.size() + 1)
+                      .containsSubsequence(startedPiKeys)
+                      .contains(lastPI));
+
       assertThat(RecordingExporter.jobRecords(JobIntent.YIELDED).limit(yieldedPis.size()))
           .map(Record::getValue)
           .extracting(JobRecordValue::getProcessInstanceKey)
