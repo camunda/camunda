@@ -20,6 +20,8 @@ import io.camunda.zeebe.auth.api.AuthorizationEncoder;
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.auth.impl.JwtAuthorizationDecoder;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -146,6 +148,22 @@ public class JwtAuthorizationTest {
     assertThatThrownBy(() -> decoder.decode())
         .isInstanceOf(UnrecoverableException.class)
         .hasMessage("Authorization data unavailable: The token is null.");
+  }
+
+  @Test
+  public void shouldNotFailVerificationForFutureIssuedAt() {
+    // given
+    final String jwtToken =
+        JWT.create()
+            .withIssuer(DEFAULT_ISSUER)
+            .withAudience(DEFAULT_AUDIENCE)
+            .withSubject(DEFAULT_SUBJECT)
+            .withClaim(Authorization.AUTHORIZED_TENANTS, List.of())
+            .withIssuedAt(Instant.now().plus(10L, ChronoUnit.MINUTES))
+            .sign(Algorithm.none());
+
+    // when /then
+    Authorization.jwtDecoder(jwtToken).withClaim(Authorization.AUTHORIZED_TENANTS).build();
   }
 
   private void assertDefaultClaims(final Map<String, Claim> claims) {
