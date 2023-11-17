@@ -25,7 +25,6 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -80,6 +79,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   private final AtomicBoolean isPollScheduled = new AtomicBoolean(false);
 
   private volatile long pollInterval;
+  private final ScheduledExecutorService scheduledExecutorService;
 
   public JobWorkerImpl(
       final int maxJobsActive,
@@ -95,7 +95,8 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     activationThreshold = Math.round(maxJobsActive * 0.3f);
     remainingJobs = new AtomicInteger(0);
 
-    this.executor = BlockingExecutor.of(executor, maxJobsActive, jobActivationTimeout);
+    this.executor = new BlockingExecutor(executor, maxJobsActive, jobActivationTimeout);
+    scheduledExecutorService = executor;
     this.jobHandlerFactory = jobHandlerFactory;
     this.jobStreamer = jobStreamer;
     initialPollInterval = pollInterval.toMillis();
@@ -135,7 +136,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
    */
   private void schedulePoll() {
     if (isPollScheduled.compareAndSet(false, true)) {
-      executor.schedule(this::onScheduledPoll, pollInterval, TimeUnit.MILLISECONDS);
+      scheduledExecutorService.schedule(this::onScheduledPoll, pollInterval, TimeUnit.MILLISECONDS);
     }
   }
 
@@ -267,54 +268,5 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
 
   private void handleStreamJobFinished() {
     metrics.jobHandled(1);
-  }
-
-  private static class BlockingExecutor {
-    public static final TimeUnit TIMEOUT_UNIT = TimeUnit.MILLISECONDS;
-
-    private final ScheduledExecutorService wrappedExecutor;
-    private final Semaphore semaphore;
-    private final long timeoutMillis;
-
-    private BlockingExecutor(
-        final ScheduledExecutorService wrappedExecutor,
-        final int maxActivate,
-        final Duration jobActivationTimeout) {
-      this.wrappedExecutor = wrappedExecutor;
-      semaphore = new Semaphore(maxActivate);
-      timeoutMillis = jobActivationTimeout.toMillis();
-    }
-
-    public static BlockingExecutor of(
-        final ScheduledExecutorService executor,
-        final int maxJobs,
-        final Duration jobActivationTimeout) {
-      return new BlockingExecutor(executor, maxJobs, jobActivationTimeout);
-    }
-
-    public void schedule(final Runnable runnable, final long timeout, final TimeUnit unit) {
-      wrappedExecutor.schedule(runnable, timeout, unit);
-    }
-
-    public void execute(final Runnable command) throws RejectedExecutionException {
-      try {
-        if (!semaphore.tryAcquire(timeoutMillis, TIMEOUT_UNIT)) {
-          throw new RejectedExecutionException(
-              String.format(
-                  "Not able to acquire lease in %d%s", timeoutMillis, TIMEOUT_UNIT.toString()));
-        }
-
-        wrappedExecutor.execute(
-            () -> {
-              try {
-                command.run();
-              } finally {
-                semaphore.release();
-              }
-            });
-      } catch (final InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
-    }
   }
 }
