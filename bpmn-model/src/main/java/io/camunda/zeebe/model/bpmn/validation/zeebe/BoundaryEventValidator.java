@@ -15,7 +15,9 @@
  */
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
+import io.camunda.zeebe.model.bpmn.instance.Association;
 import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
+import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
@@ -26,6 +28,7 @@ import io.camunda.zeebe.model.bpmn.util.ModelUtil;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -37,7 +40,8 @@ public class BoundaryEventValidator implements ModelElementValidator<BoundaryEve
           MessageEventDefinition.class,
           ErrorEventDefinition.class,
           SignalEventDefinition.class,
-          EscalationEventDefinition.class);
+          EscalationEventDefinition.class,
+          CompensateEventDefinition.class);
 
   @Override
   public Class<BoundaryEvent> getElementType() {
@@ -51,15 +55,29 @@ public class BoundaryEventValidator implements ModelElementValidator<BoundaryEve
       validationResultCollector.addError(0, "Must be attached to an activity");
     }
 
-    if (element.getIncoming().size() > 0) {
+    if (!element.getIncoming().isEmpty()) {
       validationResultCollector.addError(0, "Cannot have incoming sequence flows");
     }
 
-    if (element.getOutgoing().size() < 1) {
-      validationResultCollector.addError(0, "Must have at least one outgoing sequence flow");
+    if (element.getOutgoing().isEmpty() && !isValidCompensationBoundaryEvent(element)) {
+      validationResultCollector.addError(
+          0, "Must have at least one outgoing sequence flow or association");
     }
 
     validateEventDefinition(element, validationResultCollector);
+  }
+
+  private boolean isValidCompensationBoundaryEvent(final BoundaryEvent element) {
+    // A compensation boundary event should have no outgoing sequence flows. The compensation
+    // handler is connected by an association.
+    final Optional<Association> association =
+        element.getModelInstance().getModelElementsByType(Association.class).stream()
+            .filter(a -> a.getSource().getId().equals(element.getId()))
+            .findFirst();
+    return element.getOutgoing().isEmpty()
+        && association.isPresent()
+        && element.getEventDefinitions().stream()
+            .anyMatch(CompensateEventDefinition.class::isInstance);
   }
 
   private void validateEventDefinition(
