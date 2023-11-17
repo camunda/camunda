@@ -40,10 +40,9 @@ public interface SnapshotId extends Comparable<SnapshotId> {
   String getSnapshotIdAsString();
 
   /**
-   * A snapshot is considered "lower" if its term is less than that of the other snapshot. If they
-   * are the same, then it is considered "lower" if its index is less then the other, if they are
-   * equal then the processed positions are compared, and then exported positions are compared. If
-   * they are the same then these snapshots are the same order-wise.
+   * A snapshot is considered "lower" if its index is less then the other, if they are equal then
+   * the processed positions are compared, and then exported positions are compared. If they are the
+   * same then these snapshots are the same order-wise.
    *
    * @param other the snapshot to compare against
    * @return -1 if {@code this} is less than {@code other}, 0 if they are the same, 1 if it is
@@ -51,8 +50,7 @@ public interface SnapshotId extends Comparable<SnapshotId> {
    */
   @Override
   default int compareTo(final SnapshotId other) {
-    return Comparator.comparingLong(SnapshotId::getTerm)
-        .thenComparing(SnapshotId::getIndex)
+    return Comparator.comparingLong(SnapshotId::getIndex)
         .thenComparing(SnapshotId::getProcessedPosition)
         .thenComparing(SnapshotId::getExportedPosition)
         .compare(this, other);
