@@ -12,7 +12,6 @@ import org.agrona.DirectBuffer;
 
 /** The context for evaluating an expression. */
 public interface EvaluationContext {
-
   /**
    * Returns the value of the variable with the given name.
    *

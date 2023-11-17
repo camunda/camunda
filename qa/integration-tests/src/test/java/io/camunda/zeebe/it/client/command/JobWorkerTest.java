@@ -15,14 +15,17 @@ import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilder
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.it.util.RecordingJobHandler;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.qa.util.actuator.JobStreamActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.Strings;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import org.assertj.core.data.Offset;
@@ -179,6 +182,53 @@ final class JobWorkerTest {
       // then - expect both jobs to be activated
       Awaitility.await("until all jobs are activated")
           .untilAsserted(() -> assertThat(jobHandler.getHandledJobs()).hasSize(2));
+    }
+  }
+
+  @Test
+  void shouldYieldJobsWhenWorkerIsBlocked() {
+    // given
+    client.createSingleJob(jobType, b -> {});
+
+    // when
+    final var jobHandler = new RecordingJobHandler();
+    final var latch = new CountDownLatch(1);
+    final var builder =
+        client
+            .getClient()
+            .newWorker()
+            .jobType(jobType)
+            .handler(
+                (c, j) -> {
+                  jobHandler.handle(c, j);
+                  latch.await();
+                })
+            .maxJobsActive(1)
+            .streamEnabled(true);
+    try (final var ignored = builder.open()) {
+      awaitStreamRegistered(jobType);
+
+      // when
+      final long firstJobKey = client.createSingleJob(jobType, b -> {});
+      final long secondJobKey = client.createSingleJob(jobType, b -> {});
+
+      // then
+      Awaitility.await("until first job is handled")
+          .untilAsserted(() -> assertThat(jobHandler.getHandledJobs()).hasSize(1));
+
+      assertThat(jobHandler.getHandledJobs())
+          .extracting(ActivatedJob::getKey)
+          .contains(firstJobKey);
+
+      Awaitility.await("Second job should be yielded when worker is blocking")
+          .untilAsserted(
+              () ->
+                  assertThat(
+                          RecordingExporter.jobRecords()
+                              .withIntent(JobIntent.YIELDED)
+                              .withRecordKey(secondJobKey)
+                              .exists())
+                      .isTrue());
     }
   }
 
