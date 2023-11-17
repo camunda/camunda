@@ -152,12 +152,23 @@ runs:
           echo "result=gh-hosted" >> $GITHUB_OUTPUT
         fi
     - name: Cache local Maven repository
-      if: inputs.java == 'true'
+      # Only use the full cache action if we're on main or stable/* branches
+      if: inputs.java == 'true' && (startsWith(github.ref_name, 'stable/') || github.ref_name == 'main')
       uses: actions/cache@v3
       with:
         # This is the path used by the `enhancedLocalRepository` set up in the 'Configure Maven' step.
         # `aether.enhancedLocalRepository.remotePrefix` defaults to 'cached'
         # `aether.enhancedLocalRepository.releasesPrefix` defaults to 'releases'
+        path: ~/.m2/repository/cached/releases/
+        key: ${{ steps.runner-env.outputs.result }}-${{ runner.os }}-mvn-${{ inputs.maven-cache-key-modifier }}-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ steps.runner-env.outputs.result }}-${{ runner.os }}-mvn-${{ inputs.maven-cache-key-modifier }}
+    - name: Restore maven cache
+      # Restore cache (but don't save it) if we're not on main or stable/* branches
+      if: inputs.java == 'true' && !(startsWith(github.ref_name, 'stable/') || github.ref_name == 'main')
+      uses: actions/cache/restore@v3
+      with:
+        # This has to match the 'Cache local Maven repository' step above
         path: ~/.m2/repository/cached/releases/
         key: ${{ steps.runner-env.outputs.result }}-${{ runner.os }}-mvn-${{ inputs.maven-cache-key-modifier }}-${{ hashFiles('**/pom.xml') }}
         restore-keys: |
