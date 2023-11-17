@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client;
 
+import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.EvaluateDecisionCommandStep1;
+import io.camunda.zeebe.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
@@ -166,6 +168,63 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   ModifyProcessInstanceCommandStep1 newModifyProcessInstanceCommand(long processInstanceKey);
+
+  /**
+   * Command to migrate a process instance to a different process definition.
+   *
+   * <p>The migration command contains a migration plan. Migration plan contains
+   * targetProcessDefinitionKey to indicate which process definition to use for the migration.
+   * Mapping instructions for the migration describe how to map elements from the source process
+   * definition to the target process definition.
+   *
+   * <p>For example, let's consider we want to migrate process instance with key {@code 1}, target
+   * process definition key {@code 2}, a source process definition with a service task with id
+   * {@code "task1"} and the target process definition with a service task with id {@code "task2"}.
+   * The migration command could be:
+   *
+   * <pre>{@code
+   * {
+   *  "processInstanceKey": 1,
+   *  "migrationPlan": {
+   *   "targetProcessDefinitionKey": 2,
+   *   "mappingInstructions": [
+   *    {
+   *     "sourceElementId": "task1",
+   *     "targetElementId": "task2"
+   *    }
+   *   ]
+   *  }
+   * }
+   * }</pre>
+   *
+   * <pre>
+   *
+   * zeebeClient
+   *  .newMigrateProcessInstanceCommand(1L)
+   *  .migrationPlan(2L)
+   *  .addMappingInstruction("element1", "element2")
+   *  .addMappingInstruction("element3", "element4")
+   *  .send();
+   * </pre>
+   *
+   * <pre>
+   * final MigrationPlan migrationPlan =
+   *         MigrationPlan.newBuilder()
+   *             .withTargetProcessDefinitionKey(2L)
+   *             .addMappingInstruction("element1", "element2")
+   *             .addMappingInstruction("element3", "element4")
+   *             .build();
+   * zeebeClient
+   *  .newMigrateProcessInstanceCommand(1L)
+   *  .migrationPlan(migrationPlan)
+   *  .send();
+   * </pre>
+   *
+   * @param processInstanceKey the key which refers to the process instance to migrate
+   * @return a builder for the command
+   */
+  @ExperimentalApi("https://github.com/camunda/zeebe/issues/14907")
+  MigrateProcessInstanceCommandStep1 newMigrateProcessInstanceCommand(long processInstanceKey);
 
   /**
    * Command to cancel a process instance.
