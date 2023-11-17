@@ -24,7 +24,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
 import org.junit.runners.Parameterized.Parameters;
 
-public class ZeebeUserTaskValidatorFormTest extends AbstractZeebeValidationTest {
+public class ZeebeCompensationTaskValidatorFormTest extends AbstractZeebeValidationTest {
 
   @Parameters(name = "{index}: {1}")
   public static Object[][] parameters() {

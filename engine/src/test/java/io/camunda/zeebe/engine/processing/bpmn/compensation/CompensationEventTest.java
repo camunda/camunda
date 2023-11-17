@@ -122,4 +122,77 @@ public class CompensationEventTest {
     assertThat(rejectedDeploy.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(rejectedDeploy.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
   }
+
+  @Test
+  public void shouldDeployCompensationUndefinedTask() {
+    ENGINE
+        .deployment()
+        .withXmlClasspathResource("/compensation/compensation-undefined-task.bpmn")
+        .deploy();
+
+    // when
+    ENGINE.processInstance().ofBpmnProcessId("compensation-process").create();
+
+    // then
+    assertThat(
+        RecordingExporter.processRecords().withBpmnProcessId("compensation-process").limit(1))
+        .extracting(Record::getIntent)
+        .contains(ProcessIntent.CREATED);
+  }
+
+  @Test
+  public void shouldNotDeployCompensationHandlerNotValid() {
+    final var rejectedDeploy =
+        ENGINE
+            .deployment()
+            .withXmlClasspathResource("/compensation/compensation-not-valid-task.bpmn")
+            .expectRejection()
+            .deploy();
+
+    // then
+    assertThat(rejectedDeploy.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejectedDeploy.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+  }
+
+  @Test
+  public void shouldNotDeployCompensationHandlerWithOutgoingFlow() {
+    final var rejectedDeploy =
+        ENGINE
+            .deployment()
+            .withXmlClasspathResource("/compensation/compensation-task-with-outgoing.bpmn")
+            .expectRejection()
+            .deploy();
+
+    // then
+    assertThat(rejectedDeploy.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejectedDeploy.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+  }
+
+  @Test
+  public void shouldNotDeployCompensationHandlerWithIncomingFlow() {
+    final var rejectedDeploy =
+        ENGINE
+            .deployment()
+            .withXmlClasspathResource("/compensation/compensation-task-with-incoming.bpmn")
+            .expectRejection()
+            .deploy();
+
+    // then
+    assertThat(rejectedDeploy.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejectedDeploy.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+  }
+
+  @Test
+  public void shouldNotDeployCompensationHandlerWithBoundaryEvent() {
+    final var rejectedDeploy =
+        ENGINE
+            .deployment()
+            .withXmlClasspathResource("/compensation/compensation-task-with-boundary.bpmn")
+            .expectRejection()
+            .deploy();
+
+    // then
+    assertThat(rejectedDeploy.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejectedDeploy.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+  }
 }
