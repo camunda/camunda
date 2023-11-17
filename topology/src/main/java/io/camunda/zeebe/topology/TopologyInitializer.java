@@ -315,7 +315,7 @@ public interface TopologyInitializer {
 
       final Version version = membershipService.getLocalMember().version();
       if (isVersion84(version)) {
-        final boolean knowOtherMembers = hasOtherReachableMembers(membershipService);
+        final boolean knowOtherMembers = hasOtherReachableBrokers(membershipService);
         if (knowOtherMembers && isRollingUpdate(membershipService)) {
           LOGGER.debug(
               "Cluster is doing rolling update. Cannot initialize cluster topology via gossip. Initializing cluster topology from static configuration.");
@@ -327,35 +327,49 @@ public interface TopologyInitializer {
           executor.schedule(RETRY_DELAY, this::initialize);
         } else {
           // do not initialize. It is not rolling update so initialize via gossip or sync
+          LOGGER.trace(
+              "Cluster is not doing rolling update. Will not initialize cluster topology.");
           initializeFuture.complete(ClusterTopology.uninitialized());
         }
       } else {
+        LOGGER.trace("Cluster is not doing rolling update. Will not initialize cluster topology.");
         initializeFuture.complete(ClusterTopology.uninitialized());
       }
       return initializeFuture;
     }
 
-    private boolean hasOtherReachableMembers(final ClusterMembershipService membershipService) {
+    private boolean hasOtherReachableBrokers(final ClusterMembershipService membershipService) {
       return membershipService.getMembers().stream()
+          .filter(this::isBroker)
           .map(Member::id)
           .anyMatch(memberId -> !memberId.equals(membershipService.getLocalMember().id()));
     }
 
     private boolean isRollingUpdate(final ClusterMembershipService membershipService) {
-      final List<Member> otherMembers =
+      final List<Member> otherBrokers =
           membershipService.getMembers().stream()
+              .filter(this::isBroker)
               .filter(member -> !member.id().equals(membershipService.getLocalMember().id()))
               .toList();
       final var cannotDetermineVersionOfOtherMembers =
-          otherMembers.stream().map(Member::version).noneMatch(Objects::nonNull);
+          otherBrokers.stream().map(Member::version).noneMatch(Objects::nonNull);
       if (cannotDetermineVersionOfOtherMembers) {
         // This is mainly required for testing, where the DiscoveryMembershipProvider cannot
         // determine version of remote members.
         LOGGER.warn(
-            "Cannot determine version of local member. Assuming this is not rolling update and skip initialization.");
+            "Cannot determine version of remote members. Assuming this is not rolling update and skip initialization.");
         return false;
       }
-      return otherMembers.stream().map(Member::version).anyMatch(this::isVersion83);
+      return otherBrokers.stream().map(Member::version).anyMatch(this::isVersion83);
+    }
+
+    private boolean isBroker(final Member member) {
+      try {
+        // hacky way to determine if the other member is a broker
+        return Integer.parseInt(member.id().id()) >= 0;
+      } catch (final NumberFormatException e) {
+        return false;
+      }
     }
 
     private boolean isVersion84(final Version version) {
