@@ -15,7 +15,8 @@ import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Enumeration;
 import io.prometheus.client.Gauge;
-import io.prometheus.client.Gauge.Timer;
+import io.prometheus.client.Histogram;
+import io.prometheus.client.Histogram.Timer;
 import java.util.List;
 
 public final class TopologyMetrics {
@@ -61,8 +62,8 @@ public final class TopologyMetrics {
           .name("cluster_changes_operations_completed")
           .help("Number of completed changes in the current change plan")
           .register();
-  private static final Gauge OPERATION_DURATION =
-      Gauge.build()
+  private static final Histogram OPERATION_DURATION =
+      Histogram.build()
           .namespace(NAMESPACE)
           .name("cluster_changes_operation_duration")
           .help("Duration it takes to apply an operation")
