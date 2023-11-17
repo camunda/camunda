@@ -23,6 +23,7 @@ import io.camunda.zeebe.util.LogUtil;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Properties;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
@@ -172,6 +173,19 @@ public final class TopologyManagerImpl extends Actor
         },
         followerPartitionId -> removeIfLeader(brokerInfo, followerPartitionId),
         inactivePartitionId -> removeIfLeader(brokerInfo, inactivePartitionId));
+    // If a partition is removed from the broker, remove it from the local leader list
+    final var leaderPartitionsInBroker =
+        partitionLeaders.entrySet().stream()
+            .filter(
+                entry -> {
+                  final var broker = entry.getValue();
+                  return broker.getNodeId() == brokerInfo.getNodeId();
+                })
+            .map(Entry::getKey)
+            .toList();
+    leaderPartitionsInBroker.stream()
+        .filter(partitionId -> !brokerInfo.getPartitionRoles().containsKey(partitionId))
+        .forEach(removedPartition -> removeIfLeader(brokerInfo, removedPartition));
   }
 
   private boolean updatePartitionLeader(
@@ -181,13 +195,11 @@ public final class TopologyManagerImpl extends Actor
     if (currentLeader != null) {
       final Long currentLeaderTerm = currentLeader.getPartitionLeaderTerms().get(leaderPartitionId);
       if (currentLeaderTerm == null) {
-        LOG.error(
-            "Could not update new leader for partition {} at term {}. Expected to have a non-null value for current leader term, but found null",
+        LOG.debug(
+            "Expected to have a non-null value for current leader term, but found null. Partition {} is likely removed from broker {}. Updating the leader anyway.",
             leaderPartitionId,
-            term);
-        return false;
-      }
-      if (currentLeaderTerm >= term) {
+            currentLeader.getNodeId());
+      } else if (currentLeaderTerm >= term) {
         return false;
       }
     }
@@ -237,7 +249,11 @@ public final class TopologyManagerImpl extends Actor
 
   @Override
   public void removePartition(final int partitionId) {
-    actor.run(() -> localBroker.removePartition(partitionId));
+    actor.run(
+        () -> {
+          removeIfLeader(localBroker, partitionId);
+          localBroker.removePartition(partitionId);
+        });
   }
 
   private void notifyPartitionLeaderUpdated(final int partitionId, final BrokerInfo member) {
