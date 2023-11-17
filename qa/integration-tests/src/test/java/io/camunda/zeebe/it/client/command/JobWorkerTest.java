@@ -29,6 +29,7 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.grpc.internal.AbstractStream.TransportState;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -297,6 +298,7 @@ final class JobWorkerTest {
                     latch.await();
                   })
               .maxJobsActive(1)
+              .pollInterval(Duration.ofHours(1))
               .streamEnabled(true)
               .open();
 
@@ -352,7 +354,11 @@ final class JobWorkerTest {
       latch.countDown();
       Awaitility.await("until buffered jobs are received")
           .untilAsserted(
-              () -> assertThat(jobHandler.getHandledJobs()).hasSameSizeAs(expectedJobPis));
+              () ->
+                  assertThat(jobHandler.getHandledJobs())
+                      .extracting(ActivatedJob::getProcessInstanceKey)
+                      .hasSameSizeAs(expectedJobPis));
+
       expectedJobPis.add(createProcessInstance(uniqueId, payload));
 
       // then - unblock stream consumer and expect jobs for the PIs started before we yielded to
