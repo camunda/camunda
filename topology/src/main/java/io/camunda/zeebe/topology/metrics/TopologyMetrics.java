@@ -72,7 +72,7 @@ public final class TopologyMetrics {
       Counter.build()
           .namespace(NAMESPACE)
           .name("cluster_changes_operation_attempts")
-          .help("Number of retries per operation type")
+          .help("Number of attempts per operation type")
           .labelNames(LABEL_OPERATION, LABEL_OUTCOME)
           .register();
 
