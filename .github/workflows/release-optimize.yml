@@ -156,7 +156,7 @@ jobs:
       # This still needs changing once we are on prod
       - name: Upload artifact to Camunda Download Center
         if: inputs.DRY_RUN == 'false'
-        uses: camunda/infra-global-github-actions/download-center-upload@modify_download_center
+        uses: camunda/infra-global-github-actions/download-center-upload@main
         with:
           gcp_credentials: ${{ steps.secrets.outputs.GCP_CREDENTIALS_NAME }}
           ee: 'true'
