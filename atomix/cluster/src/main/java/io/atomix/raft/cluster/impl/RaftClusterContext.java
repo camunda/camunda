@@ -110,7 +110,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
 
   @Override
   public Collection<RaftMember> getMembers() {
-    return configuration.allMembers();
+    return configuration != null ? configuration.allMembers() : null;
   }
 
   private void createInitialConfig(final Collection<MemberId> cluster) {
