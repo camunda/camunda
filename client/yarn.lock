@@ -2032,10 +2032,10 @@
     lodash "^4.17.15"
     redent "^3.0.0"
 
-"@testing-library/react@14.1.1":
-  version "14.1.1"
-  resolved "https://registry.yarnpkg.com/@testing-library/react/-/react-14.1.1.tgz#38f2115766ae53e0328f1108fc18e458845b2273"
-  integrity sha512-XN9qioSzyYvfH+O09pzc9HAhZ2dSuTZLh+EmHkp1OKKxe13wAf617EKLuQ5l5S5dlfgPf/p0MHTeRkqO8Xz8qw==
+"@testing-library/react@14.1.2":
+  version "14.1.2"
+  resolved "https://registry.yarnpkg.com/@testing-library/react/-/react-14.1.2.tgz#a2b9e9ee87721ec9ed2d7cfc51cc04e474537c32"
+  integrity sha512-z4p7DVBTPjKM5qDZ0t5ZjzkpSNb+fZy1u6bzO7kk8oeGagpPCAtgh4cx1syrfp7a+QWkM021jGqjJaxJJnXAZg==
   dependencies:
     "@babel/runtime" "^7.12.5"
     "@testing-library/dom" "^9.0.0"
