@@ -253,7 +253,12 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     try {
       executor.execute(jobHandlerFactory.create(job, finalizer));
     } catch (final RejectedExecutionException e) {
-      // drop job
+      if (scheduledExecutorService.isShutdown() || scheduledExecutorService.isTerminated()) {
+        LOG.warn("Underlying executor was closed before the worker. Closing the worker now.", e);
+        close();
+        return;
+      }
+
       LOG.warn(ERROR_MSG, job.getKey(), e);
     }
   }

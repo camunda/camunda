@@ -25,6 +25,7 @@ import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilder
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.camunda.zeebe.client.impl.ZeebeClientImpl;
 import io.camunda.zeebe.client.impl.util.Environment;
+import io.camunda.zeebe.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
@@ -45,7 +46,10 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import org.awaitility.Awaitility;
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -191,6 +195,40 @@ public final class JobWorkerImplTest {
     }
   }
 
+  @Test
+  public void shouldCloseIfExecutorIsClosed() {
+    // given
+    final ScheduledExecutorService closedExecutor = Executors.newSingleThreadScheduledExecutor();
+
+    try (final ZeebeClient client =
+        new ZeebeClientImpl(
+            new ZeebeClientBuilderImpl(),
+            channel,
+            GatewayGrpc.newStub(channel),
+            new ExecutorResource(closedExecutor, false))) {
+
+      final JobWorker jobWorker =
+          client
+              .newWorker()
+              .jobType("t")
+              .handler((c, j) -> {})
+              .pollInterval(Duration.ofHours(1))
+              .streamEnabled(true)
+              .open();
+
+      Awaitility.await("We need to wait until the streams have been opened")
+          .until(() -> !gateway.openStreams.isEmpty());
+
+      // when
+      closedExecutor.shutdownNow();
+      gateway.pushJob(TestData.job());
+
+      // then
+      Awaitility.await("Worker should be closed after detecting underlying executor is closed")
+          .until(jobWorker::isClosed, Matchers.equalTo(true));
+    }
+  }
+
   /**
    * This mocked gateway is able to record metrics on polling for new jobs and easily switch how it
    * responds to polling.
@@ -256,6 +294,13 @@ public final class JobWorkerImplTest {
         System.out.println("Now responding with jobs");
         isInErrorMode = false;
         pollSuccessResponse = ActivateJobsResponse.newBuilder().addAllJobs(jobs).build();
+      }
+    }
+
+    public void pushJob(final ActivatedJob job) {
+      synchronized (responsesLock) {
+        System.out.println("Pushing job to one of the streams");
+        openStreams.values().stream().findFirst().ifPresent((observer) -> observer.onNext(job));
       }
     }
 
