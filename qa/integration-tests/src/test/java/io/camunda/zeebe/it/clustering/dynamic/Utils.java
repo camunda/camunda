@@ -61,6 +61,7 @@ final class Utils {
       final List<Long> processInstanceKeys, final ZeebeClient zeebeClient, final String jobType) {
     final Set<ActivatedJob> activatedJobs = new HashSet<>();
     Awaitility.await("Jobs from all partitions are activated")
+        .timeout(Duration.ofSeconds(20))
         .untilAsserted(
             () -> {
               final var jobs =
