@@ -15,15 +15,28 @@ type Props = {
 };
 
 const Wrapper = ({children}: Props) => {
-  useEffect(() => processInstanceMigrationStore.reset);
-  return <>{children}</>;
+  useEffect(() => {
+    processInstanceMigrationStore.setCurrentStep('elementMapping');
+    return processInstanceMigrationStore.reset;
+  });
+  return (
+    <>
+      {children}
+      <button
+        onClick={() => {
+          processInstanceMigrationStore.updateFlowNodeMapping({
+            sourceId: 'task1',
+            targetId: 'task2',
+          });
+        }}
+      >
+        map element
+      </button>
+    </>
+  );
 };
 
 describe('Footer', () => {
-  beforeEach(() => {
-    processInstanceMigrationStore.setCurrentStep('elementMapping');
-  });
-
   it('should render correct buttons in each step', async () => {
     const {user} = render(<Footer />, {wrapper: Wrapper});
 
@@ -37,6 +50,8 @@ describe('Footer', () => {
     expect(
       screen.queryByRole('button', {name: 'Confirm'}),
     ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: /map element/i}));
 
     await user.click(screen.getByRole('button', {name: 'Next'}));
 

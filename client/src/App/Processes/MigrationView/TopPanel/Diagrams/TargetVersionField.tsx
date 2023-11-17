@@ -10,6 +10,7 @@ import {observer} from 'mobx-react';
 import {isNil} from 'lodash';
 import {processesStore} from 'modules/stores/processes/processes.migration';
 import {Dropdown} from '@carbon/react';
+import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 
 const TargetVersionField: React.FC = observer(() => {
   const {
@@ -28,6 +29,7 @@ const TargetVersionField: React.FC = observer(() => {
         type="inline"
         onChange={async ({selectedItem}) => {
           if (!isNil(selectedItem)) {
+            processInstanceMigrationStore.resetFlowNodeMapping();
             processesStore.setSelectedTargetVersion(selectedItem);
           }
         }}

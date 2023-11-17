@@ -10,6 +10,7 @@ import {observer} from 'mobx-react';
 import {isNil} from 'lodash';
 import {processesStore} from 'modules/stores/processes/processes.migration';
 import {Dropdown} from '@carbon/react';
+import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 
 const TargetProcessField: React.FC = observer(() => {
   const {
@@ -38,6 +39,8 @@ const TargetProcessField: React.FC = observer(() => {
           if (isNil(selectedItem)) {
             return;
           }
+
+          processInstanceMigrationStore.resetFlowNodeMapping();
 
           processesStore.setSelectedTargetProcess(selectedItem.id);
 

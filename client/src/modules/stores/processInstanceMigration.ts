@@ -79,6 +79,10 @@ class ProcessInstanceMigration {
     return this.state.currentStep !== null;
   }
 
+  get hasFlowNodeMapping() {
+    return Object.keys(this.state.flowNodeMapping).length > 0;
+  }
+
   setSelectedInstancesCount = (seletedInstancesCount: number) => {
     this.state.seletedInstancesCount = seletedInstancesCount;
   };
@@ -90,11 +94,15 @@ class ProcessInstanceMigration {
     sourceId: string;
     targetId?: string;
   }) => {
-    if (targetId === undefined) {
+    if (targetId === undefined || targetId === '') {
       delete this.state.flowNodeMapping[sourceId];
     } else {
       this.state.flowNodeMapping[sourceId] = targetId;
     }
+  };
+
+  resetFlowNodeMapping = () => {
+    this.state.flowNodeMapping = {...DEFAULT_STATE.flowNodeMapping};
   };
 }
 

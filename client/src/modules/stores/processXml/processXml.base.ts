@@ -38,6 +38,7 @@ class ProcessXmlBase extends NetworkReconnectionHandler {
       handleFetchXmlSuccess: action,
       handleFetchError: action,
       selectableFlowNodes: computed,
+      hasSelectableFlowNodes: computed,
       selectableIds: computed,
       resetState: action,
     });
@@ -67,6 +68,10 @@ class ProcessXmlBase extends NetworkReconnectionHandler {
     return getFlowNodes(this.state.diagramModel?.elementsById);
   }
 
+  get hasSelectableFlowNodes() {
+    return this.selectableFlowNodes.length > 0;
+  }
+
   get selectableIds() {
     return this.selectableFlowNodes.map(({id}) => id);
   }
@@ -91,27 +96,6 @@ class ProcessXmlBase extends NetworkReconnectionHandler {
       logger.error(error);
     }
   };
-
-  get flowNodeFilterOptions() {
-    return this.selectableFlowNodes
-      .map(({id, name}) => ({
-        value: id,
-        label: name ?? id,
-      }))
-      .sort((node, nextNode) => {
-        const label = node.label.toUpperCase();
-        const nextLabel = nextNode.label.toUpperCase();
-
-        if (label < nextLabel) {
-          return -1;
-        }
-        if (label > nextLabel) {
-          return 1;
-        }
-
-        return 0;
-      });
-  }
 
   resetState = () => {
     this.state = {...DEFAULT_STATE};

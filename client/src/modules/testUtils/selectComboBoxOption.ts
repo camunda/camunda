@@ -19,7 +19,7 @@ const selectComboBoxOption = async ({
   option: string;
   listBoxLabel: string;
 }) => {
-  await user.click(screen.getByLabelText(fieldName));
+  await user.click(screen.getByRole('combobox', {name: fieldName}));
   await user.selectOptions(screen.getByRole('listbox', {name: listBoxLabel}), [
     screen.getByRole('option', {name: option}),
   ]);
@@ -79,6 +79,15 @@ const selectDecisionVersion = async ({user, option}: SelectProps) => {
   );
 };
 
+const selectTargetProcess = ({user, option}: SelectProps) => {
+  return selectComboBoxOption({
+    user,
+    option,
+    fieldName: 'Target Process',
+    listBoxLabel: 'Target Process',
+  });
+};
+
 const clearComboBox = async ({
   user,
   fieldName,
@@ -106,5 +115,6 @@ export {
   selectFlowNode,
   selectDecision,
   selectDecisionVersion,
+  selectTargetProcess,
   clearComboBox,
 };

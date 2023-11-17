@@ -6,26 +6,24 @@
  */
 
 import {waitFor} from '@testing-library/react';
-import {mockProcessXml} from 'modules/mocks/mockProcessXml';
-import {processXmlStore} from './processXml.list';
+import {processXmlStore} from './processXml.migration.source';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {open} from 'modules/mocks/diagrams';
 
 describe('stores/processXml/processXml.list', () => {
   afterEach(() => {
     processXmlStore.reset();
   });
 
-  it('should get flowNodeFilterOptions', async () => {
-    mockFetchProcessXML().withSuccess(mockProcessXml);
+  it('should filter selectable flow nodes', async () => {
+    mockFetchProcessXML().withSuccess(open('orderProcess.bpmn'));
 
     processXmlStore.fetchProcessXml('1');
-
+    expect(processXmlStore.state.status).toBe('fetching');
     await waitFor(() => expect(processXmlStore.state.status).toBe('fetched'));
 
-    expect(processXmlStore.flowNodeFilterOptions).toEqual([
-      {label: 'EndEvent_0crvjrk', value: 'EndEvent_0crvjrk'},
-      {label: 'StartEvent_1', value: 'StartEvent_1'},
-      {label: 'userTask', value: 'userTask'},
-    ]);
+    expect(
+      processXmlStore.selectableFlowNodes.map((flowNode) => flowNode.id),
+    ).toEqual(['checkPayment', 'shipArticles', 'requestForPayment']);
   });
 });
