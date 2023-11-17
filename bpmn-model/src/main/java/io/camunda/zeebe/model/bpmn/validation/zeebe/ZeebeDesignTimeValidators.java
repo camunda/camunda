@@ -122,6 +122,7 @@ public final class ZeebeDesignTimeValidators {
             .hasNonEmptyAttribute(
                 ZeebePublishMessage::getCorrelationKey, ZeebeConstants.ATTRIBUTE_CORRELATION_KEY));
     validators.add(new IntermediateThrowEventValidator());
+    validators.add(new CompensationTaskValidator());
 
     VALIDATORS = Collections.unmodifiableList(validators);
   }
