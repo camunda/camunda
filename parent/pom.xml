@@ -119,7 +119,7 @@
     <version.zpt>8.3.3</version.zpt>
     <version.feign>13.1</version.feign>
     <version.google-sdk>26.27.0</version.google-sdk>
-    <version.awssdk>2.21.24</version.awssdk>
+    <version.awssdk>2.21.25</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.0.2</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
