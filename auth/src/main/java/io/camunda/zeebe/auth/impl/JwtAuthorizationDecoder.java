@@ -73,12 +73,7 @@ public class JwtAuthorizationDecoder
    */
   @Override
   public DecodedJWT build() {
-    try {
-      return validateJwtToken();
-    } catch (final JWTVerificationException | NullPointerException ex) {
-      LOGGER.error("Authorization data unavailable: {}", ex.getMessage());
-      throw new UnrecoverableException("Authorization data unavailable: " + ex.getMessage(), ex);
-    }
+    return validateJwtToken();
   }
 
   @Override
