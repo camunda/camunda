@@ -11,6 +11,8 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.topology.changes.TopologyChangeAppliers;
+import io.camunda.zeebe.topology.metrics.TopologyMetrics;
+import io.camunda.zeebe.topology.metrics.TopologyMetrics.OperationObserver;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import io.camunda.zeebe.topology.state.MemberState;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation;
@@ -213,6 +215,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
     onGoingTopologyChangeOperation = true;
     shouldRetry = false;
     final var operation = mergedTopology.pendingChangesFor(localMemberId).orElseThrow();
+    final var observer = TopologyMetrics.observeOperation(operation);
     LOG.info("Applying topology change operation {}", operation);
     final var operationApplier = changeAppliers.getApplier(operation);
     final var initialized =
@@ -223,6 +226,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
 
     if (initialized.isLeft()) {
       // TODO: What should we do here? Retry?
+      observer.failed();
       onGoingTopologyChangeOperation = false;
       LOG.error(
           "Failed to initialize topology change operation {}", operation, initialized.getLeft());
@@ -231,7 +235,8 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
 
     operationApplier
         .apply()
-        .onComplete((transformer, error) -> onOperationApplied(operation, transformer, error));
+        .onComplete(
+            (transformer, error) -> onOperationApplied(operation, transformer, error, observer));
   }
 
   private void logAndScheduleRetry(final TopologyChangeOperation operation, final Throwable error) {
@@ -253,9 +258,11 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
   private void onOperationApplied(
       final TopologyChangeOperation operation,
       final UnaryOperator<MemberState> transformer,
-      final Throwable error) {
+      final Throwable error,
+      final OperationObserver observer) {
     onGoingTopologyChangeOperation = false;
     if (error == null) {
+      observer.applied();
       backoffRetry.reset();
       updateLocalTopology(
           persistedClusterTopology.getTopology().advanceTopologyChange(localMemberId, transformer));
@@ -270,6 +277,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
             applyTopologyChangeOperation(persistedClusterTopology.getTopology());
           });
     } else {
+      observer.failed();
       // Retry after a delay. The failure is most likely due to timeouts such
       // as when joining a raft partition.
       logAndScheduleRetry(operation, error);

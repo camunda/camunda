@@ -17,9 +17,11 @@ import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
+import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -90,6 +92,11 @@ final class ScaleDownBrokersTest {
         .doesNotHaveBroker(brokerToShutdownId);
 
     // Changes are reflected in the topology returned by grpc query
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                TopologyAssert.assertThat(zeebeClient.newTopologyRequest().send().join())
+                    .hasLeaderForPartition(3, 0));
     cluster.awaitCompleteTopology(newClusterSize, PARTITIONS_COUNT, 1, Duration.ofSeconds(20));
 
     assertThatAllJobsCanBeCompleted(createdInstances, zeebeClient, JOB_TYPE);
@@ -121,6 +128,12 @@ final class ScaleDownBrokersTest {
         .doesNotHaveBroker(brokerToShutdownId);
 
     // Changes are reflected in the topology returned by grpc query
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                TopologyAssert.assertThat(zeebeClient.newTopologyRequest().send().join())
+                    .hasLeaderForPartition(3, 0)
+                    .hasLeaderForPartition(2, 0));
     cluster.awaitCompleteTopology(newClusterSize, PARTITIONS_COUNT, 1, Duration.ofSeconds(20));
 
     assertThatAllJobsCanBeCompleted(createdInstances, zeebeClient, JOB_TYPE);
