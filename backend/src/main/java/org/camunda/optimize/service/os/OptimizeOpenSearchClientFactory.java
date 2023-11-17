@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.jodah.failsafe.RetryPolicy;
 import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -25,7 +24,6 @@ import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.ssl.TrustStrategy;
-import org.camunda.optimize.plugin.OpenSearchCustomHeaderProvider;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.RequestOptionsProvider;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -37,7 +35,6 @@ import org.camunda.optimize.service.util.configuration.elasticsearch.DatabaseCon
 import org.elasticsearch.client.RequestOptions;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.transport.OpenSearchTransport;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.springframework.context.annotation.Conditional;
@@ -56,7 +53,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
-import java.time.Duration;
+import java.util.Collections;
 
 import static org.camunda.optimize.service.util.DatabaseVersionChecker.checkOSVersionSupport;
 
@@ -66,14 +63,14 @@ import static org.camunda.optimize.service.util.DatabaseVersionChecker.checkOSVe
 public class OptimizeOpenSearchClientFactory {
 
   public static OptimizeOpenSearchClient create(final ConfigurationService configurationService,
-                                                   final OptimizeIndexNameService optimizeIndexNameService,
-                                                   final OpenSearchSchemaManager openSearchSchemaManager,
-                                                   final OpenSearchCustomHeaderProvider opensearchCustomHeaderProvider,
-                                                   final BackoffCalculator backoffCalculator) throws IOException {
+                                                final OptimizeIndexNameService optimizeIndexNameService,
+                                                final OpenSearchSchemaManager openSearchSchemaManager,
+                                                final BackoffCalculator backoffCalculator) throws IOException {
 
     log.info("Creating OpenSearch connection...");
+    // TODO Evaluate the need for OpenSearchCustomHeaderProvider with OPT-7400
     final RequestOptionsProvider requestOptionsProvider =
-      new RequestOptionsProvider(opensearchCustomHeaderProvider.getPlugins(), configurationService);
+      new RequestOptionsProvider(Collections.emptyList(), configurationService);
     final HttpHost host = getHttpHost(configurationService.getOpenSearchConfiguration().getFirstConnectionNode());
     final ApacheHttpClient5TransportBuilder builder =
       ApacheHttpClient5TransportBuilder.builder(host);
@@ -100,7 +97,7 @@ public class OptimizeOpenSearchClientFactory {
 
     OptimizeOpenSearchClient osClient =  new OptimizeOpenSearchClient(openSearchClient, optimizeIndexNameService,
                                                                       requestOptionsProvider);
-    // openSearchSchemaManager.validateExistingSchemaVersion(prefixedClient); // TODO will be implemented with OPT-7229
+    openSearchSchemaManager.validateExistingSchemaVersion(osClient);
     openSearchSchemaManager.initializeSchema(osClient);
 
     return osClient;
@@ -179,7 +176,7 @@ public class OptimizeOpenSearchClientFactory {
     try {
       final ClientTlsStrategyBuilder tlsStrategyBuilder = ClientTlsStrategyBuilder.create();
       tlsStrategyBuilder.setSslContext(getSSLContext(configurationService));
-      if (configurationService.getOpenSearchConfiguration().getSkipHostnameVerification()) {
+      if (Boolean.TRUE.equals(configurationService.getOpenSearchConfiguration().getSkipHostnameVerification())) {
         tlsStrategyBuilder.setHostnameVerifier(NoopHostnameVerifier.INSTANCE);
       }
 
@@ -199,8 +196,8 @@ public class OptimizeOpenSearchClientFactory {
     throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException {
     final KeyStore truststore = loadCustomTrustStore(configurationService);
     final TrustStrategy trustStrategy =
-      configurationService.getOpenSearchConfiguration()
-        .getSecuritySslSelfSigned() ? new TrustSelfSignedStrategy() : null; // default;
+      Boolean.TRUE.equals(configurationService.getOpenSearchConfiguration()
+        .getSecuritySslSelfSigned()) ? new TrustSelfSignedStrategy() : null;
     if (truststore.size() > 0) {
       return SSLContexts.custom().loadTrustMaterial(truststore, trustStrategy).build();
     } else {
@@ -271,25 +268,4 @@ public class OptimizeOpenSearchClientFactory {
     return builder;
   }
 
-  private RetryPolicy<Boolean> getConnectionRetryPolicy(ConfigurationService configurationService) {
-    final String logMessage = String.format(
-      "connect to OpenSearch at %s",
-      configurationService.getOpenSearchConfiguration().getFirstConnectionNode().getHost()
-    );
-    return new RetryPolicy<Boolean>()
-      .handle(IOException.class, OpenSearchException.class)
-      .withDelay(Duration.ofSeconds(3))
-      .withMaxAttempts(50)
-      .onRetry(
-        e ->
-          log.info(
-            "Retrying #{} {} due to {}",
-            e.getAttemptCount(),
-            logMessage,
-            e.getLastFailure()
-          ))
-      .onAbort(e -> log.error("Abort {} by {}", logMessage, e.getFailure()))
-      .onRetriesExceeded(
-        e -> log.error("Retries {} exceeded for {}", e.getAttemptCount(), logMessage));
-  }
 }

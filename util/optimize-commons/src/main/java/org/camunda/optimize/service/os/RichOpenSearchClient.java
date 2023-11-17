@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.os;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.os.client.async.OpenSearchAsyncDocumentOperations;
@@ -27,19 +28,19 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class RichOpenSearchClient {
+
+  @Getter
   private final OptimizeIndexNameService indexNameService;
 
   // TODO slash unused operations with OPT-7352
-  protected final OpenSearchClient openSearchClient;
-  protected final OpenSearchClusterOperations openSearchClusterOperations;
-  protected final OpenSearchDocumentOperations openSearchDocumentOperations;
-  protected final OpenSearchIndexOperations openSearchIndexOperations;
-  protected final OpenSearchPipelineOperations openSearchPipelineOperations;
-  protected final OpenSearchTaskOperations openSearchTaskOperations;
-  protected final OpenSearchTemplateOperations openSearchTemplateOperations;
+  private final OpenSearchClusterOperations openSearchClusterOperations;
+  private final OpenSearchDocumentOperations openSearchDocumentOperations;
+  private final OpenSearchIndexOperations openSearchIndexOperations;
+  private final OpenSearchPipelineOperations openSearchPipelineOperations;
+  private final OpenSearchTaskOperations openSearchTaskOperations;
+  private final OpenSearchTemplateOperations openSearchTemplateOperations;
 
   public RichOpenSearchClient(OpenSearchClient openSearchClient, OptimizeIndexNameService indexNameService) {
-    this.openSearchClient = openSearchClient;
     this.indexNameService = indexNameService;
     openSearchClusterOperations = new OpenSearchClusterOperations(openSearchClient, indexNameService);
     openSearchDocumentOperations = new OpenSearchDocumentOperations(openSearchClient, indexNameService);

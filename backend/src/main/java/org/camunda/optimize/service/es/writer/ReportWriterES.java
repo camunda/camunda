@@ -21,6 +21,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionUpdateDto;
+import org.camunda.optimize.service.db.writer.DatabaseWriterUtil;
 import org.camunda.optimize.service.db.writer.ReportWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -342,7 +343,7 @@ public class ReportWriterES implements ReportWriter {
   private void updateReport(ReportDefinitionUpdateDto updatedReport, String indexName) {
     log.debug("Updating report with id [{}] in Elasticsearch", updatedReport.getId());
     try {
-      final Map<String, Object> updateParams = ElasticsearchWriterUtil.createFieldUpdateScriptParams(
+      final Map<String, Object> updateParams = DatabaseWriterUtil.createFieldUpdateScriptParams(
         UPDATABLE_FIELDS,
         updatedReport,
         objectMapper
@@ -350,7 +351,7 @@ public class ReportWriterES implements ReportWriter {
       // We always update the description, even if the new value is null
       updateParams.put(DESCRIPTION, updatedReport.getDescription());
       final Script updateScript = createDefaultScriptWithPrimitiveParams(
-        ElasticsearchWriterUtil.createUpdateFieldsScript(updateParams.keySet()),
+        DatabaseWriterUtil.createUpdateFieldsScript(updateParams.keySet()),
         updateParams
       );
       final UpdateRequest request =

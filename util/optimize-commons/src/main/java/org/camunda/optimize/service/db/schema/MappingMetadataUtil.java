@@ -78,7 +78,7 @@ public class MappingMetadataUtil {
     final Map<String, Set<String>> aliases;
     final String prefix = eventBased ? EVENT_PROCESS_INSTANCE_INDEX_PREFIX : PROCESS_INSTANCE_INDEX_PREFIX;
     try {
-      aliases = dbClient.getAliasesForIndex(prefix + "*");
+      aliases = dbClient.getAliasesForIndexPattern(prefix + "*");
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Failed retrieving aliases for dynamic index prefix " + prefix, e);
     }

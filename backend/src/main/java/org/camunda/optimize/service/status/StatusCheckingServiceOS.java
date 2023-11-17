@@ -51,7 +51,7 @@ public class StatusCheckingServiceOS extends StatusCheckingService {
       .get(
         () -> {
           final HealthResponse clusterHealthResponse =
-            osClient.getDatabaseClient().cluster().health(new HealthRequest.Builder().build());
+            osClient.getOpenSearchClient().cluster().health(new HealthRequest.Builder().build());
           return clusterHealthResponse.status() != HealthStatus.Red;
         });
   }

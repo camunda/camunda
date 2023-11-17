@@ -149,9 +149,13 @@ public interface QueryDSL {
   }
 
   static Script script(String script, Map<String, Object> params) {
+    return scriptFromJsonData(script, jsonParams(params));
+  }
+
+  static Script scriptFromJsonData(String script, Map<String, JsonData> params) {
     return new Script.Builder().inline(b -> b
       .source(script)
-      .params(jsonParams(params))
+      .params(params)
       .lang(DEFAULT_SCRIPT_LANG)
     ).build();
   }

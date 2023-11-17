@@ -16,9 +16,14 @@ import java.util.Set;
 
 public abstract class DatabaseClient implements ConfigurationReloadable {
 
-  protected static final int DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY = 30;
-
-  public abstract Map<String, Set<String>> getAliasesForIndex(final String indexName) throws IOException;
+  /**
+   * Get all the aliases for the indexes matching the indexNamePattern
+   * @param indexNamePattern Pattern for the name of an index, may contain wildcards
+   * @return A Map where the keys are the name of the matching indexes and the value is a set containing the aliases
+   * for the respective index. This map can have multiple keys because indexNamePattern may contain wildcards
+   * @throws IOException
+   */
+  public abstract Map<String, Set<String>> getAliasesForIndexPattern(final String indexNamePattern) throws IOException;
 
   public abstract Set<String> getAllIndicesForAlias(final String aliasName) throws IOException;
 

@@ -48,7 +48,7 @@ public class EventIndexRolloverService extends AbstractIndexRolloverService {
 
   @SneakyThrows
   private Set<String> getCamundaActivityEventsIndexAliases() {
-    return databaseClient.getAliasesForIndex(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*")
+    return databaseClient.getAliasesForIndexPattern(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*")
       .values()
       .stream()
       .flatMap(Set::stream)

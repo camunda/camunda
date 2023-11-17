@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
-import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.schema.DatabaseMetadataService;
 import org.camunda.optimize.service.db.schema.index.MetadataIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -58,7 +57,7 @@ public class OpenSearchMetadataService extends DatabaseMetadataService<OptimizeO
                                           final ScriptData updateScript) {
 
     readMetadata(osClient).ifPresentOrElse(metadataDto -> {
-      if(StringUtils.isBlank(metadataDto.getInstallationId())) {
+      if (StringUtils.isBlank(metadataDto.getInstallationId())) {
         final UpdateRequest.Builder<Void, Void> updateRequestBuilder =
           RequestDSL.<Void, Void>updateRequestBuilder(METADATA_INDEX_NAME)
             .id(MetadataIndex.ID)

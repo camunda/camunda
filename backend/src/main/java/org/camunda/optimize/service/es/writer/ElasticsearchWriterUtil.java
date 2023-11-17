@@ -5,13 +5,13 @@
  */
 package org.camunda.optimize.service.es.writer;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.methods.HttpGet;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
+import org.camunda.optimize.service.db.writer.DatabaseWriterUtil;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.BackoffCalculator;
@@ -32,31 +32,30 @@ import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
+import org.opensearch.client.json.JsonData;
 
 import java.io.IOException;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.TemporalAccessor;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.service.db.writer.DatabaseWriterUtil.createFieldUpdateScriptParams;
+import static org.camunda.optimize.service.db.writer.DatabaseWriterUtil.createUpdateFieldsScript;
+import static org.camunda.optimize.service.db.writer.DatabaseWriterUtil.dateTimeFormatter;
+import static org.camunda.optimize.service.db.writer.DatabaseWriterUtil.mapParamsForScriptCreation;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ElasticsearchWriterUtil {
 
   private static final String TASKS_ENDPOINT = "_tasks";
-  private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
   private static final String NESTED_DOC_LIMIT_MESSAGE = "The number of nested documents has exceeded the allowed " +
     "limit of";
 
@@ -65,28 +64,9 @@ public class ElasticsearchWriterUtil {
                                                final ObjectMapper objectMapper) {
     final Map<String, Object> params = createFieldUpdateScriptParams(fields, entityDto, objectMapper);
     return createDefaultScriptWithPrimitiveParams(
-      ElasticsearchWriterUtil.createUpdateFieldsScript(params.keySet()),
+      createUpdateFieldsScript(params.keySet()),
       params
     );
-  }
-
-  public static Map<String, Object> createFieldUpdateScriptParams(final Set<String> fields,
-                                                                  final Object entityDto,
-                                                                  final ObjectMapper objectMapper) {
-    Map<String, Object> entityAsMap =
-      objectMapper.convertValue(entityDto, new TypeReference<>() {
-      });
-    final Map<String, Object> params = new HashMap<>();
-    for (String fieldName : fields) {
-      Object fieldValue = entityAsMap.get(fieldName);
-      if (fieldValue != null) {
-        if (fieldValue instanceof TemporalAccessor) {
-          fieldValue = dateTimeFormatter.format((TemporalAccessor) fieldValue);
-        }
-        params.put(fieldName, fieldValue);
-      }
-    }
-    return params;
   }
 
   public static Script createDefaultScriptWithPrimitiveParams(final String inlineUpdateScript,
@@ -106,7 +86,7 @@ public class ElasticsearchWriterUtil {
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
       inlineUpdateScript,
-      mapParamsForScriptCreation(params, objectMapper)
+      DatabaseWriterUtil.mapParamsForScriptCreation(params, objectMapper)
     );
   }
 
@@ -117,13 +97,6 @@ public class ElasticsearchWriterUtil {
       inlineUpdateScript,
       Collections.emptyMap()
     );
-  }
-
-  static String createUpdateFieldsScript(final Set<String> fieldKeys) {
-    return fieldKeys
-      .stream()
-      .map(fieldKey -> String.format("%s.%s = params.%s;%n", "ctx._source", fieldKey, fieldKey))
-      .collect(Collectors.joining());
   }
 
   public static void executeImportRequestsAsBulk(String bulkRequestName, List<ImportRequestDto> importRequestDtos,
@@ -360,20 +333,6 @@ public class ElasticsearchWriterUtil {
         "See Optimize documentation for details.";
     }
     return "";
-  }
-
-  private static Map<String, Object> mapParamsForScriptCreation(final Map<String, Object> parameters,
-                                                                final ObjectMapper objectMapper) {
-    return Optional.ofNullable(parameters)
-      // this conversion seems redundant but it's not
-      // in case the values are specific dto objects this ensures they get converted to generic objects
-      // that the elasticsearch client is happy to serialize while it complains on specific DTO's
-      .map(value -> objectMapper.convertValue(
-        value,
-        new TypeReference<Map<String, Object>>() {
-        }
-      ))
-      .orElse(Collections.emptyMap());
   }
 
   public static void waitUntilTaskIsFinished(final OptimizeElasticsearchClient esClient,

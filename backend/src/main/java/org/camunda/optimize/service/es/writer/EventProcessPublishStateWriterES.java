@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessPublishStateDto;
 import org.camunda.optimize.service.db.schema.index.events.EventProcessPublishStateIndex;
+import org.camunda.optimize.service.db.writer.DatabaseWriterUtil;
 import org.camunda.optimize.service.db.writer.EventProcessPublishStateWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -140,7 +141,7 @@ public class EventProcessPublishStateWriterES implements EventProcessPublishStat
       updateItem
     );
     final Script updateScript = createDefaultScriptWithPrimitiveParams(
-      ElasticsearchWriterUtil.createUpdateFieldsScript(
+      DatabaseWriterUtil.createUpdateFieldsScript(
         ImmutableSet.of(EsEventProcessPublishStateDto.Fields.deleted)
       ),
       ImmutableMap.of(EsEventProcessPublishStateDto.Fields.deleted, true)
@@ -170,7 +171,7 @@ public class EventProcessPublishStateWriterES implements EventProcessPublishStat
       publishStateIdToExclude
     );
     final Script updateScript = createDefaultScriptWithPrimitiveParams(
-      ElasticsearchWriterUtil.createUpdateFieldsScript(
+      DatabaseWriterUtil.createUpdateFieldsScript(
         ImmutableSet.of(EsEventProcessPublishStateDto.Fields.deleted)
       ),
       ImmutableMap.of(EsEventProcessPublishStateDto.Fields.deleted, true)

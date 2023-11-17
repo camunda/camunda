@@ -135,4 +135,7 @@ public class DatabaseConstants {
   // Aggregation constants
   public static final String FREQUENCY_AGGREGATION = "_frequency";
 
+  // Units
+  public static final String GB_UNIT = "gb";
+
 }

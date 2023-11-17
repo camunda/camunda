@@ -19,7 +19,6 @@ import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.RequestOptionsProvider;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.ActionListener;
@@ -90,7 +89,6 @@ import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Conditional;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -112,7 +110,6 @@ import java.util.stream.Collectors;
  * as well as the {@link OptimizeIndexNameService}.
  */
 @Slf4j
-@Conditional(ElasticSearchCondition.class)
 public class OptimizeElasticsearchClient extends DatabaseClient {
 
   private static final int DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY = 30;
@@ -425,8 +422,8 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
         .get(() -> highLevelClient.indices().delete(new DeleteIndexRequest(indexNames), requestOptions()));
     } catch (FailsafeException failsafeException) {
       final Throwable cause = failsafeException.getCause();
-      if (cause instanceof ElasticsearchStatusException) {
-        throw (ElasticsearchStatusException) cause;
+      if (cause instanceof ElasticsearchStatusException elasticsearchStatusException) {
+        throw elasticsearchStatusException;
       } else {
         String errorMessage = String.format("Could not delete index [%s]!", indexNamesString);
         throw new OptimizeRuntimeException(errorMessage, cause);
@@ -468,8 +465,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   private RetryPolicy<Object> createSnapshotRetryPolicy(final String operation, final int delay) {
     return new RetryPolicy<>()
       .handleIf(failure -> {
-        if (failure instanceof ElasticsearchStatusException) {
-          final ElasticsearchStatusException statusException = (ElasticsearchStatusException) failure;
+        if (failure instanceof ElasticsearchStatusException statusException) {
           return statusException.status() == RestStatus.BAD_REQUEST
             && statusException.getMessage().contains("snapshot_in_progress_exception");
         } else {
@@ -493,9 +489,9 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   }
 
   @Override
-  public Map<String, Set<String>> getAliasesForIndex(final String indexName) throws IOException {
+  public Map<String, Set<String>> getAliasesForIndexPattern(final String indexNamePattern) throws IOException {
     final GetAliasesRequest getAliasesRequest = new GetAliasesRequest();
-    getAliasesRequest.indices(indexName);
+    getAliasesRequest.indices(indexNamePattern);
     final GetAliasesResponse aliases = getAlias(getAliasesRequest);
     return aliases.getAliases().entrySet().stream()
       .collect(Collectors.toMap(
@@ -541,8 +537,8 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     RolloverRequest requestWithPrefix = new RolloverRequest(
       indexNameService.getOptimizeIndexAliasForIndex(request.getAlias()), null);
     for (Condition<?> condition : request.getConditions().values()) {
-      if (condition instanceof MaxSizeCondition) {
-        requestWithPrefix.addMaxIndexSizeCondition(((MaxSizeCondition) condition).value());
+      if (condition instanceof MaxSizeCondition maxSizeCondition) {
+        requestWithPrefix.addMaxIndexSizeCondition(maxSizeCondition.value());
       } else {
         log.warn("Rollover condition not supported: {}", condition.name());
       }
