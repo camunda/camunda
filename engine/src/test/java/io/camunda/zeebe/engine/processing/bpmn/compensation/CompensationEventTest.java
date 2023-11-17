@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.bpmn.compensation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -83,6 +84,37 @@ public class CompensationEventTest {
         ENGINE
             .deployment()
             .withXmlClasspathResource("/compensation/compensation-throw-event-attribute-false.bpmn")
+            .expectRejection()
+            .deploy();
+
+    // then
+    assertThat(rejectedDeploy.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejectedDeploy.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+  }
+
+  @Test
+  public void shouldDeployCompensationEndEvent() {
+    ENGINE
+        .deployment()
+        .withXmlClasspathResource("/compensation/compensation-end-event.bpmn")
+        .deploy();
+
+    // when
+    ENGINE.processInstance().ofBpmnProcessId("compensation-process").create();
+
+    // then
+    assertThat(
+        RecordingExporter.processRecords().withBpmnProcessId("compensation-process").limit(1))
+        .extracting(Record::getIntent)
+        .contains(ProcessIntent.CREATED);
+  }
+
+  @Test
+  public void shouldNotDeployCompensationEndEventWithWaitForCompletionFalse() {
+    final var rejectedDeploy =
+        ENGINE
+            .deployment()
+            .withXmlClasspathResource("/compensation/compensation-end-event-attribute-false.bpmn")
             .expectRejection()
             .deploy();
 
