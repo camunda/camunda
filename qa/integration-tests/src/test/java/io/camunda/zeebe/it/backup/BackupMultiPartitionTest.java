@@ -42,6 +42,7 @@ import java.time.Duration;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -206,7 +207,7 @@ class BackupMultiPartitionTest {
     // when
     brokerIds.forEach(this::stopBrokerAndDeleteData);
     brokerIds.forEach(broker -> restoreBroker(backupId, broker));
-    brokerIds.forEach(b -> clusteringRule.getBroker(b).start());
+    brokerIds.forEach(b -> CompletableFuture.runAsync(() -> clusteringRule.getBroker(b).start()));
 
     clusteringRule.waitForTopology(
         topology -> topology.hasLeaderForEachPartition(clusteringRule.getPartitionCount()));

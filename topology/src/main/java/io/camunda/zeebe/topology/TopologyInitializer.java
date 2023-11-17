@@ -7,7 +7,10 @@
  */
 package io.camunda.zeebe.topology;
 
+import io.atomix.cluster.ClusterMembershipService;
+import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
+import io.atomix.utils.Version;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -18,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -79,6 +83,7 @@ public interface TopologyInitializer {
 
   /** Initialized topology from the locally persisted topology */
   class FileInitializer implements TopologyInitializer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FileInitializer.class);
 
     private final Path topologyFile;
     private final ClusterTopologySerializer serializer;
@@ -95,6 +100,8 @@ public interface TopologyInitializer {
           final var serializedTopology = Files.readAllBytes(topologyFile);
           if (serializedTopology.length > 0) {
             final var clusterTopology = serializer.decodeClusterTopology(serializedTopology);
+            LOGGER.debug(
+                "Initialized cluster topology '{}' from file '{}'", clusterTopology, topologyFile);
             return CompletableActorFuture.completed(clusterTopology);
           }
         }
@@ -136,6 +143,7 @@ public interface TopologyInitializer {
 
     @Override
     public ActorFuture<ClusterTopology> initialize() {
+      LOGGER.debug("Waiting for initial cluster topology via gossip.");
       topologyUpdateNotifier.addUpdateListener(this);
       if (persistedClusterTopology.isUninitialized()) {
         // When uninitialized, the member should gossip uninitialized topology so that the
@@ -272,6 +280,111 @@ public interface TopologyInitializer {
       } catch (final Exception e) {
         return CompletableActorFuture.completedExceptionally(e);
       }
+    }
+  }
+
+  /** Initializer that allows rolling update from 8.3.x to 8.4.x */
+  class RollingUpdateAwareInitializerV83ToV84 implements TopologyInitializer {
+    private static final Logger LOGGER =
+        LoggerFactory.getLogger(RollingUpdateAwareInitializerV83ToV84.class);
+    private static final Duration RETRY_DELAY = Duration.ofMillis(200);
+    private final ClusterMembershipService membershipService;
+    private final StaticInitializer staticInitializer;
+    private final int staticClusterSize;
+    private final ConcurrencyControl executor;
+    private final CompletableActorFuture<ClusterTopology> initializeFuture;
+
+    public RollingUpdateAwareInitializerV83ToV84(
+        final ClusterMembershipService membershipService,
+        final StaticConfiguration staticConfiguration,
+        final ConcurrencyControl executor) {
+      this.membershipService = membershipService;
+      staticInitializer = new StaticInitializer(staticConfiguration);
+      staticClusterSize = staticConfiguration.clusterMembers().size();
+      this.executor = executor;
+      initializeFuture = new CompletableActorFuture<>();
+    }
+
+    @Override
+    public ActorFuture<ClusterTopology> initialize() {
+      if (staticClusterSize == 1) {
+        // Cluster will be initialized via normal static initializer
+        initializeFuture.complete(ClusterTopology.uninitialized());
+        return initializeFuture;
+      }
+
+      final Version version = membershipService.getLocalMember().version();
+      if (isVersion84(version)) {
+        final boolean knowOtherMembers = hasOtherReachableBrokers(membershipService);
+        if (knowOtherMembers && isRollingUpdate(membershipService)) {
+          LOGGER.debug(
+              "Cluster is doing rolling update. Cannot initialize cluster topology via gossip. Initializing cluster topology from static configuration.");
+          staticInitializer.initialize().onComplete(initializeFuture);
+        } else if (!knowOtherMembers) {
+          LOGGER.debug(
+              "No other members are reachable. Cannot initialize topology. Will retry in {}",
+              RETRY_DELAY);
+          executor.schedule(RETRY_DELAY, this::initialize);
+        } else {
+          // do not initialize. It is not rolling update so initialize via gossip or sync
+          LOGGER.trace(
+              "Cluster is not doing rolling update. Will not initialize cluster topology.");
+          initializeFuture.complete(ClusterTopology.uninitialized());
+        }
+      } else {
+        LOGGER.trace("Cluster is not doing rolling update. Will not initialize cluster topology.");
+        initializeFuture.complete(ClusterTopology.uninitialized());
+      }
+      return initializeFuture;
+    }
+
+    private boolean hasOtherReachableBrokers(final ClusterMembershipService membershipService) {
+      return membershipService.getMembers().stream()
+          .filter(this::isBroker)
+          .map(Member::id)
+          .anyMatch(memberId -> !memberId.equals(membershipService.getLocalMember().id()));
+    }
+
+    private boolean isRollingUpdate(final ClusterMembershipService membershipService) {
+      final List<Member> otherBrokers =
+          membershipService.getMembers().stream()
+              .filter(this::isBroker)
+              .filter(member -> !member.id().equals(membershipService.getLocalMember().id()))
+              .toList();
+      final var cannotDetermineVersionOfOtherMembers =
+          otherBrokers.stream().map(Member::version).noneMatch(Objects::nonNull);
+      if (cannotDetermineVersionOfOtherMembers) {
+        // This is mainly required for testing, where the DiscoveryMembershipProvider cannot
+        // determine version of remote members.
+        LOGGER.warn(
+            "Cannot determine version of remote members. Assuming this is not rolling update and skip initialization.");
+        return false;
+      }
+      return otherBrokers.stream().map(Member::version).anyMatch(this::isVersion83);
+    }
+
+    private boolean isBroker(final Member member) {
+      try {
+        // hacky way to determine if the other member is a broker
+        return Integer.parseInt(member.id().id()) >= 0;
+      } catch (final NumberFormatException e) {
+        return false;
+      }
+    }
+
+    private boolean isVersion84(final Version version) {
+      if (version == null) {
+        // This is mainly required for testing, where the DiscoveryMembershipProvider cannot
+        // determine version of remote members.
+        LOGGER.warn(
+            "Cannot determine version of local member. Assuming this is not rolling update and skip initialization.");
+        return false;
+      }
+      return version.major() == 8 && version.minor() == 4;
+    }
+
+    private boolean isVersion83(final Version version) {
+      return version.major() == 8 && version.minor() == 3;
     }
   }
 }

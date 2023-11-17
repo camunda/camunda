@@ -53,7 +53,7 @@ public record FeatureFlags(
   private static final boolean ENABLE_DUE_DATE_CHECKER_ASYNC = false;
   private static final boolean ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR = true;
 
-  private static final boolean ENABLE_DYNAMIC_CLUSTER_TOPOLOGY = false;
+  private static final boolean ENABLE_DYNAMIC_CLUSTER_TOPOLOGY = true;
 
   public static FeatureFlags createDefault() {
     return new FeatureFlags(
@@ -78,7 +78,7 @@ public record FeatureFlags(
         true, /* ENABLE_MSG_TTL_CHECKER_ASYNC */
         true, /* ENABLE_DUE_DATE_CHECKER_ASYNC */
         true, /* ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR */
-        false /* ENABLE_DYNAMIC_CLUSTER_TOPOLOGY */
+        true /* ENABLE_DYNAMIC_CLUSTER_TOPOLOGY */
         /*, FOO_DEFAULT*/ );
   }
 

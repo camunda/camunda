@@ -41,6 +41,18 @@ public final class Version implements Comparable<Version> {
     this.build = Build.from(build).toString();
   }
 
+  public int major() {
+    return major;
+  }
+
+  public int minor() {
+    return minor;
+  }
+
+  public int patch() {
+    return patch;
+  }
+
   /**
    * Returns a new version from the given version string.
    *

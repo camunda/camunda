@@ -42,6 +42,8 @@ import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOp
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.util.Either;
+import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
@@ -332,10 +334,14 @@ public class ClusterEndpoint {
                 new BrokerState()
                     .id(Integer.parseInt(entry.getKey().id()))
                     .state(mapBrokerState(entry.getValue().state()))
-                    .lastUpdatedAt(entry.getValue().lastUpdated().atOffset(ZoneOffset.UTC))
+                    .lastUpdatedAt(mapInstantToDateTime(entry.getValue().lastUpdated()))
                     .version(entry.getValue().version())
                     .partitions(mapPartitionStates(entry.getValue().partitions())))
         .toList();
+  }
+
+  private static OffsetDateTime mapInstantToDateTime(final Instant timestamp) {
+    return timestamp.equals(Instant.MIN) ? OffsetDateTime.MIN : timestamp.atOffset(ZoneOffset.UTC);
   }
 
   private static BrokerStateCode mapBrokerState(final MemberState.State state) {
@@ -391,8 +397,8 @@ public class ClusterEndpoint {
     return new TopologyChange()
         .id(completedChange.id())
         .status(mapChangeStatus(completedChange.status()))
-        .startedAt(completedChange.startedAt().atOffset(ZoneOffset.UTC))
-        .completedAt(completedChange.completedAt().atOffset(ZoneOffset.UTC));
+        .startedAt(mapInstantToDateTime(completedChange.startedAt()))
+        .completedAt(mapInstantToDateTime(completedChange.completedAt()));
   }
 
   private static TopologyChange mapOngoingChange(final ClusterChangePlan clusterChangePlan) {
@@ -444,7 +450,7 @@ public class ClusterEndpoint {
               .priority(reconfigure.priority());
         };
 
-    mappedOperation.completedAt(operation.completedAt().atOffset(ZoneOffset.UTC));
+    mappedOperation.completedAt(mapInstantToDateTime(operation.completedAt()));
 
     return mappedOperation;
   }
