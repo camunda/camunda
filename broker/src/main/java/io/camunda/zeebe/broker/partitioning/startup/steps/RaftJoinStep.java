@@ -27,12 +27,14 @@ public class RaftJoinStep implements StartupStep<PartitionStartupContext> {
             .raftPartitionFactory()
             .createRaftPartition(context.partitionMetadata(), context.partitionDirectory());
 
+    // Immediately save the partition to the context, so that it can be closed in case of an error.
+    context.raftPartition(partition);
+
     partition
         .join(context.partitionManagementService(), context.snapshotStore())
         .whenComplete(
             (raftPartition, throwable) -> {
               if (throwable == null) {
-                context.raftPartition(raftPartition);
                 result.complete(context);
               } else {
                 result.completeExceptionally(throwable);

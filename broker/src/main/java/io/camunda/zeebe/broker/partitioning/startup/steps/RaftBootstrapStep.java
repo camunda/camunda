@@ -27,12 +27,14 @@ public final class RaftBootstrapStep implements StartupStep<PartitionStartupCont
             .raftPartitionFactory()
             .createRaftPartition(context.partitionMetadata(), context.partitionDirectory());
 
+    // Immediately save the partition to the context, so that it can be closed in case of an error.
+    context.raftPartition(partition);
+
     partition
         .bootstrap(context.partitionManagementService(), context.snapshotStore())
         .whenComplete(
             (raftPartition, throwable) -> {
               if (throwable == null) {
-                context.raftPartition(raftPartition);
                 result.complete(context);
               } else {
                 result.completeExceptionally(throwable);
