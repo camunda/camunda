@@ -56,7 +56,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.agrona.Strings;
 
-public final class ProcessInstanceModificationProcessor
+public final class ProcessInstanceModificationModifyProcessor
     implements TypedRecordProcessor<ProcessInstanceModificationRecord> {
 
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
@@ -148,7 +148,7 @@ public final class ProcessInstanceModificationProcessor
   private final ElementActivationBehavior elementActivationBehavior;
   private final VariableBehavior variableBehavior;
 
-  public ProcessInstanceModificationProcessor(
+  public ProcessInstanceModificationModifyProcessor(
       final Writers writers,
       final ElementInstanceState elementInstanceState,
       final ProcessState processState,

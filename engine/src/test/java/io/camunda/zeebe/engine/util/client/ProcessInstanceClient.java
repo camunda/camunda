@@ -13,6 +13,8 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
@@ -22,9 +24,11 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -269,6 +273,10 @@ public final class ProcessInstanceClient {
     public ProcessInstanceModificationClient modification() {
       return new ProcessInstanceModificationClient(writer, processInstanceKey, authorizedTenants);
     }
+
+    public ProcessInstanceMigrationClient migration() {
+      return new ProcessInstanceMigrationClient(writer, processInstanceKey, authorizedTenants);
+    }
   }
 
   public static class ProcessInstanceModificationClient {
@@ -482,6 +490,115 @@ public final class ProcessInstanceClient {
                 .setVariables(variables);
         activateInstruction.addVariableInstruction(variableInstruction);
         return this;
+      }
+    }
+  }
+
+  public static class ProcessInstanceMigrationClient {
+
+    private static final Function<Long, Record<ProcessInstanceMigrationRecordValue>>
+        SUCCESS_EXPECTATION =
+            (position) ->
+                RecordingExporter.processInstanceMigrationRecords()
+                    .withIntent(ProcessInstanceMigrationIntent.MIGRATED)
+                    .withSourceRecordPosition(position)
+                    .getFirst();
+
+    private static final Function<Long, Record<ProcessInstanceMigrationRecordValue>>
+        REJECTION_EXPECTATION =
+            (processInstanceKey) ->
+                RecordingExporter.processInstanceMigrationRecords()
+                    .onlyCommandRejections()
+                    .withIntent(ProcessInstanceMigrationIntent.MIGRATE)
+                    .withRecordKey(processInstanceKey)
+                    .withProcessInstanceKey(processInstanceKey)
+                    .getFirst();
+
+    private Function<Long, Record<ProcessInstanceMigrationRecordValue>> expectation =
+        SUCCESS_EXPECTATION;
+
+    private final CommandWriter writer;
+    private final long processInstanceKey;
+    private final ProcessInstanceMigrationRecord record;
+    private final List<ProcessInstanceMigrationMappingInstruction> mappingInstructions;
+    private String[] authorizedTenants;
+
+    public ProcessInstanceMigrationClient(
+        final CommandWriter writer,
+        final long processInstanceKey,
+        final String[] authorizedTenants) {
+      this.writer = writer;
+      this.processInstanceKey = processInstanceKey;
+      this.authorizedTenants = authorizedTenants;
+      record = new ProcessInstanceMigrationRecord();
+      mappingInstructions = new ArrayList<>();
+    }
+
+    /**
+     * Set the target process definition key.
+     *
+     * @param processDefinitionKey The process definition key of the target process
+     * @return this client builder for chaining
+     */
+    public ProcessInstanceMigrationClient withTargetProcessDefinitionKey(
+        final long processDefinitionKey) {
+      record.setTargetProcessDefinitionKey(processDefinitionKey);
+      return this;
+    }
+
+    /**
+     * Add a mapping instruction. Can be chained to add multiple instructions.
+     *
+     * @param sourceElementId The element id of the source element
+     * @param targetElementId The element id of the target element
+     * @return this client builder for chaining
+     */
+    public ProcessInstanceMigrationClient addMappingInstruction(
+        final String sourceElementId, final String targetElementId) {
+      final var mappingInstruction =
+          new ProcessInstanceMigrationMappingInstruction()
+              .setSourceElementId(sourceElementId)
+              .setTargetElementId(targetElementId);
+      mappingInstructions.add(mappingInstruction);
+      return this;
+    }
+
+    public ProcessInstanceMigrationClient forAuthorizedTenants(final String... authorizedTenants) {
+      this.authorizedTenants = authorizedTenants;
+      return this;
+    }
+
+    /**
+     * Expect the migration to be rejected. Fails the test if the migration is not rejected.
+     *
+     * @return this client builder for chaining
+     */
+    public ProcessInstanceMigrationClient expectRejection() {
+      expectation = REJECTION_EXPECTATION;
+      return this;
+    }
+
+    /**
+     * Migrate the process instance. Awaits the defined expectation. Fails the test if the
+     * expectation is not met.
+     *
+     * @return the resulting record of the migration
+     */
+    public Record<ProcessInstanceMigrationRecordValue> migrate() {
+      record.setProcessInstanceKey(processInstanceKey);
+      mappingInstructions.forEach(record::addMappingInstruction);
+
+      final var position =
+          writer.writeCommand(
+              processInstanceKey,
+              ProcessInstanceMigrationIntent.MIGRATE,
+              record,
+              authorizedTenants);
+
+      if (expectation == REJECTION_EXPECTATION) {
+        return expectation.apply(processInstanceKey);
+      } else {
+        return expectation.apply(position);
       }
     }
   }

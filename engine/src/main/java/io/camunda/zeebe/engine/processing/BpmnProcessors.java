@@ -20,7 +20,8 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchTe
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCancelProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateWithResultProcessor;
-import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationMigrateProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationModifyProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -39,6 +40,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
@@ -47,9 +49,9 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
-public final class ProcessEventProcessors {
+public final class BpmnProcessors {
 
-  public static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
+  public static TypedRecordProcessor<ProcessInstanceRecord> addBpmnStreamProcessor(
       final MutableProcessingState processingState,
       final Supplier<ScheduledTaskState> scheduledTaskState,
       final BpmnBehaviors bpmnBehaviors,
@@ -89,6 +91,7 @@ public final class ProcessEventProcessors {
         typedRecordProcessors, processingState, writers, bpmnBehaviors, processEngineMetrics);
     addProcessInstanceModificationStreamProcessors(
         typedRecordProcessors, processingState, writers, bpmnBehaviors);
+    addProcessInstanceMigrationStreamProcessors(typedRecordProcessors, writers);
     addProcessInstanceBatchStreamProcessors(typedRecordProcessors, processingState, writers);
 
     return bpmnStreamProcessor;
@@ -209,8 +212,8 @@ public final class ProcessEventProcessors {
       final ProcessingState processingState,
       final Writers writers,
       final BpmnBehaviors bpmnBehaviors) {
-    final ProcessInstanceModificationProcessor modificationProcessor =
-        new ProcessInstanceModificationProcessor(
+    final ProcessInstanceModificationModifyProcessor modificationProcessor =
+        new ProcessInstanceModificationModifyProcessor(
             writers,
             processingState.getElementInstanceState(),
             processingState.getProcessState(),
@@ -219,6 +222,14 @@ public final class ProcessEventProcessors {
         ValueType.PROCESS_INSTANCE_MODIFICATION,
         ProcessInstanceModificationIntent.MODIFY,
         modificationProcessor);
+  }
+
+  private static void addProcessInstanceMigrationStreamProcessors(
+      final TypedRecordProcessors typedRecordProcessors, final Writers writers) {
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_INSTANCE_MIGRATION,
+        ProcessInstanceMigrationIntent.MIGRATE,
+        new ProcessInstanceMigrationMigrateProcessor(writers));
   }
 
   private static void addProcessInstanceBatchStreamProcessors(
