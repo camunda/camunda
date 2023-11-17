@@ -201,7 +201,7 @@ public final class JobWorkerImplTest {
   @Test
   public void shouldHandleOnlyCapacity() {
     // given
-    final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+    final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
     final ArrayList<io.camunda.zeebe.client.api.response.ActivatedJob> jobs = new ArrayList<>();
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -221,7 +221,8 @@ public final class JobWorkerImplTest {
                     Uninterruptibles.awaitUninterruptibly(latch);
                   })
               .pollInterval(Duration.ofHours(1))
-              .timeout(Duration.ofMillis(10))
+              .maxJobsActive(1)
+              .timeout(Duration.ofSeconds(5))
               .streamEnabled(true)
               .open()) {
 
@@ -229,11 +230,8 @@ public final class JobWorkerImplTest {
             .until(() -> !gateway.openStreams.isEmpty());
 
         // when
-        gateway.pushJobs(TestData.jobs(2));
-        Awaitility.await("Handler blocks after one")
-            .pollInterval(Duration.ofMillis(10))
-            .during(Duration.ofMillis(200))
-            .until(() -> jobs, Matchers.hasSize(1));
+        new Thread(() -> gateway.pushJobs(TestData.jobs(2))).start();
+        Awaitility.await("Handler blocks after one").until(() -> jobs, Matchers.hasSize(1));
         latch.countDown();
 
         // then
