@@ -13,9 +13,6 @@ import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.FlowNodeInstanceDao;
 import io.camunda.operate.webapp.api.v1.entities.FlowNodeInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
-import io.camunda.operate.webapp.api.v1.exceptions.APIException;
-import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
-import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
 import org.opensearch.client.opensearch.core.SearchRequest;
@@ -28,7 +25,7 @@ import java.util.List;
 
 @Conditional(OpensearchCondition.class)
 @Component
-public class OpensearchFlowNodeInstanceDao extends OpensearchDao<FlowNodeInstance> implements FlowNodeInstanceDao {
+public class OpensearchFlowNodeInstanceDao extends OpensearchKeyFilteringDao<FlowNodeInstance> implements FlowNodeInstanceDao {
 
   private final FlowNodeInstanceTemplate flowNodeInstanceIndex;
   private final ProcessCache processCache;
@@ -42,20 +39,23 @@ public class OpensearchFlowNodeInstanceDao extends OpensearchDao<FlowNodeInstanc
   }
 
   @Override
-  public FlowNodeInstance byKey(Long key) throws APIException {
-    List<FlowNodeInstance> flowNodeInstances;
-    try {
-      flowNodeInstances = search(new Query<FlowNodeInstance>().setFilter(new FlowNodeInstance().setKey(key))).getItems();
-    } catch (Exception e) {
-      throw new ServerException(String.format("Error in reading flownode instance for key %s", key), e);
-    }
-    if (flowNodeInstances.isEmpty()) {
-      throw new ResourceNotFoundException(String.format("No flownode instance found for key %s ", key));
-    }
-    if (flowNodeInstances.size() > 1) {
-      throw new ServerException(String.format("Found more than one flownode instances for key %s", key));
-    }
-    return flowNodeInstances.get(0);
+  protected String getKeyFieldName() {
+    return FlowNodeInstance.KEY;
+  }
+
+  @Override
+  protected String getByKeyServerReadErrorMessage(Long key) {
+    return String.format("Error in reading flownode instance for key %s", key);
+  }
+
+  @Override
+  protected String getByKeyNoResultsErrorMessage(Long key) {
+    return String.format("No flownode instance found for key %s", key);
+  }
+
+  @Override
+  protected String getByKeyTooManyResultsErrorMessage(Long key) {
+    return String.format("Found more than one flownode instances for key %s", key);
   }
 
   @Override
@@ -129,5 +129,18 @@ public class OpensearchFlowNodeInstanceDao extends OpensearchDao<FlowNodeInstanc
       item.setFlowNodeName(flowNodeName);
     }
     return item;
+  }
+
+  @Override
+  protected List<FlowNodeInstance> searchByKey(Long key) {
+    List<FlowNodeInstance> results = super.searchByKey(key);
+
+    results.forEach(node -> {
+      String flowNodeName = processCache.getFlowNodeNameOrDefaultValue(node.getProcessDefinitionKey(),
+          node.getFlowNodeId(), null);
+      node.setFlowNodeName(flowNodeName);
+    });
+
+    return results;
   }
 }

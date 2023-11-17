@@ -27,7 +27,7 @@ import java.util.Map;
 
 @Conditional(OpensearchCondition.class)
 @Component
-public class OpensearchProcessDefinitionDao extends OpensearchDao<ProcessDefinition> implements ProcessDefinitionDao {
+public class OpensearchProcessDefinitionDao extends OpensearchKeyFilteringDao<ProcessDefinition> implements ProcessDefinitionDao {
 
   private final ProcessIndex processIndex;
   public OpensearchProcessDefinitionDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
@@ -37,24 +37,28 @@ public class OpensearchProcessDefinitionDao extends OpensearchDao<ProcessDefinit
   }
 
   @Override
-  public ProcessDefinition byKey(Long key) throws APIException {
-    validateKey(key);
-    var request = requestDSLWrapper.searchRequestBuilder(processIndex.getAlias())
-        .query(queryDSLWrapper.withTenantCheck(queryDSLWrapper.term(ProcessIndex.KEY, key)));
+  protected String getKeyFieldName() {
+    return ProcessIndex.KEY;
+  }
 
-    List<ProcessDefinition> processDefinitions;
-    try {
-      processDefinitions = richOpenSearchClient.doc().searchValues(request, ProcessDefinition.class);
-    } catch (Exception e) {
-      throw new ServerException(String.format("Error in reading process definition for key %s", key), e);
-    }
-    if (processDefinitions.isEmpty()) {
-      throw new ResourceNotFoundException(String.format("No process definition found for key %s ", key));
-    }
-    if (processDefinitions.size() > 1) {
-      throw new ServerException(String.format("Found more than one process definition for key %s", key));
-    }
-    return processDefinitions.get(0);
+  @Override
+  protected String getByKeyServerReadErrorMessage(Long key) {
+    return String.format("Error in reading process definition for key %s", key);
+  }
+
+  @Override
+  protected String getByKeyNoResultsErrorMessage(Long key) {
+    return String.format("No process definition found for key %s", key);
+  }
+
+  @Override
+  protected String getByKeyTooManyResultsErrorMessage(Long key) {
+    return String.format("Found more than one process definition for key %s", key);
+  }
+
+  @Override
+  protected List<ProcessDefinition> searchByKey(Long key) {
+    return super.searchByKey(key);
   }
 
   @Override
@@ -75,7 +79,7 @@ public class OpensearchProcessDefinitionDao extends OpensearchDao<ProcessDefinit
   }
 
   @Override
-  protected SearchRequest.Builder buildRequest(Query<ProcessDefinition> query) {
+  protected SearchRequest.Builder buildSearchRequest(Query<ProcessDefinition> query) {
     return requestDSLWrapper.searchRequestBuilder(getIndexName());
   }
 
@@ -107,9 +111,5 @@ public class OpensearchProcessDefinitionDao extends OpensearchDao<ProcessDefinit
       request.query(
           queryDSLWrapper.withTenantCheck(queryDSLWrapper.and(queries)));
     }
-  }
-
-  private void validateKey(Long key) {
-    if (key == null) throw new ServerException("No process definition key provided");
   }
 }

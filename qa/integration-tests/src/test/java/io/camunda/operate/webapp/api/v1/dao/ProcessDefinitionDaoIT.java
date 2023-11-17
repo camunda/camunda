@@ -6,33 +6,33 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
+import io.camunda.operate.util.OperateZeebeAbstractIT;
+import io.camunda.operate.webapp.api.v1.entities.ProcessDefinition;
+import io.camunda.operate.webapp.api.v1.entities.Query;
+import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
+import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
+import io.camunda.operate.webapp.api.v1.entities.Results;
+import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
+import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
+import io.camunda.operate.zeebeimport.util.XMLUtil;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
+
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
 import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 import static io.camunda.operate.schema.indices.ProcessIndex.BPMN_PROCESS_ID;
 import static io.camunda.operate.schema.indices.ProcessIndex.NAME;
 import static io.camunda.operate.webapp.api.v1.entities.ProcessDefinition.VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-
-import io.camunda.operate.util.OperateZeebeAbstractIT;
-import io.camunda.operate.webapp.api.v1.entities.ChangeStatus;
-import io.camunda.operate.webapp.api.v1.entities.ProcessDefinition;
-import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
-import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
-import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
-import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
-import io.camunda.operate.webapp.api.v1.entities.Query;
-import io.camunda.operate.webapp.api.v1.entities.Results;
-import io.camunda.operate.zeebeimport.util.XMLUtil;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import javax.xml.parsers.ParserConfigurationException;
-import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.xml.sax.SAXException;
-import org.xml.sax.helpers.DefaultHandler;
 
 public class ProcessDefinitionDaoIT extends OperateZeebeAbstractIT {
 
@@ -44,7 +44,6 @@ public class ProcessDefinitionDaoIT extends OperateZeebeAbstractIT {
   private Long key;
   private String processDefinitionAsXML;
   private List<Long> processDefinitionKeys;
-  private ChangeStatus changeStatus;
 
   @Test
   public void shouldReturnEmptyListWhenNoProcessDefinitionsExist() throws Exception {
@@ -85,13 +84,6 @@ public class ProcessDefinitionDaoIT extends OperateZeebeAbstractIT {
     given(() -> {
     });
     when(() -> dao.byKey(-27L));
-  }
-
-  @Test(expected = ServerException.class)
-  public void shouldThrowWhenByKeyFails() throws Exception {
-    given(() -> {
-    });
-    when(() -> dao.byKey(null));
   }
 
   @Test

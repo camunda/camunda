@@ -11,8 +11,6 @@ import io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperati
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
-import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
-import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
 import io.camunda.operate.webapp.writer.ProcessInstanceWriter;
@@ -23,16 +21,11 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opensearch.client.opensearch.core.SearchRequest;
-import org.opensearch.client.opensearch.core.SearchResponse;
-import org.opensearch.client.opensearch.core.search.Hit;
-import org.opensearch.client.opensearch.core.search.HitsMetadata;
-import org.opensearch.client.opensearch.core.search.TotalHits;
 
 import java.util.Collections;
-import java.util.LinkedList;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -65,8 +58,13 @@ public class OpensearchProcessInstanceDaoTest {
   }
 
   @Test
-  public void testGetSortKey() {
+  public void testGetUniqueSortKey() {
     assertThat(underTest.getUniqueSortKey()).isEqualTo(ListViewTemplate.KEY);
+  }
+
+  @Test
+  public void testGetKeyFieldName() {
+    assertThat(underTest.getKeyFieldName()).isEqualTo(ProcessInstance.KEY);
   }
 
   @Test
@@ -82,23 +80,44 @@ public class OpensearchProcessInstanceDaoTest {
   }
 
   @Test
-  public void testBuildRequest() {
+  public void testGetByKeyServerReadErrorMessage() {
+    assertThat(underTest.getByKeyServerReadErrorMessage(1L)).isEqualTo("Error in reading process instance for key 1");
+  }
+
+  @Test
+  public void testGetByKeyNoResultsErrorMessage() {
+    assertThat(underTest.getByKeyNoResultsErrorMessage(1L)).isEqualTo("No process instances found for key 1");
+  }
+
+  @Test
+  public void testGetByKeyTooManyResultsErrorMessage() {
+    assertThat(underTest.getByKeyTooManyResultsErrorMessage(1L)).isEqualTo("Found more than one process instances for key 1");
+  }
+
+  @Test
+  public void testSearchByKey() {
     SearchRequest.Builder mockRequestBuilder = Mockito.mock(SearchRequest.Builder.class);
     org.opensearch.client.opensearch._types.query_dsl.Query mockOsQuery =
         Mockito.mock(org.opensearch.client.opensearch._types.query_dsl.Query.class);
 
-    when(mockProcessInstanceIndex.getAlias()).thenReturn("processInstanceIndex");
-    when(mockRequestWrapper.searchRequestBuilder("processInstanceIndex")).thenReturn(mockRequestBuilder);
+    when(mockRequestWrapper.searchRequestBuilder(underTest.getIndexName())).thenReturn(mockRequestBuilder);
     when(mockQueryWrapper.withTenantCheck(any())).thenReturn(mockOsQuery);
     when(mockRequestBuilder.query(mockOsQuery)).thenReturn(mockRequestBuilder);
 
-    SearchRequest.Builder result = underTest.buildRequest(new Query<>());
+    OpenSearchDocumentOperations mockDoc = Mockito.mock(OpenSearchDocumentOperations.class);
+    when(mockOpensearchClient.doc()).thenReturn(mockDoc);
 
-    // Verify the request was built with a tenant check, the process instance index, and permissive matching
-    assertThat(result).isSameAs(mockRequestBuilder);
-    verify(mockQueryWrapper, times(1)).matchAll();
+    List<ProcessInstance> validResults = Collections.singletonList(new ProcessInstance());
+    when(mockDoc.searchValues(mockRequestBuilder, ProcessInstance.class)).thenReturn(validResults);
+
+    List<ProcessInstance> results = underTest.searchByKey(1L);
+
+    // Verify the request was built with a tenant check, the index name, and permissive matching
+    assertThat(results).isSameAs(validResults);
+    verify(mockQueryWrapper, times(1)).term(underTest.getKeyFieldName(), 1L);
+    verify(mockQueryWrapper, times(1)).term(ListViewTemplate.JOIN_RELATION, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION);
     verify(mockQueryWrapper, times(1)).withTenantCheck(any());
-    verify(mockRequestWrapper, times(1)).searchRequestBuilder("processInstanceIndex");
+    verify(mockRequestWrapper, times(1)).searchRequestBuilder(underTest.getIndexName());
   }
 
   @Test
@@ -146,92 +165,5 @@ public class OpensearchProcessInstanceDaoTest {
 
     // Verify that the join relation was still set
     verify(mockQueryWrapper, times(1)).term(ListViewTemplate.JOIN_RELATION, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION);
-  }
-
-  @Test
-  public void testByKeyWithServerException() {
-    // Mock the request building classes
-    SearchRequest.Builder mockRequestBuilder = Mockito.mock(SearchRequest.Builder.class);
-    org.opensearch.client.opensearch._types.query_dsl.Query mockOsQuery =
-        Mockito.mock(org.opensearch.client.opensearch._types.query_dsl.Query.class);
-
-    when(mockProcessInstanceIndex.getAlias()).thenReturn("processInstanceIndex");
-    when(mockRequestWrapper.searchRequestBuilder("processInstanceIndex")).thenReturn(mockRequestBuilder);
-    when(mockQueryWrapper.withTenantCheck(any())).thenReturn(mockOsQuery);
-    when(mockRequestBuilder.query(mockOsQuery)).thenReturn(mockRequestBuilder);
-
-    // Set the mocked opensearch client to throw an exception
-    when(mockOpensearchClient.doc()).thenThrow(new RuntimeException());
-
-    assertThrows(ServerException.class, () -> {
-      underTest.byKey(1L);
-    });
-  }
-
-  @Test
-  public void testByKeyWithEmptyResults() {
-    // Mock the request building classes
-    SearchRequest.Builder mockRequestBuilder = Mockito.mock(SearchRequest.Builder.class);
-    org.opensearch.client.opensearch._types.query_dsl.Query mockOsQuery =
-        Mockito.mock(org.opensearch.client.opensearch._types.query_dsl.Query.class);
-    OpenSearchDocumentOperations mockDocumentOperations = Mockito.mock(OpenSearchDocumentOperations.class);
-
-    when(mockProcessInstanceIndex.getAlias()).thenReturn("processInstanceIndex");
-    when(mockRequestWrapper.searchRequestBuilder("processInstanceIndex")).thenReturn(mockRequestBuilder);
-    when(mockQueryWrapper.withTenantCheck(any())).thenReturn(mockOsQuery);
-    when(mockRequestBuilder.query(mockOsQuery)).thenReturn(mockRequestBuilder);
-
-    // Mock the response objects from opensearch
-    SearchResponse mockOsResponse = Mockito.mock(SearchResponse.class);
-    HitsMetadata<ProcessInstance> mockOsResults = Mockito.mock(HitsMetadata.class);
-    TotalHits mockTotalHits = Mockito.mock(TotalHits.class);
-
-    when(mockOsResults.hits()).thenReturn(new LinkedList<>());
-    when(mockOsResponse.hits()).thenReturn(mockOsResults);
-    when(mockOsResults.total()).thenReturn(mockTotalHits);
-
-    // Set the mocked opensearch client to return the mocked response
-    when(mockOpensearchClient.doc()).thenReturn(mockDocumentOperations);
-    when(mockDocumentOperations.search(any(), any())).thenReturn(mockOsResponse);
-
-    assertThrows(ResourceNotFoundException.class, () -> {
-      underTest.byKey(1L);
-    });
-  }
-
-  @Test
-  public void testByKeyWithValidResult() {
-    // Mock the request building classes
-    SearchRequest.Builder mockRequestBuilder = Mockito.mock(SearchRequest.Builder.class);
-    org.opensearch.client.opensearch._types.query_dsl.Query mockOsQuery =
-        Mockito.mock(org.opensearch.client.opensearch._types.query_dsl.Query.class);
-    OpenSearchDocumentOperations mockDocumentOperations = Mockito.mock(OpenSearchDocumentOperations.class);
-
-    when(mockProcessInstanceIndex.getAlias()).thenReturn("processInstanceIndex");
-    when(mockRequestWrapper.searchRequestBuilder("processInstanceIndex")).thenReturn(mockRequestBuilder);
-    when(mockQueryWrapper.withTenantCheck(any())).thenReturn(mockOsQuery);
-    when(mockRequestBuilder.query(mockOsQuery)).thenReturn(mockRequestBuilder);
-
-    // Mock the response objects from opensearch
-    SearchResponse mockOsResponse = Mockito.mock(SearchResponse.class);
-    HitsMetadata<ProcessInstance> mockOsResults = Mockito.mock(HitsMetadata.class);
-    TotalHits mockTotalHits = Mockito.mock(TotalHits.class);
-
-    ProcessInstance validResult = new ProcessInstance().setKey(100L);
-    Hit<ProcessInstance> validHit = Mockito.mock(Hit.class);
-    when(validHit.source()).thenReturn(validResult);
-
-    when(mockOsResults.hits()).thenReturn(Collections.singletonList(validHit));
-    when(mockOsResponse.hits()).thenReturn(mockOsResults);
-    when(mockOsResults.total()).thenReturn(mockTotalHits);
-    when(mockTotalHits.value()).thenReturn(1L);
-
-    // Set the mocked opensearch client to return the mocked response
-    when(mockOpensearchClient.doc()).thenReturn(mockDocumentOperations);
-    when(mockDocumentOperations.search(any(), any())).thenReturn(mockOsResponse);
-
-    // Verify the process instance returned is the same as the one that came directly from opensearch
-    ProcessInstance result = underTest.byKey(100L);
-    assertThat(result).isSameAs(validResult);
   }
 }

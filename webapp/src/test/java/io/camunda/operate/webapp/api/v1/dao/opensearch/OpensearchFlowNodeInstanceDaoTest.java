@@ -12,8 +12,6 @@ import io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperati
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.entities.FlowNodeInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
-import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
-import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,17 +21,12 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opensearch.client.opensearch.core.SearchRequest;
-import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
-import org.opensearch.client.opensearch.core.search.HitsMetadata;
-import org.opensearch.client.opensearch.core.search.TotalHits;
 
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -66,13 +59,23 @@ public class OpensearchFlowNodeInstanceDaoTest {
   }
 
   @Test
-  public void testGetSortKey() {
-    assertThat(underTest.getUniqueSortKey()).isEqualTo(FlowNodeInstance.KEY);
+  public void testGetKeyFieldName() {
+    assertThat(underTest.getKeyFieldName()).isEqualTo(FlowNodeInstance.KEY);
   }
 
   @Test
-  public void testGetModelClass() {
-    assertThat(underTest.getModelClass()).isEqualTo(FlowNodeInstance.class);
+  public void testGetByKeyServerReadErrorMessage() {
+    assertThat(underTest.getByKeyServerReadErrorMessage(1L)).isEqualTo("Error in reading flownode instance for key 1");
+  }
+
+  @Test
+  public void testGetByKeyNoResultsErrorMessage() {
+    assertThat(underTest.getByKeyNoResultsErrorMessage(1L)).isEqualTo("No flownode instance found for key 1");
+  }
+
+  @Test
+  public void testGetByKeyTooManyResultsErrorMessage() {
+    assertThat(underTest.getByKeyTooManyResultsErrorMessage(1L)).isEqualTo("Found more than one flownode instances for key 1");
   }
 
   @Test
@@ -83,23 +86,13 @@ public class OpensearchFlowNodeInstanceDaoTest {
   }
 
   @Test
-  public void testBuildRequest() {
-    SearchRequest.Builder mockRequestBuilder = Mockito.mock(SearchRequest.Builder.class);
-    org.opensearch.client.opensearch._types.query_dsl.Query mockOsQuery =
-        Mockito.mock(org.opensearch.client.opensearch._types.query_dsl.Query.class);
+  public void testGetUniqueSortKey() {
+    assertThat(underTest.getUniqueSortKey()).isEqualTo(FlowNodeInstance.KEY);
+  }
 
-    when(mockFlowNodeIndex.getAlias()).thenReturn("flowNodeIndex");
-    when(mockRequestWrapper.searchRequestBuilder("flowNodeIndex")).thenReturn(mockRequestBuilder);
-    when(mockQueryWrapper.withTenantCheck(any())).thenReturn(mockOsQuery);
-    when(mockRequestBuilder.query(mockOsQuery)).thenReturn(mockRequestBuilder);
-
-    SearchRequest.Builder result = underTest.buildRequest(new Query<>());
-
-    // Verify the request was built with a tenant check, the flow node index, and permissive matching
-    assertThat(result).isSameAs(mockRequestBuilder);
-    verify(mockQueryWrapper, times(1)).matchAll();
-    verify(mockQueryWrapper, times(1)).withTenantCheck(any());
-    verify(mockRequestWrapper, times(1)).searchRequestBuilder("flowNodeIndex");
+  @Test
+  public void testGetModelClass() {
+    assertThat(underTest.getModelClass()).isEqualTo(FlowNodeInstance.class);
   }
 
   @Test
@@ -164,125 +157,71 @@ public class OpensearchFlowNodeInstanceDaoTest {
   }
 
   @Test
-  public void testByKeyWithServerException() {
-    // Mock the request building classes
-    SearchRequest.Builder mockRequestBuilder = Mockito.mock(SearchRequest.Builder.class);
-    org.opensearch.client.opensearch._types.query_dsl.Query mockOsQuery =
-        Mockito.mock(org.opensearch.client.opensearch._types.query_dsl.Query.class);
+  public void testTransformHitToItemWithValidItem() {
+    FlowNodeInstance item = new FlowNodeInstance().setProcessDefinitionKey(1L).setFlowNodeId("id");
 
-    when(mockFlowNodeIndex.getAlias()).thenReturn("flowNodeIndex");
-    when(mockRequestWrapper.searchRequestBuilder("flowNodeIndex")).thenReturn(mockRequestBuilder);
-    when(mockQueryWrapper.withTenantCheck(any())).thenReturn(mockOsQuery);
-    when(mockRequestBuilder.query(mockOsQuery)).thenReturn(mockRequestBuilder);
+    Hit<FlowNodeInstance> mockHit = Mockito.mock(Hit.class);
+    when(mockHit.source()).thenReturn(item);
 
-    // Set the mocked opensearch client to throw an exception
-    when(mockOpensearchClient.doc()).thenThrow(new RuntimeException());
+    when(mockProcessCache.getFlowNodeNameOrDefaultValue(item.getProcessDefinitionKey(),
+        item.getFlowNodeId(), null)).thenReturn("name");
 
-    assertThrows(ServerException.class, () -> {
-      underTest.byKey(1L);
-    });
+    FlowNodeInstance result = underTest.transformHitToItem(mockHit);
+
+    assertThat(result.getFlowNodeName()).isEqualTo("name");
+    verify(mockProcessCache, times(1)).getFlowNodeNameOrDefaultValue(item.getProcessDefinitionKey(),
+        item.getFlowNodeId(), null);
   }
 
   @Test
-  public void testByKeyWithEmptyResults() {
-    // Mock the request building classes
-    SearchRequest.Builder mockRequestBuilder = Mockito.mock(SearchRequest.Builder.class);
-    org.opensearch.client.opensearch._types.query_dsl.Query mockOsQuery =
-        Mockito.mock(org.opensearch.client.opensearch._types.query_dsl.Query.class);
-    OpenSearchDocumentOperations mockDocumentOperations = Mockito.mock(OpenSearchDocumentOperations.class);
+  public void testTransformHitToItemWithNoId() {
+    FlowNodeInstance item = new FlowNodeInstance().setProcessDefinitionKey(1L);
 
-    when(mockFlowNodeIndex.getAlias()).thenReturn("flowNodeIndex");
-    when(mockRequestWrapper.searchRequestBuilder("flowNodeIndex")).thenReturn(mockRequestBuilder);
-    when(mockQueryWrapper.withTenantCheck(any())).thenReturn(mockOsQuery);
-    when(mockRequestBuilder.query(mockOsQuery)).thenReturn(mockRequestBuilder);
+    Hit<FlowNodeInstance> mockHit = Mockito.mock(Hit.class);
+    when(mockHit.source()).thenReturn(item);
 
-    // Mock the response objects from opensearch
-    SearchResponse mockOsResponse = Mockito.mock(SearchResponse.class);
-    HitsMetadata<FlowNodeInstance> mockOsResults = Mockito.mock(HitsMetadata.class);
-    TotalHits mockTotalHits = Mockito.mock(TotalHits.class);
+    FlowNodeInstance result = underTest.transformHitToItem(mockHit);
 
-    when(mockOsResults.hits()).thenReturn(new LinkedList<>());
-    when(mockOsResponse.hits()).thenReturn(mockOsResults);
-    when(mockOsResults.total()).thenReturn(mockTotalHits);
-
-    // Set the mocked opensearch client to return the mocked response
-    when(mockOpensearchClient.doc()).thenReturn(mockDocumentOperations);
-    when(mockDocumentOperations.search(any(), any())).thenReturn(mockOsResponse);
-
-    assertThrows(ResourceNotFoundException.class, () -> {
-      underTest.byKey(1L);
-    });
+    assertThat(result).isSameAs(item);
+    verifyNoInteractions(mockProcessCache);
   }
 
   @Test
-  public void testByKeyWithValidResult() {
-    // Mock the request building classes
-    SearchRequest.Builder mockRequestBuilder = Mockito.mock(SearchRequest.Builder.class);
-    org.opensearch.client.opensearch._types.query_dsl.Query mockOsQuery =
-        Mockito.mock(org.opensearch.client.opensearch._types.query_dsl.Query.class);
-    OpenSearchDocumentOperations mockDocumentOperations = Mockito.mock(OpenSearchDocumentOperations.class);
+  public void testTransformHitToItemWithNoNullHit() {
+    Hit<FlowNodeInstance> mockHit = Mockito.mock(Hit.class);
+    when(mockHit.source()).thenReturn(null);
 
-    when(mockFlowNodeIndex.getAlias()).thenReturn("flowNodeIndex");
-    when(mockRequestWrapper.searchRequestBuilder("flowNodeIndex")).thenReturn(mockRequestBuilder);
-    when(mockQueryWrapper.withTenantCheck(any())).thenReturn(mockOsQuery);
-    when(mockRequestBuilder.query(mockOsQuery)).thenReturn(mockRequestBuilder);
+    FlowNodeInstance result = underTest.transformHitToItem(mockHit);
 
-    // Mock the response objects from opensearch
-    SearchResponse mockOsResponse = Mockito.mock(SearchResponse.class);
-    HitsMetadata<FlowNodeInstance> mockOsResults = Mockito.mock(HitsMetadata.class);
-    TotalHits mockTotalHits = Mockito.mock(TotalHits.class);
-
-    FlowNodeInstance validResult = new FlowNodeInstance().setFlowNodeId("taskA");
-    Hit<FlowNodeInstance> validHit = Mockito.mock(Hit.class);
-    when(validHit.source()).thenReturn(validResult);
-
-    when(mockOsResults.hits()).thenReturn(Collections.singletonList(validHit));
-    when(mockOsResponse.hits()).thenReturn(mockOsResults);
-    when(mockOsResults.total()).thenReturn(mockTotalHits);
-    when(mockTotalHits.value()).thenReturn(1L);
-
-    // Set the mocked opensearch client to return the mocked response
-    when(mockOpensearchClient.doc()).thenReturn(mockDocumentOperations);
-    when(mockDocumentOperations.search(any(), any())).thenReturn(mockOsResponse);
-
-    // Verify the flow node instance returned is the same as the one that came directly from opensearch
-    FlowNodeInstance result = underTest.byKey(1L);
-    assertThat(result).isSameAs(validResult);
+    assertThat(result).isNull();
+    verifyNoInteractions(mockProcessCache);
   }
 
   @Test
-  public void testByKeyWithMultipleResult() {
-    // Mock the request building classes
+  public void testSearchByKey() {
     SearchRequest.Builder mockRequestBuilder = Mockito.mock(SearchRequest.Builder.class);
     org.opensearch.client.opensearch._types.query_dsl.Query mockOsQuery =
         Mockito.mock(org.opensearch.client.opensearch._types.query_dsl.Query.class);
-    OpenSearchDocumentOperations mockDocumentOperations = Mockito.mock(OpenSearchDocumentOperations.class);
 
-    when(mockFlowNodeIndex.getAlias()).thenReturn("flowNodeIndex");
-    when(mockRequestWrapper.searchRequestBuilder("flowNodeIndex")).thenReturn(mockRequestBuilder);
+    when(mockRequestWrapper.searchRequestBuilder(underTest.getIndexName())).thenReturn(mockRequestBuilder);
     when(mockQueryWrapper.withTenantCheck(any())).thenReturn(mockOsQuery);
     when(mockRequestBuilder.query(mockOsQuery)).thenReturn(mockRequestBuilder);
 
-    // Mock the response objects from opensearch
-    SearchResponse mockOsResponse = Mockito.mock(SearchResponse.class);
-    HitsMetadata<FlowNodeInstance> mockOsResults = Mockito.mock(HitsMetadata.class);
-    TotalHits mockTotalHits = Mockito.mock(TotalHits.class);
+    OpenSearchDocumentOperations mockDoc = Mockito.mock(OpenSearchDocumentOperations.class);
+    when(mockOpensearchClient.doc()).thenReturn(mockDoc);
 
-    Hit<FlowNodeInstance> validHit = Mockito.mock(Hit.class);
-    when(validHit.source()).thenReturn(new FlowNodeInstance().setFlowNodeId("start"),
-        new FlowNodeInstance().setFlowNodeId("taskA"));
+    List<FlowNodeInstance> validResults = Collections.singletonList(new FlowNodeInstance().setProcessDefinitionKey(1L).setFlowNodeId("id"));
+    when(mockDoc.searchValues(mockRequestBuilder, FlowNodeInstance.class)).thenReturn(validResults);
 
-    when(mockOsResults.hits()).thenReturn(List.of(validHit, validHit));
-    when(mockOsResponse.hits()).thenReturn(mockOsResults);
-    when(mockOsResults.total()).thenReturn(mockTotalHits);
-    when(mockTotalHits.value()).thenReturn(2L);
+    when(mockProcessCache.getFlowNodeNameOrDefaultValue(1L, "id", null)).thenReturn("name");
 
-    // Set the mocked opensearch client to return the mocked response
-    when(mockOpensearchClient.doc()).thenReturn(mockDocumentOperations);
-    when(mockDocumentOperations.search(any(), any())).thenReturn(mockOsResponse);
+    List<FlowNodeInstance> results = underTest.searchByKey(1L);
 
-    assertThrows(ServerException.class, () -> {
-      underTest.byKey(1L);
-    });
+    // Verify the request was built with a tenant check, the index name, and permissive matching
+    assertThat(results).isSameAs(validResults);
+    assertThat(results.get(0).getFlowNodeName()).isEqualTo("name");
+    verify(mockQueryWrapper, times(1)).term(underTest.getKeyFieldName(), 1L);
+    verify(mockQueryWrapper, times(1)).withTenantCheck(any());
+    verify(mockRequestWrapper, times(1)).searchRequestBuilder(underTest.getIndexName());
   }
 }

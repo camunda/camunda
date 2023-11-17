@@ -15,7 +15,6 @@ import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import io.camunda.operate.webapp.api.v1.exceptions.ClientException;
-import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
@@ -30,7 +29,7 @@ import java.util.List;
 
 @Conditional(OpensearchCondition.class)
 @Component
-public class OpensearchProcessInstanceDao extends OpensearchDao<ProcessInstance> implements ProcessInstanceDao {
+public class OpensearchProcessInstanceDao extends OpensearchKeyFilteringDao<ProcessInstance> implements ProcessInstanceDao {
 
   private final ListViewTemplate processInstanceIndex;
 
@@ -55,6 +54,11 @@ public class OpensearchProcessInstanceDao extends OpensearchDao<ProcessInstance>
   }
 
   @Override
+  protected String getKeyFieldName() {
+    return ProcessInstance.KEY;
+  }
+
+  @Override
   protected Class<ProcessInstance> getModelClass() {
     return ProcessInstance.class;
   }
@@ -65,27 +69,18 @@ public class OpensearchProcessInstanceDao extends OpensearchDao<ProcessInstance>
   }
 
   @Override
-  public ProcessInstance byKey(Long key) throws APIException {
-    List<ProcessInstance> processInstances;
-    try {
+  protected String getByKeyServerReadErrorMessage(Long key) {
+    return String.format("Error in reading process instance for key %s", key);
+  }
 
-      // This request does not build a scroll like the Elasticsearch DAO does. Since only one result is
-      // being searched for and returned, it didn't seem to make sense to add a scroll in. Behavior without
-      // a scroll seems to still be correct.
-      processInstances = search(new Query<ProcessInstance>().setFilter(new ProcessInstance().setKey(key))).getItems();
-    } catch (Exception e) {
-      throw new ServerException(
-          String.format("Error in reading process instance for key %s", key), e);
-    }
-    if (processInstances.isEmpty()) {
-      throw new ResourceNotFoundException(
-          String.format("No process instances found for key %s ", key));
-    }
-    if (processInstances.size() > 1) {
-      throw new ServerException(
-          String.format("Found more than one process instances for key %s", key));
-    }
-    return processInstances.get(0);
+  @Override
+  protected String getByKeyNoResultsErrorMessage(Long key) {
+    return String.format("No process instances found for key %s", key);
+  }
+
+  @Override
+  protected String getByKeyTooManyResultsErrorMessage(Long key) {
+    return String.format("Found more than one process instances for key %s", key);
   }
 
   @Override
@@ -104,6 +99,18 @@ public class OpensearchProcessInstanceDao extends OpensearchDao<ProcessInstance>
       throw new ServerException(
           String.format("Error in deleting process instance and dependant data for key '%s'", key),e);
     }
+  }
+
+  @Override
+  protected List<ProcessInstance> searchByKey(Long key) {
+    List<org.opensearch.client.opensearch._types.query_dsl.Query> queryTerms = new LinkedList<>();
+    queryTerms.add(queryDSLWrapper.term(ListViewTemplate.JOIN_RELATION, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION));
+    queryTerms.add(queryDSLWrapper.term(getKeyFieldName(), key));
+
+    SearchRequest.Builder request = requestDSLWrapper.searchRequestBuilder(getIndexName())
+        .query(queryDSLWrapper.withTenantCheck(queryDSLWrapper.and(queryTerms)));
+
+    return richOpenSearchClient.doc().searchValues(request, getModelClass());
   }
 
   @Override

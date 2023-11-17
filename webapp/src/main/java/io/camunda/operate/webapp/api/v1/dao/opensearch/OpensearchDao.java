@@ -38,7 +38,7 @@ public abstract class OpensearchDao<T> {
   }
 
   public Results<T> search(Query<T> query) {
-    var request = buildRequest(query);
+    var request = buildSearchRequest(query);
 
     buildSorting(query, getUniqueSortKey(), request);
     buildFiltering(query, request);
@@ -53,7 +53,7 @@ public abstract class OpensearchDao<T> {
     }
   }
 
-  protected SearchRequest.Builder buildRequest(Query<T> query) {
+  protected SearchRequest.Builder buildSearchRequest(Query<T> query) {
     return requestDSLWrapper.searchRequestBuilder(getIndexName())
         .query(queryDSLWrapper.withTenantCheck(queryDSLWrapper.matchAll()));
   }

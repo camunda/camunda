@@ -21,7 +21,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.opensearch.client.opensearch.core.SearchRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -65,26 +64,6 @@ public class OpensearchSequenceFlowDaoTest {
     when(mockSequenceFlowIndex.getAlias()).thenReturn("sequenceFlowIndex");
     assertThat(underTest.getIndexName()).isEqualTo("sequenceFlowIndex");
     verify(mockSequenceFlowIndex, times(1)).getAlias();
-  }
-
-  @Test
-  public void testBuildRequest() {
-    SearchRequest.Builder mockRequestBuilder = Mockito.mock(SearchRequest.Builder.class);
-    org.opensearch.client.opensearch._types.query_dsl.Query mockOsQuery =
-        Mockito.mock(org.opensearch.client.opensearch._types.query_dsl.Query.class);
-
-    when(mockSequenceFlowIndex.getAlias()).thenReturn("sequenceFlowIndex");
-    when(mockRequestWrapper.searchRequestBuilder("sequenceFlowIndex")).thenReturn(mockRequestBuilder);
-    when(mockQueryWrapper.withTenantCheck(any())).thenReturn(mockOsQuery);
-    when(mockRequestBuilder.query(mockOsQuery)).thenReturn(mockRequestBuilder);
-
-    SearchRequest.Builder result = underTest.buildRequest(new Query<>());
-
-    // Verify the request was built with a tenant check, the flow node index, and permissive matching
-    assertThat(result).isSameAs(mockRequestBuilder);
-    verify(mockQueryWrapper, times(1)).matchAll();
-    verify(mockQueryWrapper, times(1)).withTenantCheck(any());
-    verify(mockRequestWrapper, times(1)).searchRequestBuilder("sequenceFlowIndex");
   }
 
   @Test

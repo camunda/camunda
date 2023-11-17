@@ -12,9 +12,6 @@ import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.VariableDao;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Variable;
-import io.camunda.operate.webapp.api.v1.exceptions.APIException;
-import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
-import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
 import org.opensearch.client.opensearch.core.SearchRequest;
@@ -26,7 +23,7 @@ import java.util.List;
 
 @Conditional(OpensearchCondition.class)
 @Component
-public class OpensearchVariableDao extends OpensearchDao<Variable> implements VariableDao {
+public class OpensearchVariableDao extends OpensearchKeyFilteringDao<Variable> implements VariableDao {
 
   private final VariableTemplate variableIndex;
 
@@ -52,20 +49,23 @@ public class OpensearchVariableDao extends OpensearchDao<Variable> implements Va
   }
 
   @Override
-  public Variable byKey(Long key) throws APIException {
-    List<Variable> variables;
-    try {
-      variables = search(new Query<Variable>().setFilter(new Variable().setKey(key))).getItems();
-    } catch (Exception e) {
-      throw new ServerException(String.format("Error in reading variable for key %s", key), e);
-    }
-    if (variables == null || variables.isEmpty()) {
-      throw new ResourceNotFoundException(String.format("No variable found for key %s ", key));
-    }
-    if (variables.size() > 1) {
-      throw new ServerException(String.format("Found more than one variables for key %s", key));
-    }
-    return variables.get(0);
+  protected String getKeyFieldName() {
+    return Variable.KEY;
+  }
+
+  @Override
+  protected String getByKeyServerReadErrorMessage(Long key) {
+    return String.format("Error in reading variable for key %s", key);
+  }
+
+  @Override
+  protected String getByKeyNoResultsErrorMessage(Long key) {
+    return String.format("No variable found for key %s", key);
+  }
+
+  @Override
+  protected String getByKeyTooManyResultsErrorMessage(Long key) {
+    return String.format("Found more than one variables for key %s", key);
   }
 
   @Override
