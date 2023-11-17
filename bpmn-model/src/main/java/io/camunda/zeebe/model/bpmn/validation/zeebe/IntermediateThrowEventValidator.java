@@ -23,8 +23,8 @@ import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
-public class IntermediateThrowEventValidator implements
-    ModelElementValidator<IntermediateThrowEvent> {
+public class IntermediateThrowEventValidator
+    implements ModelElementValidator<IntermediateThrowEvent> {
 
   @Override
   public Class<IntermediateThrowEvent> getElementType() {
@@ -32,14 +32,18 @@ public class IntermediateThrowEventValidator implements
   }
 
   @Override
-  public void validate(final IntermediateThrowEvent element,
+  public void validate(
+      final IntermediateThrowEvent element,
       final ValidationResultCollector validationResultCollector) {
 
     if (isCompensationIntermediateThrowEvent(element)) {
       final CompensateEventDefinition definition = getEventDefinition(element);
-      final String waitForCompletion = definition.getAttributeValue(BPMN_ATTRIBUTE_WAIT_FOR_COMPLETION);
+      final String waitForCompletion =
+          definition.getAttributeValue(BPMN_ATTRIBUTE_WAIT_FOR_COMPLETION);
       if (waitForCompletion != null && !Boolean.valueOf(waitForCompletion)) {
-        validationResultCollector.addError(0, "A compensation intermediate throwing event waitForCompletion attribute must be true or not present");
+        validationResultCollector.addError(
+            0,
+            "A compensation intermediate throwing event waitForCompletion attribute must be true or not present");
       }
     }
   }

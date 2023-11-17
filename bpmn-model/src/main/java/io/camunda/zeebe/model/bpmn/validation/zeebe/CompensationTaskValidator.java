@@ -44,8 +44,8 @@ public class CompensationTaskValidator implements ModelElementValidator<Task> {
   }
 
   @Override
-  public void validate(final Task element,
-      final ValidationResultCollector validationResultCollector) {
+  public void validate(
+      final Task element, final ValidationResultCollector validationResultCollector) {
 
     final String isForCompensation = element.getAttributeValue("isForCompensation");
     if (Boolean.parseBoolean(isForCompensation)) {
@@ -53,27 +53,23 @@ public class CompensationTaskValidator implements ModelElementValidator<Task> {
 
       if (!element.getIncoming().isEmpty()) {
         validationResultCollector.addError(
-            0,
-            "A compensation handler should have no incoming sequence flows.");
+            0, "A compensation handler should have no incoming sequence flows.");
       }
 
       if (!element.getOutgoing().isEmpty()) {
         validationResultCollector.addError(
-            0,
-            "A compensation handler should have no outgoing sequence flows.");
+            0, "A compensation handler should have no outgoing sequence flows.");
       }
 
       if (element.getBoundaryEvents().count() > 0) {
         validationResultCollector.addError(
-            0,
-            "A compensation handler should have no boundary events.");
+            0, "A compensation handler should have no boundary events.");
       }
     }
   }
 
   private void validateCompensationTask(
-      final Task element, final ValidationResultCollector validationResultCollector
-  ) {
+      final Task element, final ValidationResultCollector validationResultCollector) {
     if (SUPPORTED_TASK.stream().noneMatch(type -> type.equals(element.getClass()))) {
       validationResultCollector.addError(
           0,

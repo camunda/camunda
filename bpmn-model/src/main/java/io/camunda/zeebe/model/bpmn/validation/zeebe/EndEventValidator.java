@@ -76,9 +76,12 @@ public class EndEventValidator implements ModelElementValidator<EndEvent> {
           }
 
           if (def instanceof CompensateEventDefinition) {
-            final String waitForCompletion = def.getAttributeValue(BPMN_ATTRIBUTE_WAIT_FOR_COMPLETION);
+            final String waitForCompletion =
+                def.getAttributeValue(BPMN_ATTRIBUTE_WAIT_FOR_COMPLETION);
             if (waitForCompletion != null && !Boolean.valueOf(waitForCompletion)) {
-              validationResultCollector.addError(0, "A compensation end event waitForCompletion attribute must be true or not present");
+              validationResultCollector.addError(
+                  0,
+                  "A compensation end event waitForCompletion attribute must be true or not present");
             }
           }
         });

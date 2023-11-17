@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.bpmn.compensation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
-import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -73,7 +72,7 @@ public class CompensationEventTest {
 
     // then
     assertThat(
-        RecordingExporter.processRecords().withBpmnProcessId("compensation-process").limit(1))
+            RecordingExporter.processRecords().withBpmnProcessId("compensation-process").limit(1))
         .extracting(Record::getIntent)
         .contains(ProcessIntent.CREATED);
   }
@@ -104,7 +103,7 @@ public class CompensationEventTest {
 
     // then
     assertThat(
-        RecordingExporter.processRecords().withBpmnProcessId("compensation-process").limit(1))
+            RecordingExporter.processRecords().withBpmnProcessId("compensation-process").limit(1))
         .extracting(Record::getIntent)
         .contains(ProcessIntent.CREATED);
   }
@@ -135,7 +134,7 @@ public class CompensationEventTest {
 
     // then
     assertThat(
-        RecordingExporter.processRecords().withBpmnProcessId("compensation-process").limit(1))
+            RecordingExporter.processRecords().withBpmnProcessId("compensation-process").limit(1))
         .extracting(Record::getIntent)
         .contains(ProcessIntent.CREATED);
   }
