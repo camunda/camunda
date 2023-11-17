@@ -23,7 +23,7 @@ import io.camunda.zeebe.client.impl.Loggers;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.Optional;
-import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -52,12 +52,15 @@ import org.slf4j.Logger;
  */
 public final class JobWorkerImpl implements JobWorker, Closeable {
 
+  public static final String ERROR_MSG =
+      "Expected to handle received job with key {}, but the worker reached maximum capacity (maxJobsActive). "
+          + "The job activation timed out (controllable by timeout parameter). It will get reactivated shortly. "
+          + "If this issue persist, make sure to either scale your workers, threads, increase maxJobsActive or reduce the load you want to work on. ";
   private static final BackoffSupplier DEFAULT_BACKOFF_SUPPLIER =
       JobWorkerBuilderImpl.DEFAULT_BACKOFF_SUPPLIER;
   private static final Logger LOG = Loggers.JOB_WORKER_LOGGER;
   private static final String SUPPLY_RETRY_DELAY_FAILURE_MESSAGE =
       "Expected to supply retry delay, but an exception was thrown. Falling back to default backoff supplier";
-
   // job queue state
   private final int maxJobsActive;
   private final int activationThreshold;
@@ -237,13 +240,21 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   }
 
   private void handleJob(final ActivatedJob job) {
-    metrics.jobActivated(1);
-    executor.execute(jobHandlerFactory.create(job, this::handleJobFinished));
+    handleActivatedJob(job, this::handleJobFinished);
   }
 
   private void handleStreamedJob(final ActivatedJob job) {
+    handleActivatedJob(job, this::handleStreamJobFinished);
+  }
+
+  private void handleActivatedJob(final ActivatedJob job, final Runnable finalizer) {
     metrics.jobActivated(1);
-    executor.execute(jobHandlerFactory.create(job, this::handleStreamJobFinished));
+    try {
+      executor.execute(jobHandlerFactory.create(job, finalizer));
+    } catch (final RejectedExecutionException e) {
+      // drop job
+      LOG.warn(ERROR_MSG, job.getKey(), e);
+    }
   }
 
   private void handleJobFinished() {
@@ -258,13 +269,8 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     metrics.jobHandled(1);
   }
 
-  private static class BlockingExecutor implements Executor {
-
+  private static class BlockingExecutor {
     public static final TimeUnit TIMEOUT_UNIT = TimeUnit.MILLISECONDS;
-    public static final String ERROR_MSG =
-        "Expected to handle received job with key {}, but the worker reached maximum capacity (maxJobsActive). "
-            + "The job activation timed out (controllable by timeout parameter). It will get reactivated shortly. "
-            + "If this issue persist, make sure to either scale your workers, threads, increase maxJobsActive or reduce the load you want to work on. ";
 
     private final ScheduledExecutorService wrappedExecutor;
     private final Semaphore semaphore;
@@ -290,12 +296,12 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       wrappedExecutor.schedule(runnable, timeout, unit);
     }
 
-    @Override
-    public void execute(final Runnable command) {
+    public void execute(final Runnable command) throws RejectedExecutionException {
       try {
         if (!semaphore.tryAcquire(timeoutMillis, TIMEOUT_UNIT)) {
-          // handle timeout
-          LOG.warn(ERROR_MSG, timeoutMillis);
+          throw new RejectedExecutionException(
+              String.format(
+                  "Not able to acquire lease in %d%s", timeoutMillis, TIMEOUT_UNIT.toString()));
         }
 
         wrappedExecutor.execute(
