@@ -59,4 +59,35 @@ public class CompensationEventTest {
     assertThat(rejectedDeploy.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(rejectedDeploy.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
   }
+
+  @Test
+  public void shouldDeployCompensationIntermediateThrowEvent() {
+    ENGINE
+        .deployment()
+        .withXmlClasspathResource("/compensation/compensation-throw-event.bpmn")
+        .deploy();
+
+    // when
+    ENGINE.processInstance().ofBpmnProcessId("compensation-process").create();
+
+    // then
+    assertThat(
+        RecordingExporter.processRecords().withBpmnProcessId("compensation-process").limit(1))
+        .extracting(Record::getIntent)
+        .contains(ProcessIntent.CREATED);
+  }
+
+  @Test
+  public void shouldNotDeployCompensationIntermediateThrowEventWithWaitForCompletionFalse() {
+    final var rejectedDeploy =
+        ENGINE
+            .deployment()
+            .withXmlClasspathResource("/compensation/compensation-throw-event-attribute-false.bpmn")
+            .expectRejection()
+            .deploy();
+
+    // then
+    assertThat(rejectedDeploy.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejectedDeploy.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+  }
 }
