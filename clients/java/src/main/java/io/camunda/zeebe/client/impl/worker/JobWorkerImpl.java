@@ -261,6 +261,11 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   private static class BlockingExecutor implements Executor {
 
     public static final TimeUnit TIMEOUT_UNIT = TimeUnit.MILLISECONDS;
+    public static final String ERROR_MSG =
+        "Expected to handle received job with key {}, but the worker reached maximum capacity (maxJobsActive). "
+            + "The job activation timed out (controllable by timeout parameter). It will get reactivated shortly. "
+            + "If this issue persist, make sure to either scale your workers, threads, increase maxJobsActive or reduce the load you want to work on. ";
+
     private final ScheduledExecutorService wrappedExecutor;
     private final Semaphore semaphore;
     private final long timeoutMillis;
@@ -290,9 +295,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       try {
         if (!semaphore.tryAcquire(timeoutMillis, TIMEOUT_UNIT)) {
           // handle timeout
-          LOG.warn(
-              "We reached the time out after {}ms. We will drop the job, since it will be made available again for other workers in the meantime.",
-              timeoutMillis);
+          LOG.warn(ERROR_MSG, timeoutMillis);
         }
 
         wrappedExecutor.execute(
