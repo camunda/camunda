@@ -43,7 +43,7 @@ public final class ZeebeDesignTimeValidators {
     final List<ModelElementValidator<?>> validators = new ArrayList<>();
     validators.add(new ActivityValidator());
     validators.add(new BoundaryEventValidator());
-    validators.add(new BusinessRuleTaskValidation());
+    validators.add(new BusinessRuleTaskValidator());
     validators.add(
         ExtensionElementsValidator.verifyThat(CallActivity.class)
             .hasSingleExtensionElement(
@@ -66,7 +66,7 @@ public final class ZeebeDesignTimeValidators {
             .hasSingleExtensionElement(
                 ZeebeLoopCharacteristics.class, ZeebeConstants.ELEMENT_LOOP_CHARACTERISTICS));
     validators.add(new ProcessValidator());
-    validators.add(new ScriptTaskValidation());
+    validators.add(new ScriptTaskValidator());
     validators.add(new SequenceFlowValidator());
     validators.add(
         ExtensionElementsValidator.verifyThat(ServiceTask.class)

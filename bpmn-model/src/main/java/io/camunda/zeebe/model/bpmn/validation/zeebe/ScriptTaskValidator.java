@@ -16,47 +16,47 @@
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
-import io.camunda.zeebe.model.bpmn.instance.BusinessRuleTask;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
+import io.camunda.zeebe.model.bpmn.instance.ScriptTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeScript;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
-public final class BusinessRuleTaskValidation implements ModelElementValidator<BusinessRuleTask> {
+public final class ScriptTaskValidator implements ModelElementValidator<ScriptTask> {
 
   @Override
-  public Class<BusinessRuleTask> getElementType() {
-    return BusinessRuleTask.class;
+  public Class<ScriptTask> getElementType() {
+    return ScriptTask.class;
   }
 
   @Override
   public void validate(
-      final BusinessRuleTask element, final ValidationResultCollector validationResultCollector) {
+      final ScriptTask element, final ValidationResultCollector validationResultCollector) {
 
     if (!hasExactlyOneExtension(element)) {
       validationResultCollector.addError(
           0,
           String.format(
               "Must have either one 'zeebe:%s' or one 'zeebe:%s' extension element",
-              ZeebeConstants.ELEMENT_CALLED_DECISION, ZeebeConstants.ELEMENT_TASK_DEFINITION));
+              ZeebeConstants.ELEMENT_SCRIPT, ZeebeConstants.ELEMENT_TASK_DEFINITION));
     }
   }
 
-  private boolean hasExactlyOneExtension(final BusinessRuleTask element) {
+  private boolean hasExactlyOneExtension(final ScriptTask element) {
     final ExtensionElements extensionElements = element.getExtensionElements();
 
     if (extensionElements == null) {
       return false;
     }
 
-    final Collection<ZeebeCalledDecision> calledDecisionExtensions =
-        extensionElements.getChildElementsByType(ZeebeCalledDecision.class);
+    final Collection<ZeebeScript> scriptExtensions =
+        extensionElements.getChildElementsByType(ZeebeScript.class);
     final Collection<ZeebeTaskDefinition> taskDefinitionExtensions =
         extensionElements.getChildElementsByType(ZeebeTaskDefinition.class);
 
-    return calledDecisionExtensions.size() == 1 && taskDefinitionExtensions.isEmpty()
-        || calledDecisionExtensions.isEmpty() && taskDefinitionExtensions.size() == 1;
+    return scriptExtensions.size() == 1 && taskDefinitionExtensions.isEmpty()
+        || scriptExtensions.isEmpty() && taskDefinitionExtensions.size() == 1;
   }
 }
