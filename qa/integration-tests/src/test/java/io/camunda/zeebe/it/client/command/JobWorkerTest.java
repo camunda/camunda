@@ -29,6 +29,7 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.grpc.internal.AbstractStream.TransportState;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -296,6 +297,7 @@ final class JobWorkerTest {
                     latch.await();
                   })
               .maxJobsActive(1)
+              .pollInterval(Duration.ofMillis(10))
               .streamEnabled(true)
               .open();
 
