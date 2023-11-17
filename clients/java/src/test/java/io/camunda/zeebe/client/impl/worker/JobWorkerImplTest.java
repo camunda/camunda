@@ -18,6 +18,7 @@ package io.camunda.zeebe.client.impl.worker;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.ZEEBE_CLIENT_WORKER_STREAM_ENABLED;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.util.concurrent.Uninterruptibles;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.worker.JobHandler;
 import io.camunda.zeebe.client.api.worker.JobWorker;
@@ -43,9 +44,11 @@ import io.grpc.testing.GrpcCleanupRule;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import org.awaitility.Awaitility;
@@ -196,6 +199,50 @@ public final class JobWorkerImplTest {
   }
 
   @Test
+  public void shouldHandleOnlyCapacity() {
+    // given
+    final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+    final ArrayList<io.camunda.zeebe.client.api.response.ActivatedJob> jobs = new ArrayList<>();
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    try (final ZeebeClient client =
+        new ZeebeClientImpl(
+            new ZeebeClientBuilderImpl(),
+            channel,
+            GatewayGrpc.newStub(channel),
+            new ExecutorResource(executor, false))) {
+      try (final JobWorker jobWorker =
+          client
+              .newWorker()
+              .jobType("t")
+              .handler(
+                  (c, j) -> {
+                    jobs.add(j);
+                    Uninterruptibles.awaitUninterruptibly(latch);
+                  })
+              .pollInterval(Duration.ofHours(1))
+              .timeout(Duration.ofMillis(10))
+              .streamEnabled(true)
+              .open()) {
+
+        Awaitility.await("We need to wait until the streams have been opened")
+            .until(() -> !gateway.openStreams.isEmpty());
+
+        // when
+        gateway.pushJobs(TestData.jobs(2));
+        Awaitility.await("Handler blocks after one")
+            .pollInterval(Duration.ofMillis(10))
+            .during(Duration.ofMillis(200))
+            .until(() -> jobs, Matchers.hasSize(1));
+        latch.countDown();
+
+        // then
+        Awaitility.await("Handler should see both").until(() -> jobs, Matchers.hasSize(2));
+      }
+    }
+  }
+
+  @Test
   public void shouldCloseIfExecutorIsClosed() {
     // given
     final ScheduledExecutorService closedExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -298,10 +345,13 @@ public final class JobWorkerImplTest {
     }
 
     public void pushJob(final ActivatedJob job) {
-      synchronized (responsesLock) {
-        System.out.println("Pushing job to one of the streams");
-        openStreams.values().stream().findFirst().ifPresent((observer) -> observer.onNext(job));
-      }
+      openStreams.values().stream().findFirst().ifPresent((observer) -> observer.onNext(job));
+    }
+
+    public void pushJobs(final List<ActivatedJob> jobs) {
+      openStreams.values().stream()
+          .findFirst()
+          .ifPresent((observer) -> jobs.forEach(observer::onNext));
     }
 
     public void respondWith(final StatusRuntimeException throwable) {

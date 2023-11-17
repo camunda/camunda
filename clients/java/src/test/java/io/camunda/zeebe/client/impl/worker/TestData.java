@@ -23,8 +23,12 @@ import java.util.stream.IntStream;
 
 final class TestData {
   static GatewayOuterClass.ActivatedJob job() {
+    return job(12);
+  }
+
+  static GatewayOuterClass.ActivatedJob job(final long key) {
     return GatewayOuterClass.ActivatedJob.newBuilder()
-        .setKey(12)
+        .setKey(key)
         .setType("foo")
         .setProcessInstanceKey(123)
         .setBpmnProcessId("test1")
@@ -41,6 +45,6 @@ final class TestData {
   }
 
   static List<ActivatedJob> jobs(final int numberOfJobs) {
-    return IntStream.range(0, numberOfJobs).mapToObj(i -> job()).collect(Collectors.toList());
+    return IntStream.range(0, numberOfJobs).mapToObj(TestData::job).collect(Collectors.toList());
   }
 }
