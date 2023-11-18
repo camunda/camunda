@@ -22,7 +22,6 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.EndEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.model.bpmn.instance.CancelEventDefinition;
-import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
@@ -64,7 +63,7 @@ class ZeebeEndEventValidationTest {
         process,
         expect(
             END_EVENT_ID,
-            "End events must be one of: none, error, message, terminate, signal, or escalation"),
+            "End events must be one of: none, error, message, terminate, signal, escalation or compensation"),
         expect(endEventTypeBuilder.eventType, "Event definition of this type is not supported"));
   }
 
@@ -116,9 +115,6 @@ class ZeebeEndEventValidationTest {
 
   private static Stream<EndEventTypeBuilder> unsupportedEndEventTypes() {
     return Stream.of(
-        new EndEventTypeBuilder(
-            CompensateEventDefinition.class,
-            endEvent -> endEvent.compensateEventDefinition().compensateEventDefinitionDone()),
         new EndEventTypeBuilder(
             CancelEventDefinition.class,
             endEvent -> {

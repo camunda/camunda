@@ -20,6 +20,7 @@ import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE
 import io.camunda.zeebe.model.bpmn.impl.QueryImpl;
 import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
+import java.util.Optional;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -36,8 +37,11 @@ public class IntermediateThrowEventValidator
       final IntermediateThrowEvent element,
       final ValidationResultCollector validationResultCollector) {
 
-    if (isCompensationIntermediateThrowEvent(element)) {
-      final CompensateEventDefinition definition = getEventDefinition(element);
+    final Optional<CompensateEventDefinition> compensateEventDefinitionOpt =
+        getEventDefinition(element);
+
+    if (compensateEventDefinitionOpt.isPresent()) {
+      final CompensateEventDefinition definition = compensateEventDefinitionOpt.get();
       final String waitForCompletion =
           definition.getAttributeValue(BPMN_ATTRIBUTE_WAIT_FOR_COMPLETION);
       if (waitForCompletion != null && !Boolean.valueOf(waitForCompletion)) {
@@ -48,13 +52,10 @@ public class IntermediateThrowEventValidator
     }
   }
 
-  private boolean isCompensationIntermediateThrowEvent(final IntermediateThrowEvent element) {
-    return getEventDefinition(element) != null;
-  }
-
-  private CompensateEventDefinition getEventDefinition(final IntermediateThrowEvent event) {
+  private Optional<CompensateEventDefinition> getEventDefinition(
+      final IntermediateThrowEvent event) {
     return new QueryImpl<>(event.getEventDefinitions())
         .filterByType(CompensateEventDefinition.class)
-        .singleResult();
+        .findSingleResult();
   }
 }

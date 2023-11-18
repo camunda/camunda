@@ -22,9 +22,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractCatchEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
-import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
-import java.util.Arrays;
 import org.junit.runners.Parameterized.Parameters;
 
 public class ZeebeValidationTest extends AbstractZeebeValidationTest {
@@ -51,9 +49,7 @@ public class ZeebeValidationTest extends AbstractZeebeValidationTest {
             .intermediateCatchEvent("catch", AbstractCatchEventBuilder::compensateEventDefinition)
             .endEvent()
             .done(),
-        Arrays.asList(
-            expect(
-                CompensateEventDefinition.class, "Event definition of this type is not supported"),
+        singletonList(
             expect(IntermediateCatchEvent.class, "Event definition must be one of: message, timer"))
       },
       {
