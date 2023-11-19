@@ -30,6 +30,7 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.grpc.internal.AbstractStream.TransportState;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -345,13 +346,14 @@ final class JobWorkerTest {
               .getValue()
               .getProcessInstanceKey();
       final var firstYieldedPiIndex = startedPiKeys.indexOf(firstYieldedPi);
-      final var yieldedPis = startedPiKeys.subList(firstYieldedPiIndex, startedPiKeys.size());
+      final var yieldedPis =
+          new ArrayList<>(startedPiKeys.subList(firstYieldedPiIndex, startedPiKeys.size()));
 
       // unblock the worker, await the extra buffered jobs (to avoid flakiness), and
       // allow to poll for yielded jobs
       latch.countDown();
       // create a new PI to test that we can also receive new jobs
-      final var lastPI = createProcessInstance(uniqueId, payload);
+      startedPiKeys.add(createProcessInstance(uniqueId, payload));
 
       // then - unblock worker and expect that all jobs have been received
       assertThat(yieldedPis).isNotEmpty();
@@ -364,9 +366,8 @@ final class JobWorkerTest {
               () ->
                   assertThat(jobHandler.getHandledJobs())
                       .extracting(ActivatedJob::getProcessInstanceKey)
-                      .hasSize(startedPiKeys.size() + 1)
-                      .containsSubsequence(startedPiKeys)
-                      .contains(lastPI));
+                      .hasSameSizeAs(startedPiKeys)
+                      .containsAll(startedPiKeys));
 
       assertThat(RecordingExporter.jobRecords(JobIntent.YIELDED).limit(yieldedPis.size()))
           .map(Record::getValue)
