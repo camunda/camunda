@@ -18,6 +18,7 @@ package io.camunda.zeebe.client.impl.worker;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.ZEEBE_CLIENT_WORKER_STREAM_ENABLED;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.util.concurrent.Uninterruptibles;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.worker.JobHandler;
 import io.camunda.zeebe.client.api.worker.JobWorker;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilder
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.camunda.zeebe.client.impl.ZeebeClientImpl;
 import io.camunda.zeebe.client.impl.util.Environment;
+import io.camunda.zeebe.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
@@ -42,10 +44,15 @@ import io.grpc.testing.GrpcCleanupRule;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import org.awaitility.Awaitility;
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -191,6 +198,82 @@ public final class JobWorkerImplTest {
     }
   }
 
+  @Test
+  public void shouldHandleOnlyCapacity() {
+    // given
+    final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
+    final ArrayList<io.camunda.zeebe.client.api.response.ActivatedJob> jobs = new ArrayList<>();
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    try (final ZeebeClient client =
+        new ZeebeClientImpl(
+            new ZeebeClientBuilderImpl(),
+            channel,
+            GatewayGrpc.newStub(channel),
+            new ExecutorResource(executor, false))) {
+      try (final JobWorker jobWorker =
+          client
+              .newWorker()
+              .jobType("t")
+              .handler(
+                  (c, j) -> {
+                    jobs.add(j);
+                    Uninterruptibles.awaitUninterruptibly(latch);
+                  })
+              .pollInterval(Duration.ofHours(1))
+              .maxJobsActive(1)
+              .timeout(Duration.ofSeconds(5))
+              .streamEnabled(true)
+              .open()) {
+
+        Awaitility.await("We need to wait until the streams have been opened")
+            .until(() -> !gateway.openStreams.isEmpty());
+
+        // when
+        new Thread(() -> gateway.pushJobs(TestData.jobs(2))).start();
+        Awaitility.await("Handler blocks after one").until(() -> jobs, Matchers.hasSize(1));
+        latch.countDown();
+
+        // then
+        Awaitility.await("Handler should see both").until(() -> jobs, Matchers.hasSize(2));
+      }
+    }
+  }
+
+  @Test
+  public void shouldCloseIfExecutorIsClosed() {
+    // given
+    final ScheduledExecutorService closedExecutor = Executors.newSingleThreadScheduledExecutor();
+
+    try (final ZeebeClient client =
+        new ZeebeClientImpl(
+            new ZeebeClientBuilderImpl(),
+            channel,
+            GatewayGrpc.newStub(channel),
+            new ExecutorResource(closedExecutor, false))) {
+
+      final JobWorker jobWorker =
+          client
+              .newWorker()
+              .jobType("t")
+              .handler((c, j) -> {})
+              .pollInterval(Duration.ofHours(1))
+              .streamEnabled(true)
+              .open();
+
+      Awaitility.await("We need to wait until the streams have been opened")
+          .until(() -> !gateway.openStreams.isEmpty());
+
+      // when
+      closedExecutor.shutdownNow();
+      gateway.pushJob(TestData.job());
+
+      // then
+      Awaitility.await("Worker should be closed after detecting underlying executor is closed")
+          .until(jobWorker::isClosed, Matchers.equalTo(true));
+    }
+  }
+
   /**
    * This mocked gateway is able to record metrics on polling for new jobs and easily switch how it
    * responds to polling.
@@ -257,6 +340,16 @@ public final class JobWorkerImplTest {
         isInErrorMode = false;
         pollSuccessResponse = ActivateJobsResponse.newBuilder().addAllJobs(jobs).build();
       }
+    }
+
+    public void pushJob(final ActivatedJob job) {
+      openStreams.values().stream().findFirst().ifPresent((observer) -> observer.onNext(job));
+    }
+
+    public void pushJobs(final List<ActivatedJob> jobs) {
+      openStreams.values().stream()
+          .findFirst()
+          .ifPresent((observer) -> jobs.forEach(observer::onNext));
     }
 
     public void respondWith(final StatusRuntimeException throwable) {

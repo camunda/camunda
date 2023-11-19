@@ -10,13 +10,12 @@ package io.camunda.zeebe.it.util;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobHandler;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public final class RecordingJobHandler implements JobHandler {
   protected final JobHandler[] jobHandlers;
-  protected final List<ActivatedJob> handledJobs = Collections.synchronizedList(new ArrayList<>());
+  protected final List<ActivatedJob> handledJobs = new CopyOnWriteArrayList<>();
   protected int nextJobHandler = 0;
 
   public RecordingJobHandler() {

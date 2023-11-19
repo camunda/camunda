@@ -57,7 +57,8 @@ final class JobWorkerMetricsTest {
       final JobStreamer streamer,
       final JobWorkerMetrics metrics) {
     return new JobWorkerImpl(
-        1,
+        32,
+        Duration.ofSeconds(1),
         executor,
         Duration.ofSeconds(30),
         new TestJobRunnableFactory(autoCompleteCount),
