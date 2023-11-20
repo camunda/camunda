@@ -7,21 +7,11 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-public interface ScheduledTaskState {
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import java.util.Map;
 
-  DistributionState getDistributionState();
+public interface UserTaskState {
+  UserTaskRecord getUserTask(final long userTaskKey);
 
-  MessageState getMessageState();
-
-  TimerInstanceState getTimerState();
-
-  JobState getJobState();
-
-  DeploymentState getDeploymentState();
-
-  PendingMessageSubscriptionState getPendingMessageSubscriptionState();
-
-  PendingProcessMessageSubscriptionState getPendingProcessMessageSubscriptionState();
-
-  UserTaskState getUserTaskState();
+  UserTaskRecord getUserTask(final long userTaskKey, final Map<String, Object> authorizations);
 }

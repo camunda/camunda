@@ -19,8 +19,10 @@ import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.DbJobState;
 import io.camunda.zeebe.engine.state.instance.DbTimerInstanceState;
+import io.camunda.zeebe.engine.state.instance.DbUserTaskState;
 import io.camunda.zeebe.engine.state.message.DbMessageState;
 import io.camunda.zeebe.engine.state.message.DbMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
@@ -37,6 +39,7 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
   private final DeploymentState deploymentState;
   private final PendingMessageSubscriptionState pendingMessageSubscriptionState;
   private final PendingProcessMessageSubscriptionState pendingProcessMessageSubscriptionState;
+  private final UserTaskState userTaskState;
 
   public ScheduledTaskDbState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
@@ -55,6 +58,7 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
     pendingProcessMessageSubscriptionState =
         new DbProcessMessageSubscriptionState(
             zeebeDb, transactionContext, transientProcessMessageSubscriptionState);
+    userTaskState = new DbUserTaskState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -90,5 +94,10 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
   @Override
   public PendingProcessMessageSubscriptionState getPendingProcessMessageSubscriptionState() {
     return pendingProcessMessageSubscriptionState;
+  }
+
+  @Override
+  public UserTaskState getUserTaskState() {
+    return userTaskState;
   }
 }
