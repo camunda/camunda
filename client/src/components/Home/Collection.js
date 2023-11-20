@@ -26,7 +26,7 @@ import {
 } from 'components';
 import {formatters, loadEntity, updateEntity, checkDeleteConflict} from 'services';
 import {showError, addNotification} from 'notifications';
-import {getOptimizeProfile} from 'config';
+import {getOptimizeProfile, isUserSearchAvailable} from 'config';
 
 import {loadCollectionEntities, importEntity, removeEntities, checkConflicts} from './service';
 import {refreshBreadcrumbs} from 'components/navigation';
@@ -55,13 +55,17 @@ export class Collection extends Component {
     sorting: null,
     isLoading: true,
     optimizeProfile: null,
+    userSearchAvailable: false,
   };
 
   fileInput = createRef();
 
   async componentDidMount() {
     this.loadCollection();
-    this.setState({optimizeProfile: await getOptimizeProfile()});
+    this.setState({
+      optimizeProfile: await getOptimizeProfile(),
+      userSearchAvailable: await isUserSearchAvailable(),
+    });
   }
 
   componentDidUpdate(prevProps) {
@@ -130,6 +134,7 @@ export class Collection extends Component {
       sorting,
       isLoading,
       optimizeProfile,
+      userSearchAvailable,
     } = this.state;
 
     const {match} = this.props;
@@ -304,31 +309,31 @@ export class Collection extends Component {
               />
             </Tabs.Tab>
             {(optimizeProfile === 'cloud' || optimizeProfile === 'platform') && collection && (
-              <>
-                <Tabs.Tab
-                  key="alerts"
-                  value="alerts"
-                  title={t('alert.label-plural')}
-                  onClick={() => this.props.history.push('alerts')}
-                >
-                  <AlertList
-                    readOnly={collection.currentUserRole === 'viewer'}
-                    collection={collection.id}
-                  />
-                </Tabs.Tab>
-                <Tabs.Tab
-                  key="users"
-                  value="users"
-                  title={t('common.user.label-plural')}
-                  onClick={() => this.props.history.push('users')}
-                >
-                  <UserList
-                    readOnly={collection.currentUserRole !== 'manager'}
-                    onChange={this.loadCollection}
-                    collection={collection.id}
-                  />
-                </Tabs.Tab>
-              </>
+              <Tabs.Tab
+                key="alerts"
+                value="alerts"
+                title={t('alert.label-plural')}
+                onClick={() => this.props.history.push('alerts')}
+              >
+                <AlertList
+                  readOnly={collection.currentUserRole === 'viewer'}
+                  collection={collection.id}
+                />
+              </Tabs.Tab>
+            )}
+            {userSearchAvailable && collection && (
+              <Tabs.Tab
+                key="users"
+                value="users"
+                title={t('common.user.label-plural')}
+                onClick={() => this.props.history.push('users')}
+              >
+                <UserList
+                  readOnly={collection.currentUserRole !== 'manager'}
+                  onChange={this.loadCollection}
+                  collection={collection.id}
+                />
+              </Tabs.Tab>
             )}
             {collection && (
               <Tabs.Tab

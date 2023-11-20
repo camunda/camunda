@@ -11,7 +11,7 @@ import {shallow} from 'enzyme';
 import {EntityList, Deleter, ReportTemplateModal} from 'components';
 import {refreshBreadcrumbs} from 'components/navigation';
 import {loadEntity, updateEntity} from 'services';
-import {getOptimizeProfile} from 'config';
+import {getOptimizeProfile, isUserSearchAvailable} from 'config';
 
 import {Collection} from './Collection';
 import Copier from './Copier';
@@ -21,6 +21,7 @@ import UserList from './UserList';
 
 jest.mock('config', () => ({
   getOptimizeProfile: jest.fn().mockReturnValue('platform'),
+  isUserSearchAvailable: jest.fn().mockReturnValue(true),
 }));
 
 jest.mock('components/navigation', () => ({refreshBreadcrumbs: jest.fn()}));
@@ -161,6 +162,8 @@ it('should render content depending on the selected tab', async () => {
     <Collection {...props} match={{params: {id: 'aCollectionId', viewMode: 'users'}}} />
   );
 
+  await flushPromises();
+
   expect(node.find('Tabs').prop('value')).toBe('users');
   expect(node.find(UserList).prop('collection')).toBe('aCollectionId');
 });
@@ -251,12 +254,24 @@ it('should hide the export option for entity viewers', () => {
   ).toBe(undefined);
 });
 
-it('should hide alerts and users tab in the ccsm environment', async () => {
+it('should hide alerts tab in the ccsm environment', async () => {
   getOptimizeProfile.mockReturnValueOnce('ccsm');
   const node = await shallow(<Collection {...props} />);
 
-  expect(node.find({to: 'alerts'})).not.toExist();
-  expect(node.find({to: 'users'})).not.toExist();
+  await flushPromises();
+
+  expect(node.find({title: 'Alerts'})).not.toExist();
+  expect(node.find({title: 'Users'})).toExist();
+});
+
+it('should hide users tab if user search is not available', async () => {
+  isUserSearchAvailable.mockReturnValueOnce(false);
+  const node = await shallow(<Collection {...props} />);
+
+  await flushPromises();
+
+  expect(node.find({title: 'Alerts'})).toExist();
+  expect(node.find({title: 'Users'})).not.toExist();
 });
 
 it('should display badge with user role Manager', () => {
