@@ -37,6 +37,8 @@
             <include>**/*Tests.java</include>
             <include>**/*TestCase.java</include>
           </includes>
+          <forkedProcessTimeoutInSeconds>900</forkedProcessTimeoutInSeconds>
+          <!-- 15 minutes -->
         </configuration>
       </plugin>
 
