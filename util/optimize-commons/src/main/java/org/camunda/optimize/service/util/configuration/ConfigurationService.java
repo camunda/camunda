@@ -29,8 +29,10 @@ import org.camunda.optimize.service.util.configuration.security.SecurityConfigur
 import org.camunda.optimize.service.util.configuration.ui.UIConfiguration;
 import org.camunda.optimize.service.util.configuration.users.UsersConfiguration;
 import org.camunda.optimize.util.SuppressionConstants;
+import org.springframework.core.env.Environment;
 
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -53,6 +55,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PANEL_NOTIFICATION_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.TELEMETRY_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.optimizeModeProfiles;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.getLocationsAsInputStream;
 import static org.camunda.optimize.util.SuppressionConstants.OPTIONAL_ASSIGNED_TO_NULL;
@@ -217,6 +220,20 @@ public class ConfigurationService {
       .orElseThrow(() -> new OptimizeConfigurationException("No single configuration source could be read"));
     Optional.ofNullable(configurationValidator)
       .ifPresent(validator -> validator.validate(this));
+  }
+
+  public static OptimizeProfile getOptimizeProfile(Environment environment) {
+    final List<OptimizeProfile> specifiedProfiles = Arrays.stream(environment.getActiveProfiles())
+      .filter(optimizeModeProfiles::contains)
+      .map(OptimizeProfile::toProfile)
+      .toList();
+    if (specifiedProfiles.size() > 1) {
+      throw new OptimizeConfigurationException("Cannot configure more than one profile for Optimize");
+    } else if (specifiedProfiles.isEmpty()) {
+      return OptimizeProfile.PLATFORM;
+    } else {
+      return specifiedProfiles.get(0);
+    }
   }
 
   public ElasticSearchConfiguration getElasticSearchConfiguration() {

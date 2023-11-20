@@ -137,4 +137,5 @@ public class ConfigurationValidator {
       throw new OptimizeConfigurationException(errorMsg);
     }
   }
+
 }

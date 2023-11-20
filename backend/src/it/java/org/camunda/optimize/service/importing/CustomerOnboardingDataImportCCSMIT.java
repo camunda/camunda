@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing;
 
 import io.github.netmikey.logunit.api.LogCapturer;
+import org.camunda.optimize.AbstractCCSMIT;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
@@ -23,7 +24,7 @@ import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 
-public class CustomerOnboadingDataImportIT extends AbstractImportIT {
+public class CustomerOnboardingDataImportCCSMIT extends AbstractCCSMIT {
 
   public static final String CUSTOMER_ONBOARDING_PROCESS_INSTANCES = "customer_onboarding_test_process_instances.json";
   public static final String CUSTOMER_ONBOARDING_DEFINITION_FILE_NAME = "customer_onboarding_definition.json";
@@ -31,7 +32,7 @@ public class CustomerOnboadingDataImportIT extends AbstractImportIT {
 
   @RegisterExtension
   @Order(1)
-  private final LogCapturer logCapturer = LogCapturer.create()
+  public final LogCapturer logCapturer = LogCapturer.create()
     .captureForType(CustomerOnboardingDataImportService.class);
 
   @BeforeEach

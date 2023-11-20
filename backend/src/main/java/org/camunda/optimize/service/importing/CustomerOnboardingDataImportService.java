@@ -12,14 +12,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.db.writer.CompletedProcessInstanceWriter;
+import org.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.db.writer.RunningProcessInstanceWriter;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.OptimizeProfile;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -44,6 +46,8 @@ public class CustomerOnboardingDataImportService {
   private final ConfigurationService configurationService;
   private final CompletedProcessInstanceWriter completedProcessInstanceWriter;
   private final RunningProcessInstanceWriter runningProcessInstanceWriter;
+  private final Environment environment;
+
   private static final String CUSTOMER_ONBOARDING_DEFINITION = "customer_onboarding_definition.json";
   private static final String PROCESSED_INSTANCES = "customer_onboarding_process_instances.json";
   private static final int BATCH_SIZE = 2000;
@@ -55,7 +59,14 @@ public class CustomerOnboardingDataImportService {
 
   public void importData(final String processInstances, final String processDefinition, final int batchSize) {
     if (configurationService.getCustomerOnboardingImport()) {
-      importCustomerOnboardingDefinition(processDefinition, processInstances, batchSize);
+      if (ConfigurationService.getOptimizeProfile(environment).equals(OptimizeProfile.PLATFORM)) {
+        log.warn("C8 Customer onboarding data enabled but running in Platform mode. Skipping customer onboarding data import");
+      } else {
+        log.info("C8 Customer onboarding data enabled, importing customer onboarding data");
+        importCustomerOnboardingDefinition(processDefinition, processInstances, batchSize);
+      }
+    } else {
+      log.info("C8 Customer onboarding data disabled, will not perform data import");
     }
   }
 
@@ -119,8 +130,8 @@ public class CustomerOnboardingDataImportService {
           loadProcessInstancesToElasticSearch(processInstanceDtos, batchSize);
         } else {
           log.error(
-            "Could not load Camunda Customer Onboarding Demo process instances to input stream. Please validate the process instance json " +
-              "file.");
+            "Could not load Camunda Customer Onboarding Demo process instances to input stream. Please validate the process " +
+              "instance json file.");
         }
       }
     } catch (IOException e) {

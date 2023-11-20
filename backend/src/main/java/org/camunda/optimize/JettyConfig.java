@@ -51,6 +51,7 @@ import static org.eclipse.jetty.servlet.ServletContextHandler.getServletContextH
 
 @Configuration
 public class JettyConfig {
+
   private static final String COMPRESSED_MIME_TYPES = "application/json," +
     "text/html," +
     "application/x-font-ttf," +
