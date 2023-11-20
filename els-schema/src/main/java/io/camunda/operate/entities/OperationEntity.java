@@ -38,6 +38,7 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
   private Long zeebeCommandKey;
   private String username;
   private String modifyInstructions;
+  private String migrationPlan;
 
   public Long getProcessInstanceKey() {
     return processInstanceKey;
@@ -190,40 +191,63 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
     return this;
   }
 
+  public String getMigrationPlan() {
+    return migrationPlan;
+  }
+
+  public OperationEntity setMigrationPlan(String migrationPlan) {
+    this.migrationPlan = migrationPlan;
+    return this;
+  }
+
   public void generateId() {
     setId(UUID.randomUUID().toString());
   }
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-    if (!super.equals(o))
-      return false;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
     OperationEntity that = (OperationEntity) o;
-    return Objects.equals(processInstanceKey, that.processInstanceKey) && Objects.equals(processDefinitionKey, that.processDefinitionKey) && Objects.equals(
-        bpmnProcessId, that.bpmnProcessId) && Objects.equals(decisionDefinitionKey, that.decisionDefinitionKey) && Objects.equals(incidentKey, that.incidentKey)
-        && Objects.equals(scopeKey, that.scopeKey) && Objects.equals(variableName, that.variableName) && Objects.equals(variableValue, that.variableValue)
-        && type == that.type && Objects.equals(lockExpirationTime, that.lockExpirationTime) && Objects.equals(lockOwner, that.lockOwner) && state == that.state
-        && Objects.equals(errorMessage, that.errorMessage) && Objects.equals(batchOperationId, that.batchOperationId) && Objects.equals(zeebeCommandKey,
-        that.zeebeCommandKey) && Objects.equals(username, that.username) && Objects.equals(modifyInstructions, that.modifyInstructions);
+    return Objects.equals(processInstanceKey, that.processInstanceKey) && Objects.equals(processDefinitionKey, that.processDefinitionKey) &&
+        Objects.equals(bpmnProcessId, that.bpmnProcessId) && Objects.equals(decisionDefinitionKey, that.decisionDefinitionKey) &&
+        Objects.equals(incidentKey, that.incidentKey) && Objects.equals(scopeKey, that.scopeKey) && Objects.equals(variableName, that.variableName) &&
+        Objects.equals(variableValue, that.variableValue) && type == that.type && Objects.equals(lockExpirationTime, that.lockExpirationTime) &&
+        Objects.equals(lockOwner, that.lockOwner) && state == that.state && Objects.equals(errorMessage, that.errorMessage) &&
+        Objects.equals(batchOperationId, that.batchOperationId) && Objects.equals(zeebeCommandKey, that.zeebeCommandKey) &&
+        Objects.equals(username, that.username) && Objects.equals(modifyInstructions, that.modifyInstructions) &&
+        Objects.equals(migrationPlan, that.migrationPlan);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), processInstanceKey, processDefinitionKey, bpmnProcessId, decisionDefinitionKey, incidentKey, scopeKey, variableName,
-        variableValue, type, lockExpirationTime, lockOwner, state, errorMessage, batchOperationId, zeebeCommandKey, username, modifyInstructions);
+    return Objects.hash(super.hashCode(), processInstanceKey, processDefinitionKey, bpmnProcessId, decisionDefinitionKey, incidentKey, scopeKey,
+        variableName, variableValue, type, lockExpirationTime, lockOwner, state, errorMessage, batchOperationId, zeebeCommandKey, username,
+        modifyInstructions, migrationPlan);
   }
 
   @Override
   public String toString() {
-    return "OperationEntity{" + "processInstanceKey=" + processInstanceKey + ", processDefinitionKey=" + processDefinitionKey + ", bpmnProcessId='"
-        + bpmnProcessId + '\'' + ", decisionDefinitionKey=" + decisionDefinitionKey + ", incidentKey=" + incidentKey + ", scopeKey=" + scopeKey
-        + ", variableName='" + variableName + '\'' + ", variableValue='" + variableValue + '\'' + ", type=" + type + ", lockExpirationTime="
-        + lockExpirationTime + ", lockOwner='" + lockOwner + '\'' + ", state=" + state + ", errorMessage='" + errorMessage + '\'' + ", batchOperationId='"
-        + batchOperationId + '\'' + ", zeebeCommandKey=" + zeebeCommandKey + ", username='" + username + '\'' + ", modifyInstructions='" + modifyInstructions
-        + '\'' + '}';
+    return "OperationEntity{" +
+        "processInstanceKey=" + processInstanceKey +
+        ", processDefinitionKey=" + processDefinitionKey +
+        ", bpmnProcessId='" + bpmnProcessId + '\'' +
+        ", decisionDefinitionKey=" + decisionDefinitionKey +
+        ", incidentKey=" + incidentKey +
+        ", scopeKey=" + scopeKey +
+        ", variableName='" + variableName + '\'' +
+        ", variableValue='" + variableValue + '\'' +
+        ", type=" + type +
+        ", lockExpirationTime=" + lockExpirationTime +
+        ", lockOwner='" + lockOwner + '\'' +
+        ", state=" + state +
+        ", errorMessage='" + errorMessage + '\'' +
+        ", batchOperationId='" + batchOperationId + '\'' +
+        ", zeebeCommandKey=" + zeebeCommandKey +
+        ", username='" + username + '\'' +
+        ", modifyInstructions='" + modifyInstructions + '\'' +
+        ", migrationPlan='" + migrationPlan + '\'' +
+        '}';
   }
 }

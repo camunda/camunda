@@ -4,17 +4,14 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.entities;
+package io.camunda.operate.webapp.rest.dto;
 
-public enum OperationType {
+import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 
-  RESOLVE_INCIDENT,
-  CANCEL_PROCESS_INSTANCE,
-  DELETE_PROCESS_INSTANCE,
-  ADD_VARIABLE,
-  UPDATE_VARIABLE,
-  MODIFY_PROCESS_INSTANCE,
-  DELETE_DECISION_DEFINITION,
-  DELETE_PROCESS_DEFINITION,
-  MIGRATE_PROCESS_INSTANCE
+public interface RequestValidator {
+
+  /**
+   * @throws InvalidRequestException
+   */
+  void validate();
 }

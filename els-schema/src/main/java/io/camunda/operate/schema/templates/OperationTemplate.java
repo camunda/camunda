@@ -32,6 +32,7 @@ public class OperationTemplate extends AbstractTemplateDescriptor implements Pro
   public static final String ZEEBE_COMMAND_KEY = "zeebeCommandKey";
   public static final String USERNAME = "username";
   public static final String MODIFIY_INSTRUCTIONS = "modifyInstructions";
+  public static final String MIGRATION_PLAN = "migrationPlan";
 
   @Override
   public String getIndexName() {
@@ -40,7 +41,7 @@ public class OperationTemplate extends AbstractTemplateDescriptor implements Pro
 
   @Override
   public String getVersion() {
-    return "8.3.0";
+    return "8.3.2";
   }
 
 }

@@ -40,7 +40,6 @@ import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.UserService;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
-import io.camunda.operate.webapp.zeebe.operation.DeleteDecisionDefinitionHandler;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
@@ -210,7 +209,7 @@ public class OpensearchBatchOperationWriter implements io.camunda.operate.webapp
 
     final Consumer<List<Hit<ProcessInstanceSource>>> hitsConsumer = hits -> withOperateRuntimeException (() ->{
       final List<ProcessInstanceSource> processInstanceSources = hits.stream().map(Hit::source).toList();
-      return operationsCount.addAndGet(persistOperations(processInstanceSources, batchOperation.getId(), batchOperationRequest.getOperationType(), null));
+      return operationsCount.addAndGet(persistOperations(processInstanceSources, batchOperation.getId(), batchOperationRequest, null));
     });
 
     Consumer<HitsMetadata<ProcessInstanceSource>> hitsMetadataConsumer = hitsMeta -> {
@@ -414,9 +413,11 @@ public class OpensearchBatchOperationWriter implements io.camunda.operate.webapp
     return batchOperationEntity;
   }
 
-  private int persistOperations(List<ProcessInstanceSource> processInstanceSources, String batchOperationId, OperationType operationType, String incidentId) throws PersistenceException {
+  private int persistOperations(List<ProcessInstanceSource> processInstanceSources, String batchOperationId,
+                                CreateBatchOperationRequestDto batchOperationRequest, String incidentId) throws PersistenceException {
     var batchRequest = operationStore.newBatchRequest();
     int operationsCount = 0;
+    OperationType operationType = batchOperationRequest.getOperationType();
 
     List<Long> processInstanceKeys = processInstanceSources.stream().map(ProcessInstanceSource::getProcessInstanceKey).collect(Collectors.toList());
     Map<Long, List<Long>> incidentKeys = new HashMap<>();
@@ -424,7 +425,7 @@ public class OpensearchBatchOperationWriter implements io.camunda.operate.webapp
     if (operationType.equals(OperationType.RESOLVE_INCIDENT) && incidentId == null) {
       incidentKeys = incidentReader.getIncidentKeysPerProcessInstance(processInstanceKeys);
     }
-    Map<Long,String> processInstanceIdToIndexName = null;
+    Map<Long,String> processInstanceIdToIndexName;
     try {
       processInstanceIdToIndexName = listViewStore.getListViewIndicesForProcessInstances(processInstanceKeys);
     } catch (IOException e) {
@@ -435,7 +436,7 @@ public class OpensearchBatchOperationWriter implements io.camunda.operate.webapp
       Long processInstanceKey = processInstanceSource.getProcessInstanceKey();
       if (operationType.equals(OperationType.RESOLVE_INCIDENT) && incidentId == null) {
         final List<Long> allIncidentKeys = incidentKeys.get(processInstanceKey);
-        if (allIncidentKeys != null && allIncidentKeys.size() != 0) {
+        if (allIncidentKeys != null && !allIncidentKeys.isEmpty()) {
           for (Long incidentKey: allIncidentKeys) {
             OperationEntity operationEntity = createOperationEntity(processInstanceSource, operationType, batchOperationId)
               .setIncidentKey(incidentKey);
@@ -446,6 +447,13 @@ public class OpensearchBatchOperationWriter implements io.camunda.operate.webapp
       } else {
         OperationEntity operationEntity = createOperationEntity(processInstanceSource, operationType, batchOperationId)
           .setIncidentKey(toLongOrNull(incidentId));
+        if(operationType == OperationType.MIGRATE_PROCESS_INSTANCE) {
+          try {
+            operationEntity.setMigrationPlan(objectMapper.writeValueAsString(batchOperationRequest.getMigrationPlan()));
+          } catch (IOException e) {
+            throw new PersistenceException(e);
+          }
+        }
         batchRequest.add(operationTemplate.getFullQualifiedName(), operationEntity);
         operationsCount++;
       }

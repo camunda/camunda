@@ -17,6 +17,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.BatchOperationEntity;
+import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.webapp.rest.DecisionRestService;
 import io.camunda.operate.webapp.rest.ProcessRestService;
 import io.micrometer.core.instrument.Meter;
@@ -90,6 +92,9 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
 
   @Autowired
   protected ObjectMapper objectMapper;
+
+  @Autowired
+  private TestSearchRepository testSearchRepository;
 
   private HttpClient httpClient = HttpClient.newHttpClient();
 
@@ -371,19 +376,23 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     return postBatchOperation(query, operationType, name, HttpStatus.SC_OK);
   }
 
-  protected MvcResult postBatchOperation(ListViewQueryDto query, OperationType operationType, String name, int expectedStatus) throws Exception {
-    CreateBatchOperationRequestDto batchOperationDto = createBatchOperationDto(operationType, name, query);
+  protected MvcResult postBatchOperation(CreateBatchOperationRequestDto batchOperationDto, int expectedStatus) throws Exception {
     MockHttpServletRequestBuilder postOperationRequest =
-      post(POST_BATCH_OPERATION_URL)
-        .content(mockMvcTestRule.json(batchOperationDto))
-        .contentType(mockMvcTestRule.getContentType());
+        post(POST_BATCH_OPERATION_URL)
+            .content(mockMvcTestRule.json(batchOperationDto))
+            .contentType(mockMvcTestRule.getContentType());
 
     final MvcResult mvcResult =
-      mockMvc.perform(postOperationRequest)
-        .andExpect(status().is(expectedStatus))
-        .andReturn();
+        mockMvc.perform(postOperationRequest)
+            .andExpect(status().is(expectedStatus))
+            .andReturn();
     searchTestRule.refreshSerchIndexes();
     return mvcResult;
+  }
+
+  protected MvcResult postBatchOperation(ListViewQueryDto query, OperationType operationType, String name, int expectedStatus) throws Exception {
+    CreateBatchOperationRequestDto batchOperationDto = createBatchOperationDto(operationType, name, query);
+    return postBatchOperation(batchOperationDto, expectedStatus);
   }
 
   protected CreateBatchOperationRequestDto createBatchOperationDto(OperationType operationType, String name, ListViewQueryDto query) {
@@ -524,5 +533,13 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
                 .processInstanceExists()
                 .getProcessInstanceKey())
         .collect(Collectors.toList());
+  }
+
+  protected <R> List<R> searchAllDocuments(String index, Class<R> clazz) {
+    try {
+      return testSearchRepository.searchAll(index, clazz);
+    } catch (IOException ex) {
+      throw new OperateRuntimeException("Search failed for index " + index, ex);
+    }
   }
 }

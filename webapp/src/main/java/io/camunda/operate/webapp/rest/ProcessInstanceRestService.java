@@ -20,6 +20,7 @@ import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.reader.VariableReader;
+import io.camunda.operate.webapp.rest.dto.operation.MigrationPlanDto;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.rest.dto.*;
@@ -54,8 +55,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static io.camunda.operate.entities.OperationType.ADD_VARIABLE;
-import static io.camunda.operate.entities.OperationType.UPDATE_VARIABLE;
+import static io.camunda.operate.entities.OperationType.*;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 
 @RestController
@@ -147,6 +147,13 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
     if (Set.of(UPDATE_VARIABLE, ADD_VARIABLE).contains(batchOperationRequest.getOperationType())) {
       throw new InvalidRequestException(
           "For variable update use \"Create operation for one process instance\" endpoint.");
+    }
+    if (batchOperationRequest.getOperationType() == MIGRATE_PROCESS_INSTANCE) {
+      MigrationPlanDto migrationPlanDto = batchOperationRequest.getMigrationPlan();
+      if (migrationPlanDto == null) {
+        throw new InvalidRequestException(String.format("Migration plan is mandatory for %s operation", MIGRATE_PROCESS_INSTANCE));
+      }
+      migrationPlanDto.validate();
     }
   }
 

@@ -9,24 +9,38 @@ package io.camunda.operate.webapp.rest.dto.operation;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 
+import java.util.Objects;
+
 public class CreateBatchOperationRequestDto {
 
-  public CreateBatchOperationRequestDto() {
-  }
+  /**
+   * Batch operation name
+   */
+  private String name;
 
-  public CreateBatchOperationRequestDto(ListViewQueryDto query, OperationType operationType) {
-    this.query = query;
-    this.operationType = operationType;
-  }
-
+  /**
+   * Query to filter the process instances affected
+   */
   private ListViewQueryDto query;
 
+  /**
+   * Operation type
+   */
   private OperationType operationType;
 
   /**
-   * Batch operation name.
+   * Migration plan, only needed for process instance migration operation
    */
-  private String name;
+  private MigrationPlanDto migrationPlan;
+
+  public String getName() {
+    return name;
+  }
+
+  public CreateBatchOperationRequestDto setName(String name) {
+    this.name = name;
+    return this;
+  }
 
   public ListViewQueryDto getQuery() {
     return query;
@@ -46,42 +60,44 @@ public class CreateBatchOperationRequestDto {
     return this;
   }
 
-  public String getName() {
-    return name;
+  public MigrationPlanDto getMigrationPlan() {
+    return migrationPlan;
   }
 
-  public CreateBatchOperationRequestDto setName(String name) {
-    this.name = name;
+  public CreateBatchOperationRequestDto setMigrationPlan(MigrationPlanDto migrationPlan) {
+    this.migrationPlan = migrationPlan;
     return this;
+  }
+
+  public CreateBatchOperationRequestDto() {
+  }
+
+  public CreateBatchOperationRequestDto(ListViewQueryDto query, OperationType operationType) {
+    this.query = query;
+    this.operationType = operationType;
   }
 
   @Override
   public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
     CreateBatchOperationRequestDto that = (CreateBatchOperationRequestDto) o;
-
-    if (query != null ? !query.equals(that.query) : that.query != null)
-      return false;
-    if (operationType != that.operationType)
-      return false;
-    return name != null ? name.equals(that.name) : that.name == null;
-
+    return Objects.equals(name, that.name) && Objects.equals(query, that.query) && operationType == that.operationType &&
+        Objects.equals(migrationPlan, that.migrationPlan);
   }
 
   @Override
   public int hashCode() {
-    int result = query != null ? query.hashCode() : 0;
-    result = 31 * result + (operationType != null ? operationType.hashCode() : 0);
-    result = 31 * result + (name != null ? name.hashCode() : 0);
-    return result;
+    return Objects.hash(name, query, operationType, migrationPlan);
   }
 
   @Override
   public String toString() {
-    return "CreateBatchOperationRequestDto{" + "query=" + query + ", operationType=" + operationType + ", name='" + name + '\'' + '}';
+    return "CreateBatchOperationRequestDto{" +
+        "name='" + name + '\'' +
+        ", query=" + query +
+        ", operationType=" + operationType +
+        ", migrationPlan=" + migrationPlan +
+        '}';
   }
 }

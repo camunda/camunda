@@ -57,6 +57,9 @@
 			},
 			"modifyInstructions": {
 				"type": "text"
+			},
+			"migrationPlan": {
+				"type": "text"
 			}
 		}
 	}

@@ -19,7 +19,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.IncidentEntity;
@@ -28,11 +27,9 @@ import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.util.*;
-import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.*;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
@@ -49,7 +46,6 @@ import io.camunda.operate.webapp.zeebe.operation.*;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 
-import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.Arrays;
 import java.util.Collections;
@@ -103,9 +99,6 @@ public class OperationIT extends OperateZeebeAbstractIT {
 
   @Autowired
   private ObjectMapper objectMapper;
-
-  @Autowired
-  private TestSearchRepository testSearchRepository;
 
   @Autowired
   private DecisionInstanceTemplate decisionInstanceTemplate;
@@ -1040,14 +1033,6 @@ public class OperationIT extends OperateZeebeAbstractIT {
   protected Long startProcessWithDecision(String payload) {
     Long procInstanceKey = tester.startProcessInstance("invoice_decision", payload).waitUntil().processInstanceIsStarted().getProcessInstanceKey();
     return procInstanceKey;
-  }
-
-  protected <R> List<R> searchAllDocuments(String index, Class<R> clazz) {
-    try {
-      return testSearchRepository.searchAll(index, clazz);
-    } catch (IOException ex) {
-      throw new OperateRuntimeException("Search failed for index " + index, ex);
-    }
   }
 
   private long startDemoProcessInstance() {

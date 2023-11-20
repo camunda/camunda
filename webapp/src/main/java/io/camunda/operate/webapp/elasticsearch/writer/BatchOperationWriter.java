@@ -46,13 +46,10 @@ import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.UserService;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
-import io.camunda.operate.webapp.zeebe.operation.DeleteDecisionDefinitionHandler;
-import io.camunda.operate.webapp.zeebe.operation.DeleteProcessDefinitionHandler;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -68,13 +65,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
-import static io.camunda.operate.entities.OperationType.ADD_VARIABLE;
-import static io.camunda.operate.entities.OperationType.UPDATE_VARIABLE;
-import static io.camunda.operate.util.CollectionUtil.getOrDefaultForNullValue;
-import static io.camunda.operate.util.ConversionUtils.toLongOrNull;
-import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 
 @Conditional(ElasticsearchCondition.class)
 @Component
@@ -233,7 +223,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
               for(SearchHit hit : searchHits.getHits()) {
                 processInstanceSources.add(ProcessInstanceSource.fromSourceMap(hit.getSourceAsMap()));
               }
-              operationsCount.addAndGet(persistOperations(processInstanceSources, batchOperation.getId(), batchOperationRequest.getOperationType(), null));
+              operationsCount.addAndGet(persistOperations(processInstanceSources, batchOperation.getId(), batchOperationRequest, null));
             } catch (PersistenceException e) {
               throw new RuntimeException(e);
             }
@@ -449,9 +439,11 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
     return batchOperationEntity;
   }
 
-  private int persistOperations(List<ProcessInstanceSource> processInstanceSources, String batchOperationId, OperationType operationType, String incidentId) throws PersistenceException {
+  private int persistOperations(List<ProcessInstanceSource> processInstanceSources, String batchOperationId,
+                                CreateBatchOperationRequestDto batchOperationRequest, String incidentId) throws PersistenceException {
     var batchRequest = operationStore.newBatchRequest();
     int operationsCount = 0;
+    OperationType operationType = batchOperationRequest.getOperationType();
 
     List<Long> processInstanceKeys = processInstanceSources.stream().map(ProcessInstanceSource::getProcessInstanceKey).collect(Collectors.toList());
     Map<Long, List<Long>> incidentKeys = new HashMap<>();
@@ -459,7 +451,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
     if (operationType.equals(OperationType.RESOLVE_INCIDENT) && incidentId == null) {
       incidentKeys = incidentReader.getIncidentKeysPerProcessInstance(processInstanceKeys);
     }
-    Map<Long,String> processInstanceIdToIndexName = null;
+    Map<Long,String> processInstanceIdToIndexName;
     try {
       processInstanceIdToIndexName = listViewStore.getListViewIndicesForProcessInstances(processInstanceKeys);
     } catch (IOException e) {
@@ -470,7 +462,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
       Long processInstanceKey = processInstanceSource.getProcessInstanceKey();
       if (operationType.equals(OperationType.RESOLVE_INCIDENT) && incidentId == null) {
         final List<Long> allIncidentKeys = incidentKeys.get(processInstanceKey);
-        if (allIncidentKeys != null && allIncidentKeys.size() != 0) {
+        if (allIncidentKeys != null && !allIncidentKeys.isEmpty()) {
           for (Long incidentKey: allIncidentKeys) {
             OperationEntity operationEntity = createOperationEntity(processInstanceSource, operationType, batchOperationId)
               .setIncidentKey(incidentKey);
@@ -481,6 +473,13 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
       } else {
         OperationEntity operationEntity = createOperationEntity(processInstanceSource, operationType, batchOperationId)
           .setIncidentKey(toLongOrNull(incidentId));
+        if(operationType == OperationType.MIGRATE_PROCESS_INSTANCE) {
+          try {
+            operationEntity.setMigrationPlan(objectMapper.writeValueAsString(batchOperationRequest.getMigrationPlan()));
+          } catch (IOException e) {
+            throw new PersistenceException(e);
+          }
+        }
         batchRequest.add(operationTemplate.getFullQualifiedName(), operationEntity);
         operationsCount++;
       }
