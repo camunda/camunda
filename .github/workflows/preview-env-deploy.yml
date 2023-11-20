@@ -60,7 +60,7 @@ jobs:
       env:
         docker_tag: "pr-${{ github.event.pull_request.head.sha || github.sha }}" # commit id of latest PR event || sha of push event
         revision: ${{ env.BRANCH_NAME }}
-        app_name: tasklist-${{ steps.sanitize.outputs.branch_name == 'master' && 'stage' || steps.sanitize.outputs.branch_name }}
+        app_name: tasklist-${{ steps.sanitize.outputs.branch_name == 'master' && 'stage' || steps.sanitize.outputs.branch_name }}-app
     #########################################################################
     # Create a preview environment
     - name: Deploy Preview Environment
@@ -68,8 +68,8 @@ jobs:
       with:
         revision: ${{ env.BRANCH_NAME }}
         argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
-        app_name: tasklist-${{ steps.sanitize.outputs.branch_name == 'master' && 'stage' || steps.sanitize.outputs.branch_name }}
-        app_url: https://${{ steps.sanitize.outputs.branch_name == 'master' && 'stage' || steps.sanitize.outputs.branch_name }}.tasklist.camunda.cloud
+        app_name: tasklist-${{ steps.sanitize.outputs.branch_name == 'master' && 'stage' || steps.sanitize.outputs.branch_name }}-app
+        app_url: https://${{ steps.sanitize.outputs.branch_name == 'master' && 'stage' || steps.sanitize.outputs.branch_name }}-app.tasklist.camunda.cloud
         argocd_arguments: ${{ env.argocd_arguments }}
 
   clean:

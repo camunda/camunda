@@ -34,7 +34,7 @@ jobs:
         uses: camunda/infra-global-github-actions/sanitize-branch-name@main
         with:
           branch: ${{ env.BRANCH_NAME }}
-          max_length: '50'
+          max_length: '15'
       #########################################################################
       # Setup: checkout code. This is required because we are using
       # composite actions and deployment manifests.
@@ -45,7 +45,7 @@ jobs:
       - name: Tear down Preview Environment
         uses: camunda/infra-global-github-actions/preview-env/destroy@main
         with:
-          app_name: tasklist-${{ steps.sanitize.outputs.branch_name }}
+          app_name: tasklist-${{ steps.sanitize.outputs.branch_name == 'master' && 'stage' || steps.sanitize.outputs.branch_name }}-app
           revision: ${{ env.BRANCH_NAME }}
           argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
   clean:
