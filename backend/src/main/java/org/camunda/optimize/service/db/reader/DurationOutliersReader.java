@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.query.analysis.DurationChartEntryDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FlowNodeOutlierParametersDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FlowNodeOutlierVariableParametersDto;
+import org.camunda.optimize.dto.optimize.query.analysis.OutlierAnalysisServiceParameters;
 import org.camunda.optimize.dto.optimize.query.analysis.ProcessDefinitionParametersDto;
 import org.camunda.optimize.dto.optimize.query.analysis.ProcessInstanceIdDto;
 import org.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
@@ -30,11 +31,11 @@ public interface DurationOutliersReader {
    String FLOW_NODE_ID_AGG = "flowNodeId";
    String FLOW_NODE_TYPE_FILTER = "flowNodeTypeFilter";
 
-   List<DurationChartEntryDto> getCountByDurationChart(final FlowNodeOutlierParametersDto outlierParams);
+   List<DurationChartEntryDto> getCountByDurationChart(final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierAnalysisParams);
 
-   Map<String, FindingsDto> getFlowNodeOutlierMap(final ProcessDefinitionParametersDto processDefinitionParams);
+   Map<String, FindingsDto> getFlowNodeOutlierMap(final OutlierAnalysisServiceParameters<ProcessDefinitionParametersDto> outlierAnalysisParams);
 
-   List<VariableTermDto> getSignificantOutlierVariableTerms(final FlowNodeOutlierParametersDto outlierParams);
+   List<VariableTermDto> getSignificantOutlierVariableTerms(final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierAnalysisParams);
 
-   List<ProcessInstanceIdDto> getSignificantOutlierVariableTermsInstanceIds(final FlowNodeOutlierVariableParametersDto outlierParams);
+   List<ProcessInstanceIdDto> getSignificantOutlierVariableTermsInstanceIds(final OutlierAnalysisServiceParameters<FlowNodeOutlierVariableParametersDto> outlierParams);
 }

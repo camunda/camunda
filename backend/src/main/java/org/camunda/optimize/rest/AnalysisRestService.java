@@ -22,10 +22,11 @@ import org.camunda.optimize.dto.optimize.query.analysis.DurationChartEntryDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FlowNodeOutlierParametersDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FlowNodeOutlierVariableParametersDto;
+import org.camunda.optimize.dto.optimize.query.analysis.OutlierAnalysisServiceParameters;
+import org.camunda.optimize.dto.optimize.query.analysis.ProcessDefinitionParametersDto;
 import org.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
-import org.camunda.optimize.dto.optimize.rest.analysis.ProcessDefinitionParametersRequestDto;
 import org.camunda.optimize.service.BranchAnalysisService;
 import org.camunda.optimize.service.OutlierAnalysisService;
 import org.camunda.optimize.service.export.CSVUtils;
@@ -62,11 +63,12 @@ public class AnalysisRestService {
   @Path("/flowNodeOutliers")
   @Produces(MediaType.APPLICATION_JSON)
   public Map<String, FindingsDto> getFlowNodeOutlierMap(@Context ContainerRequestContext requestContext,
-                                                        ProcessDefinitionParametersRequestDto parameters) {
+                                                        ProcessDefinitionParametersDto parameters) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     validateProvidedFilters(parameters.getFilters());
-    parameters.setTimezone(extractTimezone(requestContext));
-    return outlierAnalysisService.getFlowNodeOutlierMap(parameters, userId);
+    final OutlierAnalysisServiceParameters<ProcessDefinitionParametersDto> outlierAnalysisParams =
+      new OutlierAnalysisServiceParameters<>(parameters, extractTimezone(requestContext), userId);
+    return outlierAnalysisService.getFlowNodeOutlierMap(outlierAnalysisParams);
   }
 
   @POST
@@ -76,8 +78,9 @@ public class AnalysisRestService {
                                                              FlowNodeOutlierParametersDto parameters) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     validateProvidedFilters(parameters.getFilters());
-    parameters.setTimezone(extractTimezone(requestContext));
-    return outlierAnalysisService.getCountByDurationChart(parameters, userId);
+    final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierAnalysisParams =
+      new OutlierAnalysisServiceParameters<>(parameters, extractTimezone(requestContext), userId);
+    return outlierAnalysisService.getCountByDurationChart(outlierAnalysisParams);
   }
 
   @POST
@@ -87,8 +90,9 @@ public class AnalysisRestService {
                                                                   FlowNodeOutlierParametersDto parameters) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     validateProvidedFilters(parameters.getFilters());
-    parameters.setTimezone(extractTimezone(requestContext));
-    return outlierAnalysisService.getSignificantOutlierVariableTerms(parameters, userId);
+    final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierAnalysisParams =
+      new OutlierAnalysisServiceParameters<>(parameters, extractTimezone(requestContext), userId);
+    return outlierAnalysisService.getSignificantOutlierVariableTerms(outlierAnalysisParams);
   }
 
   @POST
@@ -100,10 +104,11 @@ public class AnalysisRestService {
                                                                 FlowNodeOutlierVariableParametersDto parameters) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     validateProvidedFilters(parameters.getFilters());
-    parameters.setTimezone(extractTimezone(requestContext));
     final String resultFileName = fileName == null ? System.currentTimeMillis() + ".csv" : fileName;
+    final OutlierAnalysisServiceParameters<FlowNodeOutlierVariableParametersDto> outlierAnalysisParams =
+      new OutlierAnalysisServiceParameters<>(parameters, extractTimezone(requestContext), userId);
     final List<String[]> processInstanceIdsCsv = CSVUtils.mapIdList(
-      outlierAnalysisService.getSignificantOutlierVariableTermsInstanceIds(parameters, userId)
+      outlierAnalysisService.getSignificantOutlierVariableTermsInstanceIds(outlierAnalysisParams)
     );
 
     return Response

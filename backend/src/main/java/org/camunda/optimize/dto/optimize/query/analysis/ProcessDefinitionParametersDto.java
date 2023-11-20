@@ -23,10 +23,9 @@ public class ProcessDefinitionParametersDto {
   protected String processDefinitionKey;
   protected List<String> processDefinitionVersions;
   protected List<String> tenantIds = DEFAULT_TENANT_IDS;
-  protected Long minimumDeviationFromAvg;
-  protected Boolean disconsiderAutomatedTasks;
+  protected Long minimumDeviationFromAvg = 50L;
+  protected Boolean disconsiderAutomatedTasks = false;
   protected List<ProcessFilterDto<?>> filters = new ArrayList<>();
-  protected ZoneId timezone;
 
   public void setTenantIds(final List<String> tenantIds) {
     this.tenantIds = normalizeTenants(tenantIds);

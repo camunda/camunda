@@ -29,6 +29,7 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FlowNodeOutlierParametersDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FlowNodeOutlierVariableParametersDto;
+import org.camunda.optimize.dto.optimize.query.analysis.ProcessDefinitionParametersDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
@@ -77,7 +78,6 @@ import org.camunda.optimize.dto.optimize.rest.GetVariableNamesForReportsRequestD
 import org.camunda.optimize.dto.optimize.rest.OnboardingStateRestDto;
 import org.camunda.optimize.dto.optimize.rest.Page;
 import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
-import org.camunda.optimize.dto.optimize.rest.analysis.ProcessDefinitionParametersRequestDto;
 import org.camunda.optimize.dto.optimize.rest.definition.MultiDefinitionTenantsRequestDto;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
@@ -1414,17 +1414,17 @@ public class OptimizeRequestExecutor {
                                                               final long minimalDeviationInMs,
                                                               final boolean onlyHumanTasks,
                                                               final List<ProcessFilterDto<?>> filters) {
-    final ProcessDefinitionParametersRequestDto processDefinitionParametersRequestDto =
-      new ProcessDefinitionParametersRequestDto();
-    processDefinitionParametersRequestDto.setProcessDefinitionKey(key);
-    processDefinitionParametersRequestDto.setProcessDefinitionVersions(version);
-    processDefinitionParametersRequestDto.setTenantIds(tenantIds);
-    processDefinitionParametersRequestDto.setMinimumDeviationFromAvg(minimalDeviationInMs);
-    processDefinitionParametersRequestDto.setDisconsiderAutomatedTasks(onlyHumanTasks);
-    processDefinitionParametersRequestDto.setFilters(filters);
+    final ProcessDefinitionParametersDto processDefinitionParametersDto =
+      new ProcessDefinitionParametersDto();
+    processDefinitionParametersDto.setProcessDefinitionKey(key);
+    processDefinitionParametersDto.setProcessDefinitionVersions(version);
+    processDefinitionParametersDto.setTenantIds(tenantIds);
+    processDefinitionParametersDto.setMinimumDeviationFromAvg(minimalDeviationInMs);
+    processDefinitionParametersDto.setDisconsiderAutomatedTasks(onlyHumanTasks);
+    processDefinitionParametersDto.setFilters(filters);
     this.path = "analysis/flowNodeOutliers";
     this.method = POST;
-    this.body = getBody(processDefinitionParametersRequestDto);
+    this.body = getBody(processDefinitionParametersDto);
     return this;
   }
 

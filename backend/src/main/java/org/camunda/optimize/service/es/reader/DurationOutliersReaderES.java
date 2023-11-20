@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.analysis.DurationChartEntryDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FlowNodeOutlierParametersDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FlowNodeOutlierVariableParametersDto;
+import org.camunda.optimize.dto.optimize.query.analysis.OutlierAnalysisServiceParameters;
 import org.camunda.optimize.dto.optimize.query.analysis.ProcessDefinitionParametersDto;
 import org.camunda.optimize.dto.optimize.query.analysis.ProcessInstanceIdDto;
 import org.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
@@ -58,6 +59,7 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.time.ZoneId;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -148,9 +150,10 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
   private final ConfigurationService configurationService;
 
   @Override
-  public List<DurationChartEntryDto> getCountByDurationChart(final FlowNodeOutlierParametersDto outlierParams) {
-    final BoolQueryBuilder query = buildBaseQuery(outlierParams);
+  public List<DurationChartEntryDto> getCountByDurationChart(final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierAnalysisParams) {
+    final BoolQueryBuilder query = buildBaseQuery(outlierAnalysisParams);
 
+    final FlowNodeOutlierParametersDto outlierParams = outlierAnalysisParams.getProcessDefinitionParametersDto();
     long interval = getInterval(query, outlierParams.getFlowNodeId(), outlierParams.getProcessDefinitionKey());
     HistogramAggregationBuilder histogram = AggregationBuilders.histogram(AGG_HISTOGRAM)
       .field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION)
@@ -201,13 +204,15 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
   }
 
   @Override
-  public Map<String, FindingsDto> getFlowNodeOutlierMap(final ProcessDefinitionParametersDto processDefinitionParams) {
-    final BoolQueryBuilder processInstanceQuery = buildBaseQuery(processDefinitionParams);
+  public Map<String, FindingsDto> getFlowNodeOutlierMap(final OutlierAnalysisServiceParameters<ProcessDefinitionParametersDto> outlierAnalysisParams) {
+    final BoolQueryBuilder processInstanceQuery = buildBaseQuery(outlierAnalysisParams);
     ExtendedStatsAggregationBuilder stats = AggregationBuilders.extendedStats(AGG_STATS)
       .field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION);
 
     final BoolQueryBuilder query = boolQuery();
-    if (Boolean.TRUE.equals(processDefinitionParams.getDisconsiderAutomatedTasks())) {
+    final ProcessDefinitionParametersDto processDefinitionParametersDto =
+      outlierAnalysisParams.getProcessDefinitionParametersDto();
+    if (Boolean.TRUE.equals(processDefinitionParametersDto.getDisconsiderAutomatedTasks())) {
       query.filter(termsQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TYPE, generateListOfHumanTasks()));
     } else {
       query.filter(boolQuery().mustNot(termsQuery(
@@ -235,7 +240,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
       .size(0);
 
     SearchRequest searchRequest =
-      new SearchRequest(getProcessInstanceIndexAliasName(processDefinitionParams.getProcessDefinitionKey()))
+      new SearchRequest(getProcessInstanceIndexAliasName(processDefinitionParametersDto.getProcessDefinitionKey()))
         .source(searchSourceBuilder);
 
     final SearchResponse searchResponse;
@@ -250,7 +255,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
         log.info(
           "Was not able to get Flow Node outlier map because instance index with alias {} does not exist. " +
             "Returning empty results.",
-          getProcessInstanceIndexAliasName(processDefinitionParams.getProcessDefinitionKey())
+          getProcessInstanceIndexAliasName(processDefinitionParametersDto.getProcessDefinitionKey())
         );
         return Collections.emptyMap();
       }
@@ -268,19 +273,20 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
     return createFlowNodeOutlierMap(
       deviationForEachFlowNode,
       processInstanceQuery,
-      processDefinitionParams
+      processDefinitionParametersDto
     );
   }
 
   @Override
-  public List<VariableTermDto> getSignificantOutlierVariableTerms(final FlowNodeOutlierParametersDto outlierParams) {
+  public List<VariableTermDto> getSignificantOutlierVariableTerms(final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierAnalysisParams) {
+    final FlowNodeOutlierParametersDto outlierParams = outlierAnalysisParams.getProcessDefinitionParametersDto();
     if (outlierParams.getLowerOutlierBound() == null && outlierParams.getHigherOutlierBound() == null) {
       throw new OptimizeValidationException("One of lowerOutlierBound or higherOutlierBound must be set.");
     }
 
     try {
       // #1 get top variable value terms of outliers
-      final ParsedReverseNested outlierNestedProcessInstancesAgg = getTopVariableTermsOfOutliers(outlierParams);
+      final ParsedReverseNested outlierNestedProcessInstancesAgg = getTopVariableTermsOfOutliers(outlierAnalysisParams);
       final Map<String, Map<String, Long>> outlierVariableTermOccurrences = createVariableTermOccurrencesMap(
         outlierNestedProcessInstancesAgg.getAggregations().get(AGG_VARIABLES)
       );
@@ -297,7 +303,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
 
       // #2 get counts of the same terms from non outlier instances
       final ParsedReverseNested nonOutlierNestedProcessInstancesAgg = getVariableTermOccurrencesOfNonOutliers(
-        outlierParams, outlierVariableTerms
+        outlierAnalysisParams, outlierVariableTerms
       );
       final Map<String, Map<String, Long>> nonOutlierVariableTermOccurrence = createVariableTermOccurrencesMap(
         nonOutlierNestedProcessInstancesAgg.getAggregations().get(AGG_VARIABLES)
@@ -338,16 +344,18 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
   }
 
   @Override
-  public List<ProcessInstanceIdDto> getSignificantOutlierVariableTermsInstanceIds(final FlowNodeOutlierVariableParametersDto outlierParams) {
+  public List<ProcessInstanceIdDto> getSignificantOutlierVariableTermsInstanceIds(final OutlierAnalysisServiceParameters<FlowNodeOutlierVariableParametersDto> outlierParamsDto) {
+    final FlowNodeOutlierVariableParametersDto flowNodeOutlierVariableParams =
+      outlierParamsDto.getProcessDefinitionParametersDto();
     // filter by definition
-    final BoolQueryBuilder mainFilterQuery = buildBaseQuery(outlierParams);
+    final BoolQueryBuilder mainFilterQuery = buildBaseQuery(outlierParamsDto);
     // flowNode id & outlier duration
-    final BoolQueryBuilder flowNodeFilterQuery = createFlowNodeOutlierQuery(outlierParams);
+    final BoolQueryBuilder flowNodeFilterQuery = createFlowNodeOutlierQuery(outlierParamsDto);
     mainFilterQuery.must(nestedQuery(FLOW_NODE_INSTANCES, flowNodeFilterQuery, ScoreMode.None));
     // variable name & term
     final BoolQueryBuilder variableTermFilterQuery = boolQuery()
-      .must(termQuery(VARIABLES + "." + VARIABLE_NAME, outlierParams.getVariableName()))
-      .must(termQuery(VARIABLES + "." + VARIABLE_VALUE, outlierParams.getVariableTerm()));
+      .must(termQuery(VARIABLES + "." + VARIABLE_NAME, flowNodeOutlierVariableParams.getVariableName()))
+      .must(termQuery(VARIABLES + "." + VARIABLE_VALUE, flowNodeOutlierVariableParams.getVariableTerm()));
     mainFilterQuery.must(nestedQuery(VARIABLES, variableTermFilterQuery, ScoreMode.None));
 
     final Integer recordLimit = configurationService.getCsvConfiguration().getExportCsvLimit();
@@ -358,7 +366,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
       .size(recordLimit > MAX_RESPONSE_SIZE_LIMIT ? MAX_RESPONSE_SIZE_LIMIT : recordLimit);
 
     final SearchRequest scrollSearchRequest =
-      new SearchRequest(getProcessInstanceIndexAliasName(outlierParams.getProcessDefinitionKey()))
+      new SearchRequest(getProcessInstanceIndexAliasName(flowNodeOutlierVariableParams.getProcessDefinitionKey()))
         .source(searchSourceBuilder)
         .scroll(timeValueSeconds(configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds()));
 
@@ -379,7 +387,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
         log.info(
           "Was not able to obtain outlier instance IDs because instance index with name {} does not exist. " +
             "Returning empty list.",
-          getProcessInstanceIndexAliasName(outlierParams.getProcessDefinitionKey())
+          getProcessInstanceIndexAliasName(flowNodeOutlierVariableParams.getProcessDefinitionKey())
         );
         return Collections.emptyList();
       }
@@ -387,11 +395,12 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
     }
   }
 
-  private BoolQueryBuilder createFlowNodeOutlierQuery(final FlowNodeOutlierParametersDto outlierParams) {
+  private <T extends FlowNodeOutlierParametersDto> BoolQueryBuilder createFlowNodeOutlierQuery(final OutlierAnalysisServiceParameters<T> outlierParameters) {
+    final T outlierParams = outlierParameters.getProcessDefinitionParametersDto();
     final BoolQueryBuilder flowNodeFilterQuery = boolQuery()
       .must(termQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID, outlierParams.getFlowNodeId()))
       .minimumShouldMatch(1);
-    addFiltersToQuery(outlierParams, flowNodeFilterQuery);
+    addFiltersToQuery(outlierParams, flowNodeFilterQuery, outlierParameters.getZoneId());
     if (outlierParams.getHigherOutlierBound() != null) {
       flowNodeFilterQuery.should(
         rangeQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION).gt(outlierParams.getHigherOutlierBound())
@@ -405,15 +414,17 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
     return flowNodeFilterQuery;
   }
 
-  private void addFiltersToQuery(final ProcessDefinitionParametersDto params, final BoolQueryBuilder query) {
+  private void addFiltersToQuery(final ProcessDefinitionParametersDto params,
+                                 final BoolQueryBuilder query,
+                                 final ZoneId zoneId) {
     queryFilterEnhancer.addFilterToQuery(
       query,
       params.getFilters(),
-      FilterContext.builder().timezone(params.getTimezone()).build()
+      FilterContext.builder().timezone(zoneId).build()
     );
   }
 
-  private ParsedReverseNested getVariableTermOccurrencesOfNonOutliers(final FlowNodeOutlierParametersDto outlierParams,
+  private ParsedReverseNested getVariableTermOccurrencesOfNonOutliers(final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierParams,
                                                                       final Map<String, Set<String>> outlierVariableTerms)
     throws IOException {
     final SearchRequest nonOutliersTermOccurrencesRequest = createTopVariableTermsOfNonOutliersQuery(
@@ -425,8 +436,9 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
 
   }
 
-  private ParsedReverseNested getTopVariableTermsOfOutliers(final FlowNodeOutlierParametersDto outlierParams)
+  private ParsedReverseNested getTopVariableTermsOfOutliers(final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierAnalysisParams)
     throws IOException {
+    final FlowNodeOutlierParametersDto outlierParams = outlierAnalysisParams.getProcessDefinitionParametersDto();
     final List<String> variableNames = processVariableReader.getVariableNames(
       new ProcessVariableNameRequestDto(
         outlierParams.getProcessDefinitionKey(),
@@ -436,7 +448,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
     ).stream().map(ProcessVariableNameResponseDto::getName).collect(Collectors.toList());
 
     final SearchRequest outlierTopVariableTermsRequest = createTopVariableTermsOfOutliersQuery(
-      outlierParams, variableNames
+      outlierAnalysisParams, variableNames
     );
     return extractNestedProcessInstanceAgg(esClient.search(outlierTopVariableTermsRequest));
   }
@@ -471,7 +483,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
       .collect(Collectors.toList());
   }
 
-  private SearchRequest createTopVariableTermsOfOutliersQuery(final FlowNodeOutlierParametersDto outlierParams,
+  private SearchRequest createTopVariableTermsOfOutliersQuery(final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierParams,
                                                               final List<String> variableNames) {
     final BoolQueryBuilder flowNodeFilterQuery = createFlowNodeOutlierQuery(outlierParams);
 
@@ -490,11 +502,16 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
         )
     ));
 
-    return createFilteredFlowNodeVariableAggregation(outlierParams, flowNodeFilterQuery, nestedVariableAggregation);
+    return createFilteredFlowNodeVariableAggregation(
+      outlierParams,
+      flowNodeFilterQuery,
+      nestedVariableAggregation
+    );
   }
 
-  private SearchRequest createTopVariableTermsOfNonOutliersQuery(final FlowNodeOutlierParametersDto outlierParams,
+  private SearchRequest createTopVariableTermsOfNonOutliersQuery(final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierParameters,
                                                                  final Map<String, Set<String>> variablesAndTerms) {
+    final FlowNodeOutlierParametersDto outlierParams = outlierParameters.getProcessDefinitionParametersDto();
     final BoolQueryBuilder flowNodeFilterQuery = boolQuery()
       .must(termQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID, outlierParams.getFlowNodeId()))
       .minimumShouldMatch(1);
@@ -525,10 +542,10 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
         )
       ));
 
-    return createFilteredFlowNodeVariableAggregation(outlierParams, flowNodeFilterQuery, nestedVariableAggregation);
+    return createFilteredFlowNodeVariableAggregation(outlierParameters, flowNodeFilterQuery, nestedVariableAggregation);
   }
 
-  private SearchRequest createFilteredFlowNodeVariableAggregation(final FlowNodeOutlierParametersDto outlierParams,
+  private SearchRequest createFilteredFlowNodeVariableAggregation(final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierParams,
                                                                   final BoolQueryBuilder flowNodeFilterQuery,
                                                                   final NestedAggregationBuilder nestedVariableAggregation) {
     final FilterAggregationBuilder flowNodeFilterAggregation = AggregationBuilders.filter(
@@ -550,7 +567,8 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
       .aggregation(nestedFlowNodeAggregation)
       .size(0);
 
-    return new SearchRequest(getProcessInstanceIndexAliasName(outlierParams.getProcessDefinitionKey()))
+    return new SearchRequest(getProcessInstanceIndexAliasName(
+      outlierParams.getProcessDefinitionParametersDto().getProcessDefinitionKey()))
       .source(searchSourceBuilder);
   }
 
@@ -820,7 +838,8 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
       .get(AGG_REVERSE_NESTED_PROCESS_INSTANCE);
   }
 
-  private BoolQueryBuilder buildBaseQuery(final ProcessDefinitionParametersDto processDefinitionParams) {
+  private <T extends ProcessDefinitionParametersDto> BoolQueryBuilder buildBaseQuery(final OutlierAnalysisServiceParameters<T> outlierParams) {
+    final T processDefinitionParams = outlierParams.getProcessDefinitionParametersDto();
     final BoolQueryBuilder definitionQuery = DefinitionQueryUtil.createDefinitionQuery(
       processDefinitionParams.getProcessDefinitionKey(),
       processDefinitionParams.getProcessDefinitionVersions(),
@@ -828,7 +847,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
       new ProcessInstanceIndexES(processDefinitionParams.getProcessDefinitionKey()),
       processDefinitionReader::getLatestVersionToKey
     );
-    addFiltersToQuery(processDefinitionParams, definitionQuery);
+    addFiltersToQuery(processDefinitionParams, definitionQuery, outlierParams.getZoneId());
     return definitionQuery;
   }
 
