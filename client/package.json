@@ -96,7 +96,7 @@
     "ts-toolbelt": "9.6.0",
     "typescript": "5.2.2",
     "vite": "5.0.0",
-    "vite-plugin-svgr": "4.1.0",
+    "vite-plugin-svgr": "4.2.0",
     "vite-tsconfig-paths": "4.2.1",
     "vitest": "1.0.0-beta.4",
     "zeebe-node": "8.3.1"
