@@ -176,7 +176,7 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
     } else if (currentClusterTopology.hasPendingChanges()) {
       failFuture(
           validationFuture,
-          new OperationNotAllowed(
+          new ConcurrentModificationException(
               String.format(
                   "Cannot apply topology change. Another topology change [%s] is in progress.",
                   currentClusterTopology)));
