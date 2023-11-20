@@ -21,7 +21,7 @@ Generally, you'll need to do the following things:
 3. Support this `RecordValue` in the [Elasticsearch exporter](#support-a-recordvalue-in-the-elasticsearch-exporter) and [Opensearch exporter](#support-a-recordvalue-in-the-opensearch-exporter).
 4. [Extend the official exporter documentation](#extend-official-documentation).
 5. [Support the new `ValueType` in Zeebe Process Test (ZPT)](#extend-zeebe-process-test).
-6. [Ensure that events of the new `ValueType` can be replayed](#add-valuetype-to-supported-types-for-replay).
+6. [Ensure that the new `ValueType` is processed](#add-valuetype-to-supported-types).
 7. Add support for it to the [CompactRecordLogger](../test-util/src/main/java/io/camunda/zeebe/test/util/record/CompactRecordLogger.java).
 
 ### Expanding our protocol with a new RecordValue
@@ -106,11 +106,12 @@ defines how the supported `ValueType`s' records are logged in tests.
 
 In the previous steps, we've added a new value type. This type needs to be added here to the `valueTypeLoggers`.
 
-### Add ValueType to supported types for replay
+### Add ValueType to supported types
 
-The engine defines a [range of supported value types](https://github.com/camunda/zeebe/blob/main/engine/src/main/java/io/camunda/zeebe/engine/Engine.java#L48-L49) it processes in replay mode.
-In the previous steps, we've added a new value type. This type needs to be added here to ensure that events of this type will be replayed as well. Otherwise, brokers that replay the events
-will miss the entity updates that happened in those events for the new value type which leads to data loss.
+The engine defines a [range of supported value types](https://github.com/camunda/zeebe/blob/main/engine/src/main/java/io/camunda/zeebe/engine/Engine.java#L48-L49) it processes,
+in command processing and in replay mode.
+In the previous steps, we've added a new value type. This type needs to be added here to ensure that commands of this type will be processed and events will be replayed.
+Otherwise, brokers will not process related commands and will miss the entity updates that happened in events for the new value type, which leads to data loss.
 
 ## How to extend an existing record?
 
