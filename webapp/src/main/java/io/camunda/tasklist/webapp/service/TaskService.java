@@ -152,7 +152,8 @@ public class TaskService {
 
   private Object extractTypedValue(VariableInputDTO variable) {
     if (variable.getValue().equals("null")) {
-      return "null"; // JSON Object null must be instanced like "null", also should not send to
+      return objectMapper
+          .nullNode(); // JSON Object null must be instanced like "null", also should not send to
       // objectMapper null values
     }
 
