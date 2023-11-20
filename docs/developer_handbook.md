@@ -15,11 +15,14 @@ This document contains instructions for developers who want to contribute to thi
 
 ## How to create a new record?
 
-Generally, you'll need to do 4 things:
-1. [Expand our `protocol` with a new `RecordValue` interface (incl. a new `ValueType` value)](#expanding-our-protocol-with-a-new-recordvalue).
+Generally, you'll need to do the following things:
+1. [Expand our `protocol` with a new `RecordValue`](#expanding-our-protocol-with-a-new-recordvalue).
 2. [Implement this `RecordValue` in the `protocol-impl` module](#implement-a-new-recordvalue-in-protocol-impl).
-3. [Support this `RecordValue` in the Elasticsearch exporter](#support-a-recordvalue-in-the-elasticsearch-exporter).
-4. Add support for it to the [CompactRecordLogger](../test-util/src/main/java/io/camunda/zeebe/test/util/record/CompactRecordLogger.java).
+3. Support this `RecordValue` in the [Elasticsearch exporter](#support-a-recordvalue-in-the-elasticsearch-exporter) and [Opensearch exporter](#support-a-recordvalue-in-the-opensearch-exporter).
+4. [Extend the official exporter documentation](#extend-official-documentation).
+5. [Support the new `ValueType` in Zeebe Process Test (ZPT)](#extend-zeebe-process-test).
+6. [Ensure that events of the new `ValueType` can be replayed](#add-valuetype-to-supported-types-for-replay).
+7. Add support for it to the [CompactRecordLogger](../test-util/src/main/java/io/camunda/zeebe/test/util/record/CompactRecordLogger.java).
 
 ### Expanding our protocol with a new RecordValue
 
@@ -89,11 +92,25 @@ our tests will fail if you don't provide this support. Note that in step 3 below
 4. Document this new filter option in the dist folder's [broker config templates](../dist/src/main/config/).
 5. Add a mapping for the ValueType to the [TestSupport](../exporters/opensearch-exporter/src/test/java/io/camunda/zeebe/exporter/opensearch/TestSupport.java).
 
-### Extend Official documentation
+### Extend official documentation
 
 Our Exporter configurations are documented in the [official docs](https://github.com/camunda/camunda-platform-docs).
 In the previous steps we've extended the configuration of the Elasticsearch and OpenSearch exporters.
 These configurations options need to be added to the official documentation.
+
+### Extend Zeebe Process Test
+
+The [Zeebe Process Test (ZPT)](https://github.com/camunda/zeebe-process-test/) library allows you to unit test your Camunda Platform 8 BPMN processes.
+The [RecordStreamLogger](https://github.com/camunda/zeebe-process-test/blob/main/filters/src/main/java/io/camunda/zeebe/process/test/filters/logger/RecordStreamLogger.java) class
+defines how the supported `ValueType`s' records are logged in tests.
+
+In the previous steps, we've added a new value type. This type needs to be added here to the `valueTypeLoggers`.
+
+### Add ValueType to supported types for replay
+
+The engine defines a [range of supported value types](https://github.com/camunda/zeebe/blob/main/engine/src/main/java/io/camunda/zeebe/engine/Engine.java#L48-L49) it processes in replay mode.
+In the previous steps, we've added a new value type. This type needs to be added here to ensure that events of this type will be replayed as well. Otherwise, brokers that replay the events
+will miss the entity updates that happened in those events for the new value type which leads to data loss.
 
 ## How to extend an existing record?
 
