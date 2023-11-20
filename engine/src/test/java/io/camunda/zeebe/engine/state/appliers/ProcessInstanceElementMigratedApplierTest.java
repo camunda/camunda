@@ -80,6 +80,17 @@ public class ProcessInstanceElementMigratedApplierTest {
         .hasBpmnElementType(processInstance.getBpmnElementType())
         .hasBpmnEventType(processInstance.getBpmnEventType())
         .hasFlowScopeKey(processInstance.getFlowScopeKey());
+
+    assertThat(
+            elementInstanceState.getProcessInstanceKeysByDefinitionKey(
+                migratedProcessInstance.getProcessDefinitionKey()))
+        .describedAs("Expect that the instance is migrated to the target process definition")
+        .containsExactly(migratedProcessInstance.getProcessInstanceKey());
+    assertThat(
+            elementInstanceState.getProcessInstanceKeysByDefinitionKey(
+                processInstance.getProcessDefinitionKey()))
+        .describedAs("Expect that there are no instances of the old process definition")
+        .isEmpty();
   }
 
   @Test
