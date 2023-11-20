@@ -53,17 +53,17 @@ public class CompensationTaskValidator implements ModelElementValidator<Task> {
 
       if (!element.getIncoming().isEmpty()) {
         validationResultCollector.addError(
-            0, "A compensation handler should have no incoming sequence flows.");
+            0, "A compensation handler should have no incoming sequence flows");
       }
 
       if (!element.getOutgoing().isEmpty()) {
         validationResultCollector.addError(
-            0, "A compensation handler should have no outgoing sequence flows.");
+            0, "A compensation handler should have no outgoing sequence flows");
       }
 
       if (element.getBoundaryEvents().count() > 0) {
         validationResultCollector.addError(
-            0, "A compensation handler should have no boundary events.");
+            0, "A compensation handler should have no boundary events");
       }
     }
   }

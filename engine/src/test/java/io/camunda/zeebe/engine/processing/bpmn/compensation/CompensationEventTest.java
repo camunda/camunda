@@ -58,6 +58,8 @@ public class CompensationEventTest {
     // then
     assertThat(rejectedDeploy.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(rejectedDeploy.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeploy.getRejectionReason())
+        .contains("ERROR: Must have at least one outgoing sequence flow or association");
   }
 
   @Test
@@ -89,6 +91,9 @@ public class CompensationEventTest {
     // then
     assertThat(rejectedDeploy.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(rejectedDeploy.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeploy.getRejectionReason())
+        .contains(
+            "ERROR: A compensation intermediate throwing event waitForCompletion attribute must be true or not present");
   }
 
   @Test
@@ -120,6 +125,9 @@ public class CompensationEventTest {
     // then
     assertThat(rejectedDeploy.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(rejectedDeploy.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeploy.getRejectionReason())
+        .contains(
+            "ERROR: A compensation end event waitForCompletion attribute must be true or not present");
   }
 
   @Test
@@ -151,6 +159,9 @@ public class CompensationEventTest {
     // then
     assertThat(rejectedDeploy.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(rejectedDeploy.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeploy.getRejectionReason())
+        .contains(
+            "ERROR: Compensation task must be one of: service task, user task, send task, script task, manual task, or undefined task");
   }
 
   @Test
@@ -165,6 +176,8 @@ public class CompensationEventTest {
     // then
     assertThat(rejectedDeploy.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(rejectedDeploy.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeploy.getRejectionReason())
+        .contains("ERROR: A compensation handler should have no outgoing sequence flows");
   }
 
   @Test
@@ -179,6 +192,8 @@ public class CompensationEventTest {
     // then
     assertThat(rejectedDeploy.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(rejectedDeploy.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeploy.getRejectionReason())
+        .contains("ERROR: A compensation handler should have no incoming sequence flows");
   }
 
   @Test
@@ -193,5 +208,7 @@ public class CompensationEventTest {
     // then
     assertThat(rejectedDeploy.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(rejectedDeploy.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeploy.getRejectionReason())
+        .contains("ERROR: A compensation handler should have no boundary events");
   }
 }

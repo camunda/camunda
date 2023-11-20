@@ -22,6 +22,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.EndEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.model.bpmn.instance.CancelEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
@@ -110,7 +111,10 @@ class ZeebeEndEventValidationTest {
             endEvent ->
                 endEvent.message(
                     b -> b.name("message-name").zeebeCorrelationKey("correlationKey"))),
-        new EndEventTypeBuilder(TerminateEventDefinition.class, EndEventBuilder::terminate));
+        new EndEventTypeBuilder(TerminateEventDefinition.class, EndEventBuilder::terminate),
+        new EndEventTypeBuilder(
+            CompensateEventDefinition.class,
+            endEvent -> endEvent.compensateEventDefinition().compensateEventDefinitionDone()));
   }
 
   private static Stream<EndEventTypeBuilder> unsupportedEndEventTypes() {
