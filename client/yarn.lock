@@ -7419,9 +7419,9 @@ firefox-profile@^4.2.2:
     xml2js "^0.5.0"
 
 fitty@^2.3.7:
-  version "2.3.7"
-  resolved "https://registry.yarnpkg.com/fitty/-/fitty-2.3.7.tgz#f80002f8291334ef1bac7e9256a5648a54608db8"
-  integrity sha512-yucQBzDD8sRa8EXfHu4/h9vNDFHUXpYtC+nydtBRfLSjzToCEvacy4qiBJyihgUVrqpXB+Kp5kWCbROSrePd2g==
+  version "2.4.2"
+  resolved "https://registry.yarnpkg.com/fitty/-/fitty-2.4.2.tgz#7e75f8325e901f866dffcdb56c310682e15cf2eb"
+  integrity sha512-GNhWgImK4+wEkgEZjBkQMyu5NLSmmryg/CaRP7zYby+TWzCrUou6BHL+iqbjKzJRXMyzuJkH+LBB1+lh4oO77g==
 
 flat-cache@^3.0.4:
   version "3.1.1"
