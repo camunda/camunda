@@ -143,4 +143,18 @@ public interface ClusterActuator {
   @RequestLine("DELETE /changes/{changeId}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   GetTopologyResponse cancelChange(@Param final long changeId);
+
+  // invalid parameter types
+  @RequestLine("POST /brokers")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PostOperationResponse scaleBrokersInvalidType(@RequestBody List<String> ids);
+
+  /**
+   * Request that the broker is added to the cluster.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST /brokers/{brokerId}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PostOperationResponse addBrokerInvalidType(@Param final String brokerId);
 }

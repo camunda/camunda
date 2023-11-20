@@ -26,6 +26,8 @@ paths:
       responses:
         '202':
           $ref: '#/components/responses/AddBrokersResponse'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
         '409':
           $ref: '#/components/responses/ConcurrentChangeError'
         '500':
@@ -43,6 +45,8 @@ paths:
       responses:
         '202':
           $ref: '#/components/responses/RemoveBrokerResponse'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
         '409':
           $ref: '#/components/responses/ConcurrentChangeError'
         '500':
@@ -76,6 +80,8 @@ paths:
       responses:
         '202':
           $ref: "#/components/responses/ScaleBrokersResponse"
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
         '409':
           $ref: '#/components/responses/ConcurrentChangeError'
         '500':
@@ -103,7 +109,12 @@ paths:
       responses:
         '200':
           $ref: "#/components/responses/GetTopologyResponse"
-
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '502':
+          $ref: '#/components/responses/GatewayError'
+        '504':
+          $ref: '#/components/responses/TimeoutError'
 
 components:
   parameters:
@@ -118,6 +129,13 @@ components:
   responses:
     ConcurrentChangeError:
       description: Failed to accept request. Another topology change is in progress.
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/Error"
+
+    InvalidRequest:
+      description: Invalid request.
       content:
         application/json:
           schema:
