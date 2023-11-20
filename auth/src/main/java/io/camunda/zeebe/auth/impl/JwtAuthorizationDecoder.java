@@ -73,23 +73,7 @@ public class JwtAuthorizationDecoder
    */
   @Override
   public DecodedJWT build() {
-    final Verification verificationBuilder =
-        JWT.require(signingAlgorithm)
-            .withIssuer(issuer)
-            .withAudience(audience)
-            .withSubject(subject);
-
-    for (final String claim : claims) {
-      verificationBuilder.withClaimPresence(claim);
-    }
-    final JWTVerifier jwtVerification = verificationBuilder.build();
-
-    try {
-      return jwtVerification.verify(jwtToken);
-    } catch (final JWTVerificationException | NullPointerException ex) {
-      LOGGER.error("Authorization data unavailable: {}", ex.getMessage());
-      throw new UnrecoverableException("Authorization data unavailable: " + ex.getMessage(), ex);
-    }
+    return validateJwtToken();
   }
 
   @Override
@@ -121,5 +105,26 @@ public class JwtAuthorizationDecoder
   public JwtAuthorizationDecoder withJwtToken(final String token) {
     jwtToken = token;
     return this;
+  }
+
+  private DecodedJWT validateJwtToken() {
+    final Verification verificationBuilder =
+        JWT.require(signingAlgorithm)
+            .withIssuer(issuer)
+            .withAudience(audience)
+            .withSubject(subject)
+            .ignoreIssuedAt();
+
+    for (final String claim : claims) {
+      verificationBuilder.withClaimPresence(claim);
+    }
+    final JWTVerifier jwtVerification = verificationBuilder.build();
+
+    try {
+      return jwtVerification.verify(jwtToken);
+    } catch (final JWTVerificationException | NullPointerException ex) {
+      LOGGER.error("Authorization data unavailable: {}", ex.getMessage());
+      throw new UnrecoverableException("Authorization data unavailable: " + ex.getMessage(), ex);
+    }
   }
 }

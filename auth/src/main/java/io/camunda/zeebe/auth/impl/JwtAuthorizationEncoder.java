@@ -13,7 +13,6 @@ import com.auth0.jwt.exceptions.JWTCreationException;
 import io.camunda.zeebe.auth.api.AuthorizationEncoder;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -63,7 +62,6 @@ public class JwtAuthorizationEncoder
           .withIssuer(issuer)
           .withAudience(audience)
           .withSubject(subject)
-          .withIssuedAt(Instant.now())
           .withPayload(claims)
           .sign(signingAlgorithm);
     } catch (final IllegalArgumentException | JWTCreationException ex) {
