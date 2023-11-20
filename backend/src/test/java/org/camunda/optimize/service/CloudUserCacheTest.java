@@ -72,6 +72,34 @@ public class CloudUserCacheTest {
   }
 
   @Test
+  public void testCloudUserCacheIsInvalidatedWhenRenewed() {
+    // given
+    when(configurationService.getCaches().getCloudUsers().getMinFetchIntervalSeconds()).thenReturn(600L);
+    final CloudUserDto cloudUserDto = createCloudUserWithId("userId");
+    when(ccSaaSUserClient.fetchAllCloudUsers(any())).thenReturn(List.of(cloudUserDto));
+
+    // when we make the first request
+    Collection<CloudUserDto> allUsers = underTest.getAllUsers();
+
+    // then we get the fetched user and the cloud client was invoked
+    assertThat(allUsers).containsExactly(cloudUserDto);
+    verify(ccSaaSUserClient, times(1)).fetchAllCloudUsers(ACCESS_TOKEN);
+
+    // when the fetch interval is elapsed
+    when(configurationService.getCaches().getCloudUsers().getMinFetchIntervalSeconds()).thenReturn(-1L);
+
+    // and the second retrieval of all users no longer contains the original user
+    when(ccSaaSUserClient.fetchAllCloudUsers(any())).thenReturn(Collections.emptyList());
+
+    // when we request for a second time
+    allUsers = underTest.getAllUsers();
+
+    // then the user is not returned as the cache has been invalidated and the cloud client was invoked
+    assertThat(allUsers).isEmpty();
+    verify(ccSaaSUserClient, times(2)).fetchAllCloudUsers(ACCESS_TOKEN);
+  }
+
+  @Test
   public void testCloudUserCacheIsUsedWhenFetchingIndividualUser() {
     // given
     when(configurationService.getCaches().getCloudUsers().getMinFetchIntervalSeconds()).thenReturn(600L);
@@ -85,7 +113,7 @@ public class CloudUserCacheTest {
     Optional<CloudUserDto> fetchedCloudUser = underTest.getUserById(userId);
 
     // then the user is returned from the cache
-    assertThat(fetchedCloudUser).isPresent().get().isEqualTo(cloudUserDto);
+    assertThat(fetchedCloudUser).isPresent().get().extracting(user -> user).isEqualTo(cloudUserDto);
     // and no requests to fetch the user from the client are made
     verify(ccSaaSUserClient, times(0)).getCloudUserById(userId, ACCESS_TOKEN);
 
@@ -96,7 +124,7 @@ public class CloudUserCacheTest {
     fetchedCloudUser = underTest.getUserById(otherUserId);
 
     // then the user is returned
-    assertThat(fetchedCloudUser).isPresent().get().isEqualTo(otherCloudUser);
+    assertThat(fetchedCloudUser).isPresent().get().extracting(user -> user).isEqualTo(otherCloudUser);
     // and a request to fetch the user directly was made
     verify(ccSaaSUserClient, times(1)).getCloudUserById(otherUserId, ACCESS_TOKEN);
   }

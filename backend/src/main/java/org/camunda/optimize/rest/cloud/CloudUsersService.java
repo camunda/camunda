@@ -83,6 +83,7 @@ public class CloudUsersService {
     final OffsetDateTime currentTime = LocalDateUtil.getCurrentDateTime();
     final long secondsSinceCacheRepopulated = cacheLastPopulatedTimestamp.until(currentTime, ChronoUnit.SECONDS);
     if (secondsSinceCacheRepopulated > configurationService.getCaches().getCloudUsers().getMinFetchIntervalSeconds()) {
+      cloudUsersCache.invalidateAll();
       cloudUsersCache.putAll(fetchAllUsersWithinOrganization());
       cacheLastPopulatedTimestamp = currentTime;
     }
