@@ -167,7 +167,8 @@ public class MigrateProcessInstanceTest {
     final long v2ProcessDefinitionKey =
         extractProcessDefinitionKeyByProcessId(secondVersionDeployment, processId);
 
-    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVersion(1).create();
 
     // when
     ENGINE
