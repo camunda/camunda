@@ -15,26 +15,26 @@ import io.atomix.utils.serializer.serializers.DefaultSerializers;
 import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
 import java.nio.ByteBuffer;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class AtomixPartitionMessagingService implements PartitionMessagingService {
   private final ClusterCommunicationService communicationService;
   private final ClusterMembershipService clusterMembershipService;
-  private final Set<MemberId> otherMembers;
+  private final Supplier<Collection<MemberId>> partitionMembers;
+  private final MemberId localMember;
 
   public AtomixPartitionMessagingService(
       final ClusterCommunicationService communicationService,
       final ClusterMembershipService clusterMembershipService,
-      final Collection<MemberId> members) {
+      final Supplier<Collection<MemberId>> partitionMembers) {
+    localMember = clusterMembershipService.getLocalMember().id();
     this.communicationService = communicationService;
     this.clusterMembershipService = clusterMembershipService;
-    otherMembers = getOtherMemberIds(clusterMembershipService, members);
+    this.partitionMembers = partitionMembers;
   }
 
   @Override
@@ -46,7 +46,10 @@ public class AtomixPartitionMessagingService implements PartitionMessagingServic
   @Override
   public void broadcast(final String subject, final ByteBuffer payload) {
     final var reachableMembers =
-        otherMembers.stream().filter(this::isReachable).collect(Collectors.toUnmodifiableSet());
+        partitionMembers.get().stream()
+            .filter(memberId -> !memberId.equals(localMember))
+            .filter(this::isReachable)
+            .collect(Collectors.toUnmodifiableSet());
     communicationService.multicast(
         subject, payload, DefaultSerializers.BASIC::encode, reachableMembers, true);
   }
@@ -54,15 +57,6 @@ public class AtomixPartitionMessagingService implements PartitionMessagingServic
   @Override
   public void unsubscribe(final String subject) {
     communicationService.unsubscribe(subject);
-  }
-
-  private Set<MemberId> getOtherMemberIds(
-      final ClusterMembershipService clusterMembershipService, final Collection<MemberId> members) {
-    final var localMemberId = clusterMembershipService.getLocalMember().id();
-    final var eligibleMembers = new HashSet<>(members);
-    eligibleMembers.remove(localMemberId);
-
-    return Collections.unmodifiableSet(eligibleMembers);
   }
 
   private boolean isReachable(final MemberId memberId) {

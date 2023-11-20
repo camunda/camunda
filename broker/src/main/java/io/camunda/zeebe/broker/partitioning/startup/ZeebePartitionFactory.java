@@ -146,7 +146,7 @@ public final class ZeebePartitionFactory {
             partitionListeners,
             partitionRaftListeners,
             new AtomixPartitionMessagingService(
-                communicationService, membershipService, raftPartition.members()),
+                communicationService, membershipService, raftPartition::members),
             actorSchedulingService,
             brokerCfg,
             commandApiService::newCommandResponseWriter,

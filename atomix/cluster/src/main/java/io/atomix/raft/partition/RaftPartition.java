@@ -25,6 +25,7 @@ import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -37,6 +38,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -212,7 +214,15 @@ public final class RaftPartition implements Partition, HealthMonitorable {
 
   @Override
   public Collection<MemberId> members() {
-    return partitionMetadata != null ? partitionMetadata.members() : Collections.emptyList();
+    final var membersFromServer = server != null ? server.getMembers() : null;
+    if (membersFromServer != null) {
+      // Use members from server if available. This will reflect changes when members leave or join.
+      return membersFromServer.stream().map(RaftMember::memberId).collect(Collectors.toSet());
+    } else {
+      // Fall back to static partition metadata so that we can still get the members of a partition
+      // that hasn't been started yet. This is necessary for bootstrap.
+      return partitionMetadata != null ? partitionMetadata.members() : Collections.emptyList();
+    }
   }
 
   public Role getRole() {
