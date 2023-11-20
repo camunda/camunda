@@ -56,9 +56,9 @@ public class DbUserTaskState implements UserTaskState, MutableUserTaskState {
   }
 
   @Override
-  public void delete(final UserTaskRecord userTask) {
-    userTaskKey.wrapLong(userTask.getUserTaskKey());
-    userTasksColumnFamily.deleteExisting(userTaskKey);
+  public void delete(final long userTaskKey) {
+    this.userTaskKey.wrapLong(userTaskKey);
+    userTasksColumnFamily.deleteExisting(this.userTaskKey);
   }
 
   @Override

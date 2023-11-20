@@ -16,5 +16,5 @@ public interface MutableUserTaskState extends UserTaskState {
 
   void update(final UserTaskRecord userTask);
 
-  void delete(final UserTaskRecord userTask);
+  void delete(final long userTaskKey);
 }

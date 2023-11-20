@@ -99,7 +99,7 @@ public class UserTaskStateTest {
     userTaskState.create(expectedRecord);
 
     // when
-    userTaskState.delete(expectedRecord);
+    userTaskState.delete(5_000);
 
     // then
     assertThat(userTaskState.getUserTask(5_000)).isNull();
