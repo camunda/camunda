@@ -73,6 +73,11 @@ export default withErrorHandling(
       const title =
         optimizeProfile === 'platform' ? t('home.userGroupsTitle') : t('home.userTitle');
 
+      const columns = [t('common.name'), t('home.roles.role')];
+      if (optimizeProfile === 'platform') {
+        columns.splice(1, 0, t('home.members'));
+      }
+
       return (
         <div className="UserList">
           <EntityList
@@ -99,7 +104,7 @@ export default withErrorHandling(
             onChange={this.updateList}
             empty={t('common.notFound')}
             isLoading={!users}
-            columns={[t('common.name'), t('home.members'), t('home.roles.role')]}
+            columns={columns}
             data={
               users &&
               users.map((user) => {
@@ -107,6 +112,16 @@ export default withErrorHandling(
 
                 const numberOfManagers = users.filter(({role}) => role === 'manager').length;
                 const isLastManager = role === 'manager' && numberOfManagers === 1;
+                const meta = [formatRole(role)];
+
+                if (optimizeProfile === 'platform') {
+                  meta.unshift(
+                    identity.type === 'group' &&
+                      `${identity.memberCount} ${t(
+                        'common.user.' + (identity.memberCount > 1 ? 'label-plural' : 'label')
+                      )}`
+                  );
+                }
 
                 return {
                   id: user.id,
@@ -115,13 +130,7 @@ export default withErrorHandling(
                   icon: identity.type === 'group' ? 'user-group' : 'user',
                   type: formatType(identity.type),
                   name: identity.name || identity.id,
-                  meta: [
-                    identity.type === 'group' &&
-                      `${identity.memberCount} ${t(
-                        'common.user.' + (identity.memberCount > 1 ? 'label-plural' : 'label')
-                      )}`,
-                    formatRole(role),
-                  ],
+                  meta,
                   actions: !readOnly &&
                     !isLastManager && [
                       {

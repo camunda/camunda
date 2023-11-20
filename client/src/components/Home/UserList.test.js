@@ -111,3 +111,27 @@ it('should pass optimize environment to addUserModal', async () => {
 
   expect(node.find(AddUserModal).prop('optimizeProfile')).toBe('ccsm');
 });
+
+it('should hide members column in ccsm and cloud', async () => {
+  getOptimizeProfile.mockReturnValueOnce('ccsm');
+  let node = shallow(<UserList {...props} />);
+
+  expect(node.find(EntityList).prop('columns')).toEqual(['Name', 'Role']);
+  expect(node.find(EntityList).prop('data')[0].meta.length).toBe(1);
+
+  getOptimizeProfile.mockReturnValueOnce('platform');
+  node = shallow(<UserList {...props} />);
+
+  await flushPromises();
+
+  expect(node.find(EntityList).prop('columns')).toEqual(['Name', 'Members', 'Role']);
+  expect(node.find(EntityList).prop('data')[0].meta.length).toBe(2);
+
+  getOptimizeProfile.mockReturnValueOnce('cloud');
+  node = shallow(<UserList {...props} />);
+
+  await flushPromises();
+
+  expect(node.find(EntityList).prop('columns')).toEqual(['Name', 'Role']);
+  expect(node.find(EntityList).prop('data')[0].meta.length).toBe(1);
+});
