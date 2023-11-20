@@ -129,6 +129,8 @@
     <version.java-jwt>4.4.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.postgresql>42.6.0</version.postgresql>
+    <version.aws-signing>2.3.1</version.aws-signing>
+    <version.reactor-netty>1.1.13</version.reactor-netty>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
@@ -683,6 +685,12 @@
       </dependency>
 
       <dependency>
+        <groupId>io.projectreactor.netty</groupId>
+        <artifactId>reactor-netty-http</artifactId>
+        <version>${version.reactor-netty}</version>
+      </dependency>
+
+      <dependency>
         <groupId>io.micrometer</groupId>
         <artifactId>micrometer-bom</artifactId>
         <version>${version.micrometer}</version>
@@ -1073,7 +1081,7 @@
       <dependency>
         <groupId>io.github.acm19</groupId>
         <artifactId>aws-request-signing-apache-interceptor</artifactId>
-        <version>2.3.1</version>
+        <version>${version.aws-signing}</version>
       </dependency>
 
       <dependency>
@@ -1092,6 +1100,18 @@
         <groupId>io.camunda</groupId>
         <artifactId>identity-sdk</artifactId>
         <version>${version.identity}</version>
+      </dependency>
+
+      <!--      JMH Tests   -->
+      <dependency>
+        <groupId>org.openjdk.jmh</groupId>
+        <artifactId>jmh-core</artifactId>
+        <version>${version.jmh}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.openjdk.jmh</groupId>
+        <artifactId>jmh-generator-annprocess</artifactId>
+        <version>${version.jmh}</version>
       </dependency>
 
       <!-- Dependencies present for convergence only -->
@@ -1164,18 +1184,6 @@
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
         <version>3.6.0</version>
-      </dependency>
-
-      <!--      JMH Tests   -->
-      <dependency>
-        <groupId>org.openjdk.jmh</groupId>
-        <artifactId>jmh-core</artifactId>
-        <version>${version.jmh}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.openjdk.jmh</groupId>
-        <artifactId>jmh-generator-annprocess</artifactId>
-        <version>${version.jmh}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
