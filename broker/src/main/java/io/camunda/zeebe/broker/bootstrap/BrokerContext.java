@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
+import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
@@ -30,4 +31,6 @@ public interface BrokerContext {
   PartitionManager getPartitionManager();
 
   BrokerAdminService getBrokerAdminService();
+
+  ManagedMessagingService getApiMessagingService();
 }

@@ -110,6 +110,7 @@ public final class BrokerStartupProcess {
         bsc.getClusterServices(),
         bsc.getEmbeddedGatewayService(),
         bsc.getPartitionManager(),
-        bsc.getBrokerAdminService());
+        bsc.getBrokerAdminService(),
+        bsc.getApiMessagingService());
   }
 }
