@@ -82,8 +82,7 @@ camunda-platform:
     partitionCount: "1"
     # ReplicationFactor defines how each partition is replicated, the value defines the number of nodes
     replicationFactor: "1"
-    # Enable the creation of persistent volumes.
-    persistenceType: disk
+    persistenceType: local
     # Defines a reasonable default for the `zeebe` StatefulSet, for when persistence is enabled.
     pvcSize: 1Gi
     resources:
@@ -124,7 +123,7 @@ camunda-platform:
     replicas: 1
     imageTag: 7.16.2
     persistence:
-      enabled: true
+      enabled: false
     volumeClaimTemplate:
       resources:
         requests:
