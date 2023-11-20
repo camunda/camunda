@@ -130,10 +130,6 @@ public class DefaultRaftServer implements RaftServer {
    */
   @Override
   public CompletableFuture<Void> shutdown() {
-    if (!started && !stopped) {
-      return CompletableFuture.failedFuture(new IllegalStateException("Server not running"));
-    }
-
     if (stopped) {
       return CompletableFuture.completedFuture(null);
     }
