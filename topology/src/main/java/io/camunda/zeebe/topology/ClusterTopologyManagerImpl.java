@@ -61,6 +61,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
   private boolean onGoingTopologyChangeOperation = false;
   private boolean shouldRetry = false;
   private final ExponentialBackoffRetryDelay backoffRetry;
+  private boolean initialized = false;
 
   ClusterTopologyManagerImpl(
       final ConcurrencyControl executor,
@@ -160,6 +161,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
 
   private void setStarted() {
     if (!startFuture.isDone()) {
+      initialized = true;
       startFuture.complete(null);
     }
   }
@@ -168,6 +170,12 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
     final ActorFuture<ClusterTopology> result = executor.createFuture();
     executor.run(
         () -> {
+          if (!initialized) {
+            // When not started, do not update the local topology. This is to avoid any race
+            // condition between FileInitializer and concurrently received topology via gossip.
+            result.complete(receivedTopology);
+            return;
+          }
           try {
             if (receivedTopology != null) {
               final var mergedTopology =

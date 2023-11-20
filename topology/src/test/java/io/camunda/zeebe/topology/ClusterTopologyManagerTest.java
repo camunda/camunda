@@ -167,6 +167,23 @@ final class ClusterTopologyManagerTest {
   }
 
   @Test
+  void shouldNotUpdateLocalTopologyOnGossipEventBeforeInitialization() {
+    // given - not started cluster topology manager
+    final ClusterTopologyManagerImpl clusterTopologyManager = createTopologyManager();
+
+    // when
+    final ClusterTopology topologyFromOtherMember =
+        clusterTopologyManager
+            .getClusterTopology()
+            .join()
+            .addMember(MemberId.from("10"), MemberState.initializeAsActive(Map.of()));
+    clusterTopologyManager.onGossipReceived(topologyFromOtherMember).join();
+
+    // then
+    assertThat(persistedClusterTopology.getTopology().isUninitialized()).isTrue();
+  }
+
+  @Test
   void shouldInitiateClusterTopologyChangeOnGossip() {
     // given
     final ClusterTopologyManagerImpl clusterTopologyManager =
