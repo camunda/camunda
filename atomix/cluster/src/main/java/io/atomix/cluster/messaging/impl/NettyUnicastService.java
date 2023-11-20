@@ -113,15 +113,18 @@ public class NettyUnicastService implements ManagedUnicastService {
         .resolve(address.socketAddress())
         .addListener(
             resolvedAddress -> {
+              var cleanUpFuture = group.next().newSucceededFuture((Void) null);
               if (resolvedAddress.isSuccess()) {
-                channel.writeAndFlush(
-                    new DatagramPacket(buf, (InetSocketAddress) resolvedAddress.get()));
+                cleanUpFuture =
+                    channel.writeAndFlush(
+                        new DatagramPacket(buf, (InetSocketAddress) resolvedAddress.get()));
               } else {
                 log.warn(
                     "Failed sending unicast message (destination address {} cannot be resolved)",
                     address,
                     resolvedAddress.exceptionNow());
               }
+              cleanUpFuture.addListener(future -> buf.release());
             });
   }
 
