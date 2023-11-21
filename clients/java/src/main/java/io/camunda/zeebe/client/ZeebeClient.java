@@ -360,8 +360,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(ActivatedJob job);
 
   /**
-   * Command to update the timeout of a job. Timeout value will be used to calculate a new job
-   * deadline when the command is processed: timeout value will be added to the current time.
+   * Command to update the timeout of a job.
    *
    * <pre>
    * long jobKey = ..;
@@ -372,14 +371,17 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
+   * <p>Timeout value in millis is used to calculate a new job deadline. This will happen when the
+   * command to update the timeline is processed. The timeout value will be added to the current
+   * time then.
+   *
    * @param jobKey the key of the job to update
    * @return a builder for the command
    */
   UpdateTimeoutJobCommandStep1 newUpdateTimeoutCommand(long jobKey);
 
   /**
-   * Command to update the timeout of a job. Timeout value will be used to calculate a new job
-   * deadline when the command is processed: timeout value will be added to the current time.
+   * Command to update the timeout of a job.
    *
    * <pre>
    * ActivatedJob job= ..;
@@ -389,6 +391,10 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *  .timeout(100)
    *  .send();
    * </pre>
+   *
+   * <p>Timeout value in millis is used to calculate a new job deadline. This will happen when the
+   * command to update the timeline is processed. The timeout value will be added to the current
+   * time then.
    *
    * @param job the activated job
    * @return a builder for the command
