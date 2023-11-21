@@ -57,11 +57,9 @@ const FormContainer = styled.div`
 
 const FormScrollContainer = styled.div`
   width: 100%;
-  max-height: 100%;
   display: flex;
-  align-items: center;
   justify-content: center;
-  overflow: auto;
+  overflow-y: auto;
 `;
 
 const InlineErrorContainer = styled.div`
