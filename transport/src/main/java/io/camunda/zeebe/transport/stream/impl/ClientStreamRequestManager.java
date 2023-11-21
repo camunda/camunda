@@ -9,8 +9,10 @@ package io.camunda.zeebe.transport.stream.impl;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
+import io.atomix.cluster.messaging.MessagingException.ProtocolException;
+import io.atomix.cluster.messaging.MessagingException.RemoteHandlerFailure;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
-import io.camunda.zeebe.transport.stream.api.StreamResponseException;
 import io.camunda.zeebe.transport.stream.impl.ClientStreamRegistration.State;
 import io.camunda.zeebe.transport.stream.impl.messages.AddStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.AddStreamResponse;
@@ -23,6 +25,7 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.util.exception.UnrecoverableException;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.HashMap;
@@ -276,7 +279,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
         return;
       }
 
-      failure = new StreamResponseException(response.getLeft());
+      failure = response.getLeft().asException();
     } else {
       failure = error;
     }
@@ -336,7 +339,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
         return;
       }
 
-      failure = new StreamResponseException(response.getLeft());
+      failure = response.getLeft().asException();
     } else {
       failure = error;
     }
@@ -346,13 +349,39 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
     // Unrecoverable cases:
     //   - RemoteHandlerError
     //   - ErrorResponse.code in [ MALFORMED, INVALID ]
+    switch (failure) {
+        // all returned errors are currently unnecessary to retry
+      case final UnrecoverableException e -> handleUnrecoverableExceptionOnRemove(registration, e);
+        // no point retrying if the remote handler failed to handle our request
+      case final RemoteHandlerFailure e -> handleUnrecoverableExceptionOnRemove(registration, e);
+        // should not happen, since it means the member was removed from the topology, but keep as a
+        // failsafe
+      case final NoSuchMemberException e -> handleUnrecoverableExceptionOnRemove(registration, e);
+        // essentially happens due to malformed request, no point retrying
+      case final ProtocolException e -> handleUnrecoverableExceptionOnRemove(registration, e);
+      default -> {
+        LOGGER.debug(
+            "Failed to remove remote stream {} on {}, will retry in {}",
+            registration.streamId(),
+            registration.serverId(),
+            RETRY_DELAY,
+            failure);
+        executor.schedule(RETRY_DELAY, () -> sendRemoveRequest(registration, request));
+      }
+    }
+  }
+
+  private void handleUnrecoverableExceptionOnRemove(
+      final ClientStreamRegistration<M> registration, final Throwable e) {
     LOGGER.debug(
-        "Failed to remove remote stream {} on {}, will retry in {}",
+        """
+        Failed to remove stream '{}' for member '{}'; unrecoverable error occurred on recipient
+        side, will not retry.""",
         registration.streamId(),
         registration.serverId(),
-        RETRY_DELAY,
-        failure);
-    executor.schedule(RETRY_DELAY, () -> sendRemoveRequest(registration, request));
+        e);
+    registration.transitionToRemoved();
+    purgeRegistration(registration.streamId(), registration.serverId());
   }
 
   private void purgeRegistration(final UUID streamId, final MemberId serverId) {
