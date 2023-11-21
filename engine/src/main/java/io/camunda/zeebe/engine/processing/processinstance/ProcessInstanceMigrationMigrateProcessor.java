@@ -13,9 +13,11 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -32,15 +34,18 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final TypedResponseWriter responseWriter;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
+  private final JobState jobState;
 
   public ProcessInstanceMigrationMigrateProcessor(
       final Writers writers,
       final ElementInstanceState elementInstanceState,
-      final ProcessState processState) {
+      final ProcessState processState,
+      final JobState jobState) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     this.elementInstanceState = elementInstanceState;
     this.processState = processState;
+    this.jobState = jobState;
   }
 
   @Override
@@ -102,6 +107,19 @@ public class ProcessInstanceMigrationMigrateProcessor
             .setBpmnProcessId(processDefinition.getBpmnProcessId())
             .setVersion(processDefinition.getVersion())
             .setElementId(targetElementId));
+
+    if (elementInstance.getJobKey() > 0) {
+      final var job = jobState.getJob(elementInstance.getJobKey());
+      if (job != null) {
+        stateWriter.appendFollowUpEvent(
+            elementInstance.getJobKey(),
+            JobIntent.MIGRATED,
+            job.setProcessDefinitionKey(processDefinition.getKey())
+                .setProcessDefinitionVersion(processDefinition.getVersion())
+                .setBpmnProcessId(processDefinition.getBpmnProcessId())
+                .setElementId(targetElementId));
+      }
+    }
 
     return elementInstanceState.getChildren(elementInstance.getKey());
   }

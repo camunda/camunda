@@ -232,7 +232,10 @@ public final class BpmnProcessors {
         ValueType.PROCESS_INSTANCE_MIGRATION,
         ProcessInstanceMigrationIntent.MIGRATE,
         new ProcessInstanceMigrationMigrateProcessor(
-            writers, processingState.getElementInstanceState(), processingState.getProcessState()));
+            writers,
+            processingState.getElementInstanceState(),
+            processingState.getProcessState(),
+            processingState.getJobState()));
   }
 
   private static void addProcessInstanceBatchStreamProcessors(
