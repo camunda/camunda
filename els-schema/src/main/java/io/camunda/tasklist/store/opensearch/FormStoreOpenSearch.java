@@ -21,12 +21,15 @@ import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
+import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -41,6 +44,10 @@ public class FormStoreOpenSearch implements FormStore {
   @Autowired private ProcessIndex processIndex;
 
   @Autowired private TenantAwareOpenSearchClient tenantAwareClient;
+
+  @Autowired
+  @Qualifier("openSearchClient")
+  private OpenSearchClient osClient;
 
   public FormEntity getForm(final String id, final String processDefinitionId, final Long version) {
     final FormEntity formEmbedded =
@@ -194,6 +201,24 @@ public class FormStoreOpenSearch implements FormStore {
       throw new TasklistRuntimeException(e.getMessage(), e);
     } catch (NotFoundException e) {
       return null;
+    }
+  }
+
+  @Override
+  public List<String> getFormIdsByProcessDefinitionId(String processDefinitionId) {
+    final SearchRequest.Builder searchRequest =
+        OpenSearchUtil.createSearchRequest(formIndex, ONLY_RUNTIME)
+            .query(
+                q ->
+                    q.term(
+                        term ->
+                            term.field(FormIndex.PROCESS_DEFINITION_ID)
+                                .value(FieldValue.of(processDefinitionId))))
+            .fields(f -> f.field(TaskTemplate.ID));
+    try {
+      return OpenSearchUtil.scrollIdsToList(searchRequest, osClient);
+    } catch (IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
 }

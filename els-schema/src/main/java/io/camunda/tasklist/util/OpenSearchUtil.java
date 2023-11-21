@@ -27,6 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
@@ -38,6 +39,7 @@ import org.opensearch.client.opensearch.core.*;
 import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
+import org.opensearch.client.opensearch.core.search.SearchResult;
 import org.opensearch.client.opensearch.indices.RefreshRequest;
 import org.opensearch.client.opensearch.indices.RefreshResponse;
 import org.opensearch.client.util.ObjectBuilder;
@@ -291,7 +293,7 @@ public abstract class OpenSearchUtil {
       throws IOException {
 
     searchRequest.scroll(Time.of(t -> t.time(OpenSearchUtil.INTERNAL_SCROLL_KEEP_ALIVE_MS)));
-    final SearchResponse response = osClient.search(searchRequest.build(), Object.class);
+    SearchResult response = osClient.search(searchRequest.build(), Object.class);
 
     if (firstResponseConsumer != null) {
       firstResponseConsumer.accept(response.hits());
@@ -313,10 +315,9 @@ public abstract class OpenSearchUtil {
         scrollRequest.scrollId(scrollId);
         scrollRequest.scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS)));
 
-        final ScrollResponse<Object> scrollResponse =
-            osClient.scroll(scrollRequest.build(), Object.class);
-        scrollId = scrollResponse.scrollId();
-        hits = scrollResponse.hits();
+        response = osClient.scroll(scrollRequest.build(), Object.class);
+        scrollId = response.scrollId();
+        hits = response.hits();
       }
     } catch (Exception e) {
       throw new TasklistRuntimeException(e.getMessage());
@@ -452,6 +453,17 @@ public abstract class OpenSearchUtil {
 
     final Consumer<List<Hit>> collectIds =
         (hits) -> result.addAll(map(hits, SEARCH_HIT_ID_TO_STRING));
+
+    scrollWith(request, osClient, collectIds, null, null);
+    return result;
+  }
+
+  public static Map<String, String> scrollIdsWithIndexToMap(
+      SearchRequest.Builder request, OpenSearchClient osClient) throws IOException {
+    final Map<String, String> result = new LinkedHashMap<>();
+
+    final Consumer<List<Hit>> collectIds =
+        (hits) -> result.putAll(hits.stream().collect(Collectors.toMap(Hit::id, Hit::index)));
 
     scrollWith(request, osClient, collectIds, null, null);
     return result;

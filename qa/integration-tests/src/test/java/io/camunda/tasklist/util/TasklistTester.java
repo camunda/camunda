@@ -8,6 +8,7 @@ package io.camunda.tasklist.util;
 
 import static io.camunda.tasklist.util.TestCheck.PROCESS_INSTANCE_IS_CANCELED_CHECK;
 import static io.camunda.tasklist.util.TestCheck.PROCESS_INSTANCE_IS_COMPLETED_CHECK;
+import static io.camunda.tasklist.util.TestCheck.PROCESS_IS_DELETED_CHECK;
 import static io.camunda.tasklist.util.TestCheck.PROCESS_IS_DEPLOYED_CHECK;
 import static io.camunda.tasklist.util.TestCheck.TASKS_ARE_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK;
 import static io.camunda.tasklist.util.TestCheck.TASK_IS_ASSIGNED_CHECK;
@@ -63,6 +64,10 @@ public class TasklistTester {
   @Autowired
   @Qualifier(PROCESS_IS_DEPLOYED_CHECK)
   private TestCheck processIsDeployedCheck;
+
+  @Autowired
+  @Qualifier(PROCESS_IS_DELETED_CHECK)
+  private TestCheck processIsDeletedCheck;
 
   @Autowired
   @Qualifier(PROCESS_INSTANCE_IS_CANCELED_CHECK)
@@ -370,6 +375,11 @@ public class TasklistTester {
     return this;
   }
 
+  public TasklistTester processIsDeleted() {
+    tasklistTestRule.processAllRecordsAndWait(processIsDeletedCheck, processDefinitionKey);
+    return this;
+  }
+
   public TasklistTester startProcessInstance(String bpmnProcessId) {
     return startProcessInstance(bpmnProcessId, null);
   }
@@ -519,6 +529,11 @@ public class TasklistTester {
 
   public TasklistTester cancelProcessInstance() {
     ZeebeTestUtil.cancelProcessInstance(zeebeClient, Long.parseLong(processInstanceId));
+    return this;
+  }
+
+  public TasklistTester deleteResource(String resourceKey) {
+    ZeebeTestUtil.deleteResource(zeebeClient, Long.valueOf(resourceKey));
     return this;
   }
 

@@ -12,6 +12,7 @@ import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
 import static io.camunda.tasklist.util.OpenSearchUtil.QueryType.ALL;
 import static io.camunda.tasklist.util.OpenSearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.OpenSearchUtil.getRawResponseWithTenantCheck;
+import static io.camunda.tasklist.util.OpenSearchUtil.joinQueryBuilderWithAnd;
 import static java.util.stream.Collectors.toList;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -121,6 +122,25 @@ public class TaskStoreOpenSearch implements TaskStore {
 
     try {
       return OpenSearchUtil.scrollIdsToList(searchRequest, osClient);
+    } catch (IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public Map<String, String> getTaskIdsWithIndexByProcessDefinitionId(String processDefinitionId) {
+    final SearchRequest.Builder searchRequest =
+        OpenSearchUtil.createSearchRequest(taskTemplate)
+            .query(
+                q ->
+                    q.term(
+                        term ->
+                            term.field(TaskTemplate.PROCESS_DEFINITION_ID)
+                                .value(FieldValue.of(processDefinitionId))))
+            .fields(f -> f.field(TaskTemplate.ID));
+
+    try {
+      return OpenSearchUtil.scrollIdsWithIndexToMap(searchRequest, osClient);
     } catch (IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
@@ -401,7 +421,7 @@ public class TaskStoreOpenSearch implements TaskStore {
     }
 
     final Query.Builder jointQ =
-        OpenSearchUtil.joinQueryBuilderWithAnd(
+        joinQueryBuilderWithAnd(
             stateQ,
             assignedQ,
             assigneeQ,

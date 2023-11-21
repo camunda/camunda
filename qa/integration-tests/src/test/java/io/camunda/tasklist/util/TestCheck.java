@@ -12,6 +12,7 @@ public interface TestCheck extends Predicate<Object[]> {
 
   /* check names */
   String PROCESS_IS_DEPLOYED_CHECK = "processIsDeployedCheck";
+  String PROCESS_IS_DELETED_CHECK = "processIsDeletedCheck";
   String PROCESS_INSTANCE_IS_COMPLETED_CHECK = "processInstanceIsCompletedCheck";
   String PROCESS_INSTANCE_IS_CANCELED_CHECK = "processInstanceIsCanceledCheck";
 

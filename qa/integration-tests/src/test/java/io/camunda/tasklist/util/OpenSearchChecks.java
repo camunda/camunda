@@ -15,6 +15,7 @@ import io.camunda.tasklist.entities.ProcessInstanceEntity;
 import io.camunda.tasklist.entities.ProcessInstanceState;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
+import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
@@ -65,6 +66,32 @@ public class OpenSearchChecks {
         try {
           final ProcessEntity process = processStore.getProcess(processId);
           return process != null;
+        } catch (TasklistRuntimeException ex) {
+          return false;
+        }
+      }
+    };
+  }
+
+  @Bean(name = PROCESS_IS_DELETED_CHECK)
+  public TestCheck getProcessIsDeletedCheck() {
+
+    return new TestCheck() {
+      @Override
+      public String getName() {
+        return PROCESS_IS_DELETED_CHECK;
+      }
+
+      @Override
+      public boolean test(final Object[] objects) {
+        assertThat(objects).hasSize(1);
+        assertThat(objects[0]).isInstanceOf(String.class);
+        final String processId = (String) objects[0];
+        try {
+          processStore.getProcess(processId);
+          return false;
+        } catch (NotFoundException nfe) {
+          return true;
         } catch (TasklistRuntimeException ex) {
           return false;
         }

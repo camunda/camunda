@@ -157,6 +157,21 @@ public class TaskStoreElasticSearch implements TaskStore {
     }
   }
 
+  @Override
+  public Map<String, String> getTaskIdsWithIndexByProcessDefinitionId(String processDefinitionId) {
+    final SearchRequest searchRequest =
+        ElasticsearchUtil.createSearchRequest(taskTemplate)
+            .source(
+                SearchSourceBuilder.searchSource()
+                    .query(termQuery(TaskTemplate.PROCESS_DEFINITION_ID, processDefinitionId))
+                    .fetchField(TaskTemplate.ID));
+    try {
+      return ElasticsearchUtil.scrollIdsWithIndexToMap(searchRequest, esClient);
+    } catch (IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
+    }
+  }
+
   private List<TaskSearchView> mapTasksFromEntity(SearchResponse response) {
     return ElasticsearchUtil.mapSearchHits(
         response.getHits().getHits(),

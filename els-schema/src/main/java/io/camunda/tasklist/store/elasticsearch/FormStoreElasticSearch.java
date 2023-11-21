@@ -9,6 +9,7 @@ package io.camunda.tasklist.store.elasticsearch;
 import static io.camunda.tasklist.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.tasklist.util.ElasticsearchUtil.getRawResponseWithTenantCheck;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
@@ -20,10 +21,13 @@ import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
+import io.camunda.tasklist.util.ElasticsearchUtil;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -46,6 +50,8 @@ public class FormStoreElasticSearch implements FormStore {
 
   @Autowired private ObjectMapper objectMapper;
 
+  @Autowired private RestHighLevelClient esClient;
+
   public FormEntity getForm(final String id, final String processDefinitionId, final Long version) {
     final FormEntity formEmbedded =
         version == null ? getFormEmbedded(id, processDefinitionId) : null;
@@ -63,6 +69,21 @@ public class FormStoreElasticSearch implements FormStore {
       }
     }
     throw new NotFoundException(String.format("form with id %s was not found", id));
+  }
+
+  @Override
+  public List<String> getFormIdsByProcessDefinitionId(String processDefinitionId) {
+    final SearchRequest searchRequest =
+        new SearchRequest(formIndex.getFullQualifiedName())
+            .source(
+                SearchSourceBuilder.searchSource()
+                    .query(termQuery(FormIndex.PROCESS_DEFINITION_ID, processDefinitionId))
+                    .fetchField(FormIndex.ID));
+    try {
+      return ElasticsearchUtil.scrollIdsToList(searchRequest, esClient);
+    } catch (IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
+    }
   }
 
   private FormEntity getFormEmbedded(final String id, final String processDefinitionId) {

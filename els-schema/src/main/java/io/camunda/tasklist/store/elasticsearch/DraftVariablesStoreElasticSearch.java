@@ -7,6 +7,7 @@
 package io.camunda.tasklist.store.elasticsearch;
 
 import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
@@ -182,6 +183,21 @@ public class DraftVariablesStoreElasticSearch implements DraftVariableStore {
           String.format("Error retrieving draft task variable instance with ID [%s]", variableId),
           e);
       return Optional.empty();
+    }
+  }
+
+  @Override
+  public List<String> getDraftVariablesIdsByTaskIds(List<String> taskIds) {
+    final SearchRequest searchRequest =
+        new SearchRequest(draftTaskVariableTemplate.getFullQualifiedName())
+            .source(
+                SearchSourceBuilder.searchSource()
+                    .query(termsQuery(DraftTaskVariableTemplate.TASK_ID, taskIds))
+                    .fetchField(DraftTaskVariableTemplate.ID));
+    try {
+      return ElasticsearchUtil.scrollIdsToList(searchRequest, esClient);
+    } catch (IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
 }

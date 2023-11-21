@@ -182,4 +182,30 @@ public class DraftVariablesStoreOpenSearch implements DraftVariableStore {
       return Optional.empty();
     }
   }
+
+  @Override
+  public List<String> getDraftVariablesIdsByTaskIds(List<String> taskIds) {
+    final SearchRequest.Builder searchRequest = new SearchRequest.Builder();
+    searchRequest
+        .index(draftTaskVariableTemplate.getFullQualifiedName())
+        .query(
+            q ->
+                q.terms(
+                    terms ->
+                        terms
+                            .field(DraftTaskVariableTemplate.TASK_ID)
+                            .terms(
+                                t ->
+                                    t.value(
+                                        taskIds.stream()
+                                            .map(FieldValue::of)
+                                            .collect(Collectors.toList())))))
+        .fields(f -> f.field(DraftTaskVariableTemplate.ID));
+
+    try {
+      return OpenSearchUtil.scrollIdsToList(searchRequest, osClient);
+    } catch (IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
+    }
+  }
 }

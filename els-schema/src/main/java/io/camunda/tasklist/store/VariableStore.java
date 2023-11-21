@@ -17,6 +17,8 @@ public interface VariableStore {
   public Map<String, List<TaskVariableEntity>> getTaskVariablesPerTaskId(
       final List<GetVariablesRequest> requests);
 
+  Map<String, String> getTaskVariablesIdsWithIndexByTaskIds(final List<String> taskIds);
+
   public void persistTaskVariables(final Collection<TaskVariableEntity> finalVariables);
 
   public List<FlowNodeInstanceEntity> getFlowNodeInstances(final List<String> processInstanceIds);

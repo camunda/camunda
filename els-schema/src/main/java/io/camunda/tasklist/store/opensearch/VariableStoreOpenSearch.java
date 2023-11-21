@@ -178,6 +178,31 @@ public class VariableStoreOpenSearch implements VariableStore {
     }
   }
 
+  @Override
+  public Map<String, String> getTaskVariablesIdsWithIndexByTaskIds(List<String> taskIds) {
+    final SearchRequest.Builder searchRequest =
+        OpenSearchUtil.createSearchRequest(taskVariableTemplate)
+            .query(
+                q ->
+                    q.terms(
+                        terms ->
+                            terms
+                                .field(TaskVariableTemplate.TASK_ID)
+                                .terms(
+                                    t ->
+                                        t.value(
+                                            taskIds.stream()
+                                                .map(FieldValue::of)
+                                                .collect(Collectors.toList())))))
+            .fields(f -> f.field(TaskVariableTemplate.ID));
+
+    try {
+      return OpenSearchUtil.scrollIdsWithIndexToMap(searchRequest, osClient);
+    } catch (IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
+    }
+  }
+
   public void persistTaskVariables(final Collection<TaskVariableEntity> finalVariables) {
     final BulkRequest.Builder bulkRequest = new BulkRequest.Builder();
     final List<BulkOperation> operations = new ArrayList<BulkOperation>();

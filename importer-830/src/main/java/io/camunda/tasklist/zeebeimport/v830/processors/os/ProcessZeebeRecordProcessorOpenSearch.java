@@ -14,6 +14,7 @@ import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.schema.indices.FormIndex;
 import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.util.ConversionUtils;
+import io.camunda.tasklist.zeebeimport.common.ProcessDefinitionDeletionProcessor;
 import io.camunda.tasklist.zeebeimport.util.XMLUtil;
 import io.camunda.tasklist.zeebeimport.v830.record.value.deployment.DeployedProcessImpl;
 import io.camunda.zeebe.protocol.record.Record;
@@ -21,13 +22,13 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
+import org.opensearch.client.opensearch.core.bulk.DeleteOperation;
 import org.opensearch.client.opensearch.core.bulk.IndexOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,11 +41,9 @@ public class ProcessZeebeRecordProcessorOpenSearch {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ProcessZeebeRecordProcessorOpenSearch.class);
 
-  private static final Set<String> STATES = new HashSet<>();
+  private static final Set<String> STATES_TO_PERSIST = Set.of(ProcessIntent.CREATED.name());
 
-  static {
-    STATES.add(ProcessIntent.CREATED.name());
-  }
+  private static final Set<String> STATES_TO_DELETE = Set.of(ProcessIntent.DELETED.name());
 
   @Autowired private ObjectMapper objectMapper;
 
@@ -54,12 +53,15 @@ public class ProcessZeebeRecordProcessorOpenSearch {
 
   @Autowired private XMLUtil xmlUtil;
 
+  @Autowired private ProcessDefinitionDeletionProcessor processDefinitionDeletionProcessor;
+
   public void processDeploymentRecord(
       Record<DeployedProcessImpl> record, List<BulkOperation> operations)
       throws PersistenceException {
     final String intentStr = record.getIntent().name();
+    final String processDefinitionKey = String.valueOf(record.getValue().getProcessDefinitionKey());
 
-    if (STATES.contains(intentStr)) {
+    if (STATES_TO_PERSIST.contains(intentStr)) {
       final DeployedProcessImpl recordValue = record.getValue();
 
       final Map<String, String> userTaskForms = new HashMap<>();
@@ -70,11 +72,7 @@ public class ProcessZeebeRecordProcessorOpenSearch {
           (formKey, schema) -> {
             try {
               persistForm(
-                  recordValue.getProcessDefinitionKey(),
-                  formKey,
-                  schema,
-                  recordValue.getTenantId(),
-                  operations);
+                  processDefinitionKey, formKey, schema, recordValue.getTenantId(), operations);
             } catch (PersistenceException e) {
               exceptions.add(e);
             }
@@ -82,6 +80,14 @@ public class ProcessZeebeRecordProcessorOpenSearch {
       if (!exceptions.isEmpty()) {
         throw exceptions.get(0);
       }
+    } else if (STATES_TO_DELETE.contains(intentStr)) {
+      operations.addAll(
+          processDefinitionDeletionProcessor.createProcessDefinitionDeleteRequests(
+              processDefinitionKey,
+              (index, id) ->
+                  new BulkOperation.Builder()
+                      .delete(DeleteOperation.of(del -> del.index(index).id(id)))
+                      .build()));
     }
   }
 
@@ -138,14 +144,13 @@ public class ProcessZeebeRecordProcessorOpenSearch {
   }
 
   private void persistForm(
-      long processDefinitionKey,
+      String processDefinitionKey,
       String formKey,
       String schema,
       String tenantId,
       List<BulkOperation> operations)
       throws PersistenceException {
-    final FormEntity formEntity =
-        new FormEntity(String.valueOf(processDefinitionKey), formKey, schema, tenantId);
+    final FormEntity formEntity = new FormEntity(processDefinitionKey, formKey, schema, tenantId);
     LOGGER.debug("Form: key {}", formKey);
 
     operations.add(

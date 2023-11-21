@@ -155,6 +155,20 @@ public class VariableStoreElasticSearch implements VariableStore {
     }
   }
 
+  public Map<String, String> getTaskVariablesIdsWithIndexByTaskIds(final List<String> taskIds) {
+    final SearchRequest searchRequest =
+        ElasticsearchUtil.createSearchRequest(taskVariableTemplate)
+            .source(
+                SearchSourceBuilder.searchSource()
+                    .query(termsQuery(TaskVariableTemplate.TASK_ID, taskIds))
+                    .fetchField(TaskVariableTemplate.ID));
+    try {
+      return ElasticsearchUtil.scrollIdsWithIndexToMap(searchRequest, esClient);
+    } catch (IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
+    }
+  }
+
   public void persistTaskVariables(final Collection<TaskVariableEntity> finalVariables) {
     final BulkRequest bulkRequest = new BulkRequest();
     for (TaskVariableEntity variableEntity : finalVariables) {

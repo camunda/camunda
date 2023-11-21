@@ -7,8 +7,11 @@
 package io.camunda.tasklist.store;
 
 import io.camunda.tasklist.entities.FormEntity;
+import java.util.List;
 
 public interface FormStore {
 
   FormEntity getForm(final String id, final String processDefinitionId, final Long version);
+
+  List<String> getFormIdsByProcessDefinitionId(String processDefinitionId);
 }

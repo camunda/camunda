@@ -25,12 +25,16 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
@@ -456,6 +460,20 @@ public abstract class ElasticsearchUtil {
 
     final Consumer<SearchHits> collectIds =
         (hits) -> result.addAll(map(hits.getHits(), SEARCH_HIT_ID_TO_STRING));
+
+    scrollWith(request, esClient, collectIds, null, null);
+    return result;
+  }
+
+  public static Map<String, String> scrollIdsWithIndexToMap(
+      SearchRequest request, RestHighLevelClient esClient) throws IOException {
+    final Map<String, String> result = new LinkedHashMap();
+
+    final Consumer<SearchHits> collectIds =
+        (hits) ->
+            result.putAll(
+                Stream.of(hits.getHits())
+                    .collect(Collectors.toMap(SearchHit::getId, SearchHit::getIndex)));
 
     scrollWith(request, esClient, collectIds, null, null);
     return result;

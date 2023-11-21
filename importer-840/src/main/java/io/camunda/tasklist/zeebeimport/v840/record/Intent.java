@@ -38,7 +38,7 @@ public enum Intent implements io.camunda.zeebe.protocol.record.intent.Intent {
   // VARIABLE
   UPDATED,
 
-  // FORM
+  // FORM, PROCESS
   DELETED,
 
   UNKNOWN;

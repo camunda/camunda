@@ -21,4 +21,6 @@ public interface DraftVariableStore {
       String taskId, List<String> variableNames);
 
   Optional<DraftTaskVariableEntity> getById(String variableId);
+
+  List<String> getDraftVariablesIdsByTaskIds(List<String> taskIds);
 }

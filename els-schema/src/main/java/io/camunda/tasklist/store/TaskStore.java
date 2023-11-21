@@ -11,6 +11,7 @@ import io.camunda.tasklist.queries.TaskQuery;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.views.TaskSearchView;
 import java.util.List;
+import java.util.Map;
 
 public interface TaskStore {
   String DEFAULT_SORT_FIELD = TaskTemplate.CREATION_TIME;
@@ -18,6 +19,8 @@ public interface TaskStore {
   TaskEntity getTask(final String id);
 
   List<String> getTaskIdsByProcessInstanceId(String processInstanceId);
+
+  Map<String, String> getTaskIdsWithIndexByProcessDefinitionId(String processDefinitionId);
 
   List<TaskSearchView> getTasks(TaskQuery query);
 

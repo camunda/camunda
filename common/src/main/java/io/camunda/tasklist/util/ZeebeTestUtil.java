@@ -113,6 +113,11 @@ public abstract class ZeebeTestUtil {
     return String.valueOf(deploymentEvent.getProcesses().get(0).getProcessDefinitionKey());
   }
 
+  public static void deleteResource(ZeebeClient client, long resourceKey) {
+    client.newDeleteResourceCommand(resourceKey).send().join();
+    LOGGER.debug("Deletion of resource [{}] was performed", resourceKey);
+  }
+
   /**
    * @param client client
    * @param bpmnProcessId bpmnProcessId

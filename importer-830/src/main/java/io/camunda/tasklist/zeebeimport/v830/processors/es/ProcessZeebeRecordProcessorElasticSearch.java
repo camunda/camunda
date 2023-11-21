@@ -14,6 +14,7 @@ import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.schema.indices.FormIndex;
 import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.util.ConversionUtils;
+import io.camunda.tasklist.zeebeimport.common.ProcessDefinitionDeletionProcessor;
 import io.camunda.tasklist.zeebeimport.util.XMLUtil;
 import io.camunda.tasklist.zeebeimport.v830.record.value.deployment.DeployedProcessImpl;
 import io.camunda.zeebe.protocol.record.Record;
@@ -21,13 +22,13 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
@@ -41,11 +42,9 @@ public class ProcessZeebeRecordProcessorElasticSearch {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ProcessZeebeRecordProcessorElasticSearch.class);
 
-  private static final Set<String> STATES = new HashSet<>();
+  private static final Set<String> STATES_TO_PERSIST = Set.of(ProcessIntent.CREATED.name());
 
-  static {
-    STATES.add(ProcessIntent.CREATED.name());
-  }
+  private static final Set<String> STATES_TO_DELETE = Set.of(ProcessIntent.DELETED.name());
 
   @Autowired private ObjectMapper objectMapper;
 
@@ -55,11 +54,14 @@ public class ProcessZeebeRecordProcessorElasticSearch {
 
   @Autowired private XMLUtil xmlUtil;
 
+  @Autowired private ProcessDefinitionDeletionProcessor processDefinitionDeletionProcessor;
+
   public void processDeploymentRecord(Record<DeployedProcessImpl> record, BulkRequest bulkRequest)
       throws PersistenceException {
     final String intentStr = record.getIntent().name();
+    final String processDefinitionKey = String.valueOf(record.getValue().getProcessDefinitionKey());
 
-    if (STATES.contains(intentStr)) {
+    if (STATES_TO_PERSIST.contains(intentStr)) {
       final DeployedProcessImpl recordValue = record.getValue();
 
       final Map<String, String> userTaskForms = new HashMap<>();
@@ -82,6 +84,10 @@ public class ProcessZeebeRecordProcessorElasticSearch {
       if (!exceptions.isEmpty()) {
         throw exceptions.get(0);
       }
+    } else if (STATES_TO_DELETE.contains(intentStr)) {
+      bulkRequest.add(
+          processDefinitionDeletionProcessor.createProcessDefinitionDeleteRequests(
+              processDefinitionKey, DeleteRequest::new));
     }
   }
 
