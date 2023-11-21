@@ -60,6 +60,7 @@
     ]
   },
   "schedule": [
-    "every weekday"
+    "after 8pm every weekday",
+    "before 6am every weekday"
   ]
 }
