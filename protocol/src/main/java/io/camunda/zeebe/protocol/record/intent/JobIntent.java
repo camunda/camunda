@@ -47,7 +47,9 @@ public enum JobIntent implements ProcessInstanceRelatedIntent {
   YIELDED((short) 16),
 
   UPDATE_TIMEOUT((short) 17),
-  TIMEOUT_UPDATED((short) 18);
+  TIMEOUT_UPDATED((short) 18),
+
+  MIGRATED((short) 19);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -105,6 +107,8 @@ public enum JobIntent implements ProcessInstanceRelatedIntent {
         return UPDATE_TIMEOUT;
       case 18:
         return TIMEOUT_UPDATED;
+      case 19:
+        return MIGRATED;
       default:
         return UNKNOWN;
     }
