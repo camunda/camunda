@@ -8,6 +8,7 @@
 package io.camunda.zeebe.transport.stream.impl.messages;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
@@ -64,6 +65,20 @@ final class SerializationTest {
   }
 
   @Test
+  void shouldSerializeAddStreamResponse() {
+    // given
+    final var response = new AddStreamResponse();
+
+    // when
+    response.write(buffer, 0);
+    final var deserialized = new AddStreamResponse();
+
+    // then
+    assertThatCode(() -> deserialized.wrap(buffer, 0, response.getLength()))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
   void shouldSerializeRemoveStreamRequest() {
     // given
     final var streamId = UUID.randomUUID();
@@ -76,6 +91,20 @@ final class SerializationTest {
 
     // then
     assertThat(deserialized.streamId()).isEqualTo(streamId);
+  }
+
+  @Test
+  void shouldSerializeRemoveStreamResponse() {
+    // given
+    final var response = new RemoveStreamResponse();
+
+    // when
+    response.write(buffer, 0);
+    final var deserialized = new RemoveStreamResponse();
+
+    // then
+    assertThatCode(() -> deserialized.wrap(buffer, 0, response.getLength()))
+        .doesNotThrowAnyException();
   }
 
   @Test
@@ -93,5 +122,35 @@ final class SerializationTest {
     // then
     assertThat(deserialized.streamId()).isEqualTo(streamId);
     assertThat(deserialized.payload()).isEqualTo(BufferUtil.wrapString("foo"));
+  }
+
+  @Test
+  void shouldSerializePushStreamResponse() {
+    // given
+    final var response = new PushStreamResponse();
+
+    // when
+    response.write(buffer, 0);
+    final var deserialized = new PushStreamResponse();
+
+    // then
+    assertThatCode(() -> deserialized.wrap(buffer, 0, response.getLength()))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldSerializeErrorResponse() {
+    // given
+    final var response =
+        new ErrorResponse().code(ErrorCode.EXHAUSTED).message("Stream is exhausted");
+
+    // when
+    response.write(buffer, 0);
+    final var deserialized = new ErrorResponse();
+    deserialized.wrap(buffer, 0, response.getLength());
+
+    // then
+    assertThat(deserialized.code()).isEqualTo(ErrorCode.EXHAUSTED);
+    assertThat(deserialized.message()).isEqualTo("Stream is exhausted");
   }
 }

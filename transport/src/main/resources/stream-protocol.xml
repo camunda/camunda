@@ -8,7 +8,7 @@
   -->
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
   xmlns:xi="http://www.w3.org/2001/XInclude" package="io.camunda.zeebe.transport.stream.impl.messages"
-  id="2" version="1" semanticVersion="${project.version}"
+  id="2" version="2" semanticVersion="${project.version}"
   description="Zeebe Protocol" byteOrder="littleEndian">
 
   <xi:include href="../../../protocol/src/main/resources/common-types.xml"/>
@@ -18,22 +18,49 @@
       <type name="high" primitiveType="int64" />
       <type name="low" primitiveType="int64" />
     </composite>
+
+    <enum name="errorCode" encodingType="uint8" semanticType="String"
+      description="The unique identifier of an error">
+      <validValue name="INTERNAL_ERROR">0</validValue>
+      <validValue name="NOT_FOUND">1</validValue>
+      <validValue name="INVALID">2</validValue>
+      <validValue name="MALFORMED">3</validValue>
+      <validValue name="EXHAUSTED">4</validValue>
+      <validValue name="BLOCKED">5</validValue>
+    </enum>
   </types>
 
 
   <!-- Gateway Stream messages 400-499 -->
   <sbe:message name="AddStreamRequest" id="400" description="Adds a gateway stream to a broker">
-    <field name="id" id="1" type="UUID" />
-    <data name="streamType" id="2" type="varDataEncoding" />
-    <data name="metadata" id="3" type="varDataEncoding" />
+    <field name="id" id="1" type="UUID" description="The unique ID of the stream to add" />
+    <data name="streamType" id="2" type="varDataEncoding" description="The type of the stream, used for aggregation"/>
+    <data name="metadata" id="3" type="varDataEncoding" description="Optional, free-form metadata associated with the stream" />
+  </sbe:message>
+
+  <sbe:message name="AddStreamResponse" id="403" description="Result of adding a gateway stream to a broker">
+
   </sbe:message>
 
   <sbe:message name="RemoveStreamRequest" id="401" description="Removes a gateway stream from a broker">
-    <field name="id" id="1" type="UUID" />
+    <field name="id" id="1" type="UUID" description="The unique ID of the stream to remove" />
+  </sbe:message>
+
+  <sbe:message name="RemoveStreamResponse" id="404" description="Result of removing a gateway stream to a broker">
+
   </sbe:message>
 
   <sbe:message name="PushStreamRequest" id="402" description="Pushes a payload over a stream">
-    <field name="id" id="1" type="UUID" />
-    <data name="payload" id="2" type="varDataEncoding"/>
+    <field name="id" id="1" type="UUID" description="The unique stream ID to push on" />
+    <data name="payload" id="2" type="varDataEncoding" description="The payload to push on the stream" />
+  </sbe:message>
+
+  <sbe:message name="PushStreamResponse" id="405" description="Result of pushing a payload to a stream">
+
+  </sbe:message>
+
+  <sbe:message name="ErrorResponse" id="406" description="Returned whenever a request fails">
+    <field name="code" id="1" type="errorCode" description="The specific error code" />
+    <data name="message" id="2" type="varDataEncoding" />
   </sbe:message>
 </sbe:messageSchema>
