@@ -123,4 +123,9 @@ public interface ZeebeClientConfiguration {
    * @see ZeebeClientBuilder#defaultJobWorkerStreamEnabled(boolean)
    */
   boolean getDefaultJobWorkerStreamEnabled();
+
+  /**
+   * @see ZeebeClientBuilder#useDefaultRetryPolicy(boolean)
+   */
+  boolean useDefaultRetryPolicy();
 }

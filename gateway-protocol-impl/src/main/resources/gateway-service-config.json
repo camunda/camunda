@@ -1,0 +1,51 @@
+{
+  "methodConfig": [
+    {
+      "name": [
+        {"service": "gateway_protocol.Gateway", "method": "ActivateJobs"},
+        {"service": "gateway_protocol.Gateway", "method": "CancelProcessInstance"},
+        {"service": "gateway_protocol.Gateway", "method": "CompleteJob"},
+        {"service": "gateway_protocol.Gateway", "method": "DeleteResource"},
+        {"service": "gateway_protocol.Gateway", "method": "EvaluateDecision"},
+        {"service": "gateway_protocol.Gateway", "method": "FailJob"},
+        {"service": "gateway_protocol.Gateway", "method": "ResolveIncident"},
+        {"service": "gateway_protocol.Gateway", "method": "SetVariables"},
+        {"service": "gateway_protocol.Gateway", "method": "StreamActivatedJobs"},
+        {"service": "gateway_protocol.Gateway", "method": "Topology"}
+      ],
+      "waitForReady": true,
+      "retryPolicy": {
+        "maxAttempts": 5.0,
+        "initialBackoff": "0.1s",
+        "maxBackoff": "5s",
+        "backoffMultiplier": 3.0,
+        "retryableStatusCodes": ["UNAVAILABLE", "RESOURCE_EXHAUSTED", "DEADLINE_EXCEEDED"]
+      }
+    },
+    {
+      "name": [
+        {"service": "gateway_protocol.Gateway", "method": "BroadcastSignal"},
+        {"service": "gateway_protocol.Gateway", "method": "CreateProcessInstance"},
+        {"service": "gateway_protocol.Gateway", "method": "CreateProcessInstanceWithResult"},
+        {"service": "gateway_protocol.Gateway", "method": "DeployProcess"},
+        {"service": "gateway_protocol.Gateway", "method": "DeployResource"},
+        {"service": "gateway_protocol.Gateway", "method": "ModifyProcessInstance"},
+        {"service": "gateway_protocol.Gateway", "method": "PublishMessage"},
+        {"service": "gateway_protocol.Gateway", "method": "ThrowError"},
+        {"service": "gateway_protocol.Gateway", "method": "UpdateJobRetries"},
+        {"service": "gateway_protocol.Gateway", "method": "UpdateJobTimeout"}
+      ],
+      "waitForReady": true,
+      "retryPolicy": {
+        "maxAttempts": 5.0,
+        "initialBackoff": "0.1s",
+        "maxBackoff": "5s",
+        "backoffMultiplier": 3.0,
+        "retryableStatusCodes": ["UNAVAILABLE", "RESOURCE_EXHAUSTED"]
+      }
+    }
+  ],
+  "healthCheckConfig": {
+    "serviceName": "gateway_protocol.Gateway"
+  }
+}

@@ -20,6 +20,7 @@ import static io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_TENANT_ID;
 import static io.camunda.zeebe.client.ClientProperties.MAX_MESSAGE_SIZE;
 import static io.camunda.zeebe.client.ClientProperties.STREAM_ENABLED;
+import static io.camunda.zeebe.client.ClientProperties.USE_DEFAULT_RETRY_POLICY;
 import static io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.CA_CERTIFICATE_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_JOB_WORKER_TENANT_IDS_VAR;
@@ -27,6 +28,7 @@ import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_TENANT
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.KEEP_ALIVE_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.OVERRIDE_AUTHORITY_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.PLAINTEXT_CONNECTION_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.USE_DEFAULT_RETRY_POLICY_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.ZEEBE_CLIENT_WORKER_STREAM_ENABLED;
 import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_MB;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -724,5 +726,48 @@ public final class ZeebeClientTest extends ClientTest {
         .describedAs(
             "This method has no effect on the cloud client builder while under development")
         .isEqualTo(builder);
+  }
+
+  @Test
+  public void shouldUseDefaultRetryPolicy() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.useDefaultRetryPolicy(true);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.useDefaultRetryPolicy()).isTrue();
+  }
+
+  @Test
+  public void shouldOverrideDefaultRetryPolicyWithEnvVar() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.useDefaultRetryPolicy(true);
+    Environment.system().put(USE_DEFAULT_RETRY_POLICY_VAR, "false");
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.useDefaultRetryPolicy()).isFalse();
+  }
+
+  @Test
+  public void shouldOverrideDefaultRetryPolicyWithProperty() {
+    // given
+    final Properties properties = new Properties();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.useDefaultRetryPolicy(true);
+    properties.setProperty(USE_DEFAULT_RETRY_POLICY, "false");
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.useDefaultRetryPolicy()).isFalse();
   }
 }

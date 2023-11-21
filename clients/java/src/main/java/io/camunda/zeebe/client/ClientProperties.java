@@ -119,7 +119,8 @@ public final class ClientProperties {
   public static final String CLOUD_CLIENT_SECRET = "zeebe.client.cloud.secret";
 
   /**
-   * @see ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep4#withRegion(java.lang.String)
+   * @see
+   *     io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2.ZeebeClientCloudBuilderStep3.ZeebeClientCloudBuilderStep4#withRegion(String)
    */
   public static final String CLOUD_REGION = "zeebe.client.cloud.region";
 
@@ -127,6 +128,11 @@ public final class ClientProperties {
    * @see ZeebeClientBuilder#defaultJobWorkerStreamEnabled(boolean)
    */
   public static final String STREAM_ENABLED = "zeebe.client.worker.stream.enabled";
+
+  /**
+   * @see ZeebeClientBuilder#useDefaultRetryPolicy(boolean)
+   */
+  public static final String USE_DEFAULT_RETRY_POLICY = "zeebe.client.useDefaultRetryPolicy";
 
   private ClientProperties() {}
 }
