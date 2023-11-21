@@ -44,14 +44,14 @@ jobs:
             maven-modules: "qa/integration-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
-            tcc-enabled: 'true'
+            tcc-enabled: ${{ vars.TCC_ENABLED }}
             tcc-concurrency: 1
           - group: qa-update
             name: "QA Update Tests"
             maven-modules: "qa/update-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
-            tcc-enabled: 'true'
+            tcc-enabled: ${{ vars.TCC_ENABLED }}
             tcc-concurrency: 2
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
@@ -79,7 +79,7 @@ jobs:
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Setup TCC
-        if: matrix.tcc-enabled == 'true'
+        if: ${{ matrix.tcc-enabled == 'true' }}
         uses: atomicjar/testcontainers-cloud-setup-action@v1
         env:
           TC_CLOUD_LOGS_VERBOSE: true
@@ -105,7 +105,7 @@ jobs:
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Terminate TCC
-        if: matrix.tcc-enabled == 'true'
+        if: ${{ matrix.tcc-enabled == 'true'}}
         uses: atomicjar/testcontainers-cloud-setup-action@v1
         with:
           action: terminate
