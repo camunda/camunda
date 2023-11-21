@@ -18,8 +18,10 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayDeque;
 import java.util.List;
 
@@ -68,24 +70,13 @@ public class ProcessInstanceMigrationMigrateProcessor
               value.getProcessInstanceKey(), targetProcessDefinitionKey));
     }
 
-    stateWriter.appendFollowUpEvent(
-        processInstanceKey,
-        ProcessInstanceIntent.ELEMENT_MIGRATED,
-        processInstance
-            .getValue()
-            .setProcessDefinitionKey(processDefinition.getKey())
-            .setBpmnProcessId(processDefinition.getBpmnProcessId())
-            .setVersion(processDefinition.getVersion())
-            .setElementId(processDefinition.getBpmnProcessId()));
-
     // avoid stackoverflow using a queue to iterate over the descendants instead of recursion
-    final var childInstances =
-        new ArrayDeque<>(elementInstanceState.getChildren(processInstanceKey));
-    while (!childInstances.isEmpty()) {
-      final ElementInstance childInstance = childInstances.poll();
+    final var elementInstances = new ArrayDeque<>(List.of(processInstance));
+    while (!elementInstances.isEmpty()) {
+      final var elementInstance = elementInstances.poll();
       final List<ElementInstance> children =
-          migrateElementInstance(childInstance, processDefinition, mappingInstructions);
-      childInstances.addAll(children);
+          migrateElementInstance(elementInstance, processDefinition, mappingInstructions);
+      elementInstances.addAll(children);
     }
 
     stateWriter.appendFollowUpEvent(
@@ -99,7 +90,8 @@ public class ProcessInstanceMigrationMigrateProcessor
       final DeployedProcess processDefinition,
       final List<ProcessInstanceMigrationMappingInstructionValue> mappingInstructions) {
 
-    final String targetElementId = determineTargetElementId(elementInstance, mappingInstructions);
+    final String targetElementId =
+        determineTargetElementId(elementInstance, processDefinition, mappingInstructions);
 
     stateWriter.appendFollowUpEvent(
         elementInstance.getKey(),
@@ -116,7 +108,12 @@ public class ProcessInstanceMigrationMigrateProcessor
 
   private static String determineTargetElementId(
       final ElementInstance elementInstance,
+      final DeployedProcess targetProcessDefinition,
       final List<ProcessInstanceMigrationMappingInstructionValue> mappingInstructions) {
+    if (elementInstance.getValue().getBpmnElementType() == BpmnElementType.PROCESS) {
+      // users don't provide a mapping instruction for the bpmn process id
+      return BufferUtil.bufferAsString(targetProcessDefinition.getBpmnProcessId());
+    }
     final String elementId = elementInstance.getValue().getElementId();
     return mappingInstructions.stream()
         .filter(instruction -> instruction.getSourceElementId().equals(elementId))
