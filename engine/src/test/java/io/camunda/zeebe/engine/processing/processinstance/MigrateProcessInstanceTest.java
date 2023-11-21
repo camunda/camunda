@@ -409,10 +409,17 @@ public class MigrateProcessInstanceTest {
         .addMappingInstruction("A", "B")
         .migrate();
 
-    // then
+    // then we can do any operation on the job again
 
     // Note that while the job is migrated, it's type did not change even though it's different in
     // the target process. Because re-evaluation of the job type expression is not yet supported.
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").yield();
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").withRetries(2).fail();
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").withRetries(3).updateRetries();
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").withErrorCode("A1").throwError();
+    ENGINE.incident().ofInstance(processInstanceKey).resolve();
+
+    // and finally complete the job and continue the process
     ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
 
     assertThat(
