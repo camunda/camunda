@@ -187,6 +187,27 @@ public interface ClusterCommunicationService {
       Executor executor);
 
   /**
+   * Adds a new subscriber for the specified message subject which must return a reply. If the
+   * sender is not a known member, the handler is not called, and a {@link
+   * io.atomix.cluster.messaging.MessagingException.NoSuchMemberException} is returned to the
+   * sender.
+   *
+   * @param subject message subject
+   * @param decoder decoder to deserializing incoming message
+   * @param handler handler for handling message, receiving the sender's member ID and the decoded
+   *     message
+   * @param encoder to serialize the outgoing reply
+   * @param executor executor to run this handler on
+   * @param <M> incoming message type
+   */
+  <M, R> void replyToAsync(
+      String subject,
+      Function<byte[], M> decoder,
+      Function<M, CompletableFuture<R>> handler,
+      Function<R, byte[]> encoder,
+      Executor executor);
+
+  /**
    * Removes a subscriber for the specified message subject.
    *
    * @param subject message subject

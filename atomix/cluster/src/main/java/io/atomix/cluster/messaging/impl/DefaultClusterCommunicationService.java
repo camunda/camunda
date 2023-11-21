@@ -168,6 +168,17 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
   }
 
   @Override
+  public <M, R> void replyToAsync(
+      final String subject,
+      final Function<byte[], M> decoder,
+      final Function<M, CompletableFuture<R>> handler,
+      final Function<R, byte[]> encoder,
+      final Executor executor) {
+    messagingService.registerHandler(
+        subject, new InternalMessageAsyncResponder<>(decoder, encoder, handler, executor));
+  }
+
+  @Override
   public void unsubscribe(final String subject) {
     messagingService.unregisterHandler(subject);
     final BiConsumer<Address, byte[]> consumer = unicastConsumers.remove(subject);
@@ -270,6 +281,32 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
     @Override
     public CompletableFuture<byte[]> apply(final Address sender, final byte[] bytes) {
       return handler.apply(decoder.apply(bytes)).thenApply(encoder);
+    }
+  }
+
+  private static class InternalMessageAsyncResponder<M, R>
+      implements BiFunction<Address, byte[], CompletableFuture<byte[]>> {
+    private final Function<byte[], M> decoder;
+    private final Function<R, byte[]> encoder;
+    private final Function<M, CompletableFuture<R>> handler;
+    private final Executor executor;
+
+    InternalMessageAsyncResponder(
+        final Function<byte[], M> decoder,
+        final Function<R, byte[]> encoder,
+        final Function<M, CompletableFuture<R>> handler,
+        final Executor executor) {
+      this.decoder = decoder;
+      this.encoder = encoder;
+      this.handler = handler;
+      this.executor = executor;
+    }
+
+    @Override
+    public CompletableFuture<byte[]> apply(final Address sender, final byte[] bytes) {
+      return CompletableFuture.supplyAsync(() -> decoder.apply(bytes), executor)
+          .thenComposeAsync(handler, executor)
+          .thenApplyAsync(encoder, executor);
     }
   }
 
