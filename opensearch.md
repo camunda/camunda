@@ -213,7 +213,7 @@ Implementation of interfaces for Opensearch (packages sorted by most important f
 5.  [Public API](https://github.com/camunda/operate/tree/7ad44931a7d23f5e500dd708d238ce3046e3c71b/webapp/src/main/java/io/camunda/operate/webapp/api) even needs abstraction layer.
 
 ### Known issues
-1. search_after doesn't support null dates in Opensearch java client
+1. search_after doesn't support null dates in Opensearch java client. [Ticket #5788](https://github.com/camunda/operate/issues/5788)
     <details>
     Test to reproduce: [io.camunda.operate.elasticsearch.ListViewQueryIT.testVariousQueries](qa/integration-tests/src/test/java/io/camunda/operate/elasticsearch/ListViewQueryIT.java)
 
@@ -315,4 +315,4 @@ Implementation of interfaces for Opensearch (packages sorted by most important f
     }
     ```
     </details>
-2. Opensearch Java client doesn't support parent aggregations
+2. Opensearch Java client doesn't support parent aggregations. [Ticket #5787](https://github.com/camunda/operate/issues/5787)

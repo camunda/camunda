@@ -16,6 +16,8 @@ import org.opensearch.client.transport.OpenSearchTransport;
 import org.opensearch.client.transport.endpoints.EndpointWithResponseMapperAttr;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ExtendedOpenSearchClient extends OpenSearchClient {
 
@@ -25,12 +27,18 @@ public class ExtendedOpenSearchClient extends OpenSearchClient {
 
   public <TDocument> SearchResponse<TDocument> fixedSearch(SearchRequest request, Class<TDocument> tDocumentClass)
     throws IOException, OpenSearchException {
-
     JsonEndpoint<CamundaPatchedSearchRequest, SearchResponse<TDocument>, ErrorResponse> endpoint =
       (JsonEndpoint<CamundaPatchedSearchRequest, SearchResponse<TDocument>, ErrorResponse>) CamundaPatchedSearchRequest._ENDPOINT;
     endpoint = new EndpointWithResponseMapperAttr<>(endpoint,
       "org.opensearch.client:Deserializer:_global.search.TDocument", getDeserializer(tDocumentClass));
 
     return transport.performRequest(CamundaPatchedSearchRequest.from(request), endpoint, null);
+  }
+
+  public Map<String, Object> searchAsMap(SearchRequest request) throws IOException, OpenSearchException {
+    JsonEndpoint<SearchRequest, HashMap, ErrorResponse> endpoint =
+      SearchRequest._ENDPOINT.withResponseDeserializer(getDeserializer(HashMap.class));
+
+    return transport.performRequest(request, endpoint, null);
   }
 }

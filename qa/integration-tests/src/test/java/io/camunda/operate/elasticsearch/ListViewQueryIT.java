@@ -80,7 +80,6 @@ public class ListViewQueryIT extends OperateAbstractIT {
   private String tenant2 = "tenant2";
 
   @Test
-  // Fails for Opensearch due to a known issue #1 described in opensearch.md
   public void testVariousQueries() throws Exception {
     createData();
 

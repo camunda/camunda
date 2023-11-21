@@ -59,7 +59,6 @@ public class ProcessStatisticsIT extends OperateAbstractIT {
   public SearchTestRule searchTestRule = new SearchTestRule();
 
   @Test
-  // Fails for Opensearch due to a known issue #2 described in opensearch.md
   public void testOneProcessStatistics() throws Exception {
     createData(PROCESS_KEY_DEMO_PROCESS);
 
@@ -67,7 +66,6 @@ public class ProcessStatisticsIT extends OperateAbstractIT {
   }
 
   @Test
-  // Fails for Opensearch due to a known issue #2 described in opensearch.md
   public void testStatisticsWithQueryByActivityId() throws Exception {
     createData(PROCESS_KEY_DEMO_PROCESS);
 
@@ -82,7 +80,6 @@ public class ProcessStatisticsIT extends OperateAbstractIT {
   }
 
   @Test
-  // Fails for Opensearch due to a known issue #2 described in opensearch.md
   public void testStatisticsWithQueryByErrorMessage() throws Exception {
     createData(PROCESS_KEY_DEMO_PROCESS);
 
@@ -148,7 +145,6 @@ public class ProcessStatisticsIT extends OperateAbstractIT {
   }
 
   @Test
-  // Fails for Opensearch due to a known issue #2 described in opensearch.md
   public void testTwoProcessesStatistics() throws Exception {
     createData(PROCESS_KEY_DEMO_PROCESS);
     createData(PROCESS_KEY_OTHER_PROCESS);
@@ -179,7 +175,6 @@ public class ProcessStatisticsIT extends OperateAbstractIT {
   }
 
   @Test
-  // Fails for Opensearch due to a known issue #2 described in opensearch.md
   public void testStatisticsWithPermisssionWhenAllowed() throws Exception {
 
     // given

@@ -340,4 +340,13 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
       throw new UnsupportedOperationException("ExtendedOpenSearchClient is required to execute fixedSearch! Provided: " + openSearchClient.getClass().getName());
     }
   }
+
+  public Map<String, Object> searchAsMap(SearchRequest.Builder requestBuilder) {
+    var request = requestBuilder.size(0).build();
+    if (openSearchClient instanceof ExtendedOpenSearchClient extendedOpenSearchClient) {
+      return safe(() -> extendedOpenSearchClient.searchAsMap(request), e -> defaultDeleteErrorMessage(request.index().toString()));
+    } else {
+      throw new UnsupportedOperationException("ExtendedOpenSearchClient is required to execute fixedSearch! Provided: " + openSearchClient.getClass().getName());
+    }
+  }
 }
