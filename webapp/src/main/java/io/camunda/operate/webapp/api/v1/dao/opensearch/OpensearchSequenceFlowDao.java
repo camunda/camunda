@@ -8,14 +8,10 @@ package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.schema.templates.SequenceFlowTemplate;
-import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.SequenceFlowDao;
 import io.camunda.operate.webapp.api.v1.entities.Query;
-import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.entities.SequenceFlow;
-import io.camunda.operate.webapp.api.v1.entities.Variable;
-import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
 import org.opensearch.client.opensearch.core.SearchRequest;
@@ -27,7 +23,7 @@ import java.util.List;
 
 @Conditional(OpensearchCondition.class)
 @Component
-public class OpensearchSequenceFlowDao extends OpensearchDao<SequenceFlow> implements SequenceFlowDao {
+public class OpensearchSequenceFlowDao extends OpensearchPageableDao<SequenceFlow> implements SequenceFlowDao {
 
   private SequenceFlowTemplate sequenceFlowIndex;
 

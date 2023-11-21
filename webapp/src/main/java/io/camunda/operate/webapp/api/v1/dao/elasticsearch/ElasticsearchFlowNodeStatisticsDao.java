@@ -49,13 +49,6 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticsearchCondition.class)
 @Component("ElasticsearchFlowNodeStatisticsDaoV1")
 public class ElasticsearchFlowNodeStatisticsDao extends ElasticsearchDao<FlowNodeStatistics> implements FlowNodeStatisticsDao {
-
-  public static final String FLOW_NODE_ID_AGG = "flowNodeIdAgg";
-  public static final String COUNT_INCIDENT = "countIncident";
-  public static final String COUNT_CANCELED = "countCanceled";
-  public static final String COUNT_COMPLETED = "countCompleted";
-  public static final String COUNT_ACTIVE = "countActive";
-
   @Autowired
   private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 

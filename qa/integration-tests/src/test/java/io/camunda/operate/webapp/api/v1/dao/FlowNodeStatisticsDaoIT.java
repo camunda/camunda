@@ -6,22 +6,20 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.camunda.operate.util.OperateZeebeAbstractIT;
-import io.camunda.operate.webapp.api.v1.dao.elasticsearch.ElasticsearchFlowNodeStatisticsDao;
 import io.camunda.operate.webapp.api.v1.entities.FlowNodeStatistics;
-
-import java.util.List;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class ElasticsearchFlowNodeStatisticsDaoIT extends OperateZeebeAbstractIT {
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class FlowNodeStatisticsDaoIT extends OperateZeebeAbstractIT {
 
   @Autowired
-  ElasticsearchFlowNodeStatisticsDao dao;
+  FlowNodeStatisticsDao dao;
 
   private List<FlowNodeStatistics> flowNodeStatistics;
   private Long demoProcessKey;

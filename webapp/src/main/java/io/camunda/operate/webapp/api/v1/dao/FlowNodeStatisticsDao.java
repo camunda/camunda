@@ -11,6 +11,11 @@ import io.camunda.operate.webapp.api.v1.entities.FlowNodeStatistics;
 import java.util.List;
 
 public interface FlowNodeStatisticsDao {
+  String FLOW_NODE_ID_AGG = "flowNodeIdAgg";
+  String COUNT_INCIDENT = "countIncident";
+  String COUNT_CANCELED = "countCanceled";
+  String COUNT_COMPLETED = "countCompleted";
+  String COUNT_ACTIVE = "countActive";
 
   List<FlowNodeStatistics> getFlowNodeStatisticsForProcessInstance(Long processInstanceKey);
 }

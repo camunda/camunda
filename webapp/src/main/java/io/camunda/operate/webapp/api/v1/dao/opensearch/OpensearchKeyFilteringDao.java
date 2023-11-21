@@ -15,7 +15,7 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 
 import java.util.List;
 
-public abstract class OpensearchKeyFilteringDao<T> extends OpensearchDao<T> {
+public abstract class OpensearchKeyFilteringDao<T> extends OpensearchPageableDao<T> {
   public OpensearchKeyFilteringDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper, RichOpenSearchClient richOpenSearchClient) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
   }
