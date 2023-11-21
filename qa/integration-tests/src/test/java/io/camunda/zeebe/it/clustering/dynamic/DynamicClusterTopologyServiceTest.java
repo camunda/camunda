@@ -10,10 +10,15 @@ package io.camunda.zeebe.it.clustering.dynamic;
 import static io.camunda.zeebe.test.util.asserts.TopologyAssert.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import java.time.Duration;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
@@ -23,24 +28,73 @@ final class DynamicClusterTopologyServiceTest {
   @TestZeebe
   private final TestCluster cluster =
       TestCluster.builder()
+          .withGatewaysCount(1)
+          .withGatewayConfig(
+              g ->
+                  g.gatewayConfig()
+                      .getCluster()
+                      .getMembership()
+                      // Reduce timeouts so that the test is faster
+                      .setProbeInterval(Duration.ofMillis(100))
+                      .setFailureTimeout(Duration.ofSeconds(2)))
+          .withEmbeddedGateway(false)
           .withBrokersCount(3)
           .withPartitionsCount(PARTITIONS_COUNT)
           .withReplicationFactor(1)
           .withBrokerConfig(this::configureDynamicClusterTopology)
           .build();
 
+  private ZeebeClient client;
+
+  @BeforeEach
+  void setup() {
+    client = cluster.newClientBuilder().build();
+  }
+
+  @AfterEach
+  void tearDown() {
+    client.close();
+  }
+
   @Test
   void shouldStartClusterWithDynamicTopology() {
-    try (final var client = cluster.newClientBuilder().build()) {
-      final var topology = client.newTopologyRequest().send().join();
-      assertThat(topology)
-          .describedAs(
-              "Expected topology to have %d partitions distributed over 3 brokers",
-              PARTITIONS_COUNT)
-          .hasLeaderForPartition(1, 0)
-          .hasLeaderForPartition(2, 1)
-          .hasLeaderForPartition(3, 2);
-    }
+    final var topology = client.newTopologyRequest().send().join();
+    assertThat(topology)
+        .describedAs(
+            "Expected topology to have %d partitions distributed over 3 brokers", PARTITIONS_COUNT)
+        .hasLeaderForPartition(1, 0)
+        .hasLeaderForPartition(2, 1)
+        .hasLeaderForPartition(3, 2);
+  }
+
+  @Test
+  void shouldRestartOtherBrokerWhenBroker0IsUnavailable() {
+    // given
+    cluster.brokers().get(MemberId.from("0")).stop();
+
+    // when
+    cluster.brokers().get(MemberId.from("1")).stop();
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              final var topology = client.newTopologyRequest().send().join();
+              assertThat(topology)
+                  .describedAs("Broker 1 is removed from topology", PARTITIONS_COUNT)
+                  .doesNotContainBroker(1);
+            });
+    cluster.brokers().get(MemberId.from("1")).start();
+
+    // then
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              final var topology = client.newTopologyRequest().send().join();
+              assertThat(topology)
+                  .describedAs(
+                      "Broker 1 has restarted and added back to the topology", PARTITIONS_COUNT)
+                  .hasLeaderForPartition(2, 1)
+                  .hasLeaderForPartition(3, 2);
+            });
   }
 
   private void configureDynamicClusterTopology(
