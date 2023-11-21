@@ -20,7 +20,8 @@ import io.camunda.zeebe.client.api.response.UpdateTimeoutJobResponse;
 public interface UpdateTimeoutJobCommandStep1 {
 
   /**
-   * Set the timeout of this job.
+   * Set the timeout of this job. Timeout value will be used to calculate a new job deadline when
+   * the command is processed: timeout value will be added to the current time.
    *
    * @param timout the timeout of this job
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
