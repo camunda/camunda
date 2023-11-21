@@ -369,17 +369,8 @@ public final class JobStateTest {
     // then
     assertThat(jobState.exists(jobKey)).isTrue();
     assertThat(jobState.getJob(jobKey).getDeadline()).isEqualTo(newDeadline);
-
-    final List<JobRecord> timedOutJobs = new ArrayList<>();
-    jobState.forEachTimedOutEntry(
-        newDeadline + 1,
-        (key, value) -> {
-          timedOutJobs.add(value);
-          return true;
-        });
-
-    assertThat(timedOutJobs.size()).isEqualTo(1);
-    assertThat(timedOutJobs.get(0).getDeadline()).isEqualTo(newDeadline);
+    assertThat(jobState.jobDeadlineExists(jobKey, deadline)).isFalse();
+    assertThat(jobState.jobDeadlineExists(jobKey, newDeadline)).isTrue();
   }
 
   @Test

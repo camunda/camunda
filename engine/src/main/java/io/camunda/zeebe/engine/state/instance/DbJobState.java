@@ -378,6 +378,13 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   @Override
+  public boolean jobDeadlineExists(final long jobKey, final long deadline) {
+    this.jobKey.wrapLong(jobKey);
+    deadlineKey.wrapLong(deadline);
+    return deadlinesColumnFamily.exists(deadlineJobKey);
+  }
+
+  @Override
   public long findBackedOffJobs(final long timestamp, final BiPredicate<Long, JobRecord> callback) {
     nextBackOffDueDate = -1L;
     backoffColumnFamily.whileTrue(

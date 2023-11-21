@@ -23,6 +23,6 @@ public class JobTimeoutUpdatedApplier implements TypedEventApplier<JobIntent, Jo
 
   @Override
   public void applyState(final long key, final JobRecord value) {
-    jobState.updateJobDeadline(key, value.getTimeout());
+    jobState.updateJobDeadline(key, value.getDeadline());
   }
 }

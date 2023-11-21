@@ -90,6 +90,11 @@ public final class JobClient {
     return this;
   }
 
+  public JobClient withTimeout(final long timeout) {
+    jobRecord.setTimeout(timeout);
+    return this;
+  }
+
   public JobClient withBackOff(final Duration backOff) {
     jobRecord.setRetryBackoff(backOff.toMillis());
     return this;
@@ -160,6 +165,17 @@ public final class JobClient {
         writer.writeCommand(
             jobKey,
             JobIntent.UPDATE_RETRIES,
+            jobRecord,
+            authorizedTenantIds.toArray(new String[0]));
+    return expectation.apply(position);
+  }
+
+  public Record<JobRecordValue> updateTimeout() {
+    final long jobKey = findJobKey();
+    final long position =
+        writer.writeCommand(
+            jobKey,
+            JobIntent.UPDATE_TIMEOUT,
             jobRecord,
             authorizedTenantIds.toArray(new String[0]));
     return expectation.apply(position);
