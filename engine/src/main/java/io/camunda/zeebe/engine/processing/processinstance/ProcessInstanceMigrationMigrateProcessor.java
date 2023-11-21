@@ -18,7 +18,10 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.ArrayDeque;
+import java.util.List;
 
 public class ProcessInstanceMigrationMigrateProcessor
     implements TypedRecordProcessor<ProcessInstanceMigrationRecord> {
@@ -43,6 +46,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     final ProcessInstanceMigrationRecord value = command.getValue();
     final long processInstanceKey = value.getProcessInstanceKey();
     final long targetProcessDefinitionKey = value.getTargetProcessDefinitionKey();
+    final var mappingInstructions = value.getMappingInstructions();
 
     final ElementInstance processInstance = elementInstanceState.getInstance(processInstanceKey);
     if (processInstance == null) {
@@ -74,9 +78,50 @@ public class ProcessInstanceMigrationMigrateProcessor
             .setVersion(processDefinition.getVersion())
             .setElementId(processDefinition.getBpmnProcessId()));
 
+    // avoid stackoverflow using a queue to iterate over the descendants instead of recursion
+    final var childInstances =
+        new ArrayDeque<>(elementInstanceState.getChildren(processInstanceKey));
+    while (!childInstances.isEmpty()) {
+      final ElementInstance childInstance = childInstances.poll();
+      final List<ElementInstance> children =
+          migrateElementInstance(childInstance, processDefinition, mappingInstructions);
+      childInstances.addAll(children);
+    }
+
     stateWriter.appendFollowUpEvent(
         processInstanceKey, ProcessInstanceMigrationIntent.MIGRATED, value);
     responseWriter.writeEventOnCommand(
         processInstanceKey, ProcessInstanceMigrationIntent.MIGRATED, value, command);
+  }
+
+  private List<ElementInstance> migrateElementInstance(
+      final ElementInstance elementInstance,
+      final DeployedProcess processDefinition,
+      final List<ProcessInstanceMigrationMappingInstructionValue> mappingInstructions) {
+
+    final String targetElementId = determineTargetElementId(elementInstance, mappingInstructions);
+
+    stateWriter.appendFollowUpEvent(
+        elementInstance.getKey(),
+        ProcessInstanceIntent.ELEMENT_MIGRATED,
+        elementInstance
+            .getValue()
+            .setProcessDefinitionKey(processDefinition.getKey())
+            .setBpmnProcessId(processDefinition.getBpmnProcessId())
+            .setVersion(processDefinition.getVersion())
+            .setElementId(targetElementId));
+
+    return elementInstanceState.getChildren(elementInstance.getKey());
+  }
+
+  private static String determineTargetElementId(
+      final ElementInstance elementInstance,
+      final List<ProcessInstanceMigrationMappingInstructionValue> mappingInstructions) {
+    final String elementId = elementInstance.getValue().getElementId();
+    return mappingInstructions.stream()
+        .filter(instruction -> instruction.getSourceElementId().equals(elementId))
+        .map(ProcessInstanceMigrationMappingInstructionValue::getTargetElementId)
+        .findAny() // highlights that mappings could share the same source element id
+        .orElseThrow();
   }
 }
