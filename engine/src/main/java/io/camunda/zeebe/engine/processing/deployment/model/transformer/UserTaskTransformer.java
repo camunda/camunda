@@ -10,9 +10,10 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.impl.StaticExpression;
 import io.camunda.zeebe.engine.Loggers;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
+import io.camunda.zeebe.engine.processing.deployment.model.element.UserTaskProperties;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
@@ -46,17 +47,26 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
   public void transform(final UserTask element, final TransformContext context) {
 
     final ExecutableProcess process = context.getCurrentProcess();
-    final ExecutableJobWorkerTask userTask =
-        process.getElementById(element.getId(), ExecutableJobWorkerTask.class);
+    final ExecutableUserTask userTask =
+        process.getElementById(element.getId(), ExecutableUserTask.class);
 
-    final var jobWorkerProperties = new JobWorkerProperties();
-    userTask.setJobWorkerProperties(jobWorkerProperties);
+    final var userTaskProperties = new UserTaskProperties();
+    final var isZeebeUserTask = false; // TODO: assess from the XML model
 
-    transformTaskDefinition(jobWorkerProperties);
-    transformAssignmentDefinition(element, jobWorkerProperties);
-    transformTaskSchedule(element, jobWorkerProperties);
-    transformTaskHeaders(element, jobWorkerProperties);
-    transformTaskFormId(element, jobWorkerProperties);
+    transformAssignmentDefinition(element, userTaskProperties);
+    transformTaskSchedule(element, userTaskProperties);
+    transformTaskHeaders(element, userTaskProperties);
+    transformTaskFormId(element, userTaskProperties);
+
+    if (isZeebeUserTask) {
+      userTask.setUserTaskProperties(userTaskProperties);
+    } else {
+      final var jobWorkerProperties = new JobWorkerProperties();
+      jobWorkerProperties.wrap(userTaskProperties);
+
+      transformTaskDefinition(jobWorkerProperties);
+      userTask.setJobWorkerProperties(jobWorkerProperties);
+    }
   }
 
   private void transformTaskDefinition(final JobWorkerProperties jobWorkerProperties) {
@@ -65,77 +75,77 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
   }
 
   private void transformAssignmentDefinition(
-      final UserTask element, final JobWorkerProperties jobWorkerProperties) {
+      final UserTask element, final UserTaskProperties userTaskProperties) {
     final var assignmentDefinition =
         element.getSingleExtensionElement(ZeebeAssignmentDefinition.class);
     if (assignmentDefinition == null) {
       return;
     }
-    transformAssignee(jobWorkerProperties, assignmentDefinition);
-    transformCandidateGroups(jobWorkerProperties, assignmentDefinition);
-    transformCandidateUsers(jobWorkerProperties, assignmentDefinition);
+    transformAssignee(userTaskProperties, assignmentDefinition);
+    transformCandidateGroups(userTaskProperties, assignmentDefinition);
+    transformCandidateUsers(userTaskProperties, assignmentDefinition);
   }
 
   private void transformAssignee(
-      final JobWorkerProperties jobWorkerProperties,
+      final UserTaskProperties userTaskProperties,
       final ZeebeAssignmentDefinition assignmentDefinition) {
     final var assignee = assignmentDefinition.getAssignee();
     if (assignee != null && !assignee.isBlank()) {
       final var assigneeExpression = expressionLanguage.parseExpression(assignee);
       if (assigneeExpression.isStatic()) {
         // static assignee values are always treated as string literals
-        jobWorkerProperties.setAssignee(
+        userTaskProperties.setAssignee(
             expressionLanguage.parseExpression(
                 ExpressionTransformer.asFeelExpressionString(
                     ExpressionTransformer.asStringLiteral(assignee))));
       } else {
-        jobWorkerProperties.setAssignee(assigneeExpression);
+        userTaskProperties.setAssignee(assigneeExpression);
       }
     }
   }
 
   private void transformCandidateGroups(
-      final JobWorkerProperties jobWorkerProperties,
+      final UserTaskProperties userTaskProperties,
       final ZeebeAssignmentDefinition assignmentDefinition) {
     final var candidateGroups = assignmentDefinition.getCandidateGroups();
     if (candidateGroups != null && !candidateGroups.isBlank()) {
       final var candidateGroupsExpression = expressionLanguage.parseExpression(candidateGroups);
       if (candidateGroupsExpression.isStatic()) {
         // static candidateGroups must be in CSV format, but this is already checked by validator
-        jobWorkerProperties.setCandidateGroups(
+        userTaskProperties.setCandidateGroups(
             ExpressionTransformer.parseListOfCsv(candidateGroups)
                 .map(ExpressionTransformer::asListLiteral)
                 .map(ExpressionTransformer::asFeelExpressionString)
                 .map(expressionLanguage::parseExpression)
                 .get());
       } else {
-        jobWorkerProperties.setCandidateGroups(candidateGroupsExpression);
+        userTaskProperties.setCandidateGroups(candidateGroupsExpression);
       }
     }
   }
 
   private void transformCandidateUsers(
-      final JobWorkerProperties jobWorkerProperties,
+      final UserTaskProperties userTaskProperties,
       final ZeebeAssignmentDefinition assignmentDefinition) {
     final var candidateUsers = assignmentDefinition.getCandidateUsers();
     if (candidateUsers != null && !candidateUsers.isBlank()) {
       final var candidateUsersExpression = expressionLanguage.parseExpression(candidateUsers);
       if (candidateUsersExpression.isStatic()) {
         // static candidateUsers must be in CSV format, but this is already checked by validator
-        jobWorkerProperties.setCandidateUsers(
+        userTaskProperties.setCandidateUsers(
             ExpressionTransformer.parseListOfCsv(candidateUsers)
                 .map(ExpressionTransformer::asListLiteral)
                 .map(ExpressionTransformer::asFeelExpressionString)
                 .map(expressionLanguage::parseExpression)
                 .get());
       } else {
-        jobWorkerProperties.setCandidateUsers(candidateUsersExpression);
+        userTaskProperties.setCandidateUsers(candidateUsersExpression);
       }
     }
   }
 
   private void transformTaskSchedule(
-      final UserTask element, final JobWorkerProperties jobWorkerProperties) {
+      final UserTask element, final UserTaskProperties userTaskProperties) {
 
     final var taskSchedule = element.getSingleExtensionElement(ZeebeTaskSchedule.class);
     if (taskSchedule == null) {
@@ -144,17 +154,17 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
 
     final var dueDate = taskSchedule.getDueDate();
     if (dueDate != null && !dueDate.isBlank()) {
-      jobWorkerProperties.setDueDate(expressionLanguage.parseExpression(dueDate));
+      userTaskProperties.setDueDate(expressionLanguage.parseExpression(dueDate));
     }
 
     final var followUpDate = taskSchedule.getFollowUpDate();
     if (followUpDate != null && !followUpDate.isBlank()) {
-      jobWorkerProperties.setFollowUpDate(expressionLanguage.parseExpression(followUpDate));
+      userTaskProperties.setFollowUpDate(expressionLanguage.parseExpression(followUpDate));
     }
   }
 
   private void transformTaskHeaders(
-      final UserTask element, final JobWorkerProperties jobWorkerProperties) {
+      final UserTask element, final UserTaskProperties userTaskProperties) {
     final Map<String, String> taskHeaders = new HashMap<>();
 
     collectModelTaskHeaders(element, taskHeaders);
@@ -162,17 +172,17 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     addZeebeUserTaskFormKeyHeader(element, taskHeaders);
 
     if (!taskHeaders.isEmpty()) {
-      jobWorkerProperties.setTaskHeaders(taskHeaders);
+      userTaskProperties.setTaskHeaders(taskHeaders);
     }
   }
 
   private void transformTaskFormId(
-      final UserTask element, final JobWorkerProperties jobWorkerProperties) {
+      final UserTask element, final UserTaskProperties userTaskProperties) {
     final ZeebeFormDefinition formDefinition =
         element.getSingleExtensionElement(ZeebeFormDefinition.class);
 
     if (formDefinition != null && formDefinition.getFormId() != null) {
-      jobWorkerProperties.setFormId(expressionLanguage.parseExpression(formDefinition.getFormId()));
+      userTaskProperties.setFormId(expressionLanguage.parseExpression(formDefinition.getFormId()));
     }
   }
 
