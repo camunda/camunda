@@ -1122,6 +1122,7 @@
         <artifactId>jmh-core</artifactId>
         <version>${version.jmh}</version>
       </dependency>
+
       <dependency>
         <groupId>org.openjdk.jmh</groupId>
         <artifactId>jmh-generator-annprocess</artifactId>
@@ -1198,19 +1199,6 @@
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
         <version>3.6.0</version>
-      </dependency>
-
-      <!--      JMH Tests   -->
-      <dependency>
-        <groupId>org.openjdk.jmh</groupId>
-        <artifactId>jmh-core</artifactId>
-        <version>${version.jmh}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.openjdk.jmh</groupId>
-        <artifactId>jmh-generator-annprocess</artifactId>
-        <version>${version.jmh}</version>
       </dependency>
 
       <!-- between com.github.dasniko:testcontainers-keycloak and its own dependencies -->
