@@ -134,23 +134,24 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
       final BrokerActivateJobsRequest request,
       final ServerStreamObserver<ActivateJobsResponse> responseObserver,
       final long requestTimeout) {
+    final var longPollingRequest =
+        new InflightActivateJobsRequest(
+            ACTIVATE_JOBS_REQUEST_ID_GENERATOR.getAndIncrement(),
+            request,
+            responseObserver,
+            requestTimeout);
+    final String jobType = longPollingRequest.getType();
+    // Eagerly removing the request on cancellation may free up some resources
+    // We are not allowed to change the responseObserver after we completed this call
+    // this means we can't do it async in the following actor call.
+    responseObserver.setOnCancelHandler(() -> onRequestCancel(jobType, longPollingRequest));
     actor.run(
         () -> {
-          final var longPollingRequest =
-              new InflightActivateJobsRequest(
-                  ACTIVATE_JOBS_REQUEST_ID_GENERATOR.getAndIncrement(),
-                  request,
-                  responseObserver,
-                  requestTimeout);
-          final String jobType = longPollingRequest.getType();
           final InFlightLongPollingActivateJobsRequestsState state =
               jobTypeState.computeIfAbsent(
                   jobType, type -> new InFlightLongPollingActivateJobsRequestsState(type, metrics));
 
           tryToActivateJobsOnAllPartitions(state, longPollingRequest);
-
-          // eagerly removing the request on cancellation may free up some resources
-          responseObserver.setOnCancelHandler(() -> onRequestCancel(jobType, longPollingRequest));
         });
   }
 
