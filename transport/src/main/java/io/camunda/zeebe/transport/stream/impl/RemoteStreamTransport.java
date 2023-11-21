@@ -17,6 +17,7 @@ import io.camunda.zeebe.transport.stream.impl.messages.MessageUtil;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.ExponentialBackoff;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -62,13 +63,13 @@ public final class RemoteStreamTransport<M> extends Actor {
         StreamTopics.ADD.topic(),
         MessageUtil::parseAddRequest,
         requestHandler::add,
-        MessageUtil::encodeResponse,
+        BufferUtil::bufferAsArray,
         actor::run);
     transport.replyTo(
         StreamTopics.REMOVE.topic(),
         MessageUtil::parseRemoveRequest,
         requestHandler::remove,
-        MessageUtil::encodeResponse,
+        BufferUtil::bufferAsArray,
         actor::run);
     transport.replyTo(
         StreamTopics.REMOVE_ALL.topic(),

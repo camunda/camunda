@@ -11,7 +11,10 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamErrorHandler;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamId;
+import io.camunda.zeebe.transport.stream.impl.messages.ErrorResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
+import io.camunda.zeebe.transport.stream.impl.messages.PushStreamResponse;
+import io.camunda.zeebe.transport.stream.impl.messages.StreamResponseDecoder;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -27,6 +30,9 @@ import org.slf4j.LoggerFactory;
  */
 final class RemoteStreamPusher<P extends BufferWriter> {
   private static final Logger LOG = LoggerFactory.getLogger(RemoteStreamPusher.class);
+
+  private final StreamResponseDecoder responseDecoder = new StreamResponseDecoder();
+
   private final RemoteStreamMetrics metrics;
   private final Transport transport;
   private final Executor executor;
@@ -64,7 +70,8 @@ final class RemoteStreamPusher<P extends BufferWriter> {
     try {
       transport
           .send(request, streamId.receiver())
-          .whenCompleteAsync((ok, error) -> onPush(payload, errorHandler, error), executor);
+          .whenCompleteAsync(
+              (response, error) -> onPush(payload, errorHandler, response, error), executor);
       LOG.trace("Pushed {} to stream {}", payload, streamId);
     } catch (final Exception e) {
       errorHandler.handleError(e, payload);
@@ -72,12 +79,20 @@ final class RemoteStreamPusher<P extends BufferWriter> {
   }
 
   private void onPush(
-      final P payload, final RemoteStreamErrorHandler<P> errorHandler, final Throwable error) {
+      final P payload,
+      final RemoteStreamErrorHandler<P> errorHandler,
+      final byte[] responseBuffer,
+      final Throwable error) {
     if (error != null) {
       errorHandler.handleError(error, payload);
-    } else {
-      metrics.pushSucceeded();
+      return;
     }
+
+    responseDecoder
+        .decode(responseBuffer, new PushStreamResponse())
+        .mapLeft(ErrorResponse::asException)
+        .ifRightOrLeft(
+            ok -> metrics.pushSucceeded(), failure -> errorHandler.handleError(failure, payload));
   }
 
   /**
@@ -97,7 +112,7 @@ final class RemoteStreamPusher<P extends BufferWriter> {
      *     or an error occurred
      * @throws Exception if an error occurs before the request is sent out, i.e. serialization error
      */
-    CompletableFuture<Void> send(final PushStreamRequest request, final MemberId receiver)
+    CompletableFuture<byte[]> send(final PushStreamRequest request, final MemberId receiver)
         throws Exception;
   }
 }

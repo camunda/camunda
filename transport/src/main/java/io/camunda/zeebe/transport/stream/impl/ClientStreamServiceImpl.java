@@ -12,7 +12,6 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStream;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.transport.stream.api.ClientStreamId;
@@ -21,10 +20,10 @@ import io.camunda.zeebe.transport.stream.api.ClientStreamService;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.camunda.zeebe.transport.stream.impl.messages.MessageUtil;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collection;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
 
@@ -36,10 +35,10 @@ import org.agrona.DirectBuffer;
  */
 public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
     implements ClientStreamer<M>, ClientStreamService<M> {
-  private static final byte[] SUCCESS_RESPONSE = new byte[0];
   private final ClientStreamManager<M> clientStreamManager;
   private final ClusterCommunicationService communicationService;
   private final ClientStreamRegistry<M> registry;
+  private final ClientStreamApiHandler apiHandler;
 
   public ClientStreamServiceImpl(
       final ClusterCommunicationService communicationService, final ClientStreamMetrics metrics) {
@@ -50,47 +49,23 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
     // ClientStream objects.
     clientStreamManager =
         new ClientStreamManager<>(
-            registry, new ClientStreamRequestManager(communicationService, actor), metrics);
+            registry, new ClientStreamRequestManager<>(communicationService, actor), metrics);
+    apiHandler = new ClientStreamApiHandler(clientStreamManager, actor);
   }
 
   @Override
   protected void onActorStarted() {
-    // TODO: Define an PushResponse to inform server if push was successful or not. Currently, an
-    // exception will be received by the server response handler.
-    communicationService.replyTo(
+    communicationService.replyToAsync(
         StreamTopics.PUSH.topic(),
         MessageUtil::parsePushRequest,
-        request -> {
-          final CompletableFuture<Void> responseFuture = new CompletableFuture<>();
-          actor.run(
-              () -> {
-                try {
-                  final ActorFuture<Void> payloadPushed = new CompletableActorFuture<>();
-                  clientStreamManager.onPayloadReceived(request, payloadPushed);
-                  payloadPushed.onComplete(
-                      (ok, error) -> {
-                        if (error == null) {
-                          responseFuture.complete(null);
-                        } else {
-                          responseFuture.completeExceptionally(error);
-                        }
-                      });
-                } catch (final Exception e) {
-                  responseFuture.completeExceptionally(e);
-                }
-              });
-          return responseFuture;
-        },
-        ignore -> SUCCESS_RESPONSE);
+        apiHandler::handlePushRequest,
+        BufferUtil::bufferAsArray,
+        actor::run);
 
     communicationService.replyTo(
         StreamTopics.RESTART_STREAMS.topic(),
         Function.identity(),
-        (memberId, ignore) -> {
-          clientStreamManager.onServerRemoved(MemberId.from(memberId.id()));
-          clientStreamManager.onServerJoined(MemberId.from(memberId.id()));
-          return SUCCESS_RESPONSE;
-        },
+        apiHandler::handleRestartRequest,
         Function.identity(),
         actor::run);
   }

@@ -16,6 +16,8 @@ import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamId;
 import io.camunda.zeebe.transport.stream.impl.RemoteStreamPusher.Transport;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
+import io.camunda.zeebe.transport.stream.impl.messages.PushStreamResponse;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.ArrayList;
 import java.util.List;
@@ -136,12 +138,13 @@ final class RemoteStreamPusherTest {
   }
 
   private static final class TestTransport implements Transport {
-    private CompletableFuture<Void> response = CompletableFuture.completedFuture(null);
+    private CompletableFuture<byte[]> response =
+        CompletableFuture.completedFuture(BufferUtil.bufferAsArray(new PushStreamResponse()));
     private Message message;
     private Exception synchronousException;
 
     @Override
-    public CompletableFuture<Void> send(final PushStreamRequest request, final MemberId receiver)
+    public CompletableFuture<byte[]> send(final PushStreamRequest request, final MemberId receiver)
         throws Exception {
       if (synchronousException != null) {
         throw synchronousException;

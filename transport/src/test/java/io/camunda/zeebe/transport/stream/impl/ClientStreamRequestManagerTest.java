@@ -56,18 +56,11 @@ final class ClientStreamRequestManagerTest {
       new AggregatedClientStream<>(
           UUID.randomUUID(),
           new LogicalId<>(new UnsafeBuffer(BufferUtil.wrapString("foo")), new TestMetadata()));
-  private byte[] addStreamSuccess;
-  private byte[] removeStreamSuccess;
+  private final byte[] addStreamSuccess = BufferUtil.bufferAsArray(new AddStreamResponse());
+  private final byte[] removeStreamSuccess = BufferUtil.bufferAsArray(new RemoveStreamResponse());
 
   @BeforeEach
   void setup() {
-    final var addStreamOK = new AddStreamResponse();
-    final var removeStreamOK = new RemoveStreamResponse();
-    addStreamSuccess = new byte[addStreamOK.getLength()];
-    removeStreamSuccess = new byte[removeStreamOK.getLength()];
-    addStreamOK.write(new UnsafeBuffer(addStreamSuccess), 0);
-    removeStreamOK.write(new UnsafeBuffer(removeStreamSuccess), 0);
-
     when(mockTransport.send(any(), any(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(null));
     when(mockTransport.send(eq(StreamTopics.ADD.topic()), any(), any(), any(), any(), any()))
@@ -211,13 +204,12 @@ final class ClientStreamRequestManagerTest {
   @EnumSource(value = ErrorCode.class)
   void shouldRetryAddOnErrorResponse(final ErrorCode code) {
     // given
-    final var errorResponse = new ErrorResponse().code(code).message("Failed");
-    final var errorResponseBuffer = new byte[errorResponse.getLength()];
+    final var errorResponseBuffer =
+        BufferUtil.bufferAsArray(new ErrorResponse().code(code).message("Failed"));
     final var serverId = MemberId.anonymous();
     when(mockTransport.send(eq(StreamTopics.ADD.topic()), any(), any(), any(), eq(serverId), any()))
         .thenReturn(CompletableFuture.completedFuture(errorResponseBuffer))
         .thenReturn(CompletableFuture.completedFuture(addStreamSuccess));
-    errorResponse.write(new UnsafeBuffer(errorResponseBuffer), 0);
 
     // when
     requestManager.add(clientStream, serverId);
@@ -296,14 +288,13 @@ final class ClientStreamRequestManagerTest {
   @EnumSource(value = ErrorCode.class)
   void shouldNotRetryRemoveOnErrorResponse(final ErrorCode code) {
     // given
-    final var errorResponse = new ErrorResponse().code(code).message("Failed");
-    final var errorResponseBuffer = new byte[errorResponse.getLength()];
+    final var errorResponseBuffer =
+        BufferUtil.bufferAsArray(new ErrorResponse().code(code).message("Failed"));
     final var serverId = MemberId.anonymous();
     when(mockTransport.send(
             eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any()))
         .thenReturn(CompletableFuture.completedFuture(errorResponseBuffer))
         .thenReturn(CompletableFuture.completedFuture(removeStreamSuccess));
-    errorResponse.write(new UnsafeBuffer(errorResponseBuffer), 0);
     requestManager.add(clientStream, serverId);
 
     // when
