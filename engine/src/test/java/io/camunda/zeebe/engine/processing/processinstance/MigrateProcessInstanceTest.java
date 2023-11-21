@@ -369,6 +369,62 @@ public class MigrateProcessInstanceTest {
         .hasType("A");
   }
 
+  @Test
+  public void shouldContinueFlowInTargetProcessForMigratedJob() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask("A", a -> a.zeebeJobType("A"))
+                    .endEvent("source_process_end")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .serviceTask("B", a -> a.zeebeJobType("B"))
+                    .endEvent("target_process_end")
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .migrate();
+
+    // then
+
+    // Note that while the job is migrated, it's type did not change even though it's different in
+    // the target process. Because re-evaluation of the job type expression is not yet supported.
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.END_EVENT)
+                .withElementId("target_process_end")
+                .findAny())
+        .describedAs("Expect that the process instance is continued in the target process")
+        .isPresent();
+  }
+
   private static long extractProcessDefinitionKeyByProcessId(
       final Record<DeploymentRecordValue> deployment, final String processId) {
     return deployment.getValue().getProcessesMetadata().stream()
