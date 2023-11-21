@@ -8,11 +8,12 @@
 package io.camunda.zeebe.transport.stream.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.impl.messages.AddStreamRequest;
+import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
+import io.camunda.zeebe.transport.stream.impl.messages.ErrorResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.UUIDEncoder;
 import io.camunda.zeebe.util.buffer.BufferReader;
@@ -22,6 +23,7 @@ import java.nio.ByteOrder;
 import java.util.UUID;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
 final class RemoteStreamApiHandlerTest {
@@ -50,8 +52,15 @@ final class RemoteStreamApiHandlerTest {
             .metadata(new UnsafeBuffer()); // an empty buffer will cause the read to fail
     final var sender = MemberId.anonymous();
 
-    // when - then
-    assertThatCode(() -> server.add(sender, request)).isInstanceOf(IndexOutOfBoundsException.class);
+    // when
+    final var response = server.add(sender, request);
+
+    // then
+    assertThat(response)
+        .isInstanceOf(ErrorResponse.class)
+        .asInstanceOf(InstanceOfAssertFactories.type(ErrorResponse.class))
+        .extracting(ErrorResponse::code)
+        .isEqualTo(ErrorCode.MALFORMED);
     assertThat(registry.get(streamType)).isEmpty();
   }
 
@@ -62,8 +71,16 @@ final class RemoteStreamApiHandlerTest {
         new AddStreamRequest().streamId(UUID.randomUUID()).metadata(SERIALIZED_METADATA);
     final var sender = MemberId.anonymous();
 
-    // when - then
-    assertThatCode(() -> server.add(sender, request)).isInstanceOf(IllegalArgumentException.class);
+    // when
+    final var response = server.add(sender, request);
+
+    // then
+    assertThat(response)
+        .isInstanceOf(ErrorResponse.class)
+        .asInstanceOf(InstanceOfAssertFactories.type(ErrorResponse.class))
+        .extracting(ErrorResponse::code)
+        .isEqualTo(ErrorCode.INVALID);
+    assertThat(registry.list()).isEmpty();
   }
 
   @Test
@@ -73,8 +90,15 @@ final class RemoteStreamApiHandlerTest {
     final var request = new AddStreamRequest().streamType(streamType).metadata(SERIALIZED_METADATA);
     final var sender = MemberId.anonymous();
 
-    // when - then
-    assertThatCode(() -> server.add(sender, request)).isInstanceOf(IllegalArgumentException.class);
+    // when
+    final var response = server.add(sender, request);
+
+    // then
+    assertThat(response)
+        .isInstanceOf(ErrorResponse.class)
+        .asInstanceOf(InstanceOfAssertFactories.type(ErrorResponse.class))
+        .extracting(ErrorResponse::code)
+        .isEqualTo(ErrorCode.INVALID);
     assertThat(registry.get(streamType)).isEmpty();
   }
 
@@ -90,8 +114,15 @@ final class RemoteStreamApiHandlerTest {
             .streamId(nilUuid);
     final var sender = MemberId.anonymous();
 
-    // when - then
-    assertThatCode(() -> server.add(sender, request)).isInstanceOf(IllegalArgumentException.class);
+    // when
+    final var response = server.add(sender, request);
+
+    // then
+    assertThat(response)
+        .isInstanceOf(ErrorResponse.class)
+        .asInstanceOf(InstanceOfAssertFactories.type(ErrorResponse.class))
+        .extracting(ErrorResponse::code)
+        .isEqualTo(ErrorCode.INVALID);
     assertThat(registry.get(streamType)).isEmpty();
   }
 

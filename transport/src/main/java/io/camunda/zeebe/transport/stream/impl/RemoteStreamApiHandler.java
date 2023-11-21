@@ -56,21 +56,28 @@ public final class RemoteStreamApiHandler<M> implements CloseableSilently {
   }
 
   public StreamResponse add(final MemberId sender, final AddStreamRequest request) {
-    final M properties = metadataFactory.apply(request.metadata());
+    final M properties;
+
+    try {
+      properties = metadataFactory.apply(request.metadata());
+    } catch (final Exception e) {
+      final var errorMessage =
+          "Failed to parse stream metadata (size = '%d') from AddStreamRequest"
+              .formatted(request.metadata().capacity());
+      return failedResponse(sender, errorMessage, e);
+    }
 
     if (request.streamType().capacity() <= 0) {
       final String errorMessage =
           "Expected a stream type of length > 0, but it has %d"
               .formatted(request.streamType().capacity());
-      LOG.warn("Failed to open stream for '{}': [{}]", sender, errorMessage);
-      return errorResponse.code(ErrorCode.INVALID).message(errorMessage);
+      return failedResponse(sender, errorMessage);
     }
 
     if (request.streamId() == null || request.streamId().equals(NULL_ID)) {
       final String errorMessage =
           "Expected a stream ID, but received a nil UUID ([%s])".formatted(request.streamId());
-      LOG.warn("Failed to open stream for '{}': [{}]", sender, errorMessage);
-      return errorResponse.code(ErrorCode.INVALID).message(errorMessage);
+      return failedResponse(sender, errorMessage);
     }
 
     registry.add(new UnsafeBuffer(request.streamType()), request.streamId(), sender, properties);
@@ -86,5 +93,16 @@ public final class RemoteStreamApiHandler<M> implements CloseableSilently {
   public void removeAll(final MemberId sender) {
     registry.removeAll(sender);
     LOG.debug("Removed all streams from {}", sender);
+  }
+
+  private ErrorResponse failedResponse(
+      final MemberId sender, final String errorMessage, final Exception cause) {
+    LOG.warn("Failed to open stream for '{}': [{}]", sender, errorMessage, cause);
+    return errorResponse.code(ErrorCode.MALFORMED).message(errorMessage);
+  }
+
+  private ErrorResponse failedResponse(final MemberId sender, final String errorMessage) {
+    LOG.warn("Failed to open stream for '{}': [{}]", sender, errorMessage);
+    return errorResponse.code(ErrorCode.INVALID).message(errorMessage);
   }
 }
