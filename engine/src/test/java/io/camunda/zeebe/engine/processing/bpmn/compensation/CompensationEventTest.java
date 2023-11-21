@@ -7,208 +7,135 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.compensation;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import io.camunda.zeebe.engine.util.EngineRule;
-import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
-import io.camunda.zeebe.test.util.record.RecordingExporter;
-import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
+import io.camunda.zeebe.engine.processing.deployment.model.validation.ExpectedValidationResult;
+import io.camunda.zeebe.engine.processing.deployment.model.validation.ProcessValidationUtil;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
+import io.camunda.zeebe.model.bpmn.instance.EndEvent;
+import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
+import io.camunda.zeebe.model.bpmn.instance.Task;
+import org.junit.jupiter.api.Test;
 
 public class CompensationEventTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
-
-  @Rule
-  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
-      new RecordingExporterTestWatcher();
-
   @Test
   public void shouldDeployCompensationBoundaryEvent() {
-    ENGINE
-        .deployment()
-        .withXmlClasspathResource("/compensation/compensation-boundary-event.bpmn")
-        .deploy();
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-boundary-event.bpmn");
 
-    // when
-    ENGINE.processInstance().ofBpmnProcessId("compensation-process").create();
-
-    // then
-    assertThat(
-            RecordingExporter.processRecords().withBpmnProcessId("compensation-process").limit(1))
-        .extracting(Record::getIntent)
-        .contains(ProcessIntent.CREATED);
+    ProcessValidationUtil.validateProcess(process);
   }
 
   @Test
   public void shouldNotDeployCompensationBoundaryEventWithoutAssociation() {
-    final var rejectedDeploy =
-        ENGINE
-            .deployment()
-            .withXmlClasspathResource(
-                "/compensation/compensation-boundary-event-no-association.bpmn")
-            .expectRejection()
-            .deploy();
+    final var process =
+        createModelFromClasspathResource(
+            "/compensation/compensation-boundary-event-no-association.bpmn");
 
-    // then
-    assertThat(rejectedDeploy.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(rejectedDeploy.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejectedDeploy.getRejectionReason())
-        .contains("ERROR: Must have at least one outgoing sequence flow or association");
+    ProcessValidationUtil.validateProcess(
+        process,
+        ExpectedValidationResult.expect(
+            BoundaryEvent.class, "Must have at least one outgoing sequence flow or association"));
   }
 
   @Test
   public void shouldDeployCompensationIntermediateThrowEvent() {
-    ENGINE
-        .deployment()
-        .withXmlClasspathResource("/compensation/compensation-throw-event.bpmn")
-        .deploy();
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-throw-event.bpmn");
 
-    // when
-    ENGINE.processInstance().ofBpmnProcessId("compensation-process").create();
-
-    // then
-    assertThat(
-            RecordingExporter.processRecords().withBpmnProcessId("compensation-process").limit(1))
-        .extracting(Record::getIntent)
-        .contains(ProcessIntent.CREATED);
+    ProcessValidationUtil.validateProcess(process);
   }
 
   @Test
   public void shouldNotDeployCompensationIntermediateThrowEventWithWaitForCompletionFalse() {
-    final var rejectedDeploy =
-        ENGINE
-            .deployment()
-            .withXmlClasspathResource("/compensation/compensation-throw-event-attribute-false.bpmn")
-            .expectRejection()
-            .deploy();
+    final var process =
+        createModelFromClasspathResource(
+            "/compensation/compensation-throw-event-attribute-false.bpmn");
 
-    // then
-    assertThat(rejectedDeploy.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(rejectedDeploy.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejectedDeploy.getRejectionReason())
-        .contains(
-            "ERROR: A compensation intermediate throwing event waitForCompletion attribute must be true or not present");
+    ProcessValidationUtil.validateProcess(
+        process,
+        ExpectedValidationResult.expect(
+            IntermediateThrowEvent.class,
+            "A compensation intermediate throwing event waitForCompletion attribute must be true or not present"));
   }
 
   @Test
   public void shouldDeployCompensationEndEvent() {
-    ENGINE
-        .deployment()
-        .withXmlClasspathResource("/compensation/compensation-end-event.bpmn")
-        .deploy();
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-end-event.bpmn");
 
-    // when
-    ENGINE.processInstance().ofBpmnProcessId("compensation-process").create();
-
-    // then
-    assertThat(
-            RecordingExporter.processRecords().withBpmnProcessId("compensation-process").limit(1))
-        .extracting(Record::getIntent)
-        .contains(ProcessIntent.CREATED);
+    ProcessValidationUtil.validateProcess(process);
   }
 
   @Test
   public void shouldNotDeployCompensationEndEventWithWaitForCompletionFalse() {
-    final var rejectedDeploy =
-        ENGINE
-            .deployment()
-            .withXmlClasspathResource("/compensation/compensation-end-event-attribute-false.bpmn")
-            .expectRejection()
-            .deploy();
+    final var process =
+        createModelFromClasspathResource(
+            "/compensation/compensation-end-event-attribute-false.bpmn");
 
-    // then
-    assertThat(rejectedDeploy.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(rejectedDeploy.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejectedDeploy.getRejectionReason())
-        .contains(
-            "ERROR: A compensation end event waitForCompletion attribute must be true or not present");
+    ProcessValidationUtil.validateProcess(
+        process,
+        ExpectedValidationResult.expect(
+            EndEvent.class,
+            "A compensation end event waitForCompletion attribute must be true or not present"));
   }
 
   @Test
   public void shouldDeployCompensationUndefinedTask() {
-    ENGINE
-        .deployment()
-        .withXmlClasspathResource("/compensation/compensation-undefined-task.bpmn")
-        .deploy();
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-undefined-task.bpmn");
 
-    // when
-    ENGINE.processInstance().ofBpmnProcessId("compensation-process").create();
-
-    // then
-    assertThat(
-            RecordingExporter.processRecords().withBpmnProcessId("compensation-process").limit(1))
-        .extracting(Record::getIntent)
-        .contains(ProcessIntent.CREATED);
+    ProcessValidationUtil.validateProcess(process);
   }
 
   @Test
   public void shouldNotDeployCompensationHandlerNotValid() {
-    final var rejectedDeploy =
-        ENGINE
-            .deployment()
-            .withXmlClasspathResource("/compensation/compensation-not-valid-task.bpmn")
-            .expectRejection()
-            .deploy();
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-not-valid-task.bpmn");
 
-    // then
-    assertThat(rejectedDeploy.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(rejectedDeploy.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejectedDeploy.getRejectionReason())
-        .contains(
-            "ERROR: Compensation task must be one of: service task, user task, send task, script task, manual task, or undefined task");
+    ProcessValidationUtil.validateProcess(
+        process,
+        ExpectedValidationResult.expect(
+            Task.class,
+            "Compensation task must be one of: service task, user task, send task, script task, manual task, or undefined task"));
   }
 
   @Test
   public void shouldNotDeployCompensationHandlerWithOutgoingFlow() {
-    final var rejectedDeploy =
-        ENGINE
-            .deployment()
-            .withXmlClasspathResource("/compensation/compensation-task-with-outgoing.bpmn")
-            .expectRejection()
-            .deploy();
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-task-with-outgoing.bpmn");
 
-    // then
-    assertThat(rejectedDeploy.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(rejectedDeploy.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejectedDeploy.getRejectionReason())
-        .contains("ERROR: A compensation handler should have no outgoing sequence flows");
+    ProcessValidationUtil.validateProcess(
+        process,
+        ExpectedValidationResult.expect(
+            Task.class, "A compensation handler should have no outgoing sequence flows"));
   }
 
   @Test
   public void shouldNotDeployCompensationHandlerWithIncomingFlow() {
-    final var rejectedDeploy =
-        ENGINE
-            .deployment()
-            .withXmlClasspathResource("/compensation/compensation-task-with-incoming.bpmn")
-            .expectRejection()
-            .deploy();
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-task-with-incoming.bpmn");
 
-    // then
-    assertThat(rejectedDeploy.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(rejectedDeploy.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejectedDeploy.getRejectionReason())
-        .contains("ERROR: A compensation handler should have no incoming sequence flows");
+    ProcessValidationUtil.validateProcess(
+        process,
+        ExpectedValidationResult.expect(
+            Task.class, "A compensation handler should have no incoming sequence flows"));
   }
 
   @Test
   public void shouldNotDeployCompensationHandlerWithBoundaryEvent() {
-    final var rejectedDeploy =
-        ENGINE
-            .deployment()
-            .withXmlClasspathResource("/compensation/compensation-task-with-boundary.bpmn")
-            .expectRejection()
-            .deploy();
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-task-with-boundary.bpmn");
 
-    // then
-    assertThat(rejectedDeploy.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(rejectedDeploy.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejectedDeploy.getRejectionReason())
-        .contains("ERROR: A compensation handler should have no boundary events");
+    ProcessValidationUtil.validateProcess(
+        process,
+        ExpectedValidationResult.expect(
+            Task.class, "A compensation handler should have no boundary events"));
+  }
+
+  private BpmnModelInstance createModelFromClasspathResource(final String classpath) {
+    final var resourceAsStream = getClass().getResourceAsStream(classpath);
+    return Bpmn.readModelFromStream(resourceAsStream);
   }
 }
