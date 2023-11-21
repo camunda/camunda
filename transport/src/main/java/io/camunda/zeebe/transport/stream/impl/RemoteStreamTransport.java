@@ -23,7 +23,9 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.LongUnaryOperator;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.ArrayUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +41,7 @@ public final class RemoteStreamTransport<M> extends Actor {
   private static final Logger LOG = LoggerFactory.getLogger(RemoteStreamTransport.class);
   private static final int INITIAL_RETRY_DELAY_MS = 100;
 
+  private final MutableDirectBuffer writeBuffer = new UnsafeBuffer();
   private final ClusterCommunicationService transport;
   private final RemoteStreamApiHandler<M> requestHandler;
   private final LongUnaryOperator retryDelaySupplier;
@@ -93,8 +96,12 @@ public final class RemoteStreamTransport<M> extends Actor {
   }
 
   private byte[] onAdd(final MemberId sender, final AddStreamRequest request) {
-    requestHandler.add(sender, request);
-    return ArrayUtil.EMPTY_BYTE_ARRAY;
+    final var response = requestHandler.add(sender, request);
+    final var buffer = new byte[response.getLength()];
+    writeBuffer.wrap(buffer);
+    response.write(writeBuffer, 0);
+
+    return buffer;
   }
 
   private byte[] onRemove(final MemberId sender, final RemoveStreamRequest request) {

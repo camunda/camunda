@@ -9,7 +9,11 @@ package io.camunda.zeebe.transport.stream.impl;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.transport.stream.impl.messages.AddStreamRequest;
+import io.camunda.zeebe.transport.stream.impl.messages.AddStreamResponse;
+import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
+import io.camunda.zeebe.transport.stream.impl.messages.ErrorResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamRequest;
+import io.camunda.zeebe.transport.stream.impl.messages.StreamResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.UUIDEncoder;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.util.UUID;
@@ -34,6 +38,9 @@ public final class RemoteStreamApiHandler<M> implements CloseableSilently {
   private static final UUID NULL_ID =
       new UUID(UUIDEncoder.highNullValue(), UUIDEncoder.lowNullValue());
 
+  private final AddStreamResponse addResponse = new AddStreamResponse();
+  private final ErrorResponse errorResponse = new ErrorResponse();
+
   private final RemoteStreamRegistry<M> registry;
   private final Function<DirectBuffer, M> metadataFactory;
 
@@ -48,7 +55,7 @@ public final class RemoteStreamApiHandler<M> implements CloseableSilently {
     registry.clear();
   }
 
-  public void add(final MemberId sender, final AddStreamRequest request) {
+  public StreamResponse add(final MemberId sender, final AddStreamRequest request) {
     final M properties = metadataFactory.apply(request.metadata());
 
     if (request.streamType().capacity() <= 0) {
@@ -56,18 +63,19 @@ public final class RemoteStreamApiHandler<M> implements CloseableSilently {
           "Expected a stream type of length > 0, but it has %d"
               .formatted(request.streamType().capacity());
       LOG.warn("Failed to open stream for '{}': [{}]", sender, errorMessage);
-      throw new IllegalArgumentException(errorMessage);
+      return errorResponse.code(ErrorCode.INVALID).message(errorMessage);
     }
 
     if (request.streamId() == null || request.streamId().equals(NULL_ID)) {
       final String errorMessage =
           "Expected a stream ID, but received a nil UUID ([%s])".formatted(request.streamId());
       LOG.warn("Failed to open stream for '{}': [{}]", sender, errorMessage);
-      throw new IllegalArgumentException(errorMessage);
+      return errorResponse.code(ErrorCode.INVALID).message(errorMessage);
     }
 
     registry.add(new UnsafeBuffer(request.streamType()), request.streamId(), sender, properties);
     LOG.debug("Opened stream {} from {}", request.streamId(), sender);
+    return addResponse;
   }
 
   public void remove(final MemberId sender, final RemoveStreamRequest request) {
