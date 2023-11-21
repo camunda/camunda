@@ -5,7 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import {makeAutoObservable} from 'mobx';
+import {IReactionDisposer, makeAutoObservable, when} from 'mobx';
+import {BatchOperationQuery} from 'modules/api/processInstances/operations';
+import {operationsStore} from './operations';
+import {tracking} from 'modules/tracking';
+import {notificationsStore} from './notifications';
+import {panelStatesStore} from './panelStates';
 
 const STEPS = {
   elementMapping: {
@@ -22,18 +27,25 @@ type State = {
   currentStep: 'elementMapping' | 'summary' | null;
   flowNodeMapping: {[sourceId: string]: string};
   selectedSourceFlowNodeId?: string;
-  seletedInstancesCount: number;
+  selectedInstancesCount: number;
+  batchOperationQuery: BatchOperationQuery | null;
+  targetProcessDefinitionKey: string | null;
+  hasPendingRequest: boolean;
 };
 
 const DEFAULT_STATE: State = {
   currentStep: null,
   flowNodeMapping: {},
   selectedSourceFlowNodeId: undefined,
-  seletedInstancesCount: 0,
+  selectedInstancesCount: 0,
+  batchOperationQuery: null,
+  targetProcessDefinitionKey: null,
+  hasPendingRequest: false,
 };
 
 class ProcessInstanceMigration {
   state: State = {...DEFAULT_STATE};
+  disposer: IReactionDisposer | null = null;
 
   constructor() {
     makeAutoObservable(this);
@@ -68,6 +80,7 @@ class ProcessInstanceMigration {
   };
 
   reset = () => {
+    this.disposer?.();
     this.state = {...DEFAULT_STATE};
   };
 
@@ -83,8 +96,12 @@ class ProcessInstanceMigration {
     return Object.keys(this.state.flowNodeMapping).length > 0;
   }
 
-  setSelectedInstancesCount = (seletedInstancesCount: number) => {
-    this.state.seletedInstancesCount = seletedInstancesCount;
+  setSelectedInstancesCount = (selectedInstancesCount: number) => {
+    this.state.selectedInstancesCount = selectedInstancesCount;
+  };
+
+  setBatchOperationQuery = (query: BatchOperationQuery) => {
+    this.state.batchOperationQuery = query;
   };
 
   updateFlowNodeMapping = ({
@@ -99,6 +116,67 @@ class ProcessInstanceMigration {
     } else {
       this.state.flowNodeMapping[sourceId] = targetId;
     }
+  };
+
+  setTargetProcessDefinitionKey = (
+    key: State['targetProcessDefinitionKey'],
+  ) => {
+    this.state.targetProcessDefinitionKey = key;
+  };
+
+  setHasPendingRequest = () => {
+    if (!this.state.hasPendingRequest) {
+      this.state.hasPendingRequest = true;
+
+      this.disposer = when(
+        () => operationsStore.state.status === 'fetched',
+        () => {
+          panelStatesStore.expandOperationsPanel();
+          this.requestBatchProcess();
+          this.state.hasPendingRequest = false;
+        },
+      );
+    }
+  };
+
+  requestBatchProcess = () => {
+    const {batchOperationQuery} = processInstanceMigrationStore.state;
+    if (batchOperationQuery === null) {
+      return;
+    }
+
+    const {targetProcessDefinitionKey} = this.state;
+    if (targetProcessDefinitionKey === null) {
+      return;
+    }
+
+    operationsStore.applyBatchOperation({
+      operationType: 'MIGRATE_PROCESS_INSTANCE',
+      query: batchOperationQuery,
+      migrationPlan: {
+        targetProcessDefinitionKey,
+        mappingInstructions: Object.entries(
+          processInstanceMigrationStore.state.flowNodeMapping,
+        ).map(([sourceElementId, targetElementId]) => ({
+          sourceElementId,
+          targetElementId,
+        })),
+      },
+      onSuccess: () => {
+        tracking.track({
+          eventName: 'batch-operation',
+          operationType: 'MIGRATE_PROCESS_INSTANCE',
+        });
+      },
+      onError: ({statusCode}) =>
+        notificationsStore.displayNotification({
+          kind: 'error',
+          title: 'Operation could not be created',
+          subtitle:
+            statusCode === 403 ? 'You do not have permission' : undefined,
+          isDismissable: true,
+        }),
+    });
   };
 
   resetFlowNodeMapping = () => {

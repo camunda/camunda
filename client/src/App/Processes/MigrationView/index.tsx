@@ -28,7 +28,6 @@ const MigrationView: React.FC = observer(() => {
     processesStore.fetchProcesses();
 
     return () => {
-      processInstanceMigrationStore.reset();
       processesStore.reset();
       processXmlMigrationSourceStore.reset();
       processXmlMigrationTargetStore.reset();

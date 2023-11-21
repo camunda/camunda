@@ -14,7 +14,13 @@ import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 
-type OperationLabelType = 'Edit' | 'Retry' | 'Cancel' | 'Modify' | 'Delete';
+type OperationLabelType =
+  | 'Edit'
+  | 'Retry'
+  | 'Cancel'
+  | 'Modify'
+  | 'Delete'
+  | 'Migrate';
 
 const TYPE_LABELS: Readonly<Record<OperationEntityType, OperationLabelType>> = {
   ADD_VARIABLE: 'Edit',
@@ -25,6 +31,7 @@ const TYPE_LABELS: Readonly<Record<OperationEntityType, OperationLabelType>> = {
   MODIFY_PROCESS_INSTANCE: 'Modify',
   DELETE_PROCESS_DEFINITION: 'Delete',
   DELETE_DECISION_DEFINITION: 'Delete',
+  MIGRATE_PROCESS_INSTANCE: 'Migrate',
 };
 
 type Props = {

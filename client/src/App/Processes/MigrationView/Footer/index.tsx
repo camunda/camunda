@@ -10,8 +10,13 @@ import {observer} from 'mobx-react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {Container} from './styled';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
+import {processesStore} from 'modules/stores/processes/processes.migration';
+import {useNavigate} from 'react-router-dom';
+import {Locations} from 'modules/Routes';
 
 const Footer: React.FC = observer(() => {
+  const navigate = useNavigate();
+
   return (
     <Container orientation="horizontal" gap={5}>
       <ModalStateManager
@@ -80,7 +85,26 @@ const Footer: React.FC = observer(() => {
           <Button
             aria-label="Confirm"
             size="sm"
-            onClick={processInstanceMigrationStore.reset}
+            onClick={() => {
+              const {selectedTargetProcess, selectedTargetVersion} =
+                processesStore.migrationState;
+
+              processInstanceMigrationStore.setHasPendingRequest();
+              processInstanceMigrationStore.disable();
+
+              navigate(
+                Locations.processes({
+                  active: true,
+                  incidents: true,
+                  ...(selectedTargetProcess
+                    ? {process: selectedTargetProcess.bpmnProcessId}
+                    : {}),
+                  ...(selectedTargetVersion
+                    ? {version: selectedTargetVersion.toString()}
+                    : {}),
+                }),
+              );
+            }}
           >
             Confirm
           </Button>

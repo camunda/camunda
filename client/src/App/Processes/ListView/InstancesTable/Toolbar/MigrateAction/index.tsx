@@ -20,6 +20,7 @@ import {processesStore} from 'modules/stores/processes/processes.list';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {ListItem, Modal} from './styled';
 import {processStatisticsStore as processStatisticsMigrationSourceStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
+import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 
 const MigrateAction: React.FC = observer(() => {
   const location = useLocation();
@@ -84,12 +85,21 @@ const MigrateAction: React.FC = observer(() => {
               processXmlMigrationSourceStore.setProcessXml(
                 processXmlStore.state.xml,
               );
-              processStatisticsMigrationSourceStore.fetchProcessStatistics({
+
+              const requestFilterParameters = {
+                ...getProcessInstancesRequestFilters(),
                 ids: isAllChecked ? [] : selectedProcessInstanceIds,
                 excludeIds: isAllChecked ? selectedProcessInstanceIds : [],
-              });
+              };
+
+              processStatisticsMigrationSourceStore.fetchProcessStatistics(
+                requestFilterParameters,
+              );
               processInstanceMigrationStore.setSelectedInstancesCount(
                 processInstancesSelectionStore.selectedProcessInstanceCount,
+              );
+              processInstanceMigrationStore.setBatchOperationQuery(
+                requestFilterParameters,
               );
               processInstanceMigrationStore.enable();
             }}

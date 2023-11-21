@@ -31,7 +31,7 @@ const MigrationSummaryNotification: React.FC = observer(() => {
           <p>
             You are about to migrate{' '}
             {pluralSuffix(
-              processInstanceMigrationStore.state.seletedInstancesCount,
+              processInstanceMigrationStore.state.selectedInstancesCount,
               'process instance',
             )}{' '}
             from the process definition:{' '}

@@ -17,6 +17,8 @@ import {
 import {fetchBatchOperations} from 'modules/api/fetchBatchOperations';
 import {BatchOperationDto} from 'modules/api/sharedTypes';
 import {
+  BatchOperationQuery,
+  MigrationPlan,
   applyBatchOperation,
   applyOperation,
 } from 'modules/api/processInstances/operations';
@@ -26,7 +28,7 @@ import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
 import {deleteDecisionDefinition} from 'modules/api/decisions/operations';
 import {deleteProcessDefinition} from 'modules/api/processes/operations';
 
-type Query = Parameters<typeof applyBatchOperation>['1'];
+type Query = BatchOperationQuery;
 type OperationPayload = Parameters<typeof applyOperation>['1'];
 type ErrorHandler = ({
   operationType,
@@ -118,16 +120,22 @@ class Operations extends NetworkReconnectionHandler {
   applyBatchOperation = async ({
     operationType,
     query,
+    migrationPlan,
     onSuccess,
     onError,
   }: {
     operationType: OperationEntityType;
     query: Query;
+    migrationPlan?: MigrationPlan;
     onSuccess: () => void;
     onError: ErrorHandler;
   }) => {
     try {
-      const response = await applyBatchOperation(operationType, query);
+      const response = await applyBatchOperation(
+        operationType,
+        query,
+        migrationPlan,
+      );
 
       if (response.isSuccess) {
         this.prependOperations(response.data);

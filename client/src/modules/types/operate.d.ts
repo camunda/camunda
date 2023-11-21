@@ -23,7 +23,8 @@ type OperationEntityType =
   | 'ADD_VARIABLE'
   | 'MODIFY_PROCESS_INSTANCE'
   | 'DELETE_DECISION_DEFINITION'
-  | 'DELETE_PROCESS_DEFINITION';
+  | 'DELETE_PROCESS_DEFINITION'
+  | 'MIGRATE_PROCESS_INSTANCE';
 
 type FlowNodeState = 'active' | 'incidents' | 'canceled' | 'completed';
 

@@ -76,6 +76,7 @@ describe('useOperationApply', () => {
     expect(applyBatchOperationSpy).toHaveBeenCalledWith(
       expectedBody.operationType,
       expectedBody.query,
+      undefined,
     );
   });
 
@@ -105,6 +106,7 @@ describe('useOperationApply', () => {
     expect(applyBatchOperationSpy).toHaveBeenCalledWith(
       expectedBody.operationType,
       expectedBody.query,
+      undefined,
     );
   });
 
@@ -133,6 +135,7 @@ describe('useOperationApply', () => {
     expect(applyBatchOperationSpy).toHaveBeenCalledWith(
       expectedBody.operationType,
       expectedBody.query,
+      undefined,
     );
   });
 
@@ -164,6 +167,7 @@ describe('useOperationApply', () => {
     expect(applyBatchOperationSpy).toHaveBeenCalledWith(
       expectedBody.operationType,
       expectedBody.query,
+      undefined,
     );
   });
 
@@ -196,6 +200,7 @@ describe('useOperationApply', () => {
     expect(applyBatchOperationSpy).toHaveBeenCalledWith(
       expectedBody.operationType,
       expectedBody.query,
+      undefined,
     );
   });
 

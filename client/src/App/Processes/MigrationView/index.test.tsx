@@ -7,6 +7,7 @@
 
 import {
   unstable_HistoryRouter as HistoryRouter,
+  MemoryRouter,
   Route,
   Routes,
 } from 'react-router-dom';
@@ -227,7 +228,7 @@ describe('MigrationView', () => {
     processInstanceMigrationStore.setCurrentStep('summary');
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
-    render(<MigrationView />);
+    render(<MigrationView />, {wrapper: MemoryRouter});
 
     await waitFor(() => {
       expect(processesStore.state.status).toBe('fetched');

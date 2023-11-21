@@ -9,13 +9,29 @@ import {observer} from 'mobx-react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {MigrationView} from './MigrationView';
 import {ListView} from './ListView';
+import {useEffect} from 'react';
 import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
 import {Modal} from '@carbon/react';
 
 const Processes: React.FC = observer(() => {
+  const {hasPendingRequest} = processInstanceMigrationStore.state;
+
+  useEffect(() => {
+    return processInstanceMigrationStore.reset;
+  }, []);
+
   const {showPrompt, confirmNavigation, cancelNavigation} = useCallbackPrompt(
     processInstanceMigrationStore.isEnabled,
   );
+
+  useEffect(() => {
+    // this effect is necessary to bypass the callback prompt when a migration
+    // is triggered from migration view (MigrationView/Footer/index.tsx)
+    if (hasPendingRequest) {
+      console.log('dummy confirm');
+      confirmNavigation();
+    }
+  }, [hasPendingRequest, confirmNavigation]);
 
   return (
     <>
@@ -25,7 +41,7 @@ const Processes: React.FC = observer(() => {
         <ListView />
       )}
 
-      {showPrompt && (
+      {showPrompt && !hasPendingRequest && (
         <Modal
           open={showPrompt}
           modalHeading="Leave Migration Mode"
@@ -34,7 +50,7 @@ const Processes: React.FC = observer(() => {
           secondaryButtonText="Stay"
           primaryButtonText="Leave"
           onRequestSubmit={() => {
-            processInstanceMigrationStore.reset();
+            processInstanceMigrationStore.disable();
             confirmNavigation();
           }}
         >

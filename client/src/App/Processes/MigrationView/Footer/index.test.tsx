@@ -9,6 +9,7 @@ import {render, screen} from 'modules/testing-library';
 import {Footer} from '.';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {useEffect} from 'react';
+import {MemoryRouter} from 'react-router-dom';
 
 type Props = {
   children?: React.ReactNode;
@@ -20,7 +21,7 @@ const Wrapper = ({children}: Props) => {
     return processInstanceMigrationStore.reset;
   });
   return (
-    <>
+    <MemoryRouter>
       {children}
       <button
         onClick={() => {
@@ -32,7 +33,7 @@ const Wrapper = ({children}: Props) => {
       >
         map element
       </button>
-    </>
+    </MemoryRouter>
   );
 };
 

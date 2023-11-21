@@ -5,7 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
+import {operationsStore} from './operations';
 import {processInstanceMigrationStore} from './processInstanceMigration';
+
+jest
+  .spyOn(operationsStore, 'applyBatchOperation')
+  .mockImplementation(jest.fn());
 
 describe('processInstanceMigration', () => {
   afterEach(() => {
@@ -92,5 +97,42 @@ describe('processInstanceMigration', () => {
 
     expect(processInstanceMigrationStore.hasFlowNodeMapping).toBe(false);
     expect(processInstanceMigrationStore.state.flowNodeMapping).toEqual({});
+  });
+
+  it('should request batch process after confirm migration', async () => {
+    processInstanceMigrationStore.enable();
+
+    processInstanceMigrationStore.updateFlowNodeMapping({
+      sourceId: 'startEvent',
+      targetId: 'endEvent',
+    });
+    processInstanceMigrationStore.setBatchOperationQuery({
+      active: true,
+      incidents: false,
+      ids: [],
+      excludeIds: [],
+    });
+    processInstanceMigrationStore.setTargetProcessDefinitionKey(
+      'targetProcessDefinitionKey',
+    );
+    processInstanceMigrationStore.setHasPendingRequest();
+    operationsStore.handleFetchSuccess();
+
+    expect(operationsStore.applyBatchOperation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        migrationPlan: {
+          mappingInstructions: [
+            {sourceElementId: 'startEvent', targetElementId: 'endEvent'},
+          ],
+          targetProcessDefinitionKey: 'targetProcessDefinitionKey',
+        },
+        query: {
+          active: true,
+          incidents: false,
+          ids: [],
+          excludeIds: [],
+        },
+      }),
+    );
   });
 });

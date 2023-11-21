@@ -50,6 +50,10 @@ const TargetProcessField: React.FC = observer(() => {
             versions?.[versions.length - 1]?.version ?? null;
 
           processesStore.setSelectedTargetVersion(initialVersionSelection);
+
+          processInstanceMigrationStore.setTargetProcessDefinitionKey(
+            processesStore.selectedTargetProcessId ?? null,
+          );
         }}
         selectedItem={
           selectedTargetProcess === null

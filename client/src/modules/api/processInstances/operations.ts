@@ -8,18 +8,30 @@
 import {requestAndParse} from 'modules/request';
 import {BatchOperationDto} from '../sharedTypes';
 
+type BatchOperationQuery = {
+  active?: boolean;
+  canceled?: boolean;
+  completed?: boolean;
+  excludeIds: string[];
+  processIds?: string[];
+  finished?: boolean;
+  ids: string[];
+  incidents?: boolean;
+  running?: boolean;
+};
+
+type MigrationPlan = {
+  targetProcessDefinitionKey: string;
+  mappingInstructions: {
+    sourceElementId: string;
+    targetElementId: string;
+  }[];
+};
+
 const applyBatchOperation = async (
   operationType: OperationEntityType,
-  query: {
-    active?: boolean;
-    canceled?: boolean;
-    completed?: boolean;
-    excludeIds: string[];
-    finished?: boolean;
-    ids: string[];
-    incidents?: boolean;
-    running?: boolean;
-  },
+  query: BatchOperationQuery,
+  migrationPlan?: MigrationPlan,
 ) => {
   return requestAndParse<BatchOperationDto>({
     url: '/api/process-instances/batch-operation',
@@ -27,6 +39,7 @@ const applyBatchOperation = async (
     body: {
       operationType,
       query,
+      migrationPlan,
     },
   });
 };
@@ -49,3 +62,4 @@ const applyOperation = async (
 };
 
 export {applyBatchOperation, applyOperation};
+export type {BatchOperationQuery, MigrationPlan};
