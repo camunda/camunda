@@ -15,7 +15,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeScript;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 
-public class ScriptTaskValidationTest {
+public class ScriptTaskValidatorTest {
 
   @Test
   void emptyExpression() {

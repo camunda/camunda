@@ -27,6 +27,12 @@ import org.camunda.bpm.model.xml.validation.ValidationResults;
 
 public class ProcessValidationUtil {
 
+  /**
+   * Validate the provided {@link BpmnModelInstance}, asserting that is NOT a valid process
+   *
+   * @param process the element to validate
+   * @param expectation the expected validation errors
+   */
   public static void validateProcess(
       final BpmnModelInstance process, final ExpectedValidationResult expectation) {
 
@@ -47,6 +53,19 @@ public class ProcessValidationUtil {
             "Expected validation failure%n<%s>%n but actual validation validationResults was%n<%s>",
             expectation, validationResultsAsString)
         .anyMatch(expectation::matches);
+  }
+
+  /**
+   * Validate the provided {@link BpmnModelInstance}, asserting that should be a valid process
+   *
+   * @param process the element to validate
+   */
+  public static void validateProcess(final BpmnModelInstance process) {
+    Bpmn.validateModel(process);
+
+    assertThat(
+            validate(process).getResults().values().stream().flatMap(Collection::stream).toList())
+        .isEmpty();
   }
 
   private static ValidationResults validate(final BpmnModelInstance model) {

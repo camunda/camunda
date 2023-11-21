@@ -27,7 +27,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 
-class ZeebeSendTaskValidationTest {
+class ZeebeSendTaskValidatorTest {
 
   @Test
   void noMessageRef() {

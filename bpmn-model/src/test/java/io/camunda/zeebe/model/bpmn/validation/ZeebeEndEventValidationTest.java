@@ -64,7 +64,7 @@ class ZeebeEndEventValidationTest {
         process,
         expect(
             END_EVENT_ID,
-            "End events must be one of: none, error, message, terminate, signal, or escalation"),
+            "End events must be one of: none, error, message, terminate, signal, escalation or compensation"),
         expect(endEventTypeBuilder.eventType, "Event definition of this type is not supported"));
   }
 
@@ -111,14 +111,14 @@ class ZeebeEndEventValidationTest {
             endEvent ->
                 endEvent.message(
                     b -> b.name("message-name").zeebeCorrelationKey("correlationKey"))),
-        new EndEventTypeBuilder(TerminateEventDefinition.class, EndEventBuilder::terminate));
+        new EndEventTypeBuilder(TerminateEventDefinition.class, EndEventBuilder::terminate),
+        new EndEventTypeBuilder(
+            CompensateEventDefinition.class,
+            endEvent -> endEvent.compensateEventDefinition().compensateEventDefinitionDone()));
   }
 
   private static Stream<EndEventTypeBuilder> unsupportedEndEventTypes() {
     return Stream.of(
-        new EndEventTypeBuilder(
-            CompensateEventDefinition.class,
-            endEvent -> endEvent.compensateEventDefinition().compensateEventDefinitionDone()),
         new EndEventTypeBuilder(
             CancelEventDefinition.class,
             endEvent -> {

@@ -1,0 +1,141 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
+ */
+package io.camunda.zeebe.engine.processing.bpmn.compensation;
+
+import io.camunda.zeebe.engine.processing.deployment.model.validation.ExpectedValidationResult;
+import io.camunda.zeebe.engine.processing.deployment.model.validation.ProcessValidationUtil;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
+import io.camunda.zeebe.model.bpmn.instance.EndEvent;
+import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
+import io.camunda.zeebe.model.bpmn.instance.Task;
+import org.junit.jupiter.api.Test;
+
+public class CompensationEventTest {
+
+  @Test
+  public void shouldDeployCompensationBoundaryEvent() {
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-boundary-event.bpmn");
+
+    ProcessValidationUtil.validateProcess(process);
+  }
+
+  @Test
+  public void shouldNotDeployCompensationBoundaryEventWithoutAssociation() {
+    final var process =
+        createModelFromClasspathResource(
+            "/compensation/compensation-boundary-event-no-association.bpmn");
+
+    ProcessValidationUtil.validateProcess(
+        process,
+        ExpectedValidationResult.expect(
+            BoundaryEvent.class, "Must have at least one outgoing sequence flow or association"));
+  }
+
+  @Test
+  public void shouldDeployCompensationIntermediateThrowEvent() {
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-throw-event.bpmn");
+
+    ProcessValidationUtil.validateProcess(process);
+  }
+
+  @Test
+  public void shouldNotDeployCompensationIntermediateThrowEventWithWaitForCompletionFalse() {
+    final var process =
+        createModelFromClasspathResource(
+            "/compensation/compensation-throw-event-attribute-false.bpmn");
+
+    ProcessValidationUtil.validateProcess(
+        process,
+        ExpectedValidationResult.expect(
+            IntermediateThrowEvent.class,
+            "A compensation intermediate throwing event waitForCompletion attribute must be true or not present"));
+  }
+
+  @Test
+  public void shouldDeployCompensationEndEvent() {
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-end-event.bpmn");
+
+    ProcessValidationUtil.validateProcess(process);
+  }
+
+  @Test
+  public void shouldNotDeployCompensationEndEventWithWaitForCompletionFalse() {
+    final var process =
+        createModelFromClasspathResource(
+            "/compensation/compensation-end-event-attribute-false.bpmn");
+
+    ProcessValidationUtil.validateProcess(
+        process,
+        ExpectedValidationResult.expect(
+            EndEvent.class,
+            "A compensation end event waitForCompletion attribute must be true or not present"));
+  }
+
+  @Test
+  public void shouldDeployCompensationUndefinedTask() {
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-undefined-task.bpmn");
+
+    ProcessValidationUtil.validateProcess(process);
+  }
+
+  @Test
+  public void shouldNotDeployCompensationHandlerNotValid() {
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-not-valid-task.bpmn");
+
+    ProcessValidationUtil.validateProcess(
+        process,
+        ExpectedValidationResult.expect(
+            Task.class,
+            "Compensation task must be one of: service task, user task, send task, script task, manual task, or undefined task"));
+  }
+
+  @Test
+  public void shouldNotDeployCompensationHandlerWithOutgoingFlow() {
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-task-with-outgoing.bpmn");
+
+    ProcessValidationUtil.validateProcess(
+        process,
+        ExpectedValidationResult.expect(
+            Task.class, "A compensation handler should have no outgoing sequence flows"));
+  }
+
+  @Test
+  public void shouldNotDeployCompensationHandlerWithIncomingFlow() {
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-task-with-incoming.bpmn");
+
+    ProcessValidationUtil.validateProcess(
+        process,
+        ExpectedValidationResult.expect(
+            Task.class, "A compensation handler should have no incoming sequence flows"));
+  }
+
+  @Test
+  public void shouldNotDeployCompensationHandlerWithBoundaryEvent() {
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-task-with-boundary.bpmn");
+
+    ProcessValidationUtil.validateProcess(
+        process,
+        ExpectedValidationResult.expect(
+            Task.class, "A compensation handler should have no boundary events"));
+  }
+
+  private BpmnModelInstance createModelFromClasspathResource(final String classpath) {
+    final var resourceAsStream = getClass().getResourceAsStream(classpath);
+    return Bpmn.readModelFromStream(resourceAsStream);
+  }
+}

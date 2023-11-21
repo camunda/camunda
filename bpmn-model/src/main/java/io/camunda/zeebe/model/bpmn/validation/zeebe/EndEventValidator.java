@@ -15,6 +15,9 @@
  */
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
+import static io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_WAIT_FOR_COMPLETION;
+
+import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
@@ -36,7 +39,8 @@ public class EndEventValidator implements ModelElementValidator<EndEvent> {
           MessageEventDefinition.class,
           TerminateEventDefinition.class,
           SignalEventDefinition.class,
-          EscalationEventDefinition.class);
+          EscalationEventDefinition.class,
+          CompensateEventDefinition.class);
 
   @Override
   public Class<EndEvent> getElementType() {
@@ -68,7 +72,17 @@ public class EndEventValidator implements ModelElementValidator<EndEvent> {
           if (SUPPORTED_EVENT_DEFINITIONS.stream().noneMatch(type -> type.isInstance(def))) {
             validationResultCollector.addError(
                 0,
-                "End events must be one of: none, error, message, terminate, signal, or escalation");
+                "End events must be one of: none, error, message, terminate, signal, escalation or compensation");
+          }
+
+          if (def instanceof CompensateEventDefinition) {
+            final String waitForCompletion =
+                def.getAttributeValue(BPMN_ATTRIBUTE_WAIT_FOR_COMPLETION);
+            if (waitForCompletion != null && !Boolean.valueOf(waitForCompletion)) {
+              validationResultCollector.addError(
+                  0,
+                  "A compensation end event waitForCompletion attribute must be true or not present");
+            }
           }
         });
   }
