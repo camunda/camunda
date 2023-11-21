@@ -379,4 +379,34 @@ describe('<FormJS />', () => {
       }),
     ).toBeInTheDocument();
   });
+
+  it("should show an error message if variables can't be loaded", async () => {
+    nodeMockServer.use(
+      rest.post('/v1/tasks/:taskId/variables/search', async (_, res, ctx) => {
+        return res(ctx.status(404));
+      }),
+    );
+
+    render(
+      <FormJS
+        id={MOCK_FORM_ID}
+        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
+        task={assignedTaskWithForm(MOCK_TASK_ID)}
+        user={userMocks.currentUser}
+        onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'We could not fetch the task variables. Please try again or contact your Tasklist administrator.',
+      ),
+    ).toBeInTheDocument();
+  });
 });

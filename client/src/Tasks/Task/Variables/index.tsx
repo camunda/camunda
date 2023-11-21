@@ -68,6 +68,8 @@ import {
 import {C3EmptyState} from '@camunda/camunda-composite-components';
 import {Separator} from 'modules/components/Separator';
 import {useVariables} from 'modules/queries/useVariables';
+import {match, Pattern} from 'ts-pattern';
+import {FailedVariableFetchError} from 'modules/components/FailedVariableFetchError';
 
 const CODE_EDITOR_BUTTON_TOOLTIP_LABEL = 'Open JSON code editor';
 
@@ -108,22 +110,30 @@ const Variables: React.FC<Props> = ({
   const formRef = useRef<HTMLFormElement | null>(null);
   const {assignee, taskState} = task;
   const {hasPermission} = usePermissions(['write']);
-  const {data, isInitialLoading, fetchFullVariable, variablesLoadingFullValue} =
-    useVariables(
-      {
-        taskId: task.id,
-      },
-      {
-        refetchOnWindowFocus: assignee === null,
-        refetchOnReconnect: assignee === null,
-      },
-    );
+  const {
+    data,
+    isInitialLoading,
+    fetchFullVariable,
+    variablesLoadingFullValue,
+    status,
+  } = useVariables(
+    {
+      taskId: task.id,
+    },
+    {
+      refetchOnWindowFocus: assignee === null,
+      refetchOnReconnect: assignee === null,
+    },
+  );
   const [editingVariable, setEditingVariable] = useState<string | undefined>();
   const [submissionState, setSubmissionState] =
     useState<InlineLoadingStatus>('inactive');
   const isModalOpen = editingVariable !== undefined;
   const canCompleteTask =
-    user.userId === assignee && taskState === 'CREATED' && hasPermission;
+    user.userId === assignee &&
+    taskState === 'CREATED' &&
+    hasPermission &&
+    status === 'success';
   const hasEmptyNewVariable = (values: FormValues) =>
     values.newVariables?.some((variable) => variable === undefined);
   const variables = data ?? [];
@@ -214,222 +224,266 @@ const Variables: React.FC<Props> = ({
               <ResetForm isAssigned={canCompleteTask} />
 
               <TaskDetailsContainer tabIndex={-1}>
-                {variables.length >= 1 ||
-                (values?.newVariables?.length !== undefined &&
-                  values?.newVariables?.length >= 1) ? (
-                  <Container data-testid="variables-form-table" as={Layer}>
-                    <StructuredListWrapper isCondensed>
-                      <StructuredListHead>
-                        <StructuredListRow head>
-                          <StructuredListCell head>Name</StructuredListCell>
-                          <StructuredListCell head>Value</StructuredListCell>
-                          <StructuredListCell head />
-                        </StructuredListRow>
-                      </StructuredListHead>
-                      <StructuredListBody>
-                        {variables.map((variable) =>
-                          canCompleteTask ? (
-                            <StructuredListRow key={variable.name}>
-                              <VariableNameCell>
-                                <label
-                                  htmlFor={createVariableFieldName(
-                                    variable.name,
-                                  )}
-                                >
-                                  {variable.name}
-                                </label>
-                              </VariableNameCell>
-                              <VariableValueCell>
-                                <Field
-                                  name={createVariableFieldName(variable.name)}
-                                  validate={
-                                    variable.isValueTruncated
-                                      ? () => undefined
-                                      : validateValueJSON
-                                  }
-                                >
-                                  {({input, meta}) => (
-                                    <LoadingTextarea
-                                      {...input}
-                                      id={input.name}
-                                      invalidText={meta.error}
-                                      isLoading={variablesLoadingFullValue.includes(
-                                        variable.id,
+                {match({
+                  variablesLength: variables.length,
+                  newVariablesLength: values.newVariables?.length ?? 0,
+                  status,
+                })
+                  .with(
+                    {
+                      variablesLength: Pattern.number.lte(0),
+                      newVariablesLength: Pattern.number.lte(0),
+                      status: Pattern.union('loading', 'success'),
+                    },
+                    () => (
+                      <TaskDetailsRow as={Layer}>
+                        <C3EmptyState
+                          heading="Task has no variables"
+                          description={
+                            taskState === 'COMPLETED'
+                              ? ''
+                              : 'Click on Add Variable'
+                          }
+                        />
+                      </TaskDetailsRow>
+                    ),
+                  )
+                  .with(
+                    {
+                      status: 'error',
+                    },
+                    () => (
+                      <TaskDetailsRow>
+                        <FailedVariableFetchError />
+                      </TaskDetailsRow>
+                    ),
+                  )
+                  .with(
+                    Pattern.union(
+                      {
+                        variablesLength: Pattern.number.gte(1),
+                        status: 'success',
+                      },
+                      {
+                        newVariablesLength: Pattern.number.gte(1),
+                        status: 'success',
+                      },
+                    ),
+                    () => (
+                      <Container data-testid="variables-form-table" as={Layer}>
+                        <StructuredListWrapper isCondensed>
+                          <StructuredListHead>
+                            <StructuredListRow head>
+                              <StructuredListCell head>Name</StructuredListCell>
+                              <StructuredListCell head>
+                                Value
+                              </StructuredListCell>
+                              <StructuredListCell head />
+                            </StructuredListRow>
+                          </StructuredListHead>
+                          <StructuredListBody>
+                            {variables.map((variable) =>
+                              canCompleteTask ? (
+                                <StructuredListRow key={variable.name}>
+                                  <VariableNameCell>
+                                    <label
+                                      htmlFor={createVariableFieldName(
+                                        variable.name,
                                       )}
-                                      onFocus={(event) => {
-                                        if (variable.isValueTruncated) {
-                                          fetchFullVariable(variable.id);
-                                        }
-                                        input.onFocus(event);
-                                      }}
-                                      isActive={meta.active}
-                                      type="text"
-                                      labelText={`${variable.name} value`}
-                                      placeholder={`${variable.name} value`}
-                                      hideLabel
-                                    />
-                                  )}
-                                </Field>
-                              </VariableValueCell>
-                              <ControlsCell>
-                                <IconButtonsContainer $showExtraPadding>
-                                  <IconButton
-                                    label={CODE_EDITOR_BUTTON_TOOLTIP_LABEL}
-                                    onClick={() => {
-                                      if (variable.isValueTruncated) {
-                                        fetchFullVariable(variable.id);
+                                    >
+                                      {variable.name}
+                                    </label>
+                                  </VariableNameCell>
+                                  <VariableValueCell>
+                                    <Field
+                                      name={createVariableFieldName(
+                                        variable.name,
+                                      )}
+                                      validate={
+                                        variable.isValueTruncated
+                                          ? () => undefined
+                                          : validateValueJSON
                                       }
-
-                                      setEditingVariable(
-                                        createVariableFieldName(variable.name),
-                                      );
-                                    }}
-                                  >
-                                    <Popup />
-                                  </IconButton>
-                                </IconButtonsContainer>
-                              </ControlsCell>
-                            </StructuredListRow>
-                          ) : (
-                            <StructuredListRow key={variable.name}>
-                              <VariableNameCell>
-                                {variable.name}
-                              </VariableNameCell>
-                              <VariableValueCell>
-                                <ScrollableCellContent>
-                                  {variable.isValueTruncated
-                                    ? `${variable.previewValue}...`
-                                    : variable.value}
-                                </ScrollableCellContent>
-                              </VariableValueCell>
-                              <ControlsCell />
-                            </StructuredListRow>
-                          ),
-                        )}
-                        {canCompleteTask ? (
-                          <>
-                            <OnNewVariableAdded
-                              name="newVariables"
-                              execute={() => {
-                                const element = formRef.current?.parentElement;
-                                if (element) {
-                                  element.scrollTop = element.scrollHeight;
-                                }
-                              }}
-                            />
-                            <FieldArray name="newVariables">
-                              {({fields}) =>
-                                fields.map((variable, index) => (
-                                  <StructuredListRow key={variable}>
-                                    <VariableNameCell>
-                                      <DelayedErrorField
-                                        name={createNewVariableFieldName(
-                                          variable,
-                                          'name',
-                                        )}
-                                        validate={mergeValidators(
-                                          validateNameCharacters,
-                                          validateNameComplete,
-                                          validateDuplicateNames,
-                                        )}
-                                        addExtraDelay={Boolean(
-                                          !form.getFieldState(
-                                            `${variable}.name`,
-                                          )?.dirty &&
-                                            form.getFieldState(
-                                              `${variable}.value`,
-                                            )?.dirty,
-                                        )}
-                                      >
-                                        {({input, meta}) => (
-                                          <TextInput
-                                            {...input}
-                                            id={input.name}
-                                            invalidText={meta.error}
-                                            type="text"
-                                            labelText={`${variableIndexToOrdinal(
-                                              index,
-                                            )} variable name`}
-                                            placeholder="Name"
-                                            autoFocus
-                                          />
-                                        )}
-                                      </DelayedErrorField>
-                                    </VariableNameCell>
-                                    <VariableValueCell>
-                                      <DelayedErrorField
-                                        name={createNewVariableFieldName(
-                                          variable,
-                                          'value',
-                                        )}
-                                        validate={validateValueComplete}
-                                        addExtraDelay={Boolean(
-                                          form.getFieldState(`${variable}.name`)
-                                            ?.dirty &&
-                                            !form.getFieldState(
-                                              `${variable}.value`,
-                                            )?.dirty,
-                                        )}
-                                      >
-                                        {({input, meta}) => (
-                                          <TextInput
-                                            {...input}
-                                            id={input.name}
-                                            type="text"
-                                            labelText={`${variableIndexToOrdinal(
-                                              index,
-                                            )} variable value`}
-                                            invalidText={meta.error}
-                                            placeholder="Value"
-                                          />
-                                        )}
-                                      </DelayedErrorField>
-                                    </VariableValueCell>
-                                    <ControlsCell>
-                                      <IconButtonsContainer>
-                                        <IconButton
-                                          label={
-                                            CODE_EDITOR_BUTTON_TOOLTIP_LABEL
+                                    >
+                                      {({input, meta}) => (
+                                        <LoadingTextarea
+                                          {...input}
+                                          id={input.name}
+                                          invalidText={meta.error}
+                                          isLoading={variablesLoadingFullValue.includes(
+                                            variable.id,
+                                          )}
+                                          onFocus={(event) => {
+                                            if (variable.isValueTruncated) {
+                                              fetchFullVariable(variable.id);
+                                            }
+                                            input.onFocus(event);
+                                          }}
+                                          isActive={meta.active}
+                                          type="text"
+                                          labelText={`${variable.name} value`}
+                                          placeholder={`${variable.name} value`}
+                                          hideLabel
+                                        />
+                                      )}
+                                    </Field>
+                                  </VariableValueCell>
+                                  <ControlsCell>
+                                    <IconButtonsContainer $showExtraPadding>
+                                      <IconButton
+                                        label={CODE_EDITOR_BUTTON_TOOLTIP_LABEL}
+                                        onClick={() => {
+                                          if (variable.isValueTruncated) {
+                                            fetchFullVariable(variable.id);
                                           }
-                                          onClick={() => {
-                                            setEditingVariable(
-                                              `${variable}.value`,
-                                            );
-                                          }}
-                                        >
-                                          <Popup />
-                                        </IconButton>
-                                        <IconButton
-                                          label={`Remove ${variableIndexToOrdinal(
-                                            index,
-                                          )} new variable`}
-                                          onClick={() => {
-                                            fields.remove(index);
-                                          }}
-                                        >
-                                          <Close />
-                                        </IconButton>
-                                      </IconButtonsContainer>
-                                    </ControlsCell>
-                                  </StructuredListRow>
-                                ))
-                              }
-                            </FieldArray>
-                          </>
-                        ) : null}
-                      </StructuredListBody>
-                    </StructuredListWrapper>
-                  </Container>
-                ) : (
-                  <TaskDetailsRow as={Layer}>
-                    <C3EmptyState
-                      heading="Task has no variables"
-                      description={
-                        taskState === 'COMPLETED' ? '' : 'Click on Add Variable'
-                      }
-                    />
-                  </TaskDetailsRow>
-                )}
+
+                                          setEditingVariable(
+                                            createVariableFieldName(
+                                              variable.name,
+                                            ),
+                                          );
+                                        }}
+                                      >
+                                        <Popup />
+                                      </IconButton>
+                                    </IconButtonsContainer>
+                                  </ControlsCell>
+                                </StructuredListRow>
+                              ) : (
+                                <StructuredListRow key={variable.name}>
+                                  <VariableNameCell>
+                                    {variable.name}
+                                  </VariableNameCell>
+                                  <VariableValueCell>
+                                    <ScrollableCellContent>
+                                      {variable.isValueTruncated
+                                        ? `${variable.previewValue}...`
+                                        : variable.value}
+                                    </ScrollableCellContent>
+                                  </VariableValueCell>
+                                  <ControlsCell />
+                                </StructuredListRow>
+                              ),
+                            )}
+                            {canCompleteTask ? (
+                              <>
+                                <OnNewVariableAdded
+                                  name="newVariables"
+                                  execute={() => {
+                                    const element =
+                                      formRef.current?.parentElement;
+                                    if (element) {
+                                      element.scrollTop = element.scrollHeight;
+                                    }
+                                  }}
+                                />
+                                <FieldArray name="newVariables">
+                                  {({fields}) =>
+                                    fields.map((variable, index) => (
+                                      <StructuredListRow key={variable}>
+                                        <VariableNameCell>
+                                          <DelayedErrorField
+                                            name={createNewVariableFieldName(
+                                              variable,
+                                              'name',
+                                            )}
+                                            validate={mergeValidators(
+                                              validateNameCharacters,
+                                              validateNameComplete,
+                                              validateDuplicateNames,
+                                            )}
+                                            addExtraDelay={Boolean(
+                                              !form.getFieldState(
+                                                `${variable}.name`,
+                                              )?.dirty &&
+                                                form.getFieldState(
+                                                  `${variable}.value`,
+                                                )?.dirty,
+                                            )}
+                                          >
+                                            {({input, meta}) => (
+                                              <TextInput
+                                                {...input}
+                                                id={input.name}
+                                                invalidText={meta.error}
+                                                type="text"
+                                                labelText={`${variableIndexToOrdinal(
+                                                  index,
+                                                )} variable name`}
+                                                placeholder="Name"
+                                                autoFocus
+                                              />
+                                            )}
+                                          </DelayedErrorField>
+                                        </VariableNameCell>
+                                        <VariableValueCell>
+                                          <DelayedErrorField
+                                            name={createNewVariableFieldName(
+                                              variable,
+                                              'value',
+                                            )}
+                                            validate={validateValueComplete}
+                                            addExtraDelay={Boolean(
+                                              form.getFieldState(
+                                                `${variable}.name`,
+                                              )?.dirty &&
+                                                !form.getFieldState(
+                                                  `${variable}.value`,
+                                                )?.dirty,
+                                            )}
+                                          >
+                                            {({input, meta}) => (
+                                              <TextInput
+                                                {...input}
+                                                id={input.name}
+                                                type="text"
+                                                labelText={`${variableIndexToOrdinal(
+                                                  index,
+                                                )} variable value`}
+                                                invalidText={meta.error}
+                                                placeholder="Value"
+                                              />
+                                            )}
+                                          </DelayedErrorField>
+                                        </VariableValueCell>
+                                        <ControlsCell>
+                                          <IconButtonsContainer>
+                                            <IconButton
+                                              label={
+                                                CODE_EDITOR_BUTTON_TOOLTIP_LABEL
+                                              }
+                                              onClick={() => {
+                                                setEditingVariable(
+                                                  `${variable}.value`,
+                                                );
+                                              }}
+                                            >
+                                              <Popup />
+                                            </IconButton>
+                                            <IconButton
+                                              label={`Remove ${variableIndexToOrdinal(
+                                                index,
+                                              )} new variable`}
+                                              onClick={() => {
+                                                fields.remove(index);
+                                              }}
+                                            >
+                                              <Close />
+                                            </IconButton>
+                                          </IconButtonsContainer>
+                                        </ControlsCell>
+                                      </StructuredListRow>
+                                    ))
+                                  }
+                                </FieldArray>
+                              </>
+                            ) : null}
+                          </StructuredListBody>
+                        </StructuredListWrapper>
+                      </Container>
+                    ),
+                  )
+                  .otherwise(() => null)}
 
                 <DetailsFooter>
                   {hasEmptyNewVariable(values) && (

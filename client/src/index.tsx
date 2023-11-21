@@ -16,7 +16,7 @@ import {StrictMode} from 'react';
 function mock(): Promise<void> {
   return new Promise((resolve) => {
     if (
-      process.env.NODE_ENV === 'development' ||
+      import.meta.env.DEV ||
       window.location.host.match(/camunda\.cloud$/) !== null
     ) {
       import('modules/mockServer/startBrowserMocking').then(

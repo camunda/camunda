@@ -43,6 +43,34 @@ describe('<Variables />', () => {
     );
   });
 
+  it("should show an error message if variables can't be loaded", async () => {
+    nodeMockServer.use(
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res(ctx.status(404));
+      }),
+    );
+
+    render(
+      <Variables
+        task={taskMocks.unassignedTask()}
+        user={currentUser}
+        onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'We could not fetch the task variables. Please try again or contact your Tasklist administrator.',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('should show existing variables for unassigned tasks', async () => {
     nodeMockServer.use(
       rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {

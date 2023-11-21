@@ -6,15 +6,19 @@
  */
 
 import {Form} from '@bpmn-io/form-js-viewer';
+import {isEqual} from 'lodash';
+
+type FormJSData = Parameters<Form['importSchema']>[1];
 
 class FormManager {
   #form = new Form();
   #schema: string | null = null;
   #onSubmit: (result: {errors: object; data: object}) => void = () => {};
+  #data: FormJSData;
 
   render = async (options: {
     schema: string;
-    data: Parameters<Form['importSchema']>[1];
+    data: FormJSData;
     onSubmit: (result: {errors: object; data: object}) => void;
     onImportError?: () => void;
     container: HTMLElement;
@@ -27,17 +31,21 @@ class FormManager {
       this.#form.on('submit', this.#onSubmit);
     }
 
-    if (this.#schema === schema) {
-      return Promise.resolve();
+    if (
+      schema !== null &&
+      (this.#schema !== schema || !isEqual(this.#data, data))
+    ) {
+      try {
+        this.#form.attachTo(container);
+        await this.#form.importSchema(JSON.parse(schema), data);
+        this.#schema = schema;
+        this.#data = data;
+      } catch {
+        onImportError?.();
+      }
     }
 
-    try {
-      this.#form.attachTo(container);
-      await this.#form.importSchema(JSON.parse(schema), data);
-      this.#schema = schema;
-    } catch {
-      onImportError?.();
-    }
+    return Promise.resolve();
   };
 
   setReadOnly = (value: boolean) => {

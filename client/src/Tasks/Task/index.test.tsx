@@ -47,8 +47,8 @@ const getWrapper = (
           <MemoryRouter initialEntries={initialEntries}>
             <Routes>
               <Route path="/:id" element={children} />
-              <Route path="*" element={<LocationLog />} />
             </Routes>
+            <LocationLog />
           </MemoryRouter>
         </MockThemeProvider>
       </QueryClientProvider>
@@ -240,20 +240,25 @@ describe('<Task />', () => {
       rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
         return res.once(ctx.json([]));
       }),
+      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
+        return res.once(ctx.json([]));
+      }),
     );
 
     const {user} = render(<Task hasRemainingTasks />, {
       wrapper: getWrapper(['/0']),
     });
 
-    await user.click(
+    expect(
       await screen.findByRole('button', {name: /complete task/i}),
-    );
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /complete task/i})).toBeEnabled();
+
+    await user.click(screen.getByRole('button', {name: /complete task/i}));
 
     await waitFor(() => {
       expect(screen.getByTestId('pathname')).toHaveTextContent('/');
     });
-
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'success',
       title: 'Task completed',

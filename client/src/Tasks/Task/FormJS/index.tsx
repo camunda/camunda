@@ -25,6 +25,8 @@ import {Separator} from 'modules/components/Separator';
 import {useForm} from 'modules/queries/useForm';
 import {useVariables} from 'modules/queries/useVariables';
 import {FormJSRenderer} from 'modules/components/FormJSRenderer';
+import {FailedVariableFetchError} from 'modules/components/FailedVariableFetchError';
+import {Pattern, match} from 'ts-pattern';
 
 function formatVariablesToFormData(variables: Variable[]) {
   return variables.reduce(
@@ -87,7 +89,7 @@ const FormJS: React.FC<Props> = ({
   const {hasPermission} = usePermissions(['write']);
   const {schema} = data;
   const extractedVariables = extractVariablesFromFormSchema(schema);
-  const {isFetching, data: variablesData} = useVariables(
+  const {data: variablesData, status} = useVariables(
     {
       taskId: task.id,
       variableNames: extractedVariables,
@@ -100,7 +102,10 @@ const FormJS: React.FC<Props> = ({
   );
   const variables = useMemo(() => variablesData ?? [], [variablesData]);
   const canCompleteTask =
-    user.userId === assignee && taskState === 'CREATED' && hasPermission;
+    user.userId === assignee &&
+    taskState === 'CREATED' &&
+    hasPermission &&
+    status === 'success';
   const {removeFormReference} = useRemoveFormReference(task);
 
   return (
@@ -109,38 +114,58 @@ const FormJS: React.FC<Props> = ({
       <ScrollableContent data-testid="embedded-form" tabIndex={-1}>
         <TaskDetailsContainer>
           <TaskDetailsRow>
-            {schema === null || isFetching ? null : (
-              <FormJSRenderer
-                schema={schema}
-                data={formatVariablesToFormData(variables)}
-                readOnly={!canCompleteTask}
-                onMount={(formManager) => {
-                  formManagerRef.current = formManager;
-                }}
-                handleSubmit={onSubmit}
-                onImportError={() => {
-                  removeFormReference();
-                  notificationsStore.displayNotification({
-                    kind: 'error',
-                    title: 'Invalid Form schema',
-                    isDismissable: true,
-                  });
-                }}
-                onSubmitStart={() => {
-                  setSubmissionState('active');
-                }}
-                onSubmitSuccess={() => {
-                  setSubmissionState('finished');
-                }}
-                onSubmitError={(error) => {
-                  onSubmitFailure(error as Error);
-                  setSubmissionState('error');
-                }}
-                onValidationError={() => {
-                  setSubmissionState('inactive');
-                }}
-              />
-            )}
+            {match({schema, status})
+              .with(
+                {
+                  schema: null,
+                },
+                () => null,
+              )
+              .with(
+                {
+                  status: 'error',
+                },
+                () => <FailedVariableFetchError />,
+              )
+              .with(
+                {
+                  schema: Pattern.not(null),
+                  status: Pattern.union('loading', 'success'),
+                },
+                ({schema}) => (
+                  <FormJSRenderer
+                    schema={schema}
+                    data={formatVariablesToFormData(variables)}
+                    readOnly={!canCompleteTask}
+                    onMount={(formManager) => {
+                      formManagerRef.current = formManager;
+                    }}
+                    handleSubmit={onSubmit}
+                    onImportError={() => {
+                      removeFormReference();
+                      notificationsStore.displayNotification({
+                        kind: 'error',
+                        title: 'Invalid Form schema',
+                        isDismissable: true,
+                      });
+                    }}
+                    onSubmitStart={() => {
+                      setSubmissionState('active');
+                    }}
+                    onSubmitSuccess={() => {
+                      setSubmissionState('finished');
+                    }}
+                    onSubmitError={(error) => {
+                      onSubmitFailure(error as Error);
+                      setSubmissionState('error');
+                    }}
+                    onValidationError={() => {
+                      setSubmissionState('inactive');
+                    }}
+                  />
+                ),
+              )
+              .otherwise(() => null)}
           </TaskDetailsRow>
           <DetailsFooter>
             <AsyncActionButton
