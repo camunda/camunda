@@ -103,7 +103,7 @@
     <version.jmock>2.12.0</version.jmock>
     <version.jmh>1.37</version.jmh>
     <version.json-smart>2.4.8</version.json-smart>
-    <version.byte-buddy>1.14.9</version.byte-buddy>
+    <version.byte-buddy>1.14.10</version.byte-buddy>
     <version.revapi>0.28.1</version.revapi>
     <version.immutables>2.10.0</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
@@ -131,6 +131,8 @@
     <version.postgresql>42.7.0</version.postgresql>
     <version.aws-signing>2.3.1</version.aws-signing>
     <version.reactor-netty>1.1.13</version.reactor-netty>
+    <version.tc-keycloak>3.1.0</version.tc-keycloak>
+    <version.jakarta-activation>2.1.0</version.jakarta-activation>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
@@ -881,6 +883,18 @@
       </dependency>
 
       <dependency>
+        <groupId>com.github.dasniko</groupId>
+        <artifactId>testcontainers-keycloak</artifactId>
+        <version>${version.tc-keycloak}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit4-mock</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
         <groupId>com.github.docker-java</groupId>
         <artifactId>docker-java-api</artifactId>
         <version>${version.docker-java-api}</version>
@@ -1108,6 +1122,7 @@
         <artifactId>jmh-core</artifactId>
         <version>${version.jmh}</version>
       </dependency>
+
       <dependency>
         <groupId>org.openjdk.jmh</groupId>
         <artifactId>jmh-generator-annprocess</artifactId>
@@ -1184,6 +1199,13 @@
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
         <version>3.6.0</version>
+      </dependency>
+
+      <!-- between com.github.dasniko:testcontainers-keycloak and its own dependencies -->
+      <dependency>
+        <groupId>jakarta.activation</groupId>
+        <artifactId>jakarta.activation-api</artifactId>
+        <version>${version.jakarta-activation}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

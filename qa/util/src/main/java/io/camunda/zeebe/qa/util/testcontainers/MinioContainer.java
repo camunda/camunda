@@ -43,7 +43,7 @@ public final class MinioContainer extends GenericContainer<MinioContainer> {
    * this.
    */
   public MinioContainer() {
-    this("RELEASE.2022-09-17T00-09-45Z");
+    this("RELEASE.2023-11-20T22-40-07Z");
   }
 
   /**
@@ -57,8 +57,8 @@ public final class MinioContainer extends GenericContainer<MinioContainer> {
 
     withCommand("server /data")
         .withExposedPorts(PORT)
-        .withEnv("MINIO_ACCESS_KEY", DEFAULT_ACCESS_KEY)
-        .withEnv("MINIO_SECRET_KEY", DEFAULT_SECRET_KEY)
+        .withEnv("MINIO_ROOT_USER", DEFAULT_ACCESS_KEY)
+        .withEnv("MINIO_ROOT_PASSWORD", DEFAULT_SECRET_KEY)
         .withEnv("MINIO_REGION", DEFAULT_REGION)
         .waitingFor(defaultWaitStrategy());
   }

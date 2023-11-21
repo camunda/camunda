@@ -9,6 +9,7 @@ package io.camunda.zeebe.it.multitenancy;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
@@ -31,6 +32,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.testcontainers.DefaultTestContainers;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
@@ -107,27 +109,14 @@ public class MultiTenancyOverIdentityIT {
           .withNetworkAliases(DATABASE_HOST);
 
   @Container
-  @SuppressWarnings("resource")
-  private static final GenericContainer<?> KEYCLOAK =
-      new GenericContainer<>("bitnami/keycloak:22.0.1")
-          .dependsOn(POSTGRES)
-          .withEnv("KC_HEALTH_ENABLED", "true")
+  private static final KeycloakContainer KEYCLOAK =
+      DefaultTestContainers.createDefaultKeycloak()
           .withEnv("KEYCLOAK_ADMIN_USER", KEYCLOAK_USER)
           .withEnv("KEYCLOAK_ADMIN_PASSWORD", KEYCLOAK_PASSWORD)
-          .withEnv("KEYCLOAK_DATABASE_HOST", DATABASE_HOST)
-          .withEnv("KEYCLOAK_DATABASE_PORT", String.valueOf(DATABASE_PORT))
-          .withEnv("KEYCLOAK_DATABASE_USER", DATABASE_USER)
-          .withEnv("KEYCLOAK_DATABASE_PASSWORD", DATABASE_PASSWORD)
-          .withEnv("KEYCLOAK_DATABASE_NAME", DATABASE_NAME)
+          .withEnv("KEYCLOAK_DATABASE_VENDOR", "dev-mem")
           .withNetwork(NETWORK)
           .withNetworkAliases("keycloak")
-          .withExposedPorts(8080)
-          .waitingFor(
-              new HttpWaitStrategy()
-                  .forPort(8080)
-                  .forPath("/health/ready")
-                  .allowInsecure()
-                  .forStatusCode(200));
+          .withExposedPorts(8080);
 
   @Container
   @SuppressWarnings("resource")
