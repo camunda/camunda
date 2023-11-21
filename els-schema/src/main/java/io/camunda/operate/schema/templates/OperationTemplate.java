@@ -41,7 +41,6 @@ public class OperationTemplate extends AbstractTemplateDescriptor implements Pro
 
   @Override
   public String getVersion() {
-    return "8.3.2";
+    return "8.4.0";
   }
-
 }
