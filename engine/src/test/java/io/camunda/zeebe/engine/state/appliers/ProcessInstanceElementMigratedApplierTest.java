@@ -94,7 +94,7 @@ public class ProcessInstanceElementMigratedApplierTest {
   }
 
   @Test
-  void shouldUpdateFlowScopeKey() {
+  void shouldUpdateFlowScopeKeyIfSetToDifferentValue() {
     // given
     final long serviceTaskKey = 3L;
     final var serviceTask =
