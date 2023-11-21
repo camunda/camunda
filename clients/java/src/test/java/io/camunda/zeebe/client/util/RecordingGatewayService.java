@@ -47,6 +47,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionRespo
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FormMetadata;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.MigrateProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.MigrateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition;
@@ -120,6 +122,9 @@ public final class RecordingGatewayService extends GatewayImplBase {
     addRequestHandler(
         ModifyProcessInstanceRequest.class,
         r -> ModifyProcessInstanceResponse.getDefaultInstance());
+    addRequestHandler(
+        MigrateProcessInstanceRequest.class,
+        r -> MigrateProcessInstanceResponse.getDefaultInstance());
     addRequestHandler(
         EvaluateDecisionRequest.class, r -> EvaluateDecisionResponse.getDefaultInstance());
     addRequestHandler(
@@ -405,6 +410,13 @@ public final class RecordingGatewayService extends GatewayImplBase {
   public void modifyProcessInstance(
       final ModifyProcessInstanceRequest request,
       final StreamObserver<ModifyProcessInstanceResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
+  @Override
+  public void migrateProcessInstance(
+      final MigrateProcessInstanceRequest request,
+      final StreamObserver<MigrateProcessInstanceResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
