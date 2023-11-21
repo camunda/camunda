@@ -360,7 +360,8 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(ActivatedJob job);
 
   /**
-   * Command to update the timeout of a job.
+   * Command to update the timeout of a job. Timeout value will be used to calculate a new job
+   * deadline when the command is processed: timeout value will be added to the current time.
    *
    * <pre>
    * long jobKey = ..;
@@ -377,7 +378,8 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   UpdateTimeoutJobCommandStep1 newUpdateTimeoutCommand(long jobKey);
 
   /**
-   * Command to update the timeout of a job.
+   * Command to update the timeout of a job. Timeout value will be used to calculate a new job
+   * deadline when the command is processed: timeout value will be added to the current time.
    *
    * <pre>
    * ActivatedJob job= ..;
