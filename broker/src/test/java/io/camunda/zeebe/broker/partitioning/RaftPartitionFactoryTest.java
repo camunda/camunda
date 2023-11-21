@@ -82,6 +82,20 @@ public final class RaftPartitionFactoryTest {
   }
 
   @Test
+  void shouldSetRaftConfigurationChangeTimeout() {
+    // given
+    final Duration expected = Duration.ofSeconds(15);
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg.getExperimental().getRaft().setConfigurationChangeTimeout(expected);
+
+    // when
+    final var partition = buildRaftPartition(brokerCfg);
+
+    // then
+    assertThat(partition.getPartitionConfig().getConfigurationChangeTimeout()).isEqualTo(expected);
+  }
+
+  @Test
   void shouldSetRaftMaxQuorumResponseTimeout() {
     // given
     final Duration expected = Duration.ofSeconds(13);
