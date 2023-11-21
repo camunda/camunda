@@ -14,8 +14,10 @@ import io.camunda.zeebe.transport.stream.api.StreamResponseException;
 import io.camunda.zeebe.transport.stream.impl.ClientStreamRegistration.State;
 import io.camunda.zeebe.transport.stream.impl.messages.AddStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.AddStreamResponse;
+import io.camunda.zeebe.transport.stream.impl.messages.ErrorResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamRequest;
-import io.camunda.zeebe.transport.stream.impl.messages.StreamResponseReader;
+import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamResponse;
+import io.camunda.zeebe.transport.stream.impl.messages.StreamResponseDecoder;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -52,7 +54,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
   // maps the registration state,  for each known host, of each stream
   private final Map<MemberId, Map<UUID, ClientStreamRegistration<M>>> registrations =
       new HashMap<>();
-  private final StreamResponseReader responseReader = new StreamResponseReader();
+  private final StreamResponseDecoder responseDecoder = new StreamResponseDecoder();
 
   private final ClusterCommunicationService communicationService;
   private final ConcurrencyControl executor;
@@ -265,22 +267,18 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
       return;
     }
 
-    // for backwards compatibility, consider an empty byte array as a successful response
-    final Either<Throwable, AddStreamResponse> response;
-    if (error != null) {
-      response = Either.left(error);
-    } else if (responseBuffer != null && responseBuffer.length > 0) {
-      response =
-          responseReader
-              .read(responseBuffer, new AddStreamResponse())
-              .mapLeft(StreamResponseException::new);
-    } else {
-      response = Either.right(null);
-    }
+    final Throwable failure;
+    final Either<ErrorResponse, AddStreamResponse> response;
+    if (error == null) {
+      response = responseDecoder.decode(responseBuffer, new AddStreamResponse());
+      if (response.isRight()) {
+        registration.transitionToAdded();
+        return;
+      }
 
-    if (response.isRight()) {
-      registration.transitionToAdded();
-      return;
+      failure = new StreamResponseException(response.getLeft());
+    } else {
+      failure = error;
     }
 
     // For now, always retry; in some cases, the request will eventually go through. However, in
@@ -293,7 +291,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
         registration.streamId(),
         registration.serverId(),
         RETRY_DELAY,
-        response.getLeft());
+        failure);
     executor.schedule(RETRY_DELAY, () -> sendAddRequest(registration, request));
   }
 
@@ -313,29 +311,47 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
             REQUEST_TIMEOUT);
     registration.setPendingRequest(pendingRequest);
     pendingRequest.whenCompleteAsync(
-        (ok, error) -> handleRemoveResponse(registration, request, error), executor::run);
+        (response, error) -> handleRemoveResponse(registration, request, response, error),
+        executor::run);
   }
 
   private void handleRemoveResponse(
-      final ClientStreamRegistration<M> registration, final byte[] request, final Throwable error) {
+      final ClientStreamRegistration<M> registration,
+      final byte[] request,
+      final byte[] responseBuffer,
+      final Throwable error) {
     final var state = registration.state();
     if (state != State.REMOVING) {
       LOGGER.trace("Skip handling REMOVE response since the state is {}", state, error);
       return;
     }
 
+    final Throwable failure;
+    final Either<ErrorResponse, RemoveStreamResponse> response;
     if (error == null) {
-      registration.transitionToRemoved();
-      purgeRegistration(registration.streamId(), registration.serverId());
-      return;
+      response = responseDecoder.decode(responseBuffer, new RemoveStreamResponse());
+      if (response.isRight()) {
+        registration.transitionToRemoved();
+        purgeRegistration(registration.streamId(), registration.serverId());
+        return;
+      }
+
+      failure = new StreamResponseException(response.getLeft());
+    } else {
+      failure = error;
     }
 
-    // TODO: use backoff delay
+    // For now, always retry; in some cases, the request will eventually go through. However, in
+    // some cases it never will. This should be covered in a follow-up issue.
+    // Unrecoverable cases:
+    //   - RemoteHandlerError
+    //   - ErrorResponse.code in [ MALFORMED, INVALID ]
     LOGGER.debug(
         "Failed to remove remote stream {} on {}, will retry in {}",
         registration.streamId(),
         registration.serverId(),
-        RETRY_DELAY);
+        RETRY_DELAY,
+        failure);
     executor.schedule(RETRY_DELAY, () -> sendRemoveRequest(registration, request));
   }
 

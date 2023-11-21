@@ -13,6 +13,7 @@ import io.camunda.zeebe.transport.stream.impl.messages.AddStreamResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamRequest;
+import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.UUIDEncoder;
 import io.camunda.zeebe.util.CloseableSilently;
@@ -38,8 +39,9 @@ public final class RemoteStreamApiHandler<M> implements CloseableSilently {
   private static final UUID NULL_ID =
       new UUID(UUIDEncoder.highNullValue(), UUIDEncoder.lowNullValue());
 
-  private final AddStreamResponse addResponse = new AddStreamResponse();
+  private final AddStreamResponse addResponseOK = new AddStreamResponse();
   private final ErrorResponse errorResponse = new ErrorResponse();
+  private final RemoveStreamResponse removeResponseOK = new RemoveStreamResponse();
 
   private final RemoteStreamRegistry<M> registry;
   private final Function<DirectBuffer, M> metadataFactory;
@@ -82,12 +84,19 @@ public final class RemoteStreamApiHandler<M> implements CloseableSilently {
 
     registry.add(new UnsafeBuffer(request.streamType()), request.streamId(), sender, properties);
     LOG.debug("Opened stream {} from {}", request.streamId(), sender);
-    return addResponse;
+    return addResponseOK;
   }
 
-  public void remove(final MemberId sender, final RemoveStreamRequest request) {
+  public StreamResponse remove(final MemberId sender, final RemoveStreamRequest request) {
+    if (request.streamId() == null || request.streamId().equals(NULL_ID)) {
+      final String errorMessage =
+          "Expected a stream ID, but received a nil UUID ([%s])".formatted(request.streamId());
+      return failedResponse(sender, errorMessage);
+    }
+
     registry.remove(request.streamId(), sender);
     LOG.debug("Removed stream {} from {}", request.streamId(), sender);
+    return removeResponseOK;
   }
 
   public void removeAll(final MemberId sender) {

@@ -11,12 +11,18 @@ import io.camunda.zeebe.util.Either;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class StreamResponseReader {
+public final class StreamResponseDecoder {
   private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
   private final DirectBuffer buffer = new UnsafeBuffer();
 
-  public <T extends StreamResponse> Either<ErrorResponse, T> read(
+  public <T extends StreamResponse> Either<ErrorResponse, T> decode(
       final byte[] bytes, final T response) {
+    // for backwards compatibility, accept empty responses as success
+    // to be removed with 8.5
+    if (bytes.length == 0) {
+      return Either.right(response);
+    }
+
     buffer.wrap(bytes);
     headerDecoder.wrap(buffer, 0);
 

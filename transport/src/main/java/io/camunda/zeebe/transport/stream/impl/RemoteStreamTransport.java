@@ -13,9 +13,7 @@ import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
 import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.atomix.cluster.messaging.MessagingException.RemoteHandlerFailure;
 import io.camunda.zeebe.scheduler.Actor;
-import io.camunda.zeebe.transport.stream.impl.messages.AddStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.MessageUtil;
-import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.ExponentialBackoff;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -23,9 +21,7 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.LongUnaryOperator;
-import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.ArrayUtil;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +37,6 @@ public final class RemoteStreamTransport<M> extends Actor {
   private static final Logger LOG = LoggerFactory.getLogger(RemoteStreamTransport.class);
   private static final int INITIAL_RETRY_DELAY_MS = 100;
 
-  private final MutableDirectBuffer writeBuffer = new UnsafeBuffer();
   private final ClusterCommunicationService transport;
   private final RemoteStreamApiHandler<M> requestHandler;
   private final LongUnaryOperator retryDelaySupplier;
@@ -66,14 +61,14 @@ public final class RemoteStreamTransport<M> extends Actor {
     transport.replyTo(
         StreamTopics.ADD.topic(),
         MessageUtil::parseAddRequest,
-        this::onAdd,
-        Function.identity(),
+        requestHandler::add,
+        MessageUtil::encodeResponse,
         actor::run);
     transport.replyTo(
         StreamTopics.REMOVE.topic(),
         MessageUtil::parseRemoveRequest,
-        this::onRemove,
-        Function.identity(),
+        requestHandler::remove,
+        MessageUtil::encodeResponse,
         actor::run);
     transport.replyTo(
         StreamTopics.REMOVE_ALL.topic(),
@@ -93,20 +88,6 @@ public final class RemoteStreamTransport<M> extends Actor {
 
   public void removeAll(final MemberId member) {
     actor.run(() -> requestHandler.removeAll(member));
-  }
-
-  private byte[] onAdd(final MemberId sender, final AddStreamRequest request) {
-    final var response = requestHandler.add(sender, request);
-    final var buffer = new byte[response.getLength()];
-    writeBuffer.wrap(buffer);
-    response.write(writeBuffer, 0);
-
-    return buffer;
-  }
-
-  private byte[] onRemove(final MemberId sender, final RemoveStreamRequest request) {
-    requestHandler.remove(sender, request);
-    return ArrayUtil.EMPTY_BYTE_ARRAY;
   }
 
   private byte[] onRemoveAll(final MemberId sender, final byte[] ignored) {

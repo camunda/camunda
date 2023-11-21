@@ -31,7 +31,7 @@ final class ClientStreamRegistration<M extends BufferWriter> {
   private final MemberId serverId;
 
   private State state = State.INITIAL;
-  private CompletionStage<byte[]> pendingRequest;
+  private CompletionStage<?> pendingRequest;
 
   ClientStreamRegistration(final AggregatedClientStream<M> stream, final MemberId serverId) {
     this.stream = stream;
@@ -54,11 +54,11 @@ final class ClientStreamRegistration<M extends BufferWriter> {
     return state;
   }
 
-  CompletionStage<byte[]> pendingRequest() {
+  CompletionStage<?> pendingRequest() {
     return pendingRequest;
   }
 
-  void setPendingRequest(final CompletionStage<byte[]> pendingRequest) {
+  void setPendingRequest(final CompletionStage<?> pendingRequest) {
     this.pendingRequest = pendingRequest;
   }
 

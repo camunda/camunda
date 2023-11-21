@@ -34,4 +34,11 @@ public final class MessageUtil {
 
     return request;
   }
+
+  public static byte[] encodeResponse(final StreamResponse response) {
+    final var buffer = new byte[response.getLength()];
+    response.write(new UnsafeBuffer(buffer), 0);
+
+    return buffer;
+  }
 }

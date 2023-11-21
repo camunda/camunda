@@ -24,6 +24,7 @@ import io.camunda.zeebe.transport.stream.impl.ClientStreamRegistration.State;
 import io.camunda.zeebe.transport.stream.impl.messages.AddStreamResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorResponse;
+import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -48,17 +49,23 @@ final class ClientStreamRequestManagerTest {
           UUID.randomUUID(),
           new LogicalId<>(new UnsafeBuffer(BufferUtil.wrapString("foo")), new TestMetadata()));
   private byte[] addStreamSuccess;
+  private byte[] removeStreamSuccess;
 
   @BeforeEach
   void setup() {
     final var addStreamOK = new AddStreamResponse();
+    final var removeStreamOK = new RemoveStreamResponse();
     addStreamSuccess = new byte[addStreamOK.getLength()];
-    new AddStreamResponse().write(new UnsafeBuffer(addStreamSuccess), 0);
+    removeStreamSuccess = new byte[removeStreamOK.getLength()];
+    addStreamOK.write(new UnsafeBuffer(addStreamSuccess), 0);
+    removeStreamOK.write(new UnsafeBuffer(removeStreamSuccess), 0);
 
     when(mockTransport.send(any(), any(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(null));
     when(mockTransport.send(eq(StreamTopics.ADD.topic()), any(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(addStreamSuccess));
+    when(mockTransport.send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(removeStreamSuccess));
     clientStream.open(requestManager, Collections.emptySet());
   }
 
@@ -114,7 +121,7 @@ final class ClientStreamRequestManagerTest {
         .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
 
     // then - completes once future is completed
-    pendingRequest.complete(new byte[0]);
+    pendingRequest.complete(removeStreamSuccess);
     verify(mockTransport, times(1))
         .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
   }
@@ -263,9 +270,33 @@ final class ClientStreamRequestManagerTest {
     // given
     final var serverId = MemberId.anonymous();
     requestManager.add(clientStream, serverId);
-    when(mockTransport.send(any(), any(), any(), any(), eq(serverId), any()))
+    when(mockTransport.send(
+            eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any()))
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Expected")))
-        .thenReturn(CompletableFuture.completedFuture(null));
+        .thenReturn(CompletableFuture.completedFuture(removeStreamSuccess));
+
+    // when
+    requestManager.remove(clientStream, serverId);
+
+    // then
+    verify(mockTransport, times(2))
+        .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
+    assertThat(clientStream.isConnected(serverId)).isFalse();
+  }
+
+  @ParameterizedTest
+  @EnumSource(value = ErrorCode.class)
+  void shouldRetryRemoveOnErrorResponse(final ErrorCode code) {
+    // given
+    final var errorResponse = new ErrorResponse().code(code).message("Failed");
+    final var errorResponseBuffer = new byte[errorResponse.getLength()];
+    final var serverId = MemberId.anonymous();
+    when(mockTransport.send(
+            eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any()))
+        .thenReturn(CompletableFuture.completedFuture(errorResponseBuffer))
+        .thenReturn(CompletableFuture.completedFuture(removeStreamSuccess));
+    errorResponse.write(new UnsafeBuffer(errorResponseBuffer), 0);
+    requestManager.add(clientStream, serverId);
 
     // when
     requestManager.remove(clientStream, serverId);
