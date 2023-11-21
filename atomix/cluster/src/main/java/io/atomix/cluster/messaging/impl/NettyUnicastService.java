@@ -121,6 +121,9 @@ public class NettyUnicastService implements ManagedUnicastService {
                     "Failed sending unicast message (destination address {} cannot be resolved)",
                     address,
                     resolvedAddress.exceptionNow());
+                // Buffer needs to be released manually when not consumed by Netty.
+                // Netty will take care of the clean-up if it is passed to the channel.
+                buf.release();
               }
             });
   }
