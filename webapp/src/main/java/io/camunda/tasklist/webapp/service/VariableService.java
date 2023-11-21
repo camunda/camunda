@@ -440,19 +440,22 @@ public class VariableService {
         requests.stream().collect(groupingBy(GetVariablesRequest::getState));
 
     final List<List<VariableDTO>> response = new ArrayList<>();
+
+    final Map<String, List<VariableEntity>> varsForActive =
+        getRuntimeVariablesPerTaskId(groupByStates.get(TaskState.CREATED));
+
+    final Map<String, List<TaskVariableEntity>> varsForCompleted =
+        variableStore.getTaskVariablesPerTaskId(groupByStates.get(TaskState.COMPLETED));
+
     for (GetVariablesRequest req : requests) {
       final List<VariableDTO> vars = new ArrayList<>();
       switch (req.getState()) {
         case CREATED:
-          final Map<String, List<VariableEntity>> varsForActive =
-              getRuntimeVariablesPerTaskId(groupByStates.get(TaskState.CREATED));
           vars.addAll(
               VariableDTO.createFrom(
                   varsForActive.getOrDefault(req.getTaskId(), new ArrayList<>())));
           break;
         case COMPLETED:
-          final Map<String, List<TaskVariableEntity>> varsForCompleted =
-              variableStore.getTaskVariablesPerTaskId(groupByStates.get(TaskState.COMPLETED));
           vars.addAll(
               varsForCompleted.getOrDefault(req.getTaskId(), new ArrayList<>()).stream()
                   .map(VariableDTO::createFrom)

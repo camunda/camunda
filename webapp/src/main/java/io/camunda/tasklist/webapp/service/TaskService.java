@@ -42,6 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpServerErrorException;
 
 @Component
 public class TaskService {
@@ -121,25 +122,38 @@ public class TaskService {
         .forEach(
             variable -> variablesMap.put(variable.getName(), this.extractTypedValue(variable)));
 
-    final TaskEntity task = taskStore.getTask(taskId);
-    taskValidator.validateCanComplete(task);
+    try {
+      LOGGER.info("Starting completion of task with ID: {}", taskId);
 
-    // complete
-    CompleteJobCommandStep1 completeJobCommand =
-        zeebeClient.newCompleteCommand(Long.parseLong(taskId));
-    completeJobCommand = completeJobCommand.variables(variablesMap);
-    completeJobCommand.send().join();
+      final TaskEntity task = taskStore.getTask(taskId);
+      taskValidator.validateCanComplete(task);
 
-    // persist completion and variables
-    final TaskEntity completedTaskEntity = taskStore.persistTaskCompletion(task);
-    variableService.persistTaskVariables(taskId, variables, withDraftVariableValues);
-    deleteDraftTaskVariablesSafely(taskId);
-    updateCompletedMetric(completedTaskEntity);
-    return TaskDTO.createFrom(completedTaskEntity, objectMapper);
+      // complete
+      CompleteJobCommandStep1 completeJobCommand =
+          zeebeClient.newCompleteCommand(Long.parseLong(taskId));
+      completeJobCommand = completeJobCommand.variables(variablesMap);
+      completeJobCommand.send().join();
+
+      // persist completion and variables
+      LOGGER.info("Start variable persistence: {}", taskId);
+      final TaskEntity completedTaskEntity = taskStore.persistTaskCompletion(task);
+      variableService.persistTaskVariables(taskId, variables, withDraftVariableValues);
+      deleteDraftTaskVariablesSafely(taskId);
+      updateCompletedMetric(completedTaskEntity);
+
+      LOGGER.info("Task with ID {} completed successfully.", taskId);
+
+      return TaskDTO.createFrom(completedTaskEntity, objectMapper);
+    } catch (HttpServerErrorException e) { // Track only internal server errors
+      LOGGER.error("Error completing task with ID: {}. Details: {}", taskId, e.getMessage(), e);
+      throw new TasklistRuntimeException("Error completing task with ID: " + taskId, e);
+    }
   }
 
   void deleteDraftTaskVariablesSafely(String taskId) {
     try {
+      LOGGER.info(
+          "Start deletion of draft task variables associated with task with id='{}'", taskId);
       variableService.deleteDraftTaskVariables(taskId);
     } catch (Exception ex) {
       final String errorMessage =
@@ -180,9 +194,16 @@ public class TaskService {
   }
 
   private void updateCompletedMetric(final TaskEntity task) {
-    metrics.recordCounts(COUNTER_NAME_COMPLETED_TASKS, 1, getTaskMetricLabels(task));
-    assigneeMigrator.migrateUsageMetrics(getCurrentUser().getUserId());
-    taskMetricsStore.registerTaskCompleteEvent(task);
+    LOGGER.info("Updating completed task metric for task with ID: {}", task.getId());
+    try {
+      metrics.recordCounts(COUNTER_NAME_COMPLETED_TASKS, 1, getTaskMetricLabels(task));
+      assigneeMigrator.migrateUsageMetrics(getCurrentUser().getUserId());
+      taskMetricsStore.registerTaskCompleteEvent(task);
+    } catch (Exception e) {
+      LOGGER.error("Error updating completed task metric for task with ID: {}", task.getId(), e);
+      throw new TasklistRuntimeException(
+          "Error updating completed task metric for task with ID: " + task.getId(), e);
+    }
   }
 
   private String[] getTaskMetricLabels(final TaskEntity task) {
