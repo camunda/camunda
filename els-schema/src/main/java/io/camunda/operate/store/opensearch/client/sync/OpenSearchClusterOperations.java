@@ -23,7 +23,7 @@ public class OpenSearchClusterOperations extends OpenSearchSyncOperation {
 
   public boolean isHealthy() {
     try {
-      final HealthResponse response = openSearchClient.cluster().health(h -> h.timeout(t -> t.time("500")));
+      final HealthResponse response = openSearchClient.cluster().health(h -> h.timeout(t -> t.time("5s")));
       final HealthStatus status = response.status();
       return !response.timedOut() && !status.equals(HealthStatus.Red);
     } catch (IOException e) {
