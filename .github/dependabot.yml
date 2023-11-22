@@ -7,3 +7,7 @@ updates:
       day: "tuesday"
       time: "11:00"
     open-pull-requests-limit: 10
+    groups:
+      patches:
+        update-types:
+        - "patch"
