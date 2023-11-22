@@ -137,6 +137,7 @@
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
     <plugin.version.appassembler>2.1.0</plugin.version.appassembler>
+    <plugin.version.assembly>3.6.0</plugin.version.assembly>
     <plugin.version.build-helper>3.4.0</plugin.version.build-helper>
     <plugin.version.checkstyle>3.3.1</plugin.version.checkstyle>
     <plugin.version.compiler>3.11.0</plugin.version.compiler>
@@ -1485,6 +1486,12 @@
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>appassembler-maven-plugin</artifactId>
           <version>${plugin.version.appassembler}</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>${plugin.version.assembly}</version>
         </plugin>
 
         <!-- Exec Plugin -->
