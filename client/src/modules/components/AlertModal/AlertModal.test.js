@@ -82,6 +82,7 @@ const reports = [
 const props = {
   reports,
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  generateDocsLink: (url) => url,
 };
 
 it('should apply the alert property to the state when changing props', () => {

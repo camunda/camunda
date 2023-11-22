@@ -24,23 +24,17 @@ import {loadTenants} from './service';
 import DefinitionEditor from './DefinitionEditor';
 
 import './DefinitionList.scss';
+import {useDocs, useErrorHandling} from 'hooks';
 
 const {formatVersions, formatTenants} = formatters;
 
-export function DefinitionList({
-  mightFail,
-  location,
-  definitions = [],
-  type,
-  onChange,
-  onRemove,
-  onCopy,
-  docsLink,
-}) {
+export function DefinitionList({location, definitions = [], type, onChange, onRemove, onCopy}) {
   const [openPopover, setOpenPopover] = useState();
   const [tenantInfo, setTenantInfo] = useState();
   const [optimizeProfile, setOptimizeProfile] = useState();
   const [tenantsAvailable, setTenantsAvailable] = useState(false);
+  const {mightFail} = useErrorHandling();
+  const {generateDocsLink} = useDocs();
 
   const collection = getCollection(location.pathname);
   const definitionKeysAndVersions = definitions.map(({key, versions}) => ({key, versions}));
@@ -92,9 +86,9 @@ export function DefinitionList({
                 <Tooltip
                   content={t('report.copyTooltip', {
                     entity: t('common.process.label'),
-                    docsLink:
-                      docsLink +
-                      'components/userguide/additional-features/process-variants-comparison/',
+                    docsLink: generateDocsLink(
+                      'components/userguide/additional-features/process-variants-comparison/'
+                    ),
                   })}
                   position="bottom"
                 >

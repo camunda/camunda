@@ -29,7 +29,7 @@ export default function DashboardTemplateModal({
 }) {
   const [optimizeProfile, setOptimizeProfile] = useState();
   const [optimizeProfileLoaded, setOptimizeProfileLoaded] = useState(false);
-  const {docsLink} = useDocs();
+  const {generateDocsLink} = useDocs();
 
   useEffect(() => {
     (async () => {
@@ -46,10 +46,10 @@ export default function DashboardTemplateModal({
     {
       name: 'singleProcessGroup',
       templates: [
-        processDashboardTemplate(docsLink),
-        productivityDashboardTemplate(docsLink),
-        efficiencyDashboardTemplate(docsLink),
-        accelerationDashboardTemplate(docsLink),
+        processDashboardTemplate(generateDocsLink),
+        productivityDashboardTemplate(generateDocsLink),
+        efficiencyDashboardTemplate(generateDocsLink),
+        accelerationDashboardTemplate(generateDocsLink),
       ],
     },
     {

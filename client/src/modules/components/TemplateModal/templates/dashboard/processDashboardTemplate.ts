@@ -11,7 +11,7 @@ import {getExternalResourcePath} from '../service';
 
 import processDashboard from './images/processDashboard.png';
 
-export function processDashboardTemplate(docsLink: string) {
+export function processDashboardTemplate(generateDocsLink: (path: string) => string) {
   return {
     name: 'processDashboard',
     disabled: (definitions: unknown[]) => definitions.length > 1,
@@ -429,9 +429,9 @@ export function processDashboardTemplate(docsLink: string) {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url:
-                        docsLink +
-                        'components/userguide/process-dashboards/#configuring-process-owner-and-digests',
+                      url: generateDocsLink(
+                        'components/userguide/process-dashboards/#configuring-process-owner-and-digests'
+                      ),
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -523,7 +523,9 @@ export function processDashboardTemplate(docsLink: string) {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url: docsLink + 'components/userguide/process-analysis/outlier-analysis/',
+                      url: generateDocsLink(
+                        'components/userguide/process-analysis/outlier-analysis/'
+                      ),
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -615,9 +617,9 @@ export function processDashboardTemplate(docsLink: string) {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url:
-                        docsLink +
-                        'components/userguide/creating-reports/#creating-a-single-report',
+                      url: generateDocsLink(
+                        'components/userguide/creating-reports/#creating-a-single-report'
+                      ),
                       direction: 'ltr',
                       target: '_blank',
                     },

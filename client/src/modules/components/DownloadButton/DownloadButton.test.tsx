@@ -27,12 +27,14 @@ jest.mock('hooks', () => ({
     mightFail: jest.fn((data, cb) => cb(data)),
   })),
   useUser: jest.fn().mockReturnValue({user: {authorizations: ['csv_export']}}),
+  useDocs: jest.fn(() => ({
+    generateDocsLink: () => '',
+  })),
 }));
 
 const props: DownloadButtonProps = {
   href: '',
   totalCount: 0,
-  docsLink: '',
 };
 
 beforeAll(() => {

@@ -11,7 +11,7 @@ import {getExternalResourcePath} from '../service';
 
 import efficiency from './images/efficiency.png';
 
-export function efficiencyDashboardTemplate(docsLink: string) {
+export function efficiencyDashboardTemplate(generateDocsLink: (path: string) => string) {
   return {
     name: 'efficiency',
     disabled: (definitions: unknown[]) => definitions.length > 1,
@@ -470,9 +470,9 @@ export function efficiencyDashboardTemplate(docsLink: string) {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url:
-                        docsLink +
-                        'components/userguide/process-analysis/flow-node-filters/#flow-node-selection',
+                      url: generateDocsLink(
+                        'components/userguide/process-analysis/flow-node-filters/#flow-node-selection'
+                      ),
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -871,9 +871,9 @@ export function efficiencyDashboardTemplate(docsLink: string) {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url:
-                        docsLink +
-                        'components/userguide/process-analysis/flow-node-filters/#flow-node-selection',
+                      url: generateDocsLink(
+                        'components/userguide/process-analysis/flow-node-filters/#flow-node-selection'
+                      ),
                       direction: 'ltr',
                       target: '_blank',
                     },

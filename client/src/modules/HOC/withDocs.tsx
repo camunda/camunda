@@ -10,12 +10,14 @@ import {createContext, ComponentType, useContext, ReactNode, useEffect, useState
 import {getDocsVersion} from 'config';
 
 export interface WithDocsProps {
-  docsLink: string;
+  generateDocsLink: (path: string) => string;
 }
 
 const OPTIMIZE_DOCS_URL = 'https://docs.camunda.io/optimize/';
 
-export const DocsContext = createContext<WithDocsProps>({docsLink: OPTIMIZE_DOCS_URL});
+export const DocsContext = createContext<WithDocsProps>({
+  generateDocsLink: (path) => OPTIMIZE_DOCS_URL + path,
+});
 
 export function DocsProvider({children}: {children: ReactNode}): JSX.Element {
   const [optimizeVersion, setOptimizeVersion] = useState('');
@@ -29,12 +31,10 @@ export function DocsProvider({children}: {children: ReactNode}): JSX.Element {
   }, []);
 
   const optimizeVersionWithSlash = optimizeVersion ? optimizeVersion + '/' : '';
+  const docsLink = OPTIMIZE_DOCS_URL + optimizeVersionWithSlash;
+  const generateDocsLink = (path: string) => docsLink + path;
 
-  return (
-    <DocsContext.Provider value={{docsLink: OPTIMIZE_DOCS_URL + optimizeVersionWithSlash}}>
-      {children}
-    </DocsContext.Provider>
-  );
+  return <DocsContext.Provider value={{generateDocsLink}}>{children}</DocsContext.Provider>;
 }
 
 export default function withDocs<T extends object>(Component: ComponentType<T>) {

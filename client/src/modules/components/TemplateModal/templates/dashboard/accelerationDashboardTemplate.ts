@@ -11,7 +11,7 @@ import {getExternalResourcePath} from '../service';
 
 import acceleration from './images/acceleration.png';
 
-export function accelerationDashboardTemplate(docsLink: string) {
+export function accelerationDashboardTemplate(generateDocsLink: (path: string) => string) {
   return {
     name: 'acceleration',
     disabled: (definitions: unknown[]) => definitions.length > 1,
@@ -318,9 +318,9 @@ export function accelerationDashboardTemplate(docsLink: string) {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url:
-                        docsLink +
-                        'components/userguide/process-analysis/report-analysis/configure-reports/#chart-goal-line',
+                      url: generateDocsLink(
+                        'components/userguide/process-analysis/report-analysis/configure-reports/#chart-goal-line'
+                      ),
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -386,9 +386,9 @@ export function accelerationDashboardTemplate(docsLink: string) {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url:
-                        docsLink +
-                        'components/userguide/process-analysis/flow-node-filters/#flow-node-selection',
+                      url: generateDocsLink(
+                        'components/userguide/process-analysis/flow-node-filters/#flow-node-selection'
+                      ),
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -784,9 +784,9 @@ export function accelerationDashboardTemplate(docsLink: string) {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url:
-                        docsLink +
-                        'components/userguide/process-analysis/report-analysis/compare-target-values/',
+                      url: generateDocsLink(
+                        'components/userguide/process-analysis/report-analysis/compare-target-values/'
+                      ),
                       direction: 'ltr',
                       target: '_blank',
                     },

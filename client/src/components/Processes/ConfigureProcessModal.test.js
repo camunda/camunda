@@ -23,6 +23,12 @@ jest.mock('services', () => ({
   numberParser: {isPositiveInt: jest.fn().mockReturnValue(true)},
 }));
 
+jest.mock('hooks', () => ({
+  useDocs: jest.fn(() => ({
+    generateDocsLink: (url) => url,
+  })),
+}));
+
 const digest = {enabled: false};
 const props = {
   initialConfig: {

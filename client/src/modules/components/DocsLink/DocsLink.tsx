@@ -15,10 +15,10 @@ interface DocsLinkProps {
 }
 
 export default function DocsLink({location, children}: DocsLinkProps): JSX.Element {
-  const {docsLink} = useDocs();
+  const {generateDocsLink} = useDocs();
 
   return (
-    <a href={docsLink + location} target="_blank" rel="noopener noreferrer">
+    <a href={generateDocsLink(location)} target="_blank" rel="noopener noreferrer">
       {children}
     </a>
   );

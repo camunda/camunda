@@ -11,7 +11,7 @@ import {getExternalResourcePath} from '../service';
 
 import productivity from './images/productivity.png';
 
-export function productivityDashboardTemplate(docsLink: string) {
+export function productivityDashboardTemplate(generateDocsLink: (path: string) => string) {
   return {
     name: 'productivity',
     disabled: (definitions: unknown[]) => definitions.length > 1,
@@ -233,9 +233,9 @@ export function productivityDashboardTemplate(docsLink: string) {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url:
-                        docsLink +
-                        'components/userguide/process-analysis/report-analysis/configure-reports/#chart-goal-line',
+                      url: generateDocsLink(
+                        'components/userguide/process-analysis/report-analysis/configure-reports/#chart-goal-line'
+                      ),
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -283,9 +283,9 @@ export function productivityDashboardTemplate(docsLink: string) {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url:
-                        docsLink +
-                        'components/userguide/process-dashboards/#set-time-and-quality-kpis',
+                      url: generateDocsLink(
+                        'components/userguide/process-dashboards/#set-time-and-quality-kpis'
+                      ),
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -315,9 +315,9 @@ export function productivityDashboardTemplate(docsLink: string) {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url:
-                        docsLink +
-                        'components/userguide/process-dashboards/#configuring-process-owner-and-digests',
+                      url: generateDocsLink(
+                        'components/userguide/process-dashboards/#configuring-process-owner-and-digests'
+                      ),
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -642,9 +642,9 @@ export function productivityDashboardTemplate(docsLink: string) {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url:
-                        docsLink +
-                        'components/userguide/process-analysis/report-analysis/configure-reports/#chart-goal-line',
+                      url: generateDocsLink(
+                        'components/userguide/process-analysis/report-analysis/configure-reports/#chart-goal-line'
+                      ),
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -683,9 +683,9 @@ export function productivityDashboardTemplate(docsLink: string) {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url:
-                        docsLink +
-                        'components/userguide/process-dashboards/#set-time-and-quality-kpis',
+                      url: generateDocsLink(
+                        'components/userguide/process-dashboards/#set-time-and-quality-kpis'
+                      ),
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -715,9 +715,9 @@ export function productivityDashboardTemplate(docsLink: string) {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url:
-                        docsLink +
-                        'components/userguide/process-dashboards/#configuring-process-owner-and-digests',
+                      url: generateDocsLink(
+                        'components/userguide/process-dashboards/#configuring-process-owner-and-digests'
+                      ),
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -938,9 +938,9 @@ export function productivityDashboardTemplate(docsLink: string) {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url:
-                        docsLink +
-                        'components/userguide/process-analysis/report-analysis/configure-reports/#chart-goal-line',
+                      url: generateDocsLink(
+                        'components/userguide/process-analysis/report-analysis/configure-reports/#chart-goal-line'
+                      ),
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -979,9 +979,9 @@ export function productivityDashboardTemplate(docsLink: string) {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url:
-                        docsLink +
-                        'components/userguide/process-dashboards/#set-time-and-quality-kpis',
+                      url: generateDocsLink(
+                        'components/userguide/process-dashboards/#set-time-and-quality-kpis'
+                      ),
                       direction: 'ltr',
                       target: '_blank',
                     },
@@ -1011,9 +1011,9 @@ export function productivityDashboardTemplate(docsLink: string) {
                       rel: 'noopener norefereer',
                       type: 'link',
                       version: 1,
-                      url:
-                        docsLink +
-                        'components/userguide/process-dashboards/#configuring-process-owner-and-digests',
+                      url: generateDocsLink(
+                        'components/userguide/process-dashboards/#configuring-process-owner-and-digests'
+                      ),
                       direction: 'ltr',
                       target: '_blank',
                     },

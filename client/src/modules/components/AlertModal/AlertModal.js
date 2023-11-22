@@ -245,7 +245,7 @@ export class AlertModal extends React.Component {
       report,
     } = this.state;
 
-    const {reports, webhooks, onClose, onRemove, disabled} = this.props;
+    const {reports, webhooks, onClose, onRemove, disabled, generateDocsLink} = this.props;
     const selectedReport = reports.find((report) => report.id === reportId) || {};
     const reportMeasure = this.getReportMeasure(reportId);
 
@@ -262,9 +262,9 @@ export class AlertModal extends React.Component {
                   {!emailNotificationIsEnabled && (
                     <ActionableNotification inline kind="warning" hideCloseButton>
                       {t('alert.emailWarning', {
-                        docsLink:
-                          this.props.docsLink +
-                          'self-managed/optimize-deployment/configuration/system-configuration/#email',
+                        docsLink: generateDocsLink(
+                          'self-managed/optimize-deployment/configuration/system-configuration/#email'
+                        ),
                       })}
                     </ActionableNotification>
                   )}
