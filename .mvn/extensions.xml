@@ -9,4 +9,10 @@
     <artifactId>incremental-module-builder</artifactId>
     <version>0.2.0</version>
   </extension>
+
+  <extension>
+    <groupId>fr.jcgay.maven</groupId>
+    <artifactId>maven-profiler</artifactId>
+    <version>3.2</version>
+  </extension>
 </extensions>
