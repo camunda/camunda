@@ -70,6 +70,7 @@
     <lombok.version>1.18.30</lombok.version>
     <logback.version>1.4.11</logback.version>
     <slf4j.version>2.0.9</slf4j.version>
+    <h2.version>2.2.224</h2.version>
 
     <version.node>v20.9.0</version.node>
     <version.yarn>v1.22.19</version.yarn>
@@ -85,7 +86,6 @@
     <sonar.junit.reportPaths>
       ${project.build.directory}/surefire-reports/,${project.build.directory}/failsafe-reports/,${project.build.directory}/failsafe-reports/1/,${project.build.directory}/failsafe-reports/2/,${project.build.directory}/failsafe-reports/3/,${project.build.directory}/failsafe-reports/4/
     </sonar.junit.reportPaths>
-    <h2.version>2.2.224</h2.version>
 
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.source>17</maven.compiler.source>
@@ -244,11 +244,7 @@
         <sonar.organization>camunda</sonar.organization>
         <sonar.projectKey>camunda_camunda-optimize</sonar.projectKey>
         <sonar.moduleKey>${project.artifactId}</sonar.moduleKey>
-        <sonar.login>${env.SONARCLOUD_TOKEN}</sonar.login>
-        <!-- sonar exclusions on duplication detection -->
-        <!-- As part of our migration testing we have to c&p index classes to have their old state -->
-        <!-- available during migration testing, we thus want to exlude them from duplication detection. -->
-        <sonar.cpd.exclusions>**/org/camunda/optimize/upgrade/**/*Old.java</sonar.cpd.exclusions>
+        <sonar.token>${env.SONARCLOUD_TOKEN}</sonar.token>
       </properties>
       <build>
         <plugins>
