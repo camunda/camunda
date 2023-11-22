@@ -67,7 +67,7 @@ This is a small overview of the contents of the different modules:
 
 ### Test Execution
 
-Tests can be executed via maven (`mvn verify`) or in your prefered IDE. The Zeebe Team uses mostly [Intellij IDEA](https://www.jetbrains.com/idea/), where we also [provide settings for](https://github.com/camunda/zeebe/tree/main/.idea).
+Tests can be executed via maven (`mvn verify`) or in your preferred IDE. The Zeebe Team uses mostly [Intellij IDEA](https://www.jetbrains.com/idea/), where we also [provide settings for](https://github.com/camunda/zeebe/tree/main/.idea).
 
 > Note: If you encounter issues (like `java.lang.UnsatisfiedLinkError: failed to load the required native library`) while running the test StandaloneGatewaySecurityTest.shouldStartWithTlsEnabled take a look at https://github.com/camunda/zeebe/issues/10488 to resolve it
 
