@@ -9,7 +9,6 @@ package io.camunda.operate.webapp.api.v1.dao;
 import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
-import io.camunda.operate.webapp.api.v1.dao.elasticsearch.ElasticsearchDecisionRequirementsDao;
 import io.camunda.operate.webapp.api.v1.entities.DecisionRequirements;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
@@ -26,25 +25,18 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.DECISION_REQUIREMENTS_ID;
-import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.NAME;
-import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.RESOURCE_NAME;
-import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.VERSION;
+import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.*;
 import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeAbstractIT {
+public class DecisionRequirementsDaoIT extends OperateZeebeAbstractIT {
 
   @Autowired
-  ElasticsearchDecisionRequirementsDao dao;
+  private DecisionRequirementsDao dao;
 
   @Autowired
   private DecisionRequirementsIndex decisionRequirementsIndex;
@@ -131,9 +123,8 @@ public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeAbstract
   @Test
   public void shouldReturnWhenByKeys() throws Exception {
     given(() -> {
-      tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
-          .deployDecision("invoiceBusinessDecisions_v_2.dmn")
-          .waitUntil().decisionsAreDeployed(4);
+      tester.deployDecision("invoiceBusinessDecisions_v_1.dmn").deployDecision("invoiceBusinessDecisions_v_2.dmn").waitUntil()
+          .decisionsAreDeployed(4);
       List<DecisionRequirements> hits = searchAllDocuments(decisionRequirementsIndex.getAlias());
       keys = hits.stream().map(DecisionRequirements::getKey).collect(Collectors.toSet());
     });
@@ -148,18 +139,16 @@ public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeAbstract
   @Test
   public void shouldReturnWhenByKeysNullAndNotNull() throws Exception {
     given(() -> {
-      tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
-          .deployDecision("invoiceBusinessDecisions_v_2.dmn")
-          .waitUntil().decisionsAreDeployed(4);
+      tester.deployDecision("invoiceBusinessDecisions_v_1.dmn").deployDecision("invoiceBusinessDecisions_v_2.dmn").waitUntil()
+          .decisionsAreDeployed(4);
       List<DecisionRequirements> hits = searchAllDocuments(decisionRequirementsIndex.getAlias());
       keys = hits.stream().map(DecisionRequirements::getKey).collect(Collectors.toSet());
     });
     when(() -> {
-          Set<Long> keys2 = new HashSet<>(keys);
-          keys2.add(null);
-          decisionRequirementsList = dao.byKeys(keys2);
-        }
-    );
+      Set<Long> keys2 = new HashSet<>(keys);
+      keys2.add(null);
+      decisionRequirementsList = dao.byKeys(keys2);
+    });
     then(() -> {
       assertThat(decisionRequirementsList).hasSize(2);
       assertThat(decisionRequirementsList).extracting(DecisionRequirementsIndex.KEY).containsExactlyInAnyOrder(keys.toArray());
@@ -170,8 +159,7 @@ public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeAbstract
   @Test
   public void shouldReturnWhenXmlByKey() throws Exception {
     given(() -> {
-      tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
-          .waitUntil().decisionsAreDeployed(2);
+      tester.deployDecision("invoiceBusinessDecisions_v_1.dmn").waitUntil().decisionsAreDeployed(2);
       List<DecisionRequirements> hits = searchAllDocuments(decisionRequirementsIndex.getAlias());
       key = hits.get(0).getKey();
     });
@@ -208,9 +196,8 @@ public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeAbstract
 
   @Test
   public void shouldReturnNonEmptyListWhenDecisionRequirementsExist() throws Exception {
-    given(() -> tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
-        .deployDecision("invoiceBusinessDecisions_v_2.dmn")
-        .waitUntil().decisionsAreDeployed(4));
+    given(() -> tester.deployDecision("invoiceBusinessDecisions_v_1.dmn").deployDecision("invoiceBusinessDecisions_v_2.dmn").waitUntil()
+        .decisionsAreDeployed(4));
     when(() -> decisionRequirementsResults = dao.search(new Query<>()));
     then(() -> {
       assertThat(decisionRequirementsResults.getTotal()).isEqualTo(2);
@@ -224,16 +211,15 @@ public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeAbstract
 
   @Test
   public void shouldPageWithSearchAfterSizeAndSortedAsc() throws Exception {
-    given(() -> tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
-        .deployDecision("invoiceBusinessDecisions_v_2.dmn")
-        .waitUntil().decisionsAreDeployed(4));
+    given(() -> tester.deployDecision("invoiceBusinessDecisions_v_1.dmn").deployDecision("invoiceBusinessDecisions_v_2.dmn").waitUntil()
+        .decisionsAreDeployed(4));
     when(() -> {
-      decisionRequirementsResultsPage1 = dao.search(new Query<DecisionRequirements>().setSize(1)
-          .setSort(Query.Sort.listOf(RESOURCE_NAME, Query.Sort.Order.ASC)));
-      decisionRequirementsResultsPage2 = dao.search(new Query<DecisionRequirements>().setSize(1)
-          .setSort(Query.Sort.listOf(RESOURCE_NAME, Query.Sort.Order.ASC))
-          .setSearchAfter(new Object[] { decisionRequirementsResultsPage1.getItems().get(0).getResourceName(),
-              decisionRequirementsResultsPage1.getItems().get(0).getKey() }));
+      decisionRequirementsResultsPage1 = dao.search(
+          new Query<DecisionRequirements>().setSize(1).setSort(Query.Sort.listOf(RESOURCE_NAME, Query.Sort.Order.ASC)));
+      decisionRequirementsResultsPage2 = dao.search(
+          new Query<DecisionRequirements>().setSize(1).setSort(Query.Sort.listOf(RESOURCE_NAME, Query.Sort.Order.ASC)).setSearchAfter(
+              new Object[] { decisionRequirementsResultsPage1.getItems().get(0).getResourceName(),
+                  decisionRequirementsResultsPage1.getItems().get(0).getKey() }));
     });
     then(() -> {
       assertThat(decisionRequirementsResultsPage1.getTotal()).isEqualTo(2);
@@ -249,22 +235,20 @@ public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeAbstract
 
   @Test
   public void shouldPageWithSearchAfterSizeAndSortedDesc() throws Exception {
-    given(() -> tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
-        .deployDecision("invoiceBusinessDecisions_v_2.dmn")
-        .waitUntil().decisionsAreDeployed(4));
+    given(() -> tester.deployDecision("invoiceBusinessDecisions_v_1.dmn").deployDecision("invoiceBusinessDecisions_v_2.dmn").waitUntil()
+        .decisionsAreDeployed(4));
     when(() -> {
-      decisionRequirementsResultsPage1 = dao.search(new Query<DecisionRequirements>().setSize(1)
-          .setSort(Query.Sort.listOf(RESOURCE_NAME, Query.Sort.Order.DESC)));
-      decisionRequirementsResultsPage2 = dao.search(new Query<DecisionRequirements>().setSize(1)
-          .setSort(Query.Sort.listOf(RESOURCE_NAME, Query.Sort.Order.DESC))
-          .setSearchAfter(new Object[] { decisionRequirementsResultsPage1.getItems().get(0).getResourceName(),
-              decisionRequirementsResultsPage1.getItems().get(0).getKey() }));
+      decisionRequirementsResultsPage1 = dao.search(
+          new Query<DecisionRequirements>().setSize(1).setSort(Query.Sort.listOf(RESOURCE_NAME, Query.Sort.Order.DESC)));
+      decisionRequirementsResultsPage2 = dao.search(
+          new Query<DecisionRequirements>().setSize(1).setSort(Query.Sort.listOf(RESOURCE_NAME, Query.Sort.Order.DESC)).setSearchAfter(
+              new Object[] { decisionRequirementsResultsPage1.getItems().get(0).getResourceName(),
+                  decisionRequirementsResultsPage1.getItems().get(0).getKey() }));
     });
     then(() -> {
       assertThat(decisionRequirementsResultsPage1.getTotal()).isEqualTo(2);
       assertThat(decisionRequirementsResultsPage1.getItems()).hasSize(1);
-      assertThat(decisionRequirementsResultsPage1.getItems()).extracting(RESOURCE_NAME)
-          .containsExactly("invoiceBusinessDecisions_v_2.dmn");
+      assertThat(decisionRequirementsResultsPage1.getItems()).extracting(RESOURCE_NAME).containsExactly("invoiceBusinessDecisions_v_2.dmn");
       assertThat(decisionRequirementsResultsPage1.getItems()).extracting(VERSION).containsExactly(2);
       assertThat(decisionRequirementsResultsPage2.getTotal()).isEqualTo(2);
       assertThat(decisionRequirementsResultsPage2.getItems()).hasSize(1);
@@ -275,13 +259,11 @@ public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeAbstract
 
   @Test
   public void shouldFilterByFieldAndSortDesc() throws Exception {
-    given(() -> tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
-        .deployDecision("invoiceBusinessDecisions_v_2.dmn")
-        .waitUntil().decisionsAreDeployed(4));
+    given(() -> tester.deployDecision("invoiceBusinessDecisions_v_1.dmn").deployDecision("invoiceBusinessDecisions_v_2.dmn").waitUntil()
+        .decisionsAreDeployed(4));
     when(() -> {
       final DecisionRequirements decisionRequirementsFilter = new DecisionRequirements().setName("Invoice Business Decisions");
-      decisionRequirementsResults = dao.search(new Query<DecisionRequirements>()
-          .setFilter(decisionRequirementsFilter)
+      decisionRequirementsResults = dao.search(new Query<DecisionRequirements>().setFilter(decisionRequirementsFilter)
           .setSort(Query.Sort.listOf(VERSION, Query.Sort.Order.DESC)));
     });
     then(() -> {
@@ -295,13 +277,12 @@ public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeAbstract
 
   @Test
   public void shouldFilterByMultipleFields() throws Exception {
-    given(() -> tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
-        .deployDecision("invoiceBusinessDecisions_v_2.dmn")
-        .waitUntil().decisionsAreDeployed(4));
+    given(() -> tester.deployDecision("invoiceBusinessDecisions_v_1.dmn").deployDecision("invoiceBusinessDecisions_v_2.dmn").waitUntil()
+        .decisionsAreDeployed(4));
     when(() -> {
-      final DecisionRequirements decisionRequirementsFilter = new DecisionRequirements().setName("Invoice Business Decisions").setVersion(2);
-      decisionRequirementsResults = dao.search(new Query<DecisionRequirements>()
-          .setFilter(decisionRequirementsFilter));
+      final DecisionRequirements decisionRequirementsFilter = new DecisionRequirements().setName("Invoice Business Decisions")
+          .setVersion(2);
+      decisionRequirementsResults = dao.search(new Query<DecisionRequirements>().setFilter(decisionRequirementsFilter));
     });
     then(() -> {
       assertThat(decisionRequirementsResults.getTotal()).isEqualTo(1);
@@ -314,15 +295,13 @@ public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeAbstract
 
   @Test
   public void shouldFilterAndPageAndSort() throws Exception {
-    given(() -> tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
-        .deployDecision("invoiceBusinessDecisions_v_2.dmn")
-        .waitUntil().decisionsAreDeployed(4));
+    given(() -> tester.deployDecision("invoiceBusinessDecisions_v_1.dmn").deployDecision("invoiceBusinessDecisions_v_2.dmn").waitUntil()
+        .decisionsAreDeployed(4));
     when(() -> {
       final DecisionRequirements decisionRequirementsFilter = new DecisionRequirements().setName("Invoice Business Decisions");
-      decisionRequirementsResults = dao.search(new Query<DecisionRequirements>()
-          .setFilter(decisionRequirementsFilter)
-          .setSort(Query.Sort.listOf(VERSION, Query.Sort.Order.DESC))
-          .setSize(1));
+      decisionRequirementsResults = dao.search(
+          new Query<DecisionRequirements>().setFilter(decisionRequirementsFilter).setSort(Query.Sort.listOf(VERSION, Query.Sort.Order.DESC))
+              .setSize(1));
     });
     then(() -> {
       assertThat(decisionRequirementsResults.getTotal()).isEqualTo(2);
@@ -343,10 +322,8 @@ public class ElasticsearchDecisionRequirementsDaoIT extends OperateZeebeAbstract
 
   protected void assertThatIsXML(String xml) {
     try {
-      final InputStream xmlInputStream = new ByteArrayInputStream(
-          xml.getBytes(StandardCharsets.UTF_8));
-      new XMLUtil().getSAXParserFactory().newSAXParser()
-          .parse(xmlInputStream, new DefaultHandler());
+      final InputStream xmlInputStream = new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
+      new XMLUtil().getSAXParserFactory().newSAXParser().parse(xmlInputStream, new DefaultHandler());
     } catch (SAXException | IOException | ParserConfigurationException e) {
       fail(String.format("String '%s' should be of type xml", xml), e);
     }

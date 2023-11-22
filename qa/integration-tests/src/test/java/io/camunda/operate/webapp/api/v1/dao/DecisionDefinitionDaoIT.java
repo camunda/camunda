@@ -9,7 +9,6 @@ package io.camunda.operate.webapp.api.v1.dao;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
-import io.camunda.operate.webapp.api.v1.dao.elasticsearch.ElasticsearchDecisionDefinitionDao;
 import io.camunda.operate.webapp.api.v1.entities.DecisionDefinition;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
@@ -29,10 +28,10 @@ import static io.camunda.operate.webapp.api.v1.entities.DecisionDefinition.DECIS
 import static io.camunda.operate.webapp.api.v1.entities.DecisionDefinition.DECISION_REQUIREMENTS_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ElasticsearchDecisionDefinitionDaoIT extends OperateZeebeAbstractIT {
+public class DecisionDefinitionDaoIT extends OperateZeebeAbstractIT {
 
   @Autowired
-  ElasticsearchDecisionDefinitionDao dao;
+  DecisionDefinitionDao dao;
 
   @Autowired
   private DecisionIndex decisionIndex;
@@ -49,7 +48,7 @@ public class ElasticsearchDecisionDefinitionDaoIT extends OperateZeebeAbstractIT
     given(() -> {
       tester.deployDecision("invoiceBusinessDecisions_v_1.dmn").waitUntil().decisionsAreDeployed(2);
 
-      List<DecisionDefinition> hits = null;
+      List<DecisionDefinition> hits;
       try {
         hits = searchRepository.searchTerm(decisionIndex.getAlias(), "decisionId", "invoiceClassification", DecisionDefinition.class, 1);
       } catch (IOException e) {

@@ -138,8 +138,12 @@ public class TestOpenSearchRepository implements TestSearchRepository {
       query = term(field, l);
     }
 
+    if (value instanceof  String s) {
+      query = term(field, s);
+    }
+
     if(query == null) {
-      throw new UnsupportedOperationException(this.getClass().getName() + ".searchTearm is missing implementation for value type " + value.getClass().getName());
+      throw new UnsupportedOperationException(this.getClass().getName() + ".searchTerm is missing implementation for value type " + value.getClass().getName());
     }
 
     var requestBuilder = searchRequestBuilder(index)
