@@ -960,6 +960,8 @@
     "task": {
       "label": "Aufgabeanalyse",
       "totalTaskInstances": "Aufgabeninstanzen insgesamt: {count}",
+      "result": "Ergebnis: {count} Prozessinstanzen erfüllen diese Kriterien",
+      "totalInstances": "Instanzen insgesamt",
       "tooltip": {
         "outlier": {
           "label": "Ausreißer",
@@ -971,11 +973,16 @@
         }
       },
       "notFound": "Keine Ausreißer für den ausgewählten Prozess gefunden",
-      "onlyCompletedHint": "Hinweis: Die Ausreißeranalyse wird nur für abgeschlossene Knoten durchgeführt",
+      "onlyCompletedHint": "Hinweis: Die Aufgabeanalyse wird nur für abgeschlossene Knoten durchgeführt",
       "info": "Die Heatmap zeigt die Häufigkeit nach oben abweichender Ausreißer basierend auf der Dauer an. Berechnet mit dem Z-Score.",
       "tooltipText": {
         "singular": "{count} Instanz hat {percentage}% länger gedauert als der Durchschnitt.",
         "plural": "{count} Instanzen haben {percentage}% länger gedauert als der Durchschnitt."
+      },
+      "table": {
+        "heading": "Randaufgaben",
+        "taskName": "Aufgabennname",
+        "outliers": "Ausreißer"
       },
       "detailsModal": {
         "title": "Ergebnisse für Aufgabe \"{name}\"",

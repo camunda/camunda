@@ -960,6 +960,8 @@
     "task": {
       "label": "Task Analysis",
       "totalTaskInstances": "Total task instances: {count}",
+      "result": "Result: {count} Process instances do match these criteria",
+      "totalInstances": "Total Instances",
       "tooltip": {
         "outlier": {
           "label": "Outlier",
@@ -971,11 +973,16 @@
         }
       },
       "notFound": "No outliers found for the selected process",
-      "onlyCompletedHint": "Note: The outlier analysis is performed on completed flow nodes only",
+      "onlyCompletedHint": "Note: The task analysis is performed on completed flow nodes only",
       "info": "Heatmap displays the incidence of higher outliers based on duration. Calculated by z-score.",
       "tooltipText": {
         "singular": "{count} instance took {percentage}% longer than average.",
         "plural": "{count} instances took {percentage}% longer than average."
+      },
+      "table": {
+        "heading": "Outlying tasks",
+        "taskName": "Task Name",
+        "outliers": "Outliers"
       },
       "detailsModal": {
         "title": "Results for task \"{name}\"",

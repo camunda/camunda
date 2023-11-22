@@ -287,7 +287,7 @@ export default function Table<T extends object>({
                 className={undefined}
               />
             )}
-            {isEmpty && <div className="noData">{noData}</div>}
+            {!loading && isEmpty && <div className="noData">{noData}</div>}
             {error && <div className="error">{error}</div>}
             {showPagination && (
               <Pagination

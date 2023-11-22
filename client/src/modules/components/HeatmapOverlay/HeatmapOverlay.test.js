@@ -19,6 +19,12 @@ jest.mock('./service', () => {
 
 jest.mock('./Tooltip', () => 'foo');
 
+jest.spyOn(document.body, 'querySelector').mockReturnValue({
+  classList: {
+    add: jest.fn(),
+  },
+});
+
 const appendSpy = jest.fn();
 const removeSpy = jest.fn();
 const eventSpy = jest.fn();
