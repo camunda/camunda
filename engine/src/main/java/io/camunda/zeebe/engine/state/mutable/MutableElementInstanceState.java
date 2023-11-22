@@ -60,4 +60,26 @@ public interface MutableElementInstanceState extends ElementInstanceState {
    */
   void decrementNumberOfTakenSequenceFlows(
       final long flowScopeKey, final DirectBuffer gatewayElementId);
+
+  /**
+   * Inserts a new reference from process instance key to process definition key.
+   *
+   * <p>This makes it possible to query for all process instances of a specific process definition
+   * using {@link ElementInstanceState#getProcessInstanceKeysByDefinitionKey(long)}.
+   *
+   * @param processInstanceKey the key of the process instance to insert the reference for
+   * @param processDefinitionKey the key of the process definition to insert the reference for
+   */
+  void insertProcessInstanceKeyByDefinitionKey(long processInstanceKey, long processDefinitionKey);
+
+  /**
+   * Deletes the reference between process instance key and process definition key.
+   *
+   * <p>This makes it possible to query for all process instances of a specific process definition
+   * using {@link ElementInstanceState#getProcessInstanceKeysByDefinitionKey(long)}.
+   *
+   * @param processInstanceKey the key of the process instance to delete the reference for
+   * @param processDefinitionKey the key of the process definition to delete the reference for
+   */
+  void deleteProcessInstanceKeyByDefinitionKey(long processInstanceKey, long processDefinitionKey);
 }

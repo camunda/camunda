@@ -272,6 +272,24 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
+  public void insertProcessInstanceKeyByDefinitionKey(
+      final long processInstanceKey, final long processDefinitionKey) {
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    elementInstanceKey.wrapLong(processInstanceKey);
+    processInstanceKeyByProcessDefinitionKeyColumnFamily.insert(
+        processInstanceKeyByProcessDefinitionKey, DbNil.INSTANCE);
+  }
+
+  @Override
+  public void deleteProcessInstanceKeyByDefinitionKey(
+      final long processInstanceKey, final long processDefinitionKey) {
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    elementInstanceKey.wrapLong(processInstanceKey);
+    processInstanceKeyByProcessDefinitionKeyColumnFamily.deleteExisting(
+        processInstanceKeyByProcessDefinitionKey);
+  }
+
+  @Override
   public ElementInstance getInstance(final long key) {
     elementInstanceKey.wrapLong(key);
     final ElementInstance elementInstance = elementInstanceColumnFamily.get(elementInstanceKey);
