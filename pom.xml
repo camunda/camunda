@@ -57,7 +57,7 @@
     <version.yarn>v1.22.21</version.yarn>
 
     <zeebe-test-container.version>3.6.0</zeebe-test-container.version>
-    <elasticsearch-test-container.version>1.19.1</elasticsearch-test-container.version>
+    <elasticsearch-test-container.version>1.19.2</elasticsearch-test-container.version>
     <opensearch-testcontainers.version>2.0.0</opensearch-testcontainers.version>
     <postgres-test-container.version>1.17.6</postgres-test-container.version>
     <testcontainers.version>1.17.6</testcontainers.version>
