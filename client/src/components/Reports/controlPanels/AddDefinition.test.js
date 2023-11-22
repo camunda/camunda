@@ -9,22 +9,23 @@ import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
 import {Modal} from 'components';
+import {loadDefinitions} from 'services';
 
 import {AddDefinition} from './AddDefinition';
-import {loadDefinitions, loadTenants} from './service';
+import {loadTenants} from './service';
 
 jest.mock('./service', () => ({
-  loadDefinitions: jest.fn().mockReturnValue([
-    {key: 'definitionA', name: 'Definition A'},
-    {key: 'definitionB', name: 'Definition B'},
-    {key: 'definitionA2', name: 'Definition A'},
-  ]),
   loadTenants: jest.fn().mockReturnValue(),
 }));
 
 jest.mock('services', () => ({
   ...jest.requireActual('services'),
   getRandomId: () => 'randomID',
+  loadDefinitions: jest.fn().mockReturnValue([
+    {key: 'definitionA', name: 'Definition A'},
+    {key: 'definitionB', name: 'Definition B'},
+    {key: 'definitionA2', name: 'Definition A'},
+  ]),
 }));
 
 const props = {

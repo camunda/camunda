@@ -121,23 +121,24 @@ export function DashboardView(props) {
   async function handleInstantPreviewDashboardCopying(dashboardState) {
     const {definitions} = dashboardState;
     const [definition] = definitions || [];
-    const {key: definitionKey, tenantIds: tenants} = definition || {};
+    const {displayName, name, key, tenantIds: tenants} = definition || {};
+    const collectionName = displayName || name || key;
     let collectionId, existingCollection;
 
     mightFail(
       (async () => {
         const entities = await loadEntities();
-        existingCollection = entities.find((entity) => entity.name === definitionKey);
+        existingCollection = entities.find((entity) => entity.name === collectionName);
 
         if (existingCollection && existingCollection?.owner === user?.name) {
           collectionId = existingCollection.id;
         } else {
-          collectionId = await createEntity('collection', {name: definitionKey});
+          collectionId = await createEntity('collection', {name: collectionName});
         }
 
         await addSources(collectionId, [
           {
-            definitionKey,
+            definitionKey: key,
             definitionType: 'process',
             tenants,
           },

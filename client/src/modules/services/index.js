@@ -66,3 +66,4 @@ export {
   redoOutstandingRequests,
   resetOutstandingRequests,
 } from './outstandingRequestsService';
+export {loadDefinitions} from './loadDefinitions';

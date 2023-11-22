@@ -554,7 +554,7 @@ test('copy instant preview dashboard', async (t) => {
 
   await u.gotoOverview(t);
 
-  await t.expect(Common.collectionItem.textContent).contains('AnalysisTestingProcess');
+  await t.expect(Common.collectionItem.textContent).contains('Analysis Testing Process');
 
   await t.click(Common.collectionItem);
   await t.expect(Common.dashboardItem.count).eql(1);
@@ -596,6 +596,6 @@ test('copy instant preview dashboard', async (t) => {
   await u.gotoOverview(t);
 
   await t.expect(Common.collectionItem.count).eql(2);
-  await t.expect(Common.collectionItem.nth(0).textContent).contains('AnalysisTestingProcess');
+  await t.expect(Common.collectionItem.nth(0).textContent).contains('Analysis Testing Process');
   await t.expect(Common.collectionItem.nth(1).textContent).contains('another Collection Name');
 });

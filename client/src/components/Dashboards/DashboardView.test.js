@@ -284,12 +284,12 @@ it('should create a collection with the current data source when copying instant
   createCopyButton.simulate('click');
 
   node.find('DashboardTemplateModal').prop('onConfirm')({
-    definitions: [{key: 'someKey', tenantIds: []}],
+    definitions: [{key: 'someKey', name: 'Def Name', tenantIds: []}],
   });
 
   await flushPromises();
 
-  expect(createEntity).toHaveBeenCalledWith('collection', {name: 'someKey'});
+  expect(createEntity).toHaveBeenCalledWith('collection', {name: 'Def Name'});
   expect(addSources).toHaveBeenCalledWith('collectionId', [
     {definitionKey: 'someKey', definitionType: 'process', tenants: []},
   ]);

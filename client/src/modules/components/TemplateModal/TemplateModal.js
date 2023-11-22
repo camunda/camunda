@@ -139,7 +139,10 @@ export default function TemplateModal({
     name,
     description,
     template,
-    definitions: selectedDefinitions.map((def) => ({...def, displayName: def.name})),
+    definitions: selectedDefinitions.map((def) => ({
+      ...def,
+      displayName: def.displayName || def.name,
+    })),
     xml: xmlData[0]?.xml,
   });
 

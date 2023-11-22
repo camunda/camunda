@@ -10,11 +10,11 @@ import {useLocation} from 'react-router-dom';
 import {FilterableMultiSelect} from '@carbon/react';
 
 import {useErrorHandling} from 'hooks';
-import {getRandomId, getCollection} from 'services';
+import {Definition, getRandomId, getCollection} from 'services';
 import {showError} from 'notifications';
 import {t} from 'translation';
 
-import {Definition, loadTenants} from './service';
+import {loadTenants} from './service';
 
 interface MultiDefinitionSelectionProps {
   availableDefinitions: Definition[];

@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {get, post} from 'request';
+import {post} from 'request';
 
 export function isDurationHeatmap({view, visualization, definitions}) {
   return (
@@ -20,17 +20,6 @@ export function isDurationHeatmap({view, visualization, definitions}) {
 
 export function isProcessInstanceDuration({view}) {
   return view && view.entity === 'processInstance' && view.properties[0] === 'duration';
-}
-
-export async function loadDefinitions(type, collectionId) {
-  const params = {};
-  if (collectionId) {
-    params.filterByCollectionScope = collectionId;
-  }
-
-  const response = await get(`api/definition/${type}/keys`, params);
-
-  return await response.json();
 }
 
 export async function loadTenants(type, definitions, collectionId) {
