@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.entities.Query;
@@ -41,12 +42,15 @@ public class OpensearchSequenceFlowDaoTest {
   @Mock
   private RichOpenSearchClient mockOpensearchClient;
 
+  @Mock
+  private OperateProperties mockOperateProperties;
+
   private OpensearchSequenceFlowDao underTest;
 
   @BeforeEach
   public void setup() {
     underTest = new OpensearchSequenceFlowDao(mockQueryWrapper, mockRequestWrapper,
-        mockSequenceFlowIndex, mockOpensearchClient);
+        mockSequenceFlowIndex, mockOpensearchClient, mockOperateProperties);
   }
 
   @Test

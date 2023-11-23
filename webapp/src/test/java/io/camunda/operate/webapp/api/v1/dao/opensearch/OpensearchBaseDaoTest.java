@@ -45,11 +45,11 @@ public class OpensearchBaseDaoTest {
   @Mock
   private RichOpenSearchClient mockOpensearchClient;
 
-  private OpensearchPageableDao<Object> underTest;
+  private OpensearchPageableDao<Object, Object> underTest;
 
   @BeforeEach
   public void setup() {
-    underTest = new OpensearchPageableDao<>(mockQueryWrapper, mockRequestWrapper, mockOpensearchClient) {
+    underTest = new OpensearchPageableDao<>(mockQueryWrapper, mockRequestWrapper, mockOpensearchClient, null) {
       @Override
       protected String getUniqueSortKey() { return null; }
 

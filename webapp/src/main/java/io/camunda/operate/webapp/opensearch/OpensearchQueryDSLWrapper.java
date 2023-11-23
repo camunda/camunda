@@ -7,6 +7,7 @@
 package io.camunda.operate.webapp.opensearch;
 
 import io.camunda.operate.store.opensearch.dsl.QueryDSL;
+import io.camunda.operate.webapp.api.v1.exceptions.ValidationException;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Script;
@@ -14,14 +15,16 @@ import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.Operator;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
 import org.opensearch.client.opensearch.core.search.SourceConfig;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+
+import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
 
 /**
  * Wrapper class around the static QueryDSL interface. Enhances testability by allowing classes to utilize the
@@ -193,4 +196,51 @@ public class OpensearchQueryDSLWrapper {
         return QueryDSL.wildcardQuery(field, value);
     }
 
+  public Query buildTermQuery(String name, Number value) {
+    if (value != null) {
+      if (value instanceof Long) {
+        return term(name, value.longValue());
+      } else if (value instanceof Integer) {
+        return term(name, value.intValue());
+      } else {
+        throw new ValidationException("Type " + value.getClass().getName() + " not supported");
+      }
+    }
+    return null;
+  }
+
+  public Query buildTermQuery(final String name, final String value) {
+    if (!stringIsEmpty(value)) {
+      return term(name, value);
+    }
+    return null;
+  }
+
+  public Query buildMatchQuery(final String name, final String value) {
+    if (value != null) {
+      return match(name, value, Operator.And);
+    }
+    return null;
+  }
+
+  public Query buildMatchDateQuery(final String name, final String dateAsString, String dateFormat) {
+    if (dateAsString != null) {
+      // Used to match in different time ranges like hours, minutes etc
+      // See: https://www.elastic.co/guide/en/elasticsearch/reference/current/common-options.html#date-math
+      return RangeQuery.of(q ->
+        q.field(name)
+          .gte(json(dateAsString))
+          .lte(json(dateAsString))
+          .format(dateFormat)
+      )._toQuery();
+    }
+    return null;
+  }
+
+  public Query buildMatchDateQuery(final String name,final String dateString) {
+    if (!stringIsEmpty(dateString)){
+      return gteLte(name, dateString, dateString);
+    }
+    return null;
+  }
 }

@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.api.v1.entities.Query;
@@ -20,12 +21,11 @@ import org.opensearch.client.opensearch.core.search.HitsMetadata;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
-public abstract class OpensearchPageableDao<T> extends OpensearchDao {
+public abstract class OpensearchPageableDao<T, R> extends OpensearchDao {
 
-  protected OpensearchPageableDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper, RichOpenSearchClient richOpenSearchClient) {
-    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
+  protected OpensearchPageableDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper, RichOpenSearchClient richOpenSearchClient, OperateProperties operateProperties) {
+    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient, operateProperties);
   }
 
   public Results<T> search(Query<T> query) {
@@ -36,7 +36,7 @@ public abstract class OpensearchPageableDao<T> extends OpensearchDao {
     buildPaging(query, request);
 
     try {
-      HitsMetadata<T> results = richOpenSearchClient.doc().search(request, getModelClass()).hits();
+      HitsMetadata<R> results = richOpenSearchClient.doc().search(request, getModelClass()).hits();
 
       return formatHitsIntoResults(results);
     } catch (Exception e) {
@@ -51,7 +51,7 @@ public abstract class OpensearchPageableDao<T> extends OpensearchDao {
 
   protected abstract String getUniqueSortKey();
 
-  protected abstract Class<T> getModelClass();
+  protected abstract Class<R> getModelClass();
 
   protected abstract String getIndexName();
 
@@ -81,12 +81,14 @@ public abstract class OpensearchPageableDao<T> extends OpensearchDao {
 
   protected abstract void buildFiltering(Query<T> query, SearchRequest.Builder request);
 
-  protected Results<T> formatHitsIntoResults(HitsMetadata<T> results) {
-    List<Hit<T>> hits = results.hits();
+  protected Results<T> formatHitsIntoResults(HitsMetadata<R> results) {
+    List<Hit<R>> hits = results.hits();
 
     if (!hits.isEmpty()) {
-      List<T> items = hits.stream().map(this::transformHitToItem)
-          .filter(Objects::nonNull).collect(Collectors.toList());
+      List<T> items = hits.stream()
+        .map(this::transformHitToItem)
+        .filter(Objects::nonNull)
+        .toList();
 
       List<String> sortValues = hits.get(hits.size() - 1).sort();
 
@@ -100,7 +102,11 @@ public abstract class OpensearchPageableDao<T> extends OpensearchDao {
     }
   }
 
-  protected T transformHitToItem(Hit<T> hit) {
-    return hit.source();
+  protected T transformHitToItem(Hit<R> hit) {
+    return transformSourceToItem(hit.source());
+  }
+
+  protected T transformSourceToItem(R r) {
+    return (T) r;
   }
 }

@@ -8,6 +8,7 @@ package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.conditions.OpensearchCondition;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.FlowNodeInstanceDao;
@@ -25,15 +26,15 @@ import java.util.List;
 
 @Conditional(OpensearchCondition.class)
 @Component
-public class OpensearchFlowNodeInstanceDao extends OpensearchKeyFilteringDao<FlowNodeInstance> implements FlowNodeInstanceDao {
+public class OpensearchFlowNodeInstanceDao extends OpensearchKeyFilteringDao<FlowNodeInstance, FlowNodeInstance> implements FlowNodeInstanceDao {
 
   private final FlowNodeInstanceTemplate flowNodeInstanceIndex;
   private final ProcessCache processCache;
 
   public OpensearchFlowNodeInstanceDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
                                        FlowNodeInstanceTemplate flowNodeInstanceIndex, RichOpenSearchClient richOpenSearchClient,
-                                       ProcessCache processCache) {
-    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
+                                       ProcessCache processCache, OperateProperties operateProperties) {
+    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient, operateProperties);
     this.flowNodeInstanceIndex = flowNodeInstanceIndex;
     this.processCache = processCache;
   }

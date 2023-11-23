@@ -8,6 +8,7 @@ package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.entities.FlowNodeType;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.FlowNodeStatisticsDao;
@@ -44,9 +45,8 @@ public class OpensearchFlowNodeStatisticsDao extends OpensearchDao implements Fl
   @Autowired
   private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
-  public OpensearchFlowNodeStatisticsDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
-                       RichOpenSearchClient richOpenSearchClient) {
-    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
+  public OpensearchFlowNodeStatisticsDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper, RichOpenSearchClient richOpenSearchClient, OperateProperties operateProperties) {
+    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient, operateProperties);
   }
 
   @Override

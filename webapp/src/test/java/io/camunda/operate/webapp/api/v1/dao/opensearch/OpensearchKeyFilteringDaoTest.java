@@ -44,11 +44,11 @@ public class OpensearchKeyFilteringDaoTest {
   @Mock
   private RichOpenSearchClient mockOpensearchClient;
 
-  private OpensearchKeyFilteringDao<Object> underTest;
+  private OpensearchKeyFilteringDao<Object, Object> underTest;
 
   @BeforeEach
   public void setup() {
-    underTest = new OpensearchKeyFilteringDao<>(mockQueryWrapper, mockRequestWrapper, mockOpensearchClient) {
+    underTest = new OpensearchKeyFilteringDao<>(mockQueryWrapper, mockRequestWrapper, mockOpensearchClient, null) {
       @Override
       protected String getByKeyServerReadErrorMessage(Long key) {return "server read error";}
 
@@ -183,7 +183,7 @@ public class OpensearchKeyFilteringDaoTest {
     List<Object> results = underTest.searchByKey(1L);
 
     // Verify the request was built with a tenant check, the index name, and permissive matching
-    assertThat(results).isSameAs(validResults);
+    assertThat(results).containsExactlyElementsOf(validResults);
     verify(mockQueryWrapper, times(1)).term("key", 1L);
     verify(mockQueryWrapper, times(1)).withTenantCheck(any());
     verify(mockRequestWrapper, times(1)).searchRequestBuilder("index");

@@ -7,6 +7,7 @@
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.VariableDao;
@@ -23,13 +24,13 @@ import java.util.List;
 
 @Conditional(OpensearchCondition.class)
 @Component
-public class OpensearchVariableDao extends OpensearchKeyFilteringDao<Variable> implements VariableDao {
+public class OpensearchVariableDao extends OpensearchKeyFilteringDao<Variable, Variable> implements VariableDao {
 
   private final VariableTemplate variableIndex;
 
   public OpensearchVariableDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
-                               VariableTemplate variableIndex, RichOpenSearchClient richOpenSearchClient) {
-    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
+                               VariableTemplate variableIndex, RichOpenSearchClient richOpenSearchClient, OperateProperties operateProperties) {
+    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient, operateProperties);
     this.variableIndex = variableIndex;
   }
 

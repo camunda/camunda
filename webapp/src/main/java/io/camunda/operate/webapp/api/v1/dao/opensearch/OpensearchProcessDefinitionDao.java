@@ -7,6 +7,7 @@
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.ProcessDefinitionDao;
@@ -27,12 +28,12 @@ import java.util.Map;
 
 @Conditional(OpensearchCondition.class)
 @Component
-public class OpensearchProcessDefinitionDao extends OpensearchKeyFilteringDao<ProcessDefinition> implements ProcessDefinitionDao {
+public class OpensearchProcessDefinitionDao extends OpensearchKeyFilteringDao<ProcessDefinition, ProcessDefinition> implements ProcessDefinitionDao {
 
   private final ProcessIndex processIndex;
   public OpensearchProcessDefinitionDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
-                                        ProcessIndex processIndex, RichOpenSearchClient richOpenSearchClient) {
-    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
+                                        ProcessIndex processIndex, RichOpenSearchClient richOpenSearchClient, OperateProperties operateProperties) {
+    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient, operateProperties);
     this.processIndex = processIndex;
   }
 
@@ -103,11 +104,11 @@ public class OpensearchProcessDefinitionDao extends OpensearchKeyFilteringDao<Pr
     final ProcessDefinition filter = query.getFilter();
     if (filter != null) {
       var queries = new ArrayList<org.opensearch.client.opensearch._types.query_dsl.Query>();
-      queries.add(buildTermQuery(ProcessDefinition.NAME, filter.getName()));
-      queries.add(buildTermQuery(ProcessDefinition.BPMN_PROCESS_ID, filter.getBpmnProcessId()));
-      queries.add(buildTermQuery(ProcessDefinition.TENANT_ID, filter.getTenantId()));
-      queries.add(buildTermQuery(ProcessDefinition.VERSION, filter.getVersion()));
-      queries.add(buildTermQuery(ProcessDefinition.KEY, filter.getKey()));
+      queries.add(queryDSLWrapper.buildTermQuery(ProcessDefinition.NAME, filter.getName()));
+      queries.add(queryDSLWrapper.buildTermQuery(ProcessDefinition.BPMN_PROCESS_ID, filter.getBpmnProcessId()));
+      queries.add(queryDSLWrapper.buildTermQuery(ProcessDefinition.TENANT_ID, filter.getTenantId()));
+      queries.add(queryDSLWrapper.buildTermQuery(ProcessDefinition.VERSION, filter.getVersion()));
+      queries.add(queryDSLWrapper.buildTermQuery(ProcessDefinition.KEY, filter.getKey()));
       request.query(
           queryDSLWrapper.withTenantCheck(queryDSLWrapper.and(queries)));
     }

@@ -45,7 +45,7 @@ public class OpensearchVariableDaoTest {
 
   @BeforeEach
   public void setup() {
-    underTest = new OpensearchVariableDao(mockQueryWrapper, mockRequestWrapper, mockVariableIndex, mockOpensearchClient);
+    underTest = new OpensearchVariableDao(mockQueryWrapper, mockRequestWrapper, mockVariableIndex, mockOpensearchClient, null);
   }
 
   @Test

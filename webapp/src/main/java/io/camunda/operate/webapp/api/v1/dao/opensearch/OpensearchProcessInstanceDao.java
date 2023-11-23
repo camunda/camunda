@@ -7,6 +7,7 @@
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.ProcessInstanceDao;
@@ -29,7 +30,7 @@ import java.util.List;
 
 @Conditional(OpensearchCondition.class)
 @Component
-public class OpensearchProcessInstanceDao extends OpensearchKeyFilteringDao<ProcessInstance> implements ProcessInstanceDao {
+public class OpensearchProcessInstanceDao extends OpensearchKeyFilteringDao<ProcessInstance, ProcessInstance> implements ProcessInstanceDao {
 
   private final ListViewTemplate processInstanceIndex;
 
@@ -37,8 +38,8 @@ public class OpensearchProcessInstanceDao extends OpensearchKeyFilteringDao<Proc
 
   public OpensearchProcessInstanceDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
                                       ListViewTemplate processInstanceIndex, RichOpenSearchClient richOpenSearchClient,
-                                      ProcessInstanceWriter processInstanceWriter) {
-    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
+                                      ProcessInstanceWriter processInstanceWriter, OperateProperties operateProperties) {
+    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient, operateProperties);
     this.processInstanceIndex = processInstanceIndex;
     this.processInstanceWriter = processInstanceWriter;
   }

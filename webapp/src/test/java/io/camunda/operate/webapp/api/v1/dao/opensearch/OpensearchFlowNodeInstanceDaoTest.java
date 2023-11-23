@@ -55,7 +55,7 @@ public class OpensearchFlowNodeInstanceDaoTest {
 
   @BeforeEach
   public void setup() {
-    underTest = new OpensearchFlowNodeInstanceDao(mockQueryWrapper, mockRequestWrapper, mockFlowNodeIndex, mockOpensearchClient, mockProcessCache);
+    underTest = new OpensearchFlowNodeInstanceDao(mockQueryWrapper, mockRequestWrapper, mockFlowNodeIndex, mockOpensearchClient, mockProcessCache, null);
   }
 
   @Test
@@ -218,7 +218,7 @@ public class OpensearchFlowNodeInstanceDaoTest {
     List<FlowNodeInstance> results = underTest.searchByKey(1L);
 
     // Verify the request was built with a tenant check, the index name, and permissive matching
-    assertThat(results).isSameAs(validResults);
+    assertThat(results).containsExactlyElementsOf(validResults);
     assertThat(results.get(0).getFlowNodeName()).isEqualTo("name");
     verify(mockQueryWrapper, times(1)).term(underTest.getKeyFieldName(), 1L);
     verify(mockQueryWrapper, times(1)).withTenantCheck(any());

@@ -7,6 +7,7 @@
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.DecisionInstanceDao;
@@ -26,14 +27,14 @@ import java.util.List;
 
 @Conditional(OpensearchCondition.class)
 @Component
-public class OpensearchDecisionInstanceDao extends OpensearchKeyFilteringDao<DecisionInstance> implements DecisionInstanceDao {
+public class OpensearchDecisionInstanceDao extends OpensearchKeyFilteringDao<DecisionInstance, DecisionInstance> implements DecisionInstanceDao {
 
   private final DecisionInstanceTemplate decisionInstanceTemplate;
 
   public OpensearchDecisionInstanceDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
-      DecisionInstanceTemplate decisionInstanceTemplate,
-      RichOpenSearchClient richOpenSearchClient){
-    super(queryDSLWrapper, requestDSLWrapper,richOpenSearchClient);
+                                       DecisionInstanceTemplate decisionInstanceTemplate,
+                                       RichOpenSearchClient richOpenSearchClient, OperateProperties operateProperties){
+    super(queryDSLWrapper, requestDSLWrapper,richOpenSearchClient, operateProperties);
     this.decisionInstanceTemplate = decisionInstanceTemplate;
   }
   @Override
@@ -100,19 +101,19 @@ public class OpensearchDecisionInstanceDao extends OpensearchKeyFilteringDao<Dec
     final DecisionInstance filter = query.getFilter();
     if (filter != null) {
       var queryTerms = Arrays.asList(
-          buildTermQuery(DecisionInstance.ID, filter.getId()),
-          buildTermQuery(DecisionInstance.KEY, filter.getKey()),
-          buildTermQuery(DecisionInstance.STATE, filter.getState() == null ? null : filter.getState().name()),
-          buildMatchDateQuery(DecisionInstance.EVALUATION_DATE, filter.getEvaluationDate()),
-          buildTermQuery(DecisionInstance.EVALUATION_FAILURE, filter.getEvaluationFailure()),
-          buildTermQuery(DecisionInstance.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()),
-          buildTermQuery(DecisionInstance.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()),
-          buildTermQuery(DecisionInstance.DECISION_ID, filter.getDecisionId()),
-          buildTermQuery(DecisionInstance.TENANT_ID, filter.getTenantId()),
-          buildTermQuery(DecisionInstance.DECISION_DEFINITION_ID, filter.getDecisionDefinitionId()),
-          buildTermQuery(DecisionInstance.DECISION_NAME, filter.getDecisionName()),
-          buildTermQuery(DecisionInstance.DECISION_VERSION, filter.getDecisionVersion()),
-          buildTermQuery(DecisionInstance.DECISION_TYPE, filter.getDecisionType() == null ? null : filter.getDecisionType().name())
+        queryDSLWrapper.buildTermQuery(DecisionInstance.ID, filter.getId()),
+        queryDSLWrapper.buildTermQuery(DecisionInstance.KEY, filter.getKey()),
+        queryDSLWrapper.buildTermQuery(DecisionInstance.STATE, filter.getState() == null ? null : filter.getState().name()),
+        queryDSLWrapper.buildMatchDateQuery(DecisionInstance.EVALUATION_DATE, filter.getEvaluationDate()),
+        queryDSLWrapper.buildTermQuery(DecisionInstance.EVALUATION_FAILURE, filter.getEvaluationFailure()),
+        queryDSLWrapper.buildTermQuery(DecisionInstance.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()),
+        queryDSLWrapper.buildTermQuery(DecisionInstance.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()),
+        queryDSLWrapper.buildTermQuery(DecisionInstance.DECISION_ID, filter.getDecisionId()),
+        queryDSLWrapper.buildTermQuery(DecisionInstance.TENANT_ID, filter.getTenantId()),
+        queryDSLWrapper.buildTermQuery(DecisionInstance.DECISION_DEFINITION_ID, filter.getDecisionDefinitionId()),
+        queryDSLWrapper.buildTermQuery(DecisionInstance.DECISION_NAME, filter.getDecisionName()),
+        queryDSLWrapper.buildTermQuery(DecisionInstance.DECISION_VERSION, filter.getDecisionVersion()),
+        queryDSLWrapper.buildTermQuery(DecisionInstance.DECISION_TYPE, filter.getDecisionType() == null ? null : filter.getDecisionType().name())
       );
 
       request.query(queryDSLWrapper.and(queryTerms));

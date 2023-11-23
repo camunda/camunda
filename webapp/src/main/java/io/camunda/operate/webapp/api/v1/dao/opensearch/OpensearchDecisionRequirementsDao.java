@@ -7,6 +7,7 @@
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.DecisionRequirementsDao;
@@ -25,14 +26,14 @@ import java.util.*;
 
 @Conditional(OpensearchCondition.class)
 @Component
-public class OpensearchDecisionRequirementsDao extends OpensearchKeyFilteringDao<DecisionRequirements> implements DecisionRequirementsDao {
+public class OpensearchDecisionRequirementsDao extends OpensearchKeyFilteringDao<DecisionRequirements, DecisionRequirements> implements DecisionRequirementsDao {
 
   private final DecisionRequirementsIndex decisionRequirementsIndex;
 
   public OpensearchDecisionRequirementsDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
        DecisionRequirementsIndex decisionRequirementsIndex,
-      RichOpenSearchClient richOpenSearchClient){
-    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
+      RichOpenSearchClient richOpenSearchClient, OperateProperties operateProperties){
+    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient, operateProperties);
     this.decisionRequirementsIndex = decisionRequirementsIndex;
   }
 
@@ -109,12 +110,13 @@ public class OpensearchDecisionRequirementsDao extends OpensearchKeyFilteringDao
     final DecisionRequirements filter = query.getFilter();
     if (filter != null) {
       var queryTerms = Arrays.asList(
-          buildTermQuery(DecisionRequirements.ID, filter.getId()), buildTermQuery(DecisionRequirements.KEY, filter.getKey()),
-          buildTermQuery(DecisionRequirements.DECISION_REQUIREMENTS_ID, filter.getDecisionRequirementsId()),
-          buildTermQuery(DecisionRequirements.TENANT_ID, filter.getTenantId()),
-          buildTermQuery(DecisionRequirements.NAME, filter.getName()),
-          buildTermQuery(DecisionRequirements.VERSION, filter.getVersion()),
-          buildTermQuery(DecisionRequirements.RESOURCE_NAME, filter.getResourceName())
+        queryDSLWrapper.buildTermQuery(DecisionRequirements.ID, filter.getId()),
+        queryDSLWrapper.buildTermQuery(DecisionRequirements.KEY, filter.getKey()),
+        queryDSLWrapper.buildTermQuery(DecisionRequirements.DECISION_REQUIREMENTS_ID, filter.getDecisionRequirementsId()),
+        queryDSLWrapper.buildTermQuery(DecisionRequirements.TENANT_ID, filter.getTenantId()),
+        queryDSLWrapper.buildTermQuery(DecisionRequirements.NAME, filter.getName()),
+        queryDSLWrapper.buildTermQuery(DecisionRequirements.VERSION, filter.getVersion()),
+        queryDSLWrapper.buildTermQuery(DecisionRequirements.RESOURCE_NAME, filter.getResourceName())
       );
 
       request.query(queryDSLWrapper.and(queryTerms));

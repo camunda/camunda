@@ -54,7 +54,7 @@ public class OpensearchProcessInstanceDaoTest {
   @BeforeEach
   public void setup() {
     underTest = new OpensearchProcessInstanceDao(mockQueryWrapper, mockRequestWrapper, mockProcessInstanceIndex,
-        mockOpensearchClient, mockProcessInstanceWriter);
+        mockOpensearchClient, mockProcessInstanceWriter, null);
   }
 
   @Test

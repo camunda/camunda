@@ -10,7 +10,6 @@ import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_I
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.util.OperateZeebeAbstractIT;
-import io.camunda.operate.webapp.api.v1.dao.elasticsearch.ElasticsearchIncidentDao;
 import io.camunda.operate.webapp.api.v1.entities.Incident;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
@@ -22,10 +21,10 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class ElasticsearchIncidentDaoIT extends OperateZeebeAbstractIT {
+public class IncidentDaoIT extends OperateZeebeAbstractIT {
 
   @Autowired
-  ElasticsearchIncidentDao dao;
+  IncidentDao dao;
 
   private Results<Incident> incidentResults;
   private Incident incident;
@@ -162,7 +161,7 @@ public class ElasticsearchIncidentDaoIT extends OperateZeebeAbstractIT {
       assertThat(incidentResults.getTotal()).isEqualTo(7);
       assertThat(incidentResults.getItems()).hasSize(5);
       Object[] searchAfter = incidentResults.getSortValues();
-      assertThat(incidentResults.getItems().get(4).getKey()).isEqualTo(searchAfter[0]);
+      assertThat(incidentResults.getItems().get(4).getKey().toString()).isEqualTo(searchAfter[0].toString());
 
       Long firstKey = incidentResults.getItems().get(0).getKey();
       Long secondKey = incidentResults.getItems().get(1).getKey();
