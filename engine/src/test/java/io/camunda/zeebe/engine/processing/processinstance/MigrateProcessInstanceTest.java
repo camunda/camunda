@@ -13,9 +13,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -52,11 +57,7 @@ public class MigrateProcessInstanceTest {
                     .done())
             .deploy();
     final long otherProcessDefinitionKey =
-        deployment.getValue().getProcessesMetadata().stream()
-            .filter(p -> p.getBpmnProcessId().equals(processId2))
-            .findAny()
-            .orElseThrow()
-            .getProcessDefinitionKey();
+        extractProcessDefinitionKeyByProcessId(deployment, processId2);
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId1).create();
 
@@ -83,5 +84,125 @@ public class MigrateProcessInstanceTest {
             new ProcessInstanceMigrationMappingInstruction()
                 .setSourceElementId("A")
                 .setTargetElementId("B"));
+  }
+
+  @Test
+  public void shouldWriteElementMigratedEventForProcessInstance() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String otherProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask("A", a -> a.zeebeJobType("A"))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(otherProcessId)
+                    .startEvent()
+                    .serviceTask("B", a -> a.zeebeJobType("B"))
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long otherProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, otherProcessId);
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(otherProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .migrate();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that process definition key changed")
+        .hasProcessDefinitionKey(otherProcessDefinitionKey)
+        .describedAs("Expect that bpmn process id and element id changed")
+        .hasBpmnProcessId(otherProcessId)
+        .hasElementId(otherProcessId)
+        .describedAs("Expect that version number did not change")
+        .hasVersion(1);
+  }
+
+  @Test
+  public void shouldWriteElementMigratedEventForProcessInstanceToNewVersion() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask("A", a -> a.zeebeJobType("A"))
+                .endEvent()
+                .done())
+        .deploy();
+    final var secondVersionDeployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask("A", a -> a.zeebeJobType("A"))
+                    .userTask()
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final long v2ProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(secondVersionDeployment, processId);
+
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVersion(1).create();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(v2ProcessDefinitionKey)
+        .addMappingInstruction("A", "A")
+        .migrate();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .onlyEvents()
+                .withIntent(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that process definition key changed")
+        .hasProcessDefinitionKey(v2ProcessDefinitionKey)
+        .describedAs("Expect that version number changed")
+        .hasVersion(2)
+        .describedAs("Expect that bpmn process id and element id did not change")
+        .hasBpmnProcessId(processId)
+        .hasElementId(processId);
+  }
+
+  private static long extractProcessDefinitionKeyByProcessId(
+      final Record<DeploymentRecordValue> deployment, final String processId) {
+    return deployment.getValue().getProcessesMetadata().stream()
+        .filter(p -> p.getBpmnProcessId().equals(processId))
+        .findAny()
+        .orElseThrow()
+        .getProcessDefinitionKey();
   }
 }
