@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.os;
 
+import com.amazonaws.regions.DefaultAwsRegionProviderChain;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
@@ -53,6 +54,8 @@ import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.cluster.HealthRequest;
 import org.opensearch.client.opensearch.cluster.HealthResponse;
 import org.opensearch.client.transport.OpenSearchTransport;
+import org.opensearch.client.transport.aws.AwsSdk2Transport;
+import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,6 +64,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.StringUtils;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.http.SdkHttpClient;
+import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.regions.Region;
 
 @Configuration
 @Conditional(OpenSearchCondition.class)
@@ -141,6 +149,9 @@ public class OpenSearchConnector {
   public OpenSearchAsyncClient createAsyncOsClient(OpenSearchProperties osConfig) {
     LOGGER.debug("Creating Async OpenSearch connection...");
     LOGGER.debug("Creating OpenSearch connection...");
+    if (isAws()) {
+      return getAwsAsyncClient(osConfig);
+    }
     final HttpHost host = getHttpHost(osConfig);
     final ApacheHttpClient5TransportBuilder builder =
         ApacheHttpClient5TransportBuilder.builder(host);
@@ -192,6 +203,9 @@ public class OpenSearchConnector {
 
   public OpenSearchClient createOsClient(OpenSearchProperties osConfig) {
     LOGGER.debug("Creating OpenSearch connection...");
+    if (isAws()) {
+      return getAwsClient(osConfig);
+    }
     final HttpHost host = getHttpHost(osConfig);
     final ApacheHttpClient5TransportBuilder builder =
         ApacheHttpClient5TransportBuilder.builder(host);
@@ -407,5 +421,45 @@ public class OpenSearchConnector {
         .onAbort(e -> LOGGER.error("Abort {} by {}", logMessage, e.getFailure()))
         .onRetriesExceeded(
             e -> LOGGER.error("Retries {} exceeded for {}", e.getAttemptCount(), logMessage));
+  }
+
+  private boolean isAws() {
+    final AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
+    try {
+      credentialsProvider.resolveCredentials();
+      LOGGER.info("AWS Credentials can be resolved. Use AWS Opensearch");
+      return true;
+    } catch (Exception e) {
+      LOGGER.warn("AWS not configured due to: {} ", e.getMessage());
+      return false;
+    }
+  }
+
+  private OpenSearchAsyncClient getAwsAsyncClient(OpenSearchProperties osConfig) {
+    final String region = new DefaultAwsRegionProviderChain().getRegion();
+    final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
+    final AwsSdk2Transport transport =
+        new AwsSdk2Transport(
+            httpClient,
+            osConfig.getHost(),
+            Region.of(region),
+            AwsSdk2TransportOptions.builder()
+                .setMapper(new JacksonJsonpMapper(tasklistObjectMapper))
+                .build());
+    return new OpenSearchAsyncClient(transport);
+  }
+
+  private OpenSearchClient getAwsClient(OpenSearchProperties osConfig) {
+    final String region = new DefaultAwsRegionProviderChain().getRegion();
+    final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
+    final AwsSdk2Transport transport =
+        new AwsSdk2Transport(
+            httpClient,
+            osConfig.getHost(),
+            Region.of(region),
+            AwsSdk2TransportOptions.builder()
+                .setMapper(new JacksonJsonpMapper(tasklistObjectMapper))
+                .build());
+    return new OpenSearchClient(transport);
   }
 }
