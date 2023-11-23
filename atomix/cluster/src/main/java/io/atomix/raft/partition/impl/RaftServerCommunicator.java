@@ -52,25 +52,26 @@ public class RaftServerCommunicator implements RaftServerProtocol {
   private final RaftMessageContext context;
   private final Serializer serializer;
   private final ClusterCommunicationService clusterCommunicator;
-  private final String partitionName;
   private final RaftRequestMetrics metrics;
   private final Duration requestTimeout;
   private final Duration snapshotRequestTimeout;
+  private final Duration configurationChangeTimeout;
 
   public RaftServerCommunicator(
       final String prefix,
       final Serializer serializer,
       final ClusterCommunicationService clusterCommunicator,
       final Duration requestTimeout,
-      final Duration snapshotRequestTimeout) {
+      final Duration snapshotRequestTimeout,
+      final Duration configurationChangeTimeout) {
     context = new RaftMessageContext(prefix);
-    partitionName = prefix;
     this.serializer = Preconditions.checkNotNull(serializer, "serializer cannot be null");
     this.clusterCommunicator =
         Preconditions.checkNotNull(clusterCommunicator, "clusterCommunicator cannot be null");
     this.requestTimeout = requestTimeout;
     this.snapshotRequestTimeout = snapshotRequestTimeout;
-    metrics = new RaftRequestMetrics(partitionName);
+    this.configurationChangeTimeout = configurationChangeTimeout;
+    metrics = new RaftRequestMetrics(prefix);
   }
 
   @Override
@@ -82,18 +83,19 @@ public class RaftServerCommunicator implements RaftServerProtocol {
   @Override
   public CompletableFuture<ReconfigureResponse> reconfigure(
       final MemberId memberId, final ReconfigureRequest request) {
-    return sendAndReceive(context.reconfigureSubject, request, memberId);
+    return sendAndReceive(
+        context.reconfigureSubject, request, memberId, configurationChangeTimeout);
   }
 
   @Override
   public CompletableFuture<JoinResponse> join(final MemberId memberId, final JoinRequest request) {
-    return sendAndReceive(context.joinSubject, request, memberId);
+    return sendAndReceive(context.joinSubject, request, memberId, configurationChangeTimeout);
   }
 
   @Override
   public CompletableFuture<LeaveResponse> leave(
       final MemberId memberId, final LeaveRequest request) {
-    return sendAndReceive(context.leaveSubject, request, memberId);
+    return sendAndReceive(context.leaveSubject, request, memberId, configurationChangeTimeout);
   }
 
   @Override

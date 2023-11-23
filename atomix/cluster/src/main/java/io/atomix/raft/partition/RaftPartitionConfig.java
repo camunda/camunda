@@ -43,6 +43,7 @@ public class RaftPartitionConfig {
   private int preferSnapshotReplicationThreshold = DEFAULT_SNAPSHOT_REPLICATION_THRESHOLD;
   private RaftStorageConfig storageConfig;
   private EntryValidator entryValidator;
+  private Duration configurationChangeTimeout;
 
   /**
    * Returns the Raft leader election timeout.
@@ -134,6 +135,14 @@ public class RaftPartitionConfig {
     this.snapshotRequestTimeout = snapshotRequestTimeout;
   }
 
+  public Duration getConfigurationChangeTimeout() {
+    return configurationChangeTimeout;
+  }
+
+  public void setConfigurationChangeTimeout(final Duration configurationChangeTimeout) {
+    this.configurationChangeTimeout = configurationChangeTimeout;
+  }
+
   public int getMinStepDownFailureCount() {
     return minStepDownFailureCount;
   }
@@ -208,6 +217,8 @@ public class RaftPartitionConfig {
         + requestTimeout
         + ", snapshotRequestTimeout="
         + snapshotRequestTimeout
+        + ", configurationChangeTimeout="
+        + configurationChangeTimeout
         + ", minStepDownFailureCount="
         + minStepDownFailureCount
         + ", maxQuorumResponseTimeout="

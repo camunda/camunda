@@ -952,6 +952,11 @@
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_SNAPSHOTREQUESTTIMEOUT.
         # snapshotRequestTimeout: 2500ms
 
+        # Sets the timeout for configuration change requests such as joining or leaving. Since changes are usually a multi-step
+        # process with multiple commits, a higher timeout than the default requestTimeout is recommended.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_CONFIGURATIONCHANGEREQUESTTIMEOUT.
+        # configurationChangeRequestTimeout: 10000ms
+
         # If the leader is not able to reach the quorum, the leader may step down.
         # This is triggered after a number of requests, to a quorum of followers, has failed, and the number of failures
         # reached minStepDownFailureCount. The maxQuorumResponseTime also influences when the leader step down.

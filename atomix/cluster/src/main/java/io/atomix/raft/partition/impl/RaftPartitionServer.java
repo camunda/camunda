@@ -66,6 +66,8 @@ public class RaftPartitionServer implements HealthMonitorable {
   private final PartitionMetadata partitionMetadata;
   private final Duration requestTimeout;
   private final Duration snapshotRequestTimeout;
+  private final Duration configurationChangeTimeout;
+
   private final ReceivableSnapshotStore persistedSnapshotStore;
   private final RaftServer server;
 
@@ -90,6 +92,7 @@ public class RaftPartitionServer implements HealthMonitorable {
     this.partitionMetadata = partitionMetadata;
     requestTimeout = config.getRequestTimeout();
     snapshotRequestTimeout = config.getSnapshotRequestTimeout();
+    configurationChangeTimeout = config.getConfigurationChangeTimeout();
     server = buildServer();
   }
 
@@ -303,7 +306,8 @@ public class RaftPartitionServer implements HealthMonitorable {
         Serializer.using(RaftNamespaces.RAFT_PROTOCOL),
         clusterCommunicator,
         requestTimeout,
-        snapshotRequestTimeout);
+        snapshotRequestTimeout,
+        configurationChangeTimeout);
   }
 
   public CompletableFuture<Void> stepDown() {

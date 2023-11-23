@@ -85,6 +85,8 @@ public final class RaftPartitionFactory {
     partitionConfig.setRequestTimeout(brokerCfg.getExperimental().getRaft().getRequestTimeout());
     partitionConfig.setSnapshotRequestTimeout(
         brokerCfg.getExperimental().getRaft().getSnapshotRequestTimeout());
+    partitionConfig.setConfigurationChangeTimeout(
+        brokerCfg.getExperimental().getRaft().getConfigurationChangeTimeout());
     partitionConfig.setMaxQuorumResponseTimeout(
         brokerCfg.getExperimental().getRaft().getMaxQuorumResponseTimeout());
     partitionConfig.setMinStepDownFailureCount(

@@ -186,6 +186,26 @@ final class ReconfigurationTest {
   @Nested
   final class Joining {
     @Test
+    void rejoinShouldBeSuccessful(@TempDir final Path tmp) {
+      // given - a cluster with 3 members
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+      final var id3 = MemberId.from("3");
+
+      final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
+      final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
+      final var m3 = createServer(tmp, createMembershipService(id3, id2, id1));
+
+      // when - m3 joined once
+      CompletableFuture.allOf(m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3)).join();
+      m3.join(id1, id2).join();
+
+      // then - m3 can join again
+      m3.shutdown().join();
+      m3.join(id1, id2).join();
+    }
+
+    @Test
     void shouldJoinExistingMembers(@TempDir final Path tmp) {
       // given - a cluster with 3 members
       final var id1 = MemberId.from("1");

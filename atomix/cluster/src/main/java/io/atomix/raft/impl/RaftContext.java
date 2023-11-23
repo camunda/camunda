@@ -694,17 +694,25 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
                           || cause instanceof NoRemoteHandler
                           || cause instanceof TimeoutException
                           || cause instanceof ConnectException) {
+                        log.debug("Join request was not acknowledged, retrying", cause);
                         joinWithRetry(joining, assistingMembers, result);
                       } else {
+                        log.error(
+                            "Join request failed with an unexpected error, not retrying", error);
                         result.completeExceptionally(error);
                       }
                     } else if (response.status() == Status.OK) {
+                      log.debug("Join request accepted");
                       result.complete(null);
                     } else if (response.error().type() == RaftError.Type.NO_LEADER
                         || response.error().type() == RaftError.Type.UNAVAILABLE) {
+                      log.debug(
+                          "Join request failed, retrying", response.error().createException());
                       joinWithRetry(joining, assistingMembers, result);
                     } else {
-                      result.completeExceptionally(response.error().createException());
+                      final var errorAsException = response.error().createException();
+                      log.error("Join request rejected, not retrying", errorAsException);
+                      result.completeExceptionally(errorAsException);
                     }
                   },
                   threadContext);

@@ -91,7 +91,15 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
 
   @Override
   public CompletableFuture<Void> join(final Collection<MemberId> cluster) {
-    return raft.join(cluster);
+    return raft.join(cluster)
+        // Usually the transition is triggered by `onConfigure` when the leader sends the updated
+        // configuration. If the join is attempted again, it can be accepted without a configuration
+        // change and nothing triggers the transition.
+        // To avoid this, always transition to the configured role when joining completes
+        // successfully. If this is the first join attempt, it's likely that this transition is from
+        // inactive to inactive and the actual transition to the active role will happen when the
+        // leader sends the updated configuration.
+        .thenRunAsync(() -> raft.transition(localMember.getType()), raft.getThreadContext());
   }
 
   @Override
