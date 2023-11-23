@@ -23,6 +23,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteResourceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeployResourceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerEvaluateDecisionRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerMigrateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerModifyProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
@@ -42,6 +43,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.MigrateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessRequestObject;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
@@ -245,6 +247,15 @@ public final class RequestMapper {
         .setProcessInstanceKey(grpcRequest.getProcessInstanceKey())
         .addActivateInstructions(grpcRequest.getActivateInstructionsList())
         .addTerminateInstructions(grpcRequest.getTerminateInstructionsList());
+  }
+
+  public static BrokerMigrateProcessInstanceRequest toMigrateProcessInstanceRequest(
+      final MigrateProcessInstanceRequest grpcRequest) {
+    return new BrokerMigrateProcessInstanceRequest()
+        .setProcessInstanceKey(grpcRequest.getProcessInstanceKey())
+        .setTargetProcessDefinitionKey(
+            grpcRequest.getMigrationPlan().getTargetProcessDefinitionKey())
+        .addMappingInstructions(grpcRequest.getMigrationPlan().getMappingInstructionsList());
   }
 
   public static BrokerDeleteResourceRequest toDeleteResourceRequest(
