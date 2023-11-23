@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client.api.command;
 
 import io.camunda.zeebe.client.api.response.UpdateTimeoutJobResponse;
+import java.time.Duration;
 
 public interface UpdateTimeoutJobCommandStep1 {
 
@@ -30,6 +31,8 @@ public interface UpdateTimeoutJobCommandStep1 {
    *     to the broker.
    */
   UpdateTimeoutJobCommandStep2 timeout(long timout);
+
+  UpdateTimeoutJobCommandStep2 timeout(Duration timeout);
 
   interface UpdateTimeoutJobCommandStep2 extends FinalCommandStep<UpdateTimeoutJobResponse> {
     // the place for new optional parameters

@@ -59,6 +59,11 @@ public class JobUpdateTimeoutCommandImpl
   }
 
   @Override
+  public UpdateTimeoutJobCommandStep2 timeout(final Duration timeout) {
+    return timeout(timeout.toMillis());
+  }
+
+  @Override
   public FinalCommandStep<UpdateTimeoutJobResponse> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
