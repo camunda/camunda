@@ -16,6 +16,8 @@ import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamResponseDecoder;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.util.logging.ThrottledLogger;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -32,6 +34,7 @@ final class RemoteStreamPusher<P extends BufferWriter> {
   private static final Logger LOG = LoggerFactory.getLogger(RemoteStreamPusher.class);
 
   private final StreamResponseDecoder responseDecoder = new StreamResponseDecoder();
+  private final ThrottledLogger pushErrorLogger = new ThrottledLogger(LOG, Duration.ofSeconds(5));
 
   private final RemoteStreamMetrics metrics;
   private final Transport transport;
@@ -58,7 +61,8 @@ final class RemoteStreamPusher<P extends BufferWriter> {
     return (error, payload) -> {
       if (error != null) {
         metrics.pushFailed();
-        LOG.debug("Failed to push (size = {}) to stream {}", payload.getLength(), streamId, error);
+        pushErrorLogger.warn(
+            "Failed to push (size = {}) to stream {}", payload.getLength(), streamId, error);
         errorHandler.handleError(error, payload);
       }
     };
