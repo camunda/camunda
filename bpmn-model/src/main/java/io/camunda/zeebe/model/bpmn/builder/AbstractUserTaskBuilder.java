@@ -26,6 +26,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
 
 /**
@@ -60,14 +61,6 @@ public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<
     final ZeebeFormDefinition formDefinition =
         getCreateSingleExtensionElement(ZeebeFormDefinition.class);
     formDefinition.setFormKey(formKey);
-    return myself;
-  }
-
-  @Override
-  public B zeebeFormId(final String formId) {
-    final ZeebeFormDefinition formDefinition =
-        getCreateSingleExtensionElement(ZeebeFormDefinition.class);
-    formDefinition.setFormId(formId);
     return myself;
   }
 
@@ -153,6 +146,24 @@ public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<
   @Override
   public B zeebeFollowUpDateExpression(final String expression) {
     return zeebeFollowUpDate(asZeebeExpression(expression));
+  }
+
+  @Override
+  public B zeebeFormId(final String formId) {
+    final ZeebeFormDefinition formDefinition =
+        getCreateSingleExtensionElement(ZeebeFormDefinition.class);
+    formDefinition.setFormId(formId);
+    return myself;
+  }
+
+  /**
+   * Marks the user task as native Zeebe user task.
+   *
+   * @return the builder object
+   */
+  public B zeebeUserTask() {
+    getCreateSingleExtensionElement(ZeebeUserTask.class);
+    return myself;
   }
 
   public B zeebeTaskHeader(final String key, final String value) {

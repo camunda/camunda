@@ -22,6 +22,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTask;
 import io.camunda.zeebe.protocol.Protocol;
 import java.util.HashMap;
 import java.util.List;
@@ -51,7 +52,7 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
         process.getElementById(element.getId(), ExecutableUserTask.class);
 
     final var userTaskProperties = new UserTaskProperties();
-    final var isZeebeUserTask = false; // TODO: assess from the XML model
+    final var isZeebeUserTask = element.getSingleExtensionElement(ZeebeUserTask.class) != null;
 
     transformAssignmentDefinition(element, userTaskProperties);
     transformTaskSchedule(element, userTaskProperties);

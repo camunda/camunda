@@ -37,7 +37,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public final class UserTaskTest {
+public final class JobBasedUserTaskTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 

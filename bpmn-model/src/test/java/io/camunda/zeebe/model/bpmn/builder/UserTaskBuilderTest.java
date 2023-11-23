@@ -23,6 +23,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
@@ -172,5 +173,54 @@ class UserTaskBuilderTest {
     assertThat(zeebeUserTaskForms).hasSize(1);
     final ZeebeUserTaskForm zeebeUserTaskForm = zeebeUserTaskForms.iterator().next();
     assertThat(zeebeUserTaskForm.getId()).isNotEmpty();
+  }
+
+  @Test
+  void shouldMarkAsZeebeUserTask() {
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("userTask1")
+            .zeebeUserTask()
+            .endEvent()
+            .done();
+
+    final Collection<ZeebeUserTask> zeebeUserTasks =
+        instance.getModelElementsByType(ZeebeUserTask.class);
+
+    assertThat(zeebeUserTasks).hasSize(1);
+  }
+
+  @Test
+  void shouldMarkAsZeebeUserTaskIfUsedMultipleTimes() {
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("userTask1")
+            .zeebeUserTask()
+            .zeebeUserTask()
+            .zeebeUserTask()
+            .endEvent()
+            .done();
+
+    final Collection<ZeebeUserTask> zeebeUserTasks =
+        instance.getModelElementsByType(ZeebeUserTask.class);
+
+    assertThat(zeebeUserTasks).hasSize(1);
+  }
+
+  @Test
+  void shouldNotMarkAsZeebeUserTaskByDefault() {
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("userTask1")
+            .endEvent()
+            .done();
+
+    final Collection<ZeebeUserTask> zeebeUserTasks =
+        instance.getModelElementsByType(ZeebeUserTask.class);
+
+    assertThat(zeebeUserTasks).isEmpty();
   }
 }

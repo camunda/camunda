@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.bpmn.task;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
@@ -55,8 +56,11 @@ public final class UserTaskProcessor implements BpmnElementProcessor<ExecutableU
       final ExecutableUserTask element, final BpmnElementContext context) {
     if (element.getJobWorkerProperties() != null) {
       return jobWorkerTaskBehavior;
-    } else {
+    } else if (element.getUserTaskProperties() != null) {
       return zeebeUserTaskBehavior;
+    } else {
+      throw new BpmnProcessingException(
+          context, "Expected to process user task, but could not determine processing behavior");
     }
   }
 
