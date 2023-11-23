@@ -3,13 +3,15 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.os.client.dsl;
+package org.camunda.optimize.service.os.externalcode.client.dsl;
 
+import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
 import org.opensearch.client.opensearch.core.ClearScrollRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
+import org.opensearch.client.opensearch.core.DeleteRequest;
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.ReindexRequest;
@@ -18,9 +20,19 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.reindex.Destination;
 import org.opensearch.client.opensearch.core.reindex.Source;
+import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.GetIndexRequest;
+import org.opensearch.client.opensearch.indices.IndexState;
+import org.opensearch.client.opensearch.snapshot.CreateSnapshotRequest;
+import org.opensearch.client.opensearch.snapshot.DeleteSnapshotRequest;
+import org.opensearch.client.opensearch.snapshot.GetRepositoryRequest;
+import org.opensearch.client.opensearch.snapshot.GetSnapshotRequest;
 
-import static org.camunda.optimize.service.os.client.sync.OpenSearchDocumentOperations.SCROLL_KEEP_ALIVE_MS;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import static org.camunda.optimize.service.os.externalcode.client.sync.OpenSearchDocumentOperations.SCROLL_KEEP_ALIVE_MS;
 
 public interface RequestDSL {
   enum QueryType {
@@ -28,8 +40,32 @@ public interface RequestDSL {
     ALL
   }
 
+  static CreateIndexRequest.Builder createIndexRequestBuilder(String index, IndexState patternIndex) {
+    return new CreateIndexRequest.Builder()
+      .index(index)
+      .aliases(patternIndex.aliases())
+      .mappings(patternIndex.mappings())
+      .settings(s -> s.index(i -> i
+        .numberOfReplicas(patternIndex.settings().index().numberOfReplicas())
+        .numberOfShards(patternIndex.settings().index().numberOfShards())
+        .analysis(patternIndex.settings().index().analysis())
+      ));
+  }
+
+  static CreateSnapshotRequest.Builder createSnapshotRequestBuilder(String repository, String snapshot, List<String> indices) {
+    return new CreateSnapshotRequest.Builder().repository(repository).snapshot(snapshot).indices(indices);
+  }
+
+  static DeleteRequest.Builder deleteRequestBuilder(String index, String id) {
+    return new DeleteRequest.Builder().index(index).id(id);
+  }
+
   static DeleteByQueryRequest.Builder deleteByQueryRequestBuilder(String index) {
     return new DeleteByQueryRequest.Builder().index(index);
+  }
+
+  static DeleteSnapshotRequest.Builder deleteSnapshotRequestBuilder(String repositoryName, String snapshotName) {
+    return new DeleteSnapshotRequest.Builder().repository(repositoryName).snapshot(snapshotName);
   }
 
   static <R> IndexRequest.Builder<R> indexRequestBuilder(String index) {
@@ -50,8 +86,28 @@ public interface RequestDSL {
       .dest(Destination.of(b -> b.index(dstIndex)));
   }
 
+  static ReindexRequest.Builder reindexRequestBuilder(String srcIndex, String dstIndex, String script, Map<String, Object> scriptParams) {
+    var jsonParams = scriptParams.entrySet().stream().collect(Collectors.toMap(
+      Map.Entry::getKey,
+      e -> JsonData.of(e.getValue())
+    ));
+
+    return new ReindexRequest.Builder()
+      .source(Source.of(b -> b.index(srcIndex)))
+      .dest(Destination.of(b -> b.index(dstIndex)))
+      .script(b -> b.inline(i -> i.source(script).params(jsonParams)));
+  }
+
+  static GetRepositoryRequest.Builder repositoryRequestBuilder(String name) {
+    return new GetRepositoryRequest.Builder().name(name);
+  }
+
   static SearchRequest.Builder searchRequestBuilder(String index) {
     return new SearchRequest.Builder().index(index);
+  }
+
+  static GetSnapshotRequest.Builder getSnapshotRequestBuilder(String repository, String snapshot) {
+    return new GetSnapshotRequest.Builder().repository(repository).snapshot(snapshot);
   }
 
   static <A, R> UpdateRequest.Builder<R, A> updateRequestBuilder(String index) {
@@ -62,8 +118,8 @@ public interface RequestDSL {
     return new GetRequest.Builder().index(index);
   }
 
-  static GetRequest getRequest(String index, String id) {
-    return new GetRequest.Builder().index(index).id(id).build();
+  static GetRequest.Builder getRequest(String index, String id) {
+    return new GetRequest.Builder().index(index).id(id);
   }
 
   static ScrollRequest scrollRequest(String scrollId, String time) {

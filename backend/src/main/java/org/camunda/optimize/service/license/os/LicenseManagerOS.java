@@ -34,10 +34,10 @@ public class LicenseManagerOS extends LicenseManager {
   @Override
   protected Optional<String> retrieveStoredOptimizeLicense() {
     log.debug("Retrieving stored optimize license!");
-    final Map<String, Object> result = osClient.getRichOpenSearchClient()
+    return osClient.getRichOpenSearchClient()
       .doc()
-      .getDocumentWithGivenRetries(LICENSE_INDEX_NAME, licenseDocumentId);
-    return Optional.ofNullable(result).map(res -> (String) res.get(LicenseDto.Fields.license));
+      .getWithRetries(LICENSE_INDEX_NAME, licenseDocumentId, LicenseDto.class)
+      .map(LicenseDto::getLicense);
   }
 
   @Override

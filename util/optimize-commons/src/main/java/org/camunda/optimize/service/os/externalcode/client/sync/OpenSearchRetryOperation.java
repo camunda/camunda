@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.os.client.sync;
+package org.camunda.optimize.service.os.externalcode.client.sync;
 
 
 import lombok.extern.slf4j.Slf4j;
@@ -15,9 +15,12 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.tasks.GetTasksResponse;
+import org.opensearch.client.opensearch.tasks.Info;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 
 import static org.camunda.optimize.service.exceptions.ExceptionHelper.withIOException;
@@ -90,6 +93,10 @@ public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
 
   protected GetTasksResponse task(String id) throws IOException {
     return openSearchClient.tasks().get(t -> t.taskId(id));
+  }
+
+  protected Map<String, Info> tasksWithActions(List<String> actions) throws IOException {
+    return openSearchClient.tasks().list(l -> l.actions(actions)).tasks();
   }
 
   protected GetTasksResponse waitTaskCompletion(String taskId) {

@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.service.os.client.dsl.QueryDSL;
+import org.camunda.optimize.service.os.externalcode.client.dsl.QueryDSL;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.Script;
 

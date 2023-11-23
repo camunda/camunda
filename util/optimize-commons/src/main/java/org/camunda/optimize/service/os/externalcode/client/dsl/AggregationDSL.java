@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.os.client.dsl;
+package org.camunda.optimize.service.os.externalcode.client.dsl;
 
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.opensearch.client.opensearch._types.SortOptions;
@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 
 import static java.lang.String.format;
-import static org.camunda.optimize.service.os.client.dsl.QueryDSL.sourceInclude;
 
 public interface AggregationDSL {
   static BucketSortAggregation bucketSortAggregation(@Nullable Integer size, SortOptions... sortOptions) {
@@ -74,7 +73,7 @@ public interface AggregationDSL {
   }
 
   static TopHitsAggregation topHitsAggregation(List<String> sourceFields, int size, SortOptions... sortOptions) {
-    return TopHitsAggregation.of(a -> a.source(sourceInclude(sourceFields)).size(size).sort(List.of(sortOptions)));
+    return TopHitsAggregation.of(a -> a.source(QueryDSL.sourceInclude(sourceFields)).size(size).sort(List.of(sortOptions)));
   }
 
   static TopHitsAggregation topHitsAggregation(int size, SortOptions... sortOptions) {

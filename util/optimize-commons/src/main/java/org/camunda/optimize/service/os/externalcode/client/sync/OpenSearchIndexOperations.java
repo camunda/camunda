@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.os.client.sync;
+package org.camunda.optimize.service.os.externalcode.client.sync;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import static org.camunda.optimize.service.os.JavaCollectionOperationsUtil.getOrDefaultForNullValue;
 
 @Slf4j
 public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
@@ -107,6 +106,18 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
     }
   }
 
+  public void refresh(String ... indexPatterns) {
+    final var refreshRequest = new RefreshRequest.Builder().index(List.of(indexPatterns)).build();
+    try {
+      final RefreshResponse refresh = openSearchClient.indices().refresh(refreshRequest);
+      if (refresh.shards().failures().size() > 0) {
+        log.warn("Unable to refresh indices: {}", List.of(indexPatterns));
+      }
+    } catch (Exception ex) {
+      log.warn(String.format("Unable to refresh indices: %s", List.of(indexPatterns)), ex);
+    }
+  }
+
   public void refreshWithRetries(final String indexPattern) {
     executeWithRetries(
       "Refresh " + indexPattern,
@@ -137,22 +148,18 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
       });
   }
 
-  public Map<String, String> getIndexSettingsWithRetries(String indexName, String... fields) {
+  public IndexSettings getIndexSettingsWithRetries(String indexName) {
     return executeWithRetries(
       "GetIndexSettings " + indexName,
       () -> {
-        final Map<String, String> settings = new HashMap<>();
         final GetIndicesSettingsResponse response = openSearchClient.indices().getSettings(s -> s.index(List.of(indexName)));
-        for (String field : fields) {
-          settings.put(field, response.get(field).toString());
-        }
-        return settings;
+        return response.result().get(indexName).settings();
       });
   }
 
   public String getOrDefaultRefreshInterval(String indexName, String defaultValue) {
-    final Map<String, String> settings = getIndexSettingsWithRetries(indexName, REFRESH_INTERVAL);
-    String refreshInterval = getOrDefaultForNullValue(settings, REFRESH_INTERVAL, defaultValue);
+    var refreshIntervalTime = getIndexSettingsWithRetries(indexName).refreshInterval();
+    String refreshInterval = refreshIntervalTime==null?defaultValue:refreshIntervalTime.time();
     if (refreshInterval.trim().equals(NO_REFRESH)) {
       refreshInterval = defaultValue;
     }
@@ -160,8 +167,8 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
   }
 
   public String getOrDefaultNumbersOfReplica(String indexName, String defaultValue) {
-    final Map<String, String> settings = getIndexSettingsWithRetries(indexName, NUMBERS_OF_REPLICA);
-    String numbersOfReplica = getOrDefaultForNullValue(settings, NUMBERS_OF_REPLICA, defaultValue);
+    String numberOfReplicasOriginal = getIndexSettingsWithRetries(indexName).numberOfReplicas();
+    String numbersOfReplica = numberOfReplicasOriginal==null?defaultValue:numberOfReplicasOriginal;
     if (numbersOfReplica.trim().equals(NO_REPLICA)) {
       numbersOfReplica = defaultValue;
     }
@@ -188,7 +195,7 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
   }
 
   public AnalyzeResponse analyze(AnalyzeRequest analyzeRequest) throws IOException {
-      return openSearchClient.indices().analyze(analyzeRequest);
+    return openSearchClient.indices().analyze(analyzeRequest);
   }
 
   // TODO check unused
@@ -214,9 +221,16 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
             return true;
           }
         }
-        final String task = openSearchClient.reindex(reindexRequest).task();
+        var response = openSearchClient.reindex(reindexRequest);
+
+        if(response.total().equals(srcCount)) {
+          var taskId = response.task() != null ? response.task() : "task:unavailable";
+          logProgress(taskId, srcCount, srcCount);
+          return true;
+        }
+
         TimeUnit.of(ChronoUnit.MILLIS).sleep(2_000);
-        return waitUntilTaskIsCompleted(task, srcCount);
+        return waitUntilTaskIsCompleted(response.task(), srcCount);
       },
       done -> !done);
   }
@@ -231,6 +245,8 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
     final GetTasksResponse taskResponse = waitTaskCompletion(taskId);
 
     if (taskResponse != null) {
+      logProgress(taskId, taskResponse.response().total(), srcCount);
+
       final long total = taskResponse.response().total();
       log.info("Source docs: {}, Migrated docs: {}", srcCount, total);
       return total == srcCount;
@@ -240,7 +256,14 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
     }
   }
 
-  public GetIndexResponse get(GetIndexRequest.Builder requestBuilder) throws IOException {
-    return openSearchClient.indices().get(requestBuilder.build());
+  private void logProgress(String taskId, long processed, long srcCount) {
+    var progress = processed * 100.00 / srcCount;
+    log.info("TaskId: {}, Progress: {}%", taskId, String.format("%.2f", progress));
   }
+
+  public GetIndexResponse get(GetIndexRequest.Builder requestBuilder) {
+    GetIndexRequest request = requestBuilder.build();
+    return safe(() -> openSearchClient.indices().get(request), e -> "Failed to get index " + request.index());
+  }
+
 }

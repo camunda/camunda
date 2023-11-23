@@ -8,17 +8,13 @@ package org.camunda.optimize.service.os;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.os.client.async.OpenSearchAsyncDocumentOperations;
-import org.camunda.optimize.service.os.client.async.OpenSearchAsyncIndexOperations;
-import org.camunda.optimize.service.os.client.async.OpenSearchAsyncTaskOperations;
-import org.camunda.optimize.service.os.client.sync.OpenSearchClusterOperations;
-import org.camunda.optimize.service.os.client.sync.OpenSearchDocumentOperations;
-import org.camunda.optimize.service.os.client.sync.OpenSearchIndexOperations;
-import org.camunda.optimize.service.os.client.sync.OpenSearchPipelineOperations;
-import org.camunda.optimize.service.os.client.sync.OpenSearchTaskOperations;
-import org.camunda.optimize.service.os.client.sync.OpenSearchTemplateOperations;
+import org.camunda.optimize.service.os.externalcode.client.sync.OpenSearchClusterOperations;
+import org.camunda.optimize.service.os.externalcode.client.sync.OpenSearchDocumentOperations;
+import org.camunda.optimize.service.os.externalcode.client.sync.OpenSearchIndexOperations;
+import org.camunda.optimize.service.os.externalcode.client.sync.OpenSearchPipelineOperations;
+import org.camunda.optimize.service.os.externalcode.client.sync.OpenSearchTaskOperations;
+import org.camunda.optimize.service.os.externalcode.client.sync.OpenSearchTemplateOperations;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
-import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -74,27 +70,4 @@ public class RichOpenSearchClient {
     return openSearchTemplateOperations;
   }
 
-  public class Async {
-    final OpenSearchAsyncDocumentOperations openSearchAsyncDocumentOperations;
-    final OpenSearchAsyncIndexOperations openSearchAsyncIndexOperations;
-    final OpenSearchAsyncTaskOperations openSearchAsyncTaskOperations;
-
-    public Async(OpenSearchAsyncClient openSearchAsyncClient) {
-      this.openSearchAsyncDocumentOperations = new OpenSearchAsyncDocumentOperations(openSearchAsyncClient, indexNameService);
-      this.openSearchAsyncIndexOperations = new OpenSearchAsyncIndexOperations(openSearchAsyncClient, indexNameService);
-      this.openSearchAsyncTaskOperations = new OpenSearchAsyncTaskOperations(openSearchAsyncClient, indexNameService);
-    }
-
-    public OpenSearchAsyncDocumentOperations doc() {
-      return openSearchAsyncDocumentOperations;
-    }
-
-    public OpenSearchAsyncIndexOperations index() {
-      return openSearchAsyncIndexOperations;
-    }
-
-    public OpenSearchAsyncTaskOperations task() {
-      return openSearchAsyncTaskOperations;
-    }
-  }
 }
