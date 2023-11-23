@@ -5,9 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {Component} from 'react';
+import {Settings} from '@carbon/icons-react';
 
-import {Popover, Form, Icon, Button, ColorPicker} from 'components';
+import {Popover, Form, Button, ColorPicker} from 'components';
 import {t} from 'translation';
 import {isCategoricalBar} from 'services';
 
@@ -29,7 +30,7 @@ function convertToChangeset(config) {
   );
 }
 
-export default class Configuration extends React.Component {
+export default class Configuration extends Component {
   resetToDefaults = () => {
     const {data} = this.props.report;
 
@@ -130,10 +131,20 @@ export default class Configuration extends React.Component {
       <div className="Configuration">
         <Popover
           isTabTip
-          tooltip={t('report.config.buttonTooltip')}
-          title={<Icon type="settings" />}
-          disabled={!enablePopover}
+          trigger={
+            <Popover.Button
+              size="md"
+              kind="ghost"
+              hasIconOnly
+              renderIcon={Settings}
+              iconDescription={t('report.config.buttonTooltip')}
+              disabled={!enablePopover}
+              tooltipPosition="left"
+            />
+          }
           className="configurationPopover"
+          tooltipPosition="bottom"
+          align="bottom-right"
         >
           <Form className="content" compact>
             {!report.combined && (

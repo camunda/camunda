@@ -22,7 +22,7 @@ export const viewDropdown = checkbox('View').nextSibling();
 export const distributedBySelect = checkbox('and').nextSibling();
 export const groupbyDropdownButton = groupbyDropdown.find('button');
 export const removeGroupButton = Selector('.removeGrouping');
-export const visualizationDropdown = checkbox('Visualization').nextSibling();
+export const visualizationDropdown = Selector('.CarbonSelect.Visualization button');
 export const configurationOption = (text) =>
   Selector('.Configuration .DropdownOption').withExactText(text);
 export const reportTable = reportRenderer.find('.Table');

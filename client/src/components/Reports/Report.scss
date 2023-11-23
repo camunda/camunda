@@ -106,27 +106,12 @@
     display: flex;
     justify-content: flex-end;
     align-items: flex-end;
+    margin-bottom: 10px;
+    margin-top: 10px;
+    margin-left: auto;
 
-    .select {
+    .Visualization {
       min-width: 200px;
-      margin-right: 80px;
-
-      > .label {
-        color: var(--grey-base-40);
-        font-size: 0.875em;
-        margin-bottom: 5px;
-        display: block;
-      }
-    }
-
-    .Configuration {
-      position: absolute;
-    }
-
-    .select,
-    .Configuration {
-      margin-bottom: 10px;
-      margin-top: 10px;
     }
   }
 }

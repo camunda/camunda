@@ -10,6 +10,7 @@ import {Selector} from 'testcafe';
 import config from './config';
 import * as Homepage from './tests/Homepage.elements.js';
 import * as Common from './tests/Common.elements.js';
+import * as Report from './tests/ProcessReport.elements.js';
 
 let instanceCount = {
   Chrome: 0,
@@ -122,7 +123,10 @@ const selectControlPanelOption = (type) => async (t, name, subname) => {
     await selectView(t, name);
     await selectControlPanelOption('Measure')(t, subname);
   } else {
-    const dropdownButton = Selector('.label').withText(type).nextSibling().find('button');
+    const dropdownButton =
+      type === 'Visualization'
+        ? Report.visualizationDropdown
+        : Selector('.label').withText(type).nextSibling().find('button');
     const selectedOption = await dropdownButton.innerText;
     if (selectedOption === name) {
       return;

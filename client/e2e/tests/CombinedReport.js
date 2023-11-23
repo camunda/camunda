@@ -151,13 +151,13 @@ test('open the configuration popover and add a goal line', async (t) => {
 
   await t.resizeWindow(1150, 700);
 
-  await t.click(Combined.configurationButton);
+  await t.click(Report.configurationButton);
   await t.click(Combined.goalSwitch);
   await t.typeText(Combined.goalInput, '300', {replace: true});
 
   await t.takeScreenshot('img/combined-config.png', {fullPage: true}).maximizeWindow();
 
-  await t.click(Combined.configurationButton);
+  await t.click(Report.configurationButton);
 
   await t.expect(Report.reportChart.visible).ok();
 });

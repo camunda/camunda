@@ -12,8 +12,6 @@ export const decisionTableCell = (row, column) =>
   Selector('.DecisionTable tbody tr').nth(row).find('td').nth(column);
 export const filterButton = Selector('.Filter__dropdown .activateButton');
 export const filterOption = (text) => Selector('.Filter .DropdownOption').withText(text);
-export const visualizationDropdown = Selector('.label').withText('Visualization').nextSibling();
-export const configurationButton = Selector('.configurationPopover .Button');
 export const gradientBarsSwitch = Selector('.configurationPopover label').withText(
   'Show Gradient Bars'
 );

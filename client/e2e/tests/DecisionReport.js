@@ -40,7 +40,7 @@ test('create a dmn js table report', async (t) => {
   await u.selectView(t, 'Evaluation Count');
   await u.selectGroupby(t, 'Rules');
 
-  await t.click(Report.configurationButton);
+  await t.click(ProcessReport.configurationButton);
   await t.click(Report.gradientBarsSwitch);
 
   await t.expect(Report.decisionTable.visible).ok();
@@ -124,7 +124,7 @@ test('create a report grouped by evaluation date', async (t) => {
   await u.selectView(t, 'Evaluation Count');
   await u.selectGroupby(t, 'Evaluation Date', 'Automatic');
 
-  await t.click(Report.visualizationDropdown);
+  await t.click(ProcessReport.visualizationDropdown);
 
   await checkVisualizations(t);
 
@@ -149,7 +149,7 @@ test('create a report grouped by Input variable', async (t) => {
   await u.selectView(t, 'Evaluation Count');
   await u.selectGroupby(t, 'Input Variable', 'Invoice Amount');
 
-  await t.click(Report.visualizationDropdown);
+  await t.click(ProcessReport.visualizationDropdown);
 
   await checkVisualizations(t);
 
