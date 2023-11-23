@@ -1,63 +1,38 @@
 @use '@carbon/colors';
 
-.dark .FiltersView {
-  border-color: var(--grey-darken-36);
-
-  > * > .title {
-    color: var(--silver-darken-87);
-  }
-
-  .Popover {
-    .ButtonGroup .Button {
-      background-color: var(--grey-base-40);
-      border-color: var(--grey-darken-33);
-
-      &:hover {
-        background-color: var(--grey-lighten-50);
-      }
-
-      &.active {
-        background-color: var(--blue);
-      }
-    }
-  }
-}
-
 .FiltersView {
-  border-top: 1px solid var(--silver-darken-80);
-  border-bottom: 1px solid var(--silver-darken-80);
+  border-top: 1px solid var(--cds-border-subtle);
+  border-bottom: 1px solid var(--cds-border-subtle);
   padding: 15px 40px 20px 40px;
   margin-bottom: 20px;
 
   h3 {
     display: block;
-    font-size: 14px;
-    font-weight: bold;
-    margin-bottom: 10px;
+    margin-bottom: 0.75rem;
   }
 
-  > * {
-    min-width: 190px;
-    width: max-content;
-    max-width: 350px;
-    margin-right: 14px;
-    display: inline-block;
+  .filtersContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-end;
 
-    > .title {
-      font-size: 14px;
-      color: var(--grey-base-40);
-      margin-bottom: 7px;
+    > * {
+      min-width: 190px;
+      width: max-content;
+      max-width: 350px;
+      display: inline-block;
+
+      .title {
+        font-size: 12px;
+        color: var(--cds-text-secondary);
+        margin-bottom: 7px;
+      }
     }
-  }
 
-  > .Button {
-    background: none;
-    border: none;
-    width: max-content;
-    font-size: 13px;
-    text-decoration: underline;
-    color: var(--grey-darken-13);
-    padding: 0;
+    button.reset {
+      min-width: auto;
+    }
   }
 
   > .VariableFilter__Dashboard {
@@ -66,11 +41,7 @@
     }
   }
 
-  .Dropdown .activateButton {
-    padding-left: 12px;
-  }
-
-  .indicator .active {
+  .indicator.active {
     color: colors.$blue-60;
   }
 
@@ -78,14 +49,5 @@
     border: none;
     border-bottom: 1px solid var(--cds-border-subtle);
     margin: 8px 0;
-  }
-
-  .cds--list-box__label {
-    display: flex;
-    align-items: center;
-
-    svg {
-      margin-right: 0.5rem;
-    }
   }
 }

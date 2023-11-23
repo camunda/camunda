@@ -7,8 +7,8 @@
 
 import React, {runLastEffect, runAllEffects} from 'react';
 import {shallow} from 'enzyme';
+import {MenuItem} from '@carbon/react';
 
-import {Dropdown} from 'components';
 import {showPrompt} from 'prompt';
 import {getOptimizeProfile} from 'config';
 
@@ -18,6 +18,12 @@ import {AddFiltersButton} from './AddFiltersButton';
 
 jest.mock('config', () => ({
   getOptimizeProfile: jest.fn().mockReturnValue('platform'),
+}));
+
+jest.mock('hooks', () => ({
+  useErrorHandling: () => ({
+    mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  }),
 }));
 
 const props = {
@@ -47,15 +53,15 @@ it('should not allow adding the same filter twice', () => {
     <AddFiltersButton {...props} availableFilters={[{type: 'instanceStartDate'}]} />
   );
 
-  expect(node.find(Dropdown.Option).at(0)).toBeDisabled();
+  expect(node.find(MenuItem).at(0)).toBeDisabled();
 });
 
 it('should disable options that rely on process data if there are no reports', () => {
   const node = shallow(<AddFiltersButton {...props} />);
 
-  expect(node.find(Dropdown.Option).last()).not.toBeDisabled();
+  expect(node.find(MenuItem).last()).not.toBeDisabled();
   node.setProps({reports: []});
-  expect(node.find(Dropdown.Option).last()).toBeDisabled();
+  expect(node.find(MenuItem).last()).toBeDisabled();
 });
 
 it('should show a prompt to save the dashboard when adding filters that rely on processes on a dashboard with unsaved reports', async () => {
@@ -63,7 +69,7 @@ it('should show a prompt to save the dashboard when adding filters that rely on 
     <AddFiltersButton {...props} reports={[{id: 'reportId'}, {report: {name: 'unsaved report'}}]} />
   );
 
-  node.find(Dropdown.Option).last().simulate('click');
+  node.find(MenuItem).last().simulate('click');
 
   await flushPromises();
 
@@ -103,8 +109,8 @@ it('should include the allowed values for string and number variables', () => {
   const node = shallow(<AddFiltersButton {...props} />);
 
   node
-    .find(Dropdown.Option)
-    .findWhere((n) => n.text() === 'Variable')
+    .find(MenuItem)
+    .findWhere((n) => n.prop('label') === 'Variable')
     .first()
     .simulate('click');
 
@@ -129,8 +135,8 @@ it('should not include a data field for boolean and date variables', () => {
   const node = shallow(<AddFiltersButton {...props} />);
 
   node
-    .find(Dropdown.Option)
-    .findWhere((n) => n.text() === 'Variable')
+    .find(MenuItem)
+    .findWhere((n) => n.prop('label') === 'Variable')
     .first()
     .simulate('click');
 
@@ -173,8 +179,8 @@ it('should include a checkbox to allow custom values', () => {
   const node = shallow(<AddFiltersButton {...props} />);
 
   node
-    .find(Dropdown.Option)
-    .findWhere((n) => n.text() === 'Variable')
+    .find(MenuItem)
+    .findWhere((n) => n.prop('label') === 'Variable')
     .first()
     .simulate('click');
 
@@ -191,8 +197,8 @@ it('should show an assignee filter modal with additional content', async () => {
   await runAllEffects();
 
   node
-    .find(Dropdown.Option)
-    .findWhere((n) => n.text() === 'Assignee')
+    .find(MenuItem)
+    .findWhere((n) => n.prop('label') === 'Assignee')
     .first()
     .simulate('click');
 
@@ -212,7 +218,8 @@ it('should not show assignee/group options in cloud environment', async () => {
 
   expect(
     node
-      .find(Dropdown.Option)
-      .findWhere((n) => n.text() === 'Assignee' || n.text() === 'Candidate Group').length
+      .find(MenuItem)
+      .findWhere((n) => n.prop('label') === 'Assignee' || n.prop('label') === 'Candidate Group')
+      .length
   ).toBe(0);
 });

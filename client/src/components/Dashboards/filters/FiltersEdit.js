@@ -8,10 +8,9 @@
 import React, {useState} from 'react';
 import update from 'immutability-helper';
 import equals from 'fast-deep-equal';
-import {Calendar} from '@carbon/icons-react';
-import {Checkbox} from '@carbon/react';
+import {Calendar, Close, Edit} from '@carbon/icons-react';
+import {Button, Checkbox} from '@carbon/react';
 
-import {Button, Icon} from 'components';
 import {VariableFilter, AssigneeFilter} from 'filter';
 import {t} from 'translation';
 
@@ -43,247 +42,266 @@ export default function FiltersEdit({
 
   return (
     <div className="FiltersEdit FiltersView">
-      {availableFilters.map(({type, data}, idx) => {
-        const deleter = (
-          <Button className="deleteButton" icon onClick={() => removeFilter(idx)}>
-            <Icon type="close-small" />
-          </Button>
-        );
-        switch (type) {
-          case 'state':
-            return (
-              <InstanceStateFilter key={type} filter={filter} setFilter={setFilter}>
-                {deleter}
-              </InstanceStateFilter>
-            );
-          case 'instanceStartDate':
-          case 'instanceEndDate':
-            const dateFilter = filter.find((filter) => filter.type === type);
-            return (
-              <DateFilter
-                key={type}
-                emptyText={t('common.off')}
-                icon={Calendar}
-                title={t('dashboard.filter.types.' + type)}
-                filter={dateFilter?.data}
-                setFilter={(newFilter) => {
-                  const rest = filter.filter((filter) => !equals(filter, dateFilter));
-                  if (newFilter) {
-                    setFilter([...rest, {type, data: newFilter, filterLevel: 'instance'}]);
-                  } else {
-                    setFilter(rest);
-                  }
-                }}
-              >
-                {deleter}
-              </DateFilter>
-            );
-          case 'variable':
-            const variableFilter = filter.find(
-              (filter) =>
-                filter.type === 'variable' &&
-                filter.data.name === data.name &&
-                filter.data.type === data.type
-            );
-            return (
-              <DashboardVariableFilter
-                key={idx}
-                config={data}
-                filter={variableFilter?.data.data}
-                reports={reports}
-                setFilter={(newFilter) => {
-                  const rest = filter.filter((filter) => !equals(filter, variableFilter));
-                  if (newFilter) {
-                    setFilter([
-                      ...rest,
-                      {type, data: {...data, data: newFilter}, filterLevel: 'instance'},
-                    ]);
-                  } else {
-                    setFilter(rest);
-                  }
-                }}
-              >
-                <Button
-                  className="editButton"
-                  icon
-                  onClick={() => {
-                    setFilterToEdit(idx);
-                    setAllowCustomValues(data.data?.allowCustomValues ?? false);
+      <div className="filtersContainer">
+        {availableFilters.map(({type, data}, idx) => {
+          const deleter = (
+            <div className="deleteButton">
+              <Button
+                size="sm"
+                kind="ghost"
+                className="DeleteButton"
+                hasIconOnly
+                renderIcon={Close}
+                onClick={() => removeFilter(idx)}
+                iconDescription={t('common.delete')}
+              />
+            </div>
+          );
+          switch (type) {
+            case 'state':
+              return (
+                <InstanceStateFilter key={type} filter={filter} setFilter={setFilter}>
+                  {deleter}
+                </InstanceStateFilter>
+              );
+            case 'instanceStartDate':
+            case 'instanceEndDate':
+              const dateFilter = filter.find((filter) => filter.type === type);
+              return (
+                <DateFilter
+                  key={type}
+                  emptyText={t('common.off')}
+                  icon={Calendar}
+                  title={t('dashboard.filter.types.' + type)}
+                  filter={dateFilter?.data}
+                  setFilter={(newFilter) => {
+                    const rest = filter.filter((filter) => !equals(filter, dateFilter));
+                    if (newFilter) {
+                      setFilter([...rest, {type, data: newFilter, filterLevel: 'instance'}]);
+                    } else {
+                      setFilter(rest);
+                    }
                   }}
                 >
-                  <Icon type="edit-small" />
-                </Button>
-                {deleter}
-              </DashboardVariableFilter>
-            );
-          case 'assignee':
-          case 'candidateGroup':
-            const identityFilter = filter.find((filter) => filter.type === type);
-            return (
-              <DashboardAssigneeFilter
-                key={idx}
-                config={data}
-                type={type}
-                filter={identityFilter?.data}
-                reports={reports}
-                setFilter={(newFilter) => {
-                  const rest = filter.filter((filter) => !equals(filter, identityFilter));
-                  if (newFilter) {
-                    setFilter([...rest, {type, data: newFilter, filterLevel: 'view'}]);
-                  } else {
-                    setFilter(rest);
-                  }
-                }}
-              >
-                <Button
-                  className="editButton"
-                  icon
-                  disabled={!reports || reports.length === 0}
-                  onClick={() => {
-                    setFilterToEdit(idx);
-                    setAllowCustomValues(data.allowCustomValues);
+                  {deleter}
+                </DateFilter>
+              );
+            case 'variable':
+              const variableFilter = filter.find(
+                (filter) =>
+                  filter.type === 'variable' &&
+                  filter.data.name === data.name &&
+                  filter.data.type === data.type
+              );
+              return (
+                <DashboardVariableFilter
+                  key={idx}
+                  config={data}
+                  filter={variableFilter?.data.data}
+                  reports={reports}
+                  setFilter={(newFilter) => {
+                    const rest = filter.filter((filter) => !equals(filter, variableFilter));
+                    if (newFilter) {
+                      setFilter([
+                        ...rest,
+                        {type, data: {...data, data: newFilter}, filterLevel: 'instance'},
+                      ]);
+                    } else {
+                      setFilter(rest);
+                    }
                   }}
                 >
-                  <Icon type="edit-small" />
-                </Button>
-                {deleter}
-              </DashboardAssigneeFilter>
-            );
-          default:
-            return null;
-        }
-      })}
+                  <div className="editButton">
+                    <Button
+                      size="sm"
+                      kind="ghost"
+                      className="EditButton"
+                      hasIconOnly
+                      renderIcon={Edit}
+                      iconDescription={t('common.edit')}
+                      onClick={() => {
+                        setFilterToEdit(idx);
+                        setAllowCustomValues(data.data?.allowCustomValues ?? false);
+                      }}
+                    />
+                  </div>
+                  {deleter}
+                </DashboardVariableFilter>
+              );
+            case 'assignee':
+            case 'candidateGroup':
+              const identityFilter = filter.find((filter) => filter.type === type);
+              return (
+                <DashboardAssigneeFilter
+                  key={idx}
+                  config={data}
+                  type={type}
+                  filter={identityFilter?.data}
+                  reports={reports}
+                  setFilter={(newFilter) => {
+                    const rest = filter.filter((filter) => !equals(filter, identityFilter));
+                    if (newFilter) {
+                      setFilter([...rest, {type, data: newFilter, filterLevel: 'view'}]);
+                    } else {
+                      setFilter(rest);
+                    }
+                  }}
+                >
+                  <div className="editButton">
+                    <Button
+                      size="sm"
+                      kind="ghost"
+                      className="EditButton"
+                      icon
+                      disabled={!reports || reports.length === 0}
+                      onClick={() => {
+                        setFilterToEdit(idx);
+                        setAllowCustomValues(data.allowCustomValues);
+                      }}
+                      hasIconOnly
+                      renderIcon={Edit}
+                      iconDescription={t('common.edit')}
+                    />
+                  </div>
+                  {deleter}
+                </DashboardAssigneeFilter>
+              );
+            default:
+              return null;
+          }
+        })}
 
-      {typeof filterToEdit !== 'undefined' &&
-        availableFilters[filterToEdit].type === 'variable' && (
-          <VariableFilter
-            className="dashboardVariableFilter"
-            forceEnabled={(variable) =>
-              ['Date', 'Boolean'].includes(variable?.type) || (variable && allowCustomValues)
-            }
-            addFilter={({type, data}) => {
-              setAvailableFilters(
-                availableFilters.map((filter, idx) => {
-                  if (idx !== filterToEdit) {
-                    return filter;
-                  }
-                  if (['Boolean', 'Date'].includes(data.type)) {
-                    return {
-                      type,
-                      data: {name: data.name, type: data.type},
-                      filterLevel: 'instance',
-                    };
-                  } else {
-                    return {
-                      type,
-                      data: {
-                        data: {...data.data, allowCustomValues},
-                        name: data.name,
-                        type: data.type,
-                      },
-                      filterLevel: 'instance',
-                    };
-                  }
-                })
-              );
-              setFilter(
-                filter.filter((filter) => !isOfType(filter, availableFilters[filterToEdit]))
-              );
-              setFilterToEdit();
-              setAllowCustomValues(false);
-            }}
-            getPretext={(variable) => {
-              if (variable) {
-                let text;
-                switch (variable?.type) {
-                  case 'Date':
-                  case 'Boolean':
-                    text = t('dashboard.filter.modal.pretext.' + variable.type);
-                    break;
-                  default:
-                    text = t('dashboard.filter.modal.pretext.default');
-                }
-                return <div className="preText">{text}</div>;
+        {typeof filterToEdit !== 'undefined' &&
+          availableFilters[filterToEdit].type === 'variable' && (
+            <VariableFilter
+              className="dashboardVariableFilter"
+              forceEnabled={(variable) =>
+                ['Date', 'Boolean'].includes(variable?.type) || (variable && allowCustomValues)
               }
-            }}
-            getPosttext={(variable) => {
-              if (variable && !['Date', 'Boolean'].includes(variable.type)) {
+              addFilter={({type, data}) => {
+                setAvailableFilters(
+                  availableFilters.map((filter, idx) => {
+                    if (idx !== filterToEdit) {
+                      return filter;
+                    }
+                    if (['Boolean', 'Date'].includes(data.type)) {
+                      return {
+                        type,
+                        data: {name: data.name, type: data.type},
+                        filterLevel: 'instance',
+                      };
+                    } else {
+                      return {
+                        type,
+                        data: {
+                          data: {...data.data, allowCustomValues},
+                          name: data.name,
+                          type: data.type,
+                        },
+                        filterLevel: 'instance',
+                      };
+                    }
+                  })
+                );
+                setFilter(
+                  filter.filter((filter) => !isOfType(filter, availableFilters[filterToEdit]))
+                );
+                setFilterToEdit();
+                setAllowCustomValues(false);
+              }}
+              getPretext={(variable) => {
+                if (variable) {
+                  let text;
+                  switch (variable?.type) {
+                    case 'Date':
+                    case 'Boolean':
+                      text = t('dashboard.filter.modal.pretext.' + variable.type);
+                      break;
+                    default:
+                      text = t('dashboard.filter.modal.pretext.default');
+                  }
+                  return <div className="preText">{text}</div>;
+                }
+              }}
+              getPosttext={(variable) => {
+                if (variable && !['Date', 'Boolean'].includes(variable.type)) {
+                  return (
+                    <Checkbox
+                      id="allowCustomValues"
+                      labelText={t('dashboard.filter.modal.allowCustomValues')}
+                      className="customValueCheckbox"
+                      checked={allowCustomValues}
+                      onChange={(evt, {checked}) => setAllowCustomValues(checked)}
+                    />
+                  );
+                }
+                return null;
+              }}
+              close={() => {
+                setFilterToEdit();
+                setAllowCustomValues(false);
+              }}
+              config={{
+                getVariables: () => getVariableNames(reportIds),
+                getValues: (...args) => getVariableValues(reportIds, ...args),
+              }}
+              filterType="variable"
+              filterData={{
+                type: 'variable',
+                data: augmentFilterData(availableFilters[filterToEdit].data),
+              }}
+            />
+          )}
+
+        {typeof filterToEdit !== 'undefined' &&
+          ['assignee', 'candidateGroup'].includes(availableFilters[filterToEdit].type) && (
+            <AssigneeFilter
+              className="dashboardVariableFilter"
+              forceEnabled={() => allowCustomValues}
+              reportIds={reportIds}
+              addFilter={(data) => {
+                setAvailableFilters(
+                  availableFilters.map((filter, idx) => {
+                    if (idx !== filterToEdit) {
+                      return filter;
+                    }
+                    return update(data, {data: {allowCustomValues: {$set: allowCustomValues}}});
+                  })
+                );
+                setFilter(
+                  filter.filter((filter) => !isOfType(filter, availableFilters[filterToEdit]))
+                );
+                setFilterToEdit();
+                setAllowCustomValues(false);
+              }}
+              getPretext={() => {
+                return (
+                  <div className="preText">
+                    {t('dashboard.filter.modal.pretext.default')}{' '}
+                    {t('dashboard.filter.modal.pretext.flowNodeData')}
+                  </div>
+                );
+              }}
+              getPosttext={() => {
                 return (
                   <Checkbox
                     id="allowCustomValues"
                     labelText={t('dashboard.filter.modal.allowCustomValues')}
                     className="customValueCheckbox"
                     checked={allowCustomValues}
-                    onChange={(evt) => setAllowCustomValues(evt.target.checked)}
+                    onChange={(evt, {checked}) => setAllowCustomValues(checked)}
                   />
                 );
-              }
-              return null;
-            }}
-            close={() => {
-              setFilterToEdit();
-              setAllowCustomValues(false);
-            }}
-            config={{
-              getVariables: () => getVariableNames(reportIds),
-              getValues: (...args) => getVariableValues(reportIds, ...args),
-            }}
-            filterType="variable"
-            filterData={{
-              type: 'variable',
-              data: augmentFilterData(availableFilters[filterToEdit].data),
-            }}
-          />
-        )}
-
-      {typeof filterToEdit !== 'undefined' &&
-        ['assignee', 'candidateGroup'].includes(availableFilters[filterToEdit].type) && (
-          <AssigneeFilter
-            className="dashboardVariableFilter"
-            forceEnabled={() => allowCustomValues}
-            reportIds={reportIds}
-            addFilter={(data) => {
-              setAvailableFilters(
-                availableFilters.map((filter, idx) => {
-                  if (idx !== filterToEdit) {
-                    return filter;
-                  }
-                  return update(data, {data: {allowCustomValues: {$set: allowCustomValues}}});
-                })
-              );
-              setFilter(
-                filter.filter((filter) => !isOfType(filter, availableFilters[filterToEdit]))
-              );
-              setFilterToEdit();
-              setAllowCustomValues(false);
-            }}
-            getPretext={() => {
-              return (
-                <div className="preText">
-                  {t('dashboard.filter.modal.pretext.default')}{' '}
-                  {t('dashboard.filter.modal.pretext.flowNodeData')}
-                </div>
-              );
-            }}
-            getPosttext={() => {
-              return (
-                <Checkbox
-                  id="allowCustomValues"
-                  labelText={t('dashboard.filter.modal.allowCustomValues')}
-                  className="customValueCheckbox"
-                  checked={allowCustomValues}
-                  onChange={(evt) => setAllowCustomValues(evt.target.checked)}
-                />
-              );
-            }}
-            close={() => {
-              setFilterToEdit();
-              setAllowCustomValues(false);
-            }}
-            filterType={availableFilters[filterToEdit].type}
-            filterData={availableFilters[filterToEdit]}
-          />
-        )}
+              }}
+              close={() => {
+                setFilterToEdit();
+                setAllowCustomValues(false);
+              }}
+              filterType={availableFilters[filterToEdit].type}
+              filterData={availableFilters[filterToEdit]}
+            />
+          )}
+      </div>
     </div>
   );
 }

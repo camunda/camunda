@@ -3,19 +3,19 @@
 @use '@carbon/styles/scss/spacing';
 @import 'shared-styles/shared-styles.scss';
 
-.dark .Popover {
+.dark .Popover > .cds--popover > .popoverContent {
   @include theme.theme(themes.$g100);
 }
 
 .Popover {
   display: block;
-  @include theme.theme(themes.$g10);
 
   &.cds--popover--tab-tip > .cds--popover > .popoverContent {
     min-width: 100%;
   }
 
   > .cds--popover > .popoverContent {
+    @include theme.theme(themes.$g10);
     padding: spacing.$spacing-05;
 
     &.scrollable {
@@ -49,6 +49,7 @@
 
       svg {
         margin-right: 0.5rem;
+        flex-shrink: 0;
       }
     }
 

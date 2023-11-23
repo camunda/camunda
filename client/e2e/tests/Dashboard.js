@@ -215,7 +215,7 @@ test('sharing with filters', async (t) => {
   await u.addReportToDashboard(t, 'Blank report');
 
   await t.click(e.addFilterButton);
-  await t.click(Common.option('Instance State'));
+  await t.click(Common.menuOption('Instance State'));
 
   await u.save(t);
 
@@ -337,11 +337,11 @@ test('filters', async (t) => {
   await t.click(Common.editButton);
 
   await t.click(e.addFilterButton);
-  await t.click(Common.option('Instance State'));
+  await t.click(Common.menuOption('Instance State'));
   await t.click(e.addFilterButton);
-  await t.click(Common.option('Start Date'));
+  await t.click(Common.menuOption('Start Date'));
   await t.click(e.addFilterButton);
-  await t.click(Common.option('Variable'));
+  await t.click(Common.menuOption('Variable'));
 
   await t.typeText(Common.comboBox, 'invoiceCategory', {replace: true});
   await t.click(Common.carbonOption('invoiceCategory'));

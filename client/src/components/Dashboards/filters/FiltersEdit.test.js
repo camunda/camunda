@@ -40,7 +40,7 @@ it('should show added filters', () => {
 it('should allow removing existing filters', () => {
   const node = shallow(<FiltersEdit {...props} availableFilters={[{type: 'state'}]} />);
 
-  node.find('InstanceStateFilter .deleteButton').simulate('click');
+  node.find('InstanceStateFilter .DeleteButton').simulate('click');
 
   expect(props.setAvailableFilters).toHaveBeenCalledWith([]);
 });
@@ -50,7 +50,7 @@ it('should allow editing variable filters', () => {
     <FiltersEdit {...props} availableFilters={[{type: 'variable', data: {name: 'varName'}}]} />
   );
 
-  node.find('.editButton').simulate('click');
+  node.find('.EditButton').simulate('click');
 
   expect(node.find('.dashboardVariableFilter')).toExist();
   expect(node.find('.dashboardVariableFilter').prop('filterData')).toEqual({
@@ -67,7 +67,7 @@ it('should include a checkbox to allow custom values', () => {
     />
   );
 
-  node.find('.editButton').simulate('click');
+  node.find('.EditButton').simulate('click');
 
   const postText = node.find('.dashboardVariableFilter').prop('getPosttext')({type: 'String'});
   expect(postText.props.className).toBe('customValueCheckbox');
@@ -91,5 +91,5 @@ it('should disable edit button when there are no reports', () => {
     />
   );
 
-  expect(node.find('.editButton')).toBeDisabled();
+  expect(node.find('.EditButton')).toBeDisabled();
 });

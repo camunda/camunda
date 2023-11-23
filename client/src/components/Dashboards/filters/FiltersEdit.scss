@@ -1,24 +1,12 @@
 .FiltersEdit {
   .title {
     position: relative;
-    padding-right: 40px;
+    padding-right: 4rem;
 
     .deleteButton,
     .editButton {
       position: absolute;
-      font-size: 16px;
-      width: 16px;
-      height: 16px;
-
-      &:hover,
-      &:active {
-        background: none;
-      }
-
-      .Icon {
-        margin: 0;
-        vertical-align: baseline;
-      }
+      top: -12px;
     }
 
     .deleteButton {
@@ -26,7 +14,7 @@
     }
 
     .editButton {
-      right: 21px;
+      right: 2rem;
     }
   }
 }

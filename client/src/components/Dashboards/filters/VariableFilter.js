@@ -60,12 +60,14 @@ export default function VariableFilter({
 
   return (
     <div className="VariableFilter__Dashboard">
-      <Tooltip description={title}>
-        <div className="title">
-          <span>{title}</span>
-          {children}
-        </div>
-      </Tooltip>
+      <div className="title">
+        <Tooltip description={title}>
+          <button className="tooltipTrigger" type="button">
+            {title}
+          </button>
+        </Tooltip>
+        {children}
+      </div>
       <TypeComponent
         filter={filter}
         type={config.type}
