@@ -26,7 +26,7 @@ jobs:
   integration-tests:
     name: "[IT] ${{ matrix.name }}"
     timeout-minutes: 20
-    runs-on: [ self-hosted, linux, amd64, "16" ]
+    runs-on: [ self-hosted, linux, amd64, "16", "fast" ]
     strategy:
       fail-fast: false
       matrix:
@@ -120,7 +120,7 @@ jobs:
           name: "[IT] ${{ matrix.name }}"
   unit-tests:
     name: Unit tests
-    runs-on: [ self-hosted, linux, amd64, "16" ]
+    runs-on: [ self-hosted, linux, amd64, "16", "fast" ]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -221,7 +221,7 @@ jobs:
           name: "[Smoke] ${{ matrix.os }} with ${{ matrix.arch }}"
   property-tests:
     name: Property Tests
-    runs-on: [ self-hosted, linux, amd64, "16" ]
+    runs-on: [ self-hosted, linux, amd64, "16", "fast" ]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -256,7 +256,7 @@ jobs:
           name: Property Tests
   performance-tests:
     name: Performance Tests
-    runs-on: [ self-hosted, linux, amd64, "16" ]
+    runs-on: [ self-hosted, linux, amd64, "16", "fast" ]
     timeout-minutes: 30
     env:
       ZEEBE_PERFORMANCE_TEST_RESULTS_DIR: "/tmp/jmh"
