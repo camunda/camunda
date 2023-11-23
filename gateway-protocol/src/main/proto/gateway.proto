@@ -924,7 +924,7 @@ service Gateway {
       FAILED_PRECONDITION:
         - not all active elements in the source process instance are mapped to the elements in the target process
         - a mapping instruction changes the type of an element or event
-        - a mapping instruction refers to an supported element (i.e. some elements will be supported later on)
+        - a mapping instruction refers to an unsupported element (i.e. some elements will be supported later on)
         - a mapping instruction refers to element in unsupported scenarios.
         (i.e. migrating active elements with event subscriptions will be supported later on)
 
