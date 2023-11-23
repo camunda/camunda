@@ -29,7 +29,7 @@ import org.mockito.Mockito;
 public class JobUpdateTimeoutTest extends ClientTest {
 
   @Test
-  public void shouldUpdateTimeoutByKey() {
+  public void shouldUpdateTimeoutByKeyMillis() {
     // given
     final long jobKey = 12;
     final long timeout = 100;
@@ -46,7 +46,24 @@ public class JobUpdateTimeoutTest extends ClientTest {
   }
 
   @Test
-  public void shouldUpdateTimeout() {
+  public void shouldUpdateTimeoutByKeyDuration() {
+    // given
+    final long jobKey = 12;
+    final Duration timeout = Duration.ofMinutes(15);
+
+    // when
+    client.newUpdateTimeoutCommand(jobKey).timeout(timeout).send().join();
+
+    // then
+    final UpdateJobTimeoutRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobKey()).isEqualTo(jobKey);
+    assertThat(request.getTimeout()).isEqualTo(timeout.toMillis());
+
+    rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
+  public void shouldUpdateTimeoutMillis() {
     // given
     final long timeout = 100;
     final ActivatedJob job = Mockito.mock(ActivatedJob.class);
@@ -59,6 +76,24 @@ public class JobUpdateTimeoutTest extends ClientTest {
     final UpdateJobTimeoutRequest request = gatewayService.getLastRequest();
     assertThat(request.getJobKey()).isEqualTo(job.getKey());
     assertThat(request.getTimeout()).isEqualTo(timeout);
+
+    rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
+  public void shouldUpdateTimeoutDuration() {
+    // given
+    final Duration timeout = Duration.ofMinutes(10);
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+
+    // when
+    client.newUpdateTimeoutCommand(job).timeout(timeout).send().join();
+
+    // then
+    final UpdateJobTimeoutRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobKey()).isEqualTo(job.getKey());
+    assertThat(request.getTimeout()).isEqualTo(timeout.toMillis());
 
     rule.verifyDefaultRequestTimeout();
   }

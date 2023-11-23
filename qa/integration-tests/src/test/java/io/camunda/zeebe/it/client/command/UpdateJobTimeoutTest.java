@@ -55,29 +55,27 @@ public class UpdateJobTimeoutTest {
   }
 
   @Test
-  public void shouldUpdateJobTimeout() {
+  public void shouldUpdateJobTimeoutMillis() {
     // given
-    final long newTimeout = 900000;
+    final long timeout = 900000;
 
     // when
-    CLIENT_RULE.getClient().newUpdateTimeoutCommand(jobKey).timeout(newTimeout).send().join();
+    CLIENT_RULE.getClient().newUpdateTimeoutCommand(jobKey).timeout(timeout).send().join();
 
     // then
-    assertThat(jobRecords(JobIntent.UPDATE_TIMEOUT).withRecordKey(jobKey).exists()).isTrue();
+    assertTimeoutUpdated(timeout);
+  }
 
-    final Long updatedDeadline =
-        jobRecords(JobIntent.TIMEOUT_UPDATED)
-            .withRecordKey(jobKey)
-            .findFirst()
-            .map(r -> r.getValue().getDeadline())
-            .orElse(null);
+  @Test
+  public void shouldUpdateJobTimeoutDuration() {
+    // given
+    final Duration timeout = Duration.ofMinutes(15);
 
-    assertThat(updatedDeadline).isNotNull();
+    // when
+    CLIENT_RULE.getClient().newUpdateTimeoutCommand(jobKey).timeout(timeout).send().join();
 
-    assertThat(updatedDeadline)
-        .isCloseTo(
-            BROKER_RULE.getClock().getCurrentTimeInMillis() + newTimeout,
-            within(Duration.ofMillis(100).toMillis()));
+    // then
+    assertTimeoutUpdated(timeout.toMillis());
   }
 
   private ActivatedJob activateJob() {
@@ -96,5 +94,23 @@ public class UpdateJobTimeoutTest {
         .hasSize(1);
 
     return activateResponse.getJobs().get(0);
+  }
+
+  private void assertTimeoutUpdated(final long timeout) {
+    assertThat(jobRecords(JobIntent.UPDATE_TIMEOUT).withRecordKey(jobKey).exists()).isTrue();
+
+    final Long updatedDeadline =
+        jobRecords(JobIntent.TIMEOUT_UPDATED)
+            .withRecordKey(jobKey)
+            .findFirst()
+            .map(r -> r.getValue().getDeadline())
+            .orElse(null);
+
+    assertThat(updatedDeadline).isNotNull();
+
+    assertThat(updatedDeadline)
+        .isCloseTo(
+            BROKER_RULE.getClock().getCurrentTimeInMillis() + timeout,
+            within(Duration.ofMillis(100).toMillis()));
   }
 }
