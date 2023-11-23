@@ -64,9 +64,9 @@ jobs:
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.latest-major-minor-version) }}
             generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.latest-major-minor-version) }}
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.previous-latest-major-minor-version) }}
-            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.latest-major-minor-version) }}
+            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.previous-latest-major-minor-version) }}
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.previous-previous-latest-major-minor-version) }}
-            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.latest-major-minor-version) }}
+            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.previous-previous-latest-major-minor-version) }}
     name: Weekly E2E
     uses: ./.github/workflows/e2e-testbench.yaml
     with:
