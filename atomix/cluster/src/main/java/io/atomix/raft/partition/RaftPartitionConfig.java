@@ -22,11 +22,11 @@ import java.time.Duration;
 /** Configurations for a single partition. */
 public class RaftPartitionConfig {
 
-  private static final Duration DEFAULT_ELECTION_TIMEOUT = Duration.ofMillis(2500);
+  private static final Duration DEFAULT_ELECTION_TIMEOUT = Duration.ofMillis(250);
   private static final Duration DEFAULT_SNAPSHOT_REQUEST_TIMEOUT = Duration.ofMillis(2500);
-  private static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMillis(250);
+  private static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMillis(50);
   private static final boolean DEFAULT_PRIORITY_ELECTION = true;
-  private static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(5);
+  private static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(500);
   private static final int DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT = 3;
   private static final Duration DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT = Duration.ofSeconds(0);
   private static final int DEFAULT_SNAPSHOT_REPLICATION_THRESHOLD = 100;
