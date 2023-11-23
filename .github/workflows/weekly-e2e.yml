@@ -32,8 +32,11 @@ jobs:
       - uses: actions/checkout@v4
       - run: git fetch --tags
       - run: |
+          latest_major_minor_patch=$(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -Vr | head -n1)
           latest_major_minor=$(echo $latest_major_minor_patch | sed -E -e 's/\.[0-9]+$//')
+          previous_major_minor_patch=$(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | grep -v "${latest_major_minor}" | sort -Vr | head -n1)
           previous_major_minor=$(echo $previous_major_minor_patch | sed -E -e 's/\.[0-9]+$//')
+          previous_previous_major_minor_patch=$(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | grep -v "${latest_major_minor}" | grep -v "${previous_major_minor}" | sort -Vr | head -n1)
           previous_previous_major_minor=$(echo $previous_previous_major_minor_patch | sed -E -e 's/\.[0-9]+$//')
 
           if [ ! -z $latest_major_minor ] && [ ! -z $previous_major_minor ] && [ ! -z $previous_previous_major_minor ]; then
