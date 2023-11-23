@@ -193,12 +193,16 @@ class BpmnJS {
 
     // handle overlays
     if (!isEqual(this.#overlaysData, overlaysData)) {
-      this.#overlaysData = overlaysData;
-      diagramOverlaysStore.reset();
+      [
+        ...new Set(
+          [...this.#overlaysData, ...overlaysData].map(({type}) => type),
+        ),
+      ].forEach((type) => {
+        this.#removeOverlays(type);
+        diagramOverlaysStore.removeOverlay(type);
+      });
 
-      [...new Set(overlaysData.map(({type}) => type))].forEach(
-        this.#removeOverlays,
-      );
+      this.#overlaysData = overlaysData;
 
       overlaysData.forEach(
         ({payload, flowNodeId, position, type, isZoomFixed}) => {

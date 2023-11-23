@@ -11,6 +11,7 @@ import {operationsStore} from './operations';
 import {tracking} from 'modules/tracking';
 import {notificationsStore} from './notifications';
 import {panelStatesStore} from './panelStates';
+import {processStatisticsStore} from './processStatistics/processStatistics.migration.source';
 
 const STEPS = {
   elementMapping: {
@@ -138,6 +139,30 @@ class ProcessInstanceMigration {
       );
     }
   };
+
+  get flowNodeCountByTargetId() {
+    return Object.entries(this.state.flowNodeMapping).reduce<{
+      [targetElementId: string]: number;
+    }>((mappingByTarget, [sourceElementId, targetElementId]) => {
+      const previousCount = mappingByTarget[targetElementId];
+      const newCount = processStatisticsStore.flowNodeStates
+        .filter((state) => {
+          return (
+            state.flowNodeId === sourceElementId &&
+            ['active', 'incidents'].includes(state.flowNodeState)
+          );
+        })
+        .reduce((count, state) => {
+          return count + state.count;
+        }, 0);
+
+      return {
+        ...mappingByTarget,
+        [targetElementId]:
+          previousCount !== undefined ? previousCount + newCount : newCount,
+      };
+    }, {});
+  }
 
   requestBatchProcess = () => {
     const {batchOperationQuery} = processInstanceMigrationStore.state;

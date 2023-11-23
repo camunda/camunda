@@ -17,6 +17,10 @@ import {processXmlStore} from 'modules/stores/processXml/processXml.migration.ta
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {Diagram} from 'modules/components/Diagram';
 import {useEffect} from 'react';
+import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
+import {ModificationBadgeOverlay} from 'App/ProcessInstance/TopPanel/ModificationBadgeOverlay';
+
+const OVERLAY_TYPE = 'migrationTargetSummary';
 
 const TargetDiagram: React.FC = observer(() => {
   const {
@@ -24,8 +28,11 @@ const TargetDiagram: React.FC = observer(() => {
     selectedTargetProcessId,
   } = processesStore;
   const isDiagramLoading = processXmlStore.state.status === 'fetching';
-
   const isVersionSelected = selectedTargetVersion !== null;
+  const {isSummaryStep} = processInstanceMigrationStore;
+  const stateOverlays = diagramOverlaysStore.state.overlays.filter(
+    ({type}) => type === OVERLAY_TYPE,
+  );
 
   useEffect(() => {
     if (selectedTargetProcessId !== undefined) {
@@ -49,7 +56,7 @@ const TargetDiagram: React.FC = observer(() => {
   return (
     <DiagramWrapper>
       <Header
-        mode={processInstanceMigrationStore.isSummaryStep ? 'view' : 'edit'}
+        mode={isSummaryStep ? 'view' : 'edit'}
         label="Target"
         processName={selectedTargetProcess?.name ?? ''}
         processVersion={selectedTargetVersion?.toString() ?? ''}
@@ -71,9 +78,33 @@ const TargetDiagram: React.FC = observer(() => {
             // TODO https://github.com/camunda/operate/issues/5732
             selectedFlowNodeId={undefined}
             onFlowNodeSelection={() => {}}
-            // overlaysData={[]}
+            overlaysData={
+              isSummaryStep
+                ? Object.entries(
+                    processInstanceMigrationStore.flowNodeCountByTargetId,
+                  ).map(([targetId, count]) => ({
+                    payload: {count},
+                    type: OVERLAY_TYPE,
+                    flowNodeId: targetId,
+                    position: {top: -14, right: -7},
+                  }))
+                : []
+            }
           >
-            {/* overlays here  */}
+            {isSummaryStep &&
+              stateOverlays.map((overlay) => {
+                const payload = overlay.payload as {
+                  count: number;
+                };
+                return (
+                  <ModificationBadgeOverlay
+                    key={overlay.flowNodeId}
+                    newTokenCount={payload.count}
+                    cancelledTokenCount={0}
+                    container={overlay.container}
+                  />
+                );
+              })}
           </Diagram>
         )}
       </DiagramShell>

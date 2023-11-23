@@ -13,9 +13,16 @@ import {observer} from 'mobx-react';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {Diagram} from 'modules/components/Diagram';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
+import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
+import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
+import {StateOverlay} from 'modules/components/StateOverlay';
 
 const SourceDiagram: React.FC = observer(() => {
   const {processName, version} = processesStore.getSelectedProcessDetails();
+
+  const statisticsOverlays = diagramOverlaysStore.state.overlays.filter(
+    ({type}) => type.match(/^statistics/) !== null,
+  );
 
   return (
     <DiagramWrapper>
@@ -36,9 +43,28 @@ const SourceDiagram: React.FC = observer(() => {
             onFlowNodeSelection={(flowNodeId) => {
               processInstanceMigrationStore.selectSourceFlowNode(flowNodeId);
             }}
-            // overlaysData={[]}
+            overlaysData={
+              processInstanceMigrationStore.isSummaryStep
+                ? processStatisticsStore.overlaysData
+                : []
+            }
           >
-            {/* overlays here  */}
+            {processInstanceMigrationStore.isSummaryStep &&
+              statisticsOverlays.map((overlay) => {
+                const payload = overlay.payload as {
+                  flowNodeState: FlowNodeState;
+                  count: number;
+                };
+
+                return (
+                  <StateOverlay
+                    key={`${overlay.flowNodeId}-${payload.flowNodeState}`}
+                    state={payload.flowNodeState}
+                    count={payload.count}
+                    container={overlay.container}
+                  />
+                );
+              })}
           </Diagram>
         )}
       </DiagramShell>

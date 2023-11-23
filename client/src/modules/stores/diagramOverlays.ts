@@ -33,6 +33,12 @@ class DiagramOverlays {
     this.state.overlays.push(overlay);
   };
 
+  removeOverlay = (overlayType: Overlay['type']) => {
+    this.state.overlays = this.state.overlays.filter(
+      ({type}) => type !== overlayType,
+    );
+  };
+
   reset = () => {
     this.state = {...DEFAULT_STATE};
   };

@@ -24,7 +24,7 @@ const ModificationBadgeOverlay: React.FC<Props> = ({
   }
 
   return createPortal(
-    <Modifications>
+    <Modifications data-testid="modifications-overlay">
       {newTokenCount > 0 && (
         <>
           <PlusIcon data-testid="badge-plus-icon" />

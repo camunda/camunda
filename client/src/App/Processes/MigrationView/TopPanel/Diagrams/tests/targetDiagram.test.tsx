@@ -14,15 +14,17 @@ import {useEffect} from 'react';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {
   groupedProcessesMock,
+  mockProcessStatistics,
   mockProcessWithInputOutputMappingsXML,
   mockProcessXML,
 } from 'modules/testUtils';
 import {processesStore} from 'modules/stores/processes/processes.migration';
 import {TargetDiagram} from '../TargetDiagram';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {act} from 'react-dom/test-utils';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {processXmlStore} from 'modules/stores/processXml/processXml.migration.target';
+import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
+import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
 
 type Props = {
   children?: React.ReactNode;
@@ -34,10 +36,37 @@ const Wrapper = ({children}: Props) => {
       processesStore.reset();
       processInstanceMigrationStore.reset();
       processXmlStore.reset();
+      processStatisticsStore.reset();
     };
   });
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <button
+        onClick={() => processInstanceMigrationStore.setCurrentStep('summary')}
+      >
+        Summary
+      </button>
+      <button
+        onClick={() =>
+          processInstanceMigrationStore.setCurrentStep('elementMapping')
+        }
+      >
+        Element Mapping
+      </button>
+      <button
+        onClick={() => {
+          processInstanceMigrationStore.updateFlowNodeMapping({
+            sourceId: 'ServiceTask_0kt6c5i',
+            targetId: 'ServiceTask_0kt6c5i',
+          });
+        }}
+      >
+        map elements
+      </button>
+    </>
+  );
 };
 
 describe('Target Diagram', () => {
@@ -73,11 +102,10 @@ describe('Target Diagram', () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessXML().withSuccess(mockProcessXML);
 
-    processInstanceMigrationStore.setCurrentStep('elementMapping');
-
     await processesStore.fetchProcesses();
     const {user} = render(<TargetDiagram />, {wrapper: Wrapper});
 
+    await user.click(screen.getByRole('button', {name: /element mapping/i}));
     await user.click(screen.getByRole('combobox', {name: 'Target Process'}));
     await user.click(screen.getByRole('option', {name: 'New demo process'}));
 
@@ -98,7 +126,7 @@ describe('Target Diagram', () => {
     ).toBeEnabled();
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
-    act(() => processInstanceMigrationStore.setCurrentStep('summary'));
+    await user.click(screen.getByRole('button', {name: /summary/i}));
 
     expect(
       screen.queryByRole('combobox', {
@@ -114,7 +142,7 @@ describe('Target Diagram', () => {
     expect(screen.getByText('New demo process')).toBeInTheDocument();
     expect(screen.getByText('3')).toBeInTheDocument();
 
-    act(() => processInstanceMigrationStore.setCurrentStep('elementMapping'));
+    await user.click(screen.getByRole('button', {name: /element mapping/i}));
 
     expect(
       screen.getByRole('combobox', {
@@ -132,12 +160,11 @@ describe('Target Diagram', () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessXML().withSuccess(mockProcessXML);
 
-    processInstanceMigrationStore.setCurrentStep('elementMapping');
-
     await processesStore.fetchProcesses();
 
     const {user} = render(<TargetDiagram />, {wrapper: Wrapper});
 
+    await user.click(screen.getByRole('button', {name: /element mapping/i}));
     await user.click(screen.getByRole('combobox', {name: 'Target Process'}));
     await user.click(screen.getByRole('option', {name: 'New demo process'}));
 
@@ -161,18 +188,47 @@ describe('Target Diagram', () => {
   it('should display error message on selection if diagram could not be fetched', async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessXML().withServerError();
-
-    processInstanceMigrationStore.setCurrentStep('elementMapping');
-
     await processesStore.fetchProcesses();
 
     const {user} = render(<TargetDiagram />, {wrapper: Wrapper});
 
+    await user.click(screen.getByRole('button', {name: /element mapping/i}));
     await user.click(screen.getByRole('combobox', {name: 'Target Process'}));
     await user.click(screen.getByRole('option', {name: 'New demo process'}));
 
     expect(
       await screen.findByText('Data could not be fetched'),
     ).toBeInTheDocument();
+  });
+
+  it('should render flow node overlays', async () => {
+    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
+    await processesStore.fetchProcesses();
+    await processStatisticsStore.fetchProcessStatistics();
+
+    const {user} = render(<TargetDiagram />, {wrapper: Wrapper});
+
+    await user.click(screen.getByRole('button', {name: /element mapping/i}));
+    await user.click(screen.getByRole('combobox', {name: 'Target Process'}));
+    await user.click(screen.getByRole('option', {name: 'New demo process'}));
+    await user.click(screen.getByRole('button', {name: /map elements/i}));
+
+    expect(await screen.findByText(/diagram mock/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: /summary/i}));
+
+    expect(
+      await screen.findByTestId('modifications-overlay'),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('modifications-overlay')).toHaveTextContent('1');
+
+    await user.click(screen.getByRole('button', {name: /element mapping/i}));
+
+    expect(await screen.findByText(/diagram mock/i)).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('modifications-overlay'),
+    ).not.toBeInTheDocument();
   });
 });

@@ -28,7 +28,6 @@ const Processes: React.FC = observer(() => {
     // this effect is necessary to bypass the callback prompt when a migration
     // is triggered from migration view (MigrationView/Footer/index.tsx)
     if (hasPendingRequest) {
-      console.log('dummy confirm');
       confirmNavigation();
     }
   }, [hasPendingRequest, confirmNavigation]);
