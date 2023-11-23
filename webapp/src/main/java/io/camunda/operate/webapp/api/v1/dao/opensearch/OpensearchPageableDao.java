@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 
 public abstract class OpensearchPageableDao<T> extends OpensearchDao {
 
-  public OpensearchPageableDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper, RichOpenSearchClient richOpenSearchClient) {
+  protected OpensearchPageableDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper, RichOpenSearchClient richOpenSearchClient) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
   }
 

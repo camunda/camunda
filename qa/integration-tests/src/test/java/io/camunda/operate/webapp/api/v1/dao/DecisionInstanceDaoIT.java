@@ -10,7 +10,6 @@ import io.camunda.operate.entities.dmn.DecisionType;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
-import io.camunda.operate.webapp.api.v1.dao.elasticsearch.ElasticsearchDecisionInstanceDao;
 import io.camunda.operate.webapp.api.v1.entities.DecisionInstance;
 import io.camunda.operate.webapp.api.v1.entities.DecisionInstanceState;
 import io.camunda.operate.webapp.api.v1.entities.Query;
@@ -34,12 +33,12 @@ import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.PROCE
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.STATE;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ElasticsearchDecisionInstanceDaoIT extends OperateZeebeAbstractIT {
+public class DecisionInstanceDaoIT extends OperateZeebeAbstractIT {
 
-  protected static final Logger logger = LoggerFactory.getLogger(ElasticsearchDecisionInstanceDaoIT.class);
+  protected static final Logger logger = LoggerFactory.getLogger(DecisionInstanceDaoIT.class);
 
   @Autowired
-  ElasticsearchDecisionInstanceDao dao;
+  DecisionInstanceDao dao;
 
   @Autowired
   private DecisionInstanceTemplate decisionInstanceTemplate;
@@ -94,9 +93,9 @@ public class ElasticsearchDecisionInstanceDaoIT extends OperateZeebeAbstractIT {
       assertThat(decisionInstance.getDecisionName()).isEqualTo("Invoice Classification");
       assertThat(decisionInstance.getDecisionVersion()).isEqualTo(1);
       assertThat(decisionInstance.getTenantId()).isEqualTo(DEFAULT_TENANT_ID);
-      assertThat(decisionInstance.getEvaluatedInputs().size()).isEqualTo(2);
+      assertThat(decisionInstance.getEvaluatedInputs()).hasSize(2);
       assertThat(decisionInstance.getEvaluatedInputs()).extracting("value").containsExactly("1200", "\"Travel Expenses\"");
-      assertThat(decisionInstance.getEvaluatedOutputs().size()).isEqualTo(1);
+      assertThat(decisionInstance.getEvaluatedOutputs()).hasSize(1);
       assertThat(decisionInstance.getEvaluatedOutputs()).extracting("value").containsExactly("\"day-to-day expense\"");
     });
   }
@@ -276,15 +275,13 @@ public class ElasticsearchDecisionInstanceDaoIT extends OperateZeebeAbstractIT {
 
   protected Long deployDecisionAndProcess() {
     tester.deployDecision("invoiceBusinessDecisions_v_1.dmn").waitUntil().decisionsAreDeployed(2);
-    Long procDefinitionKey = tester.deployProcess("invoice.bpmn").waitUntil().processIsDeployed()
+    return tester.deployProcess("invoice.bpmn").waitUntil().processIsDeployed()
             .getProcessDefinitionKey();
-    return procDefinitionKey;
   }
 
   protected Long startProcessWithDecision(String payload) {
-    Long procInstanceKey = tester.startProcessInstance("invoice", payload)
+    return tester.startProcessInstance("invoice", payload)
             .waitUntil().processInstanceIsStarted().getProcessInstanceKey();
-    return procInstanceKey;
   }
 
   protected void given(Runnable conditions) throws Exception {

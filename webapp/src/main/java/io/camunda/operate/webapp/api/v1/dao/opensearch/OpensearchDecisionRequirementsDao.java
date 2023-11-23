@@ -108,18 +108,16 @@ public class OpensearchDecisionRequirementsDao extends OpensearchKeyFilteringDao
   protected void buildFiltering(Query<DecisionRequirements> query, SearchRequest.Builder request) {
     final DecisionRequirements filter = query.getFilter();
     if (filter != null) {
-      List<org.opensearch.client.opensearch._types.query_dsl.Query> queryTerms = new LinkedList<>();
-      queryTerms.add(buildTermQuery(DecisionRequirements.ID, filter.getId()));
-      queryTerms.add(buildTermQuery(DecisionRequirements.KEY, filter.getKey()));
-      queryTerms.add(buildTermQuery(DecisionRequirements.DECISION_REQUIREMENTS_ID, filter.getDecisionRequirementsId()));
-      queryTerms.add(buildTermQuery(DecisionRequirements.TENANT_ID, filter.getTenantId()));
-      queryTerms.add(buildTermQuery(DecisionRequirements.NAME, filter.getName()));
-      queryTerms.add(buildTermQuery(DecisionRequirements.VERSION, filter.getVersion()));
-      queryTerms.add(buildTermQuery(DecisionRequirements.RESOURCE_NAME, filter.getResourceName()));
+      var queryTerms = Arrays.asList(
+          buildTermQuery(DecisionRequirements.ID, filter.getId()), buildTermQuery(DecisionRequirements.KEY, filter.getKey()),
+          buildTermQuery(DecisionRequirements.DECISION_REQUIREMENTS_ID, filter.getDecisionRequirementsId()),
+          buildTermQuery(DecisionRequirements.TENANT_ID, filter.getTenantId()),
+          buildTermQuery(DecisionRequirements.NAME, filter.getName()),
+          buildTermQuery(DecisionRequirements.VERSION, filter.getVersion()),
+          buildTermQuery(DecisionRequirements.RESOURCE_NAME, filter.getResourceName())
+      );
 
-      if (!queryTerms.isEmpty()) {
-        request.query(queryDSLWrapper.and(queryTerms));
-      }
+      request.query(queryDSLWrapper.and(queryTerms));
     }
   }
 }

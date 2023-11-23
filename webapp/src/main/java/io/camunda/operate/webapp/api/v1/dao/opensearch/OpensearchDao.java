@@ -19,7 +19,7 @@ public abstract class OpensearchDao {
   protected final OpensearchRequestDSLWrapper requestDSLWrapper;
   protected final RichOpenSearchClient richOpenSearchClient;
 
-  public OpensearchDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
+  protected OpensearchDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
                        RichOpenSearchClient richOpenSearchClient) {
     this.queryDSLWrapper = queryDSLWrapper;
     this.requestDSLWrapper = requestDSLWrapper;
@@ -42,6 +42,13 @@ public abstract class OpensearchDao {
   protected Query buildTermQuery(final String name, final String value) {
     if (!stringIsEmpty(value)) {
       return queryDSLWrapper.term(name, value);
+    }
+    return null;
+  }
+
+  protected Query buildMatchDateQuery(final String name,final String dateString) {
+    if (!stringIsEmpty(dateString)){
+      return queryDSLWrapper.gteLte(name, dateString, dateString);
     }
     return null;
   }

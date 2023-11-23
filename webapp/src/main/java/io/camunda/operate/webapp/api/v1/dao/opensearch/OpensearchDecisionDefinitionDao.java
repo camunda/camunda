@@ -94,16 +94,15 @@ public class OpensearchDecisionDefinitionDao extends OpensearchKeyFilteringDao<D
     DecisionDefinition filter = query.getFilter();
 
     if (filter != null) {
-      List<org.opensearch.client.opensearch._types.query_dsl.Query> queryTerms = new LinkedList<>();
-      queryTerms.add(buildTermQuery(DecisionDefinition.ID, filter.getId()));
-      queryTerms.add(buildTermQuery(DecisionDefinition.KEY, filter.getKey()));
-      queryTerms.add(buildTermQuery(DecisionDefinition.DECISION_ID, filter.getDecisionId()));
-      queryTerms.add(buildTermQuery(DecisionDefinition.TENANT_ID, filter.getTenantId()));
-      queryTerms.add(buildTermQuery(DecisionDefinition.NAME, filter.getName()));
-      queryTerms.add(buildTermQuery(DecisionDefinition.VERSION, filter.getVersion()));
-      queryTerms.add(buildTermQuery(DecisionDefinition.DECISION_REQUIREMENTS_ID, filter.getDecisionRequirementsId()));
-      queryTerms.add(buildTermQuery(DecisionDefinition.DECISION_REQUIREMENTS_KEY, filter.getDecisionRequirementsKey()));
-      queryTerms.add(buildFilteringBy(filter.getDecisionRequirementsName(), filter.getDecisionRequirementsVersion()));
+      var queryTerms = Arrays.asList(
+          buildTermQuery(DecisionDefinition.ID, filter.getId()), buildTermQuery(DecisionDefinition.KEY, filter.getKey()),
+          buildTermQuery(DecisionDefinition.DECISION_ID, filter.getDecisionId()),
+          buildTermQuery(DecisionDefinition.TENANT_ID, filter.getTenantId()), buildTermQuery(DecisionDefinition.NAME, filter.getName()),
+          buildTermQuery(DecisionDefinition.VERSION, filter.getVersion()),
+          buildTermQuery(DecisionDefinition.DECISION_REQUIREMENTS_ID, filter.getDecisionRequirementsId()),
+          buildTermQuery(DecisionDefinition.DECISION_REQUIREMENTS_KEY, filter.getDecisionRequirementsKey()),
+          buildFilteringBy(filter.getDecisionRequirementsName(), filter.getDecisionRequirementsVersion())
+      );
 
       request.query(queryDSLWrapper.and(queryTerms));
     }
