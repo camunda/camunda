@@ -621,6 +621,31 @@ message ModifyProcessInstanceResponse {
 
 }
 
+message MigrateProcessInstanceRequest {
+  // key of the process instance to migrate
+  int64 processInstanceKey = 1;
+  // the migration plan that defines target process and element mappings
+  MigrationPlan migrationPlan = 2;
+
+  message MigrationPlan {
+    // the key of process definition to migrate the process instance to
+    int64 targetProcessDefinitionKey = 1;
+    // the mapping instructions describe how to map elements from the source process definition to the target process definition
+    repeated MappingInstruction mappingInstructions = 2;
+  }
+
+  message MappingInstruction {
+    // the element id to migrate from
+    string sourceElementId = 1;
+    // the element id to migrate into
+    string targetElementId = 2;
+  }
+}
+
+message MigrateProcessInstanceResponse {
+
+}
+
 message DeleteResourceRequest {
   // The key of the resource that should be deleted. This can either be the key
   // of a process definition, the key of a decision requirements definition or the key of a form.
@@ -885,6 +910,30 @@ service Gateway {
         - scope of variable is unknown
    */
   rpc ModifyProcessInstance (ModifyProcessInstanceRequest) returns (ModifyProcessInstanceResponse) {
+
+  }
+
+  /*
+    Migrates the process instance to the specified process definition.
+    In simple terms, this is handled by updating the active element's process.
+
+    Errors:
+      NOT_FOUND:
+        - the process instance referenced by `processInstanceKey` is not active
+
+      FAILED_PRECONDITION:
+        - not all active elements in the source process instance are mapped to the elements in the target process
+        - a mapping instruction changes the type of an element or event
+        - a mapping instruction refers to an supported element (i.e. some elements will be supported later on)
+        - a mapping instruction refers to element in unsupported scenarios.
+        (i.e. migrating active elements with event subscriptions will be supported later on)
+
+      INVALID_ARGUMENT:
+        - the source element id does not refer to an element in the source process definition
+        - a source element id is mapped by multiple mapping instructions.
+        For example, the engine cannot determine how to migrate a process instance when the instructions are: [A->B, A->C].
+   */
+  rpc MigrateProcessInstance (MigrateProcessInstanceRequest) returns (MigrateProcessInstanceResponse) {
 
   }
 
