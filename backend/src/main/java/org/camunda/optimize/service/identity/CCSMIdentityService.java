@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
@@ -94,25 +95,49 @@ public class CCSMIdentityService extends AbstractIdentityService {
 
   @Override
   public IdentitySearchResultResponseDto searchForIdentitiesAsUser(final String userId, final String searchString,
-                                                                   final int maxResults, final boolean excludeUserGroups) {
+                                                                   final int maxResults,
+                                                                   final boolean excludeUserGroups) {
     final Optional<String> token = ccsmTokenService.getCurrentUserAuthToken();
     if (token.isPresent()) {
-      try {
-        final List<IdentityWithMetadataResponseDto> users = identity.users()
-          .withAccessToken(token.get())
-          .search(searchString)
-          .stream()
-          .limit(maxResults)
-          .map(this::mapToUserDto)
-          .collect(Collectors.toList());
-        return new IdentitySearchResultResponseDto(users);
-      } catch (Exception e) {
-        log.warn("Failed searching for users.", e);
-        return new IdentitySearchResultResponseDto(Collections.emptyList());
-      }
+      return new IdentitySearchResultResponseDto(searchForIdentityAsUser(token.get(), searchString, maxResults));
     } else {
       log.warn("Could not search for identities because no user token present.");
       return new IdentitySearchResultResponseDto(Collections.emptyList());
+    }
+  }
+
+  private List<IdentityWithMetadataResponseDto> searchForIdentityAsUser(final String token, final String searchString,
+                                                                        final int maxResults) {
+    try {
+      return identity.users()
+        .withAccessToken(token)
+        .search(searchString)
+        .stream()
+        .limit(maxResults)
+        .map(this::mapToUserDto)
+        .map(IdentityWithMetadataResponseDto.class::cast)
+        .toList();
+    } catch (Exception e) {
+      log.warn("Failed searching for users with searchString {}.", searchString, e);
+      return Collections.emptyList();
+    }
+  }
+
+  public List<UserDto> getUsersByEmail(final List<String> emails) {
+    final Set<String> lowerCasedEmails = emails.stream().map(String::toLowerCase).collect(Collectors.toSet());
+    final Optional<String> token = ccsmTokenService.getCurrentUserAuthToken();
+    if (token.isPresent()) {
+      return lowerCasedEmails.stream()
+        .flatMap(email -> searchForIdentityAsUser(
+          token.get(),
+          email,
+          1 // we are only expecting 1 matching user per email
+        ).stream())
+        .map(UserDto.class::cast)
+        .toList();
+    } else {
+      log.warn("Could not retrieve users by email because no user token present.");
+      return Collections.emptyList();
     }
   }
 
