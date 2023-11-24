@@ -36,6 +36,8 @@ public final class BoundaryEventTransformer implements ModelElementTransformer<B
       element.setEventType(BpmnEventType.ERROR);
     } else if (element.isEscalation()) {
       element.setEventType(BpmnEventType.ESCALATION);
+    } else if (element.isCompensation()) {
+      element.setEventType(BpmnEventType.COMPENSATION);
     }
 
     element.setInterrupting(event.cancelActivity());

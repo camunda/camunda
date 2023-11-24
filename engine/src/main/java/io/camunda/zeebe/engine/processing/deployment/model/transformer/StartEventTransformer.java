@@ -49,6 +49,8 @@ public final class StartEventTransformer implements ModelElementTransformer<Star
       startEvent.setEventType(BpmnEventType.ESCALATION);
     } else if (startEvent.isSignal()) {
       startEvent.setEventType(BpmnEventType.SIGNAL);
+    } else if (startEvent.isCompensation()) {
+      startEvent.setEventType(BpmnEventType.COMPENSATION);
     }
 
     if (element.getScope() instanceof FlowNode) {

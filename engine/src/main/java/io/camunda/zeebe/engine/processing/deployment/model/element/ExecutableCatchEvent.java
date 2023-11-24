@@ -27,6 +27,8 @@ public interface ExecutableCatchEvent extends ExecutableFlowElement {
 
   boolean isSignal();
 
+  boolean isCompensation();
+
   default boolean isNone() {
     return !isTimer() && !isMessage() && !isError() && !isLink() && !isEscalation() && !isSignal();
   }

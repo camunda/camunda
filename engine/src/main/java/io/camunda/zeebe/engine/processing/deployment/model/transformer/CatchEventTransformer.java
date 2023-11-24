@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelE
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.engine.processing.timer.CronTimer;
 import io.camunda.zeebe.model.bpmn.instance.CatchEvent;
+import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
@@ -65,9 +66,8 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
       transformMessageEventDefinition(
           context, executableElement, (MessageEventDefinition) eventDefinition);
 
-    } else if (eventDefinition instanceof TimerEventDefinition) {
+    } else if (eventDefinition instanceof final TimerEventDefinition timerDefinition) {
       final var expressionLanguage = context.getExpressionLanguage();
-      final var timerDefinition = (TimerEventDefinition) eventDefinition;
       transformTimerEventDefinition(expressionLanguage, executableElement, timerDefinition);
 
     } else if (eventDefinition instanceof ErrorEventDefinition) {
@@ -82,6 +82,8 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
     } else if (eventDefinition instanceof SignalEventDefinition) {
       transformSignalEventDefinition(
           context, executableElement, (SignalEventDefinition) eventDefinition);
+    } else if (eventDefinition instanceof CompensateEventDefinition) {
+      transformCompensationEventDefinition(executableElement);
     }
   }
 
@@ -209,5 +211,12 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
     final ExecutableSignal executableSignal = context.getSignal(signal.getId());
     executableElement.setSignal(executableSignal);
     executableElement.setEventType(BpmnEventType.SIGNAL);
+  }
+
+  private void transformCompensationEventDefinition(
+      final ExecutableCatchEventElement executableElement) {
+
+    executableElement.setCompensation(true);
+    executableElement.setEventType(BpmnEventType.COMPENSATION);
   }
 }
