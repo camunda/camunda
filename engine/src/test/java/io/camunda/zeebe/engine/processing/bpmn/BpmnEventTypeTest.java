@@ -407,17 +407,6 @@ public class BpmnEventTypeTest {
                       end -> end.compensateEventDefinition().compensateEventDefinitionDone())
                   .done();
             }
-          },
-          new BpmnEventTypeScenario(
-              "Compensation Start Event", BpmnElementType.START_EVENT, BpmnEventType.COMPENSATION) {
-            @Override
-            BpmnModelInstance modelInstance() {
-              return Bpmn.createExecutableProcess(processId())
-                  .startEvent(elementId())
-                  .compensation()
-                  .endEvent()
-                  .done();
-            }
           });
 
   @Rule

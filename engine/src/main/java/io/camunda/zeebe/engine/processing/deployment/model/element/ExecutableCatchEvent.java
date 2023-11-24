@@ -30,7 +30,13 @@ public interface ExecutableCatchEvent extends ExecutableFlowElement {
   boolean isCompensation();
 
   default boolean isNone() {
-    return !isTimer() && !isMessage() && !isError() && !isLink() && !isEscalation() && !isSignal();
+    return !isTimer()
+        && !isMessage()
+        && !isError()
+        && !isLink()
+        && !isEscalation()
+        && !isSignal()
+        && !isCompensation();
   }
 
   ExecutableMessage getMessage();
