@@ -16,9 +16,9 @@ import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWriter;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
-import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.job.importing.VariableUpdateElasticsearchImportJob;
+import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
+import org.camunda.optimize.service.importing.DatabaseImportJob;
+import org.camunda.optimize.service.importing.job.VariableUpdateDatabaseImportJob;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
@@ -35,7 +35,7 @@ import static org.camunda.optimize.service.util.VariableHelper.isProcessVariable
 @Slf4j
 public class VariableUpdateInstanceImportService implements ImportService<HistoricVariableUpdateInstanceDto> {
 
-  private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final VariableImportAdapterProvider variableImportAdapterProvider;
   private final ProcessVariableUpdateWriter variableWriter;
   private final CamundaEventImportService camundaEventService;
@@ -51,7 +51,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
                                              final EngineContext engineContext,
                                              final ProcessDefinitionResolverService processDefinitionResolverService,
                                              final ObjectVariableService objectVariableService) {
-    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+    this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
 
@@ -72,21 +72,21 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
       List<ProcessVariableDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
-      ElasticsearchImportJob<ProcessVariableDto> elasticsearchImportJob = createElasticsearchImportJob(
+      DatabaseImportJob<ProcessVariableDto> databaseImportJob = createDatabaseImportJob(
         newOptimizeEntities,
         importCompleteCallback
       );
-      addElasticsearchImportJobToQueue(elasticsearchImportJob);
+      addDatabaseImportJobToQueue(databaseImportJob);
     }
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
-    return elasticsearchImportJobExecutor;
+  public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
+    return databaseImportJobExecutor;
   }
 
-  private void addElasticsearchImportJobToQueue(ElasticsearchImportJob elasticsearchImportJob) {
-    elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
+  private void addDatabaseImportJobToQueue(DatabaseImportJob databaseImportJob) {
+    databaseImportJobExecutor.executeImportJob(databaseImportJob);
   }
 
   private List<ProcessVariableDto> mapEngineEntitiesToOptimizeEntities(
@@ -250,10 +250,10 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
     return value == null || value.equals(0L);
   }
 
-  private ElasticsearchImportJob<ProcessVariableDto> createElasticsearchImportJob(
+  private DatabaseImportJob<ProcessVariableDto> createDatabaseImportJob(
     List<ProcessVariableDto> processVariables,
     Runnable callback) {
-    VariableUpdateElasticsearchImportJob importJob = new VariableUpdateElasticsearchImportJob(
+    VariableUpdateDatabaseImportJob importJob = new VariableUpdateDatabaseImportJob(
       variableWriter,
       camundaEventService,
       configurationService,

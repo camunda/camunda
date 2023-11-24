@@ -11,13 +11,14 @@ import org.camunda.optimize.service.db.reader.ImportIndexReader;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.importing.EngineImportIndexHandler;
 import org.camunda.optimize.service.importing.page.IdSetBasedImportPage;
-import org.camunda.optimize.service.util.EsHelper;
+import org.camunda.optimize.service.util.DatabaseHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
 import jakarta.annotation.PostConstruct;
+
 import java.util.Optional;
 import java.util.Set;
 
@@ -26,6 +27,7 @@ import java.util.Set;
 public abstract class DefinitionXmlImportIndexHandler
   implements EngineImportIndexHandler<IdSetBasedImportPage, AllEntitiesBasedImportIndexDto> {
 
+  //todo depends on the implementations of database writers utils handle it in the scope of the OPT-7228
   @Autowired
   protected OptimizeElasticsearchClient esClient;
   @Autowired
@@ -47,7 +49,7 @@ public abstract class DefinitionXmlImportIndexHandler
   @Override
   public AllEntitiesBasedImportIndexDto getIndexStateDto() {
     AllEntitiesBasedImportIndexDto importIndexDto = new AllEntitiesBasedImportIndexDto();
-    importIndexDto.setEsTypeIndexRefersTo(getElasticsearchTypeForStoring());
+    importIndexDto.setEsTypeIndexRefersTo(getDatabaseTypeForStoring());
     importIndexDto.setImportIndex(importIndex);
     importIndexDto.setEngine(getEngineAlias());
     return importIndexDto;
@@ -65,20 +67,20 @@ public abstract class DefinitionXmlImportIndexHandler
 
   @PostConstruct
   protected void init() {
-    readIndexFromElasticsearch();
+    readIndexFromDatabase();
   }
 
   protected abstract Set<String> performSearchQuery();
 
-  protected abstract String getElasticsearchTypeForStoring();
+  protected abstract String getDatabaseTypeForStoring();
 
-  private String getElasticsearchId() {
-    return EsHelper.constructKey(getElasticsearchTypeForStoring(), getEngineAlias());
+  private String getDatabaseId() {
+    return DatabaseHelper.constructKey(getDatabaseTypeForStoring(), getEngineAlias());
   }
 
-  private void readIndexFromElasticsearch() {
+  private void readIndexFromDatabase() {
     Optional<AllEntitiesBasedImportIndexDto> storedIndex =
-      importIndexReader.getImportIndex(getElasticsearchId());
+      importIndexReader.getImportIndex(getDatabaseId());
     storedIndex.ifPresent(
       allEntitiesBasedImportIndexDto -> importIndex = allEntitiesBasedImportIndexDto.getImportIndex()
     );

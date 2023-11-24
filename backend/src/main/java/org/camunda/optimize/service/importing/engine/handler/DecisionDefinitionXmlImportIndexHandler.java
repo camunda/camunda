@@ -28,10 +28,10 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 import static org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_ID;
-import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -53,6 +53,7 @@ public class DecisionDefinitionXmlImportIndexHandler extends DefinitionXmlImport
     return engineContext.getEngineAlias();
   }
 
+  //todo depends on the implementations of database writers utils handle it in the scope of the OPT-7228
   @Override
   protected Set<String> performSearchQuery() {
     log.debug("Performing decision definition search query!");
@@ -87,7 +88,7 @@ public class DecisionDefinitionXmlImportIndexHandler extends DefinitionXmlImport
   }
 
   @Override
-  protected String getElasticsearchTypeForStoring() {
+  protected String getDatabaseTypeForStoring() {
     return DECISION_DEFINITION_XML_IMPORT_INDEX_DOC_ID;
   }
 
@@ -98,4 +99,5 @@ public class DecisionDefinitionXmlImportIndexHandler extends DefinitionXmlImport
       .must(termQuery(DATA_SOURCE + "." + DataSourceDto.Fields.type, DataImportSourceType.ENGINE))
       .must(termQuery(DATA_SOURCE + "." + DataSourceDto.Fields.name, engineContext.getEngineAlias()));
   }
+
 }

@@ -9,8 +9,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import org.camunda.optimize.service.db.writer.PositionBasedImportIndexWriter;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
-import org.camunda.optimize.service.es.job.importing.StorePositionBasedIndexElasticsearchImportJob;
+import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
+import org.camunda.optimize.service.importing.job.StorePositionBasedIndexDatabaseImportJob;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
@@ -24,11 +24,11 @@ import java.util.List;
 public class StorePositionBasedIndexImportService implements ImportService<PositionBasedImportIndexDto> {
 
   private final PositionBasedImportIndexWriter importIndexWriter;
-  private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  private final DatabaseImportJobExecutor databaseImportJobExecutor;
 
   public StorePositionBasedIndexImportService(final ConfigurationService configurationService,
                                               final PositionBasedImportIndexWriter importIndexWriter) {
-    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+    this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.importIndexWriter = importIndexWriter;
@@ -36,17 +36,17 @@ public class StorePositionBasedIndexImportService implements ImportService<Posit
 
   public void executeImport(final List<PositionBasedImportIndexDto> importIndexesToStore,
                             final Runnable importCompleteCallback) {
-    final StorePositionBasedIndexElasticsearchImportJob storeIndexesImportJob =
-      new StorePositionBasedIndexElasticsearchImportJob(
+    final StorePositionBasedIndexDatabaseImportJob storeIndexesImportJob =
+      new StorePositionBasedIndexDatabaseImportJob(
       importIndexWriter, importCompleteCallback
     );
     storeIndexesImportJob.setEntitiesToImport(importIndexesToStore);
-    elasticsearchImportJobExecutor.executeImportJob(storeIndexesImportJob);
+    databaseImportJobExecutor.executeImportJob(storeIndexesImportJob);
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
-    return elasticsearchImportJobExecutor;
+  public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
+    return databaseImportJobExecutor;
   }
 
 }

@@ -31,7 +31,7 @@ public abstract class PositionBasedImportIndex<TBuilder> extends DefaultIndexMap
   private static final String SEQUENCE_OF_LAST_ENTITY = PositionBasedImportIndexDto.Fields.sequenceOfLastEntity;
   private static final String HAS_SEEN_SEQUENCE_FIELD = PositionBasedImportIndexDto.Fields.hasSeenSequenceField;
   private static final String TIMESTAMP_OF_LAST_ENTITY = ImportIndexDto.Fields.timestampOfLastEntity;
-  private static final String ES_TYPE_INDEX_REFERS_TO = PositionBasedImportIndexDto.Fields.esTypeIndexRefersTo;
+  private static final String DB_TYPE_INDEX_REFERS_TO = PositionBasedImportIndexDto.Fields.esTypeIndexRefersTo;
   private static final String DATA_SOURCE = ImportIndexDto.Fields.dataSource;
 
   @Override
@@ -57,7 +57,7 @@ public abstract class PositionBasedImportIndex<TBuilder> extends DefaultIndexMap
         .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
         .field(DYNAMIC_PROPERTY_TYPE, true)
       .endObject()
-      .startObject(ES_TYPE_INDEX_REFERS_TO)
+      .startObject(DB_TYPE_INDEX_REFERS_TO)
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(POSITION_OF_LAST_ENTITY)
@@ -79,4 +79,5 @@ public abstract class PositionBasedImportIndex<TBuilder> extends DefaultIndexMap
       .endObject();
     // @formatter:on
   }
+
 }

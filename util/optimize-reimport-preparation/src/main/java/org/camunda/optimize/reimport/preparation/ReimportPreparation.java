@@ -44,6 +44,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_TRACE_STAT
 import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_PROFILE;
 
 /**
  * Deletes all engine data and the import indexes from Elasticsearch such that Optimize reimports all data from the
@@ -54,7 +55,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE
 @Slf4j
 public class ReimportPreparation {
 
-  // TODO deal with this with OPT-7244
+  // TODO deal with this with OPT-7438
   private static final List<IndexMappingCreator<?>> STATIC_INDICES_TO_DELETE = List.of(
     new ImportIndexIndexES(),
     new TimestampBasedImportIndexES(),
@@ -87,7 +88,7 @@ public class ReimportPreparation {
       customHeaderProvider.initPlugins();
       final OptimizeElasticsearchClient prefixAwareClient = new OptimizeElasticsearchClient(
         restHighLevelClient,
-        new OptimizeIndexNameService(configurationService),
+        new OptimizeIndexNameService(configurationService, ELASTICSEARCH_PROFILE),
         new RequestOptionsProvider(customHeaderProvider.getPlugins(), configurationService)
       );
 

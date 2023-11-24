@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.service.db.reader.ImportIndexReader;
 import org.camunda.optimize.service.importing.page.AllEntitiesBasedImportPage;
-import org.camunda.optimize.service.util.EsHelper;
+import org.camunda.optimize.service.util.DatabaseHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -31,9 +31,9 @@ public abstract class AllEntitiesBasedImportIndexHandler
 
   private long importIndex = 0;
 
-  public void readIndexFromElasticsearch() {
+  public void readIndexFromDatabase() {
     Optional<AllEntitiesBasedImportIndexDto> storedIndex =
-      importIndexReader.getImportIndex(EsHelper.constructKey(getElasticsearchImportIndexType(), getEngineAlias()));
+      importIndexReader.getImportIndex(DatabaseHelper.constructKey(getDatabaseImportIndexType(), getEngineAlias()));
     storedIndex.ifPresent(
       allEntitiesBasedImportIndexDto -> importIndex =
         allEntitiesBasedImportIndexDto.getImportIndex()
@@ -44,7 +44,7 @@ public abstract class AllEntitiesBasedImportIndexHandler
   public AllEntitiesBasedImportIndexDto getIndexStateDto() {
     AllEntitiesBasedImportIndexDto indexToStore = new AllEntitiesBasedImportIndexDto();
     indexToStore.setImportIndex(importIndex);
-    indexToStore.setEsTypeIndexRefersTo(getElasticsearchImportIndexType());
+    indexToStore.setEsTypeIndexRefersTo(getDatabaseImportIndexType());
     indexToStore.setEngine(getEngineAlias());
     return indexToStore;
   }
@@ -59,10 +59,10 @@ public abstract class AllEntitiesBasedImportIndexHandler
 
   @PostConstruct
   protected void init() {
-    readIndexFromElasticsearch();
+    readIndexFromDatabase();
   }
 
-  protected abstract String getElasticsearchImportIndexType();
+  protected abstract String getDatabaseImportIndexType();
 
   protected void moveImportIndex(long units) {
     importIndex += units;

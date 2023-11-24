@@ -53,6 +53,7 @@ public class ProcessDefinitionXmlImportIndexHandler extends DefinitionXmlImportI
     return engineContext.getEngineAlias();
   }
 
+  //todo depends on the implementations of database writers utils handle it in the scope of the OPT-7228
   @Override
   protected Set<String> performSearchQuery() {
     log.debug("Performing process definition search query!");
@@ -86,7 +87,7 @@ public class ProcessDefinitionXmlImportIndexHandler extends DefinitionXmlImportI
   }
 
   @Override
-  protected String getElasticsearchTypeForStoring() {
+  protected String getDatabaseTypeForStoring() {
     return PROCESS_DEFINITION_XML_IMPORT_INDEX_DOC_ID;
   }
 
@@ -97,4 +98,5 @@ public class ProcessDefinitionXmlImportIndexHandler extends DefinitionXmlImportI
       .must(termQuery(DATA_SOURCE + "." + DataSourceDto.Fields.type, DataImportSourceType.ENGINE))
       .must(termQuery(DATA_SOURCE + "." + DataSourceDto.Fields.name, engineContext.getEngineAlias()));
   }
+
 }

@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import org.camunda.optimize.service.db.writer.PositionBasedImportIndexWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.util.EsHelper;
+import org.camunda.optimize.service.util.DatabaseHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -56,7 +56,7 @@ public class PositionBasedImportIndexWriterES implements PositionBasedImportInde
     );
     try {
       bulkRequest.add(new IndexRequest(POSITION_BASED_IMPORT_INDEX_NAME)
-                        .id(EsHelper.constructKey(optimizeDto.getEsTypeIndexRefersTo(), optimizeDto.getDataSource()))
+                        .id(DatabaseHelper.constructKey(optimizeDto.getEsTypeIndexRefersTo(), optimizeDto.getDataSource()))
                         .source(objectMapper.writeValueAsString(optimizeDto), XContentType.JSON));
     } catch (JsonProcessingException e) {
       log.error("Was not able to write position based import index of type [{}] to Elasticsearch. Reason: {}",

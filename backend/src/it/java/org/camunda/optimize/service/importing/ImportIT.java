@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.job.importing.VariableUpdateElasticsearchImportJob;
+import org.camunda.optimize.service.importing.job.VariableUpdateDatabaseImportJob;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
@@ -46,7 +46,7 @@ public class ImportIT extends AbstractImportIT {
   @RegisterExtension
   @Order(5)
   protected final LogCapturer logCapturer =
-    LogCapturer.create().captureForType(VariableUpdateElasticsearchImportJob.class);
+    LogCapturer.create().captureForType(VariableUpdateDatabaseImportJob.class);
 
   @BeforeEach
   public void setup() {

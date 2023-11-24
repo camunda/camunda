@@ -10,9 +10,9 @@ import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.db.writer.activity.RunningActivityInstanceWriter;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
-import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.job.importing.RunningActivityInstanceElasticsearchImportJob;
+import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
+import org.camunda.optimize.service.importing.DatabaseImportJob;
+import org.camunda.optimize.service.importing.job.RunningActivityInstanceDatabaseImportJob;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
@@ -26,7 +26,7 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
-  protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  protected DatabaseImportJobExecutor databaseImportJobExecutor;
   protected EngineContext engineContext;
   private final RunningActivityInstanceWriter runningActivityInstanceWriter;
   private final CamundaEventImportService camundaEventService;
@@ -38,7 +38,7 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
                                               final EngineContext engineContext,
                                               final ConfigurationService configurationService,
                                               final ProcessDefinitionResolverService processDefinitionResolverService) {
-    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+    this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.engineContext = engineContext;
@@ -56,19 +56,19 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
       List<FlowNodeEventDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
-      ElasticsearchImportJob<FlowNodeEventDto> elasticsearchImportJob =
-        createElasticsearchImportJob(newOptimizeEntities, importCompleteCallback);
-      addElasticsearchImportJobToQueue(elasticsearchImportJob);
+      DatabaseImportJob<FlowNodeEventDto> databaseImportJob =
+        createDatabaseImportJob(newOptimizeEntities, importCompleteCallback);
+      addDatabaseImportJobToQueue(databaseImportJob);
     }
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
-    return elasticsearchImportJobExecutor;
+  public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
+    return databaseImportJobExecutor;
   }
 
-  private void addElasticsearchImportJobToQueue(ElasticsearchImportJob elasticsearchImportJob) {
-    elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
+  private void addDatabaseImportJobToQueue(DatabaseImportJob databaseImportJob) {
+    databaseImportJobExecutor.executeImportJob(databaseImportJob);
   }
 
   private List<FlowNodeEventDto> mapEngineEntitiesToOptimizeEntities(List<HistoricActivityInstanceEngineDto> engineEntities) {
@@ -88,10 +88,10 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
       .collect(Collectors.toList());
   }
 
-  private ElasticsearchImportJob<FlowNodeEventDto> createElasticsearchImportJob(List<FlowNodeEventDto> events,
-                                                                                Runnable callback) {
-    RunningActivityInstanceElasticsearchImportJob activityImportJob =
-      new RunningActivityInstanceElasticsearchImportJob(
+  private DatabaseImportJob<FlowNodeEventDto> createDatabaseImportJob(List<FlowNodeEventDto> events,
+                                                                           Runnable callback) {
+    RunningActivityInstanceDatabaseImportJob activityImportJob =
+      new RunningActivityInstanceDatabaseImportJob(
         runningActivityInstanceWriter,
         camundaEventService,
         configurationService,

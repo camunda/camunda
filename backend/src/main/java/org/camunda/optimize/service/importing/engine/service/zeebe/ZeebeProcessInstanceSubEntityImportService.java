@@ -10,9 +10,9 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.db.writer.ZeebeProcessInstanceWriter;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
-import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.job.importing.ZeebeProcessInstanceElasticsearchImportJob;
+import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
+import org.camunda.optimize.service.importing.DatabaseImportJob;
+import org.camunda.optimize.service.importing.job.ZeebeProcessInstanceDatabaseImportJob;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
@@ -21,7 +21,7 @@ import java.util.List;
 @Slf4j
 public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements ImportService<T> {
 
-  protected final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  protected final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final ZeebeProcessInstanceWriter processInstanceWriter;
   protected final ConfigurationService configurationService;
   protected final ProcessDefinitionReader processDefinitionReader;
@@ -31,7 +31,7 @@ public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements I
                                                        final ZeebeProcessInstanceWriter processInstanceWriter,
                                                        final int partitionId,
                                                        final ProcessDefinitionReader processDefinitionReader) {
-    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+    this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.processInstanceWriter = processInstanceWriter;
@@ -49,15 +49,15 @@ public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements I
     if (newDataIsAvailable) {
       final List<ProcessInstanceDto> newOptimizeEntities =
         filterAndMapZeebeRecordsToOptimizeEntities(zeebeRecords);
-      final ElasticsearchImportJob<ProcessInstanceDto> elasticsearchImportJob =
-        createElasticsearchImportJob(newOptimizeEntities, importCompleteCallback);
-      addElasticsearchImportJobToQueue(elasticsearchImportJob);
+      final DatabaseImportJob<ProcessInstanceDto> databaseImportJob =
+        createDatabaseImportJob(newOptimizeEntities, importCompleteCallback);
+      addDatabaseImportJobToQueue(databaseImportJob);
     }
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
-    return elasticsearchImportJobExecutor;
+  public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
+    return databaseImportJobExecutor;
   }
 
   protected ProcessInstanceDto createSkeletonProcessInstance(final String processDefinitionKey,
@@ -76,15 +76,15 @@ public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements I
     return processInstanceDto;
   }
 
-  private void addElasticsearchImportJobToQueue(ElasticsearchImportJob<ProcessInstanceDto> elasticsearchImportJob) {
-    elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
+  private void addDatabaseImportJobToQueue(DatabaseImportJob<ProcessInstanceDto> databaseImportJob) {
+    databaseImportJobExecutor.executeImportJob(databaseImportJob);
   }
 
-  private ElasticsearchImportJob<ProcessInstanceDto> createElasticsearchImportJob(
+  private DatabaseImportJob<ProcessInstanceDto> createDatabaseImportJob(
     final List<ProcessInstanceDto> processInstanceDtos,
     final Runnable importCompleteCallback) {
-    ZeebeProcessInstanceElasticsearchImportJob processInstanceImportJob =
-      new ZeebeProcessInstanceElasticsearchImportJob(
+    ZeebeProcessInstanceDatabaseImportJob processInstanceImportJob =
+      new ZeebeProcessInstanceDatabaseImportJob(
         processInstanceWriter, configurationService, importCompleteCallback
       );
     processInstanceImportJob.setEntitiesToImport(processInstanceDtos);

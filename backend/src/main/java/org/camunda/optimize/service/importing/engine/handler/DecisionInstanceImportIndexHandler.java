@@ -28,7 +28,7 @@ public class DecisionInstanceImportIndexHandler extends TimestampBasedEngineImpo
   }
 
   @Override
-  protected String getElasticsearchDocID() {
+  protected String getDatabaseDocID() {
     return DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
   }
 

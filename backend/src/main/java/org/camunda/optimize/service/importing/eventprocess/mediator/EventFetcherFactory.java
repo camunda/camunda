@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 public class EventFetcherFactory {
 
   private final ExternalEventService externalEventService;
-
   private final CamundaActivityEventReader camundaActivityEventReader;
   private final ExternalEventReader externalEventReader;
   private final TimestampBasedImportIndexReader timestampBasedImportIndexReader;
@@ -60,4 +59,5 @@ public class EventFetcherFactory {
                                            + eventImportSourceDto.getEventImportSourceType());
     }
   }
+
 }

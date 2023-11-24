@@ -20,7 +20,7 @@ public class CamundaEventTraceImportIndexHandler extends TimestampBasedEventData
   private final String definitionKey;
 
   @Override
-  protected String getElasticsearchDocID() {
+  protected String getDatabaseDocID() {
     return DatabaseConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + definitionKey;
   }
 }

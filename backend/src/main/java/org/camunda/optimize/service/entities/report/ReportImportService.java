@@ -39,7 +39,7 @@ import org.camunda.optimize.service.exceptions.conflict.OptimizeNonDefinitionSco
 import org.camunda.optimize.service.exceptions.conflict.OptimizeNonTenantScopeCompliantException;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
-import org.elasticsearch.common.util.set.Sets;
+import org.camunda.optimize.service.util.DataUtil;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -317,7 +317,7 @@ public class ReportImportService {
       || !isAllOrLatest && definitionVersions.isEmpty()) {
       throw new OptimizeImportDefinitionDoesNotExistException(
         "Could not find the required definition for this report",
-        Sets.newHashSet(DefinitionExceptionItemDto.builder()
+        DataUtil.newHashSet(DefinitionExceptionItemDto.builder()
                           .type(definitionType)
                           .key(definitionKey)
                           .tenantIds(tenantIds)
@@ -416,7 +416,7 @@ public class ReportImportService {
     if (targetVersion != exportDto.getSourceIndexVersion()) {
       throw new OptimizeImportIncorrectIndexVersionException(
         "Could not import because source and target index versions do not match",
-        Sets.newHashSet(
+        DataUtil.newHashSet(
           ImportIndexMismatchDto.builder()
             .indexName(targetName)
             .sourceIndexVersion(exportDto.getSourceIndexVersion())
@@ -462,7 +462,7 @@ public class ReportImportService {
           "User with ID [%s] is not authorized to access the required definition.",
           userId
         ),
-        Sets.newHashSet(DefinitionExceptionItemDto.builder()
+        DataUtil.newHashSet(DefinitionExceptionItemDto.builder()
                           .type(definitionType)
                           .key(definitionKey)
                           .tenantIds(tenantIds)
@@ -488,4 +488,5 @@ public class ReportImportService {
       );
     }
   }
+
 }

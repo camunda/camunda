@@ -13,7 +13,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.job.importing.VariableUpdateElasticsearchImportJob;
+import org.camunda.optimize.service.importing.job.VariableUpdateDatabaseImportJob;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
@@ -86,7 +86,7 @@ public abstract class AbstractImportEndpointFailureIT {
   @RegisterExtension
   @Order(4)
   protected final LogCapturer logCapturer =
-    LogCapturer.create().captureForType(VariableUpdateElasticsearchImportJob.class);
+    LogCapturer.create().captureForType(VariableUpdateDatabaseImportJob.class);
 
   @BeforeAll
   public void beforeAll() {

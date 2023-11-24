@@ -29,7 +29,7 @@ public class RunningActivityInstanceImportIndexHandler extends TimestampBasedEng
   }
 
   @Override
-  protected String getElasticsearchDocID() {
+  protected String getDatabaseDocID() {
     return RUNNING_ACTIVITY_INSTANCE_IMPORT_INDEX_DOC_ID;
   }
 

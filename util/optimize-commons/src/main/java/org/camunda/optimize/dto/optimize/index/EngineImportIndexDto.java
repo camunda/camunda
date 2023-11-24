@@ -8,6 +8,9 @@ package org.camunda.optimize.dto.optimize.index;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 public interface EngineImportIndexDto extends OptimizeDto {
+
   String getEngine();
+
   String getEsTypeIndexRefersTo();
+
 }

@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.dto.optimize.index.ImportIndexDto;
 import org.camunda.optimize.service.db.reader.importindex.AbstractImportIndexReader;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.util.EsHelper;
+import org.camunda.optimize.service.util.DatabaseHelper;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
@@ -37,7 +37,7 @@ public abstract class AbstractImportIndexReaderES<T extends ImportIndexDto<D>, D
 
     GetResponse getResponse = null;
     GetRequest getRequest = new GetRequest(getImportIndexName())
-      .id(EsHelper.constructKey(typeIndexComesFrom, dataSourceDto));
+      .id(DatabaseHelper.constructKey(typeIndexComesFrom, dataSourceDto));
     try {
       getResponse = esClient.get(getRequest);
     } catch (IOException e) {

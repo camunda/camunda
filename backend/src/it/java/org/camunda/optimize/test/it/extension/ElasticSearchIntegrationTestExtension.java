@@ -42,7 +42,7 @@ import org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndex
 import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndexES;
 import org.camunda.optimize.service.es.schema.index.events.EventIndexES;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.EsHelper;
+import org.camunda.optimize.service.util.DatabaseHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
@@ -133,6 +133,7 @@ import static org.camunda.optimize.service.es.OptimizeElasticsearchClient.INDICE
 import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.mapHits;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_PROFILE;
 import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
@@ -633,7 +634,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
 
   @SneakyThrows
   public OffsetDateTime getLastImportTimestampOfTimestampBasedImportIndex(final String esType, final String engine) {
-    GetRequest getRequest = new GetRequest(TIMESTAMP_BASED_IMPORT_INDEX_NAME).id(EsHelper.constructKey(esType, engine));
+    GetRequest getRequest = new GetRequest(TIMESTAMP_BASED_IMPORT_INDEX_NAME).id(DatabaseHelper.constructKey(esType, engine));
     GetResponse response = prefixAwareRestHighLevelClient.get(getRequest);
     if (response.isExists()) {
       return OBJECT_MAPPER.readValue(response.getSourceAsString(), TimestampBasedImportIndexDto.class)
@@ -771,7 +772,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     log.info("Creating ES Client with host {} and port {}", esConfig.getHost(), esConfig.getHttpPort());
     prefixAwareRestHighLevelClient = new OptimizeElasticsearchClient(
       ElasticsearchHighLevelRestClientBuilder.build(configurationService),
-      new OptimizeIndexNameService(configurationService)
+      new OptimizeIndexNameService(configurationService, ELASTICSEARCH_PROFILE)
     );
     adjustClusterSettings();
     CLIENT_CACHE.put(clientKey, prefixAwareRestHighLevelClient);

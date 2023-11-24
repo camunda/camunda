@@ -10,9 +10,9 @@ import org.camunda.optimize.dto.engine.TenantEngineDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.db.writer.TenantWriter;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
-import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.job.importing.TenantElasticsearchImportJob;
+import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
+import org.camunda.optimize.service.importing.DatabaseImportJob;
+import org.camunda.optimize.service.importing.job.TenantDatabaseImportJob;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
@@ -20,14 +20,14 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class TenantImportService implements ImportService<TenantEngineDto> {
-  private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final EngineContext engineContext;
   private final TenantWriter tenantWriter;
 
   public TenantImportService(final ConfigurationService configurationService,
                              final EngineContext engineContext,
                              final TenantWriter tenantWriter) {
-    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+    this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.engineContext = engineContext;
@@ -40,17 +40,17 @@ public class TenantImportService implements ImportService<TenantEngineDto> {
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
       final List<TenantDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
-      addElasticsearchImportJobToQueue(createElasticsearchImportJob(newOptimizeEntities, importCompleteCallback));
+      addDatabaseImportJobToQueue(createDatabaseImportJob(newOptimizeEntities, importCompleteCallback));
     }
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
-    return elasticsearchImportJobExecutor;
+  public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
+    return databaseImportJobExecutor;
   }
 
-  private void addElasticsearchImportJobToQueue(final ElasticsearchImportJob elasticsearchImportJob) {
-    elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
+  private void addDatabaseImportJobToQueue(final DatabaseImportJob databaseimportJob) {
+    databaseImportJobExecutor.executeImportJob(databaseimportJob);
   }
 
   private List<TenantDto> mapEngineEntitiesToOptimizeEntities(final List<TenantEngineDto> engineEntities) {
@@ -59,9 +59,9 @@ public class TenantImportService implements ImportService<TenantEngineDto> {
       .collect(Collectors.toList());
   }
 
-  private ElasticsearchImportJob<TenantDto> createElasticsearchImportJob(final List<TenantDto> tenantDtos,
-                                                                         final Runnable importCompleteCallback) {
-    final TenantElasticsearchImportJob importJob = new TenantElasticsearchImportJob(
+  private DatabaseImportJob<TenantDto> createDatabaseImportJob(final List<TenantDto> tenantDtos,
+                                                                    final Runnable importCompleteCallback) {
+    final TenantDatabaseImportJob importJob = new TenantDatabaseImportJob(
       tenantWriter,
       importCompleteCallback
     );

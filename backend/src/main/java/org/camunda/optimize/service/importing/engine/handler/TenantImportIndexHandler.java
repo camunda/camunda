@@ -49,7 +49,7 @@ public class TenantImportIndexHandler extends AllEntitiesBasedImportIndexHandler
   }
 
   @Override
-  protected String getElasticsearchImportIndexType() {
+  protected String getDatabaseImportIndexType() {
     return DatabaseConstants.TENANT_INDEX_NAME;
   }
 
@@ -58,4 +58,5 @@ public class TenantImportIndexHandler extends AllEntitiesBasedImportIndexHandler
     super.resetImportIndex();
     alreadyImportedTenants.clear();
   }
+
 }

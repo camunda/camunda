@@ -7,12 +7,12 @@ package org.camunda.optimize.service.importing.zeebe.mediator.factory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.service.zeebe.ZeebeProcessDefinitionImportService;
-import org.camunda.optimize.service.importing.zeebe.fetcher.ZeebeProcessDefinitionFetcher;
+import org.camunda.optimize.service.importing.zeebe.db.ZeebeProcessDefinitionFetcher;
 import org.camunda.optimize.service.importing.zeebe.mediator.ZeebeProcessDefinitionImportMediator;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -28,11 +28,11 @@ public class ZeebeProcessDefinitionImportMediatorFactory extends AbstractZeebeIm
   private final ProcessDefinitionWriter processDefinitionWriter;
 
   public ZeebeProcessDefinitionImportMediatorFactory(final BeanFactory beanFactory,
-                                                     final ImportIndexHandlerRegistry importIndexHandlerRegistry,
-                                                     final ConfigurationService configurationService,
-                                                     final ProcessDefinitionWriter processDefinitionWriter,
-                                                     final ObjectMapper objectMapper,
-                                                     final OptimizeElasticsearchClient esClient) {
+                                                       final ImportIndexHandlerRegistry importIndexHandlerRegistry,
+                                                       final ConfigurationService configurationService,
+                                                       final ProcessDefinitionWriter processDefinitionWriter,
+                                                       final ObjectMapper objectMapper,
+                                                       final DatabaseClient esClient) {
     super(beanFactory, importIndexHandlerRegistry, configurationService, objectMapper, esClient);
     this.processDefinitionWriter = processDefinitionWriter;
   }
@@ -45,7 +45,7 @@ public class ZeebeProcessDefinitionImportMediatorFactory extends AbstractZeebeIm
         beanFactory.getBean(
           ZeebeProcessDefinitionFetcher.class,
           zeebeDataSourceDto.getPartitionId(),
-          esClient,
+          databaseClient,
           objectMapper,
           configurationService
         ),
@@ -59,4 +59,5 @@ public class ZeebeProcessDefinitionImportMediatorFactory extends AbstractZeebeIm
       )
     );
   }
+
 }

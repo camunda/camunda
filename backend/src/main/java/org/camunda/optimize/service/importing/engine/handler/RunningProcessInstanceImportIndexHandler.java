@@ -31,7 +31,7 @@ public class RunningProcessInstanceImportIndexHandler extends TimestampBasedEngi
   }
 
   @Override
-  protected String getElasticsearchDocID() {
+  protected String getDatabaseDocID() {
     return RUNNING_PROCESS_INSTANCE_IMPORT_INDEX_DOC_ID;
   }
 

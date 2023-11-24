@@ -47,6 +47,7 @@ import static org.camunda.optimize.service.util.configuration.EnvironmentPropert
 @Slf4j
 @Component
 public class ImportSchedulerManagerService implements ConfigurationReloadable {
+
   private final ImportIndexHandlerRegistry importIndexHandlerRegistry;
   private final BeanFactory beanFactory;
   private final EngineContextFactory engineContextFactory;
@@ -54,6 +55,7 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
   private final List<AbstractIngestedImportMediatorFactory> ingestedMediatorFactories;
   private final List<AbstractEngineImportMediatorFactory> engineMediatorFactories;
   private final List<AbstractZeebeImportMediatorFactory> zeebeMediatorFactories;
+
   @Autowired
   private Environment environment;
 

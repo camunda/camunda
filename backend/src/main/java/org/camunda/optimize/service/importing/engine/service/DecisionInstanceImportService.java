@@ -23,9 +23,9 @@ import org.camunda.optimize.plugin.importing.variable.PluginDecisionInputDto;
 import org.camunda.optimize.plugin.importing.variable.PluginDecisionOutputDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.db.writer.DecisionInstanceWriter;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
-import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.job.importing.DecisionInstanceElasticsearchImportJob;
+import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
+import org.camunda.optimize.service.importing.DatabaseImportJob;
+import org.camunda.optimize.service.importing.job.DecisionInstanceDatabaseImportJob;
 import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionNotFoundException;
 import org.camunda.optimize.service.importing.engine.service.definition.DecisionDefinitionResolverService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -38,7 +38,7 @@ import static org.camunda.optimize.service.util.VariableHelper.isDecisionVariabl
 
 @Slf4j
 public class DecisionInstanceImportService implements ImportService<HistoricDecisionInstanceDto> {
-  private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final EngineContext engineContext;
   private final DecisionInstanceWriter decisionInstanceWriter;
   private final DecisionDefinitionResolverService decisionDefinitionResolverService;
@@ -51,7 +51,7 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
                                        final DecisionDefinitionResolverService decisionDefinitionResolverService,
                                        final DecisionInputImportAdapterProvider decisionInputImportAdapterProvider,
                                        final DecisionOutputImportAdapterProvider decisionOutputImportAdapterProvider) {
-    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+    this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.engineContext = engineContext;
@@ -69,15 +69,15 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
     if (newDataIsAvailable) {
       final List<DecisionInstanceDto> optimizeDtos = mapEngineEntitiesToOptimizeEntities(engineDtoList);
 
-      final ElasticsearchImportJob<DecisionInstanceDto> elasticsearchImportJob = createElasticsearchImportJob(
+      final DatabaseImportJob<DecisionInstanceDto> databaseImportJob = createDatabaseImportJob(
         optimizeDtos, importCompleteCallback);
-      addElasticsearchImportJobToQueue(elasticsearchImportJob);
+      addDatabaseImportJobToQueue(databaseImportJob);
     }
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
-    return elasticsearchImportJobExecutor;
+  public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
+    return databaseImportJobExecutor;
   }
 
   public Optional<DecisionInstanceDto> mapEngineEntityToOptimizeEntity(HistoricDecisionInstanceDto engineEntity) {
@@ -112,8 +112,8 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
     ));
   }
 
-  private void addElasticsearchImportJobToQueue(ElasticsearchImportJob elasticsearchImportJob) {
-    elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
+  private void addDatabaseImportJobToQueue(DatabaseImportJob databaseImportJob) {
+    databaseImportJobExecutor.executeImportJob(databaseImportJob);
   }
 
   private List<DecisionInstanceDto> mapEngineEntitiesToOptimizeEntities(List<HistoricDecisionInstanceDto> engineEntities) {
@@ -124,9 +124,9 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
       .collect(Collectors.toList());
   }
 
-  private ElasticsearchImportJob<DecisionInstanceDto> createElasticsearchImportJob(List<DecisionInstanceDto> decisionInstanceDtos,
-                                                                                   Runnable callback) {
-    final DecisionInstanceElasticsearchImportJob importJob = new DecisionInstanceElasticsearchImportJob(
+  private DatabaseImportJob<DecisionInstanceDto> createDatabaseImportJob(List<DecisionInstanceDto> decisionInstanceDtos,
+                                                                              Runnable callback) {
+    final DecisionInstanceDatabaseImportJob importJob = new DecisionInstanceDatabaseImportJob(
       decisionInstanceWriter,
       callback
     );

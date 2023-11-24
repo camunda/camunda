@@ -7,13 +7,13 @@ package org.camunda.optimize.service.importing.zeebe.mediator.factory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.db.writer.ZeebeProcessInstanceWriter;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.service.zeebe.ZeebeIncidentImportService;
-import org.camunda.optimize.service.importing.zeebe.fetcher.ZeebeIncidentFetcher;
+import org.camunda.optimize.service.importing.zeebe.db.ZeebeIncidentFetcher;
 import org.camunda.optimize.service.importing.zeebe.mediator.ZeebeIncidentImportMediator;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -30,13 +30,13 @@ public class ZeebeIncidentImportMediatorFactory extends AbstractZeebeImportMedia
   private final ProcessDefinitionReader processDefinitionReader;
 
   public ZeebeIncidentImportMediatorFactory(final BeanFactory beanFactory,
-                                            final ImportIndexHandlerRegistry importIndexHandlerRegistry,
-                                            final ConfigurationService configurationService,
-                                            final ZeebeProcessInstanceWriter zeebeProcessInstanceWriter,
-                                            final ProcessDefinitionReader processDefinitionReader,
-                                            final ObjectMapper objectMapper,
-                                            final OptimizeElasticsearchClient esClient) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService, objectMapper, esClient);
+                                              final ImportIndexHandlerRegistry importIndexHandlerRegistry,
+                                              final ConfigurationService configurationService,
+                                              final ZeebeProcessInstanceWriter zeebeProcessInstanceWriter,
+                                              final ProcessDefinitionReader processDefinitionReader,
+                                              final ObjectMapper objectMapper,
+                                              final DatabaseClient databaseClient) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService, objectMapper, databaseClient);
     this.zeebeProcessInstanceWriter = zeebeProcessInstanceWriter;
     this.processDefinitionReader = processDefinitionReader;
   }
@@ -49,7 +49,7 @@ public class ZeebeIncidentImportMediatorFactory extends AbstractZeebeImportMedia
         beanFactory.getBean(
           ZeebeIncidentFetcher.class,
           zeebeDataSourceDto.getPartitionId(),
-          esClient,
+          databaseClient,
           objectMapper,
           configurationService
         ),

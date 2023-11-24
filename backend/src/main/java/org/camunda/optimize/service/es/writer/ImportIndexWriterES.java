@@ -16,7 +16,7 @@ import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.db.writer.ImportIndexWriter;
 import org.camunda.optimize.service.db.schema.index.index.ImportIndexIndex;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.util.EsHelper;
+import org.camunda.optimize.service.util.DatabaseHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -86,7 +86,7 @@ public class ImportIndexWriterES implements ImportIndexWriter {
   }
 
   private String getId(EngineImportIndexDto importIndex) {
-    return EsHelper.constructKey(importIndex.getEsTypeIndexRefersTo(), importIndex.getEngine());
+    return DatabaseHelper.constructKey(importIndex.getEsTypeIndexRefersTo(), importIndex.getEngine());
   }
 
   private IndexRequest createAllEntitiesBasedRequest(AllEntitiesBasedImportIndexDto importIndex) {

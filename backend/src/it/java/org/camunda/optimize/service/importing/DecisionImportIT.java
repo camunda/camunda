@@ -60,7 +60,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANC
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
-import static org.camunda.optimize.service.db.schema.index.index.TimestampBasedImportIndex.ES_TYPE_INDEX_REFERS_TO;
+import static org.camunda.optimize.service.db.schema.index.index.TimestampBasedImportIndex.DB_TYPE_INDEX_REFERS_TO;
 import static org.camunda.optimize.service.importing.engine.handler.DecisionDefinitionImportIndexHandler.DECISION_DEFINITION_IMPORT_INDEX_DOC_ID;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
@@ -969,7 +969,7 @@ public class DecisionImportIT extends AbstractImportIT {
 
   private SearchResponse getDecisionInstanceIndexResponse() throws IOException {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(termsQuery(ES_TYPE_INDEX_REFERS_TO, DECISION_INSTANCE_MULTI_ALIAS))
+      .query(termsQuery(DB_TYPE_INDEX_REFERS_TO, DECISION_INSTANCE_MULTI_ALIAS))
       .size(100);
 
     SearchRequest searchRequest = new SearchRequest()

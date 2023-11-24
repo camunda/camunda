@@ -9,8 +9,8 @@ import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.plugin.BusinessKeyImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
-import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
+import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
+import org.camunda.optimize.service.importing.DatabaseImportJob;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
@@ -21,7 +21,7 @@ import java.util.List;
 public abstract class AbstractProcessInstanceImportService implements ImportService<HistoricProcessInstanceDto> {
   protected final Logger log = LoggerFactory.getLogger(getClass());
 
-  protected final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  protected final DatabaseImportJobExecutor databaseImportJobExecutor;
   protected final EngineContext engineContext;
   protected final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
@@ -31,7 +31,7 @@ public abstract class AbstractProcessInstanceImportService implements ImportServ
                                               final EngineContext engineContext,
                                               final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider,
                                               final ProcessDefinitionResolverService processDefinitionResolverService) {
-    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+    this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.engineContext = engineContext;
@@ -40,7 +40,7 @@ public abstract class AbstractProcessInstanceImportService implements ImportServ
     this.configurationService = configurationService;
   }
 
-  protected abstract ElasticsearchImportJob<ProcessInstanceDto> createElasticsearchImportJob(
+  protected abstract DatabaseImportJob<ProcessInstanceDto> createDatabaseImportJob(
     List<ProcessInstanceDto> processInstances,
     Runnable callback
   );
@@ -56,19 +56,19 @@ public abstract class AbstractProcessInstanceImportService implements ImportServ
     if (newDataIsAvailable) {
       List<ProcessInstanceDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntitiesAndApplyPlugins(
         pageOfEngineEntities);
-      ElasticsearchImportJob<ProcessInstanceDto> elasticsearchImportJob =
-        createElasticsearchImportJob(newOptimizeEntities, importCompleteCallback);
-      addElasticsearchImportJobToQueue(elasticsearchImportJob);
+      DatabaseImportJob<ProcessInstanceDto> databaseImportJob =
+        createDatabaseImportJob(newOptimizeEntities, importCompleteCallback);
+      addDatabaseImportJobToQueue(databaseImportJob);
     }
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
-    return elasticsearchImportJobExecutor;
+  public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
+    return databaseImportJobExecutor;
   }
 
-  private void addElasticsearchImportJobToQueue(final ElasticsearchImportJob<ProcessInstanceDto> elasticsearchImportJob) {
-    elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
+  private void addDatabaseImportJobToQueue(final DatabaseImportJob<ProcessInstanceDto> databaseImportJob) {
+    databaseImportJobExecutor.executeImportJob(databaseImportJob);
   }
 
   private List<ProcessInstanceDto> mapEngineEntitiesToOptimizeEntitiesAndApplyPlugins(

@@ -10,9 +10,9 @@ import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableD
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableUpdateDto;
 import org.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWriter;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
-import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.job.importing.ExternalVariableUpdateElasticsearchImportJob;
+import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
+import org.camunda.optimize.service.importing.DatabaseImportJob;
+import org.camunda.optimize.service.importing.job.ExternalVariableUpdateDatabaseImportJob;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.importing.engine.service.ObjectVariableService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -36,7 +36,7 @@ public class ExternalVariableUpdateImportService implements ImportService<Extern
 
   public static final long DEFAULT_VERSION = 1000L;
 
-  private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final ProcessVariableUpdateWriter variableWriter;
   private final ConfigurationService configurationService;
   private final ObjectVariableService objectVariableService;
@@ -44,7 +44,7 @@ public class ExternalVariableUpdateImportService implements ImportService<Extern
   public ExternalVariableUpdateImportService(final ConfigurationService configurationService,
                                              final ProcessVariableUpdateWriter variableWriter,
                                              final ObjectVariableService objectVariableService) {
-    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+    this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.variableWriter = variableWriter;
@@ -61,21 +61,21 @@ public class ExternalVariableUpdateImportService implements ImportService<Extern
     if (newDataIsAvailable) {
       List<ProcessVariableDto> newOptimizeEntities =
         mapExternalEntitiesToOptimizeEntities(pageOfExternalEntities);
-      ElasticsearchImportJob<ProcessVariableDto> elasticsearchImportJob = createElasticsearchImportJob(
+      DatabaseImportJob<ProcessVariableDto> databaseImportJob = createDatabaseImportJob(
         newOptimizeEntities,
         importCompleteCallback
       );
-      addElasticsearchImportJobToQueue(elasticsearchImportJob);
+      addDatabaseImportJobToQueue(databaseImportJob);
     }
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
-    return elasticsearchImportJobExecutor;
+  public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
+    return databaseImportJobExecutor;
   }
 
-  private void addElasticsearchImportJobToQueue(final ElasticsearchImportJob<?> elasticsearchImportJob) {
-    elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
+  private void addDatabaseImportJobToQueue(final DatabaseImportJob<?> databaseImportJob) {
+    databaseImportJobExecutor.executeImportJob(databaseImportJob);
   }
 
   private List<ProcessVariableDto> mapExternalEntitiesToOptimizeEntities(final List<ExternalProcessVariableDto> externalEntities) {
@@ -133,9 +133,9 @@ public class ExternalVariableUpdateImportService implements ImportService<Extern
       ));
   }
 
-  private ElasticsearchImportJob<ProcessVariableDto> createElasticsearchImportJob(final List<ProcessVariableDto> processVariables,
-                                                                                  final Runnable callback) {
-    final ExternalVariableUpdateElasticsearchImportJob importJob = new ExternalVariableUpdateElasticsearchImportJob(
+  private DatabaseImportJob<ProcessVariableDto> createDatabaseImportJob(final List<ProcessVariableDto> processVariables,
+                                                                             final Runnable callback) {
+    final ExternalVariableUpdateDatabaseImportJob importJob = new ExternalVariableUpdateDatabaseImportJob(
       variableWriter, configurationService, callback
     );
     importJob.setEntitiesToImport(processVariables);

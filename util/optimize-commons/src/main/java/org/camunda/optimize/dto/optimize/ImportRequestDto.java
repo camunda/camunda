@@ -15,6 +15,7 @@ import org.elasticsearch.action.DocWriteRequest;
 public class ImportRequestDto {
 
   private String importName;
+  //todo handle it in the OPT-7228
   private OptimizeElasticsearchClient client;
   private DocWriteRequest<?> request;
 

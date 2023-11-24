@@ -17,7 +17,7 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDt
 import org.camunda.optimize.service.db.reader.BusinessKeyReader;
 import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.db.reader.VariableUpdateInstanceReader;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
+import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.util.DefinitionVersionHandlingUtil;
 
@@ -62,7 +62,7 @@ public class CustomTracedEventProcessInstanceImportService implements ImportServ
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
+  public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
     return eventProcessInstanceImportService.getDatabaseImportJobExecutor();
   }
 

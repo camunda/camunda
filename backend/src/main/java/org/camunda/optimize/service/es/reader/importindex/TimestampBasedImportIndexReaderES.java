@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.List;
 
-import static org.camunda.optimize.service.db.schema.index.index.TimestampBasedImportIndex.ES_TYPE_INDEX_REFERS_TO;
+import static org.camunda.optimize.service.db.schema.index.index.TimestampBasedImportIndex.DB_TYPE_INDEX_REFERS_TO;
 import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
@@ -60,7 +60,7 @@ public class TimestampBasedImportIndexReaderES extends AbstractImportIndexReader
 
     final SearchRequest searchRequest = new SearchRequest(TIMESTAMP_BASED_IMPORT_INDEX_NAME)
       .source(new SearchSourceBuilder()
-                .query(termsQuery(ES_TYPE_INDEX_REFERS_TO, indexTypes))
+                .query(termsQuery(DB_TYPE_INDEX_REFERS_TO, indexTypes))
                 .size(LIST_FETCH_LIMIT));
 
     final SearchResponse searchResponse;

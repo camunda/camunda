@@ -547,3 +547,4 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   }
 
 }
+

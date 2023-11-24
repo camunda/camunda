@@ -19,7 +19,7 @@ import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
-import org.camunda.optimize.service.importing.zeebe.fetcher.AbstractZeebeRecordFetcher;
+import org.camunda.optimize.service.importing.zeebe.fetcher.es.AbstractZeebeRecordFetcherES;
 import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -61,7 +61,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
   private final LogCapturer positionBasedHandlerLogs = LogCapturer.create().captureForType(PositionBasedImportIndexHandler.class);
   @RegisterExtension
   @Order(2)
-  private final LogCapturer zeebeFetcherLogs = LogCapturer.create().captureForType(AbstractZeebeRecordFetcher.class);
+  private final LogCapturer zeebeFetcherLogs = LogCapturer.create().captureForType(AbstractZeebeRecordFetcherES.class);
 
   @Test
   public void importPositionIsZeroIfNothingIsImportedYet() {
