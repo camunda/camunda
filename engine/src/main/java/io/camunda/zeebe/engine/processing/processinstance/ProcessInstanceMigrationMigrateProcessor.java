@@ -20,12 +20,13 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayDeque;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class ProcessInstanceMigrationMigrateProcessor
     implements TypedRecordProcessor<ProcessInstanceMigrationRecord> {
@@ -75,12 +76,15 @@ public class ProcessInstanceMigrationMigrateProcessor
               value.getProcessInstanceKey(), targetProcessDefinitionKey));
     }
 
+    final Map<String, String> mappedElementIds =
+        mapElementIds(mappingInstructions, processInstance, processDefinition);
+
     // avoid stackoverflow using a queue to iterate over the descendants instead of recursion
     final var elementInstances = new ArrayDeque<>(List.of(processInstance));
     while (!elementInstances.isEmpty()) {
       final var elementInstance = elementInstances.poll();
       final List<ElementInstance> children =
-          migrateElementInstance(elementInstance, processDefinition, mappingInstructions);
+          migrateElementInstance(elementInstance, processDefinition, mappedElementIds);
       elementInstances.addAll(children);
     }
 
@@ -90,13 +94,30 @@ public class ProcessInstanceMigrationMigrateProcessor
         processInstanceKey, ProcessInstanceMigrationIntent.MIGRATED, value, command);
   }
 
+  private Map<String, String> mapElementIds(
+      final List<ProcessInstanceMigrationMappingInstructionValue> mappingInstructions,
+      final ElementInstance processInstance,
+      final DeployedProcess targetProcessDefinition) {
+    final Map<String, String> mappedElementIds =
+        mappingInstructions.stream()
+            .collect(
+                Collectors.toMap(
+                    ProcessInstanceMigrationMappingInstructionValue::getSourceElementId,
+                    ProcessInstanceMigrationMappingInstructionValue::getTargetElementId));
+    // users don't provide a mapping instruction for the bpmn process id
+    mappedElementIds.put(
+        processInstance.getValue().getBpmnProcessId(),
+        BufferUtil.bufferAsString(targetProcessDefinition.getBpmnProcessId()));
+    return mappedElementIds;
+  }
+
   private List<ElementInstance> migrateElementInstance(
       final ElementInstance elementInstance,
       final DeployedProcess processDefinition,
-      final List<ProcessInstanceMigrationMappingInstructionValue> mappingInstructions) {
+      final Map<String, String> sourceElementIdToTargetElementId) {
 
     final String targetElementId =
-        determineTargetElementId(elementInstance, processDefinition, mappingInstructions);
+        sourceElementIdToTargetElementId.get(elementInstance.getValue().getElementId());
 
     stateWriter.appendFollowUpEvent(
         elementInstance.getKey(),
@@ -122,21 +143,5 @@ public class ProcessInstanceMigrationMigrateProcessor
     }
 
     return elementInstanceState.getChildren(elementInstance.getKey());
-  }
-
-  private static String determineTargetElementId(
-      final ElementInstance elementInstance,
-      final DeployedProcess targetProcessDefinition,
-      final List<ProcessInstanceMigrationMappingInstructionValue> mappingInstructions) {
-    if (elementInstance.getValue().getBpmnElementType() == BpmnElementType.PROCESS) {
-      // users don't provide a mapping instruction for the bpmn process id
-      return BufferUtil.bufferAsString(targetProcessDefinition.getBpmnProcessId());
-    }
-    final String elementId = elementInstance.getValue().getElementId();
-    return mappingInstructions.stream()
-        .filter(instruction -> instruction.getSourceElementId().equals(elementId))
-        .map(ProcessInstanceMigrationMappingInstructionValue::getTargetElementId)
-        .findAny() // highlights that mappings could share the same source element id
-        .orElseThrow();
   }
 }
