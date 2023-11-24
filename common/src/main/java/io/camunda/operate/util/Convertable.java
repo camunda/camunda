@@ -25,7 +25,7 @@ public class Convertable {
 
   public <R> Optional<R> to() {
     try {
-      return Optional.of((R) value);
+      return Optional.ofNullable((R) value);
     } catch (ClassCastException e) {
       return Optional.empty();
     }
