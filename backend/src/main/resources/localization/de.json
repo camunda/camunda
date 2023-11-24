@@ -475,7 +475,7 @@
         "value": "Tatsächlicher Wert",
         "target": "Sollwert"
       },
-      "invalidValue": "Alle Felder sollten einen numerischen Wert haben",
+      "invalidValue": "Alle Felder sollten einen positiven numerischen Wert haben",
       "targetDuration": "Solldauer",
       "actualDuration": "<b>{duration}</b><br/>{percentage}% des Sollwerts",
       "duration": {
@@ -650,6 +650,7 @@
         "goalValue": "Zielwert",
         "baseline": "Grundlinie",
         "target": "Ziel",
+        "markTargets": "Ziele markieren",
         "invalidInput": "Einen positiven Zahlenwert eingeben",
         "lessThanTargetError": "Ziel muss größer als die Grundlinie sein",
         "setKpi": "Anzeige als Prozess-KPI",

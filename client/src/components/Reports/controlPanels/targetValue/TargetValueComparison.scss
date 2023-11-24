@@ -1,29 +1,17 @@
 .TargetValueComparison {
   width: 180px;
   display: inline-flex;
+  flex-grow: 1;
+
+  .toggleButton.cds--btn--ghost,
+  .editTargetButton {
+    color: var(--cds-text-primary, #161616);
+  }
 
   .toggleButton {
     flex-grow: 1;
-    border-right: 0;
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
-    text-align: left;
-    padding-right: 4px;
-
-    .Icon {
-      margin-right: 0;
-      margin-top: 1px;
-      float: right;
-    }
-  }
-
-  .editButton {
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-    padding: 6px 7px;
-
-    .Icon {
-      margin-right: 0;
-    }
+    // This is the default left padding value
+    // we use this value on the right side to make the longer text fit
+    padding-inline-end: calc(var(--cds-layout-density-padding-inline-local) - 0.0625rem);
   }
 }

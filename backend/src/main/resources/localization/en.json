@@ -475,7 +475,7 @@
         "value": "Actual Value",
         "target": "Target Value"
       },
-      "invalidValue": "All fields should have a numeric value",
+      "invalidValue": "All fields should have a positive numeric value",
       "targetDuration": "Target duration",
       "actualDuration": "<b>{duration}</b><br/>{percentage}% of the target value",
       "duration": {
@@ -650,6 +650,7 @@
         "goalValue": "Goal value",
         "baseline": "Baseline",
         "target": "Target",
+        "markTargets": "Mark targets",
         "invalidInput": "Enter a positive number",
         "lessThanTargetError": "Target must be greater than baseline",
         "setKpi": "Display as a process KPI",

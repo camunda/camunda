@@ -85,7 +85,7 @@ it('should display a double button', () => {
   const node = shallow(<TargetValueComparison {...invalidProps} />);
 
   expect(node.find('.toggleButton')).toExist();
-  expect(node.find('.editButton')).toExist();
+  expect(node.find('.targetEditButton')).toExist();
 });
 
 it('should not render the modal if result is not yet available', () => {
@@ -111,22 +111,22 @@ it('should open the modal with the left button if there are no target values set
 
   await node.find('.toggleButton').simulate('click');
 
-  expect(node.state('modalOpen')).toBe(true);
+  expect(node.find('DurationHeatmapModal').prop('open')).toBe(true);
 });
 
 it('should open the target value edit modal on with the right button', async () => {
   const node = shallow(<TargetValueComparison {...validProps} />);
 
-  await node.find('.editButton').simulate('click');
+  await node.find('.targetEditButton').simulate('click');
 
-  expect(node.state('modalOpen')).toBe(true);
+  expect(node.find('DurationHeatmapModal').prop('open')).toBe(true);
 });
 
-it('it should toggle target value view mode off if no target values are defined', async () => {
+it('should toggle target value view mode off if no target values are defined', async () => {
   const spy = jest.fn();
   const node = shallow(<TargetValueComparison {...validProps} onChange={spy} />);
 
-  node.instance().confirmModal({});
+  node.find('DurationHeatmapModal').prop('onConfirm')({});
 
   expect(spy).toHaveBeenCalledWith({
     configuration: {

@@ -43,7 +43,7 @@ export const tooltip = reportRenderer.find('.Tooltip');
 export const badge = (id) =>
   Selector(`.BPMNDiagram .djs-overlay-container [data-container-id="${id}"] .djs-overlay`);
 export const targetValueButton = Selector('.toggleButton');
-export const targetValueInput = (name) => Selector('.Modal tbody tr').withText(name).find('.Input');
+export const targetValueInput = (name) => Selector('.Modal tbody tr').withText(name).find('input');
 export const nodeFilterOperator = (name) =>
   Selector('.Modal tbody tr').withText(name).find('.Dropdown:first-child');
 export const warning = Selector('.Message--warning');
