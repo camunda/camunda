@@ -26,12 +26,22 @@ public interface UpdateTimeoutJobCommandStep1 {
    * <p>Timeout value in millis is used to calculate a new job deadline. This will happen when the
    * command is processed. The timeout value will be added to the current time then.
    *
-   * @param timout the timeout of this job
+   * @param timeout the timeout of this job
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  UpdateTimeoutJobCommandStep2 timeout(long timout);
+  UpdateTimeoutJobCommandStep2 timeout(long timeout);
 
+  /**
+   * Set the timeout of this job.
+   *
+   * <p>Timeout value passed as a duration is used to calculate a new job deadline. This will happen
+   * when the command is processed. The timeout value will be added to the current time then.
+   *
+   * @param timeout the time as duration (e.g. "Duration.ofMinutes(5)")
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
   UpdateTimeoutJobCommandStep2 timeout(Duration timeout);
 
   interface UpdateTimeoutJobCommandStep2 extends FinalCommandStep<UpdateTimeoutJobResponse> {

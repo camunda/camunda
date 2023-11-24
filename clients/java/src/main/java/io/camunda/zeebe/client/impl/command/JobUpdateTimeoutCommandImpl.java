@@ -53,8 +53,8 @@ public class JobUpdateTimeoutCommandImpl
   }
 
   @Override
-  public UpdateTimeoutJobCommandStep2 timeout(final long timout) {
-    builder.setTimeout(timout);
+  public UpdateTimeoutJobCommandStep2 timeout(final long timeout) {
+    builder.setTimeout(timeout);
     return this;
   }
 
