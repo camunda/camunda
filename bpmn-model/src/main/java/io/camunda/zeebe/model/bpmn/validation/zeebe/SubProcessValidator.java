@@ -61,7 +61,7 @@ public class SubProcessValidator implements ModelElementValidator<SubProcess> {
       final StartEvent startEvent = startEvents.iterator().next();
 
       if (element.triggeredByEvent()) {
-        validateEventSubprocess(validationResultCollector, startEvent);
+        validateEventSubprocess(validationResultCollector, startEvent, element);
       } else {
         validateEmbeddedSubprocess(validationResultCollector, startEvent);
       }
@@ -79,21 +79,23 @@ public class SubProcessValidator implements ModelElementValidator<SubProcess> {
     if (!start.getEventDefinitions().isEmpty()) {
       validationResultCollector.addError(0, "Start events in subprocesses must be of type none");
     }
-
-    if (start.getEventDefinitions().stream()
-        .anyMatch(CompensateEventDefinition.class::isInstance)) {
-      validationResultCollector.addError(
-          0, "A compensation event subprocess is not allowed on the process level");
-    }
   }
 
   private void validateEventSubprocess(
-      final ValidationResultCollector validationResultCollector, final StartEvent start) {
+      final ValidationResultCollector validationResultCollector,
+      final StartEvent start,
+      final SubProcess element) {
     final Collection<EventDefinition> eventDefinitions = start.getEventDefinitions();
     if (eventDefinitions.isEmpty()) {
       validationResultCollector.addError(
           0,
-          "Start events in event subprocesses must be one of: message, timer, error, signal, escalation, compensation");
+          "Start events in event subprocesses must be one of: message, timer, error, signal, escalation or compensation");
+    }
+
+    if (eventDefinitions.stream().anyMatch(CompensateEventDefinition.class::isInstance)
+        && !(element.getParentElement() instanceof SubProcess)) {
+      validationResultCollector.addError(
+          0, "A compensation event subprocess is not allowed on the process level");
     }
 
     eventDefinitions.forEach(
@@ -101,7 +103,7 @@ public class SubProcessValidator implements ModelElementValidator<SubProcess> {
           if (SUPPORTED_START_TYPES.stream().noneMatch(type -> type.isInstance(def))) {
             validationResultCollector.addError(
                 0,
-                "Start events in event subprocesses must be one of: message, timer, error, signal, escalation, compensation");
+                "Start events in event subprocesses must be one of: message, timer, error, signal, escalation or compensation");
           }
         });
 

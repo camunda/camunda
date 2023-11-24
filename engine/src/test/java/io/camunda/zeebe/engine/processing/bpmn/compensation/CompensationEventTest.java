@@ -143,11 +143,11 @@ public class CompensationEventTest {
         Bpmn.createExecutableProcess("compensation-process")
             .startEvent()
             .subProcess(
-                "subprocess",
+                "embedded-subprocess",
                 s ->
                     s.embeddedSubProcess()
                         .eventSubProcess(
-                            "embedded-subprocess",
+                            "subprocess",
                             eventSubProcess ->
                                 eventSubProcess
                                     .startEvent(
@@ -175,23 +175,7 @@ public class CompensationEventTest {
   @Test
   public void shouldNotDeployCompensationEventSubprocessOnProcessLevel() {
     final var process =
-        Bpmn.createExecutableProcess("compensation-process")
-            .startEvent()
-            .subProcess(
-                "subprocess",
-                s ->
-                    s.embeddedSubProcess()
-                        .startEvent("compensation-start", AbstractStartEventBuilder::compensation)
-                        .intermediateThrowEvent(
-                            "compensation-throw-event",
-                            AbstractThrowEventBuilder::compensateEventDefinition)
-                        .userTask("B")
-                        .endEvent()
-                        .done())
-            .endEvent(
-                "compensation-end-event",
-                end -> end.compensateEventDefinition().compensateEventDefinitionDone())
-            .done();
+        createModelFromClasspathResource("/compensation/compensation-not-embedded-subprocess.bpmn");
 
     ProcessValidationUtil.validateProcess(
         process,
