@@ -21,7 +21,7 @@ type SelectedFlowNodeOverlayProps = {
 type Props = {
   xml: string;
   selectableFlowNodes?: string[];
-  selectedFlowNodeId?: string;
+  selectedFlowNodeIds?: string[];
   onFlowNodeSelection?: OnFlowNodeSelection;
   overlaysData?: OverlayData[];
   children?: React.ReactNode;
@@ -35,7 +35,7 @@ const Diagram: React.FC<Props> = observer(
   ({
     xml,
     selectableFlowNodes,
-    selectedFlowNodeId,
+    selectedFlowNodeIds,
     onFlowNodeSelection,
     overlaysData,
     selectedFlowNodeOverlay,
@@ -65,7 +65,7 @@ const Diagram: React.FC<Props> = observer(
             container: diagramCanvasRef.current,
             xml,
             selectableFlowNodes,
-            selectedFlowNodeId,
+            selectedFlowNodeIds,
             overlaysData,
             highlightedSequenceFlows,
             nonSelectableNodeTooltipText: isModificationModeEnabled
@@ -82,7 +82,7 @@ const Diagram: React.FC<Props> = observer(
     }, [
       xml,
       selectableFlowNodes,
-      selectedFlowNodeId,
+      selectedFlowNodeIds,
       overlaysData,
       viewer,
       highlightedSequenceFlows,

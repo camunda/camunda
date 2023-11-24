@@ -37,7 +37,7 @@ type RenderOptions = {
   container: HTMLElement;
   xml: string;
   selectableFlowNodes?: string[];
-  selectedFlowNodeId?: string;
+  selectedFlowNodeIds?: string[];
   overlaysData?: OverlayData[];
   highlightedSequenceFlows?: string[];
   nonSelectableNodeTooltipText?: string;
@@ -49,7 +49,7 @@ class BpmnJS {
   #xml: string | null = null;
   #selectableFlowNodes: string[] = [];
   #nonSelectableFlowNodes: string[] = [];
-  #selectedFlowNodeId?: string;
+  #selectedFlowNodeIds?: string[];
   #highlightedSequenceFlows: string[] = [];
   selectedFlowNode?: SVGGraphicsElement;
   onFlowNodeSelection?: OnFlowNodeSelection;
@@ -72,7 +72,7 @@ class BpmnJS {
 
     this.#overlaysData = [];
     this.#selectableFlowNodes = [];
-    this.#selectedFlowNodeId = undefined;
+    this.#selectedFlowNodeIds = undefined;
     this.#hasOuterBorderOnSelection = false;
     this.#rootElement = undefined;
 
@@ -97,7 +97,7 @@ class BpmnJS {
       container,
       xml,
       selectableFlowNodes = [],
-      selectedFlowNodeId,
+      selectedFlowNodeIds,
       overlaysData = [],
       highlightedSequenceFlows = [],
       nonSelectableNodeTooltipText,
@@ -144,49 +144,55 @@ class BpmnJS {
     }
 
     // handle op-selected markers and selected flow node ref
-    if (this.#selectedFlowNodeId !== selectedFlowNodeId) {
-      if (this.#selectedFlowNodeId !== undefined) {
-        this.#removeMarker(this.#selectedFlowNodeId, 'op-selected');
-        this.#removeMarker(this.#selectedFlowNodeId, 'op-selected-frame');
+    if (
+      !isEqual(this.#selectedFlowNodeIds?.sort(), selectedFlowNodeIds?.sort())
+    ) {
+      if (this.#selectedFlowNodeIds !== undefined) {
+        this.#selectedFlowNodeIds.forEach((flowNodeId) => {
+          this.#removeMarker(flowNodeId, 'op-selected');
+          this.#removeMarker(flowNodeId, 'op-selected-frame');
+        });
 
         this.selectedFlowNode = undefined;
       }
 
-      if (selectedFlowNodeId !== undefined) {
-        this.#addMarker(selectedFlowNodeId, 'op-selected');
-        if (hasOuterBorderOnSelection) {
-          this.#addMarker(selectedFlowNodeId, 'op-selected-frame');
-        }
-        const elementRegistry = this.#navigatedViewer?.get('elementRegistry');
-        this.selectedFlowNode =
-          elementRegistry?.getGraphics(selectedFlowNodeId);
+      const elementRegistry = this.#navigatedViewer?.get('elementRegistry');
+      const canvas = this.#navigatedViewer?.get('canvas');
 
-        const canvas = this.#navigatedViewer?.get('canvas');
-
-        if (canvas !== undefined) {
-          const selectedFlowNodeIdRootElement =
-            canvas.findRoot(selectedFlowNodeId);
-
-          if (
-            selectedFlowNodeIdRootElement !== undefined &&
-            this.#rootElement?.id !== selectedFlowNodeIdRootElement.id
-          ) {
-            canvas.setRootElement(selectedFlowNodeIdRootElement);
+      if (selectedFlowNodeIds !== undefined) {
+        selectedFlowNodeIds.forEach((flowNodeId) => {
+          this.#addMarker(flowNodeId, 'op-selected');
+          if (hasOuterBorderOnSelection) {
+            this.#addMarker(flowNodeId, 'op-selected-frame');
           }
-        }
+          this.selectedFlowNode = elementRegistry?.getGraphics(flowNodeId);
+
+          if (canvas !== undefined) {
+            const selectedFlowNodeIdRootElement = canvas.findRoot(flowNodeId);
+
+            if (
+              selectedFlowNodeIdRootElement !== undefined &&
+              this.#rootElement?.id !== selectedFlowNodeIdRootElement.id
+            ) {
+              canvas.setRootElement(selectedFlowNodeIdRootElement);
+            }
+          }
+        });
       }
 
-      this.#selectedFlowNodeId = selectedFlowNodeId;
+      this.#selectedFlowNodeIds = selectedFlowNodeIds;
     }
 
     if (
-      selectedFlowNodeId !== undefined &&
+      selectedFlowNodeIds !== undefined &&
       this.#hasOuterBorderOnSelection !== hasOuterBorderOnSelection
     ) {
-      this.#removeMarker(selectedFlowNodeId, 'op-selected-frame');
-      if (hasOuterBorderOnSelection) {
-        this.#addMarker(selectedFlowNodeId, 'op-selected-frame');
-      }
+      selectedFlowNodeIds.forEach((flowNodeId) => {
+        this.#removeMarker(flowNodeId, 'op-selected-frame');
+        if (hasOuterBorderOnSelection) {
+          this.#addMarker(flowNodeId, 'op-selected-frame');
+        }
+      });
 
       this.#hasOuterBorderOnSelection = hasOuterBorderOnSelection;
     }
@@ -348,13 +354,14 @@ class BpmnJS {
     }
     if (
       this.#selectableFlowNodes.includes(flowNode.id) &&
-      flowNode.id !== this.#selectedFlowNodeId
+      (this.#selectedFlowNodeIds === undefined ||
+        !this.#selectedFlowNodeIds.includes(flowNode.id))
     ) {
       this.onFlowNodeSelection?.(
         flowNode.id,
         isMultiInstance(flowNode.businessObject),
       );
-    } else if (this.#selectedFlowNodeId !== undefined) {
+    } else if (this.#selectedFlowNodeIds !== undefined) {
       this.onFlowNodeSelection?.(undefined);
     }
   };

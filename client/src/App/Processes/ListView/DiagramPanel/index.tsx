@@ -153,7 +153,7 @@ const DiagramPanel: React.FC = observer(() => {
           <Diagram
             xml={xml}
             selectableFlowNodes={processXmlStore.selectableIds}
-            selectedFlowNodeId={flowNodeId}
+            selectedFlowNodeIds={flowNodeId ? [flowNodeId] : undefined}
             onFlowNodeSelection={(flowNodeId) => {
               if (flowNodeId === null || flowNodeId === undefined) {
                 navigate(deleteSearchParams(location, ['flowNodeId']));

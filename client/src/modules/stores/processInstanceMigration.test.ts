@@ -8,6 +8,10 @@
 import {operationsStore} from './operations';
 import {processInstanceMigrationStore} from './processInstanceMigration';
 
+const SOURCE_TASK_A = 'sourceTaskA';
+const TARGET_TASK_A = 'targetTaskA';
+const SOURCE_TASK_B = 'sourceTaskB';
+
 jest
   .spyOn(operationsStore, 'applyBatchOperation')
   .mockImplementation(jest.fn());
@@ -134,5 +138,81 @@ describe('processInstanceMigration', () => {
         },
       }),
     );
+  });
+
+  it('should select flow nodes on source flow node selection', () => {
+    processInstanceMigrationStore.updateFlowNodeMapping({
+      sourceId: SOURCE_TASK_A,
+      targetId: TARGET_TASK_A,
+    });
+
+    processInstanceMigrationStore.selectSourceFlowNode(SOURCE_TASK_A);
+
+    expect(processInstanceMigrationStore.selectedSourceFlowNodeIds).toEqual([
+      SOURCE_TASK_A,
+    ]);
+    expect(processInstanceMigrationStore.selectedTargetFlowNodeId).toBe(
+      TARGET_TASK_A,
+    );
+
+    processInstanceMigrationStore.updateFlowNodeMapping({
+      sourceId: SOURCE_TASK_B,
+      targetId: TARGET_TASK_A,
+    });
+
+    expect(processInstanceMigrationStore.selectedSourceFlowNodeIds).toEqual([
+      SOURCE_TASK_A,
+      SOURCE_TASK_B,
+    ]);
+    expect(processInstanceMigrationStore.selectedTargetFlowNodeId).toBe(
+      TARGET_TASK_A,
+    );
+
+    processInstanceMigrationStore.selectSourceFlowNode();
+
+    expect(
+      processInstanceMigrationStore.selectedSourceFlowNodeIds,
+    ).toBeUndefined();
+    expect(
+      processInstanceMigrationStore.selectedTargetFlowNodeId,
+    ).toBeUndefined();
+  });
+
+  it('should select flow nodes on target flow node selection', () => {
+    processInstanceMigrationStore.updateFlowNodeMapping({
+      sourceId: SOURCE_TASK_A,
+      targetId: TARGET_TASK_A,
+    });
+
+    processInstanceMigrationStore.selectTargetFlowNode(TARGET_TASK_A);
+
+    expect(processInstanceMigrationStore.selectedSourceFlowNodeIds).toEqual([
+      SOURCE_TASK_A,
+    ]);
+    expect(processInstanceMigrationStore.selectedTargetFlowNodeId).toBe(
+      TARGET_TASK_A,
+    );
+
+    processInstanceMigrationStore.updateFlowNodeMapping({
+      sourceId: SOURCE_TASK_B,
+      targetId: TARGET_TASK_A,
+    });
+
+    expect(processInstanceMigrationStore.selectedSourceFlowNodeIds).toEqual([
+      SOURCE_TASK_A,
+      SOURCE_TASK_B,
+    ]);
+    expect(processInstanceMigrationStore.selectedTargetFlowNodeId).toBe(
+      TARGET_TASK_A,
+    );
+
+    processInstanceMigrationStore.selectTargetFlowNode();
+
+    expect(
+      processInstanceMigrationStore.selectedSourceFlowNodeIds,
+    ).toBeUndefined();
+    expect(
+      processInstanceMigrationStore.selectedTargetFlowNodeId,
+    ).toBeUndefined();
   });
 });

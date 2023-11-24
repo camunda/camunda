@@ -28,6 +28,7 @@ type State = {
   currentStep: 'elementMapping' | 'summary' | null;
   flowNodeMapping: {[sourceId: string]: string};
   selectedSourceFlowNodeId?: string;
+  selectedTargetFlowNodeId?: string;
   selectedInstancesCount: number;
   batchOperationQuery: BatchOperationQuery | null;
   targetProcessDefinitionKey: string | null;
@@ -38,6 +39,7 @@ const DEFAULT_STATE: State = {
   currentStep: null,
   flowNodeMapping: {},
   selectedSourceFlowNodeId: undefined,
+  selectedTargetFlowNodeId: undefined,
   selectedInstancesCount: 0,
   batchOperationQuery: null,
   targetProcessDefinitionKey: null,
@@ -65,12 +67,60 @@ class ProcessInstanceMigration {
   }
 
   selectSourceFlowNode = (flowNodeId?: string) => {
+    this.state.selectedTargetFlowNodeId = undefined;
+
     if (this.state.selectedSourceFlowNodeId === flowNodeId) {
       this.state.selectedSourceFlowNodeId = undefined;
     } else {
       this.state.selectedSourceFlowNodeId = flowNodeId;
     }
   };
+
+  selectTargetFlowNode = (flowNodeId?: string) => {
+    this.state.selectedSourceFlowNodeId = undefined;
+
+    if (this.state.selectedTargetFlowNodeId === flowNodeId) {
+      this.state.selectedTargetFlowNodeId = undefined;
+    } else {
+      this.state.selectedTargetFlowNodeId = flowNodeId;
+    }
+  };
+
+  getAllSourceElements = (targetFlowNodeId: string) => {
+    return Object.entries(this.state.flowNodeMapping)
+      .filter(([_, t]) => t === targetFlowNodeId)
+      .map(([s, _]) => {
+        return s;
+      });
+  };
+
+  get selectedSourceFlowNodeIds() {
+    const {selectedSourceFlowNodeId, selectedTargetFlowNodeId} = this.state;
+
+    if (selectedSourceFlowNodeId !== undefined) {
+      const targetFlowNodeId =
+        this.state.flowNodeMapping[selectedSourceFlowNodeId];
+
+      if (targetFlowNodeId !== undefined) {
+        return this.getAllSourceElements(targetFlowNodeId);
+      }
+
+      return [selectedSourceFlowNodeId];
+    } else if (selectedTargetFlowNodeId !== undefined) {
+      return this.getAllSourceElements(selectedTargetFlowNodeId);
+    }
+    return undefined;
+  }
+
+  get selectedTargetFlowNodeId() {
+    const {selectedTargetFlowNodeId, selectedSourceFlowNodeId} = this.state;
+    if (selectedTargetFlowNodeId !== undefined) {
+      return selectedTargetFlowNodeId;
+    } else if (selectedSourceFlowNodeId !== undefined) {
+      return this.state.flowNodeMapping[selectedSourceFlowNodeId];
+    }
+    return undefined;
+  }
 
   enable = () => {
     this.state.currentStep = 'elementMapping';

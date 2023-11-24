@@ -19,6 +19,7 @@ import {StateOverlay} from 'modules/components/StateOverlay';
 
 const SourceDiagram: React.FC = observer(() => {
   const {processName, version} = processesStore.getSelectedProcessDetails();
+  const {selectedSourceFlowNodeIds} = processInstanceMigrationStore;
 
   const statisticsOverlays = diagramOverlaysStore.state.overlays.filter(
     ({type}) => type.match(/^statistics/) !== null,
@@ -37,9 +38,7 @@ const SourceDiagram: React.FC = observer(() => {
           <Diagram
             xml={processXmlStore.state.xml}
             selectableFlowNodes={processXmlStore.selectableIds}
-            selectedFlowNodeId={
-              processInstanceMigrationStore.state.selectedSourceFlowNodeId
-            }
+            selectedFlowNodeIds={selectedSourceFlowNodeIds}
             onFlowNodeSelection={(flowNodeId) => {
               processInstanceMigrationStore.selectSourceFlowNode(flowNodeId);
             }}

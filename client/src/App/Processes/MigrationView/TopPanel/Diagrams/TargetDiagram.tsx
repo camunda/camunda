@@ -75,9 +75,14 @@ const TargetDiagram: React.FC = observer(() => {
           <Diagram
             xml={processXmlStore.state.xml}
             selectableFlowNodes={processXmlStore.selectableIds}
-            // TODO https://github.com/camunda/operate/issues/5732
-            selectedFlowNodeId={undefined}
-            onFlowNodeSelection={() => {}}
+            selectedFlowNodeIds={
+              processInstanceMigrationStore.selectedTargetFlowNodeId
+                ? [processInstanceMigrationStore.selectedTargetFlowNodeId]
+                : undefined
+            }
+            onFlowNodeSelection={
+              processInstanceMigrationStore.selectTargetFlowNode
+            }
             overlaysData={
               isSummaryStep
                 ? Object.entries(
