@@ -7,12 +7,10 @@ package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.TerminatedUserSessionDto;
 import org.camunda.optimize.service.db.schema.index.TerminatedUserSessionIndex;
 import org.camunda.optimize.service.db.writer.TerminatedUserSessionWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -32,36 +30,26 @@ import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 
 @AllArgsConstructor
 @Component
-@Slf4j
 @Conditional(ElasticSearchCondition.class)
-public class TerminatedUserSessionWriterES implements TerminatedUserSessionWriter {
+public class TerminatedUserSessionWriterES extends TerminatedUserSessionWriter {
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
 
   @Override
-  public void writeTerminatedUserSession(final TerminatedUserSessionDto sessionDto) {
-    log.debug("Writing terminated user session with id [{}] to elasticsearch.", sessionDto.getId());
-    try {
-      final String jsonSource = objectMapper.writeValueAsString(sessionDto);
-
-      final IndexRequest request =
-        new IndexRequest(TERMINATED_USER_SESSION_INDEX_NAME)
-          .id(sessionDto.getId())
-          .source(jsonSource, XContentType.JSON)
-          .setRefreshPolicy(IMMEDIATE);
-
-      esClient.index(request);
-    } catch (IOException e) {
-      String message = "Could not write Optimize version to Elasticsearch.";
-      log.error(message, e);
-      throw new OptimizeRuntimeException(message, e);
-    }
+  protected void performWritingTerminatedUserSession(final TerminatedUserSessionDto sessionDto) throws IOException {
+    final String jsonSource = objectMapper.writeValueAsString(sessionDto);
+    final IndexRequest request =
+      new IndexRequest(TERMINATED_USER_SESSION_INDEX_NAME)
+        .id(sessionDto.getId())
+        .source(jsonSource, XContentType.JSON)
+        .setRefreshPolicy(IMMEDIATE);
+    esClient.index(request);
   }
 
   @Override
-  public void deleteTerminatedUserSessionsOlderThan(final OffsetDateTime timestamp) {
+  protected void performDeleteTerminatedUserSessionOlderThan(final OffsetDateTime timestamp) {
     final BoolQueryBuilder filterQuery = boolQuery().filter(
       rangeQuery(TerminatedUserSessionIndex.TERMINATION_TIMESTAMP)
         .lt(dateTimeFormatter.format(timestamp))

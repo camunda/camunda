@@ -12,8 +12,12 @@ import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.RequestOptionsProvider;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.client.RequestOptions;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.GetRequest;
+import org.opensearch.client.opensearch.core.GetResponse;
+import org.opensearch.client.opensearch.core.IndexRequest;
+import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.indices.GetAliasRequest;
 import org.opensearch.client.opensearch.indices.GetAliasResponse;
 import org.opensearch.client.opensearch.indices.RolloverRequest;
@@ -67,8 +71,17 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     this.requestOptionsProvider = new RequestOptionsProvider(List.of(), configurationService);
   }
 
-  public RequestOptions requestOptions() {
-    return requestOptionsProvider.getRequestOptions();
+  public final <T> GetResponse<T> get(final GetRequest getRequest,
+                                      final Class<T> responseClass) throws IOException {
+    return openSearchClient.get(getRequest, responseClass);
+  }
+
+  public long deleteByQuery(final String index, final Query query) throws IOException {
+    return richOpenSearchClient.doc().deleteByQuery(index, query);
+  }
+
+  public final <T> IndexResponse index(final IndexRequest.Builder<T> indexRequest) {
+    return richOpenSearchClient.doc().index(indexRequest);
   }
 
   @Override
@@ -123,7 +136,8 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
         );
       } else {
         log.debug("Index with alias {} has not been rolled over. {}", indexAliasName,
-                  rolloverConditionsStatus(rolloverResponse.conditions()));
+                  rolloverConditionsStatus(rolloverResponse.conditions())
+        );
       }
       return rolloverResponse.rolledOver();
     } catch (Exception e) {
@@ -140,9 +154,9 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
 
   private RolloverRequest applyAliasPrefixAndRolloverConditions(final RolloverRequest request) {
     return new RolloverRequest.Builder()
-        .alias(indexNameService.getOptimizeIndexAliasForIndex(request.alias()))
-        .conditions(request.conditions())
-        .build();
+      .alias(indexNameService.getOptimizeIndexAliasForIndex(request.alias()))
+      .conditions(request.conditions())
+      .build();
   }
 
   private String rolloverConditionsStatus(Map<String, Boolean> conditions) {

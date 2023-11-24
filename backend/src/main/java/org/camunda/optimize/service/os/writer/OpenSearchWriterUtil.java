@@ -41,4 +41,5 @@ public class OpenSearchWriterUtil {
                                                                 final ObjectMapper objectMapper) {
     return QueryDSL.scriptFromJsonData(inlineUpdateScript, mapParamsForScriptCreation(params, objectMapper));
   }
+
 }
