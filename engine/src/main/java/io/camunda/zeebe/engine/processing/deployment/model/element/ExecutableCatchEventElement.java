@@ -32,6 +32,8 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
 
   private boolean isLink;
 
+  private boolean isCompensation;
+
   public ExecutableCatchEventElement(final String id) {
     super(id);
   }
@@ -64,6 +66,11 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
   @Override
   public boolean isSignal() {
     return signal != null;
+  }
+
+  @Override
+  public boolean isCompensation() {
+    return isCompensation;
   }
 
   @Override
@@ -110,6 +117,10 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
 
   public void setSignal(final ExecutableSignal signal) {
     this.signal = signal;
+  }
+
+  public void setCompensation(final boolean isCompensation) {
+    this.isCompensation = isCompensation;
   }
 
   public void setLink(final boolean isLink) {

@@ -380,6 +380,33 @@ public class BpmnEventTypeTest {
                   .endEvent(elementId(), e -> e.escalation(escalationCode()))
                   .done();
             }
+          },
+          new BpmnEventTypeScenario(
+              "Compensation Intermediate Throw Event",
+              BpmnElementType.INTERMEDIATE_THROW_EVENT,
+              BpmnEventType.COMPENSATION) {
+            @Override
+            BpmnModelInstance modelInstance() {
+              return Bpmn.createExecutableProcess(processId())
+                  .startEvent()
+                  .intermediateThrowEvent(
+                      elementId(),
+                      t -> t.compensateEventDefinition().compensateEventDefinitionDone())
+                  .endEvent()
+                  .done();
+            }
+          },
+          new BpmnEventTypeScenario(
+              "Compensation End Event", BpmnElementType.END_EVENT, BpmnEventType.COMPENSATION) {
+            @Override
+            BpmnModelInstance modelInstance() {
+              return Bpmn.createExecutableProcess(processId())
+                  .startEvent()
+                  .endEvent(
+                      elementId(),
+                      end -> end.compensateEventDefinition().compensateEventDefinitionDone())
+                  .done();
+            }
           });
 
   @Rule

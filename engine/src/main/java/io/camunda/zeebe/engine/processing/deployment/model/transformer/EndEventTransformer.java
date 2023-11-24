@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEndEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
+import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
@@ -68,6 +69,8 @@ public final class EndEventTransformer implements ModelElementTransformer<EndEve
     } else if (eventDefinition instanceof SignalEventDefinition) {
       transformSignalEventDefinition(
           context, executableElement, (SignalEventDefinition) eventDefinition);
+    } else if (eventDefinition instanceof CompensateEventDefinition) {
+      transformCompensationEventDefinition(executableElement);
     }
   }
 
@@ -111,5 +114,9 @@ public final class EndEventTransformer implements ModelElementTransformer<EndEve
     final var executableSignal = context.getSignal(signal.getId());
     executableElement.setSignal(executableSignal);
     executableElement.setEventType(BpmnEventType.SIGNAL);
+  }
+
+  private void transformCompensationEventDefinition(final ExecutableEndEvent executableElement) {
+    executableElement.setEventType(BpmnEventType.COMPENSATION);
   }
 }

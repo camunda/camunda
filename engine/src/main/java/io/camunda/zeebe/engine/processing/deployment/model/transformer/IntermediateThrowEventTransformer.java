@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableIntermediateThrowEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
+import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
 import io.camunda.zeebe.model.bpmn.instance.LinkEventDefinition;
@@ -48,6 +49,8 @@ public final class IntermediateThrowEventTransformer
       transformEscalationEventDefinition(element, context);
     } else if (isSignalEvent(element)) {
       transformSignalEventDefinition(element, context);
+    } else if (isCompensationEvent(element)) {
+      transformCompensationEventDefinition(element, context);
     }
   }
 
@@ -67,6 +70,11 @@ public final class IntermediateThrowEventTransformer
 
   private boolean isSignalEvent(final IntermediateThrowEvent element) {
     return element.getEventDefinitions().stream().anyMatch(SignalEventDefinition.class::isInstance);
+  }
+
+  private boolean isCompensationEvent(final IntermediateThrowEvent element) {
+    return element.getEventDefinitions().stream()
+        .anyMatch(CompensateEventDefinition.class::isInstance);
   }
 
   private boolean hasTaskDefinition(final IntermediateThrowEvent element) {
@@ -113,5 +121,13 @@ public final class IntermediateThrowEventTransformer
     final var executableSignal = context.getSignal(signal.getId());
     executableElement.setSignal(executableSignal);
     executableElement.setEventType(BpmnEventType.SIGNAL);
+  }
+
+  private void transformCompensationEventDefinition(
+      final IntermediateThrowEvent element, final TransformContext context) {
+    final var currentProcess = context.getCurrentProcess();
+    final var executableElement =
+        currentProcess.getElementById(element.getId(), ExecutableIntermediateThrowEvent.class);
+    executableElement.setEventType(BpmnEventType.COMPENSATION);
   }
 }
