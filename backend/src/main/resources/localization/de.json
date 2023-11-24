@@ -1437,10 +1437,6 @@
         "view": "Prozessknoten-Daten filtern",
         "decision": "Entscheidungsevaluierungen filtern"
       },
-      "dropdownInfo": {
-        "instance": "Rückgabe Instanzen gefiltert nach...",
-        "view": "Rückgabe von Prozessknoten-Daten gefiltert nach..."
-      },
       "allVisible": {
         "instance": "Alle Instanzen sichtbar",
         "view": "Alle Prozessknoten-Daten sichtbar",

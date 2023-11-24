@@ -57,8 +57,8 @@ export const tableHeader = (idx) => Selector('.Table thead tr:last-child th.tabl
 export const tableCell = (row, column) =>
   Selector('.Table tbody tr').nth(row).find('td').nth(column);
 export const instanceCountSwitch = Selector('.Configuration .ShowInstanceCount .cds--toggle');
-export const filterButton = Selector('.Filter__dropdown .activateButton');
-export const flowNodeFilterButton = Selector('.Filter__dropdown .activateButton').nth(1);
+export const filterButton = Selector('.Filter__dropdown button');
+export const flowNodeFilterButton = Selector('.Filter__dropdown button').nth(1);
 export const filterOption = (text) =>
   Selector('.Filter__dropdown.is-open .DropdownOption').withExactText(text);
 export const subFilterOption = (text) =>

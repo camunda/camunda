@@ -5,10 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {Component} from 'react';
+import {MenuItem} from '@carbon/react';
+import {MenuDropdown} from '@camunda/camunda-optimize-composite-components';
 import update from 'immutability-helper';
-
-import {Dropdown} from 'components';
 
 import {DateFilter, VariableFilter} from './modals';
 
@@ -20,7 +20,7 @@ import {t} from 'translation';
 
 import './DecisionFilter.scss';
 
-export default class DecisionFilter extends React.Component {
+export default class DecisionFilter extends Component {
   state = {
     newFilterType: null,
     editFilter: null,
@@ -136,23 +136,26 @@ export default class DecisionFilter extends React.Component {
       <div className="DecisionFilter Filter">
         <div className="filterHeader">
           <span className="dropdownLabel">{t('common.filter.dropdownLabel.decision')}</span>
-          <Dropdown label={t('common.add')} id="ControlPanel__filters" className="Filter__dropdown">
-            <Dropdown.Option onClick={this.openNewFilterModal('evaluationDateTime')}>
-              {t('common.filter.types.evaluationDateTime')}
-            </Dropdown.Option>
-            <Dropdown.Option
+          <MenuDropdown
+            label={t('common.add')}
+            id="ControlPanel__filters"
+            className="Filter__dropdown"
+          >
+            <MenuItem
+              label={t('common.filter.types.evaluationDateTime')}
+              onClick={this.openNewFilterModal('evaluationDateTime')}
+            />
+            <MenuItem
+              label={t('common.filter.types.inputVariable')}
               disabled={this.definitionIsNotSelected()}
               onClick={this.openNewFilterModal('inputVariable')}
-            >
-              {t('common.filter.types.inputVariable')}
-            </Dropdown.Option>
-            <Dropdown.Option
+            />
+            <MenuItem
+              label={t('common.filter.types.outputVariable')}
               disabled={this.definitionIsNotSelected()}
               onClick={this.openNewFilterModal('outputVariable')}
-            >
-              {t('common.filter.types.outputVariable')}
-            </Dropdown.Option>
-          </Dropdown>
+            />
+          </MenuDropdown>
         </div>
         {filters.length === 0 && (
           <p className="emptyMessage">{t('common.filter.allVisible.decision')}</p>

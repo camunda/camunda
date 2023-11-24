@@ -583,7 +583,7 @@ test('aggregators', async (t) => {
 
   await t.click(e.sectionToggle('Filters'));
   await t.click(e.filterButton);
-  await t.click(e.filterOption('Instance State'));
+  await t.click(Common.menuOption('Instance State'));
   await t.click(e.modalOption('Completed'));
   await t.click(Common.modalConfirmButton);
 

@@ -38,7 +38,7 @@ async function createReport(
   if (completed) {
     await t.click(Report.sectionToggle('Filters'));
     await t.click(Report.filterButton);
-    await t.click(Report.filterOption('Instance State'));
+    await t.click(Common.menuOption('Instance State'));
     await t.click(Report.modalOption('Completed'));
     await t.click(Common.modalConfirmButton);
   }

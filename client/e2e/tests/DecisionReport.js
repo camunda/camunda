@@ -179,8 +179,8 @@ test('filters', async (t) => {
 
   await t
     .resizeWindow(1400, 700)
-    .click(Report.filterButton)
-    .hover(Report.filterOption('Output Variable'))
+    .click(ProcessReport.filterButton)
+    .hover(Common.menuOption('Output Variable'))
     .takeElementScreenshot(
       Common.controlPanel,
       'decision-analysis/img/report-with-filterlist-open.png'

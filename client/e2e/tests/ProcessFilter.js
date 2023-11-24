@@ -29,7 +29,7 @@ test('variable filter modal dependent on variable type', async (t) => {
 
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Variable'));
+  await t.click(Common.menuOption('Variable'));
 
   await t.click(Common.comboBox);
   await t.typeText(Filter.variableTypeahead, 'dc', {replace: true});
@@ -83,7 +83,7 @@ test('filter for custom string variable values', async (t) => {
 
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Variable'));
+  await t.click(Common.menuOption('Variable'));
 
   await t.typeText(Filter.variableTypeahead, 'stringVar', {replace: true});
   await t.click(Common.carbonOption('stringVar'));
@@ -112,7 +112,7 @@ test('should apply a filter to the report result', async (t) => {
   const unfiltered = +(await Report.reportNumber.textContent);
 
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Variable'));
+  await t.click(Common.menuOption('Variable'));
 
   await t.click(Common.comboBox);
   await t.click(Common.carbonOption('amount'));
@@ -133,36 +133,36 @@ test('instance state filters', async (t) => {
   await u.selectView(t, 'Process Instance', 'Count');
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Instance State'));
+  await t.click(Common.menuOption('Instance State'));
   await t.click(Report.modalOption('Running'));
   await t.click(Common.modalConfirmButton);
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Instance State'));
+  await t.click(Common.menuOption('Instance State'));
   await t.click(Report.modalOption('Completed'));
   await t.click(Common.modalConfirmButton);
   await t.expect(Report.warningMessage.visible).ok();
   await t.click(Report.filterRemoveButton);
   await t.click(Report.filterRemoveButton);
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Instance State'));
+  await t.click(Common.menuOption('Instance State'));
   await t.click(Report.modalOption('Canceled'));
   await t.click(Common.modalConfirmButton);
   await t.expect(Report.reportRenderer.visible).ok();
   await t.click(Report.filterRemoveButton);
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Instance State'));
+  await t.click(Common.menuOption('Instance State'));
   await t.click(Report.modalOption('Non Canceled'));
   await t.click(Common.modalConfirmButton);
   await t.expect(Report.reportRenderer.visible).ok();
   await t.click(Report.filterRemoveButton);
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Instance State'));
+  await t.click(Common.menuOption('Instance State'));
   await t.click(Report.modalOption('Suspended'));
   await t.click(Common.modalConfirmButton);
   await t.expect(Report.reportRenderer.visible).ok();
   await t.click(Report.filterRemoveButton);
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Instance State'));
+  await t.click(Common.menuOption('Instance State'));
   await t.click(Report.modalOption('Non Suspended'));
   await t.click(Common.modalConfirmButton);
   await t.expect(Report.reportRenderer.visible).ok();
@@ -175,8 +175,8 @@ test('pick a start date from the date picker', async (t) => {
 
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Instance Date'));
-  await t.click(Report.subFilterOption('Start Date'));
+  await t.hover(Common.menuOption('Instance Date'));
+  await t.click(Common.submenuOption('Start Date'));
   await t.click(Filter.dateTypeSelect);
   await t.click(Common.option('Between'));
   await t.click(Filter.dateFilterStartInput);
@@ -204,8 +204,8 @@ test('add relative current month start date filter', async (t) => {
   await u.selectView(t, 'Process Instance', 'Count');
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Instance Date'));
-  await t.click(Report.subFilterOption('Start Date'));
+  await t.hover(Common.menuOption('Instance Date'));
+  await t.click(Common.submenuOption('Start Date'));
   await t.click(Filter.dateTypeSelect);
   await t.click(Common.option('This...'));
   await t.click(Filter.unitSelect);
@@ -221,8 +221,8 @@ test('add rolling last 5 days end date filter', async (t) => {
   await u.selectView(t, 'Process Instance', 'Count');
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Instance Date'));
-  await t.click(Report.subFilterOption('End Date'));
+  await t.hover(Common.menuOption('Instance Date'));
+  await t.click(Common.submenuOption('End Date'));
   await t.click(Filter.dateTypeSelect);
   await t.click(Common.option('Rolling'));
   await t.click(Filter.unitSelect);
@@ -239,8 +239,8 @@ test('add process instance duration filter', async (t) => {
   await u.selectView(t, 'Process Instance', 'Count');
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Instance Duration'));
-  await t.click(Report.subFilterOption('Process instance'));
+  await t.hover(Common.menuOption('Instance Duration'));
+  await t.click(Common.submenuOption('Process instance'));
   await t.click(Filter.durationFilterOperator);
   await t.click(Common.option('less than'));
 
@@ -258,8 +258,8 @@ test('add flow node duration filter', async (t) => {
   await u.selectView(t, 'Process Instance', 'Count');
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Instance Duration'));
-  await t.click(Report.subFilterOption('Flow Node'));
+  await t.hover(Common.menuOption('Instance Duration'));
+  await t.click(Common.submenuOption('Flow Node'));
 
   await t.typeText(Report.targetValueInput('Approve Invoice'), '1');
   await t.typeText(Report.targetValueInput('Prepare Bank Transfer'), '5');
@@ -285,7 +285,7 @@ test('add assignee filter', async (t) => {
   await t.click(Report.sectionToggle('Filters'));
 
   await t.click(Report.flowNodeFilterButton);
-  await t.click(Report.filterOption('Assignee'));
+  await t.click(Common.menuOption('Assignee'));
 
   await t.click(Common.usersTypeahead);
   await t.typeText(Common.usersTypeahead, 'er', {replace: true});
@@ -306,7 +306,7 @@ test('add Flow Node filter', async (t) => {
   await t.resizeWindow(1000, 750);
 
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Flow Node Execution'));
+  await t.click(Common.menuOption('Flow Node Execution'));
 
   await t.click(Report.flowNode('approveInvoice'));
   await t.click(Report.flowNode('reviewInvoice'));
@@ -325,7 +325,7 @@ test('the filter is visible in the control panel and contains correct informatio
 
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Flow Node Execution'));
+  await t.click(Common.menuOption('Flow Node Execution'));
   await t.click(Report.flowNode('approveInvoice'));
   await t.click(Common.modalConfirmButton);
   const controlPanelFilterText = Report.controlPanelFilter.textContent;
@@ -334,8 +334,8 @@ test('the filter is visible in the control panel and contains correct informatio
   await t.expect(controlPanelFilterText).contains('Approve Invoice');
 
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Instance Date'));
-  await t.click(Report.subFilterOption('Start Date'));
+  await t.hover(Common.menuOption('Instance Date'));
+  await t.click(Common.submenuOption('Start Date'));
 
   await t.click(Filter.dateTypeSelect);
   await t.click(Common.option('This...'));
@@ -344,7 +344,7 @@ test('the filter is visible in the control panel and contains correct informatio
   await t.click(Common.modalConfirmButton);
 
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Instance State'));
+  await t.click(Common.menuOption('Instance State'));
   await t.click(Report.modalOption('Running'));
   await t.click(Common.modalConfirmButton);
 
@@ -367,7 +367,7 @@ test('add an incident filter', async (t) => {
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.filterButton);
 
-  await t.click(Report.filterOption('Incident'));
+  await t.click(Common.menuOption('Incident'));
   await t.click(Report.modalOption('Open Incidents'));
   await t.click(Common.modalConfirmButton);
 
@@ -376,7 +376,7 @@ test('add an incident filter', async (t) => {
 
   await t.click(Report.flowNodeFilterButton);
 
-  await t.click(Report.filterOption('Incident'));
+  await t.click(Common.menuOption('Incident'));
   await t.click(Report.modalOption('Resolved Incidents'));
   await t.click(Common.modalConfirmButton);
 
@@ -391,7 +391,7 @@ test('add flow node status filter', async (t) => {
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.flowNodeFilterButton);
 
-  await t.click(Report.filterOption('Flow Node State'));
+  await t.click(Common.menuOption('Flow Node State'));
   await t.click(Report.modalOption('Running'));
   await t.click(Common.modalConfirmButton);
 
@@ -399,7 +399,7 @@ test('add flow node status filter', async (t) => {
   await t.click(Report.filterRemoveButton);
   await t.click(Report.flowNodeFilterButton);
 
-  await t.click(Report.filterOption('Flow Node State'));
+  await t.click(Common.menuOption('Flow Node State'));
   await t.click(Report.modalOption('Completed or Canceled'));
   await t.click(Common.modalConfirmButton);
 
@@ -418,7 +418,7 @@ test('select which flow nodes to show from the configuration', async (t) => {
 
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.flowNodeFilterButton);
-  await t.click(Report.filterOption('Flow Node Selection'));
+  await t.click(Common.menuOption('Flow Node Selection'));
 
   await t.click(Report.deselectAllButton);
 
@@ -447,7 +447,7 @@ test('multi definition filters', async (t) => {
 
   await t.click(Report.sectionToggle('Filters'));
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Instance State'));
+  await t.click(Common.menuOption('Instance State'));
   await t.click(Report.modalOption('Running'));
 
   await t.click(Filter.multiSelectClearBtn());
@@ -462,7 +462,7 @@ test('multi definition filters', async (t) => {
   await t.expect(Common.controlPanel.textContent).contains('Applied to: 2 Processes');
 
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Flow Node Execution'));
+  await t.click(Common.menuOption('Flow Node Execution'));
 
   await t.click(Common.typeahead);
   await t.click(Common.typeaheadOption('Embedded Subprocess'));
@@ -488,8 +488,8 @@ test('add flow node start date filter', async (t) => {
   await t.click(Report.sectionToggle('Filters'));
 
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Flow Node Date'));
-  await t.click(Report.subFilterOption('Start Date'));
+  await t.hover(Common.menuOption('Flow Node Date'));
+  await t.click(Common.submenuOption('Start Date'));
 
   await t.click(Filter.dateTypeSelect);
   await t.click(Common.option('This...'));

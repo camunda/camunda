@@ -1437,10 +1437,6 @@
         "view": "Filter Flow Nodes",
         "decision": "Filter Decision Evaluations"
       },
-      "dropdownInfo": {
-        "instance": "Return Instances filtered by...",
-        "view": "Return Flow Node Data filtered by..."
-      },
       "allVisible": {
         "instance": "All instances visible",
         "view": "All Flow Node data visible",

@@ -6,29 +6,24 @@
     align-items: center;
     margin-bottom: 10px;
 
-    .Filter__dropdown .activateButton {
-      padding-left: 12px;
-    }
-
     .dropdownLabel {
       font-size: 12px;
       font-weight: 500;
-      color: var(--grey-darken-13);
-      margin-top: -2px;
+      color: var(--cds-text-primary);
     }
 
     .explanation {
-      margin-left: 7px;
+      margin-left: 0.5rem;
       flex-grow: 1;
-      color: var(--grey-darken-23);
 
-      .Icon {
-        opacity: 0.26;
-        vertical-align: top;
-        margin-top: 2px;
+      .cds--tooltip button {
+        padding: 0;
+        margin: 0;
+        border: none;
+        cursor: pointer;
 
-        &:hover {
-          opacity: 1;
+        svg {
+          fill: currentColor;
         }
       }
     }
@@ -44,8 +39,12 @@
     color: var(--grey-lighten-50);
     font-size: 12px;
   }
+
+  .Filter__dropdown {
+    display: inline-block;
+  }
 }
 
-.filterLevelTooltip {
-  width: 363px;
+.MenuDropdownMenu {
+  min-width: 200px;
 }
