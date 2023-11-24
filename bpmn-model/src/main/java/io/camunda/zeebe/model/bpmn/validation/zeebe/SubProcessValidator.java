@@ -16,6 +16,7 @@
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
+import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
@@ -39,7 +40,8 @@ public class SubProcessValidator implements ModelElementValidator<SubProcess> {
           MessageEventDefinition.class,
           ErrorEventDefinition.class,
           SignalEventDefinition.class,
-          EscalationEventDefinition.class);
+          EscalationEventDefinition.class,
+          CompensateEventDefinition.class);
 
   @Override
   public Class<SubProcess> getElementType() {
@@ -59,7 +61,7 @@ public class SubProcessValidator implements ModelElementValidator<SubProcess> {
       final StartEvent startEvent = startEvents.iterator().next();
 
       if (element.triggeredByEvent()) {
-        validateEventSubprocess(validationResultCollector, startEvent);
+        validateEventSubprocess(validationResultCollector, startEvent, element);
       } else {
         validateEmbeddedSubprocess(validationResultCollector, startEvent);
       }
@@ -80,12 +82,20 @@ public class SubProcessValidator implements ModelElementValidator<SubProcess> {
   }
 
   private void validateEventSubprocess(
-      final ValidationResultCollector validationResultCollector, final StartEvent start) {
+      final ValidationResultCollector validationResultCollector,
+      final StartEvent start,
+      final SubProcess element) {
     final Collection<EventDefinition> eventDefinitions = start.getEventDefinitions();
     if (eventDefinitions.isEmpty()) {
       validationResultCollector.addError(
           0,
-          "Start events in event subprocesses must be one of: message, timer, error, signal, escalation");
+          "Start events in event subprocesses must be one of: message, timer, error, signal, escalation or compensation");
+    }
+
+    if (eventDefinitions.stream().anyMatch(CompensateEventDefinition.class::isInstance)
+        && !(element.getParentElement() instanceof SubProcess)) {
+      validationResultCollector.addError(
+          0, "A compensation event subprocess is not allowed on the process level");
     }
 
     eventDefinitions.forEach(
@@ -93,7 +103,7 @@ public class SubProcessValidator implements ModelElementValidator<SubProcess> {
           if (SUPPORTED_START_TYPES.stream().noneMatch(type -> type.isInstance(def))) {
             validationResultCollector.addError(
                 0,
-                "Start events in event subprocesses must be one of: message, timer, error, signal, escalation");
+                "Start events in event subprocesses must be one of: message, timer, error, signal, escalation or compensation");
           }
         });
 

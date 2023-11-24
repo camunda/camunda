@@ -40,6 +40,12 @@ public class EmbeddedSubProcessBuilder
     return startEvent(null);
   }
 
+  public StartEventBuilder startEvent(final String id, final Consumer<StartEventBuilder> consumer) {
+    final StartEventBuilder builder = startEvent(id);
+    consumer.accept(builder);
+    return builder;
+  }
+
   public StartEventBuilder startEvent(final String id) {
     final StartEvent start = subProcessBuilder.createChild(StartEvent.class, id);
 
