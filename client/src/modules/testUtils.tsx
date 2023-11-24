@@ -509,6 +509,17 @@ export const mockProcessInstances = {
   totalCount: 912,
 };
 
+export const mockCalledProcessInstances = {
+  processInstances: [
+    createInstance({
+      id: '2251799813685837',
+      processId: '2251799813685592',
+      parentInstanceId: '22517998136837261',
+    }),
+  ],
+  totalCount: 1,
+};
+
 export const operations: OperationEntity[] = [
   {
     id: '921455fd-849a-49c5-be17-c92eb6d9e946',

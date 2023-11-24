@@ -14,11 +14,16 @@ import {Paths} from 'modules/Routes';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
-import {mockProcessInstances, mockProcessStatistics} from 'modules/testUtils';
+import {
+  mockCalledProcessInstances,
+  mockProcessInstances,
+  mockProcessStatistics,
+} from 'modules/testUtils';
 import {MigrateAction} from '.';
 import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
+import {ProcessInstancesDto} from 'modules/api/processInstances/fetchProcessInstances';
 
 const PROCESS_DEFINITION_ID = '2251799813685249';
 const PROCESS_ID = 'eventBasedGatewayProcess';
@@ -44,14 +49,16 @@ const fetchProcessInstances = async (user: UserEvent) => {
   );
 };
 
-const getProcessInstance = (state: ProcessInstanceEntity['state']) => {
-  const instance = mockProcessInstances.processInstances.find(
+const getProcessInstance = (
+  state: ProcessInstanceEntity['state'],
+  mockData: ProcessInstancesDto,
+) => {
+  const instance = mockData.processInstances.find(
     (instance) => instance.state === state,
   );
+
   if (instance === undefined) {
-    throw new Error(
-      `please make sure there is a ${state} instance mockProcessInstances.processInstances`,
-    );
+    throw new Error(`please make sure there is a ${state} in mockData`);
   }
 
   return instance;
@@ -122,7 +129,7 @@ describe('<MigrateAction />', () => {
 
     await fetchProcessInstances(user);
 
-    const instance = getProcessInstance('ACTIVE');
+    const instance = getProcessInstance('ACTIVE', mockProcessInstances);
 
     expect(screen.getByRole('button', {name: /migrate/i})).toBeDisabled();
 
@@ -131,6 +138,26 @@ describe('<MigrateAction />', () => {
     });
 
     expect(screen.getByRole('button', {name: /migrate/i})).toBeEnabled();
+  });
+
+  it('should disable migrate button, when selected instances are called by parent', async () => {
+    mockFetchProcessInstances().withSuccess(mockCalledProcessInstances);
+
+    const {user} = render(<MigrateAction />, {
+      wrapper: getWrapper(
+        `/processes?process=eventBasedGatewayProcess&version=1`,
+      ),
+    });
+
+    await fetchProcessInstances(user);
+
+    const instance = getProcessInstance('ACTIVE', mockCalledProcessInstances);
+
+    act(() => {
+      processInstancesSelectionStore.selectProcessInstance(instance.id);
+    });
+
+    expect(screen.getByRole('button', {name: /migrate/i})).toBeDisabled();
   });
 
   it('should disable migrate button, when only finished instances are selected', async () => {
@@ -144,7 +171,7 @@ describe('<MigrateAction />', () => {
 
     await fetchProcessInstances(user);
 
-    const instance = getProcessInstance('CANCELED');
+    const instance = getProcessInstance('CANCELED', mockProcessInstances);
 
     act(() => {
       processInstancesSelectionStore.selectProcessInstance(instance.id);
@@ -184,7 +211,7 @@ describe('<MigrateAction />', () => {
 
     await fetchProcessInstances(user);
 
-    const instance = getProcessInstance('ACTIVE');
+    const instance = getProcessInstance('ACTIVE', mockProcessInstances);
 
     act(() => {
       processInstancesSelectionStore.selectProcessInstance(instance.id);
@@ -229,7 +256,7 @@ describe('<MigrateAction />', () => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     await fetchProcessInstances(user);
 
-    const instance = getProcessInstance('ACTIVE');
+    const instance = getProcessInstance('ACTIVE', mockProcessInstances);
     act(() => {
       processInstancesSelectionStore.selectProcessInstance(instance.id);
     });

@@ -18,9 +18,10 @@ import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/
 import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
-import {ListItem, Modal} from './styled';
 import {processStatisticsStore as processStatisticsMigrationSourceStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
+import {ListItem, Modal} from './styled';
+import isNil from 'lodash/isNil';
 
 const MigrateAction: React.FC = observer(() => {
   const location = useLocation();
@@ -32,7 +33,7 @@ const MigrateAction: React.FC = observer(() => {
 
   const isVersionSelected = version !== undefined && version !== 'all';
   const hasSelectedFinishedInstances =
-    processInstancesSelectionStore.state.selectionMode === 'ALL' ||
+    processInstancesSelectionStore.state.isAllChecked ||
     processInstancesStore.state.processInstances.some((processInstance) => {
       return (
         selectedProcessInstanceIds.includes(processInstance.id) &&
@@ -40,7 +41,27 @@ const MigrateAction: React.FC = observer(() => {
       );
     });
 
-  const isDisabled = !isVersionSelected || !hasSelectedFinishedInstances;
+  const isChildProcess = (() => {
+    if (processInstancesSelectionStore.state.isAllChecked) {
+      return processInstancesStore.state.processInstances.some(
+        ({parentInstanceId}) => parentInstanceId !== null,
+      );
+    }
+
+    return processInstancesSelectionStore.state.selectedProcessInstanceIds.some(
+      (processInstanceId) => {
+        const instance = processInstancesStore.state.processInstances.find(
+          ({id}) => {
+            return id === processInstanceId;
+          },
+        );
+        return !isNil(instance?.parentInstanceId);
+      },
+    );
+  })();
+
+  const isDisabled =
+    !isVersionSelected || !hasSelectedFinishedInstances || isChildProcess;
 
   const getTooltipText = () => {
     if (!isVersionSelected) {
@@ -49,6 +70,10 @@ const MigrateAction: React.FC = observer(() => {
 
     if (!hasSelectedFinishedInstances) {
       return 'You can only migrate instances in active or incident state.';
+    }
+
+    if (isChildProcess) {
+      return 'You can only migrate instances which are not called by a parent process';
     }
   };
 
