@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 
 import DateVariableUnit from './DateVariableUnit';
@@ -17,22 +16,28 @@ const report = {
   },
 };
 
-it('should render a unit selection for Date variables', () => {
-  const node = shallow(<DateVariableUnit report={report} />);
+const props = {
+  configuration: report.data.configuration,
+  groupBy: report.data.groupBy,
+  onChange: jest.fn(),
+};
 
-  expect(node).toMatchSnapshot();
+it('should render a unit selection for Date variables', () => {
+  const node = shallow(<DateVariableUnit {...props} />);
+
+  const selectOptions = node.find('Option');
+
+  expect(selectOptions.at(0).prop('label')).toEqual('automatic');
+  expect(selectOptions.at(1).prop('label')).toEqual('hours');
+  expect(selectOptions.at(2).prop('label')).toEqual('days');
+  expect(selectOptions.at(3).prop('label')).toEqual('weeks');
+  expect(selectOptions.at(4).prop('label')).toEqual('months');
+  expect(selectOptions.at(5).prop('label')).toEqual('years');
 });
 
 it('should render nothing if the current variable is not Date', () => {
   const node = shallow(
-    <DateVariableUnit
-      report={{
-        data: {
-          ...report.data,
-          groupBy: {type: 'variable', value: {type: 'Number'}},
-        },
-      }}
-    />
+    <DateVariableUnit {...props} groupBy={{type: 'variable', value: {type: 'Number'}}} />
   );
 
   expect(node.find('.DateVariableUnit')).not.toExist();
@@ -41,16 +46,13 @@ it('should render nothing if the current variable is not Date', () => {
 it('should render a unit selection for distributed by date variable', () => {
   const node = shallow(
     <DateVariableUnit
-      report={{
-        data: {
-          distributedBy: {
-            type: 'variable',
-            value: {type: 'Date'},
-          },
-          configuration: {
-            groupByDateVariableUnit: 'automatic',
-          },
-        },
+      {...props}
+      distributedBy={{
+        type: 'variable',
+        value: {type: 'Date'},
+      }}
+      configuration={{
+        groupByDateVariableUnit: 'automatic',
       }}
     />
   );
@@ -61,9 +63,9 @@ it('should render a unit selection for distributed by date variable', () => {
 it('should reevaluate the report when changing the unit', () => {
   const spy = jest.fn();
 
-  const node = shallow(<DateVariableUnit report={report} onChange={spy} />);
+  const node = shallow(<DateVariableUnit {...props} onChange={spy} />);
 
-  node.find('Select').simulate('change', 'month');
+  node.find('CarbonSelect').simulate('change', 'month');
 
   expect(spy).toHaveBeenCalledWith({groupByDateVariableUnit: {$set: 'month'}}, true);
 });

@@ -5,10 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
-
-import {Button, LabeledInput} from 'components';
 
 import CountTargetInput from './CountTargetInput';
 
@@ -16,13 +13,14 @@ const validProps = {
   baseline: 10,
   target: 200,
   disabled: false,
+  onChange: jest.fn(),
 };
 
 it('should display the current target values', () => {
   const node = shallow(<CountTargetInput {...validProps} />);
 
-  expect(node.find(LabeledInput).first()).toHaveValue(200);
-  expect(node.find({label: 'Baseline'})).toHaveValue(10);
+  expect(node.find('TextInput').first()).toHaveValue(200);
+  expect(node.find({labelText: 'Baseline'})).toHaveValue(10);
 });
 
 it('should update target values', () => {
@@ -30,7 +28,7 @@ it('should update target values', () => {
   const node = shallow(<CountTargetInput {...validProps} onChange={spy} />);
 
   node
-    .find(LabeledInput)
+    .find('TextInput')
     .first()
     .simulate('change', {target: {value: '73'}});
 
@@ -40,20 +38,24 @@ it('should update target values', () => {
 it('should show an error message if an input field does not have a valid value', async () => {
   const node = shallow(<CountTargetInput {...validProps} baseline={'notAValidValue'} />);
 
-  expect(node.find('Message')).toExist();
+  expect(node.find('TextInput').at(1).prop('invalid')).toBe(true);
+  expect(node.find('TextInput').at(1).prop('invalidText')).toBe('Enter a positive number');
 });
 
 it('should show an error message if target is below baseline', async () => {
-  const node = shallow(<CountTargetInput baseline={50} target={4} />);
+  const node = shallow(<CountTargetInput {...validProps} baseline={50} target={4} />);
 
-  expect(node.find('Message')).toExist();
+  expect(node.find('TextInput').at(0).prop('invalid')).toBe(true);
+  expect(node.find('TextInput').at(0).prop('invalidText')).toBe(
+    'Target must be greater than baseline'
+  );
 });
 
 it('should invoke the onChange prop on button click', async () => {
   const spy = jest.fn();
   const node = shallow(<CountTargetInput {...validProps} onChange={spy} />);
 
-  node.find(Button).first().simulate('click');
+  node.find('RadioButton').first().simulate('click');
 
   expect(spy).toHaveBeenCalledWith('isBelow', false);
 });

@@ -5,19 +5,20 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 
 import GradientBarsSwitch from './GradientBarsSwitch';
 
 it('should contain a switch that is checked if gradient bars are shown', () => {
-  const node = shallow(<GradientBarsSwitch configuration={{showGradientBars: true}} />);
+  const node = shallow(
+    <GradientBarsSwitch configuration={{showGradientBars: true}} onChange={jest.fn()} />
+  );
 
-  expect(node.find('Switch').prop('checked')).toBe(true);
+  expect(node.find('Toggle').prop('toggled')).toBe(true);
 
   node.setProps({configuration: {showGradientBars: false}});
 
-  expect(node.find('Switch').prop('checked')).toBe(false);
+  expect(node.find('Toggle').prop('toggled')).toBe(false);
 });
 
 it('should call the onChange method when toggling the switch', () => {
@@ -27,7 +28,7 @@ it('should call the onChange method when toggling the switch', () => {
     <GradientBarsSwitch configuration={{showGradientBars: true}} onChange={spy} />
   );
 
-  node.find('Switch').simulate('change', {target: {checked: false}});
+  node.find('Toggle').simulate('toggle', false);
 
   expect(spy).toHaveBeenCalledWith({showGradientBars: {$set: false}});
 });

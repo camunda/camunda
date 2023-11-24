@@ -63,9 +63,9 @@ test('create raw data report', async (t) => {
 
   await t.click(ProcessReport.configurationButton);
   await t.click(ProcessReport.selectSectionWithLabel('INPUT VARIABLES'));
-  await t.click(ProcessReport.selectSwitchLabel('Invoice Amount'));
+  await t.click(Common.toggleElement('Invoice Amount'));
   await t.click(ProcessReport.selectSectionWithLabel('OUTPUT VARIABLES'));
-  await t.click(ProcessReport.selectSwitchLabel('Classification'));
+  await t.click(Common.toggleElement('Classification'));
   await t.click(ProcessReport.configurationButton);
 
   await t.expect(ProcessReport.reportTable.textContent).contains('Decision Definition Key');
@@ -107,7 +107,7 @@ test('create a single number report', async (t) => {
   await t.typeText(Common.nameEditField, 'Progress of Expected Evaluation Count', {replace: true});
 
   await t.click(ProcessReport.configurationButton);
-  await t.click(ProcessReport.goalSwitch);
+  await t.click(Common.toggleElement('Set Target'));
   await t.typeText(ProcessReport.goalTargetInput, '1000', {replace: true});
   await t.click(ProcessReport.configurationButton);
 

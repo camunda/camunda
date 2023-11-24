@@ -183,7 +183,7 @@ test('sort table columns', async (t) => {
 
   await t.click(e.configurationButton);
   await t.click(e.selectSectionWithLabel('VARIABLES'));
-  await t.click(e.selectSwitchLabel('invoice'));
+  await t.click(Common.toggleElement('invoice'));
   await t.click(e.configurationButton);
 
   await t.typeText(Common.nameEditField, 'Table Report', {replace: true});
@@ -235,7 +235,7 @@ test('view a variable object in rawdata table', async (t) => {
 
   await t.click(e.configurationButton);
   await t.click(e.selectSectionWithLabel('VARIABLES'));
-  await t.click(e.selectSwitchLabel('person'));
+  await t.click(Common.toggleElement('person'));
   await t.click(e.configurationButton);
 
   await t.scrollIntoView(e.objectViewBtn);
@@ -268,15 +268,15 @@ test('exclude raw data columns', async (t) => {
 
   await t.click(e.configurationButton);
 
-  await t.click(e.selectSwitchLabel('Start Date'));
-  await t.click(e.selectSwitchLabel('Show Instance Count'));
-  await t.click(e.selectSwitchLabel('Process Definition Key'));
-  await t.click(e.selectSwitchLabel('Business Key'));
-  await t.click(e.selectSwitchLabel('End Date'));
+  await t.click(Common.toggleElement('Start Date'));
+  await t.click(e.instanceCountSwitch);
+  await t.click(Common.toggleElement('Process Definition Key'));
+  await t.click(Common.toggleElement('Business Key'));
+  await t.click(Common.toggleElement('End Date'));
 
   await t.click(e.selectSectionWithLabel('VARIABLES'));
 
-  await t.click(e.selectSwitchLabel('approved'));
+  await t.click(Common.toggleElement('approved'));
 
   await t.takeScreenshot('process-analysis/report-analysis/img/rawdata.png').maximizeWindow();
 
@@ -369,8 +369,8 @@ test('Disable absolute and relative values for table reports', async (t) => {
 
   await u.selectVisualization(t, 'Table');
   await t.click(e.configurationButton);
-  await t.click(e.selectSwitchLabel('Show Absolute Value'));
-  await t.click(e.selectSwitchLabel('Show Relative Value'));
+  await t.click(Common.toggleElement('Show Absolute Value'));
+  await t.click(Common.toggleElement('Show Relative Value'));
 
   await t.expect(e.reportTable.textContent).contains('Start Date');
   await t.expect(e.reportTable.textContent).notContains('Process Instance: Count');
@@ -472,10 +472,10 @@ test('bar chart and line chart configuration', async (t) => {
     fullPage: true,
   });
 
-  await t.click(e.goalSwitch);
+  await t.click(Common.toggleElement('Set Target'));
 
-  await t.typeText(e.chartGoalInput, '4.5', {replace: true});
-  await t.expect(e.chartGoalInput.hasAttribute('disabled')).notOk();
+  await t.typeText(e.goalTargetInput, '4.5', {replace: true});
+  await t.expect(e.goalTargetInput.hasAttribute('disabled')).notOk();
 
   await t.expect(e.reportChart.visible).ok();
 
@@ -492,12 +492,12 @@ test('bar chart and line chart configuration', async (t) => {
 
   await t.click(e.configurationButton);
 
-  await t.click(e.selectSwitchLabel('Logarithmic Scale'));
+  await t.click(Common.toggleElement('Logarithmic Scale'));
 
   await t.typeText(e.axisInputs('X Axis Label'), 'x axis label', {replace: true});
   await t.typeText(e.axisInputs('Y Axis Label'), 'y axis label', {replace: true});
 
-  await t.click(e.selectSwitchLabel('Logarithmic Scale'));
+  await t.click(Common.toggleElement('Logarithmic Scale'));
 
   await t.expect(e.reportChart.visible).ok();
 
@@ -510,7 +510,7 @@ test('bar chart and line chart configuration', async (t) => {
 
   await t.click(e.configurationButton);
 
-  await t.click(e.selectSwitchLabel('Stacked bars'));
+  await t.click(Common.toggleElement('Stacked bars'));
 
   await t
     .resizeWindow(1600, 800)
@@ -547,7 +547,7 @@ test('horizontal bar chart', async (t) => {
     fullPage: true,
   });
 
-  await t.click(e.selectSwitchLabel('Horizontal bars'));
+  await t.click(Common.toggleElement('Horizontal bars'));
 
   await t.maximizeWindow();
 });
@@ -638,7 +638,7 @@ test('progress bar and reset to default', async (t) => {
 
   await t.click(e.configurationButton);
 
-  await t.click(e.goalSwitch);
+  await t.click(Common.toggleElement('Set Target'));
   await t.typeText(e.goalTargetInput, '400', {replace: true});
 
   await t.click(e.configurationButton);
@@ -741,8 +741,8 @@ test('always show tooltips', async (t) => {
   await t.expect(e.tooltip.exists).notOk();
 
   await t.click(e.configurationButton);
-  await t.click(e.selectSwitchLabel('Show Absolute Value'));
-  await t.click(e.selectSwitchLabel('Show Relative Value'));
+  await t.click(Common.toggleElement('Show Absolute Value'));
+  await t.click(Common.toggleElement('Show Relative Value'));
 
   await t
     .takeScreenshot('process-analysis/report-analysis/img/heatmap.png', {fullPage: true})
@@ -913,7 +913,7 @@ test('group by duration', async (t) => {
   await t.click(e.configurationButton);
   await t.click(e.bucketSizeSwitch);
   await t.click(e.bucketSizeUnitSelect);
-  await t.click(e.configurationOption('days'));
+  await t.click(Common.menuOption('days'));
   await t.click(e.configurationButton);
 
   await t.expect(e.reportChart.visible).ok();
@@ -1223,7 +1223,7 @@ test('create report with two versions of the same process', async (t) => {
   await u.selectGroupby(t, 'Process');
 
   await t.click(e.configurationButton);
-  await t.click(e.selectSwitchLabel('Show Absolute Value'));
+  await t.click(Common.toggleElement('Show Absolute Value'));
   await t.click(e.configurationButton);
 
   await t

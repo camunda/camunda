@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import BarChartConfig from './BarChartConfig';
 import PointMarkersConfig from './subComponents/PointMarkersConfig';
 

@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 
 import RelativeAbsoluteSelection from './RelativeAbsoluteSelection';
@@ -14,22 +13,36 @@ const props = {
   absolute: true,
   relative: true,
   reportType: 'process',
+  onChange: jest.fn(),
 };
 
-it('should match snapshot', () => {
+it('should render toggles', () => {
   const node = shallow(<RelativeAbsoluteSelection {...props} />);
 
-  expect(node).toMatchSnapshot();
+  expect(node.find('Toggle').length).toBe(2);
+  expect(node.find('Toggle').at(0).props()).toEqual({
+    id: 'showAbsoluteValueToggle',
+    labelA: 'Show Absolute Value',
+    labelB: 'Show Absolute Value',
+    onToggle: expect.any(Function),
+    size: 'sm',
+    toggled: true,
+  });
+  expect(node.find('Toggle').at(1).props()).toEqual({
+    id: 'showRelativeValueToggle',
+    labelA: 'Show Relative Value based on process instance count',
+    labelB: 'Show Relative Value based on process instance count',
+    onToggle: expect.any(Function),
+    size: 'sm',
+    toggled: true,
+  });
 });
 
 it('should call the onChange method with the correct prop and value', () => {
   const spy = jest.fn();
   const node = shallow(<RelativeAbsoluteSelection {...props} onChange={spy} />);
 
-  node
-    .find('Switch')
-    .at(0)
-    .simulate('change', {target: {checked: false}});
+  node.find('Toggle').at(0).simulate('toggle', false);
 
   expect(spy).toHaveBeenCalledWith('absolute', false);
 });
@@ -37,5 +50,6 @@ it('should call the onChange method with the correct prop and value', () => {
 it('hide the relative selection when hideRelative is true', () => {
   const node = shallow(<RelativeAbsoluteSelection {...props} hideRelative />);
 
-  expect(node).toMatchSnapshot();
+  expect(node.find('Toggle').length).toBe(1);
+  expect(node.find('Toggle').prop('id')).toBe('showAbsoluteValueToggle');
 });

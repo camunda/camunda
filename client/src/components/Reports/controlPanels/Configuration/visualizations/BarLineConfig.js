@@ -5,10 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {FormGroup, RadioButton, RadioButtonGroup, Stack} from '@carbon/react';
 
 import {t} from 'translation';
-import {Button, ButtonGroup} from 'components';
 
 import BarChartConfig from './BarChartConfig';
 import PointMarkersConfig from './subComponents/PointMarkersConfig';
@@ -24,15 +23,20 @@ export default function BarLineConfig({onChange, report}) {
   };
 
   return (
-    <div className="BarLineConfig">
-      <fieldset>
-        <legend>{t('report.config.barLine.visualizationSettings')}</legend>
-        {['frequency', 'duration'].map((measure, idx) => (
-          <div className="measureContainer" key={idx}>
-            <span>{t('report.view.' + (measure === 'frequency' ? 'count' : 'duration'))}</span>
-            <ButtonGroup>
-              <Button
-                active={configuration.measureVisualizations[measure] === 'line'}
+    <Stack gap={4} className="BarLineConfig">
+      <FormGroup legendText={t('report.config.barLine.visualizationSettings')}>
+        <Stack gap={4}>
+          {['frequency', 'duration'].map((measure) => (
+            <RadioButtonGroup
+              key={`${measure}=${configuration.measureVisualizations[measure]}`}
+              name={measure}
+              legendText={t('report.view.' + (measure === 'frequency' ? 'count' : 'duration'))}
+            >
+              <RadioButton
+                value="line"
+                name={`${measure}-line`}
+                labelText={t('report.config.barLine.line')}
+                checked={configuration.measureVisualizations[measure] === 'line'}
                 onClick={() =>
                   onChange({
                     measureVisualizations: {
@@ -40,11 +44,12 @@ export default function BarLineConfig({onChange, report}) {
                     },
                   })
                 }
-              >
-                {t('report.config.barLine.line')}
-              </Button>
-              <Button
-                active={configuration.measureVisualizations[measure] === 'bar'}
+              />
+              <RadioButton
+                value="bar"
+                name={`${measure}-bar`}
+                labelText={t('report.config.barLine.bar')}
+                checked={configuration.measureVisualizations[measure] === 'bar'}
                 onClick={() =>
                   onChange({
                     measureVisualizations: {
@@ -52,15 +57,13 @@ export default function BarLineConfig({onChange, report}) {
                     },
                   })
                 }
-              >
-                {t('report.config.barLine.bar')}
-              </Button>
-            </ButtonGroup>
-          </div>
-        ))}
-      </fieldset>
+              />
+            </RadioButtonGroup>
+          ))}
+        </Stack>
+      </FormGroup>
       <PointMarkersConfig {...{onChange, configuration}} />
       <BarChartConfig {...{onChange, report}} />
-    </div>
+    </Stack>
   );
 }

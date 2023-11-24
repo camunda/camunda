@@ -5,11 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
+import {Button} from '@carbon/react';
 
 import AllColumnsButtons from './AllColumnsButtons';
-import {Button} from 'components';
 
 it('should invoke enable All when enable all button is clicked', () => {
   const spy = jest.fn();

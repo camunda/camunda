@@ -30,6 +30,7 @@ import {
   AnchorHTMLAttributes,
   InputHTMLAttributes,
   UIEvent,
+  ElementType,
 } from 'react';
 
 declare module '@carbon/react' {
@@ -644,7 +645,12 @@ declare module '@carbon/react' {
     props: ForwardRefProps<HTMLInputElement, PasswordInputProps>
   ): JSX.Element;
 
-  declare function Stack(props: {gap: number; children: ReactNode}): JSX.Element;
+  declare function Stack(props: {
+    gap: number;
+    children?: ReactNode;
+    className?: string;
+    orientation?: 'horizontal' | 'vertical';
+  }): JSX.Element;
 
   interface MenuItemProps {
     children?: ReactNode;
@@ -679,6 +685,18 @@ declare module '@carbon/react' {
         className?: string;
         onChange?: (evt: UIEvent<HTMLElement>) => void;
       } & Omit<MenuItemProps, 'renderIcon'>
+    >
+  ): JSX.Element;
+
+  declare function Layer(
+    props: ForwardRefProps<
+      HTMLElement,
+      {
+        as?: ElementType;
+        children?: ReactNode;
+        className?: string;
+        level?: number;
+      }
     >
   ): JSX.Element;
 }

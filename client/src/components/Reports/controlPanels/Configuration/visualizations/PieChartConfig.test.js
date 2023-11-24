@@ -5,8 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
+
 import PieChartConfig from './PieChartConfig';
 
 const configuration = {
@@ -21,5 +21,12 @@ const pieReport = {
 
 it('it should display correct configuration for piechart', () => {
   const node = shallow(<PieChartConfig report={pieReport} />);
-  expect(node).toMatchSnapshot();
+
+  expect(node.find('RelativeAbsoluteSelection').props()).toEqual({
+    absolute: true,
+    relative: false,
+    reportType: undefined,
+    hideRelative: false,
+    onChange: expect.any(Function),
+  });
 });

@@ -5,13 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
+import {Button} from '@carbon/react';
 
 import Configuration from './Configuration';
 import {typeA, typeB} from './visualizations';
-import {Button} from 'components';
-import PrecisionConfig from './visualizations/PrecisionConfig';
+import PrecisionConfig from './PrecisionConfig';
 
 jest.mock('./visualizations', () => {
   const typeA = () => null;

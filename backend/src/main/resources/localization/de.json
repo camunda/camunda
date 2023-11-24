@@ -642,7 +642,6 @@
       "axisSettings": {
         "legend": "Achseneinstellungen",
         "logScale": "Logarithmische Skala (Basis 10)",
-        "label": "Achsenbeschriftung",
         "xAxis": "X-Achse Beschriftung",
         "yAxis": "Y-Achse Beschriftung"
       },
@@ -679,6 +678,7 @@
       "bucket": {
         "buckets": "Buckets",
         "bucketSize": "Bucket Größe",
+        "size": "Größe",
         "baseline": "Grundlinie",
         "invalidNumber": "Muss eine gültige Zahl sein"
       },
@@ -1058,6 +1058,7 @@
     "disabled": "deaktiviert",
     "and": "und",
     "or": "oder",
+    "on": "An",
     "off": "Aus",
     "none": "Keine",
     "all": "Alle",

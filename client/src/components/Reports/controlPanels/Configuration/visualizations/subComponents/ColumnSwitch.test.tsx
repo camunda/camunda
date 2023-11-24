@@ -20,26 +20,26 @@ const props = {
 it('should display a label', () => {
   const node = shallow(<ColumnSwitch {...props} />);
 
-  expect(node.find('.ColumnSwitch').prop('label')).toBe('this is a label');
+  expect(node.find('.ColumnSwitch').prop('labelA')).toBe('this is a label');
 });
 
 it('should not be checked when switch id is in excluded columns', () => {
   const node = shallow(<ColumnSwitch {...props} excludedColumns={['id']} />);
 
-  expect(node.find('.ColumnSwitch').prop('checked')).toBe(false);
+  expect(node.find('.ColumnSwitch').prop('toggled')).toBe(false);
 });
 
 it('should call onChange when toggled', () => {
   const spy = jest.fn();
   const node = shallow(<ColumnSwitch {...props} onChange={spy} />);
 
-  node.find('.ColumnSwitch').prop('onChange')({target: {checked: true}});
+  node.find('.ColumnSwitch').simulate('toggle', true);
 
   expect(spy).toHaveBeenCalledWith({
     tableColumns: {excludedColumns: {$set: ['a']}, includedColumns: {$push: ['id']}},
   });
 
-  node.find('.ColumnSwitch').prop('onChange')({target: {checked: false}});
+  node.find('.ColumnSwitch').simulate('toggle', false);
 
   expect(spy).toHaveBeenCalledWith({
     tableColumns: {excludedColumns: {$push: ['id']}, includedColumns: {$set: ['b']}},

@@ -642,7 +642,6 @@
       "axisSettings": {
         "legend": "Axis Settings",
         "logScale": "Logarithmic Scale (base 10)",
-        "label": "Axis Label",
         "xAxis": "X Axis Label",
         "yAxis": "Y Axis Label"
       },
@@ -679,6 +678,7 @@
       "bucket": {
         "buckets": "Buckets",
         "bucketSize": "Bucket Size",
+        "size": "Size",
         "baseline": "Baseline",
         "invalidNumber": "Must be a valid number"
       },
@@ -1058,6 +1058,7 @@
     "disabled": "disabled",
     "and": "and",
     "or": "or",
+    "on": "On",
     "off": "Off",
     "none": "None",
     "all": "All",

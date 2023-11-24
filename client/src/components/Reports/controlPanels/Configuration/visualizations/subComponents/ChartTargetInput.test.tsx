@@ -5,9 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
-import {Button, Input, Message} from 'components';
+import {RadioButton, NumberInput} from '@carbon/react';
+import {ComponentProps} from 'react';
 
 import ChartTargetInput from './ChartTargetInput';
 
@@ -15,16 +15,11 @@ const validProps = {
   report: {
     combined: false,
     data: {
-      processDefinitionKey: 'a',
-      processDefinitionVersion: 1,
       view: {
-        entity: 'flowNode',
         properties: ['duration'],
       },
-      visualization: 'bar',
       configuration: {
         targetValue: {
-          active: true,
           durationChart: {
             value: '2',
             unit: 'hours',
@@ -33,12 +28,12 @@ const validProps = {
         },
       },
     },
+    result: {},
   },
-  onChange: () => {},
-};
+  onChange: jest.fn(),
+} as unknown as ComponentProps<typeof ChartTargetInput>;
 
 const sampleTargetValue = {
-  active: true,
   durationChart: {
     isBelow: true,
     value: '15',
@@ -50,12 +45,12 @@ it('should render without crashing', () => {
   shallow(<ChartTargetInput {...validProps} />);
 });
 
-it('should add isActive classname to the clicked button in the buttonGroup', () => {
+it('should set checked prop to true for the clicked radio button', () => {
   const node = shallow(<ChartTargetInput {...validProps} />);
 
-  node.find(Button).first().simulate('click');
+  node.find(RadioButton).first().simulate('click');
 
-  expect(node.find(Button).first().props().active).toBe(true);
+  expect(node.find(RadioButton).first().prop('checked')).toBe(true);
 });
 
 it('should display the current target values target', () => {
@@ -67,13 +62,13 @@ it('should display the current target values target', () => {
     },
   });
 
-  expect(node.find(Input).first()).toHaveValue('15');
+  expect(node.find(NumberInput).first()).toHaveValue('15');
 });
 
 it('should display select dateFormat dropdown when viewProperty equal duration', () => {
   const node = shallow(<ChartTargetInput {...validProps} />);
 
-  expect(node.find('Select')).toExist();
+  expect(node.find('CarbonSelect')).toExist();
 });
 
 it('should hide select dateFormat dropdown when viewProperty is not equal duration', () => {
@@ -81,31 +76,26 @@ it('should hide select dateFormat dropdown when viewProperty is not equal durati
     report: {
       combined: false,
       data: {
-        processDefinitionKey: 'a',
-        processDefinitionVersion: 1,
         view: {
-          entity: 'flowNode',
           properties: ['frequency'],
         },
-        visualization: 'bar',
         configuration: {
-          targetValue: {
-            active: true,
-            countChart: {value: '50', isBelow: false},
-          },
+          targetValue: {},
         },
       },
+      result: {},
     },
-  };
+    onChange: jest.fn(),
+  } as unknown as ComponentProps<typeof ChartTargetInput>;
   const node = shallow(<ChartTargetInput {...newProps} />);
-  expect(node.find('Select')).not.toExist();
+  expect(node.find('CarbonSelect')).not.toExist();
 });
 
 it('should invoke the onChange prop on button click', async () => {
   const spy = jest.fn();
   const node = shallow(<ChartTargetInput {...validProps} onChange={spy} />);
 
-  node.find(Button).first().simulate('click');
+  node.find(RadioButton).first().simulate('click');
 
   expect(spy).toHaveBeenCalledWith({targetValue: {durationChart: {isBelow: {$set: false}}}});
 });
@@ -116,11 +106,16 @@ it('should display select date format if combined report is duration report', as
     report: {
       ...validProps.report,
       combined: true,
+      data: {
+        view: {
+          properties: ['duration'],
+        },
+        configuration: {targetValue: {test: {value: 0, isBelow: true, unit: 'seconds'}}},
+      },
       result: {
         data: {
           test: {
             data: {
-              visualization: 'bar',
               view: {
                 properties: ['duration'],
               },
@@ -129,10 +124,10 @@ it('should display select date format if combined report is duration report', as
         },
       },
     },
-  };
+  } as unknown as ComponentProps<typeof ChartTargetInput>;
   const node = shallow(<ChartTargetInput {...combinedProps} />);
 
-  expect(node.find('Select')).toExist();
+  expect(node.find('CarbonSelect')).toExist();
 });
 
 it('should include an error message when invalid target value is typed', () => {
@@ -152,5 +147,6 @@ it('should include an error message when invalid target value is typed', () => {
     },
   });
 
-  expect(node.find(Message)).toExist();
+  expect(node.find(NumberInput).prop('invalid')).toBe(true);
+  expect(node.find(NumberInput).prop('invalidText')).toBe('Enter a positive number');
 });

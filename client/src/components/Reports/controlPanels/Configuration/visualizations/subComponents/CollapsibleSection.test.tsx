@@ -10,6 +10,7 @@ import {shallow} from 'enzyme';
 import CollapsibleSection from './CollapsibleSection';
 
 const props = {
+  children: null,
   sectionTitle: 'this is a title',
   isSectionOpen: true,
   toggleSectionOpen: jest.fn(),

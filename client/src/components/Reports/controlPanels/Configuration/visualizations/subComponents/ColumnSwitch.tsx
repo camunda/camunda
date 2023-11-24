@@ -5,9 +5,20 @@
  * except in compliance with the proprietary license.
  */
 
-import {Switch} from 'components';
+import {Toggle} from '@carbon/react';
 
-import './ColumnSwitch.scss';
+interface ColumnSwitchProps {
+  switchId: string;
+  label: string;
+  excludedColumns: string[];
+  includedColumns: string[];
+  onChange: (change: {
+    tableColumns: {
+      excludedColumns: Record<string, string[]>;
+      includedColumns: Record<string, string[]>;
+    };
+  }) => void;
+}
 
 export default function ColumnSwitch({
   switchId,
@@ -15,13 +26,15 @@ export default function ColumnSwitch({
   excludedColumns,
   includedColumns,
   onChange,
-}) {
+}: ColumnSwitchProps) {
   return (
-    <Switch
+    <Toggle
+      size="sm"
+      id={switchId}
       key={switchId}
       className="ColumnSwitch"
-      checked={!excludedColumns.includes(switchId)}
-      onChange={({target: {checked}}) => {
+      toggled={!excludedColumns.includes(switchId)}
+      onToggle={(checked) => {
         if (checked) {
           onChange({
             tableColumns: {
@@ -38,7 +51,8 @@ export default function ColumnSwitch({
           });
         }
       }}
-      label={label}
+      labelA={label}
+      labelB={label}
     />
   );
 }

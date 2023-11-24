@@ -17,8 +17,6 @@
 @import 'colors.scss';
 
 :root {
-  @include theme.theme(themes.$white);
-
   --z-notification: 9300;
   --z-login: 9200;
   --z-tooltip: 9100;
@@ -38,6 +36,7 @@
 }
 
 html {
+  @include theme.theme(themes.$white);
   font-family:
     'IBM Plex Sans',
     -apple-system,
@@ -185,13 +184,4 @@ a[disabled] {
 // hide overlay displayed by dev server
 iframe#webpack-dev-server-client-overlay {
   display: none;
-}
-
-.cds--number input[type='number'] {
-  background-color: var(--cds-field-02, #f4f4f4);
-}
-
-.cds--number__control-btn::before,
-.cds--number__control-btn::after {
-  background: inherit;
 }

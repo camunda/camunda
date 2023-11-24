@@ -5,16 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
+
 import PointMarkersConfig from './PointMarkersConfig';
 
 it('should invok onchange when changing switch for the point markers on line chart', () => {
   const spy = jest.fn();
   const node = shallow(<PointMarkersConfig configuration={{pointMarkers: true}} onChange={spy} />);
-  node
-    .find('Switch')
-    .first()
-    .simulate('change', {target: {checked: false}});
+  node.find('Toggle').first().simulate('toggle', false);
   expect(spy).toHaveBeenCalledWith({pointMarkers: {$set: false}});
 });

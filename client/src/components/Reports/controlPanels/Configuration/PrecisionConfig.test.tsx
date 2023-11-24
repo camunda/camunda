@@ -5,40 +5,30 @@
  * except in compliance with the proprietary license.
  */
 
+import {ComponentProps} from 'react';
 import {shallow} from 'enzyme';
 
 import PrecisionConfig from './PrecisionConfig';
 
-const props = {
+const props: ComponentProps<typeof PrecisionConfig> = {
   view: {properties: ['frequency']},
   configuration: {
     precision: null,
-    targetValue: {
-      active: false,
-      countProgress: {baseline: '0', target: '100'},
-      durationProgress: {
-        baseline: {
-          value: '0',
-          unit: 'hours',
-        },
-        target: {
-          value: '2',
-          unit: 'hours',
-        },
-      },
-    },
-    aggregationTypes: [{type: 'avg', value: null}],
   },
+  onChange: jest.fn(),
 };
 
 it('should have a switch for the precision setting', () => {
   const spy = jest.fn();
   const node = shallow(<PrecisionConfig {...props} onChange={spy} />);
 
-  expect(node.find('Switch')).toExist();
+  const LegendElement = () => node.find('FormGroup').prop<JSX.Element>('legendText');
+  const legend = shallow(<LegendElement />);
+
+  expect(legend.find('Toggle')).toExist();
   expect(node.find('.precision')).toExist();
 
-  node.find({label: 'Custom Precision'}).simulate('change', {target: {checked: true}});
+  legend.find({labelA: 'Custom Precision'}).simulate('toggle', true);
 
   expect(spy).toHaveBeenCalledWith({precision: {$set: 1}});
 });

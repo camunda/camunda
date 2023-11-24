@@ -5,20 +5,21 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useMemo, useState} from 'react';
+import {useMemo, useState} from 'react';
+import {FormGroup, NumberInput, Stack, Toggle} from '@carbon/react';
 import debounce from 'debounce';
 
-import {LabeledInput, Switch, Input, Message, Select} from 'components';
+import {CarbonSelect} from 'components';
 import {numberParser, formatters} from 'services';
 import {t} from 'translation';
 
 import './BucketSize.scss';
 
 export default function BucketSize({
-  report: {
-    data: {configuration, groupBy, distributedBy},
-    result,
-  },
+  configuration,
+  groupBy,
+  distributedBy,
+  reportResult,
   onChange,
   disabled,
 }) {
@@ -53,29 +54,33 @@ export default function BucketSize({
 
     const units = (
       <>
-        <Select.Option value="millisecond">{t('common.unit.milli.label-plural')}</Select.Option>
-        <Select.Option value="second">{t('common.unit.second.label-plural')}</Select.Option>
-        <Select.Option value="minute">{t('common.unit.minute.label-plural')}</Select.Option>
-        <Select.Option value="hour">{t('common.unit.hour.label-plural')}</Select.Option>
-        <Select.Option value="day">{t('common.unit.day.label-plural')}</Select.Option>
-        <Select.Option value="week">{t('common.unit.week.label-plural')}</Select.Option>
-        <Select.Option value="month">{t('common.unit.month.label-plural')}</Select.Option>
-        <Select.Option value="year">{t('common.unit.year.label-plural')}</Select.Option>
+        <CarbonSelect.Option value="millisecond" label={t('common.unit.milli.label-plural')} />
+        <CarbonSelect.Option value="second" label={t('common.unit.second.label-plural')} />
+        <CarbonSelect.Option value="minute" label={t('common.unit.minute.label-plural')} />
+        <CarbonSelect.Option value="hour" label={t('common.unit.hour.label-plural')} />
+        <CarbonSelect.Option value="day" label={t('common.unit.day.label-plural')} />
+        <CarbonSelect.Option value="week" label={t('common.unit.week.label-plural')} />
+        <CarbonSelect.Option value="month" label={t('common.unit.month.label-plural')} />
+        <CarbonSelect.Option value="year" label={t('common.unit.year.label-plural')} />
       </>
     );
 
     return (
-      <fieldset className="BucketSize" key={active.toString()}>
-        <legend>
-          <Switch
-            title={disabled ? t('report.updateReportPreview.cannotUpdate') : undefined}
+      <FormGroup
+        className="BucketSize"
+        key={active.toString()}
+        legendText={
+          <Toggle
+            id="bucketSizeToggle"
+            size="sm"
+            labelText={disabled ? t('report.updateReportPreview.cannotUpdate') : undefined}
             disabled={disabled}
-            checked={active}
-            onChange={({target: {checked}}) => {
+            toggled={active}
+            onToggle={(checked) => {
               const change = {[customBucket]: {active: {$set: checked}}};
 
               if (checked) {
-                const values = getValues(result.measures[0].data, isDistributedByVariable);
+                const values = getValues(reportResult.measures[0].data, isDistributedByVariable);
                 if (values.length > 1) {
                   const bucketSize = (Math.max(...values) - Math.min(...values)) / 10;
                   const baseline = Math.min(...values);
@@ -100,65 +105,77 @@ export default function BucketSize({
 
               onChange(change, true);
             }}
-            label={t('report.config.bucket.bucketSize')}
+            labelA={t('report.config.bucket.bucketSize')}
+            labelB={t('report.config.bucket.bucketSize')}
           />
-        </legend>
-        <div className="inputGroup">
-          <Input
-            disabled={!active}
-            isInvalid={!sizeValid}
-            onBlur={flush}
-            onChange={(evt) => {
-              const valid = numberParser.isPositiveNumber(evt.target.value);
-              setSizeValid(valid);
-              applyChanges('bucketSize', evt.target.value, valid);
-            }}
-            defaultValue={active ? removeTrailingZeros(bucketSize) : '-'}
-          />
-          {isGroupedByDuration && (
-            <Select
+        }
+      >
+        <Stack gap={4}>
+          <Stack gap={4} orientation="horizontal">
+            <NumberInput
+              label={t('report.config.bucket.size')}
+              id="bucketSize"
               disabled={!active}
-              value={bucketSizeUnit}
-              onChange={(value) => {
-                applyChanges('bucketSizeUnit', value, true);
-                flush();
+              invalid={!sizeValid}
+              invalidText={t('common.errors.positiveNum')}
+              onBlur={flush}
+              onChange={(evt, {value}) => {
+                const valid = numberParser.isPositiveNumber(value);
+                setSizeValid(valid);
+                applyChanges('bucketSize', value, valid);
               }}
-            >
-              {units}
-            </Select>
-          )}
-        </div>
-        {!sizeValid && <Message error>{t('common.errors.positiveNum')}</Message>}
-        <div className="inputGroup">
-          <LabeledInput
-            label={t('report.config.bucket.baseline')}
-            disabled={!active}
-            isInvalid={!baseValid}
-            onBlur={flush}
-            onChange={(evt) => {
-              const valid = isGroupedByDuration
-                ? numberParser.isNonNegativeNumber(evt.target.value)
-                : numberParser.isFloatNumber(evt.target.value);
-              setBaseValid(valid);
-              applyChanges('baseline', evt.target.value, valid);
-            }}
-            defaultValue={active ? removeTrailingZeros(baseline) : '-'}
-          />
-          {isGroupedByDuration && (
-            <Select
+              defaultValue={active ? removeTrailingZeros(bucketSize) : '-'}
+            />
+            {isGroupedByDuration && (
+              <CarbonSelect
+                labelText={t('common.units')}
+                size="md"
+                id="bucketSizeUnit"
+                disabled={!active}
+                value={bucketSizeUnit}
+                onChange={(value) => {
+                  applyChanges('bucketSizeUnit', value, true);
+                  flush();
+                }}
+              >
+                {units}
+              </CarbonSelect>
+            )}
+          </Stack>
+          <Stack gap={4} orientation="horizontal">
+            <NumberInput
+              id="bucketSizeBaseline"
+              label={t('report.config.bucket.baseline')}
               disabled={!active}
-              value={baselineUnit}
-              onChange={(value) => {
-                applyChanges('baselineUnit', value, true);
-                flush();
+              invalid={!baseValid}
+              invalidText={t('report.config.bucket.invalidNumber')}
+              onBlur={flush}
+              onChange={(evt, {value}) => {
+                const valid = isGroupedByDuration
+                  ? numberParser.isNonNegativeNumber(value)
+                  : numberParser.isFloatNumber(value);
+                setBaseValid(valid);
+                applyChanges('baseline', value, valid);
               }}
-            >
-              {units}
-            </Select>
-          )}
-        </div>
-        {!baseValid && <Message error>{t('report.config.bucket.invalidNumber')}</Message>}
-      </fieldset>
+              defaultValue={active ? removeTrailingZeros(baseline) : '-'}
+            />
+            {isGroupedByDuration && (
+              <CarbonSelect
+                labelText={t('common.units')}
+                size="md"
+                disabled={!active}
+                value={baselineUnit}
+                onChange={(value) => {
+                  applyChanges('baselineUnit', value, true);
+                  flush();
+                }}
+              >
+                {units}
+              </CarbonSelect>
+            )}
+          </Stack>
+        </Stack>
+      </FormGroup>
     );
   }
   return null;

@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 
 import HeatmapConfig from './HeatmapConfig';
@@ -34,9 +33,11 @@ it('should pass relevant configuration to RelativeAbsoluteSelection', () => {
     />
   );
 
-  const props = node.find('RelativeAbsoluteSelection').props();
-
-  expect(props.absolute).toBe(true);
-  expect(props.relative).toBe(false);
-  expect(props.unrelated).toBe(undefined);
+  expect(node.find('RelativeAbsoluteSelection').props()).toEqual({
+    absolute: true,
+    relative: false,
+    reportType: undefined,
+    hideRelative: false,
+    onChange: expect.any(Function),
+  });
 });

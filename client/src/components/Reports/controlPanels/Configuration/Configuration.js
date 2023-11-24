@@ -7,8 +7,9 @@
 
 import {Component} from 'react';
 import {Settings} from '@carbon/icons-react';
+import {Stack, Form, Button} from '@carbon/react';
 
-import {Popover, Form, Button, ColorPicker} from 'components';
+import {Popover, ColorPicker} from 'components';
 import {t} from 'translation';
 import {isCategoricalBar} from 'services';
 
@@ -16,7 +17,7 @@ import * as visualizations from './visualizations';
 import ShowInstanceCount from './ShowInstanceCount';
 import DateVariableUnit from './DateVariableUnit';
 import BucketSize from './BucketSize';
-import PrecisionConfig from './visualizations/PrecisionConfig';
+import PrecisionConfig from './PrecisionConfig';
 
 import './Configuration.scss';
 
@@ -116,10 +117,11 @@ export default class Configuration extends Component {
 
   render() {
     const {report, type, disabled, autoPreviewDisabled} = this.props;
-    const {configuration, view} = report.data;
+    const {reportType, data, combined, result} = report;
+    const {configuration, view, distributedBy, groupBy} = data;
     const Component = visualizations[type];
 
-    const isRawDataReport = !report.combined && report.data.view?.properties[0] === 'rawData';
+    const isRawDataReport = !combined && view?.properties[0] === 'rawData';
 
     const isPercentageOnly =
       view?.properties.includes('percentage') && view.properties.length === 1;
@@ -146,37 +148,48 @@ export default class Configuration extends Component {
           tooltipPosition="bottom"
           align="bottom-right"
         >
-          <Form className="content" compact>
-            {!report.combined && (
-              <ShowInstanceCount
+          <Form onSubmit={(e) => e.preventDefault()} className="content">
+            <Stack gap={4}>
+              {!combined && (
+                <ShowInstanceCount
+                  showInstanceCount={configuration.showInstanceCount}
+                  onChange={this.updateConfiguration}
+                  label={reportType === 'decision' ? 'evaluation' : 'instance'}
+                />
+              )}
+              <DateVariableUnit
                 configuration={configuration}
+                groupBy={groupBy}
+                distributedBy={distributedBy}
                 onChange={this.updateConfiguration}
-                label={report.reportType === 'decision' ? 'evaluation' : 'instance'}
               />
-            )}
-            <DateVariableUnit report={report} onChange={this.updateConfiguration} />
-            <BucketSize
-              disabled={autoPreviewDisabled}
-              report={report}
-              onChange={this.updateConfiguration}
-            />
-            {Component && (
-              <Component
-                report={report}
-                onChange={this.updateConfiguration}
-                autoPreviewDisabled={autoPreviewDisabled}
-              />
-            )}
-            {(configuration.showInstanceCount || (!isPercentageOnly && !isRawDataReport)) && (
-              <PrecisionConfig
+              <BucketSize
                 configuration={configuration}
+                groupBy={groupBy}
+                distributedBy={distributedBy}
+                reportResult={result}
+                disabled={autoPreviewDisabled}
                 onChange={this.updateConfiguration}
-                view={view}
-                type={type}
               />
-            )}
+              {Component && (
+                <Component
+                  report={report}
+                  onChange={this.updateConfiguration}
+                  autoPreviewDisabled={autoPreviewDisabled}
+                />
+              )}
+              {(configuration.showInstanceCount || (!isPercentageOnly && !isRawDataReport)) && (
+                <PrecisionConfig
+                  configuration={configuration}
+                  onChange={this.updateConfiguration}
+                  view={view}
+                  type={type}
+                />
+              )}
+            </Stack>
           </Form>
-          <Button className="resetButton" onClick={this.resetToDefaults}>
+          <hr />
+          <Button size="sm" kind="ghost" className="resetButton" onClick={this.resetToDefaults}>
             {t('report.config.reset')}
           </Button>
         </Popover>

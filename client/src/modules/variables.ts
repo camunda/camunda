@@ -5,13 +5,15 @@
  * except in compliance with the proprietary license.
  */
 
-let variables = [];
+type Variable = {name: string; label: string; type: string};
 
-export async function setVariables(newVariables) {
+let variables: Variable[] = [];
+
+export async function setVariables(newVariables: Variable[]) {
   variables = newVariables;
 }
 
-export function getVariableLabel(name, type) {
+export function getVariableLabel(name: string, type: string): string {
   const matchedVariable = variables.find((variable) => {
     const sameName = variable.name === name;
     const sameType = type === undefined ? true : variable.type === type;

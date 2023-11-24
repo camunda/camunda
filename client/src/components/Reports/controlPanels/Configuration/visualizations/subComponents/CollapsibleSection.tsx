@@ -5,27 +5,34 @@
  * except in compliance with the proprietary license.
  */
 
+import {MouseEvent, ReactNode} from 'react';
 import classnames from 'classnames';
-
-import {Button, Icon} from 'components';
+import {ChevronDown} from '@carbon/icons-react';
 
 import './CollapsibleSection.scss';
+
+interface CollapsibleSectionProps {
+  children: ReactNode;
+  sectionTitle: string;
+  isSectionOpen: boolean;
+  toggleSectionOpen: (evt: MouseEvent<HTMLButtonElement>) => void;
+}
 
 export default function CollapsibleSection({
   children,
   sectionTitle,
   isSectionOpen,
   toggleSectionOpen,
-}) {
+}: CollapsibleSectionProps) {
   return (
     <section className={classnames('CollapsibleSection', {collapsed: !isSectionOpen})}>
-      <Button className="sectionTitle" onClick={toggleSectionOpen}>
+      <button type="button" className="sectionTitle" onClick={toggleSectionOpen}>
         {sectionTitle}
         <span className={classnames('sectionToggle', {open: isSectionOpen})}>
-          <Icon type="down" />
+          <ChevronDown />
         </span>
-      </Button>
-      <div>{children}</div>
+      </button>
+      {children}
     </section>
   );
 }

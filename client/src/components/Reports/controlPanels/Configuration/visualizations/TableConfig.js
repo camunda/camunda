@@ -5,13 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {FormGroup, Stack} from '@carbon/react';
+
+import {isDurationReport} from 'services';
+
 import ColumnSelection from './subComponents/ColumnSelection';
 import RelativeAbsoluteSelection from './subComponents/RelativeAbsoluteSelection';
 import GradientBarsSwitch from './subComponents/GradientBarsSwitch';
-
-import {isDurationReport} from 'services';
-import {Form} from 'components';
 
 export default function TableConfig({report, onChange, autoPreviewDisabled}) {
   let typeSpecificComponent = null;
@@ -29,23 +29,25 @@ export default function TableConfig({report, onChange, autoPreviewDisabled}) {
       break;
     case 'frequency':
       typeSpecificComponent = (
-        <Form.Group>
-          <RelativeAbsoluteSelection
-            reportType={report.reportType}
-            absolute={!report.data.configuration.hideAbsoluteValue}
-            relative={!report.data.configuration.hideRelativeValue}
-            onChange={(type, value) => {
-              if (type === 'absolute') {
-                onChange({hideAbsoluteValue: {$set: !value}});
-              } else {
-                onChange({hideRelativeValue: {$set: !value}});
-              }
-            }}
-          />
-          {groupBy === 'matchedRule' && (
-            <GradientBarsSwitch configuration={report.data.configuration} onChange={onChange} />
-          )}
-        </Form.Group>
+        <FormGroup legendText="">
+          <Stack gap={4}>
+            <RelativeAbsoluteSelection
+              reportType={report.reportType}
+              absolute={!report.data.configuration.hideAbsoluteValue}
+              relative={!report.data.configuration.hideRelativeValue}
+              onChange={(type, value) => {
+                if (type === 'absolute') {
+                  onChange({hideAbsoluteValue: {$set: !value}});
+                } else {
+                  onChange({hideRelativeValue: {$set: !value}});
+                }
+              }}
+            />
+            {groupBy === 'matchedRule' && (
+              <GradientBarsSwitch configuration={report.data.configuration} onChange={onChange} />
+            )}
+          </Stack>
+        </FormGroup>
       );
       break;
     default:

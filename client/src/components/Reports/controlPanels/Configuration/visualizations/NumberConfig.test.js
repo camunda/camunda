@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 import update from 'immutability-helper';
 
@@ -92,7 +91,7 @@ it('should set the report as kpi report', () => {
   const spy = jest.fn();
   const node = shallow(<NumberConfig {...props} onChange={spy} />);
 
-  node.find({label: 'Display as a process KPI'}).simulate('change', {target: {checked: true}});
+  node.find({labelText: 'Display as a process KPI'}).simulate('change', undefined, {checked: true});
 
   expect(spy).toHaveBeenCalledWith({targetValue: {isKpi: {$set: true}}});
   expect(track).toHaveBeenCalledWith('displayAsProcessKpiEnabled', {entityId: 'reportID'});

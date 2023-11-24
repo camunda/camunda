@@ -3,33 +3,43 @@
     min-width: 320px;
     width: auto;
 
-    .Form:after {
-      content: '';
-      display: block;
+    hr {
       width: calc(100% + 2rem);
+      margin: 8px 0;
       margin-left: -1rem;
-      border-bottom: 1px solid var(--silver-darken-80);
+      border: none;
+      border-bottom: 1px solid var(--cds-border-subtle);
     }
 
     .resetButton {
-      margin-top: 15px;
-      float: right;
-      border: none;
-      background: none;
-      padding: 0;
-
-      &:hover {
-        text-decoration: underline;
-      }
-    }
-
-    /* padding bottom workaround for firefox */
-    padding-bottom: 0;
-    &:after {
-      content: '';
-      height: 20px;
       display: block;
-      clear: both;
+      margin-left: auto;
     }
+  }
+
+  .cds--toggle {
+    min-width: 0;
+
+    .cds--toggle__switch {
+      flex-shrink: 0;
+    }
+
+    .cds--toggle__appearance {
+      // This is to make the ellipsis text wrap
+      display: flex;
+    }
+  }
+
+  .cds--btn-set button {
+    width: auto;
+    flex: 1;
+    // This is the value of the carbon button left margin
+    padding-inline-end: calc(var(--cds-layout-density-padding-inline-local) - 0.0625rem);
+  }
+
+  fieldset:not(:last-of-type) {
+    width: 100%;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--cds-border-subtle);
   }
 }

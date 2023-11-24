@@ -5,8 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
+
 import LineChartConfig from './LineChartConfig';
 
 const configuration = {
@@ -27,5 +27,45 @@ const lineReport = {
 
 it('it should display correct configuration for linechart', () => {
   const node = shallow(<LineChartConfig report={lineReport} />);
-  expect(node).toMatchSnapshot();
+
+  expect(node.find('PointMarkersConfig').props()).toEqual({
+    configuration: {
+      color: '#1991c8',
+      hideAbsoluteValue: false,
+      hideRelativeValue: false,
+      pointMarkers: true,
+      showInstanceCount: false,
+      targetValue: {
+        active: false,
+      },
+      xLabel: '',
+      yLabel: '',
+    },
+    onChange: undefined,
+  });
+
+  expect(node.find('BarChartConfig').props()).toEqual({
+    onChange: undefined,
+    report: {
+      combined: false,
+      data: {
+        configuration: {
+          color: '#1991c8',
+          hideAbsoluteValue: false,
+          hideRelativeValue: false,
+          pointMarkers: true,
+          showInstanceCount: false,
+          targetValue: {
+            active: false,
+          },
+          xLabel: '',
+          yLabel: '',
+        },
+        view: {
+          properties: ['frequency'],
+        },
+        visualization: 'line',
+      },
+    },
+  });
 });
