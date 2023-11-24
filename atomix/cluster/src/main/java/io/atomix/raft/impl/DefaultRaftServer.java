@@ -24,6 +24,7 @@ import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftThreadContextFactory;
 import io.atomix.raft.cluster.RaftCluster;
+import io.atomix.raft.impl.RaftContext.State;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
@@ -32,6 +33,7 @@ import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 
@@ -189,12 +191,7 @@ public class DefaultRaftServer implements RaftServer {
               (result, error) -> {
                 if (error == null) {
                   log.info("Server join completed. Waiting for the server to be READY");
-                  context.awaitState(
-                      RaftContext.State.READY,
-                      state -> {
-                        started = true;
-                        openFutureRef.get().complete(this);
-                      });
+                  context.addStateChangeListener(new StartedStateListener(this));
                 } else {
                   openFutureRef.get().completeExceptionally(error);
                 }
@@ -207,6 +204,8 @@ public class DefaultRaftServer implements RaftServer {
             (result, error) -> {
               if (error == null) {
                 log.debug("Server started successfully!");
+              } else if (error instanceof CancelledBootstrapException) {
+                log.debug("Server bootstrap cancelled", error);
               } else {
                 log.warn("Failed to start server", error);
               }
@@ -255,6 +254,33 @@ public class DefaultRaftServer implements RaftServer {
       raft.setEntryValidator(entryValidator);
 
       return new DefaultRaftServer(raft);
+    }
+  }
+
+  private class StartedStateListener implements Consumer<State> {
+
+    private final RaftServer raftServer;
+
+    private StartedStateListener(final RaftServer raftServer) {
+      this.raftServer = raftServer;
+    }
+
+    @Override
+    public void accept(final State state) {
+      if (state == State.READY) {
+        started = true;
+        openFutureRef.get().complete(raftServer);
+        // remove listener after starting
+        context.removeStateChangeListener(this);
+      } else if (state == State.LEFT) {
+        started = false;
+        openFutureRef
+            .get()
+            .completeExceptionally(
+                new CancelledBootstrapException(
+                    "Server left the replication group while waiting for ready."));
+        context.removeStateChangeListener(this);
+      }
     }
   }
 }

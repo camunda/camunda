@@ -536,6 +536,12 @@ public interface RaftServer {
     }
   }
 
+  class CancelledBootstrapException extends RuntimeException {
+    public CancelledBootstrapException(final String message) {
+      super(message);
+    }
+  }
+
   /**
    * Raft server state types.
    *
