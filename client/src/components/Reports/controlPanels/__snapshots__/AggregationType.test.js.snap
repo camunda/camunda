@@ -24,180 +24,174 @@ exports[`should render a user task duration selection for user task duration rep
     </ButtonTrigger>
   }
 >
-  <Form
-    compact={true}
-  >
-    <h4>
-      User Task Duration
-    </h4>
-    <fieldset>
-      <div
-        key="total"
+  <Form>
+    <ForwardRef(Stack)
+      gap={3}
+    >
+      <FormGroup
+        invalid={false}
+        legendText="User Task Duration"
+        message={false}
+        messageText=""
       >
-        <span>
-          <Switch
-            checked={false}
+        <ForwardRef(Stack)
+          gap={3}
+        >
+          <Toggle
             disabled={false}
-            label="Total"
-            onChange={[Function]}
+            id="total"
+            key="total"
+            labelA="Total"
+            labelB="Total"
+            onToggle={[Function]}
+            size="sm"
+            toggled={false}
           />
-        </span>
-      </div>
-      <div
-        key="work"
-      >
-        <span>
-          <Switch
-            checked={false}
+          <Toggle
             disabled={false}
-            label="Work"
-            onChange={[Function]}
+            id="work"
+            key="work"
+            labelA="Work"
+            labelB="Work"
+            onToggle={[Function]}
+            size="sm"
+            toggled={false}
           />
-        </span>
-      </div>
-      <div
-        key="idle"
-      >
-        <span>
-          <Switch
-            checked={true}
+          <Toggle
             disabled={true}
-            label="Idle"
-            onChange={[Function]}
+            id="idle"
+            key="idle"
+            labelA="Idle"
+            labelB="Idle"
+            onToggle={[Function]}
+            size="sm"
+            toggled={true}
           />
-        </span>
-      </div>
-    </fieldset>
-    <h4>
-      Basic aggregations
-    </h4>
-    <fieldset>
-      <div
-        key="sum"
+        </ForwardRef(Stack)>
+      </FormGroup>
+      <FormGroup
+        invalid={false}
+        legendText="Basic aggregations"
+        message={false}
+        messageText=""
       >
-        <span>
-          <Switch
-            checked={false}
+        <ForwardRef(Stack)
+          gap={3}
+        >
+          <Toggle
             disabled={false}
-            label="Sum"
-            onChange={[Function]}
+            id="sum"
+            key="sum"
+            labelA="Sum"
+            labelB="Sum"
+            onToggle={[Function]}
+            size="sm"
+            toggled={false}
           />
-        </span>
-      </div>
-      <div
-        key="min"
-      >
-        <span>
-          <Switch
-            checked={false}
+          <Toggle
             disabled={false}
-            label="Minimum"
-            onChange={[Function]}
+            id="min"
+            key="min"
+            labelA="Minimum"
+            labelB="Minimum"
+            onToggle={[Function]}
+            size="sm"
+            toggled={false}
           />
-        </span>
-      </div>
-      <div
-        key="avg"
-      >
-        <span>
-          <Switch
-            checked={false}
+          <Toggle
             disabled={false}
-            label="Average"
-            onChange={[Function]}
+            id="avg"
+            key="avg"
+            labelA="Average"
+            labelB="Average"
+            onToggle={[Function]}
+            size="sm"
+            toggled={false}
           />
-        </span>
-      </div>
-      <div
-        key="max"
-      >
-        <span>
-          <Switch
-            checked={false}
+          <Toggle
             disabled={false}
-            label="Maximum"
-            onChange={[Function]}
+            id="max"
+            key="max"
+            labelA="Maximum"
+            labelB="Maximum"
+            onToggle={[Function]}
+            size="sm"
+            toggled={false}
           />
-        </span>
-      </div>
-    </fieldset>
-    <h4>
-      Percentile aggregations
-    </h4>
-    <fieldset>
-      <div
-        key="99"
+        </ForwardRef(Stack)>
+      </FormGroup>
+      <FormGroup
+        invalid={false}
+        legendText="Percentile aggregations"
+        message={false}
+        messageText=""
       >
-        <span>
-          <Switch
-            checked={false}
+        <ForwardRef(Stack)
+          gap={3}
+        >
+          <Toggle
             disabled={false}
-            label="P99"
-            onChange={[Function]}
+            id={99}
+            key="99"
+            labelA="P99"
+            labelB="P99"
+            onToggle={[Function]}
+            size="sm"
+            toggled={false}
           />
-        </span>
-      </div>
-      <div
-        key="95"
-      >
-        <span>
-          <Switch
-            checked={false}
+          <Toggle
             disabled={false}
-            label="P95"
-            onChange={[Function]}
+            id={95}
+            key="95"
+            labelA="P95"
+            labelB="P95"
+            onToggle={[Function]}
+            size="sm"
+            toggled={false}
           />
-        </span>
-      </div>
-      <div
-        key="90"
-      >
-        <span>
-          <Switch
-            checked={false}
+          <Toggle
             disabled={false}
-            label="P90"
-            onChange={[Function]}
+            id={90}
+            key="90"
+            labelA="P90"
+            labelB="P90"
+            onToggle={[Function]}
+            size="sm"
+            toggled={false}
           />
-        </span>
-      </div>
-      <div
-        key="75"
-      >
-        <span>
-          <Switch
-            checked={false}
+          <Toggle
             disabled={false}
-            label="P75"
-            onChange={[Function]}
+            id={75}
+            key="75"
+            labelA="P75"
+            labelB="P75"
+            onToggle={[Function]}
+            size="sm"
+            toggled={false}
           />
-        </span>
-      </div>
-      <div
-        key="50"
-      >
-        <span>
-          <Switch
-            checked={true}
+          <Toggle
             disabled={true}
-            label="P50 (median)"
-            onChange={[Function]}
+            id={50}
+            key="50"
+            labelA="P50 (median)"
+            labelB="P50 (median)"
+            onToggle={[Function]}
+            size="sm"
+            toggled={true}
           />
-        </span>
-      </div>
-      <div
-        key="25"
-      >
-        <span>
-          <Switch
-            checked={false}
+          <Toggle
             disabled={false}
-            label="P25"
-            onChange={[Function]}
+            id={25}
+            key="25"
+            labelA="P25"
+            labelB="P25"
+            onToggle={[Function]}
+            size="sm"
+            toggled={false}
           />
-        </span>
-      </div>
-    </fieldset>
+        </ForwardRef(Stack)>
+      </FormGroup>
+    </ForwardRef(Stack)>
   </Form>
 </Popover>
 `;
@@ -226,139 +220,133 @@ exports[`should render an aggregation selection for duration reports 1`] = `
     </ButtonTrigger>
   }
 >
-  <Form
-    compact={true}
-  >
-    <h4>
-      Basic aggregations
-    </h4>
-    <fieldset>
-      <div
-        key="sum"
+  <Form>
+    <ForwardRef(Stack)
+      gap={3}
+    >
+      <FormGroup
+        invalid={false}
+        legendText="Basic aggregations"
+        message={false}
+        messageText=""
       >
-        <span>
-          <Switch
-            checked={false}
+        <ForwardRef(Stack)
+          gap={3}
+        >
+          <Toggle
             disabled={false}
-            label="Sum"
-            onChange={[Function]}
+            id="sum"
+            key="sum"
+            labelA="Sum"
+            labelB="Sum"
+            onToggle={[Function]}
+            size="sm"
+            toggled={false}
           />
-        </span>
-      </div>
-      <div
-        key="min"
-      >
-        <span>
-          <Switch
-            checked={false}
+          <Toggle
             disabled={false}
-            label="Minimum"
-            onChange={[Function]}
+            id="min"
+            key="min"
+            labelA="Minimum"
+            labelB="Minimum"
+            onToggle={[Function]}
+            size="sm"
+            toggled={false}
           />
-        </span>
-      </div>
-      <div
-        key="avg"
-      >
-        <span>
-          <Switch
-            checked={false}
+          <Toggle
             disabled={false}
-            label="Average"
-            onChange={[Function]}
+            id="avg"
+            key="avg"
+            labelA="Average"
+            labelB="Average"
+            onToggle={[Function]}
+            size="sm"
+            toggled={false}
           />
-        </span>
-      </div>
-      <div
-        key="max"
-      >
-        <span>
-          <Switch
-            checked={false}
+          <Toggle
             disabled={false}
-            label="Maximum"
-            onChange={[Function]}
+            id="max"
+            key="max"
+            labelA="Maximum"
+            labelB="Maximum"
+            onToggle={[Function]}
+            size="sm"
+            toggled={false}
           />
-        </span>
-      </div>
-    </fieldset>
-    <h4>
-      Percentile aggregations
-    </h4>
-    <fieldset>
-      <div
-        key="99"
+        </ForwardRef(Stack)>
+      </FormGroup>
+      <FormGroup
+        invalid={false}
+        legendText="Percentile aggregations"
+        message={false}
+        messageText=""
       >
-        <span>
-          <Switch
-            checked={false}
+        <ForwardRef(Stack)
+          gap={3}
+        >
+          <Toggle
             disabled={false}
-            label="P99"
-            onChange={[Function]}
+            id={99}
+            key="99"
+            labelA="P99"
+            labelB="P99"
+            onToggle={[Function]}
+            size="sm"
+            toggled={false}
           />
-        </span>
-      </div>
-      <div
-        key="95"
-      >
-        <span>
-          <Switch
-            checked={false}
+          <Toggle
             disabled={false}
-            label="P95"
-            onChange={[Function]}
+            id={95}
+            key="95"
+            labelA="P95"
+            labelB="P95"
+            onToggle={[Function]}
+            size="sm"
+            toggled={false}
           />
-        </span>
-      </div>
-      <div
-        key="90"
-      >
-        <span>
-          <Switch
-            checked={false}
+          <Toggle
             disabled={false}
-            label="P90"
-            onChange={[Function]}
+            id={90}
+            key="90"
+            labelA="P90"
+            labelB="P90"
+            onToggle={[Function]}
+            size="sm"
+            toggled={false}
           />
-        </span>
-      </div>
-      <div
-        key="75"
-      >
-        <span>
-          <Switch
-            checked={false}
+          <Toggle
             disabled={false}
-            label="P75"
-            onChange={[Function]}
+            id={75}
+            key="75"
+            labelA="P75"
+            labelB="P75"
+            onToggle={[Function]}
+            size="sm"
+            toggled={false}
           />
-        </span>
-      </div>
-      <div
-        key="50"
-      >
-        <span>
-          <Switch
-            checked={true}
+          <Toggle
             disabled={true}
-            label="P50 (median)"
-            onChange={[Function]}
+            id={50}
+            key="50"
+            labelA="P50 (median)"
+            labelB="P50 (median)"
+            onToggle={[Function]}
+            size="sm"
+            toggled={true}
           />
-        </span>
-      </div>
-      <div
-        key="25"
-      >
-        <span>
-          <Switch
-            checked={false}
+          <Toggle
             disabled={false}
-            label="P25"
-            onChange={[Function]}
+            id={25}
+            key="25"
+            labelA="P25"
+            labelB="P25"
+            onToggle={[Function]}
+            size="sm"
+            toggled={false}
           />
-        </span>
-      </div>
-    </fieldset>
+        </ForwardRef(Stack)>
+      </FormGroup>
+    </ForwardRef(Stack)>
   </Form>
 </Popover>
 `;

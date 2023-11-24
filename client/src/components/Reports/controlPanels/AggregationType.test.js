@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runAllEffects} from 'react';
+import {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {getOptimizeProfile} from 'config';
@@ -74,7 +74,7 @@ it('should render sum field for variable reports', () => {
     />
   );
 
-  expect(node.find('Switch').first()).toHaveProp('label', 'Sum');
+  expect(node.find('Toggle').first()).toHaveProp('labelA', 'Sum');
 });
 
 it('should hide sum field for incident reports', () => {
@@ -88,7 +88,7 @@ it('should hide sum field for incident reports', () => {
     />
   );
 
-  expect(node.find('Switch').first()).not.toHaveProp('label', 'Sum');
+  expect(node.find('Toggle').first()).not.toHaveProp('labelA', 'Sum');
 });
 
 it('should reevaluate the report when changing the aggregation type', () => {
@@ -105,10 +105,7 @@ it('should reevaluate the report when changing the aggregation type', () => {
     />
   );
 
-  node
-    .find('Switch')
-    .last()
-    .simulate('change', {target: {checked: true}});
+  node.find('Toggle').last().simulate('toggle', true);
 
   expect(spy).toHaveBeenCalledWith(
     {

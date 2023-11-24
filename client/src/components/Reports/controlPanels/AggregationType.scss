@@ -2,22 +2,4 @@
   .buttonWrapper button {
     color: var(--cds-text-primary, #161616);
   }
-
-  h4 {
-    font-size: 12px;
-    color: var(--grey-lighten-50);
-    padding-top: 10px;
-  }
-
-  .Form fieldset {
-    padding-bottom: 14px;
-
-    > :first-child {
-      margin-top: 14px;
-    }
-
-    .Switch {
-      display: inline;
-    }
-  }
 }

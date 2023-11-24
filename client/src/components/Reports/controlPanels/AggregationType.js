@@ -5,10 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState, useEffect} from 'react';
+import {useState, useEffect} from 'react';
 import {Edit} from '@carbon/icons-react';
+import {Form, FormGroup, Stack, Toggle} from '@carbon/react';
 
-import {Popover, Form, Switch} from 'components';
+import {Popover} from 'components';
 import {t} from 'translation';
 import {getOptimizeProfile} from 'config';
 
@@ -128,83 +129,84 @@ export default function AggregationType({report, onChange}) {
         }
         floating
       >
-        <Form compact>
-          {isUserTaskReport && optimizeProfile === 'platform' && (
-            <>
-              <h4>{t('report.config.aggregation.userTaskLegend')}</h4>
-              <fieldset>
-                {orders.userTaskDurationTimes.map((type) => (
-                  <div key={type}>
-                    <span>
-                      <Switch
-                        label={t('report.config.userTaskDuration.' + type)}
-                        checked={hasAggregation('userTaskDurationTimes', type)}
-                        disabled={isLastAggregation('userTaskDurationTimes', type)}
-                        onChange={({target}) => {
-                          if (target.checked) {
-                            addAggregation('userTaskDurationTimes', type);
-                          } else {
-                            removeAggregation('userTaskDurationTimes', type);
-                          }
-                        }}
-                      />
-                    </span>
-                  </div>
-                ))}
-              </fieldset>
-            </>
-          )}
-          <h4>
-            {t(
-              'report.config.aggregation.' +
-                (isVariableReport ? 'variableLegend' : 'durationLegend')
+        <Form>
+          <Stack gap={3}>
+            {isUserTaskReport && optimizeProfile === 'platform' && (
+              <FormGroup legendText={t('report.config.aggregation.userTaskLegend')}>
+                <Stack gap={3}>
+                  {orders.userTaskDurationTimes.map((type) => (
+                    <Toggle
+                      key={type}
+                      id={type}
+                      size="sm"
+                      labelA={t('report.config.userTaskDuration.' + type)}
+                      labelB={t('report.config.userTaskDuration.' + type)}
+                      toggled={hasAggregation('userTaskDurationTimes', type)}
+                      disabled={isLastAggregation('userTaskDurationTimes', type)}
+                      onToggle={(checked) => {
+                        if (checked) {
+                          addAggregation('userTaskDurationTimes', type);
+                        } else {
+                          removeAggregation('userTaskDurationTimes', type);
+                        }
+                      }}
+                    />
+                  ))}
+                </Stack>
+              </FormGroup>
             )}
-          </h4>
-          <fieldset>
-            {availableAggregations.map((type) => (
-              <div key={type}>
-                <span>
-                  <Switch
-                    label={t('report.config.aggregation.' + type)}
-                    checked={hasAggregation('aggregationTypes', type)}
+            <FormGroup
+              legendText={t(
+                'report.config.aggregation.' +
+                  (isVariableReport ? 'variableLegend' : 'durationLegend')
+              )}
+            >
+              <Stack gap={3}>
+                {availableAggregations.map((type) => (
+                  <Toggle
+                    key={type}
+                    id={type}
+                    size="sm"
+                    labelA={t('report.config.aggregation.' + type)}
+                    labelB={t('report.config.aggregation.' + type)}
+                    toggled={hasAggregation('aggregationTypes', type)}
                     disabled={isLastAggregation('aggregationTypes', type)}
-                    onChange={({target}) => {
-                      if (target.checked) {
+                    onToggle={(checked) => {
+                      if (checked) {
                         addAggregation('aggregationTypes', type);
                       } else {
                         removeAggregation('aggregationTypes', type);
                       }
                     }}
                   />
-                </span>
-              </div>
-            ))}
-          </fieldset>
-          {distributedBy.type !== 'process' && !processPart && (
-            <>
-              <h4>{t('report.config.aggregation.percentileLegend')}</h4>
-              <fieldset>
-                {orders.percentileAggregations.map((value) => (
-                  <div key={value}>
-                    <span>
-                      <Switch
-                        label={value === 50 ? t('report.config.aggregation.p50') : 'P' + value}
-                        checked={hasAggregation('aggregationTypes', 'percentile', value)}
-                        disabled={isLastAggregation('aggregationTypes', 'percentile', value)}
-                        onChange={({target}) => {
-                          if (target.checked) {
-                            addAggregation('aggregationTypes', 'percentile', value);
-                          } else {
-                            removeAggregation('aggregationTypes', 'percentile', value);
-                          }
-                        }}
-                      />
-                    </span>
-                  </div>
                 ))}
-              </fieldset>
-            </>
-          )}
+              </Stack>
+            </FormGroup>
+            {distributedBy.type !== 'process' && !processPart && (
+              <FormGroup legendText={t('report.config.aggregation.percentileLegend')}>
+                <Stack gap={3}>
+                  {orders.percentileAggregations.map((value) => (
+                    <Toggle
+                      key={value}
+                      id={value}
+                      size="sm"
+                      labelA={value === 50 ? t('report.config.aggregation.p50') : 'P' + value}
+                      labelB={value === 50 ? t('report.config.aggregation.p50') : 'P' + value}
+                      toggled={hasAggregation('aggregationTypes', 'percentile', value)}
+                      disabled={isLastAggregation('aggregationTypes', 'percentile', value)}
+                      onToggle={(checked) => {
+                        if (checked) {
+                          addAggregation('aggregationTypes', 'percentile', value);
+                        } else {
+                          removeAggregation('aggregationTypes', 'percentile', value);
+                        }
+                      }}
+                    />
+                  ))}
+                </Stack>
+              </FormGroup>
+            )}
+          </Stack>
         </Form>
       </Popover>
     );
