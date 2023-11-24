@@ -970,7 +970,8 @@
         "tookDuration": {
           "singular": "benötigte eine Dauer von",
           "plural": "benötigten eine Dauer von"
-        }
+        },
+        "zScore": "Ausreißer werden basierend auf dem Z-Score berechnet. Der Z-Score ist eine statistische Messung, die die Beziehung eines Werts zum Mittelwert einer Gruppe von Werten beschreibt. Der Z-Score wird anhand der Standardabweichungen vom Mittelwert gemessen."
       },
       "notFound": "Keine Ausreißer für den ausgewählten Prozess gefunden",
       "onlyCompletedHint": "Hinweis: Die Aufgabeanalyse wird nur für abgeschlossene Knoten durchgeführt",

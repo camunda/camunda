@@ -49,4 +49,18 @@
       }
     }
   }
+
+  .zScoreTooltip {
+    margin-left: 0.5rem;
+    height: 1rem;
+    vertical-align: -3px;
+
+    button {
+      padding: 0;
+      margin: 0;
+      border: none;
+      background: inherit;
+      color: inherit;
+    }
+  }
 }

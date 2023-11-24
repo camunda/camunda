@@ -970,7 +970,8 @@
         "tookDuration": {
           "singular": "took a duration of",
           "plural": "took a duration of"
-        }
+        },
+        "zScore": "Outliers are calculated based on Z-score. Z-score is a statistical measurement that describes a value's relationship to the mean of a group of values. Z-score is measured in terms of standard deviations from the mean."
       },
       "notFound": "No outliers found for the selected process",
       "onlyCompletedHint": "Note: The task analysis is performed on completed flow nodes only",

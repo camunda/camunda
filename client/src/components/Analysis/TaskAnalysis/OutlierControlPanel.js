@@ -7,15 +7,17 @@
 
 import React, {useCallback, useEffect, useState} from 'react';
 import update from 'immutability-helper';
-import {DefinitionSelection} from 'components';
+import {Tooltip} from '@carbon/react';
+import {Information} from '@carbon/icons-react';
 
+import {DefinitionSelection} from 'components';
 import {t} from 'translation';
 import {Filter} from 'filter';
 import {loadVariables} from 'services';
-
-import './OutlierControlPanel.scss';
 import {showError} from 'notifications';
 import {useErrorHandling} from 'hooks';
+
+import './OutlierControlPanel.scss';
 
 export default function OutlierControlPanel({
   processDefinitionKey,
@@ -77,7 +79,18 @@ export default function OutlierControlPanel({
             }
           />
         </li>
-        <li className="item">{t('analysis.task.info')}</li>
+        <li className="item">
+          {t('analysis.task.info')}
+          <Tooltip
+            description={t('analysis.task.tooltip.zScore')}
+            align="bottom"
+            className="zScoreTooltip"
+          >
+            <button>
+              <Information />
+            </button>
+          </Tooltip>
+        </li>
         <li className="item itemFilter">
           <Filter
             data={filters}
