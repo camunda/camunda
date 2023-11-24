@@ -32,7 +32,8 @@ public enum BpmnEventType {
   NONE("none"),
   SIGNAL("signal"),
   TERMINATE("terminate"),
-  TIMER("timer");
+  TIMER("timer"),
+  COMPENSATION("compensation");
 
   private final String eventTypeName;
 
