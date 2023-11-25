@@ -90,7 +90,7 @@ final class ElasticsearchClientIT {
     assertThatThrownBy(client::flush)
         .isInstanceOf(ElasticsearchExporterException.class)
         .hasMessageContaining(
-            "Failed to flush bulk request: [Failed to flush 1 item(s) of bulk request [type: mapper_parsing_exception, reason: failed to parse field [timestamp]");
+            "Failed to flush bulk request: [Failed to flush 1 item(s) of bulk request [type: document_parsing_exception, reason: [1:114] failed to parse field [timestamp] of type [date]");
   }
 
   @Test
@@ -182,9 +182,9 @@ final class ElasticsearchClientIT {
     assertThat(lifecycle.policy().phases().delete().minAge()).isNotNull();
     assertThat(lifecycle.policy().phases().delete().minAge().time()).isEqualTo("30d");
     assertThat(lifecycle.policy().phases().delete().actions()).isNotNull();
-    assertThat(lifecycle.policy().phases().delete().actions().toString())
+    assertThat(lifecycle.policy().phases().delete().actions().toJson())
         .describedAs("Expect that the policy's action is to delete")
-        .contains("delete");
+        .hasFieldOrProperty("delete");
   }
 
   private void assertIndexTemplate(final Template actualTemplate, final Template expectedTemplate) {
