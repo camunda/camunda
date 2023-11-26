@@ -61,13 +61,13 @@ final class ClientCancelPendingCommandTest {
         client
             .newStreamJobsCommand()
             .jobType("jobs")
-            .consumer(ignored -> {})
+            .listener(ignored -> {})
             .workerName(uniqueWorkerName)
-            .send();
+            .open();
 
     // when
     awaitStreamRegistered(uniqueWorkerName);
-    stream.cancel(true);
+    stream.close();
 
     // then
     awaitStreamRemoved(uniqueWorkerName);

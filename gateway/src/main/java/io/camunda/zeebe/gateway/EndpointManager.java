@@ -58,7 +58,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentReques
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamJobsControl;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
@@ -66,11 +66,11 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesReque
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutResponse;
-import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.VersionUtil;
 import io.grpc.Context;
 import io.grpc.stub.ServerCallStreamObserver;
+import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -164,16 +164,9 @@ public final class EndpointManager {
     return true;
   }
 
-  public void streamActivatedJobs(
-      final StreamActivatedJobsRequest request,
+  public StreamObserver<StreamJobsControl> streamJobs(
       final ServerCallStreamObserver<ActivatedJob> responseObserver) {
-    try {
-      final JobActivationProperties brokerRequest =
-          RequestMapper.toJobActivationProperties(request);
-      streamJobsHandler.handle(request.getType(), brokerRequest, responseObserver);
-    } catch (final Exception e) {
-      responseObserver.onError(e);
-    }
+    return streamJobsHandler.handle(responseObserver);
   }
 
   public void activateJobs(

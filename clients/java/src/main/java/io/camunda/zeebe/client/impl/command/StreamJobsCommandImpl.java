@@ -17,20 +17,13 @@ package io.camunda.zeebe.client.impl.command;
 
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
-import io.camunda.zeebe.client.api.ZeebeFuture;
-import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep2;
 import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep3;
-import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.client.api.response.StreamJobsResponse;
-import io.camunda.zeebe.client.impl.RetriableStreamingFutureImpl;
 import io.camunda.zeebe.client.impl.response.ActivatedJobImpl;
-import io.camunda.zeebe.client.impl.response.StreamJobsResponseImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest.Builder;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamJobsControl;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.Arrays;
@@ -39,8 +32,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
+import net.jcip.annotations.ThreadSafe;
 
 public final class StreamJobsCommandImpl
     implements StreamJobsCommandStep1, StreamJobsCommandStep2, StreamJobsCommandStep3 {
@@ -48,9 +42,9 @@ public final class StreamJobsCommandImpl
   private final GatewayStub asyncStub;
   private final JsonMapper jsonMapper;
   private final Predicate<Throwable> retryPredicate;
-  private final Builder builder;
+  private final StreamJobsControl.Registration.Builder builder;
 
-  private Consumer<ActivatedJob> consumer;
+  private StreamJobsListener listener;
   private Duration requestTimeout;
 
   private final Set<String> defaultTenantIds;
@@ -64,7 +58,7 @@ public final class StreamJobsCommandImpl
     this.asyncStub = asyncStub;
     this.jsonMapper = jsonMapper;
     this.retryPredicate = retryPredicate;
-    builder = StreamActivatedJobsRequest.newBuilder();
+    builder = StreamJobsControl.Registration.newBuilder();
 
     timeout(config.getDefaultJobTimeout());
     workerName(config.getDefaultJobWorkerName());
@@ -74,52 +68,14 @@ public final class StreamJobsCommandImpl
   }
 
   @Override
-  public FinalCommandStep<StreamJobsResponse> requestTimeout(final Duration requestTimeout) {
-    this.requestTimeout = requestTimeout;
-    return this;
-  }
-
-  @Override
-  public ZeebeFuture<StreamJobsResponse> send() {
-
-    if (customTenantIds.isEmpty()) {
-      builder.addAllTenantIds(defaultTenantIds);
-    } else {
-      builder.addAllTenantIds(customTenantIds);
-    }
-
-    final StreamActivatedJobsRequest request = builder.build();
-    final RetriableStreamingFutureImpl<StreamJobsResponse, GatewayOuterClass.ActivatedJob> result =
-        new RetriableStreamingFutureImpl<>(
-            new StreamJobsResponseImpl(),
-            this::consumeJob,
-            retryPredicate,
-            streamObserver -> send(request, streamObserver));
-
-    send(request, result);
-    return result;
-  }
-
-  private void send(
-      final StreamActivatedJobsRequest request,
-      final StreamObserver<GatewayOuterClass.ActivatedJob> observer) {
-    GatewayStub stub = asyncStub;
-    if (requestTimeout != null) {
-      stub = stub.withDeadlineAfter(requestTimeout.toNanos(), TimeUnit.NANOSECONDS);
-    }
-
-    stub.streamActivatedJobs(request, observer);
-  }
-
-  @Override
   public StreamJobsCommandStep2 jobType(final String jobType) {
     builder.setType(Objects.requireNonNull(jobType, "must specify a job type"));
     return this;
   }
 
   @Override
-  public StreamJobsCommandStep3 consumer(final Consumer<ActivatedJob> consumer) {
-    this.consumer = Objects.requireNonNull(consumer, "must specify a job consumer");
+  public StreamJobsCommandStep3 listener(final StreamJobsListener listener) {
+    this.listener = Objects.requireNonNull(listener, "must specify a job listener");
     return this;
   }
 
@@ -148,6 +104,37 @@ public final class StreamJobsCommandImpl
   }
 
   @Override
+  public StreamJobsCommandStep3 requestTimeout(final Duration requestTimeout) {
+    this.requestTimeout = requestTimeout;
+    return this;
+  }
+
+  @Override
+  public JobStream open() {
+    // because we use `withWaitForReady`, we can send the initial registration request immediately
+    // it will simply be queued until the stream is connected and ready
+    GatewayStub stub = asyncStub.withWaitForReady();
+
+    if (requestTimeout != null) {
+      stub = stub.withDeadlineAfter(requestTimeout.toNanos(), TimeUnit.NANOSECONDS);
+    }
+
+    if (customTenantIds.isEmpty()) {
+      builder.addAllTenantIds(defaultTenantIds);
+    } else {
+      builder.addAllTenantIds(customTenantIds);
+    }
+
+    final StreamJobsControl registrationRequest =
+        StreamJobsControl.newBuilder().setRegistration(builder.build()).build();
+
+    final JobStreamImpl controller =
+        new JobStreamImpl(listener, jsonMapper, retryPredicate, stub, registrationRequest);
+    controller.open();
+    return controller;
+  }
+
+  @Override
   public StreamJobsCommandStep3 tenantId(final String tenantId) {
     customTenantIds.add(tenantId);
     return this;
@@ -165,8 +152,88 @@ public final class StreamJobsCommandImpl
     return tenantIds(Arrays.asList(tenantIds));
   }
 
-  private void consumeJob(final GatewayOuterClass.ActivatedJob job) {
-    final ActivatedJobImpl mappedJob = new ActivatedJobImpl(jsonMapper, job);
-    consumer.accept(mappedJob);
+  @ThreadSafe
+  private static final class JobStreamImpl
+      implements JobStream, StreamObserver<GatewayOuterClass.ActivatedJob> {
+
+    private final AtomicBoolean closed = new AtomicBoolean();
+    private final StreamJobsListener listener;
+    private final JsonMapper jsonMapper;
+    private final Predicate<Throwable> retryPredicate;
+    private final GatewayStub gatewayStub;
+    private final StreamJobsControl registrationRequest;
+
+    private volatile StreamObserver<StreamJobsControl> requestStream;
+
+    private JobStreamImpl(
+        final StreamJobsListener listener,
+        final JsonMapper jsonMapper,
+        final Predicate<Throwable> retryPredicate,
+        final GatewayStub gatewayStub,
+        final StreamJobsControl registrationRequest) {
+      this.listener = listener;
+      this.jsonMapper = jsonMapper;
+      this.retryPredicate = retryPredicate;
+      this.gatewayStub = gatewayStub;
+      this.registrationRequest = registrationRequest;
+    }
+
+    @Override
+    public void onNext(final GatewayOuterClass.ActivatedJob value) {
+      try {
+        final ActivatedJobImpl mappedJob = new ActivatedJobImpl(jsonMapper, value);
+        listener.onJob(mappedJob);
+      } catch (final Exception e) {
+        onError(e);
+      }
+    }
+
+    @Override
+    public void onError(final Throwable t) {
+      if (retryPredicate.test(t)) {
+        open();
+      } else {
+        closed.set(true);
+        listener.onError(t);
+      }
+    }
+
+    @Override
+    public void onCompleted() {
+      // TODO: do we want to differentiate between client-side close (i.e. the close() method) and
+      // server-side closed (i.e. this method)
+      close();
+    }
+
+    @Override
+    public void close() {
+      if (!closed.compareAndSet(false, true)) {
+        return;
+      }
+
+      if (requestStream != null) {
+        try {
+          requestStream.onCompleted();
+        } catch (final Exception ignored) {
+          // it could be that the stream is already closed, which would throw, but in this case we
+          // can simply ignore it
+        }
+      }
+
+      listener.onClose();
+    }
+
+    private void open() {
+      if (closed.get()) {
+        return;
+      }
+
+      requestStream = gatewayStub.streamJobs(this);
+      if (closed.get()) {
+        requestStream.onCompleted();
+      } else {
+        requestStream.onNext(registrationRequest);
+      }
+    }
   }
 }

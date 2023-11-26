@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.client.api.command.ClientException;
-import io.camunda.zeebe.client.api.response.StreamJobsResponse;
+import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1.JobStream;
 import io.camunda.zeebe.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+@SuppressWarnings("resource")
 public final class StreamJobsTest extends ClientTest {
   @Test
   public void shouldStreamJobs() {
@@ -74,16 +75,15 @@ public final class StreamJobsTest extends ClientTest {
     gatewayService.onStreamJobsRequest(activatedJob1, activatedJob2);
 
     // when
-    final StreamJobsResponse response =
+    final JobStream controller =
         client
             .newStreamJobsCommand()
             .jobType("foo")
-            .consumer(receivedJobs::add)
+            .listener(receivedJobs::add)
             .timeout(Duration.ofMillis(1000))
             .workerName("worker1")
             .tenantIds("test-tenant-1", "test-tenant-2")
-            .send()
-            .join();
+            .open();
 
     // then - we can more easily compare the results of both jobs by serializing them to JSON
     final StreamActivatedJobsRequest request = gatewayService.getLastRequest();
@@ -92,7 +92,7 @@ public final class StreamJobsTest extends ClientTest {
     assertThat(request.getTimeout()).isEqualTo(1000);
     assertThat(request.getWorker()).isEqualTo("worker1");
 
-    assertThat(response).isNotNull();
+    assertThat(controller).isNotNull();
     assertThat(receivedJobs).hasSize(2);
 
     io.camunda.zeebe.client.api.response.ActivatedJob job = receivedJobs.get(0);
@@ -136,13 +136,7 @@ public final class StreamJobsTest extends ClientTest {
     final Duration timeout = Duration.ofMinutes(2);
 
     // when
-    client
-        .newStreamJobsCommand()
-        .jobType("foo")
-        .consumer(ignored -> {})
-        .timeout(timeout)
-        .send()
-        .join();
+    client.newStreamJobsCommand().jobType("foo").listener(ignored -> {}).timeout(timeout).open();
 
     // then
     final StreamActivatedJobsRequest request = gatewayService.getLastRequest();
@@ -158,10 +152,9 @@ public final class StreamJobsTest extends ClientTest {
     client
         .newStreamJobsCommand()
         .jobType("foo")
-        .consumer(ignored -> {})
+        .listener(ignored -> {})
         .fetchVariables(fetchVariables)
-        .send()
-        .join();
+        .open();
 
     // then
     final StreamActivatedJobsRequest request = gatewayService.getLastRequest();
@@ -177,10 +170,9 @@ public final class StreamJobsTest extends ClientTest {
     client
         .newStreamJobsCommand()
         .jobType("foo")
-        .consumer(ignored -> {})
+        .listener(ignored -> {})
         .fetchVariables(fetchVariables)
-        .send()
-        .join();
+        .open();
 
     // then
     final StreamActivatedJobsRequest request = gatewayService.getLastRequest();
@@ -190,7 +182,7 @@ public final class StreamJobsTest extends ClientTest {
   @Test
   public void shouldSetDefaultValues() {
     // when
-    client.newStreamJobsCommand().jobType("foo").consumer(ignored -> {}).send().join();
+    client.newStreamJobsCommand().jobType("foo").listener(ignored -> {}).open();
 
     // then
     final StreamActivatedJobsRequest request = gatewayService.getLastRequest();
@@ -208,8 +200,7 @@ public final class StreamJobsTest extends ClientTest {
 
     // when
     assertThatThrownBy(
-            () ->
-                client.newStreamJobsCommand().jobType("foo").consumer(ignored -> {}).send().join())
+            () -> client.newStreamJobsCommand().jobType("foo").listener(ignored -> {}).open())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Invalid request");
   }
@@ -220,10 +211,9 @@ public final class StreamJobsTest extends ClientTest {
     client
         .newStreamJobsCommand()
         .jobType("foo")
-        .consumer(ignored -> {})
+        .listener(ignored -> {})
         .workerName("testWorker")
-        .send()
-        .join();
+        .open();
 
     // then
     final StreamActivatedJobsRequest request = gatewayService.getLastRequest();
@@ -239,10 +229,9 @@ public final class StreamJobsTest extends ClientTest {
     client
         .newStreamJobsCommand()
         .jobType("foo")
-        .consumer(ignored -> {})
+        .listener(ignored -> {})
         .requestTimeout(requestTimeout)
-        .send()
-        .join();
+        .open();
 
     // then
     Mockito.verify(rule.getGatewayStub(), Mockito.times(1))
@@ -255,10 +244,9 @@ public final class StreamJobsTest extends ClientTest {
     client
         .newStreamJobsCommand()
         .jobType("foo")
-        .consumer(ignored -> {})
+        .listener(ignored -> {})
         .tenantIds(Arrays.asList("tenant1", "tenant2"))
-        .send()
-        .join();
+        .open();
 
     // when
     final StreamActivatedJobsRequest request = gatewayService.getLastRequest();
@@ -273,10 +261,9 @@ public final class StreamJobsTest extends ClientTest {
     client
         .newStreamJobsCommand()
         .jobType("foo")
-        .consumer(ignored -> {})
+        .listener(ignored -> {})
         .tenantIds("tenant1", "tenant2")
-        .send()
-        .join();
+        .open();
 
     // when
     final StreamActivatedJobsRequest request = gatewayService.getLastRequest();
@@ -291,12 +278,11 @@ public final class StreamJobsTest extends ClientTest {
     client
         .newStreamJobsCommand()
         .jobType("foo")
-        .consumer(ignored -> {})
+        .listener(ignored -> {})
         .tenantId("tenant1")
         .tenantId("tenant2")
         .tenantId("tenant2")
-        .send()
-        .join();
+        .open();
 
     // when
     final StreamActivatedJobsRequest request = gatewayService.getLastRequest();

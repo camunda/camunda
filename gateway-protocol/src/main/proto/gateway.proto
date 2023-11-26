@@ -24,6 +24,31 @@ message StreamActivatedJobsRequest {
   repeated string tenantIds = 6;
 }
 
+message StreamJobsControl {
+  oneof message {
+    Registration registration = 1;
+  }
+
+  message Registration {
+    // the job type, as defined in the BPMN process (e.g. <zeebe:taskDefinition
+    // type="payment-service" />)
+    string type = 1;
+    // the name of the worker activating the jobs, mostly used for logging purposes
+    string worker = 2;
+    // a job returned after this call will not be activated by another call until the
+    // timeout (in ms) has been reached
+    int64 timeout = 3;
+    // a list of variables to fetch as the job variables; if empty, all visible variables at
+    // the time of activation for the scope of the job will be returned
+    repeated string fetchVariable = 5;
+    // a list of identifiers of tenants for which to stream jobs
+    repeated string tenantIds = 6;
+    // the initial stream capacity, i.e. the maximum number of jobs that can be
+    // pushed initially before a JobConsumedMessage is sent to increase the capacity
+    int32 capacity = 7;
+  }
+}
+
 message ActivateJobsRequest {
   // the job type, as defined in the BPMN process (e.g. <zeebe:taskDefinition
   // type="payment-service" />)
@@ -673,6 +698,10 @@ service Gateway {
       - timeout less than 1
   */
   rpc StreamActivatedJobs (StreamActivatedJobsRequest) returns (stream ActivatedJob) {
+  }
+
+  rpc StreamJobs (stream StreamJobsControl) returns (stream ActivatedJob) {
+
   }
 
   /*

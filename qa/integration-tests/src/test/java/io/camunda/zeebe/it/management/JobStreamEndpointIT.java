@@ -48,25 +48,26 @@ final class JobStreamEndpointIT {
             });
   }
 
+  @SuppressWarnings("resource")
   @Test
   void shouldListMultipleRemoteStreams() {
     // given
     client
         .newStreamJobsCommand()
         .jobType("foo")
-        .consumer(ignored -> {})
+        .listener(ignored -> {})
         .workerName("foo")
         .timeout(Duration.ofMillis(100))
         .fetchVariables("foo", "fooz")
-        .send();
+        .open();
     client
         .newStreamJobsCommand()
         .jobType("bar")
-        .consumer(ignored -> {})
+        .listener(ignored -> {})
         .workerName("bar")
         .timeout(Duration.ofMillis(250))
         .fetchVariables("bar", "barz")
-        .send();
+        .open();
 
     // then
     final var brokerActuator = JobStreamActuator.of(CLUSTER.brokers().get(MemberId.from("0")));
@@ -94,6 +95,7 @@ final class JobStreamEndpointIT {
                         RemoteJobStreamsAssert.hasFetchVariables("bar", "barz")));
   }
 
+  @SuppressWarnings("resource")
   @Test
   void shouldListMultipleRemoteConsumers() {
     // given
@@ -107,19 +109,19 @@ final class JobStreamEndpointIT {
       client
           .newStreamJobsCommand()
           .jobType("foo")
-          .consumer(ignored -> {})
+          .listener(ignored -> {})
           .workerName("foo")
           .timeout(Duration.ofMillis(100))
           .fetchVariables("foo", "fooz")
-          .send();
+          .open();
       otherClient
           .newStreamJobsCommand()
           .jobType("foo")
-          .consumer(ignored -> {})
+          .listener(ignored -> {})
           .workerName("foo")
           .timeout(Duration.ofMillis(100))
           .fetchVariables("foo", "fooz")
-          .send();
+          .open();
 
       // then
       final var brokerActuator = JobStreamActuator.of(CLUSTER.brokers().get(MemberId.from("0")));
@@ -133,25 +135,26 @@ final class JobStreamEndpointIT {
     }
   }
 
+  @SuppressWarnings("resource")
   @Test
   void shouldListMultipleClientStreams() {
     // given
     client
         .newStreamJobsCommand()
         .jobType("foo")
-        .consumer(ignored -> {})
+        .listener(ignored -> {})
         .workerName("foo")
         .timeout(Duration.ofMillis(100))
         .fetchVariables("foo", "fooz")
-        .send();
+        .open();
     client
         .newStreamJobsCommand()
         .jobType("bar")
-        .consumer(ignored -> {})
+        .listener(ignored -> {})
         .workerName("bar")
         .timeout(Duration.ofMillis(250))
         .fetchVariables("bar", "barz")
-        .send();
+        .open();
 
     // then
     final var actuator = JobStreamActuator.of(gateway);

@@ -48,7 +48,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Resource;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamJobsControl.Registration;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
@@ -259,8 +259,7 @@ public final class RequestMapper {
         .setTenantId(ensureTenantIdSet("BroadcastSignal", grpcRequest.getTenantId()));
   }
 
-  public static JobActivationProperties toJobActivationProperties(
-      final StreamActivatedJobsRequest request) {
+  public static JobActivationProperties toJobActivationProperties(final Registration request) {
 
     List<String> tenantIds = request.getTenantIdsList();
     tenantIds = ensureTenantIdsSet("StreamActivatedJobs", tenantIds);

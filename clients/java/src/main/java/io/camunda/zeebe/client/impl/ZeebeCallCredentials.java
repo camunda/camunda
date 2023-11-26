@@ -52,10 +52,4 @@ public final class ZeebeCallCredentials extends io.grpc.CallCredentials {
           }
         });
   }
-
-  @Override
-  public void thisUsesUnstableApi() {
-    // This method's purpose is to make it clearer to implementors that the API is unstable.
-    // Therefore, it's never called.
-  }
 }

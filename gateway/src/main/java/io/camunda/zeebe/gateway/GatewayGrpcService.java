@@ -40,7 +40,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentReques
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamJobsControl;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
@@ -67,11 +67,10 @@ public class GatewayGrpcService extends GatewayImplBase {
   }
 
   @Override
-  public void streamActivatedJobs(
-      final StreamActivatedJobsRequest request,
+  public StreamObserver<StreamJobsControl> streamJobs(
       final StreamObserver<ActivatedJob> responseObserver) {
-    endpointManager.streamActivatedJobs(
-        request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
+    return endpointManager.streamJobs(
+        ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
   }
 
   @Override

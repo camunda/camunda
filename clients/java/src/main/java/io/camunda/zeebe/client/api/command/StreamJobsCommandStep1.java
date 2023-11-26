@@ -17,10 +17,8 @@ package io.camunda.zeebe.client.api.command;
 
 import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.client.api.response.StreamJobsResponse;
 import java.time.Duration;
 import java.util.List;
-import java.util.function.Consumer;
 
 @ExperimentalApi("https://github.com/camunda/zeebe/issues/11231")
 public interface StreamJobsCommandStep1 {
@@ -36,19 +34,18 @@ public interface StreamJobsCommandStep1 {
   interface StreamJobsCommandStep2 {
 
     /**
-     * Sets the consumer to receive activated jobs. Note that jobs can be activated on different
-     * threads, so the consumer should be thread-safe.
+     * Sets a listener which receives new jobs, as well as notifications about the stream lifecycle
+     * (e.g. error, close, etc.). Note that listener may be called on different threads, and thus
+     * its implementation should be thread safe.
      *
-     * @param consumer the job consumer
+     * @param listener the job stream listener
      * @return the builder's next step
      * @throws NullPointerException if the consumer is null
      */
-    StreamJobsCommandStep3 consumer(final Consumer<ActivatedJob> consumer);
+    StreamJobsCommandStep3 listener(final StreamJobsListener listener);
   }
 
-  interface StreamJobsCommandStep3
-      extends CommandWithOneOrMoreTenantsStep<StreamJobsCommandStep3>,
-          FinalCommandStep<StreamJobsResponse> {
+  interface StreamJobsCommandStep3 extends CommandWithOneOrMoreTenantsStep<StreamJobsCommandStep3> {
     /**
      * Set the time for how long a job is exclusively assigned for this subscription.
      *
@@ -59,7 +56,7 @@ public interface StreamJobsCommandStep1 {
      * <p>If no time is set then the default is used from the configuration.
      *
      * @param timeout the time as duration (e.g. "Duration.ofMinutes(5)")
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     * @return the builder for this command. Call {@link #open()} to complete the command and send
      *     it to the broker.
      */
     StreamJobsCommandStep3 timeout(Duration timeout);
@@ -74,7 +71,7 @@ public interface StreamJobsCommandStep1 {
      * <p>If no name is set then the default is used from the configuration.
      *
      * @param workerName the name of the worker (e.g. "payment-service")
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     * @return the builder for this command. Call {@link #open()} to complete the command and send
      *     it to the broker.
      */
     StreamJobsCommandStep3 workerName(String workerName);
@@ -87,7 +84,7 @@ public interface StreamJobsCommandStep1 {
      * <p>This can be used to limit the number of variables of the activated jobs.
      *
      * @param fetchVariables list of variables names to fetch on activation
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     * @return the builder for this command. Call {@link #open()} to complete the command and send
      *     it to the broker.
      */
     StreamJobsCommandStep3 fetchVariables(List<String> fetchVariables);
@@ -100,9 +97,50 @@ public interface StreamJobsCommandStep1 {
      * <p>This can be used to limit the number of variables of the activated jobs.
      *
      * @param fetchVariables list of variables names to fetch on activation
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     * @return the builder for this command. Call {@link #open()} to complete the command and send
      *     it to the broker.
      */
     StreamJobsCommandStep3 fetchVariables(String... fetchVariables);
+
+    /**
+     * Sets the request timeout for the command. By default, there is no request timeout, as a job
+     * stream is expected to be long living. It is recommended to set a few hours however to ensure
+     * that streams are load balanced across you gateways from time to time.
+     *
+     * @param requestTimeout the request timeout
+     * @return the builder for this command. Call {@link #open()} to complete the command and send
+     *     it to the broker.
+     */
+    StreamJobsCommandStep3 requestTimeout(final Duration requestTimeout);
+
+    /**
+     * Opens a long-living job stream configured via this builder.
+     *
+     * @return a controller for this stream
+     */
+    JobStream open();
+  }
+
+  /**
+   * Controls the job stream, allowing callers to:
+   *
+   * <ul>
+   *   <li>Close the stream
+   * </ul>
+   */
+  interface JobStream extends AutoCloseable {
+
+    /** Closes the job stream locally and remotely. */
+    @Override
+    void close();
+  }
+
+  @FunctionalInterface
+  interface StreamJobsListener {
+    void onJob(final ActivatedJob job);
+
+    default void onError(final Throwable error) {}
+
+    default void onClose() {}
   }
 }

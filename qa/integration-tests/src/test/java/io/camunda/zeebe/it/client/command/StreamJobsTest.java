@@ -10,9 +10,9 @@ package io.camunda.zeebe.it.client.command;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1.JobStream;
+import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1.StreamJobsListener;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.client.api.response.StreamJobsResponse;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Record;
@@ -40,12 +40,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import org.agrona.LangUtil;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -72,7 +70,7 @@ final class StreamJobsTest {
             .serviceTask("task03", b -> b.zeebeJobType(uniqueId))
             .endEvent()
             .done();
-    final Consumer<ActivatedJob> jobHandler =
+    final StreamJobsListener jobHandler =
         job -> {
           jobs.add(job);
           client.newCompleteCommand(job).send();
@@ -84,16 +82,16 @@ final class StreamJobsTest {
         client
             .newStreamJobsCommand()
             .jobType(uniqueId)
-            .consumer(jobHandler)
+            .listener(jobHandler)
             .workerName("streamer")
             .fetchVariables("foo")
             .tenantIds(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .timeout(Duration.ofSeconds(5))
-            .send();
+            .open();
     final var initialTime = System.currentTimeMillis();
     final boolean processInstanceCompleted;
 
-    try {
+    try (stream) {
       awaitStreamRegistered(uniqueId);
       final var processInstanceKey =
           createProcessInstance(uniqueId, Map.of("foo", "bar", "baz", "buz"));
@@ -103,8 +101,6 @@ final class StreamJobsTest {
               .limitToProcessInstanceCompleted()
               .findFirst()
               .isPresent();
-    } finally {
-      stream.cancel(true);
     }
 
     // then
@@ -132,7 +128,7 @@ final class StreamJobsTest {
             .serviceTask("task01", b -> b.zeebeJobType(uniqueId))
             .endEvent()
             .done();
-    final Consumer<ActivatedJob> streamHandler = streamedJobs::add;
+    final StreamJobsListener streamHandler = streamedJobs::add;
     deployProcess(process);
 
     // when - create a process instance and wait for the job to be created; this cannot be streamed
@@ -152,17 +148,15 @@ final class StreamJobsTest {
         client
             .newStreamJobsCommand()
             .jobType(uniqueId)
-            .consumer(streamHandler)
+            .listener(streamHandler)
             .workerName("stream")
-            .send();
+            .open();
     final long secondPIKey;
-    try {
+    try (stream) {
       awaitStreamRegistered(uniqueId);
       secondPIKey = createProcessInstance(uniqueId);
       Awaitility.await("until job has been streamed")
           .untilAsserted(() -> assertThat(streamedJobs).hasSize(1));
-    } finally {
-      stream.cancel(true);
     }
 
     // poll after the newer job was streamed, showing that polling for older jobs work
@@ -196,9 +190,9 @@ final class StreamJobsTest {
         client
             .newStreamJobsCommand()
             .jobType(uniqueId)
-            .consumer(ignored -> {})
+            .listener(ignored -> {})
             .workerName("stream")
-            .send();
+            .open();
     awaitStreamRegistered(uniqueId);
     ZEEBE.stop().start().awaitCompleteTopology();
 
@@ -257,6 +251,7 @@ final class StreamJobsTest {
   }
 
   @Nested
+  @AutoCloseResources
   final class SlowClientTest {
     private final String uniqueId = Strings.newRandomValidBpmnId();
     private final CountDownLatch latch = new CountDownLatch(1);
@@ -272,7 +267,9 @@ final class StreamJobsTest {
     private final Map<String, Object> payload =
         Map.of("foo", "bar".repeat(TransportState.DEFAULT_ONREADY_THRESHOLD));
 
-    private ZeebeFuture<StreamJobsResponse> stream;
+    @SuppressWarnings({"FieldCanBeLocal", "unused"})
+    @AutoCloseResource
+    private JobStream stream;
 
     @BeforeEach
     void beforeEach() {
@@ -280,23 +277,16 @@ final class StreamJobsTest {
           client
               .newStreamJobsCommand()
               .jobType(uniqueId)
-              .consumer(
+              .listener(
                   job -> {
                     jobs.add(job);
                     uncheckedLatchAwait(latch);
                   })
               .workerName("stream")
-              .send();
+              .open();
 
       awaitStreamRegistered(uniqueId);
       deployProcess(process);
-    }
-
-    @AfterEach
-    void afterEach() {
-      if (stream != null) {
-        stream.cancel(true);
-      }
     }
 
     @Test

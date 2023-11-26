@@ -144,10 +144,10 @@ class JobWorkerBuilderImplTest {
   void shouldUseStreamTimeoutInsteadOfRequestTimeout() {
     // given
     final StreamJobsCommandStep3 lastStep = Mockito.mock(Answers.RETURNS_SELF);
-    Mockito.when(jobClient.newStreamJobsCommand().jobType(anyString()).consumer(any()))
+    Mockito.when(jobClient.newStreamJobsCommand().jobType(anyString()).listener(any()))
         .thenReturn(lastStep);
     Mockito.when(lastStep.tenantIds(anyList())).thenReturn(lastStep);
-    Mockito.when(lastStep.send()).thenReturn(Mockito.mock());
+    Mockito.when(lastStep.open()).thenReturn(Mockito.mock());
 
     // when
     jobWorkerBuilder
@@ -169,10 +169,10 @@ class JobWorkerBuilderImplTest {
   void shouldTimeoutStreamAfterEightHours() {
     // given
     final StreamJobsCommandStep3 lastStep = Mockito.mock(Answers.RETURNS_SELF);
-    Mockito.when(jobClient.newStreamJobsCommand().jobType(anyString()).consumer(any()))
+    Mockito.when(jobClient.newStreamJobsCommand().jobType(anyString()).listener(any()))
         .thenReturn(lastStep);
     Mockito.when(lastStep.tenantIds(anyList())).thenReturn(lastStep);
-    Mockito.when(lastStep.send()).thenReturn(Mockito.mock());
+    Mockito.when(lastStep.open()).thenReturn(Mockito.mock());
 
     // when
     jobWorkerBuilder
@@ -255,12 +255,12 @@ class JobWorkerBuilderImplTest {
   void shouldForwardDefaultTenantIdOnStream() {
     // given
     final StreamJobsCommandStep3 lastStep = Mockito.mock(Answers.RETURNS_SELF);
-    Mockito.when(jobClient.newStreamJobsCommand().jobType(anyString()).consumer(any()))
+    Mockito.when(jobClient.newStreamJobsCommand().jobType(anyString()).listener(any()))
         .thenReturn(lastStep);
     @SuppressWarnings("unchecked")
     final ArgumentCaptor<List<String>> tenantIdCaptor = ArgumentCaptor.forClass(List.class);
     Mockito.when(lastStep.tenantIds(tenantIdCaptor.capture())).thenReturn(lastStep);
-    Mockito.when(lastStep.send()).thenReturn(Mockito.mock());
+    Mockito.when(lastStep.open()).thenReturn(Mockito.mock());
 
     // when
     jobWorkerBuilder
@@ -283,12 +283,12 @@ class JobWorkerBuilderImplTest {
   void shouldForwardCustomTenantIdsOnStream() {
     // given
     final StreamJobsCommandStep3 lastStep = Mockito.mock(Answers.RETURNS_SELF);
-    Mockito.when(jobClient.newStreamJobsCommand().jobType(anyString()).consumer(any()))
+    Mockito.when(jobClient.newStreamJobsCommand().jobType(anyString()).listener(any()))
         .thenReturn(lastStep);
     @SuppressWarnings("unchecked")
     final ArgumentCaptor<List<String>> tenantIdCaptor = ArgumentCaptor.forClass(List.class);
     Mockito.when(lastStep.tenantIds(tenantIdCaptor.capture())).thenReturn(lastStep);
-    Mockito.when(lastStep.send()).thenReturn(Mockito.mock());
+    Mockito.when(lastStep.open()).thenReturn(Mockito.mock());
 
     // when
     jobWorkerBuilder

@@ -48,13 +48,13 @@ final class JobStreamLifecycleIT {
         client
             .newStreamJobsCommand()
             .jobType(jobType)
-            .consumer(ignored -> {})
+            .listener(ignored -> {})
             .fetchVariables("foo", "bar")
             .timeout(Duration.ofMillis(500))
             .workerName("worker");
 
     // when
-    command.send();
+    command.open();
 
     // then
     Awaitility.await("until stream is registered")
@@ -91,7 +91,7 @@ final class JobStreamLifecycleIT {
         client
             .newStreamJobsCommand()
             .jobType(jobType)
-            .consumer(ignored -> {})
+            .listener(ignored -> {})
             .fetchVariables("foo", "bar")
             .timeout(Duration.ofMillis(500))
             .workerName("commandA");
@@ -99,14 +99,14 @@ final class JobStreamLifecycleIT {
         client
             .newStreamJobsCommand()
             .jobType(jobType)
-            .consumer(ignored -> {})
+            .listener(ignored -> {})
             .fetchVariables("foo", "bar")
             .timeout(Duration.ofMillis(500))
             .workerName("commandB");
 
     // when - both are registered individually on the gateway
-    commandA.send();
-    commandB.send();
+    commandA.open();
+    commandB.open();
     Awaitility.await("until streams are registered")
         .untilAsserted(
             () ->
@@ -133,7 +133,7 @@ final class JobStreamLifecycleIT {
         client
             .newStreamJobsCommand()
             .jobType(jobType)
-            .consumer(ignored -> {})
+            .listener(ignored -> {})
             .fetchVariables("foo", "bar")
             .timeout(Duration.ofMillis(500))
             .workerName("command");
@@ -141,14 +141,14 @@ final class JobStreamLifecycleIT {
         client
             .newStreamJobsCommand()
             .jobType(jobType)
-            .consumer(ignored -> {})
+            .listener(ignored -> {})
             .fetchVariables("foo", "bar")
             .timeout(Duration.ofMillis(500))
             .workerName("command");
 
     // when - both streams are opened and registered on the gateway as individual client streams
-    commandA.send();
-    commandB.send();
+    commandA.open();
+    commandB.open();
     Awaitility.await("until streams are registered")
         .untilAsserted(
             () ->
@@ -182,7 +182,7 @@ final class JobStreamLifecycleIT {
           client
               .newStreamJobsCommand()
               .jobType(jobType)
-              .consumer(ignored -> {})
+              .listener(ignored -> {})
               .fetchVariables("foo", "bar")
               .timeout(Duration.ofMillis(500))
               .workerName("command");
@@ -190,14 +190,14 @@ final class JobStreamLifecycleIT {
           otherClient
               .newStreamJobsCommand()
               .jobType(jobType)
-              .consumer(ignored -> {})
+              .listener(ignored -> {})
               .fetchVariables("foo", "bar")
               .timeout(Duration.ofMillis(500))
               .workerName("command");
 
       // when - both streams are opened and registered on the gateway as individual client streams
-      commandA.send();
-      commandB.send();
+      commandA.open();
+      commandB.open();
       Awaitility.await("until streams are registered")
           .untilAsserted(
               () -> {
@@ -227,7 +227,7 @@ final class JobStreamLifecycleIT {
   void shouldRemoveStreamOnClientCancel() {
     // given - one stream is registered on the gateway
     final var stream =
-        client.newStreamJobsCommand().jobType(jobType).consumer(ignored -> {}).send();
+        client.newStreamJobsCommand().jobType(jobType).listener(ignored -> {}).open();
     Awaitility.await("until stream is fully registered")
         .untilAsserted(
             () ->
@@ -236,7 +236,7 @@ final class JobStreamLifecycleIT {
                     .haveConnectedTo(1, jobType, 0, 1));
 
     // when - that stream is cancelled
-    stream.cancel(true);
+    stream.close();
 
     // then - it is removed everywhere, as it was the last client for this logical stream
     Awaitility.await("until no gateway streams are registered")
@@ -260,8 +260,9 @@ final class JobStreamLifecycleIT {
   void shouldNotRemoveOtherStreamOnClientCancel() {
     // given - two logically equivalent clients
     final var stream =
-        client.newStreamJobsCommand().jobType(jobType).consumer(ignored -> {}).send();
-    client.newStreamJobsCommand().jobType(jobType).consumer(ignored -> {}).send();
+        client.newStreamJobsCommand().jobType(jobType).listener(ignored -> {}).open();
+    //noinspection resource
+    client.newStreamJobsCommand().jobType(jobType).listener(ignored -> {}).open();
 
     // when - two clients are registered on the gateway, and one of them is closed
     Awaitility.await("until gateway streams are fully connected")
@@ -270,7 +271,7 @@ final class JobStreamLifecycleIT {
                 JobStreamActuatorAssert.assertThat(JobStreamActuator.of(gateway))
                     .clientStreams()
                     .haveConnectedTo(2, jobType, 0, 1));
-    stream.cancel(true);
+    stream.close();
 
     // then - the remaining gateway stream is present, and it's still connected to the brokers
     Awaitility.await("until gateway has only one stream")
@@ -285,16 +286,17 @@ final class JobStreamLifecycleIT {
     }
   }
 
+  @SuppressWarnings("resource")
   @Test
   void shouldRemoveAllStreamsOnGatewayShutdown() {
     // given - two logically different clients
-    client.newStreamJobsCommand().jobType(jobType).consumer(ignored -> {}).send();
+    client.newStreamJobsCommand().jobType(jobType).listener(ignored -> {}).open();
     client
         .newStreamJobsCommand()
         .jobType(jobType)
-        .consumer(ignored -> {})
+        .listener(ignored -> {})
         .fetchVariables("foo", "bar")
-        .send();
+        .open();
     Awaitility.await("until gateway streams are fully connected")
         .untilAsserted(
             () ->
