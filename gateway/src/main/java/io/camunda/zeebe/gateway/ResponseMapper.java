@@ -29,6 +29,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluatedDecisionOutp
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FormMetadata;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.MatchedDecisionRule;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.MigrateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
@@ -46,6 +47,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
@@ -327,6 +329,11 @@ public final class ResponseMapper {
   public static ModifyProcessInstanceResponse toModifyProcessInstanceResponse(
       final long key, final ProcessInstanceModificationRecord brokerResponse) {
     return ModifyProcessInstanceResponse.getDefaultInstance();
+  }
+
+  public static MigrateProcessInstanceResponse toMigrateProcessInstanceResponse(
+      final long key, final ProcessInstanceMigrationRecord brokerResponse) {
+    return MigrateProcessInstanceResponse.getDefaultInstance();
   }
 
   public static DeleteResourceResponse toDeleteResourceResponse(
