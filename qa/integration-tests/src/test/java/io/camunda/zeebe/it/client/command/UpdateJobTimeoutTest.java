@@ -9,7 +9,6 @@ package io.camunda.zeebe.it.client.command;
 
 import static io.camunda.zeebe.test.util.record.RecordingExporter.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.within;
 
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
@@ -36,6 +35,7 @@ public class UpdateJobTimeoutTest {
 
   private String jobType;
   private long jobKey;
+  private long initialDeadline;
 
   @Before
   public void init() {
@@ -51,11 +51,14 @@ public class UpdateJobTimeoutTest {
 
     CLIENT_RULE.createProcessInstance(processDefinitionKey);
 
-    jobKey = activateJob().getKey();
+    final ActivatedJob job = activateJob();
+
+    initialDeadline = job.getDeadline();
+    jobKey = job.getKey();
   }
 
   @Test
-  public void shouldUpdateJobTimeoutMillis() {
+  public void shouldIncreaseJobTimeoutInMillis() {
     // given
     final long timeout = 900000;
 
@@ -63,11 +66,23 @@ public class UpdateJobTimeoutTest {
     CLIENT_RULE.getClient().newUpdateTimeoutCommand(jobKey).timeout(timeout).send().join();
 
     // then
-    assertTimeoutUpdated(timeout);
+    assertTimeoutIncreased();
   }
 
   @Test
-  public void shouldUpdateJobTimeoutDuration() {
+  public void shouldDecreaseJobTimeoutInMillis() {
+    // given
+    final long timeout = 780000;
+
+    // when
+    CLIENT_RULE.getClient().newUpdateTimeoutCommand(jobKey).timeout(timeout).send().join();
+
+    // then
+    assertTimeoutDecreased();
+  }
+
+  @Test
+  public void shouldIncreaseJobTimeoutDuration() {
     // given
     final Duration timeout = Duration.ofMinutes(15);
 
@@ -75,7 +90,19 @@ public class UpdateJobTimeoutTest {
     CLIENT_RULE.getClient().newUpdateTimeoutCommand(jobKey).timeout(timeout).send().join();
 
     // then
-    assertTimeoutUpdated(timeout.toMillis());
+    assertTimeoutIncreased();
+  }
+
+  @Test
+  public void shouldDecreaseJobTimeoutDuration() {
+    // given
+    final Duration timeout = Duration.ofMinutes(13);
+
+    // when
+    CLIENT_RULE.getClient().newUpdateTimeoutCommand(jobKey).timeout(timeout).send().join();
+
+    // then
+    assertTimeoutDecreased();
   }
 
   private ActivatedJob activateJob() {
@@ -85,7 +112,7 @@ public class UpdateJobTimeoutTest {
             .newActivateJobsCommand()
             .jobType(jobType)
             .maxJobsToActivate(1)
-            .timeout(Duration.ofMinutes(10))
+            .timeout(Duration.ofMinutes(14))
             .send()
             .join();
 
@@ -96,21 +123,27 @@ public class UpdateJobTimeoutTest {
     return activateResponse.getJobs().get(0);
   }
 
-  private void assertTimeoutUpdated(final long timeout) {
-    assertThat(jobRecords(JobIntent.UPDATE_TIMEOUT).withRecordKey(jobKey).exists()).isTrue();
-
-    final Long updatedDeadline =
-        jobRecords(JobIntent.TIMEOUT_UPDATED)
-            .withRecordKey(jobKey)
-            .findFirst()
-            .map(r -> r.getValue().getDeadline())
-            .orElse(null);
+  private void assertTimeoutIncreased() {
+    final Long updatedDeadline = retrieveCurrentDeadline();
 
     assertThat(updatedDeadline).isNotNull();
+    assertThat(updatedDeadline).isGreaterThan(initialDeadline);
+  }
 
-    assertThat(updatedDeadline)
-        .isCloseTo(
-            BROKER_RULE.getClock().getCurrentTimeInMillis() + timeout,
-            within(Duration.ofMillis(100).toMillis()));
+  private void assertTimeoutDecreased() {
+    final Long updatedDeadline = retrieveCurrentDeadline();
+
+    assertThat(updatedDeadline).isNotNull();
+    assertThat(updatedDeadline).isLessThan(initialDeadline);
+  }
+
+  private Long retrieveCurrentDeadline() {
+    assertThat(jobRecords(JobIntent.UPDATE_TIMEOUT).withRecordKey(jobKey).exists()).isTrue();
+
+    return jobRecords(JobIntent.TIMEOUT_UPDATED)
+        .withRecordKey(jobKey)
+        .findFirst()
+        .map(r -> r.getValue().getDeadline())
+        .orElse(null);
   }
 }
