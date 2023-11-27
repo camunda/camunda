@@ -10,7 +10,7 @@ import classnames from 'classnames';
 import {FullScreen, useFullScreenHandle} from 'react-full-screen';
 import {Link, useHistory} from 'react-router-dom';
 import {Button} from '@carbon/react';
-import {Copy, Edit, Filter, Maximize, Minimize, Share, TrashCan} from '@carbon/icons-react';
+import {Edit, Filter, Maximize, Minimize, Share, TrashCan} from '@carbon/icons-react';
 
 import {
   ShareEntity,
@@ -40,6 +40,7 @@ import {
 import {FiltersView} from './filters';
 import {AutoRefreshBehavior, AutoRefreshSelect} from './AutoRefresh';
 import useReportDefinitions from './useReportDefinitions';
+import {ReactComponent as DashboardCopyIcon} from './DashboardCopyIcon.svg';
 
 import './DashboardView.scss';
 
@@ -183,7 +184,7 @@ export function DashboardView(props) {
                       kind="primary"
                       className="create-copy"
                       hasIconOnly
-                      renderIcon={Copy}
+                      renderIcon={DashboardCopyIcon}
                       iconDescription={t('dashboard.copyInstantDashboard')}
                       onClick={() => setIsTemplateModalOpen(true)}
                     />
