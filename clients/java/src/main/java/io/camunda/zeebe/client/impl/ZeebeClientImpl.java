@@ -42,6 +42,7 @@ import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
+import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
@@ -53,6 +54,7 @@ import io.camunda.zeebe.client.impl.command.DeployProcessCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeployResourceCommandImpl;
 import io.camunda.zeebe.client.impl.command.EvaluateDecisionCommandImpl;
 import io.camunda.zeebe.client.impl.command.JobUpdateRetriesCommandImpl;
+import io.camunda.zeebe.client.impl.command.JobUpdateTimeoutCommandImpl;
 import io.camunda.zeebe.client.impl.command.MigrateProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.ModifyProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.PublishMessageCommandImpl;
@@ -371,6 +373,20 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(final ActivatedJob job) {
     return newUpdateRetriesCommand(job.getKey());
+  }
+
+  @Override
+  public UpdateTimeoutJobCommandStep1 newUpdateTimeoutCommand(final long jobKey) {
+    return new JobUpdateTimeoutCommandImpl(
+        asyncStub,
+        jobKey,
+        config.getDefaultRequestTimeout(),
+        credentialsProvider::shouldRetryRequest);
+  }
+
+  @Override
+  public UpdateTimeoutJobCommandStep1 newUpdateTimeoutCommand(final ActivatedJob job) {
+    return newUpdateTimeoutCommand(job.getKey());
   }
 
   @Override

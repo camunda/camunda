@@ -30,6 +30,7 @@ import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
+import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
@@ -357,6 +358,48 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(ActivatedJob job);
+
+  /**
+   * Command to update the timeout of a job.
+   *
+   * <pre>
+   * long jobKey = ..;
+   *
+   * zeebeClient
+   *  .newUpdateTimeoutCommand(jobKey)
+   *  .timeout(100)
+   *  .send();
+   * </pre>
+   *
+   * <p>Timeout value in millis is used to calculate a new job deadline. This will happen when the
+   * command to update the timeline is processed. The timeout value will be added to the current
+   * time then.
+   *
+   * @param jobKey the key of the job to update
+   * @return a builder for the command
+   */
+  UpdateTimeoutJobCommandStep1 newUpdateTimeoutCommand(long jobKey);
+
+  /**
+   * Command to update the timeout of a job.
+   *
+   * <pre>
+   * ActivatedJob job= ..;
+   *
+   * zeebeClient
+   *  .newUpdateTimeoutCommand(job)
+   *  .timeout(100)
+   *  .send();
+   * </pre>
+   *
+   * <p>Timeout value in millis is used to calculate a new job deadline. This will happen when the
+   * command to update the timeline is processed. The timeout value will be added to the current
+   * time then.
+   *
+   * @param job the activated job
+   * @return a builder for the command
+   */
+  UpdateTimeoutJobCommandStep1 newUpdateTimeoutCommand(ActivatedJob job);
 
   /**
    * Registers a new job worker for jobs of a given type.

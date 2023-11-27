@@ -382,32 +382,12 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   /**
-   * Awaits a state change.
-   *
-   * @param state the state for which to wait
-   * @param listener the listener to call when the next state change occurs
-   */
-  public void awaitState(final State state, final Consumer<State> listener) {
-    if (this.state == state) {
-      listener.accept(this.state);
-    } else {
-      addStateChangeListener(
-          new Consumer<>() {
-            @Override
-            public void accept(final State state) {
-              listener.accept(state);
-              removeStateChangeListener(this);
-            }
-          });
-    }
-  }
-
-  /**
    * Adds a state change listener.
    *
    * @param listener The state change listener.
    */
   public void addStateChangeListener(final Consumer<State> listener) {
+    listener.accept(state);
     stateChangeListeners.add(listener);
   }
 
@@ -434,7 +414,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   /**
    * Removes registered commit listener
    *
-   * @param commitListener the listenere to remove
+   * @param commitListener the listener to remove
    */
   public void removeCommitListener(final RaftCommitListener commitListener) {
     commitListeners.remove(commitListener);
@@ -737,6 +717,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
                       future.completeExceptionally(error);
                     } else if (response.status() == Status.OK) {
                       future.complete(null);
+                      updateState(State.LEFT);
                     } else {
                       future.completeExceptionally(response.error().createException());
                     }
@@ -1336,10 +1317,18 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     return partitionId;
   }
 
+  private void updateState(final State newState) {
+    if (state != newState) {
+      state = newState;
+      stateChangeListeners.forEach(l -> l.accept(state));
+    }
+  }
+
   /** Raft server state. */
   public enum State {
     ACTIVE,
     READY,
+    LEFT,
   }
 
   /**
@@ -1362,9 +1351,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       // On start up, set the state to READY after the follower has caught up with the leader
       // https://github.com/zeebe-io/zeebe/issues/4877
       if (index >= firstCommitIndex) {
-        state = State.READY;
         log.info("Commit index is {}. RaftServer is ready", index);
-        stateChangeListeners.forEach(l -> l.accept(state));
+        updateState(State.READY);
         removeCommitListener(this);
       } else {
         throttledLogger.info(

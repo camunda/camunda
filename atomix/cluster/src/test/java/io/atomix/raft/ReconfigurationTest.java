@@ -13,6 +13,7 @@ import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.RaftServer.CancelledBootstrapException;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.impl.RaftContext;
@@ -424,6 +425,34 @@ final class ReconfigurationTest {
 
       // then - m2 can request leave again
       assertThat(m2.leave()).succeedsWithin(Duration.ofSeconds(5));
+    }
+
+    @Test
+    void canLeaveAgainAfterRestart(@TempDir final Path tmp) {
+      // given - a cluster with 2 members
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+
+      final var m1 = createServer(tmp, createMembershipService(id1, id2));
+      final var m2 = createServer(tmp, createMembershipService(id2, id1));
+
+      CompletableFuture.allOf(m1.bootstrap(id1, id2), m2.bootstrap(id1, id2)).join();
+
+      // when - m2 left
+      assertThat(m2.leave()).succeedsWithin(Duration.ofSeconds(5));
+      appendEntry(awaitLeader(m1)).commit().join();
+
+      m2.shutdown().join();
+      final var m2Restarted = createServer(tmp, createMembershipService(id2, id1));
+      final var startFuture = m2Restarted.bootstrap(id1, id2);
+
+      // then - m2 can request leave again
+      assertThat(m2Restarted.leave()).succeedsWithin(Duration.ofSeconds(5));
+      // bootstrap completes
+      assertThat(startFuture)
+          .failsWithin(Duration.ofMillis(200))
+          .withThrowableOfType(ExecutionException.class)
+          .withCauseInstanceOf(CancelledBootstrapException.class);
     }
 
     @Test
