@@ -60,7 +60,7 @@ public class UpdateJobTimeoutTest {
   @Test
   public void shouldIncreaseJobTimeoutInMillis() {
     // given
-    final long timeout = 900000;
+    final long timeout = Duration.ofMinutes(15).toMillis();
 
     // when
     CLIENT_RULE.getClient().newUpdateTimeoutCommand(jobKey).timeout(timeout).send().join();
@@ -72,7 +72,7 @@ public class UpdateJobTimeoutTest {
   @Test
   public void shouldDecreaseJobTimeoutInMillis() {
     // given
-    final long timeout = 780000;
+    final long timeout = Duration.ofMinutes(13).toMillis();
 
     // when
     CLIENT_RULE.getClient().newUpdateTimeoutCommand(jobKey).timeout(timeout).send().join();
