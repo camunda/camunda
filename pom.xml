@@ -63,7 +63,7 @@
     <mockserver.version>5.15.0</mockserver.version>
     <quartz.version>2.3.2</quartz.version>
     <assertj.version>3.24.2</assertj.version>
-    <postgres.version>42.6.0</postgres.version>
+    <postgres.version>42.7.0</postgres.version>
     <jakarta.rs-api.version>3.1.0</jakarta.rs-api.version>
     <netty.version>4.1.100.Final</netty.version>
 
