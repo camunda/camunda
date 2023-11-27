@@ -108,7 +108,8 @@ public class ProcessInternalController extends ApiErrorController {
           final var form = formStore.getForm(process.getFormId(), process.getId(), null);
           return form.getBpmnId();
         } catch (NotFoundException e) {
-          return null;
+          // Form not found, but maintain the Form ID in order to threat not found in front-end
+          return process.getFormId();
         }
       }
 
