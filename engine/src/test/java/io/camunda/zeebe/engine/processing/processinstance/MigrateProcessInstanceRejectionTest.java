@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -51,5 +52,44 @@ public class MigrateProcessInstanceRejectionTest {
                 "Expected to migrate process instance but no process instance found with key '%d'",
                 unknownKey))
         .hasKey(unknownKey);
+  }
+
+  @Test
+  public void shouldRejectCommandWhenTargetProcessDefinitionIsUnknown() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("task"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
+
+    final long unknownKey = 12345L;
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(unknownKey)
+        .expectRejection()
+        .migrate();
+
+    // then
+    final var rejectionRecord =
+        RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst();
+
+    assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            String.format(
+                "Expected to migrate process instance to process definition but no process definition found with key '%d'",
+                unknownKey))
+        .hasKey(processInstanceKey);
   }
 }
