@@ -35,6 +35,8 @@ public class ProcessInstanceMigrationMigrateProcessor
 
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
       "Expected to migrate process instance but no process instance found with key '%d'";
+  private static final String ERROR_MESSAGE_PROCESS_DEFINITION_NOT_FOUND =
+      "Expected to migrate process instance to process definition but no process definition found with key '%d'";
 
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
@@ -76,11 +78,11 @@ public class ProcessInstanceMigrationMigrateProcessor
         processState.getProcessByKeyAndTenant(
             targetProcessDefinitionKey, processInstance.getValue().getTenantId());
     if (processDefinition == null) {
-      // todo: we should reject the command explicitly
-      throw new IllegalStateException(
-          String.format(
-              "Expected to migrate process instance with key '%d' to process definition with key '%d', but process definition not found",
-              value.getProcessInstanceKey(), targetProcessDefinitionKey));
+      final String reason =
+          String.format(ERROR_MESSAGE_PROCESS_DEFINITION_NOT_FOUND, targetProcessDefinitionKey);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
+      return;
     }
 
     final Map<String, String> mappedElementIds =
