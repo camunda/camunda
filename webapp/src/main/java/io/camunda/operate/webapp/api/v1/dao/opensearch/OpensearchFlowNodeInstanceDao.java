@@ -8,7 +8,6 @@ package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.FlowNodeInstanceDao;
@@ -17,7 +16,6 @@ import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
 import org.opensearch.client.opensearch.core.SearchRequest;
-import org.opensearch.client.opensearch.core.search.Hit;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -33,8 +31,8 @@ public class OpensearchFlowNodeInstanceDao extends OpensearchKeyFilteringDao<Flo
 
   public OpensearchFlowNodeInstanceDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
                                        FlowNodeInstanceTemplate flowNodeInstanceIndex, RichOpenSearchClient richOpenSearchClient,
-                                       ProcessCache processCache, OperateProperties operateProperties) {
-    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient, operateProperties);
+                                       ProcessCache processCache) {
+    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.flowNodeInstanceIndex = flowNodeInstanceIndex;
     this.processCache = processCache;
   }
@@ -70,7 +68,7 @@ public class OpensearchFlowNodeInstanceDao extends OpensearchKeyFilteringDao<Flo
   }
 
   @Override
-  protected Class<FlowNodeInstance> getModelClass() {
+  protected Class<FlowNodeInstance> getInternalDocumentModelClass() {
     return FlowNodeInstance.class;
   }
 
@@ -122,26 +120,12 @@ public class OpensearchFlowNodeInstanceDao extends OpensearchKeyFilteringDao<Flo
   }
 
   @Override
-  protected FlowNodeInstance transformHitToItem(Hit<FlowNodeInstance> hit) {
-    FlowNodeInstance item = hit.source();
-    if (item != null && item.getFlowNodeId() != null) {
-      String flowNodeName = processCache.getFlowNodeNameOrDefaultValue(item.getProcessDefinitionKey(),
-          item.getFlowNodeId(), null);
-      item.setFlowNodeName(flowNodeName);
+  protected FlowNodeInstance convertInternalToApiResult(FlowNodeInstance internalResult) {
+    if (internalResult != null && internalResult.getFlowNodeId() != null) {
+      String flowNodeName = processCache.getFlowNodeNameOrDefaultValue(internalResult.getProcessDefinitionKey(),
+          internalResult.getFlowNodeId(), null);
+      internalResult.setFlowNodeName(flowNodeName);
     }
-    return item;
-  }
-
-  @Override
-  protected List<FlowNodeInstance> searchByKey(Long key) {
-    List<FlowNodeInstance> results = super.searchByKey(key);
-
-    results.forEach(node -> {
-      String flowNodeName = processCache.getFlowNodeNameOrDefaultValue(node.getProcessDefinitionKey(),
-          node.getFlowNodeId(), null);
-      node.setFlowNodeName(flowNodeName);
-    });
-
-    return results;
+    return internalResult;
   }
 }

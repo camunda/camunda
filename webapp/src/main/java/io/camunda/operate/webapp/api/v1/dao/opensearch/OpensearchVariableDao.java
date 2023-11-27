@@ -7,7 +7,6 @@
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.VariableDao;
@@ -29,8 +28,8 @@ public class OpensearchVariableDao extends OpensearchKeyFilteringDao<Variable, V
   private final VariableTemplate variableIndex;
 
   public OpensearchVariableDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
-                               VariableTemplate variableIndex, RichOpenSearchClient richOpenSearchClient, OperateProperties operateProperties) {
-    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient, operateProperties);
+                               VariableTemplate variableIndex, RichOpenSearchClient richOpenSearchClient) {
+    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.variableIndex = variableIndex;
   }
 
@@ -45,7 +44,7 @@ public class OpensearchVariableDao extends OpensearchKeyFilteringDao<Variable, V
   }
 
   @Override
-  protected Class<Variable> getModelClass() {
+  protected Class<Variable> getInternalDocumentModelClass() {
     return Variable.class;
   }
 
@@ -101,5 +100,10 @@ public class OpensearchVariableDao extends OpensearchKeyFilteringDao<Variable, V
         request.query(queryDSLWrapper.and(queryTerms));
       }
     }
+  }
+
+  @Override
+  protected Variable convertInternalToApiResult(Variable internalResult) {
+    return internalResult;
   }
 }

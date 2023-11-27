@@ -54,7 +54,7 @@ public class OpensearchProcessInstanceDaoTest {
   @BeforeEach
   public void setup() {
     underTest = new OpensearchProcessInstanceDao(mockQueryWrapper, mockRequestWrapper, mockProcessInstanceIndex,
-        mockOpensearchClient, mockProcessInstanceWriter, null);
+        mockOpensearchClient, mockProcessInstanceWriter);
   }
 
   @Test
@@ -68,8 +68,8 @@ public class OpensearchProcessInstanceDaoTest {
   }
 
   @Test
-  public void testGetModelClass() {
-    assertThat(underTest.getModelClass()).isEqualTo(ProcessInstance.class);
+  public void testGetInternalDocumentModelClass() {
+    assertThat(underTest.getInternalDocumentModelClass()).isEqualTo(ProcessInstance.class);
   }
 
   @Test

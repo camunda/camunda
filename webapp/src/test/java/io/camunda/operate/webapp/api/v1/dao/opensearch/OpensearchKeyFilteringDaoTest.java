@@ -48,7 +48,7 @@ public class OpensearchKeyFilteringDaoTest {
 
   @BeforeEach
   public void setup() {
-    underTest = new OpensearchKeyFilteringDao<>(mockQueryWrapper, mockRequestWrapper, mockOpensearchClient, null) {
+    underTest = new OpensearchKeyFilteringDao<>(mockQueryWrapper, mockRequestWrapper, mockOpensearchClient) {
       @Override
       protected String getByKeyServerReadErrorMessage(Long key) {return "server read error";}
 
@@ -65,13 +65,16 @@ public class OpensearchKeyFilteringDaoTest {
       protected String getUniqueSortKey() { return null; }
 
       @Override
-      protected Class<Object> getModelClass() { return Object.class; }
+      protected Class<Object> getInternalDocumentModelClass() { return Object.class; }
 
       @Override
       protected String getIndexName() {return "index";}
 
       @Override
       protected void buildFiltering(Query<Object> query, SearchRequest.Builder request) {}
+
+      @Override
+      protected Object convertInternalToApiResult(Object internalResult) { return internalResult; }
     };
   }
 

@@ -6,7 +6,6 @@
  */
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.api.v1.entities.Query;
@@ -22,10 +21,21 @@ import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import java.util.List;
 import java.util.Objects;
 
-public abstract class OpensearchPageableDao<T, R> extends OpensearchDao {
+/**
+ * @param <T> - API model class
+ * @param <R> - Internal model class that maps to an opensearch document and fields
+ */
+public abstract class OpensearchSearchableDao<T, R> {
 
-  protected OpensearchPageableDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper, RichOpenSearchClient richOpenSearchClient, OperateProperties operateProperties) {
-    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient, operateProperties);
+  protected final OpensearchQueryDSLWrapper queryDSLWrapper;
+  protected final OpensearchRequestDSLWrapper requestDSLWrapper;
+  protected final RichOpenSearchClient richOpenSearchClient;
+
+  public OpensearchSearchableDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
+                          RichOpenSearchClient richOpenSearchClient) {
+    this.queryDSLWrapper = queryDSLWrapper;
+    this.requestDSLWrapper = requestDSLWrapper;
+    this.richOpenSearchClient = richOpenSearchClient;
   }
 
   public Results<T> search(Query<T> query) {
@@ -36,7 +46,7 @@ public abstract class OpensearchPageableDao<T, R> extends OpensearchDao {
     buildPaging(query, request);
 
     try {
-      HitsMetadata<R> results = richOpenSearchClient.doc().search(request, getModelClass()).hits();
+      HitsMetadata<R> results = richOpenSearchClient.doc().search(request, getInternalDocumentModelClass()).hits();
 
       return formatHitsIntoResults(results);
     } catch (Exception e) {
@@ -51,7 +61,7 @@ public abstract class OpensearchPageableDao<T, R> extends OpensearchDao {
 
   protected abstract String getUniqueSortKey();
 
-  protected abstract Class<R> getModelClass();
+  protected abstract Class<R> getInternalDocumentModelClass();
 
   protected abstract String getIndexName();
 
@@ -86,7 +96,7 @@ public abstract class OpensearchPageableDao<T, R> extends OpensearchDao {
 
     if (!hits.isEmpty()) {
       List<T> items = hits.stream()
-        .map(this::transformHitToItem)
+        .map(hit -> convertInternalToApiResult(hit.source()))
         .filter(Objects::nonNull)
         .toList();
 
@@ -102,11 +112,5 @@ public abstract class OpensearchPageableDao<T, R> extends OpensearchDao {
     }
   }
 
-  protected T transformHitToItem(Hit<R> hit) {
-    return transformSourceToItem(hit.source());
-  }
-
-  protected T transformSourceToItem(R r) {
-    return (T) r;
-  }
+  protected abstract T convertInternalToApiResult(R internalResult);
 }

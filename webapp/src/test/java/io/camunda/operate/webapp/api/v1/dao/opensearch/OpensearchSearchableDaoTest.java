@@ -34,7 +34,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class OpensearchBaseDaoTest {
+public class OpensearchSearchableDaoTest {
 
   @Mock
   private OpensearchQueryDSLWrapper mockQueryWrapper;
@@ -45,22 +45,25 @@ public class OpensearchBaseDaoTest {
   @Mock
   private RichOpenSearchClient mockOpensearchClient;
 
-  private OpensearchPageableDao<Object, Object> underTest;
+  private OpensearchSearchableDao<Object, Object> underTest;
 
   @BeforeEach
   public void setup() {
-    underTest = new OpensearchPageableDao<>(mockQueryWrapper, mockRequestWrapper, mockOpensearchClient, null) {
+    underTest = new OpensearchSearchableDao<>(mockQueryWrapper, mockRequestWrapper, mockOpensearchClient) {
       @Override
       protected String getUniqueSortKey() { return null; }
 
       @Override
-      protected Class getModelClass() { return Object.class; }
+      protected Class getInternalDocumentModelClass() { return Object.class; }
 
       @Override
       protected String getIndexName() { return "index"; }
 
       @Override
       protected void buildFiltering(Query query, SearchRequest.Builder request) {}
+
+      @Override
+      protected Object convertInternalToApiResult(Object internalResult) { return internalResult; }
     };
   }
 

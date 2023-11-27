@@ -7,7 +7,6 @@
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.DecisionInstanceDao;
@@ -33,17 +32,23 @@ public class OpensearchDecisionInstanceDao extends OpensearchKeyFilteringDao<Dec
 
   public OpensearchDecisionInstanceDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
                                        DecisionInstanceTemplate decisionInstanceTemplate,
-                                       RichOpenSearchClient richOpenSearchClient, OperateProperties operateProperties){
-    super(queryDSLWrapper, requestDSLWrapper,richOpenSearchClient, operateProperties);
+                                       RichOpenSearchClient richOpenSearchClient){
+    super(queryDSLWrapper, requestDSLWrapper,richOpenSearchClient);
     this.decisionInstanceTemplate = decisionInstanceTemplate;
   }
+
+  @Override
+  protected DecisionInstance convertInternalToApiResult(DecisionInstance internalResult) {
+    return internalResult;
+  }
+
   @Override
   public DecisionInstance byId(String id) throws APIException {
     List<DecisionInstance> decisionInstances;
     try {
       var request = requestDSLWrapper.searchRequestBuilder(getIndexName())
           .query(queryDSLWrapper.withTenantCheck(queryDSLWrapper.term(DecisionInstanceTemplate.ID, id)));
-      decisionInstances = richOpenSearchClient.doc().searchValues(request, getModelClass());
+      decisionInstances = richOpenSearchClient.doc().searchValues(request, getInternalDocumentModelClass());
     } catch (Exception e) {
       throw new ServerException(String.format("Error in reading decision instance for id %s", id), e);
     }
@@ -87,7 +92,7 @@ public class OpensearchDecisionInstanceDao extends OpensearchKeyFilteringDao<Dec
   }
 
   @Override
-  protected Class<DecisionInstance> getModelClass() {
+  protected Class<DecisionInstance> getInternalDocumentModelClass() {
     return DecisionInstance.class;
   }
 

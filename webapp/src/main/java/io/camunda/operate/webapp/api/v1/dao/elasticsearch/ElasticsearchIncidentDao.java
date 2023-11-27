@@ -113,7 +113,7 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
       return;
     }
     query.setSort(query.getSort().stream().map(s ->
-        s.setField(Incident.OBJECT_TO_ELASTICSEARCH.getOrDefault(s.getField(), s.getField()))
+        s.setField(Incident.OBJECT_TO_SEARCH_MAP.getOrDefault(s.getField(), s.getField()))
     ).collect(Collectors.toList()));
   }
 

@@ -7,7 +7,6 @@
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
@@ -24,7 +23,13 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Conditional(OpensearchCondition.class)
@@ -39,11 +44,16 @@ public class OpensearchDecisionDefinitionDao extends OpensearchKeyFilteringDao<D
 
   public OpensearchDecisionDefinitionDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
       DecisionIndex decisionIndex, DecisionRequirementsIndex decisionRequirementsIndex, DecisionRequirementsDao decisionRequirementsDao,
-      RichOpenSearchClient richOpenSearchClient, OperateProperties operateProperties) {
-    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient, operateProperties);
+      RichOpenSearchClient richOpenSearchClient) {
+    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.decisionIndex = decisionIndex;
     this.decisionRequirementsIndex = decisionRequirementsIndex;
     this.decisionRequirementsDao = decisionRequirementsDao;
+  }
+
+  @Override
+  protected DecisionDefinition convertInternalToApiResult(DecisionDefinition internalResult) {
+    return internalResult;
   }
 
   @Override
@@ -72,7 +82,7 @@ public class OpensearchDecisionDefinitionDao extends OpensearchKeyFilteringDao<D
   }
 
   @Override
-  protected Class<DecisionDefinition> getModelClass() {
+  protected Class<DecisionDefinition> getInternalDocumentModelClass() {
     return DecisionDefinition.class;
   }
 

@@ -21,7 +21,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opensearch.client.opensearch.core.SearchRequest;
-import org.opensearch.client.opensearch.core.search.Hit;
 
 import java.util.Collections;
 import java.util.List;
@@ -55,7 +54,7 @@ public class OpensearchFlowNodeInstanceDaoTest {
 
   @BeforeEach
   public void setup() {
-    underTest = new OpensearchFlowNodeInstanceDao(mockQueryWrapper, mockRequestWrapper, mockFlowNodeIndex, mockOpensearchClient, mockProcessCache, null);
+    underTest = new OpensearchFlowNodeInstanceDao(mockQueryWrapper, mockRequestWrapper, mockFlowNodeIndex, mockOpensearchClient, mockProcessCache);
   }
 
   @Test
@@ -91,8 +90,8 @@ public class OpensearchFlowNodeInstanceDaoTest {
   }
 
   @Test
-  public void testGetModelClass() {
-    assertThat(underTest.getModelClass()).isEqualTo(FlowNodeInstance.class);
+  public void testGetInternalDocumentModelClass() {
+    assertThat(underTest.getInternalDocumentModelClass()).isEqualTo(FlowNodeInstance.class);
   }
 
   @Test
@@ -157,16 +156,13 @@ public class OpensearchFlowNodeInstanceDaoTest {
   }
 
   @Test
-  public void testTransformHitToItemWithValidItem() {
+  public void testConvertInternalToModelResultWithValidItem() {
     FlowNodeInstance item = new FlowNodeInstance().setProcessDefinitionKey(1L).setFlowNodeId("id");
-
-    Hit<FlowNodeInstance> mockHit = Mockito.mock(Hit.class);
-    when(mockHit.source()).thenReturn(item);
 
     when(mockProcessCache.getFlowNodeNameOrDefaultValue(item.getProcessDefinitionKey(),
         item.getFlowNodeId(), null)).thenReturn("name");
 
-    FlowNodeInstance result = underTest.transformHitToItem(mockHit);
+    FlowNodeInstance result = underTest.convertInternalToApiResult(item);
 
     assertThat(result.getFlowNodeName()).isEqualTo("name");
     verify(mockProcessCache, times(1)).getFlowNodeNameOrDefaultValue(item.getProcessDefinitionKey(),
@@ -174,24 +170,18 @@ public class OpensearchFlowNodeInstanceDaoTest {
   }
 
   @Test
-  public void testTransformHitToItemWithNoId() {
+  public void testConvertInternalToModelResultWithNoId() {
     FlowNodeInstance item = new FlowNodeInstance().setProcessDefinitionKey(1L);
 
-    Hit<FlowNodeInstance> mockHit = Mockito.mock(Hit.class);
-    when(mockHit.source()).thenReturn(item);
-
-    FlowNodeInstance result = underTest.transformHitToItem(mockHit);
+    FlowNodeInstance result = underTest.convertInternalToApiResult(item);
 
     assertThat(result).isSameAs(item);
     verifyNoInteractions(mockProcessCache);
   }
 
   @Test
-  public void testTransformHitToItemWithNoNullHit() {
-    Hit<FlowNodeInstance> mockHit = Mockito.mock(Hit.class);
-    when(mockHit.source()).thenReturn(null);
-
-    FlowNodeInstance result = underTest.transformHitToItem(mockHit);
+  public void testConvertInternalToModelResultWithNoNullHit() {
+    FlowNodeInstance result = underTest.convertInternalToApiResult(null);
 
     assertThat(result).isNull();
     verifyNoInteractions(mockProcessCache);
@@ -213,13 +203,10 @@ public class OpensearchFlowNodeInstanceDaoTest {
     List<FlowNodeInstance> validResults = Collections.singletonList(new FlowNodeInstance().setProcessDefinitionKey(1L).setFlowNodeId("id"));
     when(mockDoc.searchValues(mockRequestBuilder, FlowNodeInstance.class)).thenReturn(validResults);
 
-    when(mockProcessCache.getFlowNodeNameOrDefaultValue(1L, "id", null)).thenReturn("name");
-
     List<FlowNodeInstance> results = underTest.searchByKey(1L);
 
     // Verify the request was built with a tenant check, the index name, and permissive matching
     assertThat(results).containsExactlyElementsOf(validResults);
-    assertThat(results.get(0).getFlowNodeName()).isEqualTo("name");
     verify(mockQueryWrapper, times(1)).term(underTest.getKeyFieldName(), 1L);
     verify(mockQueryWrapper, times(1)).withTenantCheck(any());
     verify(mockRequestWrapper, times(1)).searchRequestBuilder(underTest.getIndexName());

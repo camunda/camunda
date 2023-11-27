@@ -45,7 +45,7 @@ public class OpensearchVariableDaoTest {
 
   @BeforeEach
   public void setup() {
-    underTest = new OpensearchVariableDao(mockQueryWrapper, mockRequestWrapper, mockVariableIndex, mockOpensearchClient, null);
+    underTest = new OpensearchVariableDao(mockQueryWrapper, mockRequestWrapper, mockVariableIndex, mockOpensearchClient);
   }
 
   @Test
@@ -61,8 +61,8 @@ public class OpensearchVariableDaoTest {
   }
 
   @Test
-  public void testGetModelClass() {
-    assertThat(underTest.getModelClass()).isEqualTo(Variable.class);
+  public void testGetInternalDocumentModelClass() {
+    assertThat(underTest.getInternalDocumentModelClass()).isEqualTo(Variable.class);
   }
 
   @Test

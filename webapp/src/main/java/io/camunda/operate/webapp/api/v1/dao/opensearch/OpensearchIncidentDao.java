@@ -19,24 +19,25 @@ import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
 import org.opensearch.client.opensearch.core.SearchRequest;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import static java.lang.String.format;
 
 @Conditional(OpensearchCondition.class)
 @Component
 public class OpensearchIncidentDao extends OpensearchKeyFilteringDao<Incident, OpensearchIncident> implements IncidentDao {
-  @Autowired
-  private IncidentTemplate incidentIndex;
+  private final OperateProperties operateProperties;
+  private final IncidentTemplate incidentIndex;
 
-  public OpensearchIncidentDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper, RichOpenSearchClient richOpenSearchClient, OperateProperties operateProperties) {
-    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient, operateProperties);
+  public OpensearchIncidentDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
+                               RichOpenSearchClient richOpenSearchClient, OperateProperties operateProperties,
+                               IncidentTemplate incidentIndex) {
+    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
+    this.operateProperties = operateProperties;
+    this.incidentIndex = incidentIndex;
   }
 
   @Override
@@ -72,7 +73,7 @@ public class OpensearchIncidentDao extends OpensearchKeyFilteringDao<Incident, O
   }
 
   @Override
-  protected Class<OpensearchIncident> getModelClass() {
+  protected Class<OpensearchIncident> getInternalDocumentModelClass() {
     return OpensearchIncident.class;
   }
 
@@ -84,7 +85,6 @@ public class OpensearchIncidentDao extends OpensearchKeyFilteringDao<Incident, O
   @Override
   protected void buildFiltering(Query<Incident> query, SearchRequest.Builder request) {
     final Incident filter = query.getFilter();
-    List<org.opensearch.client.opensearch._types.query_dsl.Query> queryBuilders = new ArrayList<>();
     if (filter != null) {
       var queryTerms = Arrays.asList(
         queryDSLWrapper.buildTermQuery(Incident.KEY, filter.getKey()),
@@ -108,14 +108,14 @@ public class OpensearchIncidentDao extends OpensearchKeyFilteringDao<Incident, O
 
     var rewrittenSort = query.getSort()
       .stream()
-      .map(s -> s.setField(Incident.OBJECT_TO_ELASTICSEARCH.getOrDefault(s.getField(), s.getField())))
+      .map(s -> s.setField(Incident.OBJECT_TO_SEARCH_MAP.getOrDefault(s.getField(), s.getField())))
       .toList();
 
     query.setSort(rewrittenSort);
   }
 
   @Override
-  protected Incident transformSourceToItem(OpensearchIncident osIncident) {
+  protected Incident convertInternalToApiResult(OpensearchIncident osIncident) {
     return new Incident()
       .setKey(osIncident.key())
       .setProcessInstanceKey(osIncident.processInstanceKey())

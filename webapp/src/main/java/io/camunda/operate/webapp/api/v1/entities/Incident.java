@@ -33,7 +33,7 @@ public class Incident {
 
   public static final String MESSAGE_FIELD = "message";
   public static final String TYPE_FIELD = "type";
-  public static final Map<String,String> OBJECT_TO_ELASTICSEARCH = Map.of(TYPE_FIELD, TYPE, MESSAGE_FIELD, MESSAGE);
+  public static final Map<String,String> OBJECT_TO_SEARCH_MAP = Map.of(TYPE_FIELD, TYPE, MESSAGE_FIELD, MESSAGE);
 
   private Long key;
   private Long processDefinitionKey;

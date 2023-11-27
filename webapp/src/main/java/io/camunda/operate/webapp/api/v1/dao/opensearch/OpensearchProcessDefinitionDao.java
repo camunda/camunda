@@ -7,7 +7,6 @@
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.ProcessDefinitionDao;
@@ -23,7 +22,6 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 @Conditional(OpensearchCondition.class)
@@ -32,10 +30,12 @@ public class OpensearchProcessDefinitionDao extends OpensearchKeyFilteringDao<Pr
 
   private final ProcessIndex processIndex;
   public OpensearchProcessDefinitionDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
-                                        ProcessIndex processIndex, RichOpenSearchClient richOpenSearchClient, OperateProperties operateProperties) {
-    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient, operateProperties);
+                                        ProcessIndex processIndex, RichOpenSearchClient richOpenSearchClient) {
+    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.processIndex = processIndex;
   }
+
+
 
   @Override
   protected String getKeyFieldName() {
@@ -55,11 +55,6 @@ public class OpensearchProcessDefinitionDao extends OpensearchKeyFilteringDao<Pr
   @Override
   protected String getByKeyTooManyResultsErrorMessage(Long key) {
     return String.format("Found more than one process definition for key %s", key);
-  }
-
-  @Override
-  protected List<ProcessDefinition> searchByKey(Long key) {
-    return super.searchByKey(key);
   }
 
   @Override
@@ -95,7 +90,7 @@ public class OpensearchProcessDefinitionDao extends OpensearchKeyFilteringDao<Pr
   }
 
   @Override
-  protected Class<ProcessDefinition> getModelClass() {
+  protected Class<ProcessDefinition> getInternalDocumentModelClass() {
     return ProcessDefinition.class;
   }
 
@@ -112,5 +107,10 @@ public class OpensearchProcessDefinitionDao extends OpensearchKeyFilteringDao<Pr
       request.query(
           queryDSLWrapper.withTenantCheck(queryDSLWrapper.and(queries)));
     }
+  }
+
+  @Override
+  protected ProcessDefinition convertInternalToApiResult(ProcessDefinition internalResult) {
+    return internalResult;
   }
 }

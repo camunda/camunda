@@ -7,7 +7,6 @@
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.DecisionRequirementsDao;
@@ -22,7 +21,11 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 @Conditional(OpensearchCondition.class)
 @Component
@@ -32,9 +35,14 @@ public class OpensearchDecisionRequirementsDao extends OpensearchKeyFilteringDao
 
   public OpensearchDecisionRequirementsDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
        DecisionRequirementsIndex decisionRequirementsIndex,
-      RichOpenSearchClient richOpenSearchClient, OperateProperties operateProperties){
-    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient, operateProperties);
+      RichOpenSearchClient richOpenSearchClient){
+    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.decisionRequirementsIndex = decisionRequirementsIndex;
+  }
+
+  @Override
+  protected DecisionRequirements convertInternalToApiResult(DecisionRequirements internalResult) {
+    return internalResult;
   }
 
   @Override
@@ -96,7 +104,7 @@ public class OpensearchDecisionRequirementsDao extends OpensearchKeyFilteringDao
   }
 
   @Override
-  protected Class<DecisionRequirements> getModelClass() {
+  protected Class<DecisionRequirements> getInternalDocumentModelClass() {
     return DecisionRequirements.class;
   }
 

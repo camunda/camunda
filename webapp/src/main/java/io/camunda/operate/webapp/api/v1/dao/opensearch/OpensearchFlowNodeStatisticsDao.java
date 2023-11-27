@@ -8,14 +8,13 @@ package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.entities.FlowNodeType;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.FlowNodeStatisticsDao;
 import io.camunda.operate.webapp.api.v1.entities.FlowNodeStatistics;
+import io.camunda.operate.webapp.opensearch.OpensearchAggregationDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -29,46 +28,48 @@ import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.FLOW_
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.INCIDENT;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.STATE;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TYPE;
-import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.termAggregation;
-import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.withSubaggregations;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.constantScore;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.not;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.withTenantCheck;
-import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
-import static io.camunda.operate.util.ElasticsearchUtil.TERMS_AGG_SIZE;
 
 @Conditional(OpensearchCondition.class)
 @Component
-public class OpensearchFlowNodeStatisticsDao extends OpensearchDao implements FlowNodeStatisticsDao {
-  @Autowired
-  private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+public class OpensearchFlowNodeStatisticsDao implements FlowNodeStatisticsDao {
+  private final FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+  private final RichOpenSearchClient richOpenSearchClient;
+  private final OpensearchQueryDSLWrapper queryDSLWrapper;
+  private final OpensearchRequestDSLWrapper requestDSLWrapper;
+  private final OpensearchAggregationDSLWrapper aggregationDSLWrapper;
 
-  public OpensearchFlowNodeStatisticsDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper, RichOpenSearchClient richOpenSearchClient, OperateProperties operateProperties) {
-    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient, operateProperties);
+  private static final int TERMS_AGG_SIZE = 10000;
+
+  public OpensearchFlowNodeStatisticsDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
+                                         OpensearchAggregationDSLWrapper aggregationDSLWrapper,
+                                         RichOpenSearchClient richOpenSearchClient, FlowNodeInstanceTemplate flowNodeInstanceTemplate) {
+    this.flowNodeInstanceTemplate = flowNodeInstanceTemplate;
+    this.richOpenSearchClient = richOpenSearchClient;
+    this.queryDSLWrapper = queryDSLWrapper;
+    this.requestDSLWrapper = requestDSLWrapper;
+    this.aggregationDSLWrapper = aggregationDSLWrapper;
   }
 
   @Override
   public List<FlowNodeStatistics> getFlowNodeStatisticsForProcessInstance(Long processInstanceKey) {
-    var requestBuilder = searchRequestBuilder(flowNodeInstanceTemplate)
-      .query(withTenantCheck(constantScore(term(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey))))
-      .aggregations(FLOW_NODE_ID_AGG, withSubaggregations(
-        termAggregation(FLOW_NODE_ID, TERMS_AGG_SIZE),
+    var requestBuilder = requestDSLWrapper.searchRequestBuilder(flowNodeInstanceTemplate)
+      .query(queryDSLWrapper.withTenantCheck(queryDSLWrapper.constantScore(queryDSLWrapper.term(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKey))))
+      .aggregations(FLOW_NODE_ID_AGG, aggregationDSLWrapper.withSubaggregations(
+        aggregationDSLWrapper.termAggregation(FLOW_NODE_ID, TERMS_AGG_SIZE),
         Map.of(
-              COUNT_INCIDENT, term(INCIDENT, true)._toAggregation(),
-              COUNT_CANCELED, and(
-                not(term(TYPE, FlowNodeType.MULTI_INSTANCE_BODY.name())),
-                term(STATE, TERMINATED.name())
+              COUNT_INCIDENT, queryDSLWrapper.term(INCIDENT, true)._toAggregation(),
+              COUNT_CANCELED, queryDSLWrapper.and(
+                queryDSLWrapper.not(queryDSLWrapper.term(TYPE, FlowNodeType.MULTI_INSTANCE_BODY.name())),
+                queryDSLWrapper.term(STATE, TERMINATED.name())
               )._toAggregation(),
-              COUNT_COMPLETED, and(
-                not(term(TYPE, FlowNodeType.MULTI_INSTANCE_BODY.name())),
-                term(STATE, COMPLETED.name())
+              COUNT_COMPLETED, queryDSLWrapper.and(
+                queryDSLWrapper.not(queryDSLWrapper.term(TYPE, FlowNodeType.MULTI_INSTANCE_BODY.name())),
+                queryDSLWrapper.term(STATE, COMPLETED.name())
               )._toAggregation(),
-              COUNT_ACTIVE, and(
-                not(term(TYPE, FlowNodeType.MULTI_INSTANCE_BODY.name())),
-                term(STATE, ACTIVE.name()),
-                term(INCIDENT, false)
+              COUNT_ACTIVE, queryDSLWrapper.and(
+                queryDSLWrapper.not(queryDSLWrapper.term(TYPE, FlowNodeType.MULTI_INSTANCE_BODY.name())),
+                queryDSLWrapper.term(STATE, ACTIVE.name()),
+                queryDSLWrapper.term(INCIDENT, false)
               )._toAggregation()
           )
         )

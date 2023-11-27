@@ -7,7 +7,6 @@
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.ProcessInstanceDao;
@@ -38,11 +37,13 @@ public class OpensearchProcessInstanceDao extends OpensearchKeyFilteringDao<Proc
 
   public OpensearchProcessInstanceDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
                                       ListViewTemplate processInstanceIndex, RichOpenSearchClient richOpenSearchClient,
-                                      ProcessInstanceWriter processInstanceWriter, OperateProperties operateProperties) {
-    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient, operateProperties);
+                                      ProcessInstanceWriter processInstanceWriter) {
+    super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.processInstanceIndex = processInstanceIndex;
     this.processInstanceWriter = processInstanceWriter;
   }
+
+
 
   @Override
   protected String getUniqueSortKey() {
@@ -60,7 +61,7 @@ public class OpensearchProcessInstanceDao extends OpensearchKeyFilteringDao<Proc
   }
 
   @Override
-  protected Class<ProcessInstance> getModelClass() {
+  protected Class<ProcessInstance> getInternalDocumentModelClass() {
     return ProcessInstance.class;
   }
 
@@ -111,7 +112,7 @@ public class OpensearchProcessInstanceDao extends OpensearchKeyFilteringDao<Proc
     SearchRequest.Builder request = requestDSLWrapper.searchRequestBuilder(getIndexName())
         .query(queryDSLWrapper.withTenantCheck(queryDSLWrapper.and(queryTerms)));
 
-    return richOpenSearchClient.doc().searchValues(request, getModelClass());
+    return richOpenSearchClient.doc().searchValues(request, getInternalDocumentModelClass());
   }
 
   @Override
@@ -155,5 +156,10 @@ public class OpensearchProcessInstanceDao extends OpensearchKeyFilteringDao<Proc
     }
 
     request.query(queryDSLWrapper.and(queryTerms));
+  }
+
+  @Override
+  protected ProcessInstance convertInternalToApiResult(ProcessInstance internalResult) {
+    return internalResult;
   }
 }
