@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
+import io.camunda.zeebe.protocol.record.value.BpmnEventType;
+
 public class ExecutableIntermediateThrowEvent extends ExecutableFlowNode
     implements ExecutableJobWorkerElement {
 
@@ -60,7 +62,8 @@ public class ExecutableIntermediateThrowEvent extends ExecutableFlowNode
     return !isMessageThrowEvent()
         && !isLinkThrowEvent()
         && !isEscalationThrowEvent()
-        && !isSignalThrowEvent();
+        && !isSignalThrowEvent()
+        && !isCompensationEvent();
   }
 
   public boolean isMessageThrowEvent() {
@@ -77,5 +80,9 @@ public class ExecutableIntermediateThrowEvent extends ExecutableFlowNode
 
   public boolean isSignalThrowEvent() {
     return signal != null;
+  }
+
+  public boolean isCompensationEvent() {
+    return getEventType() == BpmnEventType.COMPENSATION;
   }
 }

@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.ClassRule;
@@ -46,8 +47,7 @@ public class CompensationEventExecutionTest {
 
     ENGINE.deployment().withXmlResource(process).deploy();
 
-    final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
     ENGINE.job().ofInstance(processInstanceKey).withType(Protocol.USER_TASK_JOB_TYPE).complete();
@@ -57,12 +57,30 @@ public class CompensationEventExecutionTest {
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceCompleted())
-        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .extracting(
+            r -> r.getValue().getBpmnElementType(),
+            Record::getIntent,
+            r -> r.getValue().getBpmnEventType())
         .containsSubsequence(
-            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
-                BpmnElementType.INTERMEDIATE_THROW_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
-            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+                BpmnElementType.USER_TASK,
+                ProcessInstanceIntent.ELEMENT_COMPLETED,
+                BpmnEventType.UNSPECIFIED),
+            tuple(
+                BpmnElementType.INTERMEDIATE_THROW_EVENT,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                BpmnEventType.COMPENSATION),
+            tuple(
+                BpmnElementType.INTERMEDIATE_THROW_EVENT,
+                ProcessInstanceIntent.ELEMENT_COMPLETED,
+                BpmnEventType.COMPENSATION),
+            tuple(
+                BpmnElementType.END_EVENT,
+                ProcessInstanceIntent.ELEMENT_COMPLETED,
+                BpmnEventType.NONE),
+            tuple(
+                BpmnElementType.PROCESS,
+                ProcessInstanceIntent.ELEMENT_COMPLETED,
+                BpmnEventType.UNSPECIFIED));
   }
 }
