@@ -103,6 +103,17 @@
           "type": "dashboard"
         },
         "type": "dashboard"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "enable": true,
+        "expr": "max(zeebe_cluster_changes_status{zeebe_cluster_changes_status=\"IN_PROGRESS\", namespace=~\"$namespace\", pod=~\"$pod\"}) > 0",
+        "iconColor": "light-blue",
+        "name": "Scaling",
+        "titleFormat": "Scaling"
       }
     ]
   },
