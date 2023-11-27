@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
@@ -43,10 +44,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.filter.util.ModelElementFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.camunda.optimize.service.es.filter.util.ModelElementFilterQueryUtil.createUserTaskFlowNodeTypeFilter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
@@ -126,7 +126,7 @@ public abstract class ProcessGroupByIdentity extends ProcessGroupByPart {
         .filter(Optional::isPresent)
         .map(Optional::get)
         .map(ProcessDefinitionOptimizeDto.class::cast)
-        .collect(Collectors.toList())
+        .toList()
     ).keySet();
   }
 
@@ -141,11 +141,19 @@ public abstract class ProcessGroupByIdentity extends ProcessGroupByPart {
         distributedByPart.retrieveResult(response, identityBucket.getAggregations(), context);
 
       if (GROUP_BY_IDENTITY_MISSING_KEY.equals(key)) {
-        distributedByResults.forEach(result -> result.getViewResult().getViewMeasures().forEach(measure -> {
-          if (AggregationType.SUM.equals(measure.getAggregationType()) && (measure.getValue() != null && measure.getValue() == 0)) {
-            measure.setValue(null);
-          }
-        }));
+        distributedByResults.forEach(result ->
+           result.getViewResult()
+             .getViewMeasures()
+             .forEach(measure ->
+               Optional.ofNullable(measure.getAggregationType())
+               .map(AggregationDto::getType)
+               .ifPresent(aggregationType -> {
+                 if (AggregationType.SUM.equals(aggregationType) &&
+                     (measure.getValue() != null && measure.getValue() == 0)) {
+                   measure.setValue(null);
+                 }
+               }))
+        );
       }
 
       // ensure missing identity bucket is excluded if its empty
