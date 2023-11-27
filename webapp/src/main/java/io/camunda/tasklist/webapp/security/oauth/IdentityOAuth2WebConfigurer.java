@@ -9,7 +9,7 @@ package io.camunda.tasklist.webapp.security.oauth;
 import static io.camunda.tasklist.webapp.security.BaseWebConfigurer.sendJSONErrorMessage;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.IDENTITY_AUTH_PROFILE;
 
-import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.identity.sdk.IdentityConfiguration;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -39,7 +39,7 @@ public class IdentityOAuth2WebConfigurer {
 
   @Autowired private Environment env;
 
-  @Autowired private TasklistProperties tasklistProperties;
+  @Autowired private IdentityConfiguration identityConfiguration;
 
   @Autowired private IdentityJwt2AuthenticationTokenConverter jwtConverter;
 
@@ -59,7 +59,7 @@ public class IdentityOAuth2WebConfigurer {
   }
 
   private String getJwkSetUriProperty() {
-    return tasklistProperties.getIdentity().getIssuerBackendUrl() + JWKS_PATH;
+    return identityConfiguration.getIssuerBackendUrl() + JWKS_PATH;
   }
 
   private void authenticationFailure(

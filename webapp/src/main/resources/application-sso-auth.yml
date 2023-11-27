@@ -1,0 +1,4 @@
+camunda:
+  identity:
+    type: AUTH0
+    baseUrl: ${camunda.tasklist.identity.baseUrl:}

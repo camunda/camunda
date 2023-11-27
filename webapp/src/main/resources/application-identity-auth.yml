@@ -1,0 +1,18 @@
+spring:
+  config:
+    activate:
+      on-profile: "identity-auth"
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${camunda.identity.issuer:${camunda.tasklist.identity.issuerUrl:}}
+# Fallback Identity configuration for deprecated env variable naming
+camunda:
+  identity:
+    issuer: ${camunda.tasklist.identity.issuerUrl:}
+    issuerBackendUrl: ${camunda.tasklist.identity.issuerBackendUrl:}
+    clientId: ${camunda.tasklist.identity.clientId:}
+    clientSecret: ${camunda.tasklist.identity.clientSecret:}
+    audience: ${camunda.tasklist.identity.audience:}
+    baseUrl: ${camunda.tasklist.identity.baseUrl:}

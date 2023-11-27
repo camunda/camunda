@@ -11,6 +11,7 @@ import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.UserDetails;
+import io.camunda.identity.sdk.authentication.exception.TokenDecodeException;
 import io.camunda.identity.sdk.impl.rest.exception.RestException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.SpringContextHolder;
@@ -101,10 +102,18 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   }
 
   private boolean hasRefreshTokenExpired() {
-    final DecodedJWT refreshToken =
-        getIdentity().authentication().decodeJWT(tokens.getRefreshToken());
-    final Date refreshTokenExpiresAt = refreshToken.getExpiresAt();
-    return refreshTokenExpiresAt == null || refreshTokenExpiresAt.before(new Date());
+    try {
+      final DecodedJWT refreshToken =
+          getIdentity().authentication().decodeJWT(tokens.getRefreshToken());
+      final Date refreshTokenExpiresAt = refreshToken.getExpiresAt();
+      LOGGER.info("Refresh token will expire at {}", refreshTokenExpiresAt);
+      return refreshTokenExpiresAt == null || refreshTokenExpiresAt.before(new Date());
+    } catch (final TokenDecodeException e) {
+      LOGGER.info(
+          "Refresh token is not a JWT and expire date can not be determined. Error message: {}",
+          e.getMessage());
+      return false;
+    }
   }
 
   @Override

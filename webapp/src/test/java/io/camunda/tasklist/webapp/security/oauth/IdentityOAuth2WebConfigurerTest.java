@@ -6,10 +6,14 @@
  */
 package io.camunda.tasklist.webapp.security.oauth;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import io.camunda.tasklist.property.IdentityProperties;
-import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.identity.sdk.IdentityConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -22,7 +26,7 @@ class IdentityOAuth2WebConfigurerTest {
 
   @Mock private Environment environment;
 
-  @Mock private TasklistProperties tasklistProperties;
+  @Mock private IdentityConfiguration identityConfiguration;
 
   @InjectMocks private IdentityOAuth2WebConfigurer webConfigurer;
 
@@ -40,9 +44,7 @@ class IdentityOAuth2WebConfigurerTest {
     when(environment.getProperty(
             IdentityOAuth2WebConfigurer.SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI))
         .thenReturn("https://example.com/jwks");
-    when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
-    when(tasklistProperties.getIdentity().getIssuerBackendUrl())
-        .thenReturn("https://example.com/identity");
+    when(identityConfiguration.getIssuerBackendUrl()).thenReturn("https://example.com/identity");
 
     final HttpSecurity httpSecurity = mock(HttpSecurity.class);
 
