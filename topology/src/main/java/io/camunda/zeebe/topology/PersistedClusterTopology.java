@@ -40,6 +40,7 @@ final class PersistedClusterTopology {
         serializedTopology,
         StandardOpenOption.CREATE,
         StandardOpenOption.WRITE,
+        StandardOpenOption.TRUNCATE_EXISTING,
         StandardOpenOption.DSYNC);
 
     this.clusterTopology = clusterTopology;
