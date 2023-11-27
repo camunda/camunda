@@ -257,7 +257,7 @@ public class DefaultRaftServer implements RaftServer {
     }
   }
 
-  private class StartedStateListener implements Consumer<State> {
+  private final class StartedStateListener implements Consumer<State> {
 
     private final RaftServer raftServer;
 
