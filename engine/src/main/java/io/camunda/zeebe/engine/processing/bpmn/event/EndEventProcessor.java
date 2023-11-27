@@ -34,7 +34,8 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
           new MessageEndEventBehavior(),
           new TerminateEndEventBehavior(),
           new EscalationEndEventBehavior(),
-          new SignalEndEventBehavior());
+          new SignalEndEventBehavior(),
+          new CompensationBehaviour());
 
   private final ExpressionProcessor expressionProcessor;
   private final BpmnEventPublicationBehavior eventPublicationBehavior;
@@ -308,6 +309,31 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
       variableMappingBehavior
           .applyOutputMappings(completing, element)
           .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, completing))
+          .ifRightOrLeft(
+              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
+              failure -> incidentBehavior.createIncident(failure, completing));
+    }
+  }
+
+  private final class CompensationBehaviour implements EndEventBehavior {
+
+    @Override
+    public boolean isSuitableForEvent(final ExecutableEndEvent element) {
+      return element.isCompensationEvent();
+    }
+
+    @Override
+    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
+      final var activated =
+          stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
+      final var completing = stateTransitionBehavior.transitionToCompleting(activated);
+      onComplete(element, completing);
+    }
+
+    @Override
+    public void onComplete(final ExecutableEndEvent element, final BpmnElementContext completing) {
+      stateTransitionBehavior
+          .transitionToCompleted(element, completing)
           .ifRightOrLeft(
               completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
               failure -> incidentBehavior.createIncident(failure, completing));
