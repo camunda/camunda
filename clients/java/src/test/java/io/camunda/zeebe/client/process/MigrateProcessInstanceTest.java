@@ -140,11 +140,32 @@ public class MigrateProcessInstanceTest extends ClientTest {
     Assertions.assertThatThrownBy(
             () ->
                 client
-                    .newModifyProcessInstanceCommand(PI_KEY)
-                    .activateElement(ELEMENT_ID_A)
-                    .withVariable(null, null)
+                    .newMigrateProcessInstanceCommand(PI_KEY)
+                    .migrationPlan(PD_KEY)
+                    .addMappingInstruction(null, null)
                     .send()
                     .join())
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void
+      shouldThrowErrorWhenTryToMigrateProcessInstanceWithNullMappingInstructionInMigrationPlan() {
+    // when
+    Assertions.assertThatThrownBy(
+            () -> {
+              final MigrationPlan migrationPlan =
+                  MigrationPlan.newBuilder()
+                      .withTargetProcessDefinitionKey(PD_KEY)
+                      .addMappingInstruction(null, null)
+                      .build();
+
+              client
+                  .newMigrateProcessInstanceCommand(PI_KEY)
+                  .migrationPlan(migrationPlan)
+                  .send()
+                  .join();
+            })
         .isInstanceOf(IllegalArgumentException.class);
   }
 

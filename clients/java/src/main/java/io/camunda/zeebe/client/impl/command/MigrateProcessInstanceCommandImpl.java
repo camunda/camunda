@@ -70,10 +70,9 @@ public final class MigrateProcessInstanceCommandImpl
         migrationPlan.getMappingInstructions().stream()
             .map(
                 mappingInstruction ->
-                    MappingInstruction.newBuilder()
-                        .setSourceElementId(mappingInstruction.getSourceElementId())
-                        .setTargetElementId(mappingInstruction.getTargetElementId())
-                        .build())
+                    buildMappingInstruction(
+                        mappingInstruction.getSourceElementId(),
+                        mappingInstruction.getTargetElementId()))
             .collect(Collectors.toList());
     requestBuilder.setMigrationPlan(
         MigrateProcessInstanceRequest.MigrationPlan.newBuilder()
@@ -87,11 +86,7 @@ public final class MigrateProcessInstanceCommandImpl
       final String sourceElementId, final String targetElementId) {
     requestBuilder
         .getMigrationPlanBuilder()
-        .addMappingInstructions(
-            MappingInstruction.newBuilder()
-                .setSourceElementId(sourceElementId)
-                .setTargetElementId(targetElementId)
-                .build());
+        .addMappingInstructions(buildMappingInstruction(sourceElementId, targetElementId));
     return this;
   }
 
@@ -125,5 +120,16 @@ public final class MigrateProcessInstanceCommandImpl
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .migrateProcessInstance(request, streamObserver);
+  }
+
+  private MappingInstruction buildMappingInstruction(
+      final String sourceElementId, final String targetElementId) {
+    ArgumentUtil.ensureNotNull("sourceElementId", sourceElementId);
+    ArgumentUtil.ensureNotNull("targetElementId", targetElementId);
+
+    return MappingInstruction.newBuilder()
+        .setSourceElementId(sourceElementId)
+        .setTargetElementId(targetElementId)
+        .build();
   }
 }
