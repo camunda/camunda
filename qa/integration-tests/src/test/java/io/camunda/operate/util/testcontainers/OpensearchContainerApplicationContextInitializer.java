@@ -14,8 +14,8 @@ import org.springframework.context.ConfigurableApplicationContext;
 import java.util.Map;
 
 public class OpensearchContainerApplicationContextInitializer extends AbstractContainerApplicationContextInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
-  private static OpensearchContainer opensearch =
-    new OpensearchContainer(getDockerImageName("testcontainers.opensearch"))
+  private static OpensearchContainer<?> opensearch =
+    new OpensearchContainer<>(getDockerImageName("testcontainers.opensearch"))
       .withEnv(Map.of()).withExposedPorts(9200);
 
   @Override public void initialize(ConfigurableApplicationContext applicationContext) {

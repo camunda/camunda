@@ -11,7 +11,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.1.5</version>
+    <version>3.1.6</version>
   </parent>
 
   <modules>
@@ -55,7 +55,7 @@
     <!-- Library versions not provided by spring boot -->
     <version.zeebe>8.4.0-alpha1</version.zeebe>
     <version.identity>8.4.0-alpha1</version.identity>
-    <version.elasticsearch>7.17.13</version.elasticsearch>
+    <version.elasticsearch>7.17.15</version.elasticsearch>
     <version.opensearch>2.5.0</version.opensearch>
     <version.springdoc>2.2.0</version.springdoc>
     <version.jakarta.json>2.0.1</version.jakarta.json>
@@ -63,9 +63,9 @@
     <version.yarn>v1.22.10</version.yarn>
     <version.failsafe>2.4.4</version.failsafe>
     <version.log4j.testjar>2.17.2</version.log4j.testjar>
-    <version.awssdk>2.21.25</version.awssdk>
+    <version.awssdk>2.21.30</version.awssdk>
     <zeebe-test-container.version>3.6.0</zeebe-test-container.version>
-    <elasticsearch-test-container.version>1.19.2</elasticsearch-test-container.version>
+    <elasticsearch-test-container.version>1.19.3</elasticsearch-test-container.version>
 
     <!-- Auth0 Dependencies -->
     <!-- If any of the following version changes, -->
@@ -199,13 +199,13 @@
       <dependency>
         <groupId>software.amazon.awssdk</groupId>
         <artifactId>auth</artifactId>
-        <version>2.21.23</version>
+        <version>${version.awssdk}</version>
       </dependency>
 
       <dependency>
         <groupId>com.amazonaws</groupId>
         <artifactId>aws-java-sdk-sts</artifactId>
-        <version>1.12.591</version>
+        <version>1.12.598</version>
       </dependency>
 
       <dependency>
