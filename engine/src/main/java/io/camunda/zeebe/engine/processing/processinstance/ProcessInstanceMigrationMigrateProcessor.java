@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -17,6 +18,7 @@ import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
@@ -31,8 +33,14 @@ import java.util.stream.Collectors;
 public class ProcessInstanceMigrationMigrateProcessor
     implements TypedRecordProcessor<ProcessInstanceMigrationRecord> {
 
+  private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
+      "Expected to migrate process instance but no process instance found with key '%d'";
+  private static final String ERROR_MESSAGE_PROCESS_DEFINITION_NOT_FOUND =
+      "Expected to migrate process instance to process definition but no process definition found with key '%d'";
+
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
+  private final TypedRejectionWriter rejectionWriter;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
   private final JobState jobState;
@@ -44,6 +52,7 @@ public class ProcessInstanceMigrationMigrateProcessor
       final JobState jobState) {
     stateWriter = writers.state();
     responseWriter = writers.response();
+    rejectionWriter = writers.rejection();
     this.elementInstanceState = elementInstanceState;
     this.processState = processState;
     this.jobState = jobState;
@@ -58,22 +67,22 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     final ElementInstance processInstance = elementInstanceState.getInstance(processInstanceKey);
     if (processInstance == null) {
-      // todo: we should reject the command explicitly
-      throw new IllegalArgumentException(
-          String.format(
-              "Expected to migrate process instance with key '%d', but process instance not found",
-              processInstanceKey));
+      final String reason =
+          String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, processInstanceKey);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
+      return;
     }
 
     final DeployedProcess processDefinition =
         processState.getProcessByKeyAndTenant(
             targetProcessDefinitionKey, processInstance.getValue().getTenantId());
     if (processDefinition == null) {
-      // todo: we should reject the command explicitly
-      throw new IllegalStateException(
-          String.format(
-              "Expected to migrate process instance with key '%d' to process definition with key '%d', but process definition not found",
-              value.getProcessInstanceKey(), targetProcessDefinitionKey));
+      final String reason =
+          String.format(ERROR_MESSAGE_PROCESS_DEFINITION_NOT_FOUND, targetProcessDefinitionKey);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
+      return;
     }
 
     final Map<String, String> mappedElementIds =
