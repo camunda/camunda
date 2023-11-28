@@ -171,7 +171,11 @@ final class ScaleUpBrokersTest {
 
     // Add new broker to the cluster without moving partitions
     final var newBroker = createNewBroker(newClusterSize, newBrokerId, Optional.of(dataDirectory));
-    ClusterActuator.of(cluster.availableGateway()).addBroker(newBrokerId);
+    final var brokerAdded = ClusterActuator.of(cluster.availableGateway()).addBroker(newBrokerId);
+    Awaitility.await()
+        .timeout(Duration.ofMinutes(2))
+        .untilAsserted(
+            () -> ClusterActuatorAssert.assertThat(cluster).hasAppliedChanges(brokerAdded));
 
     // when
     newBroker.stop();
