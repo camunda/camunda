@@ -56,7 +56,6 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
 
     transformAssignmentDefinition(element, userTaskProperties);
     transformTaskSchedule(element, userTaskProperties);
-    transformTaskHeaders(element, userTaskProperties);
     transformTaskFormId(element, userTaskProperties);
 
     if (isZeebeUserTask) {
@@ -66,6 +65,7 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
       jobWorkerProperties.wrap(userTaskProperties);
 
       transformTaskDefinition(jobWorkerProperties);
+      transformTaskHeaders(element, jobWorkerProperties);
       userTask.setJobWorkerProperties(jobWorkerProperties);
     }
   }
@@ -85,6 +85,55 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     transformAssignee(userTaskProperties, assignmentDefinition);
     transformCandidateGroups(userTaskProperties, assignmentDefinition);
     transformCandidateUsers(userTaskProperties, assignmentDefinition);
+  }
+
+  private void transformTaskHeaders(
+      final UserTask element, final JobWorkerProperties jobWorkerProperties) {
+    final Map<String, String> taskHeaders = new HashMap<>();
+
+    collectModelTaskHeaders(element, taskHeaders);
+    addZeebeUserTaskFormKeyHeader(element, taskHeaders);
+
+    if (!taskHeaders.isEmpty()) {
+      jobWorkerProperties.setTaskHeaders(taskHeaders);
+    }
+  }
+
+  private void addZeebeUserTaskFormKeyHeader(
+      final UserTask element, final Map<String, String> taskHeaders) {
+    final ZeebeFormDefinition formDefinition =
+        element.getSingleExtensionElement(ZeebeFormDefinition.class);
+
+    if (formDefinition != null && formDefinition.getFormKey() != null) {
+      taskHeaders.put(Protocol.USER_TASK_FORM_KEY_HEADER_NAME, formDefinition.getFormKey());
+    }
+  }
+
+  private void collectModelTaskHeaders(
+      final UserTask element, final Map<String, String> taskHeaders) {
+    final ZeebeTaskHeaders modelTaskHeaders =
+        element.getSingleExtensionElement(ZeebeTaskHeaders.class);
+
+    if (modelTaskHeaders != null) {
+      final List<ZeebeHeader> validHeaders =
+          modelTaskHeaders.getHeaders().stream().filter(this::isValidHeader).toList();
+
+      if (validHeaders.size() < modelTaskHeaders.getHeaders().size()) {
+        LOG.warn(
+            "Ignoring invalid headers for task '{}'. Must have non-empty key and value.",
+            element.getName());
+      }
+
+      validHeaders.forEach(h -> taskHeaders.put(h.getKey(), h.getValue()));
+    }
+  }
+
+  private boolean isValidHeader(final ZeebeHeader header) {
+    return header != null && isValidHeader(header.getKey(), header.getValue());
+  }
+
+  private boolean isValidHeader(final String key, final String value) {
+    return key != null && !key.isEmpty() && value != null && !value.isEmpty();
   }
 
   private void transformAssignee(
@@ -164,19 +213,6 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     }
   }
 
-  private void transformTaskHeaders(
-      final UserTask element, final UserTaskProperties userTaskProperties) {
-    final Map<String, String> taskHeaders = new HashMap<>();
-
-    collectModelTaskHeaders(element, taskHeaders);
-
-    addZeebeUserTaskFormKeyHeader(element, taskHeaders);
-
-    if (!taskHeaders.isEmpty()) {
-      userTaskProperties.setTaskHeaders(taskHeaders);
-    }
-  }
-
   private void transformTaskFormId(
       final UserTask element, final UserTaskProperties userTaskProperties) {
     final ZeebeFormDefinition formDefinition =
@@ -185,42 +221,5 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     if (formDefinition != null && formDefinition.getFormId() != null) {
       userTaskProperties.setFormId(expressionLanguage.parseExpression(formDefinition.getFormId()));
     }
-  }
-
-  private void addZeebeUserTaskFormKeyHeader(
-      final UserTask element, final Map<String, String> taskHeaders) {
-    final ZeebeFormDefinition formDefinition =
-        element.getSingleExtensionElement(ZeebeFormDefinition.class);
-
-    if (formDefinition != null && formDefinition.getFormKey() != null) {
-      taskHeaders.put(Protocol.USER_TASK_FORM_KEY_HEADER_NAME, formDefinition.getFormKey());
-    }
-  }
-
-  private void collectModelTaskHeaders(
-      final UserTask element, final Map<String, String> taskHeaders) {
-    final ZeebeTaskHeaders modelTaskHeaders =
-        element.getSingleExtensionElement(ZeebeTaskHeaders.class);
-
-    if (modelTaskHeaders != null) {
-      final List<ZeebeHeader> validHeaders =
-          modelTaskHeaders.getHeaders().stream().filter(this::isValidHeader).toList();
-
-      if (validHeaders.size() < modelTaskHeaders.getHeaders().size()) {
-        LOG.warn(
-            "Ignoring invalid headers for task '{}'. Must have non-empty key and value.",
-            element.getName());
-      }
-
-      validHeaders.forEach(h -> taskHeaders.put(h.getKey(), h.getValue()));
-    }
-  }
-
-  private boolean isValidHeader(final ZeebeHeader header) {
-    return header != null && isValidHeader(header.getKey(), header.getValue());
-  }
-
-  private boolean isValidHeader(final String key, final String value) {
-    return key != null && !key.isEmpty() && value != null && !value.isEmpty();
   }
 }

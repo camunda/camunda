@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
 import io.camunda.zeebe.el.Expression;
+import java.util.Map;
 
 /**
  * The properties of an element that is based on a job and should be processed by a job worker. For
@@ -17,6 +18,8 @@ public class JobWorkerProperties extends UserTaskProperties {
 
   private Expression type;
   private Expression retries;
+
+  private Map<String, String> taskHeaders = Map.of();
 
   public Expression getType() {
     return type;
@@ -32,5 +35,13 @@ public class JobWorkerProperties extends UserTaskProperties {
 
   public void setRetries(final Expression retries) {
     this.retries = retries;
+  }
+
+  public Map<String, String> getTaskHeaders() {
+    return taskHeaders;
+  }
+
+  public void setTaskHeaders(final Map<String, String> taskHeaders) {
+    this.taskHeaders = taskHeaders;
   }
 }
