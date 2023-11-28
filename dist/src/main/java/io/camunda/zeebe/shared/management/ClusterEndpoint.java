@@ -50,6 +50,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,12 +80,15 @@ public class ClusterEndpoint {
     try {
       return mapClusterTopologyResponse(requestSender.getTopology().join());
     } catch (final Exception error) {
-      return mapError(error.getCause());
+      return mapError(error);
     }
   }
 
   private ResponseEntity<Error> mapError(final Throwable error) {
-    // TODO: Map error to proper HTTP status code as defined in spec
+    if (error instanceof CompletionException) {
+      return mapError(error.getCause());
+    }
+
     final var errorResponse = new Error();
     errorResponse.setMessage(error.getMessage());
     final int status =
@@ -98,7 +102,6 @@ public class ClusterEndpoint {
   }
 
   private ResponseEntity<Error> invalidRequest(final String message) {
-    // TODO: Map error to proper HTTP status code as defined in spec
     final var errorResponse = new Error();
     errorResponse.setMessage(message);
     return ResponseEntity.status(400).body(errorResponse);
@@ -157,7 +160,7 @@ public class ClusterEndpoint {
     } catch (final NumberFormatException ignore) {
       return invalidRequest("Change id must be a number");
     } catch (final Exception error) {
-      return mapError(error.getCause());
+      return mapError(error);
     }
   }
 
@@ -190,7 +193,7 @@ public class ClusterEndpoint {
               .join();
       return mapOperationResponse(response);
     } catch (final Exception error) {
-      return mapError(error.getCause());
+      return mapError(error);
     }
   }
 
