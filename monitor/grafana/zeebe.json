@@ -19054,7 +19054,7 @@
               "refId": "A"
             }
           ],
-          "title": "Failed Operations",
+          "title": "Number of Failed Operations",
           "type": "table"
         },
         {
@@ -19247,7 +19247,7 @@
               "refId": "A"
             }
           ],
-          "title": "Applied Operations",
+          "title": "Number of Applied Operations",
           "type": "table"
         }
       ],
