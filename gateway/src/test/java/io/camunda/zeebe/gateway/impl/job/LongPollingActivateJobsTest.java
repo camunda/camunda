@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.gateway.api.job;
+package io.camunda.zeebe.gateway.impl.job;
 
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,6 +20,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.gateway.RequestMapper;
+import io.camunda.zeebe.gateway.api.job.ActivateJobsStub;
+import io.camunda.zeebe.gateway.api.job.FailJobStub;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient.RequestHandler;
 import io.camunda.zeebe.gateway.cmd.BrokerRejectionException;
@@ -31,8 +33,6 @@ import io.camunda.zeebe.gateway.impl.broker.response.BrokerErrorResponse;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerRejection;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerRejectionResponse;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.camunda.zeebe.gateway.impl.job.InflightActivateJobsRequest;
-import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
@@ -109,7 +109,7 @@ public final class LongPollingActivateJobsTest {
     final InflightActivateJobsRequest request = getLongPollingActivateJobsRequest();
 
     // when
-    handler.activateJobs(request);
+    handler.internalActivateJobsRetry(request);
 
     // then
     waitUntil(request::hasScheduledTimer);
@@ -122,7 +122,7 @@ public final class LongPollingActivateJobsTest {
     final InflightActivateJobsRequest request = getLongPollingActivateJobsRequest();
     final StreamObserver<ActivateJobsResponse> responseSpy = request.getResponseObserver();
 
-    handler.activateJobs(request);
+    handler.internalActivateJobsRetry(request);
 
     // when
     waitUntil(request::hasScheduledTimer);
@@ -154,7 +154,7 @@ public final class LongPollingActivateJobsTest {
 
     // when
     final InflightActivateJobsRequest request = getLongPollingActivateJobsRequest();
-    handler.activateJobs(request);
+    handler.internalActivateJobsRetry(request);
     waitUntil(request::hasScheduledTimer);
 
     // then
@@ -193,7 +193,7 @@ public final class LongPollingActivateJobsTest {
     final InflightActivateJobsRequest longPollingRequest = getLongPollingActivateJobsRequest();
 
     // when
-    handler.activateJobs(longPollingRequest);
+    handler.internalActivateJobsRetry(longPollingRequest);
     waitUntil(longPollingRequest::hasScheduledTimer);
     actorClock.addTime(Duration.ofMillis(LONG_POLLING_TIMEOUT));
     waitUntil(longPollingRequest::isTimedOut);
@@ -214,7 +214,7 @@ public final class LongPollingActivateJobsTest {
     final InflightActivateJobsRequest successRequest = getLongPollingActivateJobsRequest();
     activateJobsStub.addAvailableJobs(TYPE, 1);
     brokerClient.notifyJobsAvailable(TYPE);
-    handler.activateJobs(successRequest);
+    handler.internalActivateJobsRetry(successRequest);
     Awaitility.await().until(successRequest::isCompleted);
 
     // then
@@ -232,7 +232,7 @@ public final class LongPollingActivateJobsTest {
 
     // when
     final InflightActivateJobsRequest otherRequest = getLongPollingActivateJobsRequest(otherType);
-    handler.activateJobs(otherRequest);
+    handler.internalActivateJobsRetry(otherRequest);
     Awaitility.await().until(otherRequest::isCompleted);
 
     // then
@@ -252,7 +252,7 @@ public final class LongPollingActivateJobsTest {
     submitActorToActivateJobs(handler);
 
     final InflightActivateJobsRequest request = getLongPollingActivateJobsRequest();
-    handler.activateJobs(request);
+    handler.internalActivateJobsRetry(request);
     waitUntil(request::hasScheduledTimer);
 
     // when
@@ -303,7 +303,7 @@ public final class LongPollingActivateJobsTest {
             .build();
     final InflightActivateJobsRequest longPollingRequest = toInflightActivateJobsRequest(request);
 
-    handler.activateJobs(longPollingRequest);
+    handler.internalActivateJobsRetry(longPollingRequest);
     waitUntil(longPollingRequest::hasScheduledTimer);
     actorClock.addTime(Duration.ofMillis(requestTimeout));
     waitUntil(longPollingRequest::isTimedOut);
@@ -333,8 +333,8 @@ public final class LongPollingActivateJobsTest {
                 .setRequestTimeout(longTimeout)
                 .build());
 
-    handler.activateJobs(shortRequest);
-    handler.activateJobs(longRequest);
+    handler.internalActivateJobsRetry(shortRequest);
+    handler.internalActivateJobsRetry(longRequest);
     waitUntil(shortRequest::hasScheduledTimer);
     waitUntil(longRequest::hasScheduledTimer);
 
@@ -363,7 +363,7 @@ public final class LongPollingActivateJobsTest {
                 .build());
 
     // when
-    handler.activateJobs(request);
+    handler.internalActivateJobsRetry(request);
     Awaitility.await().until(request::isCompleted);
 
     // then
@@ -423,7 +423,7 @@ public final class LongPollingActivateJobsTest {
           }
         });
     // when
-    handler.activateJobs(request);
+    handler.internalActivateJobsRetry(request);
     waitUntil(request::isCompleted);
 
     // then
@@ -468,7 +468,7 @@ public final class LongPollingActivateJobsTest {
           }
         });
     // when
-    handler.activateJobs(request);
+    handler.internalActivateJobsRetry(request);
     Awaitility.await().until(request::isAborted);
 
     // then
@@ -516,7 +516,7 @@ public final class LongPollingActivateJobsTest {
           }
         });
     // when
-    handler.activateJobs(request);
+    handler.internalActivateJobsRetry(request);
 
     waitUntil(request::isCompleted);
 
@@ -556,10 +556,10 @@ public final class LongPollingActivateJobsTest {
     activateJobsStub.addAvailableJobs(TYPE, 3 * MAX_JOBS_TO_ACTIVATE);
 
     // when
-    handler.activateJobs(firstRequest);
-    handler.activateJobs(secondRequest);
-    handler.activateJobs(thirdRequest);
-    handler.activateJobs(fourthRequest);
+    handler.internalActivateJobsRetry(firstRequest);
+    handler.internalActivateJobsRetry(secondRequest);
+    handler.internalActivateJobsRetry(thirdRequest);
+    handler.internalActivateJobsRetry(fourthRequest);
 
     allRequestsSubmittedLatch.countDown();
     waitUntil(fourthRequest::hasScheduledTimer);
@@ -604,7 +604,7 @@ public final class LongPollingActivateJobsTest {
           }
         });
     // when
-    handler.activateJobs(request);
+    handler.internalActivateJobsRetry(request);
     waitUntil(request::hasScheduledTimer);
     brokerClient.notifyJobsAvailable(TYPE);
     Awaitility.await().until(request::isAborted);
@@ -645,7 +645,7 @@ public final class LongPollingActivateJobsTest {
           }
         });
     // when
-    handler.activateJobs(request);
+    handler.internalActivateJobsRetry(request);
     waitUntil(request::hasScheduledTimer);
     brokerClient.notifyJobsAvailable(TYPE);
     Awaitility.await().until(request::isAborted);
@@ -678,7 +678,7 @@ public final class LongPollingActivateJobsTest {
         });
 
     // when
-    handler.activateJobs(request);
+    handler.internalActivateJobsRetry(request);
 
     // then
     waitUntil(request::isCompleted);
@@ -699,7 +699,7 @@ public final class LongPollingActivateJobsTest {
         });
 
     // when
-    handler.activateJobs(request);
+    handler.internalActivateJobsRetry(request);
     waitUntil(request::hasScheduledTimer);
     actorClock.addTime(Duration.ofMillis(LONG_POLLING_TIMEOUT));
     waitUntil(request::isTimedOut);
@@ -726,7 +726,7 @@ public final class LongPollingActivateJobsTest {
     doReturn(responseNotSent).when(request).tryToSendActivatedJobs(any());
 
     // when
-    handler.activateJobs(request);
+    handler.internalActivateJobsRetry(request);
     waitUntil(request::isAborted);
 
     // then
@@ -751,7 +751,7 @@ public final class LongPollingActivateJobsTest {
     doThrow(sendResponseException).when(responseObserver).onNext(any());
 
     // when
-    handler.activateJobs(request);
+    handler.internalActivateJobsRetry(request);
     waitUntil(request::isAborted);
 
     // then
@@ -768,7 +768,7 @@ public final class LongPollingActivateJobsTest {
     doReturn(responseNotSent).when(request).tryToSendActivatedJobs(any());
 
     // when
-    handler.activateJobs(request);
+    handler.internalActivateJobsRetry(request);
     waitUntil(request::isAborted);
 
     // then
@@ -788,7 +788,7 @@ public final class LongPollingActivateJobsTest {
     doThrow(sendResponseException).when(responseObserver).onNext(any());
 
     // when
-    handler.activateJobs(request);
+    handler.internalActivateJobsRetry(request);
     waitUntil(request::isAborted);
 
     // then
@@ -824,7 +824,7 @@ public final class LongPollingActivateJobsTest {
         });
 
     // when
-    handler.activateJobs(request);
+    handler.internalActivateJobsRetry(request);
     waitUntil(request::isAborted);
 
     // then
@@ -862,7 +862,7 @@ public final class LongPollingActivateJobsTest {
         });
 
     // when
-    handler.activateJobs(request);
+    handler.internalActivateJobsRetry(request);
     waitUntil(request::isAborted);
 
     // then
@@ -901,7 +901,7 @@ public final class LongPollingActivateJobsTest {
         };
 
     // when
-    handler.activateJobs(request);
+    handler.internalActivateJobsRetry(request);
     waitUntil(request::isAborted);
 
     // then
@@ -932,7 +932,7 @@ public final class LongPollingActivateJobsTest {
         .map(
             i -> {
               final InflightActivateJobsRequest request = getLongPollingActivateJobsRequest();
-              handler.activateJobs(request);
+              handler.internalActivateJobsRetry(request);
               waitUntil(request::hasScheduledTimer);
               return request;
             })
