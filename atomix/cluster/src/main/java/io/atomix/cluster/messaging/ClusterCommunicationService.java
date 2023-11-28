@@ -194,8 +194,8 @@ public interface ClusterCommunicationService {
    *
    * @param subject message subject
    * @param decoder decoder to deserializing incoming message
-   * @param handler handler for handling message, receiving the sender's member ID and the decoded
-   *     message
+   * @param handler handler receives the decoded message and returns a future which is completed
+   *     with the reply (which will be encoded using the given encoder)
    * @param encoder to serialize the outgoing reply
    * @param executor executor to run this handler on
    * @param <M> incoming message type
