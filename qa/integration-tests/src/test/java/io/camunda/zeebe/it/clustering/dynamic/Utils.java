@@ -40,7 +40,7 @@ final class Utils {
   }
 
   static PostOperationResponse scale(final TestCluster cluster, final int newClusterSize) {
-    final var actuator = ClusterActuator.of(cluster.availableGateway());
+    final var actuator = ClusterActuator.of(cluster.anyGateway());
     final var newBrokerSet = IntStream.range(0, newClusterSize).boxed().toList();
 
     // when
