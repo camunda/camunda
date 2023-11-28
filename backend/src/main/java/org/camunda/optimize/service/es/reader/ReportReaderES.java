@@ -47,15 +47,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.COLLECTION_ID;
-import static org.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.DATA;
-import static org.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.REPORTS;
-import static org.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.REPORT_ITEM_ID;
-import static org.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.MANAGEMENT_REPORT;
 import static org.camunda.optimize.service.db.DatabaseConstants.COMBINED_REPORT_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.COLLECTION_ID;
+import static org.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.DATA;
+import static org.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.REPORTS;
+import static org.camunda.optimize.service.db.schema.index.report.CombinedReportIndex.REPORT_ITEM_ID;
+import static org.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.INSTANT_PREVIEW_REPORT;
+import static org.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.MANAGEMENT_REPORT;
 import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -187,10 +188,12 @@ public class ReportReaderES implements ReportReader {
   @Override
   public List<ReportDefinitionDto> getAllPrivateReportsOmitXml() {
     log.debug("Fetching all available private reports");
-    QueryBuilder qb = boolQuery().mustNot(existsQuery(COLLECTION_ID))
-      .minimumShouldMatch(1)
-      .should(boolQuery().must(termQuery(DATA + "." + MANAGEMENT_REPORT, false)))
-      .should(boolQuery().mustNot(existsQuery(DATA + "." + MANAGEMENT_REPORT)));
+
+    QueryBuilder qb =
+      boolQuery()
+        .mustNot(existsQuery(COLLECTION_ID))
+        .mustNot(termQuery(DATA + "." + MANAGEMENT_REPORT, true))
+        .mustNot(termQuery(DATA + "." + INSTANT_PREVIEW_REPORT, true));
     SearchResponse searchResponse = performGetReportRequestOmitXml(
       qb,
       ALL_REPORT_INDICES,
@@ -234,7 +237,9 @@ public class ReportReaderES implements ReportReader {
     if (ReportType.PROCESS.equals(reportType)) {
       countRequest = new CountRequest(
         new String[]{SINGLE_PROCESS_REPORT_INDEX_NAME},
-        termQuery(String.join(".", DATA, MANAGEMENT_REPORT), false)
+        boolQuery()
+          .mustNot(termQuery(DATA + "." + MANAGEMENT_REPORT, true))
+          .mustNot(termQuery(DATA + "." + INSTANT_PREVIEW_REPORT, true))
       );
     } else {
       countRequest = new CountRequest(SINGLE_DECISION_REPORT_INDEX_NAME);
@@ -305,10 +310,11 @@ public class ReportReaderES implements ReportReader {
   private List<ReportDefinitionDto> getReportsForCollection(final String collectionId, final boolean includeXml) {
     log.debug("Fetching reports using collection with id {}", collectionId);
 
-    QueryBuilder qb = boolQuery().must(termQuery(COLLECTION_ID, collectionId))
-      .minimumShouldMatch(1)
-      .should(boolQuery().must(termQuery(DATA + "." + MANAGEMENT_REPORT, false)))
-      .should(boolQuery().mustNot(existsQuery(DATA + "." + MANAGEMENT_REPORT)));
+    QueryBuilder qb =
+      boolQuery()
+        .must(termQuery(COLLECTION_ID, collectionId))
+        .mustNot(termQuery(DATA + "." + MANAGEMENT_REPORT, true))
+        .mustNot(termQuery(DATA + "." + INSTANT_PREVIEW_REPORT, true));
     SearchRequest searchRequest;
     final String[] indices = {
       COMBINED_REPORT_INDEX_NAME,

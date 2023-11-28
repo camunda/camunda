@@ -53,8 +53,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static java.util.stream.Collectors.toList;
-
 @Component
 @Slf4j
 @AllArgsConstructor
@@ -106,7 +104,7 @@ public class KpiService {
     for (SingleProcessReportDefinitionRequestDto report : currentKpiReports) {
       // If the most recent results don't include one of the current KPI reports, we exclude it from the results
       if (lastKpiEvaluationResults.containsKey(report.getId())) {
-        ReportRestMapper.localizeReportNames(report, locale, localizationService);
+        ReportRestMapper.localizeReportData(report, locale, localizationService);
         KpiResultDto kpiResponseDto = new KpiResultDto();
         kpiResponseDto.setValue(lastKpiEvaluationResults.get(report.getId()));
         getTargetAndUnit(report)
