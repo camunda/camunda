@@ -191,7 +191,7 @@ describe('<FormModal />', () => {
     ).toBeInTheDocument();
     expect(
       within(screen.getByRole('alert')).getByText(
-        'We were not able to load the form. Please check your connection and try again later.',
+        'We were not able to load the form. Please try again or contact your Tasklist administrator.',
       ),
     ).toBeInTheDocument();
   });

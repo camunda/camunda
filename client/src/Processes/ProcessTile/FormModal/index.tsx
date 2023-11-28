@@ -210,8 +210,7 @@ const FormModal: React.FC<Props> = ({
                 hideCloseButton
                 lowContrast
                 title="Something went wrong"
-                subtitle="We were not able to load the form. Please check your connection
-              and try again later."
+                subtitle="We were not able to load the form. Please try again or contact your Tasklist administrator."
               />
             ))
             .exhaustive()}
