@@ -312,7 +312,10 @@ public final class ZeebeClientImpl implements ZeebeClient {
   public MigrateProcessInstanceCommandStep1 newMigrateProcessInstanceCommand(
       final long processInstanceKey) {
     return new MigrateProcessInstanceCommandImpl(
-        processInstanceKey, config.getDefaultRequestTimeout());
+        processInstanceKey,
+        asyncStub,
+        config.getDefaultRequestTimeout(),
+        credentialsProvider::shouldRetryRequest);
   }
 
   @Override

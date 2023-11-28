@@ -22,8 +22,9 @@ import io.camunda.zeebe.client.api.response.MigrateProcessInstanceResponse;
 public interface MigrateProcessInstanceCommandStep1 {
 
   /**
-   * Create a MigrationPlan (TODO - link to actual gRPC object) for the given target process
-   * definition key.
+   * Create a MigrationPlan {@link
+   * io.camunda.zeebe.gateway.protocol.GatewayOuterClass.MigrateProcessInstanceRequest.MigrationPlan}
+   * for the given target process definition key.
    *
    * @param targetProcessDefinitionKey the key of the target process definition
    * @return the builder for this command
@@ -51,8 +52,10 @@ public interface MigrateProcessInstanceCommandStep1 {
 
   interface MigrateProcessInstanceCommandStep2 {
     /**
-     * Add a MappingInstruction for the element that will be migrated and its target element id in
-     * the target process definition.
+     * Add a {@link
+     * io.camunda.zeebe.gateway.protocol.GatewayOuterClass.MigrateProcessInstanceRequest.MappingInstruction}
+     * for the element that will be migrated and its target element id in the target process
+     * definition.
      *
      * @param sourceElementId the element id to migrate from
      * @param targetElementId the element id to migrate into
@@ -66,9 +69,11 @@ public interface MigrateProcessInstanceCommandStep1 {
       extends MigrateProcessInstanceCommandStep2, FinalCommandStep<MigrateProcessInstanceResponse> {
 
     /**
-     * Add a MappingInstruction for the element that will be migrated and its target element id in
-     * the target process definition. This method allows to add more than one mapping instructions
-     * to the migration plan.
+     * Add a {@link
+     * io.camunda.zeebe.gateway.protocol.GatewayOuterClass.MigrateProcessInstanceRequest.MappingInstruction}
+     * for the element that will be migrated and its target element id in the target process
+     * definition. This method allows to add more than one mapping instructions to the migration
+     * plan.
      *
      * @param sourceElementId the element id to migrate from
      * @param targetElementId the element id to migrate into
