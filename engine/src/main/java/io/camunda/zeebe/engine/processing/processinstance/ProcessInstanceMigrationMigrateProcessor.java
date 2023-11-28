@@ -100,7 +100,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     final var elementInstances = new ArrayDeque<>(List.of(processInstance));
     while (!elementInstances.isEmpty()) {
       final var elementInstance = elementInstances.poll();
-      migrateElementInstance(elementInstance, processDefinition, mappedElementIds);
+      tryMigrateElementInstance(elementInstance, processDefinition, mappedElementIds);
       final List<ElementInstance> children =
           elementInstanceState.getChildren(elementInstance.getKey());
       elementInstances.addAll(children);
@@ -144,7 +144,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     return mappedElementIds;
   }
 
-  private void migrateElementInstance(
+  private void tryMigrateElementInstance(
       final ElementInstance elementInstance,
       final DeployedProcess processDefinition,
       final Map<String, String> sourceElementIdToTargetElementId) {
