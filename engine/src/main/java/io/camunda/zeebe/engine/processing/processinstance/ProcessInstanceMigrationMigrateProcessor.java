@@ -92,8 +92,9 @@ public class ProcessInstanceMigrationMigrateProcessor
     final var elementInstances = new ArrayDeque<>(List.of(processInstance));
     while (!elementInstances.isEmpty()) {
       final var elementInstance = elementInstances.poll();
+      migrateElementInstance(elementInstance, processDefinition, mappedElementIds);
       final List<ElementInstance> children =
-          migrateElementInstance(elementInstance, processDefinition, mappedElementIds);
+          elementInstanceState.getChildren(elementInstance.getKey());
       elementInstances.addAll(children);
     }
 
@@ -120,7 +121,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     return mappedElementIds;
   }
 
-  private List<ElementInstance> migrateElementInstance(
+  private void migrateElementInstance(
       final ElementInstance elementInstance,
       final DeployedProcess processDefinition,
       final Map<String, String> sourceElementIdToTargetElementId) {
@@ -150,7 +151,5 @@ public class ProcessInstanceMigrationMigrateProcessor
                 .setElementId(targetElementId));
       }
     }
-
-    return elementInstanceState.getChildren(elementInstance.getKey());
   }
 }
