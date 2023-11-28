@@ -7,6 +7,9 @@ package org.camunda.optimize.service.os;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.DataImportSourceType;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
+import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.RequestOptionsProvider;
@@ -18,6 +21,11 @@ import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.IndexResponse;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.search.Hit;
+import org.opensearch.client.opensearch.core.search.SourceConfig;
+import org.opensearch.client.opensearch.core.search.SourceFilter;
 import org.opensearch.client.opensearch.indices.GetAliasRequest;
 import org.opensearch.client.opensearch.indices.GetAliasResponse;
 import org.opensearch.client.opensearch.indices.RolloverRequest;
@@ -26,6 +34,7 @@ import org.opensearch.client.opensearch.indices.rollover.RolloverConditions;
 import org.springframework.context.ApplicationContext;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,6 +42,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.db.DatabaseConstants.GB_UNIT;
+import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
+import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 
 @Slf4j
 public class OptimizeOpenSearchClient extends DatabaseClient {
@@ -76,7 +87,12 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return openSearchClient.get(getRequest, responseClass);
   }
 
-  public long deleteByQuery(final String index, final Query query) throws IOException {
+  public final <T> SearchResponse<T> search(final SearchRequest searchRequest,
+                                            final Class<T> responseClass) throws IOException {
+    return openSearchClient.search(searchRequest, responseClass);
+  }
+
+  public long deleteByQuery(final String index, final Query query) {
     return richOpenSearchClient.doc().deleteByQuery(index, query);
   }
 
@@ -145,6 +161,52 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       log.error(message, e);
       throw new OptimizeRuntimeException(message, e);
     }
+  }
+
+  @Override
+  public Set<String> performSearchDefinitionQuery(final String indexName,
+                                                  final String definitionXml,
+                                                  final String definitionIdField,
+                                                  final int maxPageSize,
+                                                  final String engineAlias) {
+    log.debug("Performing " + indexName + " search query!");
+    Set<String> result = new HashSet<>();
+
+    SourceFilter filter = buildBasicSearchDefinitionQuery(definitionXml, engineAlias);
+    SourceConfig sourceConfig = new SourceConfig.Builder()
+      .filter(filter)
+      .build();
+
+    SearchRequest searchRequest = new SearchRequest
+      .Builder()
+      .index(indexName)
+      .source(sourceConfig)
+      .build();
+
+    SearchResponse<DefinitionOptimizeResponseDto> searchResponse;
+    try {
+      // refresh to ensure we see the latest state
+      richOpenSearchClient.index().refresh(indexName);
+      searchResponse = this.search(searchRequest, DefinitionOptimizeResponseDto.class);
+    } catch (IOException e) {
+      log.error("Was not able to search for " + indexName + "!", e);
+      throw new OptimizeRuntimeException("Was not able to search for " + indexName + "!", e);
+    }
+    log.debug(indexName + " search query got [{}] results", searchResponse.hits().hits());
+
+    for (Hit<DefinitionOptimizeResponseDto> hit : searchResponse.hits().hits()) {
+      result.add(hit.id());
+    }
+    return result;
+  }
+
+  private SourceFilter buildBasicSearchDefinitionQuery(String definitionXml, String engineAlias) {
+    return new SourceFilter.Builder()
+      .excludes(List.of(definitionXml))
+      .includes(DEFINITION_DELETED, "false")
+      .includes(DATA_SOURCE + "." + DataSourceDto.Fields.type, DataImportSourceType.ENGINE.toString())
+      .includes(DATA_SOURCE + "." + DataSourceDto.Fields.name, engineAlias)
+      .build();
   }
 
   public final RolloverResponse rollover(RolloverRequest rolloverRequest) throws IOException {

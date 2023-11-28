@@ -12,6 +12,8 @@ import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.FailsafeException;
 import net.jodah.failsafe.FailsafeExecutor;
 import net.jodah.failsafe.RetryPolicy;
+import org.camunda.optimize.dto.optimize.DataImportSourceType;
+import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.plugin.ElasticsearchCustomHeaderProvider;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.schema.IndexMappingCreator;
@@ -83,21 +85,33 @@ import org.elasticsearch.client.tasks.TaskSubmissionResponse;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.common.unit.ByteSizeUnit;
 import org.elasticsearch.common.unit.ByteSizeValue;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.rest.RestStatus;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.context.ApplicationContext;
 
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
+import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 /**
  * This Client serves as the main elasticsearch client to be used from application code.
@@ -531,6 +545,50 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
       log.error(message, e);
       throw new OptimizeRuntimeException(message, e);
     }
+  }
+
+  @Override
+  public Set<String> performSearchDefinitionQuery(final String indexName,
+                                                  final String definitionXml,
+                                                  final String definitionIdField,
+                                                  final int maxPageSize,
+                                                  final String engineAlias) {
+    log.debug("Performing " + indexName + " search query!");
+    Set<String> result = new HashSet<>();
+    QueryBuilder query = buildBasicSearchDefinitionQuery(definitionXml, engineAlias);
+
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .fetchSource(false)
+      .sort(SortBuilders.fieldSort(definitionIdField).order(SortOrder.DESC))
+      .size(maxPageSize);
+    SearchRequest searchRequest = new SearchRequest(indexName)
+      .source(searchSourceBuilder);
+
+    SearchResponse searchResponse;
+    try {
+      // refresh to ensure we see the latest state
+      this.refresh(new RefreshRequest(indexName));
+      searchResponse = this.search(searchRequest);
+    } catch (IOException e) {
+      log.error("Was not able to search for " + indexName + "!", e);
+      throw new OptimizeRuntimeException("Was not able to search for " + indexName + "!", e);
+    }
+
+    log.debug(indexName + " search query got [{}] results", searchResponse.getHits().getHits().length);
+
+    for (SearchHit hit : searchResponse.getHits().getHits()) {
+      result.add(hit.getId());
+    }
+    return result;
+  }
+
+  private QueryBuilder buildBasicSearchDefinitionQuery(String definitionXml, String engineAlias) {
+    return QueryBuilders.boolQuery()
+      .mustNot(existsQuery(definitionXml))
+      .must(termQuery(DEFINITION_DELETED, false))
+      .must(termQuery(DATA_SOURCE + "." + DataSourceDto.Fields.type, DataImportSourceType.ENGINE))
+      .must(termQuery(DATA_SOURCE + "." + DataSourceDto.Fields.name, engineAlias));
   }
 
   private RolloverRequest applyAliasPrefixAndRolloverConditions(final RolloverRequest request) {

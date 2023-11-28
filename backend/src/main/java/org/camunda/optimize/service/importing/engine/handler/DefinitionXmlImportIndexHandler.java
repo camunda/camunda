@@ -7,8 +7,8 @@ package org.camunda.optimize.service.importing.engine.handler;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.index.AllEntitiesBasedImportIndexDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.reader.ImportIndexReader;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.importing.EngineImportIndexHandler;
 import org.camunda.optimize.service.importing.page.IdSetBasedImportPage;
 import org.camunda.optimize.service.util.DatabaseHelper;
@@ -27,11 +27,12 @@ import java.util.Set;
 public abstract class DefinitionXmlImportIndexHandler
   implements EngineImportIndexHandler<IdSetBasedImportPage, AllEntitiesBasedImportIndexDto> {
 
-  //todo depends on the implementations of database writers utils handle it in the scope of the OPT-7228
   @Autowired
-  protected OptimizeElasticsearchClient esClient;
+  protected DatabaseClient databaseClient;
+
   @Autowired
   protected ConfigurationService configurationService;
+
   @Autowired
   private ImportIndexReader importIndexReader;
 

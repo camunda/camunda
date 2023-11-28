@@ -18,6 +18,7 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
 
   /**
    * Get all the aliases for the indexes matching the indexNamePattern
+   *
    * @param indexNamePattern Pattern for the name of an index, may contain wildcards
    * @return A Map where the keys are the name of the matching indexes and the value is a set containing the aliases
    * for the respective index. This map can have multiple keys because indexNamePattern may contain wildcards
@@ -44,5 +45,11 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
     final String prefixedIndexName = indexNameService.getOptimizeIndexAliasForIndex(rawIndexName);
     return hasExcludePrefix ? "-" + prefixedIndexName : prefixedIndexName;
   }
+
+  public abstract Set<String> performSearchDefinitionQuery(final String indexName,
+                                                           final String definitionXml,
+                                                           final String definitionIdField,
+                                                           final int maxPageSize,
+                                                           final String engineAlias);
 
 }
