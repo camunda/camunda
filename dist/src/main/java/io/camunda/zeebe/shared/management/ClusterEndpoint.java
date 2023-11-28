@@ -8,6 +8,7 @@
 package io.camunda.zeebe.shared.management;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.cluster.messaging.MessagingException;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.BrokerStateCode;
 import io.camunda.zeebe.management.cluster.Error;
@@ -42,12 +43,15 @@ import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOp
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.util.Either;
+import java.net.ConnectException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
@@ -80,15 +84,24 @@ public class ClusterEndpoint {
     }
   }
 
-  private ResponseEntity<Error> mapError(final Exception error) {
-    // TODO: Map error to proper HTTP status code as defined in spec
+  private ResponseEntity<Error> mapError(final Throwable error) {
+    if (error instanceof CompletionException) {
+      return mapError(error.getCause());
+    }
+
     final var errorResponse = new Error();
     errorResponse.setMessage(error.getMessage());
-    return ResponseEntity.status(500).body(errorResponse);
+    final int status =
+        switch (error) {
+          case final ConnectException ignore -> 502;
+          case final MessagingException.NoSuchMemberException ignore -> 502;
+          case final TimeoutException ignore -> 504;
+          default -> 500;
+        };
+    return ResponseEntity.status(status).body(errorResponse);
   }
 
   private ResponseEntity<Error> invalidRequest(final String message) {
-    // TODO: Map error to proper HTTP status code as defined in spec
     final var errorResponse = new Error();
     errorResponse.setMessage(message);
     return ResponseEntity.status(400).body(errorResponse);

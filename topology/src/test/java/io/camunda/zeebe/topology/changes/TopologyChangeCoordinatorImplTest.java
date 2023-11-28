@@ -16,8 +16,8 @@ import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.topology.ClusterTopologyAssert;
 import io.camunda.zeebe.topology.ClusterTopologyManager;
 import io.camunda.zeebe.topology.api.TopologyRequestFailedException;
+import io.camunda.zeebe.topology.api.TopologyRequestFailedException.ConcurrentModificationException;
 import io.camunda.zeebe.topology.api.TopologyRequestFailedException.InvalidRequest;
-import io.camunda.zeebe.topology.api.TopologyRequestFailedException.OperationNotAllowed;
 import io.camunda.zeebe.topology.changes.TopologyChangeCoordinator.TopologyChangeRequest;
 import io.camunda.zeebe.topology.state.ClusterChangePlan;
 import io.camunda.zeebe.topology.state.ClusterTopology;
@@ -117,7 +117,7 @@ final class TopologyChangeCoordinatorImplTest {
     assertThat(applyFuture)
         .failsWithin(Duration.ofMillis(100))
         .withThrowableOfType(ExecutionException.class)
-        .withCauseInstanceOf(OperationNotAllowed.class);
+        .withCauseInstanceOf(ConcurrentModificationException.class);
   }
 
   @Test

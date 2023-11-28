@@ -162,7 +162,7 @@ public final class TopologyRequestServer implements AutoCloseable {
           new ErrorResponse(ErrorCode.INVALID_REQUEST, invalidRequest.getMessage()));
       case final ConcurrentModificationException concurrentModificationException -> Either.left(
           new ErrorResponse(
-              ErrorCode.INVALID_REQUEST, concurrentModificationException.getMessage()));
+              ErrorCode.CONCURRENT_MODIFICATION, concurrentModificationException.getMessage()));
       default -> Either.left(new ErrorResponse(ErrorCode.INTERNAL_ERROR, throwable.getMessage()));
     };
   }
