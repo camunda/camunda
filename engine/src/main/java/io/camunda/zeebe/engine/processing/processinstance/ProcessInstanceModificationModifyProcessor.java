@@ -47,7 +47,7 @@ import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -125,16 +125,15 @@ public final class ProcessInstanceModificationModifyProcessor
       Expected to modify instance of process '%s' but it contains one or more activate instructions \
       with an ancestor scope key that is not an ancestor of the element to activate:%s""";
 
-  private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
-      Set.of(
+  private static final EnumSet<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
+      EnumSet.of(
           BpmnElementType.UNSPECIFIED,
           BpmnElementType.START_EVENT,
           BpmnElementType.SEQUENCE_FLOW,
           BpmnElementType.BOUNDARY_EVENT);
-  private static final Set<BpmnElementType> SUPPORTED_ELEMENT_TYPES =
-      Arrays.stream(BpmnElementType.values())
-          .filter(elementType -> !UNSUPPORTED_ELEMENT_TYPES.contains(elementType))
-          .collect(Collectors.toSet());
+  private static final EnumSet<BpmnElementType> SUPPORTED_ELEMENT_TYPES =
+      EnumSet.complementOf(UNSUPPORTED_ELEMENT_TYPES);
+
   private static final Either<Rejection, Object> VALID = Either.right(null);
 
   private final StateWriter stateWriter;
