@@ -50,7 +50,7 @@ final class PersistedClusterTopologyTest {
     // then
     assertEquals(updatedTopology, persistedClusterTopology.getTopology());
     assertEquals(
-        updatedTopology, serializer.decodeClusterTopology(Files.readAllBytes(topologyFile)));
+        updatedTopology, new PersistedClusterTopology(topologyFile, serializer).getTopology());
   }
 
   /**

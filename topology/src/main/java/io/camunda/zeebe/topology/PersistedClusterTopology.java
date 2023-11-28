@@ -11,46 +11,48 @@ import io.camunda.zeebe.topology.serializer.ClusterTopologySerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
+import java.util.zip.CRC32C;
 
-/** Manages reading and updating ClusterTopology in a local persisted file * */
+/**
+ * Manages reading and updating ClusterTopology in a local persisted file. The file consists of a
+ * fixed-size header containing a version and a checksum, followed by the serialized topology.
+ */
 final class PersistedClusterTopology {
+  // Constant version, to be incremented if the format changes.
+  private static final byte VERSION = 1;
+
+  // Header is a single byte for the version, followed by a long for the checksum.
+  private static final int HEADER_LENGTH = Byte.BYTES + Long.BYTES;
   private final Path topologyFile;
   private final ClusterTopologySerializer serializer;
-  private ClusterTopology clusterTopology = ClusterTopology.uninitialized();
+  private ClusterTopology clusterTopology;
 
+  /**
+   * Creates a new PersistedClusterTopology. If the file does not exist yet, the topology is
+   * uninitialized. The file is created on the first {@link #update(ClusterTopology)}.
+   *
+   * @param topologyFile Path to the persisted topology file. Does not need to exist yet.
+   * @param serializer used to (de)serialize the topology. Does not need to care about versioning or
+   *     checksums.
+   */
   PersistedClusterTopology(final Path topologyFile, final ClusterTopologySerializer serializer) {
     this.topologyFile = topologyFile;
     this.serializer = serializer;
-    clusterTopology = readFromFile();
+    try {
+      clusterTopology = readFromFile();
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   ClusterTopology getTopology() {
     return clusterTopology;
-  }
-
-  private ClusterTopology readFromFile() {
-    if (Files.exists(topologyFile)) {
-      try {
-        return serializer.decodeClusterTopology(Files.readAllBytes(topologyFile));
-      } catch (final IOException e) {
-        throw new UncheckedIOException(e);
-      }
-    } else {
-      return ClusterTopology.uninitialized();
-    }
-  }
-
-  private void writeToFile(final ClusterTopology clusterTopology) throws IOException {
-    Files.write(
-        topologyFile,
-        serializer.encode(clusterTopology),
-        StandardOpenOption.CREATE,
-        StandardOpenOption.WRITE,
-        StandardOpenOption.TRUNCATE_EXISTING,
-        StandardOpenOption.DSYNC);
   }
 
   void update(final ClusterTopology clusterTopology) throws IOException {
@@ -63,5 +65,82 @@ final class PersistedClusterTopology {
 
   public boolean isUninitialized() {
     return clusterTopology.isUninitialized();
+  }
+
+  private ClusterTopology readFromFile() throws IOException {
+    if (!Files.exists(topologyFile)) {
+      return ClusterTopology.uninitialized();
+    }
+
+    final var content = Files.readAllBytes(topologyFile);
+    if (content.length < HEADER_LENGTH) {
+      throw new MissingHeader(topologyFile, content.length);
+    }
+    final var header = ByteBuffer.wrap(content, 0, HEADER_LENGTH).order(ByteOrder.LITTLE_ENDIAN);
+    final var version = header.get();
+    final var expectedChecksum = header.getLong();
+
+    if (version != VERSION) {
+      throw new UnexpectedVersion(topologyFile, version);
+    }
+
+    final var body = Arrays.copyOfRange(content, HEADER_LENGTH, content.length);
+
+    final var actualChecksum = checksum(body);
+    if (expectedChecksum != actualChecksum) {
+      throw new ChecksumMismatch(topologyFile, expectedChecksum, actualChecksum);
+    }
+
+    // deserialize the topology
+    return serializer.decodeClusterTopology(body);
+  }
+
+  private void writeToFile(final ClusterTopology clusterTopology) throws IOException {
+    final var body = serializer.encode(clusterTopology);
+    final var checksum = checksum(body);
+    final var buffer =
+        ByteBuffer.allocate(HEADER_LENGTH + body.length)
+            .order(ByteOrder.LITTLE_ENDIAN)
+            .put(VERSION)
+            .putLong(checksum)
+            .put(body);
+    Files.write(
+        topologyFile,
+        buffer.array(),
+        StandardOpenOption.CREATE,
+        StandardOpenOption.WRITE,
+        StandardOpenOption.TRUNCATE_EXISTING,
+        StandardOpenOption.DSYNC);
+  }
+
+  private long checksum(final byte[] bytes) {
+    final var checksum = new CRC32C();
+    checksum.update(bytes);
+    return checksum.getValue();
+  }
+
+  private static final class UnexpectedVersion extends RuntimeException {
+    private UnexpectedVersion(final Path topologyFile, final byte version) {
+      super(
+          "Topology file %s had version '%s', but expected version '%s'"
+              .formatted(topologyFile, version, VERSION));
+    }
+  }
+
+  private static final class MissingHeader extends RuntimeException {
+    private MissingHeader(final Path topologyFile, final Object fileSize) {
+      super(
+          "Topology file %s is too small to contain the expected header: %s bytes"
+              .formatted(topologyFile, fileSize));
+    }
+  }
+
+  private static final class ChecksumMismatch extends RuntimeException {
+    private ChecksumMismatch(
+        final Path topologyFile, final long expectedChecksum, final long actualChecksum) {
+      super(
+          "Corrupted topology file: %s. Expected checksum: '%d', actual checksum: '%d'"
+              .formatted(topologyFile, expectedChecksum, actualChecksum));
+    }
   }
 }
