@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.transport.stream.impl.messages;
 
+import io.camunda.zeebe.transport.stream.api.StreamResponseException;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
@@ -99,5 +100,21 @@ public final class ErrorResponse implements StreamResponse {
   @Override
   public String toString() {
     return "ErrorResponse{" + "message=" + message() + ", code=" + code + '}';
+  }
+
+  public StreamResponseException asException() {
+    return new StacklessException(this);
+  }
+
+  private static final class StacklessException extends StreamResponseException {
+
+    public StacklessException(final ErrorResponse response) {
+      super(response);
+    }
+
+    @Override
+    public Throwable fillInStackTrace() {
+      return this;
+    }
   }
 }

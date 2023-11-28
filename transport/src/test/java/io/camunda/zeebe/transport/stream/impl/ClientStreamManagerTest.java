@@ -9,6 +9,7 @@ package io.camunda.zeebe.transport.stream.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -20,7 +21,10 @@ import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.transport.stream.api.ClientStreamId;
 import io.camunda.zeebe.transport.stream.api.NoSuchStreamException;
+import io.camunda.zeebe.transport.stream.impl.messages.AddStreamResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
+import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamResponse;
+import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
@@ -30,6 +34,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,9 +56,15 @@ class ClientStreamManagerTest {
 
   @BeforeEach
   void setup() {
-
     when(mockTransport.send(any(), any(), any(), any(), any(), any()))
-        .thenReturn(CompletableFuture.completedFuture(null));
+        .thenReturn(CompletableFuture.completedFuture(ArrayUtil.EMPTY_BYTE_ARRAY));
+    when(mockTransport.send(eq(StreamTopics.ADD.topic()), any(), any(), any(), any(), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(BufferUtil.bufferAsArray(new AddStreamResponse())));
+    when(mockTransport.send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), any(), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                BufferUtil.bufferAsArray(new RemoveStreamResponse())));
   }
 
   @Test
