@@ -10,6 +10,7 @@ package io.camunda.zeebe.topology;
 import io.camunda.zeebe.topology.serializer.ClusterTopologySerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -23,26 +24,40 @@ final class PersistedClusterTopology {
   PersistedClusterTopology(final Path topologyFile, final ClusterTopologySerializer serializer) {
     this.topologyFile = topologyFile;
     this.serializer = serializer;
+    clusterTopology = readFromFile();
   }
 
   ClusterTopology getTopology() {
     return clusterTopology;
   }
 
-  void update(final ClusterTopology clusterTopology) throws IOException {
-    if (this.clusterTopology.equals(clusterTopology)) {
-      return;
+  private ClusterTopology readFromFile() {
+    if (Files.exists(topologyFile)) {
+      try {
+        return serializer.decodeClusterTopology(Files.readAllBytes(topologyFile));
+      } catch (final IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    } else {
+      return ClusterTopology.uninitialized();
     }
+  }
 
-    final var serializedTopology = serializer.encode(clusterTopology);
+  private void writeToFile(final ClusterTopology clusterTopology) throws IOException {
     Files.write(
         topologyFile,
-        serializedTopology,
+        serializer.encode(clusterTopology),
         StandardOpenOption.CREATE,
         StandardOpenOption.WRITE,
         StandardOpenOption.TRUNCATE_EXISTING,
         StandardOpenOption.DSYNC);
+  }
 
+  void update(final ClusterTopology clusterTopology) throws IOException {
+    if (this.clusterTopology.equals(clusterTopology)) {
+      return;
+    }
+    writeToFile(clusterTopology);
     this.clusterTopology = clusterTopology;
   }
 

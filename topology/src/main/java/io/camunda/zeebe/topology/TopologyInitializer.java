@@ -17,7 +17,6 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.topology.TopologyUpdateNotifier.TopologyUpdateListener;
 import io.camunda.zeebe.topology.serializer.ClusterTopologySerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -96,20 +95,16 @@ public interface TopologyInitializer {
     @Override
     public ActorFuture<ClusterTopology> initialize() {
       try {
-        if (Files.exists(topologyFile)) {
-          final var serializedTopology = Files.readAllBytes(topologyFile);
-          if (serializedTopology.length > 0) {
-            final var clusterTopology = serializer.decodeClusterTopology(serializedTopology);
-            LOGGER.debug(
-                "Initialized cluster topology '{}' from file '{}'", clusterTopology, topologyFile);
-            return CompletableActorFuture.completed(clusterTopology);
-          }
+        final var persistedTopology =
+            new PersistedClusterTopology(topologyFile, serializer).getTopology();
+        if (!persistedTopology.isUninitialized()) {
+          LOGGER.debug(
+              "Initialized cluster topology '{}' from file '{}'", persistedTopology, topologyFile);
         }
+        return CompletableActorFuture.completed(persistedTopology);
       } catch (final Exception e) {
         return CompletableActorFuture.completedExceptionally(e);
       }
-
-      return CompletableActorFuture.completed(ClusterTopology.uninitialized());
     }
   }
 
