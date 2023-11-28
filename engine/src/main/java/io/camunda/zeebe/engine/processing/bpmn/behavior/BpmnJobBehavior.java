@@ -15,11 +15,8 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
-import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.deployment.PersistedForm;
-import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
@@ -28,15 +25,13 @@ import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
-import java.time.ZonedDateTime;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
@@ -64,7 +59,7 @@ public final class BpmnJobBehavior {
   private final BpmnIncidentBehavior incidentBehavior;
   private final JobMetrics jobMetrics;
   private final BpmnJobActivationBehavior jobActivationBehavior;
-  private final FormState formState;
+  private final BpmnUserTaskBehavior userTaskBehavior;
 
   public BpmnJobBehavior(
       final KeyGenerator keyGenerator,
@@ -75,7 +70,7 @@ public final class BpmnJobBehavior {
       final BpmnIncidentBehavior incidentBehavior,
       final BpmnJobActivationBehavior jobActivationBehavior,
       final JobMetrics jobMetrics,
-      final FormState formState) {
+      final BpmnUserTaskBehavior userTaskBehavior) {
     this.keyGenerator = keyGenerator;
     this.jobState = jobState;
     this.expressionBehavior = expressionBehavior;
@@ -84,7 +79,7 @@ public final class BpmnJobBehavior {
     this.incidentBehavior = incidentBehavior;
     this.jobMetrics = jobMetrics;
     this.jobActivationBehavior = jobActivationBehavior;
-    this.formState = formState;
+    this.userTaskBehavior = userTaskBehavior;
   }
 
   public Either<Failure, JobProperties> evaluateJobExpressions(
@@ -95,19 +90,39 @@ public final class BpmnJobBehavior {
     return Either.<Failure, JobProperties>right(new JobProperties())
         .flatMap(p -> evalTypeExp(jobWorkerProps.getType(), scopeKey).map(p::type))
         .flatMap(p -> evalRetriesExp(jobWorkerProps.getRetries(), scopeKey).map(p::retries))
-        .flatMap(p -> evalAssigneeExp(jobWorkerProps.getAssignee(), scopeKey).map(p::assignee))
         .flatMap(
             p ->
-                evalCandidateGroupsExp(jobWorkerProps.getCandidateGroups(), scopeKey)
+                userTaskBehavior
+                    .evaluateAssigneeExpression(jobWorkerProps.getAssignee(), scopeKey)
+                    .map(p::assignee))
+        .flatMap(
+            p ->
+                userTaskBehavior
+                    .evaluateCandidateGroupsExpression(
+                        jobWorkerProps.getCandidateGroups(), scopeKey)
                     .map(p::candidateGroups))
         .flatMap(
             p ->
-                evalCandidateUsersExp(jobWorkerProps.getCandidateUsers(), scopeKey)
+                userTaskBehavior
+                    .evaluateCandidateUsersExpression(jobWorkerProps.getCandidateUsers(), scopeKey)
                     .map(p::candidateUsers))
-        .flatMap(p -> evalDateExp(jobWorkerProps.getDueDate(), scopeKey).map(p::dueDate))
-        .flatMap(p -> evalDateExp(jobWorkerProps.getFollowUpDate(), scopeKey).map(p::followUpDate))
         .flatMap(
-            p -> evalFormIdExp(jobWorkerProps.getFormId(), scopeKey, tenantId).map(p::formKey));
+            p ->
+                userTaskBehavior
+                    .evaluateDateExpression(jobWorkerProps.getDueDate(), scopeKey)
+                    .map(p::dueDate))
+        .flatMap(
+            p ->
+                userTaskBehavior
+                    .evaluateDateExpression(jobWorkerProps.getFollowUpDate(), scopeKey)
+                    .map(p::followUpDate))
+        .flatMap(
+            p ->
+                userTaskBehavior
+                    .evaluateFormIdExpressionToFormKey(
+                        jobWorkerProps.getFormId(), scopeKey, tenantId)
+                    .map(key -> Objects.toString(key, null))
+                    .map(p::formKey));
   }
 
   public void createNewJob(
@@ -124,71 +139,6 @@ public final class BpmnJobBehavior {
 
   private Either<Failure, Long> evalRetriesExp(final Expression retries, final long scopeKey) {
     return expressionBehavior.evaluateLongExpression(retries, scopeKey);
-  }
-
-  private Either<Failure, String> evalAssigneeExp(final Expression assignee, final long scopeKey) {
-    if (assignee == null) {
-      return Either.right(null);
-    }
-    return expressionBehavior.evaluateStringExpression(assignee, scopeKey);
-  }
-
-  private Either<Failure, String> evalCandidateGroupsExp(
-      final Expression candidateGroups, final long scopeKey) {
-    if (candidateGroups == null) {
-      return Either.right(null);
-    }
-    return expressionBehavior
-        .evaluateArrayOfStringsExpression(candidateGroups, scopeKey)
-        .map(ExpressionTransformer::asListLiteral);
-  }
-
-  private Either<Failure, String> evalCandidateUsersExp(
-      final Expression candidateUsers, final long scopeKey) {
-    if (candidateUsers == null) {
-      return Either.right(null);
-    }
-    return expressionBehavior
-        .evaluateArrayOfStringsExpression(candidateUsers, scopeKey)
-        .map(ExpressionTransformer::asListLiteral);
-  }
-
-  private Either<Failure, String> evalDateExp(final Expression date, final long scopeKey) {
-    if (date == null) {
-      return Either.right(null);
-    }
-    return expressionBehavior
-        .evaluateDateTimeExpression(date, scopeKey, true)
-        .map(optionalDate -> optionalDate.map(ZonedDateTime::toString).orElse(null));
-  }
-
-  private Either<Failure, String> evalFormIdExp(
-      final Expression formIdExp, final long scopeKey, final String tenantId) {
-    if (formIdExp == null) {
-      return Either.right(null);
-    }
-    return expressionBehavior
-        .evaluateStringExpression(formIdExp, scopeKey)
-        .flatMap(
-            formId -> {
-              final Optional<PersistedForm> latestFormById =
-                  formState.findLatestFormById(wrapString(formId), tenantId);
-              return latestFormById
-                  .<Either<Failure, String>>map(
-                      persistedForm -> Either.right(String.valueOf(persistedForm.getFormKey())))
-                  .orElseGet(
-                      () ->
-                          Either.left(
-                              new Failure(
-                                  String.format(
-                                      "Expected to find a form with id '%s',"
-                                          + " but no form with this id is found,"
-                                          + " at least a form with this id should be available."
-                                          + " To resolve the Incident please deploy a form with the same id",
-                                      formId),
-                                  ErrorType.FORM_NOT_FOUND,
-                                  scopeKey)));
-            });
   }
 
   private void writeJobCreatedEvent(

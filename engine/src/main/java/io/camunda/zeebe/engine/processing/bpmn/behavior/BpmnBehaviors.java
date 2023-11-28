@@ -51,4 +51,6 @@ public interface BpmnBehaviors {
   ElementActivationBehavior elementActivationBehavior();
 
   BpmnJobActivationBehavior jobActivationBehavior();
+
+  BpmnUserTaskBehavior userTaskBehavior();
 }

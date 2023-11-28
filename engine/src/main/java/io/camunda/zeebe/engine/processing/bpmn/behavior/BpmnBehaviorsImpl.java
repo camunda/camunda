@@ -47,6 +47,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final BpmnSignalBehavior signalBehavior;
 
+  private final BpmnUserTaskBehavior userTaskBehavior;
+
   public BpmnBehaviorsImpl(
       final MutableProcessingState processingState,
       final Writers writers,
@@ -132,18 +134,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getKeyGenerator(),
             jobMetrics);
 
-    jobBehavior =
-        new BpmnJobBehavior(
-            processingState.getKeyGenerator(),
-            processingState.getJobState(),
-            writers,
-            expressionBehavior,
-            stateBehavior,
-            incidentBehavior,
-            jobActivationBehavior,
-            jobMetrics,
-            processingState.getFormState());
-
     multiInstanceOutputCollectionBehavior =
         new MultiInstanceOutputCollectionBehavior(stateBehavior, expressionBehavior());
 
@@ -160,6 +150,25 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getVariableState(),
             writers,
             expressionBehavior);
+
+    userTaskBehavior =
+        new BpmnUserTaskBehavior(
+            processingState.getKeyGenerator(),
+            writers,
+            expressionBehavior,
+            processingState.getFormState());
+
+    jobBehavior =
+        new BpmnJobBehavior(
+            processingState.getKeyGenerator(),
+            processingState.getJobState(),
+            writers,
+            expressionBehavior,
+            stateBehavior,
+            incidentBehavior,
+            jobActivationBehavior,
+            jobMetrics,
+            userTaskBehavior);
   }
 
   @Override
@@ -250,5 +259,10 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnJobActivationBehavior jobActivationBehavior() {
     return jobActivationBehavior;
+  }
+
+  @Override
+  public BpmnUserTaskBehavior userTaskBehavior() {
+    return userTaskBehavior;
   }
 }
