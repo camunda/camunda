@@ -2230,20 +2230,20 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       ////////////////////////////// CompensationSubscriptionRecord ///////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
-        {
-            "CompensationSubscriptionRecord",
-            (Supplier<UnifiedRecordValue>)
-                () ->
-                    new CompensationSubscriptionRecord()
-                        .setTenantId("tenantId")
-                        .setProcessInstanceKey(123L)
-                        .setProcessDefinitionKey(456L)
-                        .setElementActivityId("elementActivityId")
-                        .setFlowScopeElementActivityId(789L)
-                        .setElementThrowEventId("elementThrowEventId")
-                        .setElementThrowEventKey(123L)
-                        .setVariables(VARIABLES_MSGPACK),
-            """
+      {
+        "CompensationSubscriptionRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new CompensationSubscriptionRecord()
+                    .setTenantId("tenantId")
+                    .setProcessInstanceKey(123L)
+                    .setProcessDefinitionKey(456L)
+                    .setElementActivityId("elementActivityId")
+                    .setFlowScopeElementActivityId(789L)
+                    .setElementThrowEventId("elementThrowEventId")
+                    .setElementThrowEventKey(123L)
+                    .setVariables(VARIABLES_MSGPACK),
+        """
         {
           "tenantId": "tenantId",
           "processInstanceKey": 123,
@@ -2257,16 +2257,15 @@ final class JsonSerializableToJsonTest {
           }
         }
         """
-        },
+      },
 
-        /////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////// Empty CompensationSubscriptionRecord /////////////////////////
-        /////////////////////////////////////////////////////////////////////////////////////////////
-        {
-            "CompensationSubscriptionRecord",
-            (Supplier<UnifiedRecordValue>)
-                CompensationSubscriptionRecord::new,
-            """
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////// Empty CompensationSubscriptionRecord /////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "CompensationSubscriptionRecord",
+        (Supplier<UnifiedRecordValue>) CompensationSubscriptionRecord::new,
+        """
         {
           "tenantId": "<default>",
           "processInstanceKey": -1,
@@ -2278,7 +2277,7 @@ final class JsonSerializableToJsonTest {
           "variables": {}
         }
         """
-        },
+      },
     };
   }
 
