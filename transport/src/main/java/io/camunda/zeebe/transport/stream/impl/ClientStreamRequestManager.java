@@ -10,10 +10,14 @@ package io.camunda.zeebe.transport.stream.impl;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.transport.stream.api.StreamResponseException;
 import io.camunda.zeebe.transport.stream.impl.ClientStreamRegistration.State;
 import io.camunda.zeebe.transport.stream.impl.messages.AddStreamRequest;
+import io.camunda.zeebe.transport.stream.impl.messages.AddStreamResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamRequest;
+import io.camunda.zeebe.transport.stream.impl.messages.StreamResponseReader;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -48,6 +52,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
   // maps the registration state,  for each known host, of each stream
   private final Map<MemberId, Map<UUID, ClientStreamRegistration<M>>> registrations =
       new HashMap<>();
+  private final StreamResponseReader responseReader = new StreamResponseReader();
 
   private final ClusterCommunicationService communicationService;
   private final ConcurrencyControl executor;
@@ -245,30 +250,50 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
             REQUEST_TIMEOUT);
     registration.setPendingRequest(pendingRequest);
     pendingRequest.whenCompleteAsync(
-        (ok, error) -> handleAddResponse(registration, request, error), executor::run);
+        (response, error) -> handleAddResponse(registration, request, response, error),
+        executor::run);
   }
 
   private void handleAddResponse(
-      final ClientStreamRegistration<M> registration, final byte[] request, final Throwable error) {
+      final ClientStreamRegistration<M> registration,
+      final byte[] request,
+      final byte[] responseBuffer,
+      final Throwable error) {
     final var state = registration.state();
     if (state != State.ADDING) {
       LOGGER.trace("Skip handling ADD response since the state is {}", state, error);
       return;
     }
 
-    if (error == null) {
+    // for backwards compatibility, consider an empty byte array as a successful response
+    final Either<Throwable, AddStreamResponse> response;
+    if (error != null) {
+      response = Either.left(error);
+    } else if (responseBuffer != null && responseBuffer.length > 0) {
+      response =
+          responseReader
+              .read(responseBuffer, new AddStreamResponse())
+              .mapLeft(StreamResponseException::new);
+    } else {
+      response = Either.right(null);
+    }
+
+    if (response.isRight()) {
       registration.transitionToAdded();
       return;
     }
 
-    // For now, always retry; eventually the request will succeed, and duplicate add request are
-    // fine.
+    // For now, always retry; in some cases, the request will eventually go through. However, in
+    // some cases it never will. This should be covered in a follow-up issue.
+    // Unrecoverable cases:
+    //   - RemoteHandlerError
+    //   - ErrorResponse.code in [ MALFORMED, INVALID ]
     LOGGER.warn(
         "Failed to add stream {} on {}; will retry in {}",
         registration.streamId(),
         registration.serverId(),
         RETRY_DELAY,
-        error);
+        response.getLeft());
     executor.schedule(RETRY_DELAY, () -> sendAddRequest(registration, request));
   }
 

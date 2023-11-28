@@ -29,14 +29,4 @@ public interface BufferWriter {
    * @param offset the offset in the buffer that the writer begins writing at
    */
   void write(MutableDirectBuffer buffer, int offset);
-
-  /**
-   * Writes this instance into a newly allocated buffer before reading it back using {@code dest}.
-   *
-   * @param dest the destination reader
-   * @throws NullPointerException if dest is null
-   */
-  default void copyTo(final BufferReader dest) {
-    BufferUtil.copy(this, dest);
-  }
 }

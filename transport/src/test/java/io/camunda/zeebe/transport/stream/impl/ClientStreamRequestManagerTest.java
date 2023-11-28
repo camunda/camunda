@@ -21,6 +21,9 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.transport.stream.impl.ClientStreamRegistration.State;
+import io.camunda.zeebe.transport.stream.impl.messages.AddStreamResponse;
+import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
+import io.camunda.zeebe.transport.stream.impl.messages.ErrorResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -32,6 +35,8 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 final class ClientStreamRequestManagerTest {
 
@@ -42,11 +47,18 @@ final class ClientStreamRequestManagerTest {
       new AggregatedClientStream<>(
           UUID.randomUUID(),
           new LogicalId<>(new UnsafeBuffer(BufferUtil.wrapString("foo")), new TestMetadata()));
+  private byte[] addStreamSuccess;
 
   @BeforeEach
   void setup() {
+    final var addStreamOK = new AddStreamResponse();
+    addStreamSuccess = new byte[addStreamOK.getLength()];
+    new AddStreamResponse().write(new UnsafeBuffer(addStreamSuccess), 0);
+
     when(mockTransport.send(any(), any(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(null));
+    when(mockTransport.send(eq(StreamTopics.ADD.topic()), any(), any(), any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(addStreamSuccess));
     clientStream.open(requestManager, Collections.emptySet());
   }
 
@@ -167,9 +179,30 @@ final class ClientStreamRequestManagerTest {
   void shouldRetryWhenAddRequestFails() {
     // given
     final var serverId = MemberId.anonymous();
-    when(mockTransport.send(any(), any(), any(), any(), eq(serverId), any()))
+    when(mockTransport.send(eq(StreamTopics.ADD.topic()), any(), any(), any(), eq(serverId), any()))
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Expected")))
-        .thenReturn(CompletableFuture.completedFuture(null));
+        .thenReturn(CompletableFuture.completedFuture(addStreamSuccess));
+
+    // when
+    requestManager.add(clientStream, serverId);
+
+    // then
+    verify(mockTransport, times(2))
+        .send(eq(StreamTopics.ADD.topic()), any(), any(), any(), eq(serverId), any());
+    assertThat(clientStream.isConnected(serverId)).isTrue();
+  }
+
+  @ParameterizedTest
+  @EnumSource(value = ErrorCode.class)
+  void shouldRetryAddOnErrorResponse(final ErrorCode code) {
+    // given
+    final var errorResponse = new ErrorResponse().code(code).message("Failed");
+    final var errorResponseBuffer = new byte[errorResponse.getLength()];
+    final var serverId = MemberId.anonymous();
+    when(mockTransport.send(eq(StreamTopics.ADD.topic()), any(), any(), any(), eq(serverId), any()))
+        .thenReturn(CompletableFuture.completedFuture(errorResponseBuffer))
+        .thenReturn(CompletableFuture.completedFuture(addStreamSuccess));
+    errorResponse.write(new UnsafeBuffer(errorResponseBuffer), 0);
 
     // when
     requestManager.add(clientStream, serverId);
