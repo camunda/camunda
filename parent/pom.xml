@@ -33,6 +33,7 @@
     <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
     <spotbugs.include>spotbugs/spotbugs-include.xml</spotbugs.include>
     <spotbugs.exclude>spotbugs/spotbugs-exclude.xml</spotbugs.exclude>
+    <maven-profiler-report-directory>${project.build.directory}/profiler</maven-profiler-report-directory>
 
     <!-- EXTERNAL LIBS -->
     <version.agrona>1.17.2</version.agrona>
