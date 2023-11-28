@@ -68,6 +68,7 @@ public final class TopologyMetrics {
           .name("cluster_changes_operation_duration")
           .help("Duration it takes to apply an operation")
           .labelNames(LABEL_OPERATION)
+          .buckets(0.1, 1, 2, 5, 10, 30, 60, 120, 180, 300, 600)
           .register();
   private static final Counter OPERATION_ATTEMPTS =
       Counter.build()
