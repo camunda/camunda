@@ -7,7 +7,6 @@ package org.camunda.optimize.service.os.writer;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import org.camunda.optimize.service.db.writer.SharingWriter;
@@ -15,7 +14,6 @@ import org.camunda.optimize.service.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-
 
 @AllArgsConstructor
 @Component
@@ -46,7 +44,8 @@ public class SharingWriterOS implements SharingWriter {
 //
 //    log.debug("report share with id [{}] for resource [{}] has been created", id, createSharingDto.getReportId());
 //    return createSharingDto;
-    throw new NotImplementedException();
+    //todo will be handled in the OPT-7376
+    return null;
   }
 
   public DashboardShareRestDto saveDashboardShare(final DashboardShareRestDto createSharingDto) {
@@ -74,7 +73,8 @@ public class SharingWriterOS implements SharingWriter {
 //      createSharingDto.getDashboardId()
 //    );
 //    return createSharingDto;
-    throw new NotImplementedException();
+    //todo will be handled in the OPT-7376
+    return null;
   }
 
   public void updateDashboardShare(final DashboardShareRestDto updatedShare) {
@@ -99,7 +99,7 @@ public class SharingWriterOS implements SharingWriter {
 //      throw new OptimizeRuntimeException(message);
 //    }
 //    log.debug("dashboard share with id [{}] for resource [{}] has been updated", id, updatedShare.getDashboardId());
-    throw new NotImplementedException();
+    //todo will be handled in the OPT-7376
   }
 
   public void deleteReportShare(final String shareId) {
@@ -116,7 +116,7 @@ public class SharingWriterOS implements SharingWriter {
 //      log.error(message);
 //      throw new NotFoundException(message);
 //    }
-    throw new NotImplementedException();
+    //todo will be handled in the OPT-7376
   }
 
   public void deleteDashboardShare(final String shareId) {
@@ -134,6 +134,7 @@ public class SharingWriterOS implements SharingWriter {
 //      throw new NotFoundException(message);
 //    }
 //  }
-    throw new NotImplementedException();
+    //todo will be handled in the OPT-7376
   }
+
 }

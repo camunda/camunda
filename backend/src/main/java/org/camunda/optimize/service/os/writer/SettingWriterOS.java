@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.ws.rs.BadRequestException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.service.db.schema.index.SettingsIndex;
 import org.camunda.optimize.service.db.writer.SettingsWriter;
@@ -24,12 +23,12 @@ import org.springframework.stereotype.Component;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static org.camunda.optimize.service.db.DatabaseConstants.SETTINGS_INDEX_NAME;
 import static org.camunda.optimize.service.db.schema.index.SettingsIndex.LAST_MODIFIED;
 import static org.camunda.optimize.service.db.schema.index.SettingsIndex.LAST_MODIFIER;
 import static org.camunda.optimize.service.db.schema.index.SettingsIndex.METADATA_TELEMETRY_ENABLED;
 import static org.camunda.optimize.service.db.schema.index.SettingsIndex.SHARING_ENABLED;
-import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.service.db.DatabaseConstants.SETTINGS_INDEX_NAME;
 
 @AllArgsConstructor
 @Slf4j
@@ -50,7 +49,7 @@ public class SettingWriterOS implements SettingsWriter {
 //            log.error(errorMessage, e);
 //            return "There were errors while writing settings to OS." + e.getMessage();
 //        });
-    throw new NotImplementedException();
+    //todo will be handled in the OPT-7376
   }
 
   private UpdateRequest.Builder<Void, SettingsResponseDto> createSettingsUpsert(final SettingsResponseDto settingsDto) {
@@ -75,7 +74,7 @@ public class SettingWriterOS implements SettingsWriter {
       settingsDto,
       objectMapper
     );
-
+    //todo will be handled in the OPT-7376
     return new UpdateRequest.Builder<Void, SettingsResponseDto>()
       .index(SETTINGS_INDEX_NAME)
       .id(SettingsIndex.ID)

@@ -18,10 +18,9 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.db.reader.ProcessVariableReader;
 import org.camunda.optimize.service.db.reader.VariableLabelReader;
+import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.ElasticSearchIndexSettingsBuilder;
-import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.DefinitionQueryUtil;
@@ -57,6 +56,8 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.db.DatabaseConstants.MAX_GRAM;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.LOWERCASE_FIELD;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.N_GRAM_FIELD;
 import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
@@ -66,8 +67,6 @@ import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedV
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableTypeField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getValueSearchField;
-import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.wildcardQuery;
@@ -78,7 +77,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 @RequiredArgsConstructor
 @Component
 @Slf4j
-@Conditional({ElasticSearchCondition.class})
+@Conditional(ElasticSearchCondition.class)
 public class ProcessVariableReaderES implements ProcessVariableReader {
 
   private final OptimizeElasticsearchClient esClient;

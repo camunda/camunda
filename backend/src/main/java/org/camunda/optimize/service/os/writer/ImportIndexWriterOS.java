@@ -7,7 +7,6 @@ package org.camunda.optimize.service.os.writer;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.index.EngineImportIndexDto;
@@ -38,27 +37,11 @@ public class ImportIndexWriterOS implements ImportIndexWriter {
   private final DateTimeFormatter dateTimeFormatter;
 
   public void importIndexes(List<EngineImportIndexDto> engineImportIndexDtos) {
-//        String importItemName = "import index information";
-//        log.debug("Writing [{}] {} to ES.", engineImportIndexDtos.size(), importItemName);
-//
-//        ElasticsearchWriterUtil.doImportBulkRequestWithList(
-//                osClient,
-//                importItemName,
-//                engineImportIndexDtos,
-//                this::addImportIndexRequest,
-//                configurationService.getSkipDataAfterNestedDocLimitReached()
-//        );
-    throw new NotImplementedException();
+    //todo will be handled in the OPT-7376
   }
 
   private void addImportIndexRequest(BulkRequest.Builder bulkRequestBuilder, OptimizeDto optimizeDto) {
-//        if (optimizeDto instanceof TimestampBasedImportIndexDto timestampBasedIndexDto) {
-//          bulkRequestBuilder.operations(op->op.index(createTimestampBasedRequest(timestampBasedIndexDto));
-//        } else if (optimizeDto instanceof AllEntitiesBasedImportIndexDto) {
-//            AllEntitiesBasedImportIndexDto entitiesBasedIndexDto = (AllEntitiesBasedImportIndexDto) optimizeDto;
-//            bulkRequest.add(createAllEntitiesBasedRequest(entitiesBasedIndexDto));
-//        }
-    throw new NotImplementedException();
+    //todo will be handled in the OPT-7376
   }
 
   private IndexRequest.Builder<TimestampBasedImportIndexDto> createTimestampBasedRequest(TimestampBasedImportIndexDto importIndex) {
@@ -70,7 +53,6 @@ public class ImportIndexWriterOS implements ImportIndexWriter {
     return new IndexRequest.Builder<TimestampBasedImportIndexDto>().index(TIMESTAMP_BASED_IMPORT_INDEX_NAME)
       .id(getId(importIndex))
       .document(importIndex);
-
   }
 
   private String getId(EngineImportIndexDto importIndex) {
@@ -78,27 +60,8 @@ public class ImportIndexWriterOS implements ImportIndexWriter {
   }
 
   private IndexRequest createAllEntitiesBasedRequest(AllEntitiesBasedImportIndexDto importIndex) {
-//        log.debug("Writing all entities based import index type [{}] to elasticsearch. " +
-//                        "Starting from [{}]",
-//                importIndex.getEsTypeIndexRefersTo(), importIndex.getImportIndex()
-//        );
-//        try {
-//            XContentBuilder sourceToAdjust = XContentFactory.jsonBuilder()
-//                    .startObject()
-//                    .field(ImportIndexIndex.ENGINE, importIndex.getEngine())
-//                    .field(ImportIndexIndex.IMPORT_INDEX, importIndex.getImportIndex())
-//                    .endObject();
-//            return new IndexRequest(IMPORT_INDEX_INDEX_NAME)
-//                    .id(getId(importIndex))
-//                    .source(sourceToAdjust);
-//        } catch (IOException e) {
-//            log.error(
-//                    "Was not able to write all entities based import index of type [{}] to Elasticsearch. Reason: {}",
-//                    importIndex.getEsTypeIndexRefersTo(), e
-//            );
-//            return new IndexRequest();
-//        }
-    throw new NotImplementedException();
+    //todo will be handled in the OPT-7376
+    return null;
   }
 
 }

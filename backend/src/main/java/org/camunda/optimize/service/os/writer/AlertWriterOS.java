@@ -49,6 +49,7 @@ public class AlertWriterOS implements AlertWriter {
 //        log.debug("alert with [{}] saved to elasticsearch", id);
 //
 //        return alertDefinitionDto;
+    //todo will be handled in the OPT-7376
     throw new NotImplementedException();
   }
 
@@ -77,7 +78,7 @@ public class AlertWriterOS implements AlertWriter {
 //            log.error(errorMessage);
 //            throw new OptimizeRuntimeException(errorMessage);
 //        }
-    throw new NotImplementedException();
+    //todo will be handled in the OPT-7376
   }
 
   public void deleteAlert(String alertId) {
@@ -101,7 +102,7 @@ public class AlertWriterOS implements AlertWriter {
 //            log.error(message);
 //            throw new NotFoundException(message);
 //        }
-    throw new NotImplementedException();
+    //todo will be handled in the OPT-7376
   }
 
   public void deleteAlerts(List<String> alertIds) {
@@ -121,7 +122,7 @@ public class AlertWriterOS implements AlertWriter {
 //            return "There were errors while deleting alerts to OS." + e.getMessage();
 //        });
 
-    throw new NotImplementedException();
+    //todo will be handled in the OPT-7376
 
   }
 
@@ -157,7 +158,7 @@ public class AlertWriterOS implements AlertWriter {
 //            log.error("Can't update status of alert [{}]", alertId, e);
 //        }
 
-    throw new NotImplementedException();
+    //todo will be handled in the OPT-7376
   }
 
   /**
@@ -178,6 +179,6 @@ public class AlertWriterOS implements AlertWriter {
 //            return "There were errors while deleting alerts by the reports to OS." + e.getMessage();
 //        });
 
-    throw new NotImplementedException();
+    //todo will be handled in the OPT-7376
   }
 }

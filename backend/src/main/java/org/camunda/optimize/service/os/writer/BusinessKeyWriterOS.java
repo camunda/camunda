@@ -7,7 +7,6 @@ package org.camunda.optimize.service.os.writer;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
@@ -18,6 +17,7 @@ import org.opensearch.client.opensearch.core.IndexRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.camunda.optimize.service.db.DatabaseConstants.BUSINESS_KEY_INDEX_NAME;
@@ -47,7 +47,8 @@ public class BusinessKeyWriterOS implements BusinessKeyWriter {
 //                        .request(request)
 //                        .build())
 //                .collect(Collectors.toList());
-    throw new NotImplementedException();
+    //todo will be handled in the OPT-7376
+    return new ArrayList<>();
   }
 
   @Override
@@ -62,8 +63,7 @@ public class BusinessKeyWriterOS implements BusinessKeyWriter {
 //
 //
 //        osClient.bulk(bulkRequestBuilder);
-    throw new NotImplementedException();
-
+    //todo will be handled in the OPT-7376
   }
 
   private BusinessKeyDto extractBusinessKey(final ProcessInstanceDto processInstance) {

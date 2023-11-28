@@ -66,7 +66,6 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.sum;
 
 @AllArgsConstructor
 @Slf4j
-@Conditional(ElasticSearchCondition.class)
 public class EventSequenceCountReaderES implements EventSequenceCountReader {
 
   private final String indexKey;

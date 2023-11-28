@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.usertask.AbstractUserTaskWriter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
@@ -86,7 +87,7 @@ public abstract class AbstractUserTaskWriterES extends AbstractProcessInstanceDa
 
   @Override
   public List<ImportRequestDto> generateUserTaskImports(final String importItemName,
-                                                        final OptimizeElasticsearchClient esClient,
+                                                        final DatabaseClient databaseClient,
                                                         final List<FlowNodeInstanceDto> userTaskInstances) {
     log.debug("Writing [{}] {} to ES.", userTaskInstances.size(), importItemName);
 
