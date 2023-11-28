@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
+import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
@@ -2225,6 +2226,59 @@ final class JsonSerializableToJsonTest {
         }
         """
       },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////// CompensationSubscriptionRecord ///////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+        {
+            "CompensationSubscriptionRecord",
+            (Supplier<UnifiedRecordValue>)
+                () ->
+                    new CompensationSubscriptionRecord()
+                        .setTenantId("tenantId")
+                        .setProcessInstanceKey(123L)
+                        .setProcessDefinitionKey(456L)
+                        .setElementActivityId("elementActivityId")
+                        .setFlowScopeElementActivityId(789L)
+                        .setElementThrowEventId("elementThrowEventId")
+                        .setElementThrowEventKey(123L)
+                        .setVariables(VARIABLES_MSGPACK),
+            """
+        {
+          "tenantId": "tenantId",
+          "processInstanceKey": 123,
+          "processDefinitionKey": 456,
+          "elementActivityId": "elementActivityId",
+          "flowScopeElementActivityId": 789,
+          "elementThrowEventId": "elementThrowEventId",
+          "elementThrowEventKey": 123,
+          "variables": {
+            "foo": "bar"
+          }
+        }
+        """
+        },
+
+        /////////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////// Empty CompensationSubscriptionRecord /////////////////////////
+        /////////////////////////////////////////////////////////////////////////////////////////////
+        {
+            "CompensationSubscriptionRecord",
+            (Supplier<UnifiedRecordValue>)
+                CompensationSubscriptionRecord::new,
+            """
+        {
+          "tenantId": "<default>",
+          "processInstanceKey": -1,
+          "processDefinitionKey": -1,
+          "elementActivityId": "",
+          "flowScopeElementActivityId": -1,
+          "elementThrowEventId": "",
+          "elementThrowEventKey": -1,
+          "variables": {}
+        }
+        """
+        },
     };
   }
 
