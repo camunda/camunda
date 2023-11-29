@@ -15,17 +15,23 @@
 
 ## Build Zeebe from source
 
-Zeebe is a multi-module maven project. To build all components,
-run the command: `mvn clean install -DskipTests` in the root folder.
+Zeebe is a multi-module maven project. To **quickly** build all components,
+run the command: `mvn clean install -Dquickly` in the root folder.
 
-> NOTE: All Java modules in Zeebe are built and tested with JDK 17. Most modules use language level
+> [!NOTE]
+> All Java modules in Zeebe are built and tested with JDK 17. Most modules use language level
 > 17, exceptions are: zeebe-bpmn-model, zeebe-client-java, zeebe-gateway-protocol,
 > zeebe-gateway-protocol-impl, zeebe-protocol and zeebe-protocol-jackson which use language level 8
 >
-> NOTE: The Go client and zbctl are built and tested with Go 1.15
+> The Go client and zbctl are built and tested with Go 1.15
 >
-> NOTE: The Java and the Go modules are built and tested with Docker 20.10.5 [with IPv6 support](https://docs.docker.com/config/daemon/ipv6/).
+> The Java and the Go modules are built and tested with Docker 20.10.5 [with IPv6 support](https://docs.docker.com/config/daemon/ipv6/).
 
+For contributions to Zeebe, building quickly is typically sufficient.
+However, users of Zeebe are recommended to build the full distribution.
+
+To fully build the Zeebe distribution, run the command: `mvn clean install -DskipTests` in the root folder.
+This is slightly slower than building quickly, but ensures the distribution is assembled completely.
 The resulting Zeebe distribution can be found in the folder `dist/target`, i.e.
 
 ```
@@ -33,7 +39,7 @@ dist/target/camunda-zeebe-X.Y.Z-SNAPSHOT.tar.gz
 dist/target/camunda-zeebe-X.Y.Z-SNAPSHOT.zip
 ```
 
-The distribution can be containerized with Docker (i.e. build a Docker image) by running:
+This distribution can be containerized with Docker (i.e. build a Docker image) by running:
 
 ```
 docker build \
@@ -66,9 +72,15 @@ This is a small overview of the contents of the different modules:
 
 ### Test Execution
 
-Tests can be executed via maven (`mvn verify`) or in your prefered IDE. The Zeebe Team uses mostly [Intellij IDEA](https://www.jetbrains.com/idea/), where we also [provide settings for](https://github.com/camunda/zeebe/tree/main/.idea).
+Tests can be executed via maven (`mvn verify`) or in your preferred IDE. The Zeebe Team uses mostly [Intellij IDEA](https://www.jetbrains.com/idea/), where we also [provide settings for](https://github.com/camunda/zeebe/tree/main/.idea).
 
-> Note: If you encounter issues (like `java.lang.UnsatisfiedLinkError: failed to load the required native library`) while running the test StandaloneGatewaySecurityTest.shouldStartWithTlsEnabled take a look at https://github.com/camunda/zeebe/issues/10488 to resolve it
+> [!TIP]
+> To execute the tests quickly, run `mvn verify -Dquickly -DskipTests=false`.
+> The tests will be skipped when using `-Dquickly` without `-DskipTests=false`.
+
+#### Test Troubleshooting
+
+- If you encounter issues (like `java.lang.UnsatisfiedLinkError: failed to load the required native library`) while running the test StandaloneGatewaySecurityTest.shouldStartWithTlsEnabled take a look at https://github.com/camunda/zeebe/issues/10488 to resolve it.
 
 ### Build profiling
 
