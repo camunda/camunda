@@ -156,6 +156,7 @@ public class ConfigurationService {
   private String notificationEmailAddress;
   private String notificationEmailHostname;
   private Integer notificationEmailPort;
+  private Boolean notificationEmailCheckServerIdentity;
   private String notificationEmailCompanyBranding;
   private EmailAuthenticationConfiguration emailAuthenticationConfiguration;
 
@@ -885,6 +886,13 @@ public class ConfigurationService {
       notificationEmailPort = configJsonContext.read(ConfigurationServiceConstants.EMAIL_PORT, Integer.class);
     }
     return notificationEmailPort;
+  }
+
+  public Boolean getNotificationEmailCheckServerIdentity() {
+    if (notificationEmailCheckServerIdentity == null) {
+      notificationEmailCheckServerIdentity = Boolean.TRUE;
+    }
+    return notificationEmailCheckServerIdentity;
   }
 
   public String getNotificationEmailCompanyBranding() {
