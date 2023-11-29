@@ -5,12 +5,14 @@
  */
 package org.camunda.optimize.service.security;
 
+import com.auth0.jwt.interfaces.DecodedJWT;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Authentication;
 import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.UserDetails;
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
+import io.camunda.identity.sdk.authentication.exception.TokenDecodeException;
 import jakarta.servlet.http.Cookie;
 import jakarta.ws.rs.NotAuthorizedException;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -19,7 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.service.util.CamundaIdentityConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import org.springframework.context.annotation.Conditional;
@@ -29,6 +30,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.net.URI;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -53,10 +55,10 @@ public class CCSMTokenService {
   private final Identity identity;
 
   public CCSMTokenService(final AuthCookieService authCookieService, final ConfigurationService configurationService,
-                          final CamundaIdentityConfigurationService identityConfigurationProvider) {
+                          final Identity identity) {
     this.authCookieService = authCookieService;
     this.configurationService = configurationService;
-    this.identity = new Identity(identityConfigurationProvider.getIdentityConfiguration());
+    this.identity = identity;
   }
 
   public List<Cookie> createOptimizeAuthCookies(final Tokens tokens, final AccessToken accessToken, final String scheme) {
@@ -66,10 +68,13 @@ public class CCSMTokenService {
       accessToken.getToken().getExpiresAtAsInstant(),
       scheme
     );
+
+    final Date refreshTokenExpirationDate = getRefreshTokenExpirationDate(tokens.getRefreshToken());
+
     final Cookie optimizeRefreshCookie = authCookieService.createCookie(
       OPTIMIZE_REFRESH_TOKEN,
       tokens.getRefreshToken(),
-      authentication().decodeJWT(tokens.getRefreshToken()).getExpiresAt().toInstant(),
+      refreshTokenExpirationDate == null ? null : refreshTokenExpirationDate.toInstant(),
       scheme
     );
     return List.of(optimizeAuthCookie, optimizeRefreshCookie);
@@ -85,7 +90,7 @@ public class CCSMTokenService {
     final NewCookie optimizeRefreshCookie = authCookieService.createCookie(
       OPTIMIZE_REFRESH_TOKEN,
       tokens.getRefreshToken(),
-      authentication().decodeJWT(tokens.getRefreshToken()).getExpiresAt(),
+      getRefreshTokenExpirationDate(tokens.getRefreshToken()),
       scheme
     );
     return List.of(optimizeAuthCookie, optimizeRefreshCookie);
@@ -120,6 +125,21 @@ public class CCSMTokenService {
       .orElse(requestContext.getUriInfo().getAbsolutePath().toString());
     log.trace("Exchanging auth code with redirectUri: {}", redirectUri);
     return authentication().exchangeAuthCode(authCode, redirectUri);
+  }
+
+  private Date getRefreshTokenExpirationDate(final String refreshToken) {
+    try {
+      final DecodedJWT decodedRefreshToken = authentication().decodeJWT(refreshToken);
+      final Date refreshTokenExpiresAt = decodedRefreshToken.getExpiresAt();
+      log.trace("Refresh token will expire at {}", refreshTokenExpiresAt);
+      return refreshTokenExpiresAt;
+    } catch (final TokenDecodeException e) {
+      log.trace(
+          "Refresh token is not a JWT and expire date can not be determined. Error message: {}",
+          e.getMessage()
+      );
+      return null;
+    }
   }
 
   private static String appendCallbackSubpath(final String configuredRedirectUri) {
