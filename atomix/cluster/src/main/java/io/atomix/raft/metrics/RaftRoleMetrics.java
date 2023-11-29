@@ -67,6 +67,10 @@ public class RaftRoleMetrics extends RaftMetrics {
     electionLatency = ELECTION_LATENCY.labels(partitionGroupName, partition);
   }
 
+  public void becomingInactive() {
+    role.set(0);
+  }
+
   public void becomingFollower() {
     role.set(1);
   }
