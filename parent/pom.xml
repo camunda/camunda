@@ -172,12 +172,14 @@
 
     <!--
       you can use the following to disable some or all goals:
+        - quickly will skip all non-essential goals, like checks, tests, and assembly
         - skipTests will skip all tests
         - skipITs will skip integration tests
         - skipUTs will skip unit tests
         - skipChecks will non-test checks, such as licensing, checkstyle, backwards compat, etc.
       -->
-    <skipTests>false</skipTests>
+    <quickly>false</quickly>
+    <skipTests>${quickly}</skipTests>
     <skipUTs>${skipTests}</skipUTs>
     <skipITs>${skipTests}</skipITs>
     <jacoco.skip>${skipUTs}</jacoco.skip>
@@ -189,7 +191,7 @@
       that way, you can use skipChecks, but you can also still use checkstyle.skip if you only want
       to disable checkstyle
       -->
-    <skipChecks>false</skipChecks>
+    <skipChecks>${quickly}</skipChecks>
     <checkstyle.skip>${skipChecks}</checkstyle.skip>
     <revapi.skip>${skipChecks}</revapi.skip>
     <license.skip>${skipChecks}</license.skip>
@@ -198,6 +200,9 @@
     <sort.skip>${skipChecks}</sort.skip>
     <spotless.apply.skip>${skipChecks}</spotless.apply.skip>
     <spotless.checks.skip>${skipChecks}</spotless.checks.skip>
+
+    <!-- disable other non-essential goals -->
+    <assembly.skipAssembly>${quickly}</assembly.skipAssembly>
   </properties>
 
   <dependencyManagement>
