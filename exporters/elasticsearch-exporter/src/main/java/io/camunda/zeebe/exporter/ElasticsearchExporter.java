@@ -294,6 +294,9 @@ public class ElasticsearchExporter implements Exporter {
       if (index.processInstanceMigration) {
         createValueIndexTemplate(ValueType.PROCESS_INSTANCE_MIGRATION);
       }
+      if (index.compensationSubscription) {
+        createValueIndexTemplate(ValueType.COMPENSATION_SUBSCRIPTION);
+      }
     }
 
     indexTemplatesCreated = true;

@@ -92,6 +92,7 @@ final class TestSupport {
       case COMMAND_DISTRIBUTION -> config.commandDistribution = value;
       case FORM -> config.form = value;
       case USER_TASK -> config.userTask = value;
+      case COMPENSATION_SUBSCRIPTION -> config.compensationSubscription = value;
       default -> throw new IllegalArgumentException(
           "No known indexing configuration option for value type " + valueType);
     }

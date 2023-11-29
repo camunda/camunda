@@ -124,6 +124,8 @@ public class ElasticsearchExporterConfiguration {
         return index.form;
       case USER_TASK:
         return index.userTask;
+      case COMPENSATION_SUBSCRIPTION:
+        return index.compensationSubscription;
       default:
         return false;
     }
@@ -188,6 +190,7 @@ public class ElasticsearchExporterConfiguration {
     public boolean commandDistribution = true;
     public boolean form = true;
     public boolean userTask = true;
+    public boolean compensationSubscription = true;
 
     // index settings
     private Integer numberOfShards = null;
@@ -287,6 +290,8 @@ public class ElasticsearchExporterConfiguration {
           + form
           + ", userTask="
           + userTask
+          + ", compensationSubscription="
+          + compensationSubscription
           + '}';
     }
   }
