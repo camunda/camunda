@@ -116,11 +116,8 @@ public class ProcessInstanceMigrationMigrateProcessor
   public ProcessingError tryHandleError(
       final TypedRecord<ProcessInstanceMigrationRecord> command, final Throwable error) {
     if (error instanceof final UnsupportedElementMigrationException e) {
-      final String reason =
-          "Expected to migrate process instance '%s' but it contains an active element that is unsupported: %s"
-              .formatted(command.getKey(), e.getMessage());
-      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, reason);
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, e.getMessage());
+      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }
     if (error instanceof final UnmappedActiveElementException e) {
@@ -157,7 +154,9 @@ public class ProcessInstanceMigrationMigrateProcessor
     final var elementInstanceRecord = elementInstance.getValue();
     if (UNSUPPORTED_ELEMENT_TYPES.contains(elementInstanceRecord.getBpmnElementType())) {
       throw new UnsupportedElementMigrationException(
-          elementInstanceRecord.getElementId(), elementInstanceRecord.getBpmnElementType());
+          elementInstanceRecord.getProcessInstanceKey(),
+          elementInstanceRecord.getElementId(),
+          elementInstanceRecord.getBpmnElementType());
     }
 
     final String targetElementId =
@@ -196,8 +195,16 @@ public class ProcessInstanceMigrationMigrateProcessor
    */
   private static final class UnsupportedElementMigrationException extends RuntimeException {
     UnsupportedElementMigrationException(
-        final String elementId, final BpmnElementType bpmnElementType) {
-      super("%s. The migration of a %s is not supported.".formatted(elementId, bpmnElementType));
+        final long processInstanceKey,
+        final String elementId,
+        final BpmnElementType bpmnElementType) {
+      super(
+          String.format(
+              """
+              Expected to migrate process instance '%s' \
+              but it contains an active element that is unsupported: %s. \
+              The migration of a %s is not supported.""",
+              processInstanceKey, elementId, bpmnElementType));
     }
   }
 
