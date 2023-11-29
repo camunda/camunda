@@ -24,6 +24,7 @@ import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.response.PublishMessageResponse;
 import io.camunda.zeebe.client.api.response.ResolveIncidentResponse;
+import io.camunda.zeebe.client.api.response.UpdateTimeoutJobResponse;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.zeebe.gateway.impl.configuration.AuthenticationCfg.AuthMode;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -781,6 +782,48 @@ public class MultiTenancyOverIdentityIT {
       assertThat(result)
           .describedAs(
               "Expect that job can be competed as the client has access process of tenant-a")
+          .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldUpdateJobTimeoutForTenant() {
+    // given
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      final var activatedJob =
+          client
+              .newActivateJobsCommand()
+              .jobType("type")
+              .maxJobsToActivate(1)
+              .tenantId(TENANT_A)
+              .timeout(Duration.ofMinutes(10))
+              .send()
+              .join()
+              .getJobs()
+              .get(0);
+
+      // when
+      final Future<UpdateTimeoutJobResponse> result =
+          client.newUpdateTimeoutCommand(activatedJob).timeout(Duration.ofMinutes(11)).send();
+
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that job timeout can be updated as the client has access process of tenant-a")
           .succeedsWithin(Duration.ofSeconds(10));
     }
   }
