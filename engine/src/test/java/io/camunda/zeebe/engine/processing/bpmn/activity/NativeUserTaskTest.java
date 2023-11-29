@@ -19,11 +19,15 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -125,12 +129,453 @@ public final class NativeUserTaskTest {
     assertThat(
             RecordingExporter.processInstanceRecords().withProcessInstanceKey(processInstanceKey))
         .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
-        .contains(tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATING));
+        .containsSequence(
+            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED));
 
     assertThat(
             RecordingExporter.jobRecords(JobIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .count())
         .isEqualTo(0L);
+  }
+
+  @Test
+  public void shouldCreateUserTask() {
+    // given
+    ENGINE.deployment().withXmlResource(process()).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<ProcessInstanceRecordValue> taskActivated =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.USER_TASK)
+            .getFirst();
+
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue())
+        .hasElementInstanceKey(taskActivated.getKey())
+        .hasElementId(taskActivated.getValue().getElementId())
+        .hasProcessDefinitionKey(taskActivated.getValue().getProcessDefinitionKey())
+        .hasBpmnProcessId(taskActivated.getValue().getBpmnProcessId())
+        .hasProcessDefinitionVersion(taskActivated.getValue().getVersion());
+
+    assertThat(userTask.getValue().getUserTaskKey()).isGreaterThan(0L);
+  }
+
+  @Test
+  public void shouldNotPickUpEmbeddedFormForUserTask() {
+    // given
+    final String formKey = Strings.newRandomValidBpmnId();
+
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeFormKey(formKey))).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasFormKey(-1L);
+  }
+
+  @Test
+  public void shouldNotPickUpEmbeddedFormWithJsonForUserTask() {
+    // given
+    final String formKey = Strings.newRandomValidBpmnId();
+
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeUserTaskForm(formKey, "User Task Form")))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasFormKey(-1L);
+  }
+
+  @Test
+  public void shouldCreateUserTaskWithAssignee() {
+    // given
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeAssignee("alice"))).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasAssignee("alice");
+  }
+
+  @Test
+  public void shouldCreateUserTaskWithStaticNumberValueAssignee() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeAssignee("1234567891011121314")))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasAssignee("1234567891011121314");
+  }
+
+  @Test
+  public void shouldCreateUserTaskWithEvaluatedAssigneeExpression() {
+    // given
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeAssigneeExpression("user"))).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("user", "alice"))
+            .create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasAssignee("alice");
+  }
+
+  @Test
+  public void shouldCreateUserTaskWithEmptyEvaluatedAssigneeExpression() {
+    // given
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeAssigneeExpression("user"))).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("user", ""))
+            .create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasAssignee("");
+  }
+
+  @Test
+  public void shouldCreateJobWithCandidateGroups() {
+    // given
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeCandidateGroups("alice,bob"))).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasCandidateGroups("[\"alice\",\"bob\"]");
+  }
+
+  @Test
+  public void shouldCreateJobWithEvaluatedCandidateGroupsExpression() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeCandidateGroupsExpression("users")))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables("{ \"users\": [\"alice\", \"bob\"] }")
+            .create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasCandidateGroups("[\"alice\",\"bob\"]");
+  }
+
+  @Test
+  public void shouldCreateJobWithCandidateUsers() {
+    // given
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeCandidateUsers("jack,rose"))).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasCandidateUsers("[\"jack\",\"rose\"]");
+  }
+
+  @Test
+  public void shouldCreateJobWithEvaluatedCandidateUsersExpression() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeCandidateUsersExpression("users")))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables("{ \"users\": [\"jack\", \"rose\"] }")
+            .create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasCandidateUsers("[\"jack\",\"rose\"]");
+  }
+
+  @Test
+  public void shouldCreateJobWithDueDate() {
+    // given
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeDueDate(DUE_DATE))).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasDueDate(DUE_DATE);
+  }
+
+  @Test
+  public void shouldCreateJobWithEvaluatedDueDateExpression() {
+    // given
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeDueDateExpression("dueDate"))).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("dueDate", DUE_DATE))
+            .create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasDueDate(DUE_DATE);
+  }
+
+  @Test
+  public void shouldCreateJobAndIgnoreEmptyDueDate() {
+    // given
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeDueDate(""))).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasDueDate("");
+  }
+
+  @Test
+  public void shouldCreateJobAndIgnoreEmptyEvaluatedDueDateExpression() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeDueDateExpression("=dueDate")))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("dueDate", ""))
+            .create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasDueDate("");
+  }
+
+  @Test
+  public void shouldCreateJobAndIgnoreNullEvaluatedDueDateExpression() {
+    // given
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeDueDateExpression("=null"))).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasDueDate("");
+  }
+
+  @Test
+  public void shouldCreateJobWithFollowUpDate() {
+    // given
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeFollowUpDate(FOLLOW_UP_DATE))).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasFollowUpDate(FOLLOW_UP_DATE);
+  }
+
+  @Test
+  public void shouldCreateJobWithEvaluatedFollowUpDateExpression() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeFollowUpDateExpression("followUpDate")))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("followUpDate", FOLLOW_UP_DATE))
+            .create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasFollowUpDate(FOLLOW_UP_DATE);
+  }
+
+  @Test
+  public void shouldCreateJobAndIgnoreEmptyFollowUpDate() {
+    // given
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeFollowUpDate(""))).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasFollowUpDate("");
+  }
+
+  @Test
+  public void shouldCreateJobAndIgnoreEmptyEvaluatedFollowUpDateExpression() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeFollowUpDateExpression("=followUpDate")))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("followUpDate", ""))
+            .create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasFollowUpDate("");
+  }
+
+  @Test
+  public void shouldCreateJobAndIgnoreNullEvaluatedFollowUpDateExpression() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeFollowUpDateExpression("=null")))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue()).hasFollowUpDate("");
   }
 }
