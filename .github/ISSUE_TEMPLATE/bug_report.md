@@ -1,3 +1,6 @@
+<!-- For existing Camunda Customers,
+please also use our [Support Channels](https://camunda.com/services/support/) to get priority assistance -->
+
 ---
 
 name: Bug report
