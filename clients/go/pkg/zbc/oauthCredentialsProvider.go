@@ -38,6 +38,9 @@ const OAuthClientSecretEnvVar = "ZEEBE_CLIENT_SECRET"
 // #nosec 101
 const OAuthTokenAudienceEnvVar = "ZEEBE_TOKEN_AUDIENCE"
 
+// #nosec 101
+const OAuthTokenScopeEnvVar = "ZEEBE_TOKEN_SCOPE"
+
 //nolint:revive
 const OAuthAuthorizationUrlEnvVar = "ZEEBE_AUTHORIZATION_SERVER_URL"
 const OAuthRequestTimeoutEnvVar = "ZEEBE_AUTH_REQUEST_TIMEOUT"
@@ -69,6 +72,8 @@ type OAuthProviderConfig struct {
 	ClientSecret string
 	// The audience to which the access token will be sent. Can be overridden with the environment variable 'ZEEBE_TOKEN_AUDIENCE'.
 	Audience string
+	// The scope(s) to be included in the access token. Can be overridden with the environment variable 'ZEEBE_TOKEN_SCOPE'.
+	Scope string
 	// The URL for the authorization server from which the access token will be requested. Can be overridden with
 	// the environment variable 'ZEEBE_AUTHORIZATION_SERVER_URL'.
 	AuthorizationServerURL string
@@ -128,6 +133,7 @@ func NewOAuthCredentialsProvider(config *OAuthProviderConfig) (*OAuthCredentials
 		TokenConfig: &clientcredentials.Config{
 			ClientID:       config.ClientID,
 			ClientSecret:   config.ClientSecret,
+			Scopes:         []string{config.Scope},
 			EndpointParams: map[string][]string{"audience": {config.Audience}},
 			TokenURL:       config.AuthorizationServerURL,
 			AuthStyle:      oauth2.AuthStyleInParams,
@@ -210,6 +216,9 @@ func applyCredentialEnvOverrides(config *OAuthProviderConfig) error {
 	}
 	if envAudience := env.get(OAuthTokenAudienceEnvVar); envAudience != "" {
 		config.Audience = envAudience
+	}
+	if envScope := env.get(OAuthTokenScopeEnvVar); envScope != "" {
+		config.Scope = envScope
 	}
 	if envAuthzServerURL := env.get(OAuthAuthorizationUrlEnvVar); envAuthzServerURL != "" {
 		config.AuthorizationServerURL = envAuthzServerURL
