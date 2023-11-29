@@ -120,6 +120,12 @@ public class ZeebeClientCloudBuilderImpl
   }
 
   @Override
+  public ZeebeClientBuilder gatewayTarget(final String gatewayTarget) {
+    innerBuilder.gatewayTarget(gatewayTarget);
+    return this;
+  }
+
+  @Override
   @ExperimentalApi("https://github.com/camunda/zeebe/issues/14106")
   public ZeebeClientCloudBuilderStep4 defaultTenantId(final String tenantId) {
     Loggers.LOGGER.debug(

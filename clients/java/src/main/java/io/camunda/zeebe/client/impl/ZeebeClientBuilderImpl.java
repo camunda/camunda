@@ -38,6 +38,8 @@ import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.zeebe.client.impl.util.DataSizeUtil;
 import io.camunda.zeebe.client.impl.util.Environment;
 import io.grpc.ClientInterceptor;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,6 +47,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.regex.Pattern;
 
 public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientConfiguration {
 
@@ -65,6 +68,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
   private final List<ClientInterceptor> interceptors = new ArrayList<>();
   private String gatewayAddress = DEFAULT_GATEWAY_ADDRESS;
+  private String gatewayTarget = null;
   private String defaultTenantId = CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
   private List<String> defaultJobWorkerTenantIds =
       Collections.singletonList(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
@@ -90,6 +94,11 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   @Override
   public String getGatewayAddress() {
     return gatewayAddress;
+  }
+
+  @Override
+  public String getGatewayTarget() {
+    return gatewayTarget;
   }
 
   @Override
@@ -205,7 +214,16 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
               properties.getProperty(ClientProperties.APPLY_ENVIRONMENT_VARIABLES_OVERRIDES)));
     }
     if (properties.containsKey(ClientProperties.GATEWAY_ADDRESS)) {
-      gatewayAddress(properties.getProperty(ClientProperties.GATEWAY_ADDRESS));
+      final String gatewayAddress = properties.getProperty(ClientProperties.GATEWAY_ADDRESS);
+
+      // check if the gateway address is in the format of an IP address with port: ip:port
+      String ipPortPattern = "^\\b(?:\\d{1,3}\\.){3}\\d{1,3}:\\d{1,5}\\b";
+      Pattern pattern = Pattern.compile(ipPortPattern);
+      if (pattern.matcher(gatewayAddress).matches()) {
+        gatewayAddress(gatewayAddress);
+      } else {
+        gatewayTarget(gatewayAddress);
+      }
     }
     if (properties.containsKey(ClientProperties.DEFAULT_TENANT_ID)) {
       defaultTenantId(properties.getProperty(ClientProperties.DEFAULT_TENANT_ID));
@@ -291,6 +309,19 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   @Override
   public ZeebeClientBuilder gatewayAddress(final String gatewayAddress) {
     this.gatewayAddress = gatewayAddress;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder gatewayTarget(final String gatewayTarget) {
+    final URI targetUri;
+    try {
+      // use URI api to check if the gatewayTarget is a valid URI
+      targetUri = new URI(gatewayTarget);
+    } catch (URISyntaxException e) {
+      throw new RuntimeException("Failed to parse gateway target uri", e);
+    }
+    this.gatewayTarget = targetUri.toString();
     return this;
   }
 

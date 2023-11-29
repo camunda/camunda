@@ -89,6 +89,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public final class ZeebeClientImpl implements ZeebeClient {
+
   private final ZeebeClientConfiguration config;
   private final JsonMapper jsonMapper;
   private final GatewayStub asyncStub;
@@ -134,17 +135,25 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   public static ManagedChannel buildChannel(final ZeebeClientConfiguration config) {
-    final URI address;
+    final NettyChannelBuilder channelBuilder;
+    if (config.getGatewayTarget() == null) {
+      final URI address;
 
-    try {
-      address = new URI("zb://" + config.getGatewayAddress());
-    } catch (final URISyntaxException e) {
-      throw new RuntimeException("Failed to parse broker contact point", e);
+      try {
+        address = new URI("zb://" + config.getGatewayAddress());
+      } catch (final URISyntaxException e) {
+        throw new RuntimeException("Failed to parse broker contact point", e);
+      }
+      channelBuilder = NettyChannelBuilder.forAddress(address.getHost(), address.getPort());
+    } else {
+      channelBuilder = NettyChannelBuilder.forTarget(config.getGatewayTarget());
     }
 
-    final NettyChannelBuilder channelBuilder =
-        NettyChannelBuilder.forAddress(address.getHost(), address.getPort());
+    return configureNettyChannel(config, channelBuilder).build();
+  }
 
+  private static NettyChannelBuilder configureNettyChannel(
+      final ZeebeClientConfiguration config, final NettyChannelBuilder channelBuilder) {
     configureConnectionSecurity(config, channelBuilder);
     channelBuilder.keepAliveTime(config.getKeepAlive().toMillis(), TimeUnit.MILLISECONDS);
     channelBuilder.userAgent("zeebe-client-java/" + VersionUtil.getVersion());
@@ -158,7 +167,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
       }
     }
 
-    return channelBuilder.build();
+    return channelBuilder;
   }
 
   private static CallCredentials buildCallCredentials(final ZeebeClientConfiguration config) {
@@ -205,7 +214,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
     final GatewayStub gatewayStub = GatewayGrpc.newStub(channel).withCallCredentials(credentials);
     if (!config.getInterceptors().isEmpty()) {
       return gatewayStub.withInterceptors(
-          config.getInterceptors().toArray(new ClientInterceptor[] {}));
+          config.getInterceptors().toArray(new ClientInterceptor[]{}));
     }
     return gatewayStub;
   }
@@ -222,7 +231,8 @@ public final class ZeebeClientImpl implements ZeebeClient {
 
     try {
       return objectMapper.readValue(
-          defaultServiceConfig, new TypeReference<Map<String, Object>>() {});
+          defaultServiceConfig, new TypeReference<Map<String, Object>>() {
+          });
     } catch (final IOException e) {
       Loggers.LOGGER.warn(
           "Failed to read default service config from classpath; will not configure a default retry policy",

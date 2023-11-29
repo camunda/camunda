@@ -18,6 +18,10 @@ package io.camunda.zeebe.client;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.grpc.ClientInterceptor;
+import io.grpc.NameResolver;
+import io.grpc.NameResolver.Args;
+import io.grpc.NameResolverProvider;
+import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Properties;
@@ -49,6 +53,18 @@ public interface ZeebeClientBuilder {
    *     </code> .
    */
   ZeebeClientBuilder gatewayAddress(String gatewayAddress);
+
+  /**
+   * @param gatewayTarget the host socket address of a gateway that the client can initially connect
+   *     to. If this value is empty, the gatewayAddress will be used. The default value is empty.
+   *     The purpose of this method is to extend gatewayAddress to support more connections.
+   *     <p>Must be in a standard URI format, e.g. <code>dns:///gateway.zeebe.com:26500</code> or
+   *     <code>gateway.zeebe.com:26500</code>(by default use the highest priority
+   *     NameResolverProvider schema)
+   *     <p>The schema for a URI can be customized, as long as a corresponding NameResolver exists.
+   *     <p>see {@link NameResolverProvider#newNameResolver(URI, Args)}, {@link NameResolver}
+   */
+  ZeebeClientBuilder gatewayTarget(String gatewayTarget);
 
   /**
    * @param tenantId the tenant identifier which is used for tenant-aware commands when no tenant

@@ -28,6 +28,11 @@ public interface ZeebeClientConfiguration {
   String getGatewayAddress();
 
   /**
+   * @see ZeebeClientBuilder#gatewayTarget(String)
+   */
+  String getGatewayTarget();
+
+  /**
    * @see ZeebeClientBuilder#defaultTenantId(String)
    */
   String getDefaultTenantId();
