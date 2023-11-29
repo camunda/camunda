@@ -15,13 +15,7 @@ security:
       userAccessTokenAudience: ${CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_AUDIENCE:}
       tokenUrl: ${CAMUNDA_OPTIMIZE_AUTH0_TOKEN_URL:}
     ccsm:
-      issuerUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL:}
-      issuerBackendUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL:}
       redirectRootUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_REDIRECT_ROOT_URL:}
-      clientId: ${CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID:}
-      clientSecret: ${CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET:}
-      audience: ${CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE:}
-      baseUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL:}
     cookie:
       same-site:
         # decides if the Optimize auth cookie has the same site cookie flag set

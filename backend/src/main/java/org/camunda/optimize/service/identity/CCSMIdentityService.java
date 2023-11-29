@@ -17,7 +17,6 @@ import org.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.service.security.CCSMTokenService;
-import org.camunda.optimize.service.util.CamundaIdentityConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import org.springframework.context.annotation.Conditional;
@@ -40,10 +39,10 @@ public class CCSMIdentityService extends AbstractIdentityService {
   private final Identity identity;
 
   public CCSMIdentityService(final ConfigurationService configurationService, final CCSMTokenService ccsmTokenService,
-                             final CamundaIdentityConfigurationService identityConfigurationProvider) {
+                             final Identity identity) {
     super(configurationService);
     this.ccsmTokenService = ccsmTokenService;
-    this.identity = new Identity(identityConfigurationProvider.getIdentityConfiguration());
+    this.identity = identity;
   }
 
   @Override
