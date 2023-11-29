@@ -123,6 +123,11 @@ public class ProcessInstanceMigrationMigrateProcessor
       responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, reason);
       return ProcessingError.EXPECTED_ERROR;
     }
+    if (error instanceof final UnmappedActiveElementException e) {
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, e.getMessage());
+      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
+      return ProcessingError.EXPECTED_ERROR;
+    }
 
     return ProcessingError.UNEXPECTED_ERROR;
   }
@@ -157,6 +162,10 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     final String targetElementId =
         sourceElementIdToTargetElementId.get(elementInstanceRecord.getElementId());
+    if (targetElementId == null) {
+      throw new UnmappedActiveElementException(
+          elementInstanceRecord.getProcessInstanceKey(), elementInstanceRecord.getElementId());
+    }
 
     stateWriter.appendFollowUpEvent(
         elementInstance.getKey(),
@@ -189,6 +198,22 @@ public class ProcessInstanceMigrationMigrateProcessor
     UnsupportedElementMigrationException(
         final String elementId, final BpmnElementType bpmnElementType) {
       super("%s. The migration of a %s is not supported.".formatted(elementId, bpmnElementType));
+    }
+  }
+
+  /**
+   * Exception that can be thrown during the migration of a process instance, in case the engine
+   * attempts to migrate an element which is not mapped.
+   */
+  private static final class UnmappedActiveElementException extends RuntimeException {
+    UnmappedActiveElementException(final long processInstanceKey, final String elementId) {
+      super(
+          String.format(
+              """
+              Expected to migrate process instance '%s' \
+              but no mapping instruction defined for active element '%s'. \
+              Elements cannot be migrated without a mapping.""",
+              processInstanceKey, elementId));
     }
   }
 }
