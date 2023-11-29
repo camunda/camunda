@@ -12,7 +12,6 @@ import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
 import io.camunda.operate.webapp.api.v1.entities.Results;
-import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,16 +54,6 @@ public class FlowNodeInstanceDaoIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void shouldReturnEmptyListWhenNoFlowNodeInstanceExist() throws Exception {
-    given(() -> { /*"no flownode instances "*/ });
-    when(() -> flowNodeInstanceResults = dao.search(new Query<>()));
-    then(() -> {
-      assertThat(flowNodeInstanceResults.getItems()).isEmpty();
-      assertThat(flowNodeInstanceResults.getTotal()).isZero();
-    });
-  }
-
-  @Test
   public void shouldReturnFlowNodeInstances() throws Exception {
     given(() ->
         processInstanceKey = createIncidentsAndGetProcessInstanceKey(
@@ -72,6 +61,36 @@ public class FlowNodeInstanceDaoIT extends OperateZeebeAbstractIT {
     );
     when(() ->
         flowNodeInstanceResults = dao.search(new Query<>())
+    );
+    then(() -> {
+      assertThat(flowNodeInstanceResults.getItems()).hasSize(2);
+      assertThat(flowNodeInstanceResults.getItems().get(0))
+          .extracting(
+              "processInstanceKey", "processDefinitionKey", "flowNodeId", "flowNodeName",
+              "type", "state", "tenantId")
+          .containsExactly(
+              processInstanceKey, demoProcessDefinitionKey, "start", "start",
+              "START_EVENT", "COMPLETED", DEFAULT_TENANT_ID
+          );
+      assertThat(flowNodeInstanceResults.getItems().get(1))
+          .extracting(
+              "processInstanceKey", "processDefinitionKey", "flowNodeId", "flowNodeName",
+              "type", "state", "tenantId")
+          .containsExactly(
+              processInstanceKey, demoProcessDefinitionKey, "taskA", "task A",
+              "SERVICE_TASK", "ACTIVE", DEFAULT_TENANT_ID
+          );
+    });
+  }
+
+  @Test
+  public void shouldReturnFlowNodeInstancesWithEmptyFilter() throws Exception {
+    given(() ->
+        processInstanceKey = createIncidentsAndGetProcessInstanceKey(
+            "demoProcess", "taskA", "Some error")
+    );
+    when(() ->
+        flowNodeInstanceResults = dao.search(new Query<FlowNodeInstance>().setFilter(new FlowNodeInstance()))
     );
     then(() -> {
       assertThat(flowNodeInstanceResults.getItems()).hasSize(2);
@@ -203,14 +222,6 @@ public class FlowNodeInstanceDaoIT extends OperateZeebeAbstractIT {
               "start", "start", "START_EVENT", "COMPLETED"
           );
     });
-  }
-
-  @Test(expected= ResourceNotFoundException.class)
-  public void shouldThrowExceptionWhenNoKeyFound() {
-    processInstanceKey = createIncidentsAndGetProcessInstanceKey(
-        "demoProcess", "taskA", "Some error");
-
-    dao.byKey(1L);
   }
 
   protected void given(Runnable conditions) throws Exception {

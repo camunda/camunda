@@ -21,8 +21,10 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Conditional(OpensearchCondition.class)
 @Component
@@ -30,7 +32,7 @@ public class OpensearchProcessDefinitionDao extends OpensearchKeyFilteringDao<Pr
 
   private final ProcessIndex processIndex;
   public OpensearchProcessDefinitionDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
-                                        ProcessIndex processIndex, RichOpenSearchClient richOpenSearchClient) {
+                                        RichOpenSearchClient richOpenSearchClient, ProcessIndex processIndex) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.processIndex = processIndex;
   }
@@ -75,11 +77,6 @@ public class OpensearchProcessDefinitionDao extends OpensearchKeyFilteringDao<Pr
   }
 
   @Override
-  protected SearchRequest.Builder buildSearchRequest(Query<ProcessDefinition> query) {
-    return requestDSLWrapper.searchRequestBuilder(getIndexName());
-  }
-
-  @Override
   protected String getIndexName() {
     return processIndex.getAlias();
   }
@@ -98,14 +95,17 @@ public class OpensearchProcessDefinitionDao extends OpensearchKeyFilteringDao<Pr
   protected void buildFiltering(Query<ProcessDefinition> query, SearchRequest.Builder request) {
     final ProcessDefinition filter = query.getFilter();
     if (filter != null) {
-      var queries = new ArrayList<org.opensearch.client.opensearch._types.query_dsl.Query>();
-      queries.add(queryDSLWrapper.buildTermQuery(ProcessDefinition.NAME, filter.getName()));
-      queries.add(queryDSLWrapper.buildTermQuery(ProcessDefinition.BPMN_PROCESS_ID, filter.getBpmnProcessId()));
-      queries.add(queryDSLWrapper.buildTermQuery(ProcessDefinition.TENANT_ID, filter.getTenantId()));
-      queries.add(queryDSLWrapper.buildTermQuery(ProcessDefinition.VERSION, filter.getVersion()));
-      queries.add(queryDSLWrapper.buildTermQuery(ProcessDefinition.KEY, filter.getKey()));
-      request.query(
-          queryDSLWrapper.withTenantCheck(queryDSLWrapper.and(queries)));
+      var queryTerms = Stream.of(
+          queryDSLWrapper.term(ProcessDefinition.NAME, filter.getName()),
+          queryDSLWrapper.term(ProcessDefinition.BPMN_PROCESS_ID, filter.getBpmnProcessId()),
+          queryDSLWrapper.term(ProcessDefinition.TENANT_ID, filter.getTenantId()),
+          queryDSLWrapper.term(ProcessDefinition.VERSION, filter.getVersion()),
+          queryDSLWrapper.term(ProcessDefinition.KEY, filter.getKey())
+      ).filter(Objects::nonNull).collect(Collectors.toList());
+
+      if (!queryTerms.isEmpty()) {
+        request.query(queryDSLWrapper.and(queryTerms));
+      }
     }
   }
 

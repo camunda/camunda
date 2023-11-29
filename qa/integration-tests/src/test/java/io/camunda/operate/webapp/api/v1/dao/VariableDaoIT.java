@@ -13,7 +13,6 @@ import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.entities.Variable;
-import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,16 +57,6 @@ public class VariableDaoIT extends OperateZeebeAbstractIT {
       fail("Could not build payload from map ", variables);
     }
     return null;
-  }
-
-  @Test
-  public void shouldReturnEmptyListWhenNoVariableExist() throws Exception {
-    given(() -> { /*"no incidents "*/ });
-    when(() -> variableResults = dao.search(new Query<>()));
-    then(() -> {
-      assertThat(variableResults.getItems()).isEmpty();
-      assertThat(variableResults.getTotal()).isZero();
-    });
   }
 
   @Test
@@ -125,12 +114,42 @@ public class VariableDaoIT extends OperateZeebeAbstractIT {
     });
   }
 
-  @Test(expected=ResourceNotFoundException.class)
-  public void shouldThrowExceptionWhenNoKeyFound() {
-    processInstanceKey = createVariablesAndGetProcessInstanceKey(
-        "manual-task-process", Map.of("customerId", "23", "orderId", "5"));
-
-    variable = dao.byKey(1L);
+  @Test
+  public void shouldReturnVariablesWithEmptyFilter() throws Exception {
+    given(() ->
+        processInstanceKey = createVariablesAndGetProcessInstanceKey(
+            "manual-task-process", Map.of("customerId", "23", "orderId", "5"))
+    );
+    when(() ->
+        variableResults = dao.search(new Query<Variable>().setFilter(new Variable()).setSort(Sort.listOf("name")))
+    );
+    then(() -> {
+      assertThat(variableResults.getItems()).hasSize(2);
+      assertThat(variableResults.getItems().get(0))
+          .extracting(
+              "processInstanceKey",
+              "name",
+              "value",
+              "tenantId")
+          .containsExactly(
+              processInstanceKey,
+              "customerId",
+              "\"23\"",
+              DEFAULT_TENANT_ID
+          );
+      assertThat(variableResults.getItems().get(1))
+          .extracting(
+              "processInstanceKey",
+              "name",
+              "value",
+              "tenantId")
+          .containsExactly(
+              processInstanceKey,
+              "orderId",
+              "\"5\"",
+              DEFAULT_TENANT_ID
+          );
+    });
   }
 
   @Test

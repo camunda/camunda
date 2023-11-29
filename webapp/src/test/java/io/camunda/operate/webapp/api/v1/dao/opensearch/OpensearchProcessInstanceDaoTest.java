@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
+import io.camunda.operate.property.OperateOpensearchProperties;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
@@ -49,12 +51,19 @@ public class OpensearchProcessInstanceDaoTest {
   @Mock
   private ListViewTemplate mockProcessInstanceIndex;
 
+  @Mock
+  private OperateOpensearchProperties mockOpensearchProperties;
+
+  @Mock
+  private OperateProperties mockOperateProperties;
+
   private OpensearchProcessInstanceDao underTest;
 
   @BeforeEach
   public void setup() {
-    underTest = new OpensearchProcessInstanceDao(mockQueryWrapper, mockRequestWrapper, mockProcessInstanceIndex,
-        mockOpensearchClient, mockProcessInstanceWriter);
+    when(mockOperateProperties.getOpensearch()).thenReturn(mockOpensearchProperties);
+    underTest = new OpensearchProcessInstanceDao(mockQueryWrapper, mockRequestWrapper, mockOpensearchClient,
+        mockProcessInstanceIndex, mockProcessInstanceWriter, mockOperateProperties);
   }
 
   @Test
@@ -147,6 +156,9 @@ public class OpensearchProcessInstanceDaoTest {
         .setParentFlowNodeInstanceKey(4L).setProcessVersion(1).setBpmnProcessId("bpmnId").setState("state")
         .setTenantId("tenant").setStartDate("01-01-2020").setEndDate("01-02-2020");
 
+    String expectedDateFormat = "dd-mm-yy";
+    when(mockOpensearchProperties.getDateFormat()).thenReturn(expectedDateFormat);
+
     Query<ProcessInstance> inputQuery = new Query<ProcessInstance>().setFilter(filter);
 
     underTest.buildFiltering(inputQuery, mockSearchRequest);
@@ -160,8 +172,8 @@ public class OpensearchProcessInstanceDaoTest {
     verify(mockQueryWrapper, times(1)).term(ProcessInstance.BPMN_PROCESS_ID, filter.getBpmnProcessId());
     verify(mockQueryWrapper, times(1)).term(ProcessInstance.STATE, filter.getState());
     verify(mockQueryWrapper, times(1)).term(ProcessInstance.TENANT_ID, filter.getTenantId());
-    verify(mockQueryWrapper, times(1)).term(ProcessInstance.START_DATE, filter.getStartDate());
-    verify(mockQueryWrapper, times(1)).term(ProcessInstance.END_DATE, filter.getEndDate());
+    verify(mockQueryWrapper, times(1)).matchDateQuery(ProcessInstance.START_DATE, filter.getStartDate(), expectedDateFormat);
+    verify(mockQueryWrapper, times(1)).matchDateQuery(ProcessInstance.END_DATE, filter.getEndDate(), expectedDateFormat);
 
     // Verify that the join relation was still set
     verify(mockQueryWrapper, times(1)).term(ListViewTemplate.JOIN_RELATION, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION);

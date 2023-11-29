@@ -7,6 +7,8 @@
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.cache.ProcessCache;
+import io.camunda.operate.property.OperateOpensearchProperties;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
@@ -50,11 +52,18 @@ public class OpensearchFlowNodeInstanceDaoTest {
   @Mock
   private ProcessCache mockProcessCache;
 
+  @Mock
+  private OperateOpensearchProperties mockOpensearchProperties;
+
+  @Mock
+  private OperateProperties mockOperateProperties;
+
   private OpensearchFlowNodeInstanceDao underTest;
 
   @BeforeEach
   public void setup() {
-    underTest = new OpensearchFlowNodeInstanceDao(mockQueryWrapper, mockRequestWrapper, mockFlowNodeIndex, mockOpensearchClient, mockProcessCache);
+    when(mockOperateProperties.getOpensearch()).thenReturn(mockOpensearchProperties);
+    underTest = new OpensearchFlowNodeInstanceDao(mockQueryWrapper, mockRequestWrapper, mockOpensearchClient, mockFlowNodeIndex, mockProcessCache, mockOperateProperties);
   }
 
   @Test
@@ -105,23 +114,14 @@ public class OpensearchFlowNodeInstanceDaoTest {
   }
 
   @Test
-  public void testBuildFilteringWithAllNullFilterFields() {
-    SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
-    Query<FlowNodeInstance> inputQuery = new Query<FlowNodeInstance>().setFilter(new FlowNodeInstance());
-
-    underTest.buildFiltering(inputQuery, mockSearchRequest);
-
-    // Verify that the query was not modified in any way
-    verifyNoInteractions(mockSearchRequest);
-    verifyNoInteractions(mockQueryWrapper);
-  }
-
-  @Test
   public void testBuildFilteringWithValidFields() {
     SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
     FlowNodeInstance filter = new FlowNodeInstance().setKey(1L).setProcessInstanceKey(2L).setProcessDefinitionKey(3L)
         .setStartDate("01-01-2020").setEndDate("01-02-2020").setState("state").setType("type").setFlowNodeId("nodeA")
         .setIncident(true).setIncidentKey(4L).setTenantId("tenant");
+
+    String expectedDateFormat = "dd-mm-yy";
+    when(mockOpensearchProperties.getDateFormat()).thenReturn(expectedDateFormat);
 
     Query<FlowNodeInstance> inputQuery = new Query<FlowNodeInstance>().setFilter(filter);
 
@@ -131,28 +131,14 @@ public class OpensearchFlowNodeInstanceDaoTest {
     verify(mockQueryWrapper, times(1)).term(FlowNodeInstance.KEY, filter.getKey());
     verify(mockQueryWrapper, times(1)).term(FlowNodeInstance.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey());
     verify(mockQueryWrapper, times(1)).term(FlowNodeInstance.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey());
-    verify(mockQueryWrapper, times(1)).term(FlowNodeInstance.START_DATE, filter.getStartDate());
-    verify(mockQueryWrapper, times(1)).term(FlowNodeInstance.END_DATE, filter.getEndDate());
+    verify(mockQueryWrapper, times(1)).matchDateQuery(FlowNodeInstance.START_DATE, filter.getStartDate(), expectedDateFormat);
+    verify(mockQueryWrapper, times(1)).matchDateQuery(FlowNodeInstance.END_DATE, filter.getEndDate(), expectedDateFormat);
     verify(mockQueryWrapper, times(1)).term(FlowNodeInstance.STATE, filter.getState());
     verify(mockQueryWrapper, times(1)).term(FlowNodeInstance.TYPE, filter.getType());
     verify(mockQueryWrapper, times(1)).term(FlowNodeInstance.FLOW_NODE_ID, filter.getFlowNodeId());
     verify(mockQueryWrapper, times(1)).term(FlowNodeInstance.INCIDENT, filter.getIncident());
     verify(mockQueryWrapper, times(1)).term(FlowNodeInstance.INCIDENT_KEY, filter.getIncidentKey());
     verify(mockQueryWrapper, times(1)).term(FlowNodeInstance.TENANT_ID, filter.getTenantId());
-  }
-
-  @Test
-  public void testBuildFilteringIgnoresFlowNodeName() {
-    SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
-    FlowNodeInstance filter = new FlowNodeInstance().setFlowNodeName("name");
-
-    Query<FlowNodeInstance> inputQuery = new Query<FlowNodeInstance>().setFilter(filter);
-
-    underTest.buildFiltering(inputQuery, mockSearchRequest);
-
-    // Verify that the query was not modified in any way
-    verifyNoInteractions(mockSearchRequest);
-    verifyNoInteractions(mockQueryWrapper);
   }
 
   @Test

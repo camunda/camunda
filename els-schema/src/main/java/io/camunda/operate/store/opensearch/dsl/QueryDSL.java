@@ -238,4 +238,15 @@ public interface QueryDSL {
   static Query wildcardQuery(String field, String value) {
     return WildcardQuery.of(q -> q.field(field).value(value))._toQuery();
   }
+
+  static Query matchDateQuery(final String name, final String dateAsString, String dateFormat) {
+    // Used to match in different time ranges like hours, minutes etc
+    // See: https://www.elastic.co/guide/en/elasticsearch/reference/current/common-options.html#date-math
+    return RangeQuery.of(q ->
+        q.field(name)
+            .gte(json(dateAsString))
+            .lte(json(dateAsString))
+            .format(dateFormat)
+    )._toQuery();
+  }
 }

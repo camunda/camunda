@@ -6,20 +6,20 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
-import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.api.v1.entities.Incident;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
 import io.camunda.operate.webapp.api.v1.entities.Results;
-import java.util.List;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.List;
+
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class IncidentDaoIT extends OperateZeebeAbstractIT {
 
@@ -56,17 +56,6 @@ public class IncidentDaoIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void shouldReturnEmptyListWhenNoIncidentExist() throws Exception {
-    given(() -> { /*"no incidents "*/ });
-    when(() -> incidentResults = dao.search(new Query<>()));
-    then(() -> {
-      assertThat(incidentResults.getItems()).isEmpty();
-      assertThat(incidentResults.getTotal()).isZero();
-    });
-  }
-
-  @Test
-  @Ignore("https://github.com/camunda/operate/issues/5287")
   public void shouldReturnIncidents() throws Exception {
     given(() ->
       processInstanceKey = createIncidentsAndGetProcessInstanceKey(
@@ -74,6 +63,36 @@ public class IncidentDaoIT extends OperateZeebeAbstractIT {
     );
     when(() ->
         incidentResults = dao.search(new Query<>())
+    );
+    then(() -> {
+      assertThat(incidentResults.getItems()).hasSize(1);
+      assertThat(incidentResults.getItems().get(0))
+          .extracting(
+              "processDefinitionKey",
+              "processInstanceKey",
+              "type",
+              "state",
+              "message",
+              "tenantId")
+          .containsExactly(
+              demoProcessKey,
+              processInstanceKey,
+              "JOB_NO_RETRIES",
+              "ACTIVE",
+              "Some error",
+              DEFAULT_TENANT_ID
+          );
+    });
+  }
+
+  @Test
+  public void shouldReturnIncidentsWithEmptyFilter() throws Exception {
+    given(() ->
+        processInstanceKey = createIncidentsAndGetProcessInstanceKey(
+            "demoProcess", "taskA", "Some error")
+    );
+    when(() ->
+        incidentResults = dao.search(new Query<Incident>().setFilter(new Incident()))
     );
     then(() -> {
       assertThat(incidentResults.getItems()).hasSize(1);

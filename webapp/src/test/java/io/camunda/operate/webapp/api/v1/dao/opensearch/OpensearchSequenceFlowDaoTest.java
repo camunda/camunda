@@ -46,7 +46,7 @@ public class OpensearchSequenceFlowDaoTest {
   @BeforeEach
   public void setup() {
     underTest = new OpensearchSequenceFlowDao(mockQueryWrapper, mockRequestWrapper,
-        mockSequenceFlowIndex, mockOpensearchClient);
+        mockOpensearchClient, mockSequenceFlowIndex);
   }
 
   @Test
@@ -70,18 +70,6 @@ public class OpensearchSequenceFlowDaoTest {
   public void testBuildFilteringWithNullFilter() {
     SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
     underTest.buildFiltering(new Query<>(), mockSearchRequest);
-
-    // Verify that the query was not modified in any way
-    verifyNoInteractions(mockSearchRequest);
-    verifyNoInteractions(mockQueryWrapper);
-  }
-
-  @Test
-  public void testBuildFilteringWithAllNullFilterFields() {
-    SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
-    Query<SequenceFlow> inputQuery = new Query<SequenceFlow>().setFilter(new SequenceFlow());
-
-    underTest.buildFiltering(inputQuery, mockSearchRequest);
 
     // Verify that the query was not modified in any way
     verifyNoInteractions(mockSearchRequest);

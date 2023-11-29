@@ -8,6 +8,8 @@ package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.conditions.OpensearchCondition;
+import io.camunda.operate.property.OpensearchProperties;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.FlowNodeInstanceDao;
@@ -19,8 +21,9 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Conditional(OpensearchCondition.class)
 @Component
@@ -29,12 +32,15 @@ public class OpensearchFlowNodeInstanceDao extends OpensearchKeyFilteringDao<Flo
   private final FlowNodeInstanceTemplate flowNodeInstanceIndex;
   private final ProcessCache processCache;
 
+  private final OpensearchProperties opensearchProperties;
+
   public OpensearchFlowNodeInstanceDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
-                                       FlowNodeInstanceTemplate flowNodeInstanceIndex, RichOpenSearchClient richOpenSearchClient,
-                                       ProcessCache processCache) {
+                                       RichOpenSearchClient richOpenSearchClient, FlowNodeInstanceTemplate flowNodeInstanceIndex,
+                                       ProcessCache processCache, OperateProperties operateProperties) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.flowNodeInstanceIndex = flowNodeInstanceIndex;
     this.processCache = processCache;
+    this.opensearchProperties = operateProperties.getOpensearch();
   }
 
   @Override
@@ -77,41 +83,19 @@ public class OpensearchFlowNodeInstanceDao extends OpensearchKeyFilteringDao<Flo
     FlowNodeInstance filter = query.getFilter();
 
     if (filter != null) {
-      List<org.opensearch.client.opensearch._types.query_dsl.Query> queryTerms = new LinkedList<>();
-
-      if (filter.getKey() != null) {
-        queryTerms.add(queryDSLWrapper.term(FlowNodeInstance.KEY, filter.getKey()));
-      }
-      if (filter.getProcessInstanceKey() != null) {
-        queryTerms.add(queryDSLWrapper.term(FlowNodeInstance.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()));
-      }
-      if (filter.getProcessDefinitionKey() != null) {
-        queryTerms.add(queryDSLWrapper.term(FlowNodeInstance.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()));
-      }
-      if (filter.getStartDate() != null) {
-        queryTerms.add(queryDSLWrapper.term(FlowNodeInstance.START_DATE, filter.getStartDate()));
-      }
-      if (filter.getEndDate() != null) {
-        queryTerms.add(queryDSLWrapper.term(FlowNodeInstance.END_DATE, filter.getEndDate()));
-      }
-      if (filter.getState() != null) {
-        queryTerms.add(queryDSLWrapper.term(FlowNodeInstance.STATE, filter.getState()));
-      }
-      if (filter.getType() != null) {
-        queryTerms.add(queryDSLWrapper.term(FlowNodeInstance.TYPE, filter.getType()));
-      }
-      if (filter.getFlowNodeId() != null) {
-        queryTerms.add(queryDSLWrapper.term(FlowNodeInstance.FLOW_NODE_ID, filter.getFlowNodeId()));
-      }
-      if (filter.getIncident() != null) {
-        queryTerms.add(queryDSLWrapper.term(FlowNodeInstance.INCIDENT, filter.getIncident()));
-      }
-      if (filter.getIncidentKey() != null) {
-        queryTerms.add(queryDSLWrapper.term(FlowNodeInstance.INCIDENT_KEY, filter.getIncidentKey()));
-      }
-      if (filter.getTenantId() != null) {
-        queryTerms.add(queryDSLWrapper.term(FlowNodeInstance.TENANT_ID, filter.getTenantId()));
-      }
+      var queryTerms = Stream.of(
+          queryDSLWrapper.term(FlowNodeInstance.KEY, filter.getKey()),
+          queryDSLWrapper.term(FlowNodeInstance.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()),
+          queryDSLWrapper.term(FlowNodeInstance.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()),
+          queryDSLWrapper.matchDateQuery(FlowNodeInstance.START_DATE, filter.getStartDate(), opensearchProperties.getDateFormat()),
+          queryDSLWrapper.matchDateQuery(FlowNodeInstance.END_DATE, filter.getEndDate(), opensearchProperties.getDateFormat()),
+          queryDSLWrapper.term(FlowNodeInstance.STATE, filter.getState()),
+          queryDSLWrapper.term(FlowNodeInstance.TYPE, filter.getType()),
+          queryDSLWrapper.term(FlowNodeInstance.FLOW_NODE_ID, filter.getFlowNodeId()),
+          queryDSLWrapper.term(FlowNodeInstance.INCIDENT, filter.getIncident()),
+          queryDSLWrapper.term(FlowNodeInstance.INCIDENT_KEY, filter.getIncidentKey()),
+          queryDSLWrapper.term(FlowNodeInstance.TENANT_ID, filter.getTenantId())
+      ).filter(Objects::nonNull).collect(Collectors.toList());
 
       if (!queryTerms.isEmpty()) {
         request.query(queryDSLWrapper.and(queryTerms));

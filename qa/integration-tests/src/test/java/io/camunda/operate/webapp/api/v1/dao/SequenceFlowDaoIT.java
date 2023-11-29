@@ -51,16 +51,6 @@ public class SequenceFlowDaoIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void shouldReturnEmptyListWhenNoSequenceFlowsExist() throws Exception {
-    given(() -> { /*"no sequence flows "*/ });
-    when(() -> sequenceFlowResults = dao.search(new Query<>()));
-    then(() -> {
-      assertThat(sequenceFlowResults.getItems()).isEmpty();
-      assertThat(sequenceFlowResults.getTotal()).isZero();
-    });
-  }
-
-  @Test
   public void shouldReturnSequenceFlows() throws Exception {
     given(() ->
       processInstanceKey = createIncidentsAndGetProcessInstanceKey(
@@ -68,6 +58,36 @@ public class SequenceFlowDaoIT extends OperateZeebeAbstractIT {
     );
     when(() ->
         sequenceFlowResults = dao.search(new Query<>())
+    );
+    then(() -> {
+      assertThat(sequenceFlowResults.getItems()).hasSize(4);
+      assertThat(sequenceFlowResults.getItems().get(0))
+          .extracting("processInstanceKey", "activityId", "tenantId")
+          .containsExactly(
+              processInstanceKey, "sequenceFlow_01", DEFAULT_TENANT_ID);
+      assertThat(sequenceFlowResults.getItems().get(1))
+          .extracting("processInstanceKey", "activityId", "tenantId")
+          .containsExactly(
+              processInstanceKey, "sequenceFlow_02", DEFAULT_TENANT_ID);
+      assertThat(sequenceFlowResults.getItems().get(2))
+          .extracting("processInstanceKey", "activityId", "tenantId")
+          .containsExactly(
+              processInstanceKey, "sequenceFlow_03", DEFAULT_TENANT_ID);
+      assertThat(sequenceFlowResults.getItems().get(3))
+          .extracting("processInstanceKey", "activityId", "tenantId")
+          .containsExactly(
+              processInstanceKey, "sequenceFlow_04", DEFAULT_TENANT_ID);
+    });
+  }
+
+  @Test
+  public void shouldReturnSequenceFlowsWithEmptyFilter() throws Exception {
+    given(() ->
+        processInstanceKey = createIncidentsAndGetProcessInstanceKey(
+            "sequenceFlowsProcessV1", "taskA", "Some error")
+    );
+    when(() ->
+        sequenceFlowResults = dao.search(new Query<SequenceFlow>().setFilter(new SequenceFlow()))
     );
     then(() -> {
       assertThat(sequenceFlowResults.getItems()).hasSize(4);

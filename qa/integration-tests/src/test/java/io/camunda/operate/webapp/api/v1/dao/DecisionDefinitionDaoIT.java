@@ -12,8 +12,6 @@ import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.webapp.api.v1.entities.DecisionDefinition;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
-import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
-import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -68,36 +66,29 @@ public class DecisionDefinitionDaoIT extends OperateZeebeAbstractIT {
     });
   }
 
-  @Test(expected = ResourceNotFoundException.class)
-  public void shouldThrowWhenByKeyNotExists() throws Exception {
-    given(() -> {
-    });
-    when(() -> dao.byKey(-27L));
-  }
-
-  @Test(expected = ServerException.class)
-  public void shouldThrowWhenByKeyFails() throws Exception {
-    given(() -> {
-    });
-    when(() -> dao.byKey(null));
-  }
-
   @Test
-  public void shouldReturnEmptyListWhenNoDecisionDefinitionsExist() throws Exception {
-    given(() -> { /*"no decision definitions"*/ });
-    when(() -> decisionDefinitionResults = dao.search(new Query<>()));
-    then(() -> {
-      assertThat(decisionDefinitionResults.getItems()).isEmpty();
-      assertThat(decisionDefinitionResults.getTotal()).isZero();
-    });
-  }
-
-  @Test
-  public void shouldReturnNonEmptyListWhenDecisionDefinitionsExist() throws Exception {
+  public void shouldReturnDecisionDefinitionsOnSearch() throws Exception {
     given(() -> tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
         .deployDecision("invoiceBusinessDecisions_v_2.dmn")
         .waitUntil().decisionsAreDeployed(4));
     when(() -> decisionDefinitionResults = dao.search(new Query<>()));
+    then(() -> {
+      assertThat(decisionDefinitionResults.getTotal()).isEqualTo(4);
+      assertThat(decisionDefinitionResults.getItems()).extracting(DECISION_ID)
+          .containsExactly("invoiceAssignApprover", "invoiceClassification", "invoiceAssignApprover", "invoiceClassification");
+      assertThat(decisionDefinitionResults.getItems()).extracting(VERSION).containsExactly(1, 1, 2, 2);
+      assertThat(decisionDefinitionResults.getItems()).extracting(DECISION_REQUIREMENTS_NAME)
+          .containsExactly("Invoice Business Decisions", "Invoice Business Decisions", "Invoice Business Decisions", "Invoice Business Decisions");
+      assertThat(decisionDefinitionResults.getItems()).extracting(DECISION_REQUIREMENTS_VERSION).containsExactly(1, 1, 2, 2);
+    });
+  }
+
+  @Test
+  public void shouldReturnDecisionDefinitionsOnSearchWithEmptyFilter() throws Exception {
+    given(() -> tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
+        .deployDecision("invoiceBusinessDecisions_v_2.dmn")
+        .waitUntil().decisionsAreDeployed(4));
+    when(() -> decisionDefinitionResults = dao.search(new Query<DecisionDefinition>().setFilter(new DecisionDefinition())));
     then(() -> {
       assertThat(decisionDefinitionResults.getTotal()).isEqualTo(4);
       assertThat(decisionDefinitionResults.getItems()).extracting(DECISION_ID)

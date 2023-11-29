@@ -49,7 +49,7 @@ public abstract class OpensearchKeyFilteringDao<T, R> extends OpensearchSearchab
 
   protected void validateKey(Long key) {
     if (key == null) {
-      throw new ServerException("Key provide cannot be null");
+      throw new ServerException("Key provided cannot be null");
     }
   }
 

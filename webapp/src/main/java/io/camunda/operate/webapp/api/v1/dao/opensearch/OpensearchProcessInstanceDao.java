@@ -7,6 +7,8 @@
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
+import io.camunda.operate.property.OpensearchProperties;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.ProcessInstanceDao;
@@ -26,6 +28,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 @Conditional(OpensearchCondition.class)
 @Component
@@ -35,12 +38,15 @@ public class OpensearchProcessInstanceDao extends OpensearchKeyFilteringDao<Proc
 
   private final ProcessInstanceWriter processInstanceWriter;
 
+  private final OpensearchProperties opensearchProperties;
+
   public OpensearchProcessInstanceDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
-                                      ListViewTemplate processInstanceIndex, RichOpenSearchClient richOpenSearchClient,
-                                      ProcessInstanceWriter processInstanceWriter) {
+                                      RichOpenSearchClient richOpenSearchClient, ListViewTemplate processInstanceIndex,
+                                      ProcessInstanceWriter processInstanceWriter, OperateProperties operateProperties) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.processInstanceIndex = processInstanceIndex;
     this.processInstanceWriter = processInstanceWriter;
+    this.opensearchProperties = operateProperties.getOpensearch();
   }
 
 
@@ -123,39 +129,21 @@ public class OpensearchProcessInstanceDao extends OpensearchKeyFilteringDao<Proc
     ProcessInstance filter = query.getFilter();
 
     if (filter != null) {
-      if (filter.getKey() != null) {
         queryTerms.add(queryDSLWrapper.term(ProcessInstance.KEY, filter.getKey()));
-      }
-      if (filter.getProcessDefinitionKey() != null) {
         queryTerms.add(queryDSLWrapper.term(ProcessInstance.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()));
-      }
-      if (filter.getParentKey() != null) {
         queryTerms.add(queryDSLWrapper.term(ProcessInstance.PARENT_KEY, filter.getParentKey()));
-      }
-      if (filter.getParentFlowNodeInstanceKey() != null) {
         queryTerms.add(queryDSLWrapper.term(ProcessInstance.PARENT_FLOW_NODE_INSTANCE_KEY, filter.getParentFlowNodeInstanceKey()));
-      }
-      if (filter.getProcessVersion() != null) {
         queryTerms.add(queryDSLWrapper.term(ProcessInstance.VERSION, filter.getProcessVersion()));
-      }
-      if (filter.getBpmnProcessId() != null) {
         queryTerms.add(queryDSLWrapper.term(ProcessInstance.BPMN_PROCESS_ID, filter.getBpmnProcessId()));
-      }
-      if (filter.getState() != null) {
         queryTerms.add(queryDSLWrapper.term(ProcessInstance.STATE, filter.getState()));
-      }
-      if (filter.getTenantId() != null) {
         queryTerms.add(queryDSLWrapper.term(ProcessInstance.TENANT_ID, filter.getTenantId()));
-      }
-      if (filter.getStartDate() != null) {
-        queryTerms.add(queryDSLWrapper.term(ProcessInstance.START_DATE, filter.getStartDate()));
-      }
-      if (filter.getEndDate() != null) {
-        queryTerms.add(queryDSLWrapper.term(ProcessInstance.END_DATE, filter.getEndDate()));
-      }
+        queryTerms.add(queryDSLWrapper.matchDateQuery(ProcessInstance.START_DATE, filter.getStartDate(), opensearchProperties.getDateFormat()));
+        queryTerms.add(queryDSLWrapper.matchDateQuery(ProcessInstance.END_DATE, filter.getEndDate(), opensearchProperties.getDateFormat()));
     }
 
-    request.query(queryDSLWrapper.and(queryTerms));
+    var nonNullQueryTerms = queryTerms.stream().filter(Objects::nonNull).toList();
+
+    request.query(queryDSLWrapper.and(nonNullQueryTerms));
   }
 
   @Override

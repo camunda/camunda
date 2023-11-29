@@ -25,10 +25,17 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.*;
+import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.DECISION_REQUIREMENTS_ID;
+import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.NAME;
+import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.RESOURCE_NAME;
+import static io.camunda.operate.schema.indices.DecisionRequirementsIndex.VERSION;
 import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -64,20 +71,6 @@ public class DecisionRequirementsDaoIT extends OperateZeebeAbstractIT {
       assertThat(decisionRequirements.getDecisionRequirementsId()).isEqualTo("invoiceBusinessDecisions");
       assertThat(decisionRequirements.getTenantId()).isEqualTo(DEFAULT_TENANT_ID);
     });
-  }
-
-  @Test(expected = ResourceNotFoundException.class)
-  public void shouldThrowWhenByKeyNotExists() throws Exception {
-    given(() -> {
-    });
-    when(() -> dao.byKey(-27L));
-  }
-
-  @Test(expected = ServerException.class)
-  public void shouldThrowWhenByKeyFails() throws Exception {
-    given(() -> {
-    });
-    when(() -> dao.byKey(null));
   }
 
   @Test
@@ -185,20 +178,25 @@ public class DecisionRequirementsDaoIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void shouldReturnEmptyListWhenNoDecisionRequirementsExist() throws Exception {
-    given(() -> { /*"no decision requirements"*/ });
+  public void shouldReturnDecisionRequirements() throws Exception {
+    given(() -> tester.deployDecision("invoiceBusinessDecisions_v_1.dmn").deployDecision("invoiceBusinessDecisions_v_2.dmn").waitUntil()
+        .decisionsAreDeployed(4));
     when(() -> decisionRequirementsResults = dao.search(new Query<>()));
     then(() -> {
-      assertThat(decisionRequirementsResults.getItems()).isEmpty();
-      assertThat(decisionRequirementsResults.getTotal()).isZero();
+      assertThat(decisionRequirementsResults.getTotal()).isEqualTo(2);
+      assertThat(decisionRequirementsResults.getItems()).extracting(DECISION_REQUIREMENTS_ID)
+          .containsExactly("invoiceBusinessDecisions", "invoiceBusinessDecisions");
+      assertThat(decisionRequirementsResults.getItems()).extracting(VERSION).containsExactly(1, 2);
+      assertThat(decisionRequirementsResults.getItems()).extracting(RESOURCE_NAME)
+          .containsExactly("invoiceBusinessDecisions_v_1.dmn", "invoiceBusinessDecisions_v_2.dmn");
     });
   }
 
   @Test
-  public void shouldReturnNonEmptyListWhenDecisionRequirementsExist() throws Exception {
+  public void shouldReturnDecisionRequirementsWithEmptyFilter() throws Exception {
     given(() -> tester.deployDecision("invoiceBusinessDecisions_v_1.dmn").deployDecision("invoiceBusinessDecisions_v_2.dmn").waitUntil()
         .decisionsAreDeployed(4));
-    when(() -> decisionRequirementsResults = dao.search(new Query<>()));
+    when(() -> decisionRequirementsResults = dao.search(new Query<DecisionRequirements>().setFilter(new DecisionRequirements())));
     then(() -> {
       assertThat(decisionRequirementsResults.getTotal()).isEqualTo(2);
       assertThat(decisionRequirementsResults.getItems()).extracting(DECISION_REQUIREMENTS_ID)

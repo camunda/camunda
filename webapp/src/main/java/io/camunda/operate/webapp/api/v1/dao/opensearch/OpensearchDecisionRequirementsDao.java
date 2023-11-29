@@ -21,11 +21,12 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Conditional(OpensearchCondition.class)
 @Component
@@ -34,8 +35,7 @@ public class OpensearchDecisionRequirementsDao extends OpensearchKeyFilteringDao
   private final DecisionRequirementsIndex decisionRequirementsIndex;
 
   public OpensearchDecisionRequirementsDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
-       DecisionRequirementsIndex decisionRequirementsIndex,
-      RichOpenSearchClient richOpenSearchClient){
+                                           RichOpenSearchClient richOpenSearchClient, DecisionRequirementsIndex decisionRequirementsIndex){
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.decisionRequirementsIndex = decisionRequirementsIndex;
   }
@@ -117,17 +117,19 @@ public class OpensearchDecisionRequirementsDao extends OpensearchKeyFilteringDao
   protected void buildFiltering(Query<DecisionRequirements> query, SearchRequest.Builder request) {
     final DecisionRequirements filter = query.getFilter();
     if (filter != null) {
-      var queryTerms = Arrays.asList(
-        queryDSLWrapper.buildTermQuery(DecisionRequirements.ID, filter.getId()),
-        queryDSLWrapper.buildTermQuery(DecisionRequirements.KEY, filter.getKey()),
-        queryDSLWrapper.buildTermQuery(DecisionRequirements.DECISION_REQUIREMENTS_ID, filter.getDecisionRequirementsId()),
-        queryDSLWrapper.buildTermQuery(DecisionRequirements.TENANT_ID, filter.getTenantId()),
-        queryDSLWrapper.buildTermQuery(DecisionRequirements.NAME, filter.getName()),
-        queryDSLWrapper.buildTermQuery(DecisionRequirements.VERSION, filter.getVersion()),
-        queryDSLWrapper.buildTermQuery(DecisionRequirements.RESOURCE_NAME, filter.getResourceName())
-      );
+      var queryTerms = Stream.of(
+        queryDSLWrapper.term(DecisionRequirements.ID, filter.getId()),
+        queryDSLWrapper.term(DecisionRequirements.KEY, filter.getKey()),
+        queryDSLWrapper.term(DecisionRequirements.DECISION_REQUIREMENTS_ID, filter.getDecisionRequirementsId()),
+        queryDSLWrapper.term(DecisionRequirements.TENANT_ID, filter.getTenantId()),
+        queryDSLWrapper.term(DecisionRequirements.NAME, filter.getName()),
+        queryDSLWrapper.term(DecisionRequirements.VERSION, filter.getVersion()),
+        queryDSLWrapper.term(DecisionRequirements.RESOURCE_NAME, filter.getResourceName())
+      ).filter(Objects::nonNull).collect(Collectors.toList());
 
-      request.query(queryDSLWrapper.and(queryTerms));
+      if (!queryTerms.isEmpty()) {
+        request.query(queryDSLWrapper.and(queryTerms));
+      }
     }
   }
 }

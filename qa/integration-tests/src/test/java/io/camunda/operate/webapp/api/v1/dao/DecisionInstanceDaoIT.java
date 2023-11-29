@@ -38,7 +38,7 @@ public class DecisionInstanceDaoIT extends OperateZeebeAbstractIT {
   protected static final Logger logger = LoggerFactory.getLogger(DecisionInstanceDaoIT.class);
 
   @Autowired
-  DecisionInstanceDao dao;
+  private DecisionInstanceDao dao;
 
   @Autowired
   private DecisionInstanceTemplate decisionInstanceTemplate;
@@ -115,17 +115,7 @@ public class DecisionInstanceDaoIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void shouldReturnEmptyListWhenNoDecisionInstanceExist() throws Exception {
-    given(() -> { /*"no decision instance"*/ });
-    when(() -> decisionInstanceResults = dao.search(new Query<>()));
-    then(() -> {
-      assertThat(decisionInstanceResults.getItems()).isEmpty();
-      assertThat(decisionInstanceResults.getTotal()).isZero();
-    });
-  }
-
-  @Test
-  public void shouldReturnNonEmptyListWhenDecisionInstanceExist() throws Exception {
+  public void shouldReturnDecisionInstances() throws Exception {
     given(() -> {
       String payload = "{\"amount\": 1200, \"invoiceCategory\": \"Travel Expenses\"}";
       processDefinitionKey = deployDecisionAndProcess();
@@ -147,6 +137,32 @@ public class DecisionInstanceDaoIT extends OperateZeebeAbstractIT {
               .containsExactly(processDefinitionKey, processDefinitionKey);
       assertThat(decisionInstanceResults.getItems()).extracting(PROCESS_INSTANCE_KEY)
               .containsExactly(processInstanceKey, processInstanceKey);
+    });
+  }
+
+  @Test
+  public void shouldReturnDecisionInstancesWithEmptyFilter() throws Exception {
+    given(() -> {
+      String payload = "{\"amount\": 1200, \"invoiceCategory\": \"Travel Expenses\"}";
+      processDefinitionKey = deployDecisionAndProcess();
+      processInstanceKey = startProcessWithDecision(payload);
+      waitForDecisionInstances(2);
+    });
+    when(() -> decisionInstanceResults = dao.search(new Query<DecisionInstance>().setFilter(new DecisionInstance())));
+    then(() -> {
+      assertThat(decisionInstanceResults.getTotal()).isEqualTo(2);
+      assertThat(decisionInstanceResults.getItems()).extracting(DECISION_ID)
+          .containsExactlyInAnyOrder("invoiceClassification", "invoiceAssignApprover");
+      assertThat(decisionInstanceResults.getItems()).extracting(DECISION_NAME)
+          .containsExactlyInAnyOrder("Invoice Classification", "Assign Approver Group");
+      assertThat(decisionInstanceResults.getItems()).extracting(DECISION_TYPE)
+          .containsExactly(DecisionType.DECISION_TABLE, DecisionType.DECISION_TABLE);
+      assertThat(decisionInstanceResults.getItems()).extracting(STATE)
+          .containsExactly(DecisionInstanceState.EVALUATED, DecisionInstanceState.EVALUATED);
+      assertThat(decisionInstanceResults.getItems()).extracting(PROCESS_DEFINITION_KEY)
+          .containsExactly(processDefinitionKey, processDefinitionKey);
+      assertThat(decisionInstanceResults.getItems()).extracting(PROCESS_INSTANCE_KEY)
+          .containsExactly(processInstanceKey, processInstanceKey);
     });
   }
 

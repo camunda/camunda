@@ -23,7 +23,6 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -31,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Conditional(OpensearchCondition.class)
 @Component
@@ -43,8 +43,8 @@ public class OpensearchDecisionDefinitionDao extends OpensearchKeyFilteringDao<D
   private final DecisionRequirementsDao decisionRequirementsDao;
 
   public OpensearchDecisionDefinitionDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
-      DecisionIndex decisionIndex, DecisionRequirementsIndex decisionRequirementsIndex, DecisionRequirementsDao decisionRequirementsDao,
-      RichOpenSearchClient richOpenSearchClient) {
+                                         RichOpenSearchClient richOpenSearchClient, DecisionIndex decisionIndex,
+                                         DecisionRequirementsIndex decisionRequirementsIndex, DecisionRequirementsDao decisionRequirementsDao) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.decisionIndex = decisionIndex;
     this.decisionRequirementsIndex = decisionRequirementsIndex;
@@ -105,19 +105,21 @@ public class OpensearchDecisionDefinitionDao extends OpensearchKeyFilteringDao<D
     DecisionDefinition filter = query.getFilter();
 
     if (filter != null) {
-      var queryTerms = Arrays.asList(
-        queryDSLWrapper.buildTermQuery(DecisionDefinition.ID, filter.getId()),
-        queryDSLWrapper.buildTermQuery(DecisionDefinition.KEY, filter.getKey()),
-        queryDSLWrapper.buildTermQuery(DecisionDefinition.DECISION_ID, filter.getDecisionId()),
-        queryDSLWrapper.buildTermQuery(DecisionDefinition.TENANT_ID, filter.getTenantId()),
-        queryDSLWrapper.buildTermQuery(DecisionDefinition.NAME, filter.getName()),
-        queryDSLWrapper.buildTermQuery(DecisionDefinition.VERSION, filter.getVersion()),
-        queryDSLWrapper.buildTermQuery(DecisionDefinition.DECISION_REQUIREMENTS_ID, filter.getDecisionRequirementsId()),
-        queryDSLWrapper.buildTermQuery(DecisionDefinition.DECISION_REQUIREMENTS_KEY, filter.getDecisionRequirementsKey()),
+      var queryTerms = Stream.of(
+        queryDSLWrapper.term(DecisionDefinition.ID, filter.getId()),
+        queryDSLWrapper.term(DecisionDefinition.KEY, filter.getKey()),
+        queryDSLWrapper.term(DecisionDefinition.DECISION_ID, filter.getDecisionId()),
+        queryDSLWrapper.term(DecisionDefinition.TENANT_ID, filter.getTenantId()),
+        queryDSLWrapper.term(DecisionDefinition.NAME, filter.getName()),
+        queryDSLWrapper.term(DecisionDefinition.VERSION, filter.getVersion()),
+        queryDSLWrapper.term(DecisionDefinition.DECISION_REQUIREMENTS_ID, filter.getDecisionRequirementsId()),
+        queryDSLWrapper.term(DecisionDefinition.DECISION_REQUIREMENTS_KEY, filter.getDecisionRequirementsKey()),
         buildFilteringBy(filter.getDecisionRequirementsName(), filter.getDecisionRequirementsVersion())
-      );
+      ).filter(Objects::nonNull).collect(Collectors.toList());
 
-      request.query(queryDSLWrapper.and(queryTerms));
+      if (!queryTerms.isEmpty()) {
+        request.query(queryDSLWrapper.and(queryTerms));
+      }
     }
   }
 
@@ -155,8 +157,8 @@ public class OpensearchDecisionDefinitionDao extends OpensearchKeyFilteringDao<D
       Integer decisionRequirementsVersion) {
     try {
       List<org.opensearch.client.opensearch._types.query_dsl.Query> queryTerms = new LinkedList<>();
-      queryTerms.add(queryDSLWrapper.buildTermQuery(DecisionRequirementsIndex.NAME, decisionRequirementsName));
-      queryTerms.add(queryDSLWrapper.buildTermQuery(DecisionRequirementsIndex.VERSION, decisionRequirementsVersion));
+      queryTerms.add(queryDSLWrapper.term(DecisionRequirementsIndex.NAME, decisionRequirementsName));
+      queryTerms.add(queryDSLWrapper.term(DecisionRequirementsIndex.VERSION, decisionRequirementsVersion));
       var query = queryDSLWrapper.and(queryTerms);
       if (query == null) {
         return null;

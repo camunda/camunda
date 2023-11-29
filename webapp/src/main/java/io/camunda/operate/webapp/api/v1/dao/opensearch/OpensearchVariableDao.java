@@ -18,8 +18,9 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Conditional(OpensearchCondition.class)
 @Component
@@ -28,7 +29,7 @@ public class OpensearchVariableDao extends OpensearchKeyFilteringDao<Variable, V
   private final VariableTemplate variableIndex;
 
   public OpensearchVariableDao(OpensearchQueryDSLWrapper queryDSLWrapper, OpensearchRequestDSLWrapper requestDSLWrapper,
-                               VariableTemplate variableIndex, RichOpenSearchClient richOpenSearchClient) {
+                               RichOpenSearchClient richOpenSearchClient, VariableTemplate variableIndex) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.variableIndex = variableIndex;
   }
@@ -73,28 +74,15 @@ public class OpensearchVariableDao extends OpensearchKeyFilteringDao<Variable, V
     Variable filter = query.getFilter();
 
     if (filter != null) {
-      List<org.opensearch.client.opensearch._types.query_dsl.Query> queryTerms = new LinkedList<>();
-      if (filter.getKey() != null) {
-        queryTerms.add(queryDSLWrapper.term(Variable.KEY, filter.getKey()));
-      }
-      if (filter.getTenantId() != null) {
-        queryTerms.add(queryDSLWrapper.term(Variable.TENANT_ID, filter.getTenantId()));
-      }
-      if (filter.getProcessInstanceKey() != null) {
-        queryTerms.add(queryDSLWrapper.term(Variable.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()));
-      }
-      if (filter.getScopeKey() != null) {
-        queryTerms.add(queryDSLWrapper.term(Variable.SCOPE_KEY, filter.getScopeKey()));
-      }
-      if (filter.getName() != null) {
-        queryTerms.add(queryDSLWrapper.term(Variable.NAME, filter.getName()));
-      }
-      if (filter.getValue() != null) {
-        queryTerms.add(queryDSLWrapper.term(Variable.VALUE, filter.getValue()));
-      }
-      if (filter.getTruncated() != null) {
-        queryTerms.add(queryDSLWrapper.term(Variable.TRUNCATED, filter.getTruncated()));
-      }
+      var queryTerms = Stream.of(
+          queryDSLWrapper.term(Variable.KEY, filter.getKey()),
+          queryDSLWrapper.term(Variable.TENANT_ID, filter.getTenantId()),
+          queryDSLWrapper.term(Variable.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()),
+          queryDSLWrapper.term(Variable.SCOPE_KEY, filter.getScopeKey()),
+          queryDSLWrapper.term(Variable.NAME, filter.getName()),
+          queryDSLWrapper.term(Variable.VALUE, filter.getValue()),
+          queryDSLWrapper.term(Variable.TRUNCATED, filter.getTruncated())
+      ).filter(Objects::nonNull).collect(Collectors.toList());
 
       if (!queryTerms.isEmpty()) {
         request.query(queryDSLWrapper.and(queryTerms));

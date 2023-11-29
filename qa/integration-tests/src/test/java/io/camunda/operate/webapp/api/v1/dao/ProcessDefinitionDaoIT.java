@@ -46,17 +46,22 @@ public class ProcessDefinitionDaoIT extends OperateZeebeAbstractIT {
   private List<Long> processDefinitionKeys;
 
   @Test
-  public void shouldReturnEmptyListWhenNoProcessDefinitionsExist() throws Exception {
-    given(() -> { /*"no process definitions"*/ });
-    when(() -> processDefinitionResults = dao.search(new Query<>()));
-    then(() -> {
-      assertThat(processDefinitionResults.getItems()).isEmpty();
-      assertThat(processDefinitionResults.getTotal()).isZero();
-    });
-
+  public void shouldReturnProcessDefinitions() throws Exception {
     given(() -> deployProcesses(
         "demoProcess_v_1.bpmn", "errorProcess.bpmn", "complexProcess_v_3.bpmn"));
     when(() -> processDefinitionResults = dao.search(new Query<>()));
+    then(() -> {
+      assertThat(processDefinitionResults.getTotal()).isEqualTo(3);
+      assertThat(processDefinitionResults.getItems()).extracting(BPMN_PROCESS_ID)
+          .containsExactly("demoProcess", "errorProcess", "complexProcess");
+    });
+  }
+
+  @Test
+  public void shouldReturnProcessDefinitionsWithEmptyFilter() throws Exception {
+    given(() -> deployProcesses(
+        "demoProcess_v_1.bpmn", "errorProcess.bpmn", "complexProcess_v_3.bpmn"));
+    when(() -> processDefinitionResults = dao.search(new Query<ProcessDefinition>().setFilter(new ProcessDefinition())));
     then(() -> {
       assertThat(processDefinitionResults.getTotal()).isEqualTo(3);
       assertThat(processDefinitionResults.getItems()).extracting(BPMN_PROCESS_ID)
@@ -77,13 +82,6 @@ public class ProcessDefinitionDaoIT extends OperateZeebeAbstractIT {
       assertThat(processDefinition.getBpmnProcessId()).isEqualTo("complexProcess");
       assertThat(processDefinition.getTenantId()).isEqualTo(DEFAULT_TENANT_ID);
     });
-  }
-
-  @Test(expected = ResourceNotFoundException.class)
-  public void showThrowWhenByKeyNotExists() throws Exception {
-    given(() -> {
-    });
-    when(() -> dao.byKey(-27L));
   }
 
   @Test

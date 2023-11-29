@@ -45,7 +45,7 @@ public class OpensearchVariableDaoTest {
 
   @BeforeEach
   public void setup() {
-    underTest = new OpensearchVariableDao(mockQueryWrapper, mockRequestWrapper, mockVariableIndex, mockOpensearchClient);
+    underTest = new OpensearchVariableDao(mockQueryWrapper, mockRequestWrapper, mockOpensearchClient, mockVariableIndex);
   }
 
   @Test
@@ -89,18 +89,6 @@ public class OpensearchVariableDaoTest {
   public void testBuildFilteringWithNullFilter() {
     SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
     underTest.buildFiltering(new Query<>(), mockSearchRequest);
-
-    // Verify that the query was not modified in any way
-    verifyNoInteractions(mockSearchRequest);
-    verifyNoInteractions(mockQueryWrapper);
-  }
-
-  @Test
-  public void testBuildFilteringWithAllNullFilterFields() {
-    SearchRequest.Builder mockSearchRequest = Mockito.mock(SearchRequest.Builder.class);
-    Query<Variable> inputQuery = new Query<Variable>().setFilter(new Variable());
-
-    underTest.buildFiltering(inputQuery, mockSearchRequest);
 
     // Verify that the query was not modified in any way
     verifyNoInteractions(mockSearchRequest);

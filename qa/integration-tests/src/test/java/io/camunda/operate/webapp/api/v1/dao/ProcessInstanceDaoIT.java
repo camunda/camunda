@@ -14,7 +14,6 @@ import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
-import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -41,16 +40,6 @@ public class ProcessInstanceDaoIT extends OperateZeebeAbstractIT {
   private ChangeStatus changeStatus;
 
   @Test
-  public void shouldReturnEmptyListWhenNoProcessDefinitionsExist() throws Exception {
-    given(() -> { /*"no process definitions"*/ });
-    when(() -> processInstanceResults = dao.search(new Query<>()));
-    then(() -> {
-      assertThat(processInstanceResults.getItems()).isEmpty();
-      assertThat(processInstanceResults.getTotal()).isZero();
-    });
-  }
-
-  @Test
   public void shouldReturnProcessInstancesOnSearch() throws Exception {
     given(() -> {
       deployProcesses(
@@ -58,6 +47,21 @@ public class ProcessInstanceDaoIT extends OperateZeebeAbstractIT {
       startProcesses("demoProcess","errorProcess","complexProcess");
     });
     when(() -> processInstanceResults = dao.search(new Query<>()));
+    then(() -> {
+      assertThat(processInstanceResults.getTotal()).isEqualTo(3);
+      assertThat(processInstanceResults.getItems()).extracting(BPMN_PROCESS_ID)
+          .contains("demoProcess", "errorProcess", "complexProcess");
+    });
+  }
+
+  @Test
+  public void shouldReturnProcessInstancesOnSearchWithEmptyFilter() throws Exception {
+    given(() -> {
+      deployProcesses(
+          "demoProcess_v_1.bpmn", "errorProcess.bpmn", "complexProcess_v_3.bpmn");
+      startProcesses("demoProcess","errorProcess","complexProcess");
+    });
+    when(() -> processInstanceResults = dao.search(new Query<ProcessInstance>().setFilter(new ProcessInstance())));
     then(() -> {
       assertThat(processInstanceResults.getTotal()).isEqualTo(3);
       assertThat(processInstanceResults.getItems()).extracting(BPMN_PROCESS_ID)
@@ -110,7 +114,7 @@ public class ProcessInstanceDaoIT extends OperateZeebeAbstractIT {
     given(() -> {
       deployProcesses("callActivityProcess.bpmn", "calledProcess.bpmn");
       processInstanceKeys = startProcesses("CallActivityProcess");
-      processInstanceResults = dao.search(new Query<ProcessInstance>());
+      processInstanceResults = dao.search(new Query<>());
       key = processInstanceKeys.get(0);
     });
     when(() -> processInstance = processInstanceResults.getItems().stream()
@@ -128,18 +132,6 @@ public class ProcessInstanceDaoIT extends OperateZeebeAbstractIT {
       startProcesses("process", "complexProcess", "demoProcess");
     });
     when(() -> dao.delete(123L));
-  }
-
-  @Test(expected = ResourceNotFoundException.class)
-  public void showThrowExceptionWhenByKeyNotExists() throws Exception {
-    given(() -> {});
-    when(() -> dao.byKey(-27L));
-  }
-
-  @Test(expected = ServerException.class)
-  public void shouldThrowExceptionWhenByKeyIsNull() throws Exception {
-    given(() -> {});
-    when(() -> dao.byKey(null));
   }
 
   @Test
