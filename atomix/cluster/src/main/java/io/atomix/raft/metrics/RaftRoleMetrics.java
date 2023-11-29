@@ -76,6 +76,10 @@ public class RaftRoleMetrics extends RaftMetrics {
     lastFlushedIndexUpdate = LAST_FLUSHED_INDEX_UPDATE.labels(partitionGroupName, partition);
   }
 
+  public void becomingInactive() {
+    role.set(0);
+  }
+
   public void becomingFollower() {
     role.set(1);
   }
