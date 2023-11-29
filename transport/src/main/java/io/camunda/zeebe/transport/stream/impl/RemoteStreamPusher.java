@@ -10,7 +10,9 @@ package io.camunda.zeebe.transport.stream.impl;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamErrorHandler;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
+import io.camunda.zeebe.transport.stream.api.StreamResponseException;
 import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamId;
+import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamResponse;
@@ -35,6 +37,7 @@ final class RemoteStreamPusher<P extends BufferWriter> {
 
   private final StreamResponseDecoder responseDecoder = new StreamResponseDecoder();
   private final ThrottledLogger pushErrorLogger = new ThrottledLogger(LOG, Duration.ofSeconds(5));
+  private final ThrottledLogger pushWarnLogger = new ThrottledLogger(LOG, Duration.ofSeconds(5));
 
   private final RemoteStreamMetrics metrics;
   private final Transport transport;
@@ -59,12 +62,24 @@ final class RemoteStreamPusher<P extends BufferWriter> {
   private RemoteStreamErrorHandler<P> instrumentingErrorHandler(
       final RemoteStreamErrorHandler<P> errorHandler, final StreamId streamId) {
     return (error, payload) -> {
-      if (error != null) {
-        metrics.pushFailed();
-        pushErrorLogger.warn(
-            "Failed to push (size = {}) to stream {}", payload.getLength(), streamId, error);
-        errorHandler.handleError(error, payload);
+      if (error == null) {
+        return;
       }
+
+      if (error instanceof final StreamResponseException e
+          && (e.code() == ErrorCode.INVALID || e.code() == ErrorCode.MALFORMED)) {
+        pushErrorLogger.error(
+            "Failed to push (size = {}) to stream {}, request could not be parsed",
+            payload.getLength(),
+            streamId,
+            e);
+      } else {
+        pushWarnLogger.warn(
+            "Failed to push (size = {}) to stream {}", payload.getLength(), streamId, error);
+      }
+
+      metrics.pushFailed();
+      errorHandler.handleError(error, payload);
     };
   }
 
