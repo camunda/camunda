@@ -154,11 +154,6 @@ public final class ZeebePartition extends Actor
                 LOG.error(error.getMessage(), error);
               }
 
-              // reset contexts to null to not have lingering references that could
-              // cause OOM problems in tests which start/stop partitions
-              startupContext = null;
-              context = null;
-
               closeFuture.complete(null);
             });
   }

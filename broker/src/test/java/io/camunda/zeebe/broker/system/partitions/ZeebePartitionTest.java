@@ -575,6 +575,22 @@ public class ZeebePartitionTest {
     assertThat(healthReport.getIssue()).isNull();
   }
 
+  @Test
+  public void shouldBeAbleToGetHealthReportFromClosedPartition() {
+    // given
+    final HealthReport healthReport = mock(HealthReport.class);
+    when(healthMonitor.getHealthReport()).thenReturn(healthReport);
+    schedulerRule.submitActor(partition);
+
+    // when
+    final var closeFuture = partition.closeAsync();
+    schedulerRule.workUntilDone();
+
+    // then
+    Awaitility.await().until(closeFuture::isDone);
+    assertThat(partition.getHealthReport()).isEqualTo(healthReport);
+  }
+
   private static final class NoopStartupStep implements PartitionStartupStep {
 
     @Override
