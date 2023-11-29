@@ -7,15 +7,22 @@
  */
 package io.camunda.zeebe.backup.azure;
 
+import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.BlobServiceClient;
+import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.azure.storage.common.StorageSharedKeyCredential;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * {@link BackupStore} for Azure. Stores all backups in a given bucket.
@@ -24,16 +31,58 @@ import java.util.concurrent.CompletableFuture;
  * scheme: {@code basePath/partitionId/checkpointId/nodeId}.
  */
 public final class AzureBackupStore implements BackupStore {
-
-  private final AzureBackupConfig azureBackupConfig;
+  public static final String SNAPSHOT_FILESET_NAME = "snapshot";
+  public static final String SEGMENTS_FILESET_NAME = "segments";
+  private final ExecutorService executor;
+  private final FileSetManager fileSetManager;
+  private final ManifestManager manifestManager;
 
   public AzureBackupStore(final AzureBackupConfig config) {
-    azureBackupConfig = config;
+    this(config, buildClient(config));
+  }
+
+  public AzureBackupStore(final AzureBackupConfig config, final BlobServiceClient client) {
+    executor = Executors.newWorkStealingPool(4);
+    final BlobContainerClient blobContainerClient =
+        client.getBlobContainerClient(config.containerName());
+    fileSetManager = new FileSetManager(blobContainerClient);
+    manifestManager = new ManifestManager(blobContainerClient);
+  }
+
+  public static BlobServiceClient buildClient(final AzureBackupConfig config) {
+
+    // BlobServiceClientBuilder has their own validations, for building the client
+    if (config.connectionString() != null) {
+      return new BlobServiceClientBuilder()
+          .connectionString(config.connectionString())
+          .buildClient();
+    } else {
+      return new BlobServiceClientBuilder()
+          .endpoint(config.endpoint())
+          .credential(new StorageSharedKeyCredential(config.accountName(), config.accountKey()))
+          .buildClient();
+    }
   }
 
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
-    throw new UnsupportedOperationException();
+    return CompletableFuture.runAsync(
+        () -> {
+          final var persistedManifest = manifestManager.createInitialManifest(backup);
+          try {
+            fileSetManager.save(backup.id(), SNAPSHOT_FILESET_NAME, backup.snapshot());
+            fileSetManager.save(backup.id(), SEGMENTS_FILESET_NAME, backup.segments());
+            manifestManager.completeManifest(persistedManifest);
+          } catch (final Exception e) {
+            manifestManager.markAsFailed(persistedManifest, e.getMessage());
+            try {
+              throw e;
+            } catch (final NoSuchFileException ex) {
+              throw new RuntimeException(ex);
+            }
+          }
+        },
+        executor);
   }
 
   @Override
