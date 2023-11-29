@@ -9,7 +9,9 @@ package io.camunda.tasklist.webapp.service;
 import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -20,12 +22,14 @@ import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.store.TaskStore;
+import io.camunda.tasklist.store.VariableStore.GetVariablesRequest;
 import io.camunda.tasklist.views.TaskSearchView;
 import io.camunda.tasklist.webapp.CommonUtils;
 import io.camunda.tasklist.webapp.es.TaskValidator;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
+import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
@@ -35,8 +39,10 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -85,6 +91,100 @@ class TaskServiceTest {
 
     // Then
     assertThat(result).containsExactly(expectedTask);
+  }
+
+  @Test
+  void getTasksWithVariables() {
+    // Given
+    final var taskQuery = new TaskQueryDTO();
+    final var providedTasks =
+        List.of(
+            new TaskSearchView().setId("123").setState(TaskState.CREATED),
+            new TaskSearchView().setId("456").setState(TaskState.COMPLETED));
+    final var expectedTasks =
+        List.of(
+            new TaskDTO()
+                .setId("123")
+                .setTaskState(TaskState.CREATED)
+                .setVariables(
+                    new VariableDTO[] {
+                      new VariableDTO()
+                          .setId("var123")
+                          .setName("varA")
+                          .setPreviewValue("valA")
+                          .setIsValueTruncated(false)
+                    }),
+            new TaskDTO()
+                .setId("456")
+                .setTaskState(TaskState.COMPLETED)
+                .setVariables(
+                    new VariableDTO[] {
+                      new VariableDTO()
+                          .setId("var123")
+                          .setName("varA")
+                          .setPreviewValue("longVal")
+                          .setIsValueTruncated(true)
+                    }));
+
+    when(taskStore.getTasks(taskQuery.toTaskQuery())).thenReturn(providedTasks);
+    final Set<String> fieldNames = Set.of("id", "name", "previewValue", "isValueTruncated");
+    when(variableService.getVariablesPerTaskId(
+            List.of(
+                new GetVariablesRequest()
+                    .setTaskId("123")
+                    .setState(TaskState.CREATED)
+                    .setVarNames(List.of("varA"))
+                    .setFieldNames(fieldNames),
+                new GetVariablesRequest()
+                    .setTaskId("456")
+                    .setState(TaskState.COMPLETED)
+                    .setVarNames(List.of("varA"))
+                    .setFieldNames(fieldNames))))
+        .thenReturn(
+            Map.of(
+                "123",
+                List.of(
+                    new VariableDTO()
+                        .setId("var123")
+                        .setName("varA")
+                        .setPreviewValue("valA")
+                        .setIsValueTruncated(false)),
+                "456",
+                List.of(
+                    new VariableDTO()
+                        .setId("var123")
+                        .setName("varA")
+                        .setPreviewValue("longVal")
+                        .setIsValueTruncated(true))));
+
+    // When
+    final var result = instance.getTasks(taskQuery, List.of("varA"));
+
+    // Then
+    assertThat(result).containsAll(expectedTasks);
+  }
+
+  @Test
+  void getTasksWithoutVariables() {
+    // Given
+    final var taskQuery = new TaskQueryDTO();
+    final var providedTasks =
+        List.of(
+            new TaskSearchView().setId("123").setState(TaskState.CREATED),
+            new TaskSearchView().setId("456").setState(TaskState.COMPLETED));
+    final var expectedTasks =
+        List.of(
+            new TaskDTO().setId("123").setTaskState(TaskState.CREATED),
+            new TaskDTO().setId("456").setTaskState(TaskState.COMPLETED));
+
+    when(taskStore.getTasks(taskQuery.toTaskQuery())).thenReturn(providedTasks);
+
+    // When
+    final var result = instance.getTasks(taskQuery, Collections.emptyList());
+
+    // Then
+    assertThat(result).containsAll(expectedTasks);
+    verify(variableService, never()).getVariablesPerTaskId(any());
   }
 
   private static Stream<Arguments> getTasksTestData() {

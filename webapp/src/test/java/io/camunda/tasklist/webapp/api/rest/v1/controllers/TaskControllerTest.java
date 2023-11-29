@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
+import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.mockito.Mockito.*;
@@ -26,7 +27,6 @@ import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.service.TaskService;
 import io.camunda.tasklist.webapp.service.VariableService;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -82,7 +82,7 @@ class TaskControllerTest {
             .setSearchAfter(new String[] {"123", "456"});
     final var searchQuery = mock(TaskQueryDTO.class);
     when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
-    when(taskService.getTasks(searchQuery)).thenReturn(List.of(providedTask));
+    when(taskService.getTasks(searchQuery, emptyList())).thenReturn(List.of(providedTask));
     when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
 
     // When
@@ -131,7 +131,7 @@ class TaskControllerTest {
     final var searchRequest = new TaskSearchRequest().setPageSize(50);
     final var searchQuery = new TaskQueryDTO().setPageSize(50);
     when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
-    when(taskService.getTasks(searchQuery)).thenReturn(List.of(providedTask));
+    when(taskService.getTasks(searchQuery, emptyList())).thenReturn(List.of(providedTask));
     when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
 
     // When
@@ -427,8 +427,7 @@ class TaskControllerTest {
   void searchTaskVariablesWhenRequestBodyIsEmpty() throws Exception {
     // Given
     final var taskId = "11778899";
-    when(variableService.getVariableSearchResponses(taskId, Collections.emptyList()))
-        .thenReturn(Collections.emptyList());
+    when(variableService.getVariableSearchResponses(taskId, emptyList())).thenReturn(emptyList());
 
     // When
     final var responseAsString =

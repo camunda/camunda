@@ -13,6 +13,7 @@ import static io.camunda.tasklist.Metrics.TAG_KEY_FLOW_NODE_ID;
 import static io.camunda.tasklist.Metrics.TAG_KEY_ORGANIZATION_ID;
 import static io.camunda.tasklist.Metrics.TAG_KEY_USER_ID;
 import static io.camunda.tasklist.util.CollectionUtil.countNonNullObjects;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNullElse;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,10 +22,13 @@ import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.store.TaskStore;
+import io.camunda.tasklist.store.VariableStore;
+import io.camunda.tasklist.views.TaskSearchView;
 import io.camunda.tasklist.webapp.es.TaskValidator;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
+import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
@@ -37,6 +41,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +67,10 @@ public class TaskService {
   @Autowired private TaskValidator taskValidator;
 
   public List<TaskDTO> getTasks(TaskQueryDTO query) {
+    return getTasks(query, emptyList());
+  }
+
+  public List<TaskDTO> getTasks(TaskQueryDTO query, List<String> includeVariableNames) {
     if (countNonNullObjects(
             query.getSearchAfter(), query.getSearchAfterOrEqual(),
             query.getSearchBefore(), query.getSearchBeforeOrEqual())
@@ -72,8 +83,32 @@ public class TaskService {
       throw new InvalidRequestException("Page size cannot should be a positive number");
     }
 
-    return taskStore.getTasks(query.toTaskQuery()).stream()
-        .map(it -> TaskDTO.createFrom(it, objectMapper))
+    final List<TaskSearchView> tasks = taskStore.getTasks(query.toTaskQuery());
+    final Set<String> fieldNames =
+        Set.of(
+            "id",
+            "name",
+            "previewValue",
+            "isValueTruncated"); // use fieldNames to not fetch fullValue from DB
+    final Map<String, List<VariableDTO>> variablesPerTaskId =
+        CollectionUtils.isEmpty(includeVariableNames)
+            ? Collections.emptyMap()
+            : variableService.getVariablesPerTaskId(
+                tasks.stream()
+                    .map(
+                        taskView ->
+                            VariableStore.GetVariablesRequest.createFrom(
+                                taskView, includeVariableNames, fieldNames))
+                    .toList());
+    return tasks.stream()
+        .map(
+            it ->
+                TaskDTO.createFrom(
+                    it,
+                    Optional.ofNullable(variablesPerTaskId.get(it.getId()))
+                        .map(list -> list.toArray(new VariableDTO[list.size()]))
+                        .orElse(null),
+                    objectMapper))
         .toList();
   }
 

@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -139,7 +140,9 @@ public class VariableStoreOpenSearch implements VariableStore {
     final List<String> varNames =
         requests.stream()
             .map(GetVariablesRequest::getVarNames)
-            .flatMap(x -> x == null ? null : x.stream())
+            .filter(Objects::nonNull)
+            .flatMap(List::stream)
+            .distinct()
             .collect(toList());
     Query.Builder varNamesQ = null;
     if (isNotEmpty(varNames)) {

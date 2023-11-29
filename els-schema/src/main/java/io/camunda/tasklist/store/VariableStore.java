@@ -7,6 +7,7 @@
 package io.camunda.tasklist.store;
 
 import io.camunda.tasklist.entities.*;
+import io.camunda.tasklist.views.TaskSearchView;
 import java.util.*;
 
 public interface VariableStore {
@@ -88,6 +89,17 @@ public interface VariableStore {
           .setProcessInstanceId(taskEntity.getProcessInstanceId());
     }
 
+    public static GetVariablesRequest createFrom(
+        TaskSearchView taskSearchView, List<String> varNames, Set<String> fieldNames) {
+      return new GetVariablesRequest()
+          .setTaskId(taskSearchView.getId())
+          .setFlowNodeInstanceId(taskSearchView.getFlowNodeInstanceId())
+          .setState(taskSearchView.getState())
+          .setProcessInstanceId(taskSearchView.getProcessInstanceId())
+          .setVarNames(varNames)
+          .setFieldNames(fieldNames);
+    }
+
     public String getTaskId() {
       return taskId;
     }
@@ -140,6 +152,29 @@ public interface VariableStore {
     public GetVariablesRequest setFieldNames(final Set<String> fieldNames) {
       this.fieldNames = fieldNames;
       return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final GetVariablesRequest that = (GetVariablesRequest) o;
+      return Objects.equals(taskId, that.taskId)
+          && state == that.state
+          && Objects.equals(flowNodeInstanceId, that.flowNodeInstanceId)
+          && Objects.equals(processInstanceId, that.processInstanceId)
+          && Objects.equals(varNames, that.varNames)
+          && Objects.equals(fieldNames, that.fieldNames);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(
+          taskId, state, flowNodeInstanceId, processInstanceId, varNames, fieldNames);
     }
   }
 }

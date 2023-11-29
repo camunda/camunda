@@ -8,6 +8,7 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
 import static java.util.Objects.requireNonNullElse;
 
+import io.camunda.tasklist.webapp.api.rest.v1.entities.IncludeVariable;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.SaveVariablesRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskAssignRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskCompleteRequest;
@@ -26,6 +27,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -78,8 +80,14 @@ public class TaskController extends ApiErrorController {
 
     final var query =
         taskMapper.toTaskQuery(requireNonNullElse(searchRequest, new TaskSearchRequest()));
+    final List<String> includeVariableNames =
+        searchRequest != null && searchRequest.getIncludeVariables() != null
+            ? Arrays.stream(searchRequest.getIncludeVariables())
+                .map(IncludeVariable::getName)
+                .toList()
+            : Collections.emptyList();
     final var tasks =
-        taskService.getTasks(query).stream()
+        taskService.getTasks(query, includeVariableNames).stream()
             .map(taskMapper::toTaskSearchResponse)
             .collect(Collectors.toList());
     return ResponseEntity.ok(tasks);

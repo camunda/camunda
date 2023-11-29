@@ -11,9 +11,12 @@ import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
 import io.camunda.tasklist.webapp.es.cache.ProcessCache;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO;
+import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
+import java.util.stream.Stream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -44,7 +47,30 @@ public class TaskMapper {
         .setDueDate(taskDTO.getDueDate())
         .setFollowUpDate(taskDTO.getFollowUpDate())
         .setCandidateGroups(taskDTO.getCandidateGroups())
-        .setCandidateUsers(taskDTO.getCandidateUsers());
+        .setCandidateUsers(taskDTO.getCandidateUsers())
+        .setVariables(
+            taskDTO.getVariables() != null
+                ? Stream.of(taskDTO.getVariables())
+                    .map(this::toVariableSearchResponse)
+                    .toArray(VariableSearchResponse[]::new)
+                : null);
+  }
+
+  private VariableSearchResponse toVariableSearchResponse(VariableDTO variableDTO) {
+    return new VariableSearchResponse()
+        .setId(variableDTO.getId())
+        .setName(variableDTO.getName())
+        .setValue(
+            variableDTO.getIsValueTruncated()
+                ? null
+                : variableDTO
+                    .getPreviewValue()) // Currently, for big variables, only truncated values are
+        // included in the Task Search response. So, we avoid
+        // retrieving the fullValue from the database and populate
+        // the output value with previewValue if it is not
+        // truncated.
+        .setIsValueTruncated(variableDTO.getIsValueTruncated())
+        .setPreviewValue(variableDTO.getPreviewValue());
   }
 
   public TaskResponse toTaskResponse(TaskDTO taskDTO) {

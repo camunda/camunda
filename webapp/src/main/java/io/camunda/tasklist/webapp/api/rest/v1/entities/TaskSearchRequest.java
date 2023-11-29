@@ -35,6 +35,7 @@ public class TaskSearchRequest {
   private String[] searchAfterOrEqual;
   private String[] searchBefore;
   private String[] searchBeforeOrEqual;
+  private IncludeVariable[] includeVariables;
 
   public TaskState getState() {
     return state;
@@ -198,6 +199,15 @@ public class TaskSearchRequest {
     return this;
   }
 
+  public IncludeVariable[] getIncludeVariables() {
+    return includeVariables;
+  }
+
+  public TaskSearchRequest setIncludeVariables(IncludeVariable[] includeVariables) {
+    this.includeVariables = includeVariables;
+    return this;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -224,7 +234,8 @@ public class TaskSearchRequest {
         && Arrays.equals(searchAfter, that.searchAfter)
         && Arrays.equals(searchAfterOrEqual, that.searchAfterOrEqual)
         && Arrays.equals(searchBefore, that.searchBefore)
-        && Arrays.equals(searchBeforeOrEqual, that.searchBeforeOrEqual);
+        && Arrays.equals(searchBeforeOrEqual, that.searchBeforeOrEqual)
+        && Arrays.equals(includeVariables, that.includeVariables);
   }
 
   @Override
@@ -249,6 +260,7 @@ public class TaskSearchRequest {
     result = 31 * result + Arrays.hashCode(searchAfterOrEqual);
     result = 31 * result + Arrays.hashCode(searchBefore);
     result = 31 * result + Arrays.hashCode(searchBeforeOrEqual);
+    result = 31 * result + Arrays.hashCode(includeVariables);
     return result;
   }
 
@@ -273,6 +285,7 @@ public class TaskSearchRequest {
         .add("searchAfterOrEqual=" + Arrays.toString(searchAfterOrEqual))
         .add("searchBefore=" + Arrays.toString(searchBefore))
         .add("searchBeforeOrEqual=" + Arrays.toString(searchBeforeOrEqual))
+        .add("includeVariables=" + Arrays.toString(includeVariables))
         .toString();
   }
 }

@@ -34,6 +34,7 @@ public class TaskSearchResponse {
   private OffsetDateTime followUpDate;
   private String[] candidateGroups;
   private String[] candidateUsers;
+  private VariableSearchResponse[] variables;
 
   public String getId() {
     return id;
@@ -224,6 +225,15 @@ public class TaskSearchResponse {
     return this;
   }
 
+  public VariableSearchResponse[] getVariables() {
+    return variables;
+  }
+
+  public TaskSearchResponse setVariables(VariableSearchResponse[] variables) {
+    this.variables = variables;
+    return this;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -253,7 +263,8 @@ public class TaskSearchResponse {
         && Objects.equals(dueDate, that.dueDate)
         && Objects.equals(followUpDate, that.followUpDate)
         && Arrays.equals(candidateGroups, that.candidateGroups)
-        && Arrays.equals(candidateUsers, that.candidateUsers);
+        && Arrays.equals(candidateUsers, that.candidateUsers)
+        && Arrays.equals(variables, that.variables);
   }
 
   @Override
@@ -281,6 +292,7 @@ public class TaskSearchResponse {
     result = 31 * result + Arrays.hashCode(sortValues);
     result = 31 * result + Arrays.hashCode(candidateGroups);
     result = 31 * result + Arrays.hashCode(candidateUsers);
+    result = 31 * result + Arrays.hashCode(variables);
     return result;
   }
 
@@ -308,6 +320,7 @@ public class TaskSearchResponse {
         .add("followUpDate='" + followUpDate + "'")
         .add("candidateGroups=" + Arrays.toString(candidateGroups))
         .add("candidateUsers=" + Arrays.toString(candidateUsers))
+        .add("variables=" + Arrays.toString(variables))
         .toString();
   }
 }

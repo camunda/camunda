@@ -24,7 +24,6 @@ import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.store.VariableStore.FlowNodeTree;
 import io.camunda.tasklist.store.VariableStore.GetVariablesRequest;
 import io.camunda.tasklist.store.VariableStore.VariableMap;
-import io.camunda.tasklist.util.CollectionUtil;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
 import io.camunda.tasklist.webapp.es.TaskValidator;
@@ -41,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -222,7 +222,9 @@ public class VariableService {
             flowNodeInstanceIds,
             requests.stream()
                 .map(GetVariablesRequest::getVarNames)
-                .flatMap(x -> x == null ? null : x.stream())
+                .filter(Objects::nonNull)
+                .flatMap(List::stream)
+                .distinct()
                 .collect(toList()),
             requests
                 .get(0)
@@ -328,7 +330,10 @@ public class VariableService {
    */
   private Map<String, FlowNodeTree> buildFlowNodeTrees(List<GetVariablesRequest> requests) {
     final List<String> processInstanceIds =
-        CollectionUtil.map(requests, GetVariablesRequest::getProcessInstanceId);
+        requests.stream()
+            .map(GetVariablesRequest::getProcessInstanceId)
+            .distinct()
+            .collect(toList());
     // get all flow node instances for all process instance ids
     final List<FlowNodeInstanceEntity> flowNodeInstances =
         variableStore.getFlowNodeInstances(processInstanceIds);
@@ -436,38 +441,37 @@ public class VariableService {
   }
 
   public List<List<VariableDTO>> getVariables(List<GetVariablesRequest> requests) {
+    final Map<String, List<VariableDTO>> variablesPerTaskId = getVariablesPerTaskId(requests);
+    final List<List<VariableDTO>> result = new ArrayList<>();
+    for (GetVariablesRequest req : requests) {
+      result.add(
+          variablesPerTaskId.getOrDefault(req.getTaskId(), Collections.emptyList()).stream()
+              .sorted(Comparator.comparing(VariableDTO::getName))
+              .toList());
+    }
+    return result;
+  }
+
+  public Map<String, List<VariableDTO>> getVariablesPerTaskId(List<GetVariablesRequest> requests) {
+    final Map<String, List<VariableDTO>> result = new HashMap<>();
     final Map<TaskState, List<GetVariablesRequest>> groupByStates =
         requests.stream().collect(groupingBy(GetVariablesRequest::getState));
-
-    final List<List<VariableDTO>> response = new ArrayList<>();
-
-    final Map<String, List<VariableEntity>> varsForActive =
-        getRuntimeVariablesPerTaskId(groupByStates.get(TaskState.CREATED));
-
-    final Map<String, List<TaskVariableEntity>> varsForCompleted =
-        variableStore.getTaskVariablesPerTaskId(groupByStates.get(TaskState.COMPLETED));
-
-    for (GetVariablesRequest req : requests) {
-      final List<VariableDTO> vars = new ArrayList<>();
-      switch (req.getState()) {
-        case CREATED:
-          vars.addAll(
-              VariableDTO.createFrom(
-                  varsForActive.getOrDefault(req.getTaskId(), new ArrayList<>())));
-          break;
-        case COMPLETED:
-          vars.addAll(
-              varsForCompleted.getOrDefault(req.getTaskId(), new ArrayList<>()).stream()
-                  .map(VariableDTO::createFrom)
-                  .toList());
-          break;
-        default:
-          break;
-      }
-      vars.sort(Comparator.comparing(VariableDTO::getName));
-      response.add(vars);
+    if (groupByStates.containsKey(TaskState.CREATED)) {
+      result.putAll(
+          getRuntimeVariablesPerTaskId(groupByStates.get(TaskState.CREATED)).entrySet().stream()
+              .collect(Collectors.toMap(Entry::getKey, e -> VariableDTO.createFrom(e.getValue()))));
     }
-    return response;
+    if (groupByStates.containsKey(TaskState.COMPLETED)) {
+      result.putAll(
+          variableStore
+              .getTaskVariablesPerTaskId(groupByStates.get(TaskState.COMPLETED))
+              .entrySet()
+              .stream()
+              .collect(
+                  Collectors.toMap(
+                      Entry::getKey, e -> VariableDTO.createFromTaskVariables(e.getValue()))));
+    }
+    return result;
   }
 
   public VariableDTO getVariable(final String variableId, final Set<String> fieldNames) {

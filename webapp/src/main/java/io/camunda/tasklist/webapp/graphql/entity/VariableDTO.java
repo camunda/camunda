@@ -11,6 +11,7 @@ import io.camunda.tasklist.entities.VariableEntity;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class VariableDTO {
 
@@ -95,6 +96,11 @@ public class VariableDTO {
       }
     }
     return result;
+  }
+
+  public static List<VariableDTO> createFromTaskVariables(
+      List<TaskVariableEntity> taskVariableEntities) {
+    return taskVariableEntities.stream().map(VariableDTO::createFrom).collect(Collectors.toList());
   }
 
   @Override

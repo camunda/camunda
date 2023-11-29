@@ -48,6 +48,7 @@ public final class TaskDTO {
   private String tenantId;
   private OffsetDateTime dueDate;
   private OffsetDateTime followUpDate;
+  private VariableDTO[] variables;
 
   public String getId() {
     return id;
@@ -242,6 +243,15 @@ public final class TaskDTO {
     return this;
   }
 
+  public VariableDTO[] getVariables() {
+    return variables;
+  }
+
+  public TaskDTO setVariables(VariableDTO[] variables) {
+    this.variables = variables;
+    return this;
+  }
+
   public static TaskDTO createFrom(TaskEntity taskEntity, ObjectMapper objectMapper) {
     return createFrom(taskEntity, null, objectMapper);
   }
@@ -276,7 +286,8 @@ public final class TaskDTO {
     return taskDTO;
   }
 
-  public static TaskDTO createFrom(TaskSearchView taskSearchView, ObjectMapper objectMapper) {
+  public static TaskDTO createFrom(
+      TaskSearchView taskSearchView, VariableDTO[] variables, ObjectMapper objectMapper) {
     return new TaskDTO()
         .setCreationTime(objectMapper.convertValue(taskSearchView.getCreationTime(), String.class))
         .setCompletionTime(
@@ -299,7 +310,8 @@ public final class TaskDTO {
         .setCandidateGroups(taskSearchView.getCandidateGroups())
         .setCandidateUsers(taskSearchView.getCandidateUsers())
         .setSortValues(taskSearchView.getSortValues())
-        .setIsFirst(taskSearchView.isFirst());
+        .setIsFirst(taskSearchView.isFirst())
+        .setVariables(variables);
   }
 
   public static TaskEntity toTaskEntity(TaskDTO taskDTO) {
@@ -370,7 +382,8 @@ public final class TaskDTO {
         && Objects.equals(isFormEmbedded, taskDTO.isFormEmbedded)
         && Objects.equals(tenantId, taskDTO.tenantId)
         && Objects.equals(dueDate, taskDTO.dueDate)
-        && Objects.equals(followUpDate, taskDTO.followUpDate);
+        && Objects.equals(followUpDate, taskDTO.followUpDate)
+        && Arrays.equals(variables, taskDTO.variables);
   }
 
   @Override
@@ -398,6 +411,7 @@ public final class TaskDTO {
     result = 31 * result + Arrays.hashCode(candidateGroups);
     result = 31 * result + Arrays.hashCode(candidateUsers);
     result = 31 * result + Arrays.hashCode(sortValues);
+    result = 31 * result + Arrays.hashCode(variables);
     return result;
   }
 
@@ -425,6 +439,7 @@ public final class TaskDTO {
         .add("tenantId='" + tenantId + "'")
         .add("dueDate=" + dueDate)
         .add("followUpDate=" + followUpDate)
+        .add("variables=" + Arrays.toString(variables))
         .toString();
   }
 }

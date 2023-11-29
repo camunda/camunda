@@ -7,10 +7,13 @@
 package io.camunda.tasklist.webapp.service;
 
 import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -34,12 +37,13 @@ import io.camunda.tasklist.webapp.CommonUtils;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
 import io.camunda.tasklist.webapp.es.TaskValidator;
+import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -135,10 +139,12 @@ class VariableServiceTest {
                 "tenant_a"));
   }
 
-  private void mockReturnOriginalVariables(List<VariableEntity> originalVariables) {
+  private void mockReturnOriginalVariables(
+      List<VariableEntity> originalVariables, String... varNames) {
     final FlowNodeInstanceEntity flowNodeInstance = mock(FlowNodeInstanceEntity.class);
     when(variableStore.getFlowNodeInstances(any())).thenReturn(List.of(flowNodeInstance));
-    when(variableStore.getVariablesByFlowNodeInstanceIds(any(), any(), any()))
+    when(variableStore.getVariablesByFlowNodeInstanceIds(
+            any(), varNames.length != 0 ? eq(List.of(varNames)) : any(), eq(emptySet())))
         .thenReturn(originalVariables);
   }
 
@@ -205,11 +211,11 @@ class VariableServiceTest {
             .setName("B_strVar")
             .setValue("\"strVarValue\"")
             .setFullValue("\"strVarValue\"");
-    when(draftVariableStore.getVariablesByTaskIdAndVariableNames(taskId, Collections.emptyList()))
+    when(draftVariableStore.getVariablesByTaskIdAndVariableNames(taskId, emptyList()))
         .thenReturn(List.of(numDraftVariable, strDraftVariable));
 
     // when
-    final var result = instance.getVariableSearchResponses(taskId, Collections.emptyList());
+    final var result = instance.getVariableSearchResponses(taskId, emptyList());
 
     // then
     assertThat(result)
@@ -238,10 +244,99 @@ class VariableServiceTest {
   }
 
   @Test
+  void getVariablesPerTaskIdForCreatedTask() {
+    final String taskId = "taskId_557";
+    final String flowNodeInstanceId = "flowNodeInstanceId_557";
+    final int variableSizeThreshold = 100;
+    mockReturnOriginalVariables(
+        List.of(
+            createVariableEntity(flowNodeInstanceId, "A_numVar", "123", variableSizeThreshold),
+            createVariableEntity(
+                flowNodeInstanceId,
+                "C_objVar",
+                "{\"propA\":1,\"propB\":\"strVal\"}",
+                variableSizeThreshold)),
+        "A_numVar",
+        "C_objVar");
+
+    // when
+    final var result =
+        instance.getVariablesPerTaskId(
+            List.of(
+                new VariableStore.GetVariablesRequest()
+                    .setTaskId(taskId)
+                    .setFlowNodeInstanceId(flowNodeInstanceId)
+                    .setState(TaskState.CREATED)
+                    .setVarNames(List.of("A_numVar", "C_objVar"))));
+
+    // then
+    assertThat(result).size().isEqualTo(1);
+    assertThat(result.get(taskId))
+        .containsExactly(
+            new VariableDTO()
+                .setId(VariableEntity.getIdBy(flowNodeInstanceId, "A_numVar"))
+                .setName("A_numVar")
+                .setValue("123")
+                .setPreviewValue("123"),
+            new VariableDTO()
+                .setId(VariableEntity.getIdBy(flowNodeInstanceId, "C_objVar"))
+                .setName("C_objVar")
+                .setValue("{\"propA\":1,\"propB\":\"strVal\"}")
+                .setIsValueTruncated(false)
+                .setPreviewValue("{\"propA\":1,\"propB\":\"strVal\"}"));
+  }
+
+  @Test
+  void getVariablesPerTaskIdFoCompletedTask() {
+    final String taskId = "taskId_557";
+    final String flowNodeInstanceId = "flowNodeInstanceId_557";
+    final int variableSizeThreshold = 100;
+    when(variableStore.getTaskVariablesPerTaskId(
+            List.of(
+                new VariableStore.GetVariablesRequest()
+                    .setTaskId(taskId)
+                    .setFlowNodeInstanceId(flowNodeInstanceId)
+                    .setState(TaskState.COMPLETED)
+                    .setVarNames(List.of("A_numVar", "C_objVar")))))
+        .thenReturn(
+            Map.of(
+                taskId,
+                List.of(
+                    new TaskVariableEntity()
+                        .setId("variableId")
+                        .setTaskId("id789")
+                        .setName("A_numVar")
+                        .setIsPreview(true)
+                        .setValue("[\"val1\", \"val2\",")
+                        .setFullValue("[\"val1\", \"val2\", \"val3\"]"))));
+
+    // when
+    final var result =
+        instance.getVariablesPerTaskId(
+            List.of(
+                new VariableStore.GetVariablesRequest()
+                    .setTaskId(taskId)
+                    .setFlowNodeInstanceId(flowNodeInstanceId)
+                    .setState(TaskState.COMPLETED)
+                    .setVarNames(List.of("A_numVar", "C_objVar"))));
+
+    // then
+    assertThat(result).size().isEqualTo(1);
+    assertThat(result.get(taskId))
+        .containsExactly(
+            new VariableDTO()
+                .setId("variableId")
+                .setName("A_numVar")
+                .setValue("[\"val1\", \"val2\", \"val3\"]")
+                .setIsValueTruncated(true)
+                .setPreviewValue("[\"val1\", \"val2\","));
+  }
+
+  @Test
   void getVariableResponseWhenOnlyOriginalVariableExists() {
     // given
     final String variableId = "id123-varA";
-    when(variableStore.getRuntimeVariable(variableId, Collections.emptySet()))
+    when(variableStore.getRuntimeVariable(variableId, emptySet()))
         .thenReturn(createVariableEntity("id123", "varA", "123", 100));
     when(draftVariableStore.getById(variableId)).thenReturn(Optional.empty());
 
@@ -264,7 +359,7 @@ class VariableServiceTest {
   void getVariableResponseWhenOriginalVariableExistsWithDraftValue() {
     // given
     final String variableId = "id123-varB";
-    when(variableStore.getRuntimeVariable(variableId, Collections.emptySet()))
+    when(variableStore.getRuntimeVariable(variableId, emptySet()))
         .thenReturn(createVariableEntity("id123", "varB", "123", 100));
     when(draftVariableStore.getById(variableId))
         .thenReturn(
@@ -295,7 +390,7 @@ class VariableServiceTest {
   void getVariableResponseWhenOnlyDraftValueExists() {
     // given
     final String variableId = "id456-strVal";
-    when(variableStore.getRuntimeVariable(variableId, Collections.emptySet()))
+    when(variableStore.getRuntimeVariable(variableId, emptySet()))
         .thenThrow(NotFoundException.class);
     when(draftVariableStore.getById(variableId))
         .thenReturn(
@@ -329,10 +424,10 @@ class VariableServiceTest {
   void getVariableResponseWhenOnlyTaskVariableExists() {
     // given
     final String variableId = "id789-arrayVar";
-    when(variableStore.getRuntimeVariable(variableId, Collections.emptySet()))
+    when(variableStore.getRuntimeVariable(variableId, emptySet()))
         .thenThrow(NotFoundException.class);
     when(draftVariableStore.getById(variableId)).thenReturn(Optional.empty());
-    when(variableStore.getTaskVariable(variableId, Collections.emptySet()))
+    when(variableStore.getTaskVariable(variableId, emptySet()))
         .thenReturn(
             new TaskVariableEntity()
                 .setId(variableId)
@@ -359,11 +454,10 @@ class VariableServiceTest {
   void getVariableResponseWhenNoOriginalDraftAndTaskVariableExistThenNotFoundExceptionExpected() {
     // given
     final String variableId = "idUnknown-var";
-    when(variableStore.getRuntimeVariable(variableId, Collections.emptySet()))
+    when(variableStore.getRuntimeVariable(variableId, emptySet()))
         .thenThrow(NotFoundException.class);
     when(draftVariableStore.getById(variableId)).thenReturn(Optional.empty());
-    when(variableStore.getTaskVariable(variableId, Collections.emptySet()))
-        .thenThrow(NotFoundException.class);
+    when(variableStore.getTaskVariable(variableId, emptySet())).thenThrow(NotFoundException.class);
 
     // when - then
     assertThatThrownBy(() -> instance.getVariableResponse(variableId))
@@ -444,7 +538,7 @@ class VariableServiceTest {
             createVariableEntity(
                 flowNodeInstanceId, "varB", "\"originalB\"", variableSizeThreshold, "tenant_c")));
 
-    when(draftVariableStore.getVariablesByTaskIdAndVariableNames(taskId, Collections.emptyList()))
+    when(draftVariableStore.getVariablesByTaskIdAndVariableNames(taskId, emptyList()))
         .thenReturn(
             List.of(
                 new DraftTaskVariableEntity()

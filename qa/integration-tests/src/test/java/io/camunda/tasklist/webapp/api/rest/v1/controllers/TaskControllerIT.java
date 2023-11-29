@@ -20,10 +20,12 @@ import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.util.MockMvcHelper;
 import io.camunda.tasklist.util.TasklistTester;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.IncludeVariable;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.SaveVariablesRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskAssignRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskCompleteRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskResponse;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariablesSearchRequest;
@@ -1016,6 +1018,66 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
         .extractingListContent(objectMapper, VariableSearchResponse.class)
         .extracting("name", "previewValue", "draft")
         .containsExactly(tuple("a", "1", null), tuple("c", "3", null));
+  }
+
+  @Test
+  public void searchTasksShouldReturnIncludeVariablesCaseCreatedTask() {
+    // given
+    final String bpmnProcessId = "simpleTestProcess";
+    final String flowNodeBpmnId = "taskH_".concat(UUID.randomUUID().toString());
+    createTask(bpmnProcessId, flowNodeBpmnId, "{\"a\": 1, \"b\": 2, \"c\": 3}").getTaskId();
+    final var variablesRequest =
+        new TaskSearchRequest()
+            .setIncludeVariables(
+                new IncludeVariable[] {
+                  new IncludeVariable().setName("a"), new IncludeVariable().setName("c")
+                });
+
+    // when
+    final var result =
+        mockMvcHelper.doRequest(
+            post(TasklistURIs.TASKS_URL_V1.concat("/search")), variablesRequest);
+
+    // then
+    assertThat(result)
+        .hasOkHttpStatus()
+        .hasApplicationJsonContentType()
+        .extractingListContent(objectMapper, TaskSearchResponse.class)
+        .hasSize(1)
+        .flatExtracting("variables")
+        .extracting("name", "value")
+        .containsExactly(tuple("a", "1"), tuple("c", "3"));
+  }
+
+  @Test
+  public void searchTasksShouldReturnIncludeVariablesCaseCompletedTask() {
+    // given
+    final String bpmnProcessId = "simpleTestProcess";
+    final String flowNodeBpmnId = "taskH_".concat(UUID.randomUUID().toString());
+    createTask(bpmnProcessId, flowNodeBpmnId, 1)
+        .claimAndCompleteHumanTask(flowNodeBpmnId, "a", "1", "b", "2", "c", "3")
+        .getTaskId();
+    final var variablesRequest =
+        new TaskSearchRequest()
+            .setIncludeVariables(
+                new IncludeVariable[] {
+                  new IncludeVariable().setName("a"), new IncludeVariable().setName("c")
+                });
+
+    // when
+    final var result =
+        mockMvcHelper.doRequest(
+            post(TasklistURIs.TASKS_URL_V1.concat("/search")), variablesRequest);
+
+    // then
+    assertThat(result)
+        .hasOkHttpStatus()
+        .hasApplicationJsonContentType()
+        .extractingListContent(objectMapper, TaskSearchResponse.class)
+        .hasSize(1)
+        .flatExtracting("variables")
+        .extracting("name", "value")
+        .containsExactly(tuple("a", "1"), tuple("c", "3"));
   }
 
   @Test
