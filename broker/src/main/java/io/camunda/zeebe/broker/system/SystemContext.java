@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system;
 import static io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector.MINIMUM_SNAPSHOT_PERIOD;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.Loggers;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.DiskCfg.FreeSpaceCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
@@ -37,8 +39,6 @@ public final class SystemContext {
 
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final String BROKER_ID_LOG_PROPERTY = "broker-id";
-  private static final String NODE_ID_ERROR_MSG =
-      "Node id %s needs to be non negative and smaller then cluster size %s.";
   private static final String SNAPSHOT_PERIOD_ERROR_MSG =
       "Snapshot period %s needs to be larger then or equals to one minute.";
   private static final String MAX_BATCH_SIZE_ERROR_MSG =
@@ -129,6 +129,8 @@ public final class SystemContext {
         case S3 -> S3BackupStore.validateConfig(S3BackupStoreConfig.toStoreConfig(backup.getS3()));
         case GCS -> GcsBackupStore.validateConfig(
             GcsBackupStoreConfig.toStoreConfig(backup.getGcs()));
+        case AZURE -> AzureBackupStore.validateConfig(
+            AzureBackupStoreConfig.toStoreConfig(backup.getAzure()));
         default -> throw new UnsupportedOperationException(
             "Does not support validating configuration of backup store %s"
                 .formatted(backup.getStore()));

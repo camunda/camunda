@@ -17,6 +17,8 @@ public class BackupStoreCfg implements ConfigurationEntry {
   private S3BackupStoreConfig s3 = new S3BackupStoreConfig();
   private GcsBackupStoreConfig gcs = new GcsBackupStoreConfig();
 
+  private AzureBackupStoreConfig azure = new AzureBackupStoreConfig();
+
   public S3BackupStoreConfig getS3() {
     return s3;
   }
@@ -33,6 +35,14 @@ public class BackupStoreCfg implements ConfigurationEntry {
     this.gcs = gcs;
   }
 
+  public AzureBackupStoreConfig getAzure() {
+    return azure;
+  }
+
+  public void setAzure(final AzureBackupStoreConfig azure) {
+    this.azure = azure;
+  }
+
   public BackupStoreType getStore() {
     return store;
   }
@@ -45,6 +55,7 @@ public class BackupStoreCfg implements ConfigurationEntry {
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
     s3.init(globalConfig, brokerBase);
     gcs.init(globalConfig, brokerBase);
+    azure.init(globalConfig, brokerBase);
   }
 
   @Override
@@ -53,6 +64,7 @@ public class BackupStoreCfg implements ConfigurationEntry {
       case NONE -> "BackupStoreCfg{" + "store=" + store + '}';
       case S3 -> "BackupStoreCfg{" + "store=" + store + ", s3=" + s3 + '}';
       case GCS -> "BackupStoreCfg{" + "store=" + store + ", gcs=" + gcs + '}';
+      case AZURE -> "BackupStoreCfg{" + "store=" + store + ", azure=" + azure + '}';
     };
   }
 
@@ -68,6 +80,11 @@ public class BackupStoreCfg implements ConfigurationEntry {
      * backup store
      */
     GCS,
+    /**
+     * When type = AZURE, {@link io.camunda.zeebe.backup.azure.AzureBackupStore} will be used as the
+     * backup store
+     */
+    AZURE,
 
     /** Set type = NONE when no backup store is available. No backup will be taken. */
     NONE
