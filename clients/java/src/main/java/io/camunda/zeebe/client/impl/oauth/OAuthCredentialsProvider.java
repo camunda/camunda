@@ -123,6 +123,10 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     payload.put("client_secret", builder.getClientSecret());
     payload.put("audience", builder.getAudience());
     payload.put("grant_type", "client_credentials");
+    final String scope = builder.getScope();
+    if (scope != null) {
+      payload.put("scope", scope);
+    }
 
     return payload.entrySet().stream()
         .map(e -> encode(e.getKey()) + "=" + encode(e.getValue()))

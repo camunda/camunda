@@ -91,6 +91,52 @@ func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProvider() {
 	}
 	s.Equal("Bearer "+accessToken, interceptor.authHeader)
 }
+
+func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProviderWithScope() {
+	// given
+	truncateDefaultOAuthYamlCacheFile()
+	interceptor := newInterceptor(nil)
+	gatewayLis, grpcServer := createServerWithUnaryInterceptor(interceptor.interceptUnary)
+
+	go grpcServer.Serve(gatewayLis)
+	defer func() {
+		grpcServer.Stop()
+		_ = gatewayLis.Close()
+	}()
+
+	testScope := "721aa3ee-24c9-4ab5-95bc-d921ecafdd6d/.default"
+
+	authzServer := mockAuthorizationServerWithScope(s.T(), &mutableToken{value: accessToken}, testScope)
+	defer authzServer.Close()
+
+	credsProvider, err := NewOAuthCredentialsProvider(&OAuthProviderConfig{
+		ClientID:               clientID,
+		ClientSecret:           clientSecret,
+		Audience:               audience,
+		Scope:                  testScope,
+		AuthorizationServerURL: authzServer.URL,
+	})
+
+	s.NoError(err)
+	parts := strings.Split(gatewayLis.Addr().String(), ":")
+	client, err := NewClient(&ClientConfig{
+		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
+		UsePlaintextConnection: true,
+		CredentialsProvider:    credsProvider,
+	})
+	s.NoError(err)
+
+	// when
+	_, err = client.NewTopologyCommand().Send(context.Background())
+
+	// then
+	s.Error(err)
+	if errorStatus, ok := status.FromError(err); ok {
+		s.Equal(codes.Unimplemented, errorStatus.Code())
+	}
+	s.Equal("Bearer "+accessToken, interceptor.authHeader)
+}
+
 func (s *oauthCredsProviderTestSuite) TestNoConfigSecureClient() {
 	// given
 	truncateDefaultOAuthYamlCacheFile()
@@ -783,7 +829,15 @@ func mockAuthorizationServer(t *testing.T, token *mutableToken) *httptest.Server
 	return mockAuthorizationServerWithAudience(t, token, audience)
 }
 
+func mockAuthorizationServerWithScope(t *testing.T, token *mutableToken, scope string) *httptest.Server {
+	return mockAuthorizationServerWithAudienceAndScope(t, token, audience, scope)
+}
+
 func mockAuthorizationServerWithAudience(t *testing.T, token *mutableToken, audience string) *httptest.Server {
+	return mockAuthorizationServerWithAudienceAndScope(t, token, audience, "")
+}
+
+func mockAuthorizationServerWithAudienceAndScope(t *testing.T, token *mutableToken, audience string, scope string) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		bytes, err := io.ReadAll(request.Body)
 		if err != nil {
@@ -801,6 +855,10 @@ func mockAuthorizationServerWithAudience(t *testing.T, token *mutableToken, audi
 		require.Equal(t, clientSecret, query.Get("client_secret"))
 		require.Regexp(t, regexp.MustCompile(`zeebe-client-go/\d+\.\d+\.\d+.*`),
 			request.Header.Get("User-Agent"))
+
+		if scope != "" {
+			require.Equal(t, scope, query.Get("scope"))
+		}
 
 		writer.Header().Set("Content-Type", "application/json")
 		responsePayload := []byte("{\"access_token\": \"" + token.value + "\"," +

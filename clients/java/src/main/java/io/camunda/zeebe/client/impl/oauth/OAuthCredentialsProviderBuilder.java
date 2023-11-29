@@ -28,6 +28,7 @@ public final class OAuthCredentialsProviderBuilder {
   public static final String OAUTH_ENV_CLIENT_ID = "ZEEBE_CLIENT_ID";
   public static final String OAUTH_ENV_CLIENT_SECRET = "ZEEBE_CLIENT_SECRET";
   public static final String OAUTH_ENV_TOKEN_AUDIENCE = "ZEEBE_TOKEN_AUDIENCE";
+  public static final String OAUTH_ENV_TOKEN_SCOPE = "ZEEBE_TOKEN_SCOPE";
   public static final String OAUTH_ENV_AUTHORIZATION_SERVER = "ZEEBE_AUTHORIZATION_SERVER_URL";
   public static final String OAUTH_ENV_CACHE_PATH = "ZEEBE_CLIENT_CONFIG_PATH";
   public static final String OAUTH_ENV_CONNECT_TIMEOUT = "ZEEBE_AUTH_CONNECT_TIMEOUT";
@@ -39,6 +40,7 @@ public final class OAuthCredentialsProviderBuilder {
   private String clientId;
   private String clientSecret;
   private String audience;
+  private String scope;
   private String authorizationServerUrl;
   private URL authorizationServer;
   private String credentialsCachePath;
@@ -72,7 +74,7 @@ public final class OAuthCredentialsProviderBuilder {
     return clientSecret;
   }
 
-  /** The resource for which the the access token should be valid. */
+  /** The resource for which the access token should be valid. */
   public OAuthCredentialsProviderBuilder audience(final String audience) {
     this.audience = audience;
     return this;
@@ -83,6 +85,19 @@ public final class OAuthCredentialsProviderBuilder {
    */
   String getAudience() {
     return audience;
+  }
+
+  /** The scopes of the access token. */
+  public OAuthCredentialsProviderBuilder scope(final String scope) {
+    this.scope = scope;
+    return this;
+  }
+
+  /**
+   * @see OAuthCredentialsProviderBuilder#scope(String)
+   */
+  String getScope() {
+    return scope;
   }
 
   /** The authorization server's URL, from which the access token will be requested. */
@@ -162,6 +177,7 @@ public final class OAuthCredentialsProviderBuilder {
     final String envClientId = Environment.system().get(OAUTH_ENV_CLIENT_ID);
     final String envClientSecret = Environment.system().get(OAUTH_ENV_CLIENT_SECRET);
     final String envAudience = Environment.system().get(OAUTH_ENV_TOKEN_AUDIENCE);
+    final String envScope = Environment.system().get(OAUTH_ENV_TOKEN_SCOPE);
     final String envAuthorizationUrl = Environment.system().get(OAUTH_ENV_AUTHORIZATION_SERVER);
     final String envCachePath = Environment.system().get(OAUTH_ENV_CACHE_PATH);
     final String envReadTimeout = Environment.system().get(OAUTH_ENV_READ_TIMEOUT);
@@ -177,6 +193,10 @@ public final class OAuthCredentialsProviderBuilder {
 
     if (envAudience != null) {
       audience = envAudience;
+    }
+
+    if (envScope != null) {
+      scope = envScope;
     }
 
     if (envAuthorizationUrl != null) {

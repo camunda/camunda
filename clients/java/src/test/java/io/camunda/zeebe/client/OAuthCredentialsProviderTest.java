@@ -89,6 +89,7 @@ public final class OAuthCredentialsProviderTest {
       Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
   private static final String SECRET = "secret";
   private static final String AUDIENCE = "endpoint";
+  private static final String SCOPE = "721aa3ee-24c9-4ab5-95bc-d921ecafdd6d/.default";
   private static final String ACCESS_TOKEN = "someToken";
   private static final String TOKEN_TYPE = "Bearer";
   private static final String CLIENT_ID = "client";
@@ -138,6 +139,35 @@ public final class OAuthCredentialsProviderTest {
                 .clientId(CLIENT_ID)
                 .clientSecret(SECRET)
                 .audience(AUDIENCE)
+                .authorizationServerUrl("http://localhost:" + wireMockRule.port() + "/oauth/token")
+                .credentialsCachePath(tempFolder.newFile().getPath())
+                .build())
+        .build()
+        .close();
+    client = new ZeebeClientImpl(builder, serverRule.getChannel());
+
+    // when
+    client.newTopologyRequest().send().join();
+
+    // then
+    assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY))
+        .isEqualTo(TOKEN_TYPE + " " + ACCESS_TOKEN);
+  }
+
+  @Test
+  public void shouldRequestTokenWithScopeAndAddToCall() throws IOException {
+    // given
+    mockCredentialsWithScope(ACCESS_TOKEN, SCOPE);
+
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder
+        .usePlaintext()
+        .credentialsProvider(
+            new OAuthCredentialsProviderBuilder()
+                .clientId(CLIENT_ID)
+                .clientSecret(SECRET)
+                .audience(AUDIENCE)
+                .scope(SCOPE)
                 .authorizationServerUrl("http://localhost:" + wireMockRule.port() + "/oauth/token")
                 .credentialsCachePath(tempFolder.newFile().getPath())
                 .build())
@@ -574,13 +604,28 @@ public final class OAuthCredentialsProviderTest {
     mockCredentials(accessToken, audience, 0);
   }
 
+  private void mockCredentialsWithScope(final String accessToken, final String scope) {
+    mockCredentials(accessToken, AUDIENCE, 0, scope);
+  }
+
   private void mockCredentials(
       final String accessToken, final String audience, final Integer replyDelay) {
+    mockCredentials(accessToken, audience, replyDelay, null);
+  }
+
+  private void mockCredentials(
+      final String accessToken,
+      final String audience,
+      final Integer replyDelay,
+      final String scope) {
     final HashMap<String, String> map = new HashMap<>();
     map.put("client_secret", SECRET);
     map.put("client_id", CLIENT_ID);
     map.put("audience", audience);
     map.put("grant_type", "client_credentials");
+    if (scope != null) {
+      map.put("scope", scope);
+    }
 
     final String encodedBody =
         map.entrySet().stream()
