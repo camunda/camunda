@@ -26,6 +26,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableRec
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableScriptTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.model.bpmn.instance.Activity;
@@ -89,7 +90,7 @@ public final class FlowElementInstantiationTransformer
     ELEMENT_FACTORIES.put(ServiceTask.class, ExecutableJobWorkerTask::new);
     ELEMENT_FACTORIES.put(StartEvent.class, ExecutableStartEvent::new);
     ELEMENT_FACTORIES.put(SubProcess.class, ExecutableFlowElementContainer::new);
-    ELEMENT_FACTORIES.put(UserTask.class, ExecutableJobWorkerTask::new);
+    ELEMENT_FACTORIES.put(UserTask.class, ExecutableUserTask::new);
 
     NON_EXECUTABLE_ELEMENT_TYPES.add(DataObject.class);
     NON_EXECUTABLE_ELEMENT_TYPES.add(DataObjectReference.class);

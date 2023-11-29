@@ -23,6 +23,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
@@ -172,5 +173,89 @@ class UserTaskBuilderTest {
     assertThat(zeebeUserTaskForms).hasSize(1);
     final ZeebeUserTaskForm zeebeUserTaskForm = zeebeUserTaskForms.iterator().next();
     assertThat(zeebeUserTaskForm.getId()).isNotEmpty();
+  }
+
+  @Test
+  void shouldMarkAsZeebeUserTask() {
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("userTask1")
+            .zeebeUserTask()
+            .endEvent()
+            .done();
+
+    final Collection<ZeebeUserTask> zeebeUserTasks =
+        instance.getModelElementsByType(ZeebeUserTask.class);
+
+    assertThat(zeebeUserTasks).hasSize(1);
+  }
+
+  @Test
+  void shouldMarkAsZeebeUserTaskIfUsedMultipleTimes() {
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("userTask1")
+            .zeebeUserTask()
+            .zeebeUserTask()
+            .zeebeUserTask()
+            .endEvent()
+            .done();
+
+    final Collection<ZeebeUserTask> zeebeUserTasks =
+        instance.getModelElementsByType(ZeebeUserTask.class);
+
+    assertThat(zeebeUserTasks).hasSize(1);
+  }
+
+  @Test
+  void shouldNotMarkAsZeebeUserTaskByDefault() {
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("userTask1")
+            .endEvent()
+            .done();
+
+    final Collection<ZeebeUserTask> zeebeUserTasks =
+        instance.getModelElementsByType(ZeebeUserTask.class);
+
+    assertThat(zeebeUserTasks).isEmpty();
+  }
+
+  @Test
+  void shouldSetAllExistingUserTaskPropertiesForZeebeUserTask() {
+    final String dueDate = "2023-02-24T14:29:00Z";
+    final String followUpDate = "2023-02-24T14:29:00Z";
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask(
+                "userTask1",
+                b ->
+                    b.zeebeAssignee("user1")
+                        .zeebeCandidateGroups("role1")
+                        .zeebeCandidateUsers("user2"))
+            .zeebeDueDate(dueDate)
+            .zeebeFollowUpDate(followUpDate)
+            .zeebeUserTask()
+            .endEvent()
+            .done();
+
+    final ModelElementInstance userTask = instance.getModelElementById("userTask1");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) userTask.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeAssignmentDefinition.class))
+        .hasSize(1)
+        .extracting(
+            ZeebeAssignmentDefinition::getAssignee,
+            ZeebeAssignmentDefinition::getCandidateGroups,
+            ZeebeAssignmentDefinition::getCandidateUsers)
+        .containsExactly(tuple("user1", "role1", "user2"));
+    assertThat(extensionElements.getChildElementsByType(ZeebeTaskSchedule.class))
+        .hasSize(1)
+        .extracting(ZeebeTaskSchedule::getDueDate, ZeebeTaskSchedule::getFollowUpDate)
+        .containsExactly(tuple(dueDate, followUpDate));
   }
 }

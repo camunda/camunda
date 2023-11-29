@@ -14,17 +14,12 @@ import java.util.Map;
  * The properties of an element that is based on a job and should be processed by a job worker. For
  * example, a service task.
  */
-public class JobWorkerProperties {
+public class JobWorkerProperties extends UserTaskProperties {
 
   private Expression type;
   private Expression retries;
-  private Expression assignee;
-  private Expression candidateGroups;
-  private Expression candidateUsers;
-  private Expression dueDate;
-  private Expression followUpDate;
+
   private Map<String, String> taskHeaders = Map.of();
-  private Expression formId;
 
   public Expression getType() {
     return type;
@@ -42,59 +37,11 @@ public class JobWorkerProperties {
     this.retries = retries;
   }
 
-  public Expression getAssignee() {
-    return assignee;
-  }
-
-  public void setAssignee(final Expression assignee) {
-    this.assignee = assignee;
-  }
-
-  public Expression getCandidateGroups() {
-    return candidateGroups;
-  }
-
-  public void setCandidateGroups(final Expression candidateGroups) {
-    this.candidateGroups = candidateGroups;
-  }
-
-  public Expression getCandidateUsers() {
-    return candidateUsers;
-  }
-
-  public void setCandidateUsers(final Expression candidateUsers) {
-    this.candidateUsers = candidateUsers;
-  }
-
-  public Expression getDueDate() {
-    return dueDate;
-  }
-
-  public void setDueDate(final Expression dueDate) {
-    this.dueDate = dueDate;
-  }
-
-  public Expression getFollowUpDate() {
-    return followUpDate;
-  }
-
-  public void setFollowUpDate(final Expression followUpDate) {
-    this.followUpDate = followUpDate;
-  }
-
   public Map<String, String> getTaskHeaders() {
     return taskHeaders;
   }
 
   public void setTaskHeaders(final Map<String, String> taskHeaders) {
     this.taskHeaders = taskHeaders;
-  }
-
-  public Expression getFormId() {
-    return formId;
-  }
-
-  public void setFormId(final Expression formId) {
-    this.formId = formId;
   }
 }
