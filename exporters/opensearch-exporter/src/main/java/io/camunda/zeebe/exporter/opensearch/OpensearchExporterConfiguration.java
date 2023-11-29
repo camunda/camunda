@@ -123,6 +123,8 @@ public class OpensearchExporterConfiguration {
         return index.form;
       case USER_TASK:
         return index.userTask;
+      case COMPENSATION_SUBSCRIPTION:
+        return index.compensationSubscription;
       default:
         return false;
     }
@@ -185,10 +187,9 @@ public class OpensearchExporterConfiguration {
     public boolean signalSubscription = true;
     public boolean resourceDeletion = true;
     public boolean commandDistribution = true;
-
     public boolean form = true;
-
     public boolean userTask = true;
+    public boolean compensationSubscription = true;
 
     // index settings
     private Integer numberOfShards = null;
@@ -286,6 +287,8 @@ public class OpensearchExporterConfiguration {
           + form
           + ", userTask="
           + userTask
+          + ", compensationSubscription="
+          + compensationSubscription
           + '}';
     }
   }
