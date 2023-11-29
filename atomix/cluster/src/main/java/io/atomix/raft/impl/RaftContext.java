@@ -741,6 +741,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private RaftRole createRole(final Role role) {
     switch (role) {
       case INACTIVE:
+        raftRoleMetrics.becomingInactive();
         return new InactiveRole(this);
       case PASSIVE:
         return new PassiveRole(this);
@@ -803,6 +804,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   @Override
   public void close() {
+    raftRoleMetrics.becomingInactive();
     started = false;
     // Unregister protocol listeners.
     unregisterHandlers(protocol);
