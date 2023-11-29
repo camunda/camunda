@@ -18,6 +18,7 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.instance.JobRecordValue;
+import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -87,6 +88,26 @@ public class JobBackoffCleanupMigrationTest {
 
     // then
     assertThat(backoffColumnFamily.exists(backoffJobKey)).isFalse();
+  }
+
+  // regression test of https://github.com/camunda/zeebe/issues/14329
+  @Test
+  public void shouldNotCleanUpFailedJobs() {
+    // given
+    final MutableJobState jobState = processingState.getJobState();
+    final JobRecord record = new JobRecord();
+    record.setType("test");
+    jobState.create(jobKey.getValue(), record);
+    record.setRetries(3);
+    record.setRetryBackoff(1000);
+    record.setRecurringTime(System.currentTimeMillis() + 1000);
+    jobState.fail(jobKey.getValue(), record);
+
+    // when
+    jobBackoffCleanupMigration.runMigration(processingState);
+
+    // then
+    assertThat(backoffColumnFamily.isEmpty()).isFalse();
   }
 
   @Test
