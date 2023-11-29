@@ -13,12 +13,12 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
 
-public abstract class PotentialJobTaskProcessor<T extends ExecutableJobWorkerTask>
+public abstract class JobWorkerTaskSupportingProcessor<T extends ExecutableJobWorkerTask>
     implements BpmnElementProcessor<T> {
 
   private final JobWorkerTaskProcessor delegate;
 
-  public PotentialJobTaskProcessor(
+  public JobWorkerTaskSupportingProcessor(
       final BpmnBehaviors bpmnBehaviors,
       final BpmnStateTransitionBehavior stateTransitionBehavior) {
     delegate = new JobWorkerTaskProcessor(bpmnBehaviors, stateTransitionBehavior);

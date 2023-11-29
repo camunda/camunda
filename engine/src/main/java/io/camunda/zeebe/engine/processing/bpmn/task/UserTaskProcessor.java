@@ -13,7 +13,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 
-public final class UserTaskProcessor extends PotentialJobTaskProcessor<ExecutableUserTask> {
+public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<ExecutableUserTask> {
 
   public UserTaskProcessor(
       final BpmnBehaviors bpmnBehaviors,

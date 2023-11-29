@@ -25,7 +25,8 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 
-public final class ScriptTaskProcessor extends PotentialJobTaskProcessor<ExecutableScriptTask> {
+public final class ScriptTaskProcessor
+    extends JobWorkerTaskSupportingProcessor<ExecutableScriptTask> {
 
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;

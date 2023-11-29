@@ -19,7 +19,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehav
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBusinessRuleTask;
 
 public final class BusinessRuleTaskProcessor
-    extends PotentialJobTaskProcessor<ExecutableBusinessRuleTask> {
+    extends JobWorkerTaskSupportingProcessor<ExecutableBusinessRuleTask> {
 
   private final BpmnDecisionBehavior decisionBehavior;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
