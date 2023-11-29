@@ -7,15 +7,30 @@
  */
 package io.camunda.zeebe.transport.stream.api;
 
+import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorResponse;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 
 /** An exception returned */
 public class StreamResponseException extends UnrecoverableException {
 
+  private final ErrorCode code;
+  private final String message;
+
   public StreamResponseException(final ErrorResponse response) {
     super(
         "Remote stream server error: [code=%s, message='%s']"
             .formatted(response.code(), response.message()));
+
+    code = response.code();
+    message = response.message();
+  }
+
+  public ErrorCode code() {
+    return code;
+  }
+
+  public String message() {
+    return message;
   }
 }

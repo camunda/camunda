@@ -17,6 +17,7 @@ import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamConsu
 import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamId;
 import io.camunda.zeebe.transport.stream.impl.RemoteStreamPusher.Transport;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
+import io.camunda.zeebe.transport.stream.impl.messages.PushStreamResponse;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
@@ -109,14 +110,14 @@ class RemoteStreamImplTest {
     }
 
     @Override
-    public CompletableFuture<Void> send(final PushStreamRequest request, final MemberId receiver)
-        throws Exception {
+    public CompletableFuture<byte[]> send(
+        final PushStreamRequest request, final MemberId receiver) {
       attemptedStreams.add(request.streamId());
       attempt++;
       if (attempt <= succeedAfterAttempt) {
         return CompletableFuture.failedFuture(new RuntimeException("force fail"));
       }
-      return CompletableFuture.completedFuture(null);
+      return CompletableFuture.completedFuture(BufferUtil.bufferAsArray(new PushStreamResponse()));
     }
   }
 }

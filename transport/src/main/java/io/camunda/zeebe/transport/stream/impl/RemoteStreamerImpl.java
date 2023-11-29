@@ -89,15 +89,13 @@ public final class RemoteStreamerImpl<M, P extends BufferWriter> extends Actor
     return Optional.empty();
   }
 
-  private CompletableFuture<Void> send(final PushStreamRequest request, final MemberId receiver) {
-    return transport
-        .send(
-            StreamTopics.PUSH.topic(),
-            request,
-            BufferUtil::bufferAsArray,
-            Function.identity(),
-            receiver,
-            REQUEST_TIMEOUT)
-        .thenApply(ok -> null);
+  private CompletableFuture<byte[]> send(final PushStreamRequest request, final MemberId receiver) {
+    return transport.send(
+        StreamTopics.PUSH.topic(),
+        request,
+        BufferUtil::bufferAsArray,
+        Function.identity(),
+        receiver,
+        REQUEST_TIMEOUT);
   }
 }

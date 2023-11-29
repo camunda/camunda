@@ -16,7 +16,6 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.impl.DiscoveryMembershipProtocol;
-import io.atomix.cluster.messaging.MessagingException.RemoteHandlerFailure;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -34,6 +33,8 @@ import io.camunda.zeebe.transport.stream.api.RemoteStreamErrorHandler;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamer;
+import io.camunda.zeebe.transport.stream.api.StreamResponseException;
+import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,6 +48,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -147,10 +149,12 @@ final class StreamIntegrationTest {
     // Use serverStream obtained before stream is removed
     serverStream.push(new TestSerializableData(100));
 
-    // then - we can't assert for NoSuchStreamException on the server side, as we don't serialize
-    // the exceptions when transmitting them
+    // then
     assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
-    assertThat(error.get()).hasRootCauseInstanceOf(RemoteHandlerFailure.class);
+    assertThat(error.get())
+        .isInstanceOf(StreamResponseException.class)
+        .asInstanceOf(InstanceOfAssertFactories.throwable(StreamResponseException.class))
+        .returns(ErrorCode.NOT_FOUND, StreamResponseException::code);
   }
 
   private Node createNode(final String id) {
