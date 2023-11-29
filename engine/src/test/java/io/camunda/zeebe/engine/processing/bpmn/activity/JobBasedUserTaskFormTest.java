@@ -29,13 +29,15 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class UserTaskFormTest {
+public class JobBasedUserTaskFormTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   private static final String PROCESS_ID = "process";
-  private static final String TEST_FORM = "/form/test-form-1.form";
-  private static final String FORM_ID = "Form_0w7r08e";
+  private static final String TEST_FORM_1 = "/form/test-form-1.form";
+  private static final String TEST_FORM_2 = "/form/test-form-2.form";
+  private static final String FORM_ID_1 = "Form_0w7r08e";
+  private static final String FORM_ID_2 = "Form_6s1b76p";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -44,8 +46,8 @@ public class UserTaskFormTest {
   @Test
   public void shouldActivateUserTaskIfFormIsAlreadyDeployed() {
     // given
-    deployForm();
-    deployProcess(FORM_ID);
+    deployForm(TEST_FORM_1);
+    deployProcess(FORM_ID_1);
 
     // when
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -57,7 +59,7 @@ public class UserTaskFormTest {
   @Test
   public void shouldRaiseAnIncidentIfFormIsNotDeployed() {
     // given
-    final var formId = "form-id";
+    final var formId = "non-existent-form-id";
     deployProcess(formId);
 
     // when
@@ -70,13 +72,13 @@ public class UserTaskFormTest {
   @Test
   public void shouldResolveAnIncidentIfFormIsDeployed() {
     // given
-    deployProcess(FORM_ID);
+    deployProcess(FORM_ID_2);
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-    final var incidentCreated = assertFormIncident(processInstanceKey, FORM_ID);
+    final var incidentCreated = assertFormIncident(processInstanceKey, FORM_ID_2);
 
     // when
-    deployForm();
+    deployForm(TEST_FORM_2);
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentCreated.getKey()).resolve();
 
     // then
@@ -102,8 +104,8 @@ public class UserTaskFormTest {
     ENGINE.deployment().withXmlResource(processWithFormId).deploy();
   }
 
-  private void deployForm() {
-    final var deploymentEvent = ENGINE.deployment().withJsonClasspathResource(TEST_FORM).deploy();
+  private void deployForm(final String formPath) {
+    final var deploymentEvent = ENGINE.deployment().withJsonClasspathResource(formPath).deploy();
 
     Assertions.assertThat(deploymentEvent)
         .hasIntent(DeploymentIntent.CREATED)
