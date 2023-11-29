@@ -139,10 +139,10 @@
   <sbe:message name="RecordMetadata" id="200" description="Descriptor for Record Metadata">
     <field name="recordType" id="1" type="RecordType"/>
     <field name="requestStreamId" id="2" type="int32"/>
+    <field name="intent" id="6" type="uint8"/>
     <field name="requestId" id="3" type="uint64"/>
     <field name="protocolVersion" id="4" type="uint16"/>
     <field name="valueType" id="5" type="ValueType"/>
-    <field name="intent" id="6" type="uint8"/>
     <field name="brokerVersion" id="9" type="Version" sinceVersion="2" presence="optional"/>
     <field name="recordVersion" id="10" type="uint16" sinceVersion="3" presence="optional"/>
     <!-- populated when RecordType is COMMAND_REJECTION -->
