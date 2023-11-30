@@ -150,6 +150,7 @@ final class StandaloneGatewaySecurityTest {
 
     return new StandaloneGateway(
         new GatewayConfiguration(gatewayCfg),
+        null,
         new SpringGatewayBridge(),
         actorScheduler,
         atomixCluster,
