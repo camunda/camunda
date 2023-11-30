@@ -17,7 +17,8 @@ package io.camunda.zeebe.protocol.record.intent;
 
 public enum VariableIntent implements Intent {
   CREATED((short) 0),
-  UPDATED((short) 1);
+  UPDATED((short) 1),
+  MIGRATED((short) 2);
 
   private final short value;
 
@@ -36,6 +37,8 @@ public enum VariableIntent implements Intent {
         return CREATED;
       case 1:
         return UPDATED;
+      case 2:
+        return MIGRATED;
       default:
         return Intent.UNKNOWN;
     }
