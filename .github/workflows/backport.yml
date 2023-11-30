@@ -17,3 +17,4 @@ jobs:
         uses: korthout/backport-action@v2
         with:
           merge_commits: skip
+          pull_title: "${pull_title} [Backport ${target_branch}]"
