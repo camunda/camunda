@@ -1,0 +1,160 @@
+version: "3.6"
+
+services:
+  opensearch:
+    image: opensearchproject/opensearch:2.5.0
+    container_name: opensearch
+    environment:
+      - cluster.name=opensearch
+      - node.name=opensearch
+      - discovery.seed_hosts=opensearch
+      - plugins.security.disabled=true
+      - cluster.initial_cluster_manager_nodes=opensearch
+      - bootstrap.memory_lock=true # along with the mem lock settings below, disables swapping
+      - "OPENSEARCH_JAVA_OPTS=-Xms1G -Xmx1G" # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536 # maximum number of open files for the OpenSearch user, set to at least 65536 on modern systems
+        hard: 65536
+    ports:
+      - "9200:9200"
+      - "9600:9600" # re
+  postgres:
+    container_name: postgres
+    image: postgres:15.1-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: identity
+      POSTGRES_USER: identity
+      POSTGRES_PASSWORD: "t2L@!AqSMg8%I%NmHM"
+  keycloak:
+    depends_on:
+      - postgres
+    container_name: keycloak
+    image: bitnami/keycloak:22.0.1
+    volumes:
+      - keycloak-theme:/opt/bitnami/keycloak/themes/identity
+    ports:
+      - "18080:8080"
+    environment:
+      KEYCLOAK_HTTP_RELATIVE_PATH: /auth
+      KEYCLOAK_DATABASE_HOST: postgres
+      KEYCLOAK_DATABASE_NAME: identity
+      KEYCLOAK_DATABASE_USER: identity
+      KEYCLOAK_DATABASE_PASSWORD: "t2L@!AqSMg8%I%NmHM"
+      KEYCLOAK_ADMIN_USER: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/auth"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 30s
+  identity:
+    depends_on:
+      - keycloak
+    container_name: identity
+    image: camunda/identity:8.4.0-alpha1
+    ports:
+      - "8080:8080"
+    volumes:
+      - keycloak-theme:/app/keycloak-theme
+    environment:
+      KEYCLOAK_URL: http://keycloak:8080/auth
+      IDENTITY_AUTH_PROVIDER_BACKEND_URL: http://keycloak:8080/auth/realms/camunda-platform
+      IDENTITY_DATABASE_HOST: postgres
+      IDENTITY_DATABASE_PORT: 5432
+      IDENTITY_DATABASE_NAME: identity
+      IDENTITY_DATABASE_USERNAME: identity
+      IDENTITY_DATABASE_PASSWORD: "t2L@!AqSMg8%I%NmHM"
+      KEYCLOAK_INIT_OPERATE_SECRET: the-cake-is-alive
+      KEYCLOAK_INIT_OPERATE_ROOT_URL: http://localhost:8081/operate
+      KEYCLOAK_INIT_TASKLIST_SECRET: the-cake-is-alive
+      KEYCLOAK_INIT_TASKLIST_ROOT_URL: http://localhost:8082/tasklist
+      KEYCLOAK_INIT_ZEEBE_NAME: Zeebe
+      KEYCLOAK_INIT_ZEEBE_SECRET: zeebeSecret
+      KEYCLOAK_CLIENTS_0_NAME: Zeebe
+      KEYCLOAK_CLIENTS_0_ID: zeebe
+      KEYCLOAK_CLIENTS_0_SECRET: zeebeSecret
+      KEYCLOAK_CLIENTS_0_TYPE: M2M
+      KEYCLOAK_CLIENTS_0_PERMISSIONS_0_RESOURCE_SERVER_ID: zeebe-api
+      KEYCLOAK_CLIENTS_0_PERMISSIONS_0_DEFINITION: write:*
+      MULTITENANCY_ENABLED: true
+    env_file: .env.test
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8082/actuator/health",
+        ]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 30s
+  zeebe:
+    container_name: zeebe
+    image: camunda/zeebe:8.4.0-alpha1
+    environment:
+      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
+      - ZEEBE_HOST=${ZEEBE_HOST:-}
+      - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=4
+      - ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME=io.camunda.zeebe.exporter.opensearch.OpensearchExporter
+      - ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL=http://opensearch:9200
+      - ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_BULK_SIZE=1
+      - ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_DEPLOYMENT=false
+      - ZEEBE_BROKER_EXPORTERS_OPENSEARCH_INDEX_PROCESS_MESSAGE_SUBSCRIPTION=true
+      - ZEEBE_BROKER_GATEWAY_MULTITENANCY_ENABLED=true
+      - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_MODE=identity
+      - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_TYPE=keycloak
+      - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_ISSUERBACKENDURL=http://keycloak:8080/auth/realms/camunda-platform
+      - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_AUDIENCE=zeebe-api
+      - ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_BASEURL=http://identity:8080
+      - logging.level.io.camunda.zeebe.gateway.interceptors.impl.IdentityInterceptor=DEBUG
+    ports:
+      - "26500:26500"
+      - "8000:8000"
+    restart: always
+  operate:
+    image: camunda/operate:SNAPSHOT
+    container_name: operate
+    environment:
+      - SERVER_PORT=8081
+      - SERVER_SERVLET_CONTEXT_PATH=/operate
+      - SPRING_PROFILES_ACTIVE=identity-auth,dev-data
+      - CAMUNDA_OPERATE_TASKLIST_URL=http://localhost:8082/tasklist
+      - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
+      - CAMUNDA_OPERATE_OPENSEARCH_URL=http://opensearch:9200
+      - CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL=http://opensearch:9200
+      - SPRING_PROFILES_ACTIVE=identity-auth,dev-data
+      # Identity
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
+      - CAMUNDA_IDENTITY_ISSUER_BACKEND_URL=http://keycloak:8080/auth/realms/camunda-platform
+      - CAMUNDA_IDENTITY_CLIENT_ID=operate
+      - CAMUNDA_IDENTITY_CLIENT_SECRET=the-cake-is-alive
+      - CAMUNDA_IDENTITY_AUDIENCE=operate-api
+      - CAMUNDA_IDENTITY_BASE_URL=http://identity:8080
+      - CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED=false
+      #
+      - CAMUNDA_OPERATE_MULTITENANCY_ENABLED=true
+      - CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test
+      # Zeebe with Identity
+      - ZEEBE_CLIENT_ID=zeebe
+      - ZEEBE_CLIENT_SECRET=zeebeSecret
+      - ZEEBE_TOKEN_AUDIENCE=zeebe-api
+      - ZEEBE_AUTHORIZATION_SERVER_URL=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/token
+    ports:
+      - "8081:8081"
+    depends_on:
+      - opensearch
+      - zeebe
+      - identity
+volumes:
+  keycloak-theme:
