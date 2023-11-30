@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.schema;
 
+import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.OpensearchConnector;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
@@ -41,6 +42,7 @@ import static org.mockito.Mockito.when;
 
 @RunWith(SpringRunner.class) @SpringBootTest(classes = {
     TestApplicationWithNoBeans.class, OperateProperties.class,
+    DatabaseInfo.class,
     IndexSchemaValidator.class,
     TestElasticsearchSchemaManager.class,
     TestOpensearchSchemaManager.class,

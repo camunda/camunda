@@ -36,6 +36,7 @@ import io.camunda.operate.management.IndicesCheck;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.elasticsearch.ElasticsearchSessionRepository;
 import io.camunda.operate.webapp.opensearch.OpensearchSessionRepository;
@@ -73,6 +74,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -156,6 +158,9 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   @MockBean
   private IndicesCheck probes;
 
+  @Autowired
+  private ApplicationContext applicationContext;
+
   private final BiFunction<String, String, Tokens> orgExtractor;
 
   public AuthenticationWithPersistentSessionsIT(BiFunction<String, String, Tokens> orgExtractor) {
@@ -169,6 +174,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
 
   @Before
   public void setUp() {
+    new SpringContextHolder().setApplicationContext(applicationContext);
     // mock building authorizeUrl
     AuthorizeUrl mockedAuthorizedUrl = mock(AuthorizeUrl.class);
     given(authenticationController.buildAuthorizeUrl(isNotNull(), isNotNull(), isNotNull()))

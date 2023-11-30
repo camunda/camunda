@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.conditions;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -16,11 +18,17 @@ import static io.camunda.operate.conditions.DatabaseCondition.DATABASE_PROPERTY;
 @Component("databaseInfo")
 public class DatabaseInfo implements ApplicationContextAware {
 
+  private static final Logger logger = LoggerFactory.getLogger(DatabaseInfo.class);
   private static ApplicationContext applicationContext;
 
   static final DatabaseType DEFAULT_DATABASE = DatabaseType.Elasticsearch;
 
-  public static DatabaseType getCurrent(){
+  public static DatabaseType getCurrent() {
+    if (applicationContext == null) {
+      logger.warn("getCurrent() called on DatabaseInfo before application context has been set");
+      return DEFAULT_DATABASE;
+    }
+
     var code =  applicationContext.getEnvironment().getProperty(DATABASE_PROPERTY);
     return DatabaseType.byCode(code).orElse(DEFAULT_DATABASE);
   }

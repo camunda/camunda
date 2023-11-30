@@ -9,9 +9,11 @@ package io.camunda.operate.schema.indices;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 @Component
+@DependsOn("databaseInfo")
 public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   @Autowired

@@ -27,6 +27,7 @@ import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.OperateProfileService;
+import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
@@ -60,6 +61,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -133,6 +135,9 @@ public class AuthenticationIT implements AuthenticationTestable {
   @Autowired
   private ObjectMapper objectMapper;
 
+  @Autowired
+  private ApplicationContext applicationContext;
+
   @MockBean
   @Qualifier("auth0_restTemplate")
   private RestTemplate restTemplate;
@@ -143,6 +148,7 @@ public class AuthenticationIT implements AuthenticationTestable {
 
   @Before
   public void setUp() {
+    new SpringContextHolder().setApplicationContext(applicationContext);
     // mock building authorizeUrl
     AuthorizeUrl mockedAuthorizedUrl = mock(AuthorizeUrl.class);
     given(authenticationController.buildAuthorizeUrl(isNotNull(), isNotNull(), isNotNull()))
