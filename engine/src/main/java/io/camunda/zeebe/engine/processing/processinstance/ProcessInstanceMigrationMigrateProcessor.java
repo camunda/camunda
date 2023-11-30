@@ -49,6 +49,8 @@ public class ProcessInstanceMigrationMigrateProcessor
   private static final String ERROR_MESSAGE_PROCESS_DEFINITION_NOT_FOUND =
       "Expected to migrate process instance to process definition but no process definition found with key '%d'";
 
+  private final VariableRecord variableRecord = new VariableRecord();
+
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
@@ -56,7 +58,6 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final ProcessState processState;
   private final JobState jobState;
   private final VariableState variableState;
-  private final VariableRecord variableRecord = new VariableRecord();
 
   public ProcessInstanceMigrationMigrateProcessor(
       final Writers writers,
