@@ -67,7 +67,7 @@ public class MigrateProcessInstanceTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .serviceTask("B", a -> a.zeebeJobType("B"))
-                .endEvent()
+                .endEvent("end")
                 .done());
 
     // when
@@ -131,6 +131,18 @@ public class MigrateProcessInstanceTest {
             "Expect that the type did not change even though it's different in the target process."
                 + " Re-evaluation of the job type expression is not enabled for this migration")
         .hasType("A");
+
+    CLIENT_RULE.getClient().newCompleteCommand(jobKey).send().join();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withRecordKey(serviceTaskKey)
+        .await();
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withElementId("end")
+                .findAny())
+        .describedAs("Expect that end event is activated")
+        .isPresent();
   }
 
   @Test
@@ -234,7 +246,6 @@ public class MigrateProcessInstanceTest {
         .hasType("A");
 
     CLIENT_RULE.getClient().newCompleteCommand(jobKey).send().join();
-
     RecordingExporter.jobRecords(JobIntent.COMPLETED).withRecordKey(jobKey).await();
 
     Assertions.assertThat(
@@ -278,7 +289,7 @@ public class MigrateProcessInstanceTest {
             Bpmn.createExecutableProcess(targetProcessId)
                 .startEvent()
                 .serviceTask("B", a -> a.zeebeJobType("B"))
-                .endEvent()
+                .endEvent("end")
                 .done());
 
     // when
@@ -342,5 +353,17 @@ public class MigrateProcessInstanceTest {
             "Expect that the type did not change even though it's different in the target process."
                 + " Re-evaluation of the job type expression is not enabled for this migration")
         .hasType("A");
+
+    CLIENT_RULE.getClient().newCompleteCommand(jobKey).send().join();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withRecordKey(serviceTaskKey)
+        .await();
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withElementId("end")
+                .findAny())
+        .describedAs("Expect that end event is activated")
+        .isPresent();
   }
 }
