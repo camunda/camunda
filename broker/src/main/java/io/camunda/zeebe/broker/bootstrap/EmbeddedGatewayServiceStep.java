@@ -35,6 +35,7 @@ class EmbeddedGatewayServiceStep extends AbstractBrokerStartupStep {
     final var embeddedGatewayService =
         new EmbeddedGatewayService(
             brokerStartupContext.getBrokerConfiguration(),
+            brokerStartupContext.getIdentityConfiguration(),
             scheduler,
             concurrencyControl,
             jobStreamClient,

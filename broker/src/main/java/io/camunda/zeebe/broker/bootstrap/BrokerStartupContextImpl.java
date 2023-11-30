@@ -11,6 +11,7 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
+import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -39,6 +40,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
 
   private final BrokerInfo brokerInfo;
   private final BrokerCfg configuration;
+  private final IdentityConfiguration identityConfiguration;
   private final SpringBrokerBridge springBrokerBridge;
   private final ActorSchedulingService actorScheduler;
   private final BrokerHealthCheckService healthCheckService;
@@ -63,6 +65,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   public BrokerStartupContextImpl(
       final BrokerInfo brokerInfo,
       final BrokerCfg configuration,
+      final IdentityConfiguration identityConfiguration,
       final SpringBrokerBridge springBrokerBridge,
       final ActorSchedulingService actorScheduler,
       final BrokerHealthCheckService healthCheckService,
@@ -78,8 +81,33 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.healthCheckService = requireNonNull(healthCheckService);
     this.exporterRepository = requireNonNull(exporterRepository);
     this.clusterServices = requireNonNull(clusterServices);
+    this.identityConfiguration = identityConfiguration;
     this.brokerClient = brokerClient;
     partitionListeners.addAll(additionalPartitionListeners);
+  }
+
+  public BrokerStartupContextImpl(
+      final BrokerInfo brokerInfo,
+      final BrokerCfg configuration,
+      final SpringBrokerBridge springBrokerBridge,
+      final ActorSchedulingService actorScheduler,
+      final BrokerHealthCheckService healthCheckService,
+      final ExporterRepository exporterRepository,
+      final ClusterServicesImpl clusterServices,
+      final BrokerClient brokerClient,
+      final List<PartitionListener> additionalPartitionListeners) {
+
+    this(
+        brokerInfo,
+        configuration,
+        null,
+        springBrokerBridge,
+        actorScheduler,
+        healthCheckService,
+        exporterRepository,
+        clusterServices,
+        brokerClient,
+        additionalPartitionListeners);
   }
 
   @Override
@@ -95,6 +123,11 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public BrokerCfg getBrokerConfiguration() {
     return configuration;
+  }
+
+  @Override
+  public IdentityConfiguration getIdentityConfiguration() {
+    return identityConfiguration;
   }
 
   @Override

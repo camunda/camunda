@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
+import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -40,6 +41,8 @@ public interface BrokerStartupContext {
   BrokerInfo getBrokerInfo();
 
   BrokerCfg getBrokerConfiguration();
+
+  IdentityConfiguration getIdentityConfiguration();
 
   SpringBrokerBridge getSpringBrokerBridge();
 
