@@ -17,10 +17,12 @@ import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.engine.state.instance.JobRecordValue;
+import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import java.util.ArrayList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -59,60 +61,71 @@ public class JobBackoffCleanupMigrationTest {
     jobKey.wrapLong(1);
   }
 
+  // regression test of https://github.com/camunda/zeebe/issues/14329
   @Test
-  public void afterCleanupValidTimeoutIsStillPresent() {
+  public void shoulCleanOrphanBackoffEntries() {
     // given
-    final int deadline = 123;
-    jobsColumnFamily.upsert(jobKey, createJobRecordValue(deadline));
-    backoffKey.wrapLong(deadline);
-    backoffColumnFamily.upsert(backoffJobKey, DbNil.INSTANCE);
-
-    // when
-    jobBackoffCleanupMigration.runMigration(processingState);
-
-    // then
-    assertThat(backoffColumnFamily.exists(backoffJobKey)).isTrue();
-  }
-
-  @Test
-  public void afterCleanupOrphanedBackoffIsDeleted() {
-    // given
-    jobsColumnFamily.upsert(jobKey, new JobRecordValue());
-    backoffKey.wrapLong(123);
-    backoffColumnFamily.upsert(backoffJobKey, DbNil.INSTANCE);
+    final MutableJobState jobState = processingState.getJobState();
+    final JobRecord record = createJobRecord(1000);
+    jobState.create(jobKey.getValue(), record);
+    jobState.fail(jobKey.getValue(), record);
     jobsColumnFamily.deleteExisting(jobKey);
 
     // when
     jobBackoffCleanupMigration.runMigration(processingState);
 
     // then
-    assertThat(backoffColumnFamily.exists(backoffJobKey)).isFalse();
+    assertThat(backoffColumnFamily.isEmpty()).isTrue();
   }
 
+  // regression test of https://github.com/camunda/zeebe/issues/14329
   @Test
-  public void afterCleanupTimeoutWithNonMatchingRetryBackoffIsDeleted() {
+  public void shouldNotCleanUpFailedJobs() {
     // given
-    final int firstRetryBackoff = 123;
-    final int secondRetryBackoff = 456;
-    jobsColumnFamily.upsert(jobKey, createJobRecordValue(secondRetryBackoff));
-    backoffKey.wrapLong(firstRetryBackoff);
-    backoffColumnFamily.upsert(backoffJobKey, DbNil.INSTANCE);
-    backoffKey.wrapLong(secondRetryBackoff);
-    backoffColumnFamily.upsert(backoffJobKey, DbNil.INSTANCE);
+    final MutableJobState jobState = processingState.getJobState();
+    final JobRecord record = createJobRecord(1000);
+    jobState.create(jobKey.getValue(), record);
+    jobState.fail(jobKey.getValue(), record);
 
     // when
     jobBackoffCleanupMigration.runMigration(processingState);
 
     // then
-    backoffKey.wrapLong(firstRetryBackoff);
-    assertThat(backoffColumnFamily.exists(backoffJobKey)).isFalse();
-    backoffKey.wrapLong(secondRetryBackoff);
-    assertThat(backoffColumnFamily.exists(backoffJobKey)).isTrue();
+    assertThat(backoffColumnFamily.isEmpty()).isFalse();
   }
 
-  private static JobRecordValue createJobRecordValue(final long retryBackoff) {
-    final JobRecordValue jobRecordValue = new JobRecordValue();
-    jobRecordValue.setRecordWithoutVariables(new JobRecord().setRetryBackoff(retryBackoff));
-    return jobRecordValue;
+  // regression test of https://github.com/camunda/zeebe/issues/14329
+  @Test
+  public void shoulCleanDuplicatedBackoffEntries() {
+    // given
+    final MutableJobState jobState = processingState.getJobState();
+    final JobRecord record = createJobRecord(1000);
+    jobState.create(jobKey.getValue(), record);
+    jobState.fail(jobKey.getValue(), record);
+
+    // second fail will cause duplicate entry and orphan the first backoff
+    record.setRecurringTime(System.currentTimeMillis() + 1001);
+    jobState.fail(jobKey.getValue(), record);
+
+    // when
+    jobBackoffCleanupMigration.runMigration(processingState);
+
+    // then
+    assertThat(backoffColumnFamily.isEmpty()).isFalse();
+    final var keys = new ArrayList<DbCompositeKey<DbLong, DbForeignKey<DbLong>>>();
+    backoffColumnFamily.forEach((k, v) -> keys.add(k));
+    assertThat(keys).hasSize(1);
+    assertThat(keys)
+        .extracting(DbCompositeKey::second)
+        .extracting(DbForeignKey::inner)
+        .contains(jobKey);
+  }
+
+  private static JobRecord createJobRecord(final long retryBackoff) {
+    return new JobRecord()
+        .setType("test")
+        .setRetries(3)
+        .setRetryBackoff(retryBackoff)
+        .setRecurringTime(System.currentTimeMillis() + retryBackoff);
   }
 }
