@@ -122,6 +122,11 @@ public abstract class AbstractProcessGroupByProcessInstanceDate extends ProcessG
     );
     result.setGroupByKeyOfNumericType(false);
     result.setDistributedByKeyOfNumericType(distributedByPart.isKeyOfNumericType(context));
+    ProcessReportDataDto reportData = context.getReportData();
+    // We sort by label for management report because keys change on every request
+    if(reportData.isManagementReport()) {
+      result.setDistributedBySorting(new ReportSortingDto(ReportSortingDto.SORT_BY_LABEL, SortOrder.ASC));
+    }
   }
 
   private List<GroupByResult> processAggregations(final SearchResponse response,
