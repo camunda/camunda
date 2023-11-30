@@ -57,11 +57,12 @@ public interface TopologyInitializer {
   ActorFuture<ClusterTopology> initialize();
 
   /**
-   * Chain initializers in oder. If this.initialize did not successfully initialize, then the
-   * topology is initialized using the provided initializer
+   * Chain initializers in oder. If this initializer returns an uninitialized topology, the provided
+   * initializer is tried instead. If this initializer completes exceptionally, the exceptions
+   * propagates. See {@link #recover(Class, TopologyInitializer)} to handle exceptions.
    *
    * @param after the next initializer used to initialize topology if the current one did not
-   *     succeed.
+   *     succeed with an initialized topology.
    * @return a chained TopologyInitializer
    */
   default TopologyInitializer orThen(final TopologyInitializer after) {
@@ -72,7 +73,10 @@ public interface TopologyInitializer {
           .initialize()
           .onComplete(
               (topology, error) -> {
-                if (error != null || topology.isUninitialized()) {
+                if (error != null) {
+                  LOG.error("Failed to initialize topology", error);
+                  chainedInitialize.completeExceptionally(error);
+                } else if (topology.isUninitialized()) {
                   after.initialize().onComplete(chainedInitialize);
                 } else {
                   chainedInitialize.complete(topology);

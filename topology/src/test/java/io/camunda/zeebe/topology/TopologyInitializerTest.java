@@ -40,6 +40,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -267,7 +268,7 @@ final class TopologyInitializerTest {
     }
 
     @Test
-    void shouldInitializeFromGossipWhenFileIsCorrupted() throws IOException {
+    void shouldFailToInitializeWhenFileIsCorrupted() throws IOException {
       // given
       final AtomicReference<ClusterTopology> gossipedTopology = new AtomicReference<>();
       final TestTopologyNotifier topologyUpdateNotifier = new TestTopologyNotifier();
@@ -285,16 +286,8 @@ final class TopologyInitializerTest {
 
       // when
       final var initializeFuture = initializer.initialize();
-      assertThat(initializeFuture.isDone()).isFalse();
-      assertThat(gossipedTopology.get())
-          .describedAs("Should gossip uninitialized topology")
-          .isEqualTo(ClusterTopology.uninitialized());
-
-      // Simulate gossip received
-      topologyUpdateNotifier.updateTopology(initialClusterTopology);
-
-      // then
-      assertThatClusterTopology(initializeFuture.join()).isInitialized();
+      Awaitility.await().until(initializeFuture::isDone);
+      assertThat(initializeFuture.getException()).isInstanceOf(PersistedTopologyIsBroken.class);
     }
 
     @Test
@@ -416,7 +409,6 @@ final class TopologyInitializerTest {
 
       // then
       assertThat(chainedInitializer.initialize().join()).isEqualTo(initialClusterTopology);
-      verify(recoveryInitializer, never()).initialize();
     }
 
     @Test
