@@ -367,7 +367,7 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.resetImportStartIndexes();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(processDefinition);
@@ -393,7 +393,7 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     final String reportId = createSingleReport(processDefinition);
     importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<ProcessVariableNameResponseDto> variablesForDef = variablesClient.getProcessVariableNames(processDefinition);
@@ -609,7 +609,7 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
     ProcessDefinitionEngineDto processDefinition1 = deploySimpleProcessDefinition();
     startInstanceAndImportEngineEntities(processDefinition1, ImmutableMap.of("var1", "value1"));
     final String reportId1 = createSingleReport(processDefinition1);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     ProcessDefinitionEngineDto processDefinition2 = deploySimpleProcessDefinition();
     startInstanceAndImportEngineEntities(processDefinition2, ImmutableMap.of("var2", 5L));
     final String reportId2 = createSingleReport(processDefinition2);

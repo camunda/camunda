@@ -119,10 +119,10 @@ public class OptimizeEventsQueryPerformanceTest extends AbstractQueryPerformance
         .count(RandomUtils.nextLong(0, 1000))
         .build())
       .collect(Collectors.toMap(EventSequenceCountDto::getId, seq -> seq));
-    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(
+    databaseIntegrationTestExtension.addEntriesToDatabase(
       EventSequenceCountIndex.constructIndexName(EXTERNAL_EVENTS_INDEX_SUFFIX), sequencesById
     );
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private void addEventsToOptimize(final int numberOfDifferentEvents) {
@@ -137,10 +137,10 @@ public class OptimizeEventsQueryPerformanceTest extends AbstractQueryPerformance
         .id(IdGenerator.getNextId())
         .build())
       .collect(Collectors.toMap(EventDto::getId, event -> event));
-    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(
+    databaseIntegrationTestExtension.addEntriesToDatabase(
       new EventIndexES().getIndexName(), eventsById
     );
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private static Stream<Arguments> eventCountSorterAndSearchTerm() {

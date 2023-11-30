@@ -43,10 +43,10 @@ public class RunningProcessInstanceMediatorPermutationsImportIT extends Abstract
   public void runningInstanceIsFullyImported(final List<Class<? extends ImportMediator>> mediatorOrder) {
     // when
     performOrderedImport(mediatorOrder);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .hasSize(1)
       .singleElement()
       .satisfies(persistedProcessInstanceDto -> {
@@ -77,7 +77,7 @@ public class RunningProcessInstanceMediatorPermutationsImportIT extends Abstract
       });
 
     final List<CamundaActivityEventDto> allStoredCamundaActivityEventsForDefinition =
-      elasticSearchIntegrationTestExtension.getAllStoredCamundaActivityEventsForDefinition(TEST_PROCESS);
+      databaseIntegrationTestExtension.getAllStoredCamundaActivityEventsForDefinition(TEST_PROCESS);
     // the process instance start and the single running user task event
     assertThat(allStoredCamundaActivityEventsForDefinition).hasSize(2);
   }

@@ -12,14 +12,12 @@ import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-
 import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.metrics.ValueCount;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -33,9 +31,9 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.camunda.optimize.service.db.DatabaseConstants.FREQUENCY_AGGREGATION;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.camunda.optimize.util.BpmnModels.END_EVENT;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK;
 import static org.camunda.optimize.util.BpmnModels.START_EVENT;
@@ -60,7 +58,7 @@ public class EngineActivityImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    final List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    final List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(allProcessInstances)
       .hasSize(2)
       .allSatisfy(processInstanceDto -> assertThat(processInstanceDto.getFlowNodeInstances())
@@ -84,7 +82,7 @@ public class EngineActivityImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    final List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    final List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(allProcessInstances)
       .singleElement()
       .extracting(ProcessInstanceDto::getFlowNodeInstances)
@@ -102,8 +100,12 @@ public class EngineActivityImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    assertAllEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_MULTI_ALIAS, PROCESS_INSTANCE_NULLABLE_FIELDS);
-    final List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    assertAllEntriesInElasticsearchHaveAllData(
+      PROCESS_INSTANCE_MULTI_ALIAS,
+      ProcessInstanceDto.class,
+      PROCESS_INSTANCE_NULLABLE_FIELDS
+    );
+    final List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(allProcessInstances).hasSize(1);
     assertThat(allProcessInstances.get(0).getFlowNodeInstances())
       .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
@@ -120,7 +122,7 @@ public class EngineActivityImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(allProcessInstances).hasSize(1);
     assertThat(allProcessInstances.get(0).getFlowNodeInstances())
       .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
@@ -134,8 +136,12 @@ public class EngineActivityImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromLastIndex();
 
     // then
-    assertAllEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_MULTI_ALIAS, PROCESS_INSTANCE_NULLABLE_FIELDS);
-    allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    assertAllEntriesInElasticsearchHaveAllData(
+      PROCESS_INSTANCE_MULTI_ALIAS,
+      ProcessInstanceDto.class,
+      PROCESS_INSTANCE_NULLABLE_FIELDS
+    );
+    allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(allProcessInstances).hasSize(1);
     assertThat(allProcessInstances.get(0).getFlowNodeInstances())
       .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
@@ -152,7 +158,7 @@ public class EngineActivityImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(allProcessInstances).hasSize(1);
     assertThat(allProcessInstances.get(0).getFlowNodeInstances())
       .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
@@ -166,8 +172,12 @@ public class EngineActivityImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromLastIndex();
 
     // then
-    assertAllEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_MULTI_ALIAS, PROCESS_INSTANCE_NULLABLE_FIELDS);
-    allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    assertAllEntriesInElasticsearchHaveAllData(
+      PROCESS_INSTANCE_MULTI_ALIAS,
+      ProcessInstanceDto.class,
+      PROCESS_INSTANCE_NULLABLE_FIELDS
+    );
+    allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(allProcessInstances).hasSize(1);
     assertThat(allProcessInstances.get(0).getFlowNodeInstances())
       .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getCanceled)
@@ -187,7 +197,7 @@ public class EngineActivityImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    final List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    final List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(allProcessInstances).hasSize(1);
     assertThat(allProcessInstances.get(0).getFlowNodeInstances())
       .extracting(FlowNodeInstanceDto::getFlowNodeId)
@@ -205,12 +215,8 @@ public class EngineActivityImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
-    for (SearchHit searchHitFields : idsResp.getHits()) {
-      List<?> events = (List<?>) searchHitFields.getSourceAsMap().get(FLOW_NODE_INSTANCES);
-      assertThat(events).hasSize(3);
-    }
+    assertThat(databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceDto.class))
+      .allSatisfy(processInstance -> assertThat(processInstance.getFlowNodeInstances()).hasSize(3));
   }
 
   @Test
@@ -246,12 +252,9 @@ public class EngineActivityImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
-    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
-    SearchHit hit = idsResp.getHits().getAt(0);
-    List<?> events = (List<?>) hit.getSourceAsMap().get(FLOW_NODE_INSTANCES);
-    assertThat(events).hasSize(2);
+    assertThat(databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceDto.class))
+      .singleElement()
+      .satisfies(processInstance -> assertThat(processInstance.getFlowNodeInstances()).hasSize(2));
   }
 
   @Test
@@ -265,13 +268,10 @@ public class EngineActivityImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
-    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
-    SearchHit hit = idsResp.getHits().getAt(0);
-    List<Map> events = (List) hit.getSourceAsMap().get(FLOW_NODE_INSTANCES);
-    boolean allEventsHaveEndDate = events.stream().allMatch(e -> e.get("endDate") != null);
-    assertThat(allEventsHaveEndDate).isTrue();
+    assertThat(databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceDto.class))
+      .singleElement()
+      .satisfies(processInstance -> assertThat(processInstance.getFlowNodeInstances()).
+        allSatisfy(flowNodeInstance -> assertThat(flowNodeInstance.getEndDate()).isNotNull()));
   }
 
   @Test
@@ -290,16 +290,13 @@ public class EngineActivityImportIT extends AbstractImportIT {
     startEvent.setEndTime(null);
     startEvent.setDurationInMillis(null);
     embeddedOptimizeExtension.importRunningActivityInstance(Collections.singletonList(startEvent));
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
-    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
-    SearchHit hit = idsResp.getHits().getAt(0);
-    List<Map> events = (List) hit.getSourceAsMap().get(FLOW_NODE_INSTANCES);
-    boolean allEventsHaveEndDate = events.stream().allMatch(e -> e.get("endDate") != null);
-    assertThat(allEventsHaveEndDate).isTrue();
+    assertThat(databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(PROCESS_INSTANCE_MULTI_ALIAS, ProcessInstanceDto.class))
+      .singleElement()
+      .satisfies(processInstance -> assertThat(processInstance.getFlowNodeInstances()).
+        allSatisfy(flowNodeInstance -> assertThat(flowNodeInstance.getEndDate()).isNotNull()));
   }
 
   @Test
@@ -347,7 +344,7 @@ public class EngineActivityImportIT extends AbstractImportIT {
       .indices(PROCESS_INSTANCE_MULTI_ALIAS)
       .source(searchSourceBuilder);
 
-    SearchResponse response = elasticSearchIntegrationTestExtension.getOptimizeElasticClient().search(searchRequest);
+    SearchResponse response = databaseIntegrationTestExtension.getOptimizeElasticsearchClient().search(searchRequest);
 
     Nested nested = response.getAggregations()
       .get(FLOW_NODE_INSTANCES);

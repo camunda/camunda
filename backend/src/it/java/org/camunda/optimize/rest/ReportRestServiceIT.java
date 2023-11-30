@@ -1410,7 +1410,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   private String findManagementReportId() {
-    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
         SINGLE_PROCESS_REPORT_INDEX_NAME,
         SingleProcessReportDefinitionRequestDto.class
       )

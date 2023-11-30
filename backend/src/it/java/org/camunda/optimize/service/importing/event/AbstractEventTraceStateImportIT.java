@@ -9,10 +9,9 @@ import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.db.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.db.schema.index.events.EventTraceStateIndex;
-import org.camunda.optimize.service.db.DatabaseConstants;
-import org.elasticsearch.action.search.SearchResponse;
 import org.junit.jupiter.api.BeforeEach;
 
 import java.time.OffsetDateTime;
@@ -29,12 +28,11 @@ public abstract class AbstractEventTraceStateImportIT extends AbstractPlatformIT
   }
 
   protected <T> List<T> getAllStoredDocumentsForIndexAsClass(final String indexName, final Class<T> dtoClass) {
-    SearchResponse response = elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(indexName);
-    return mapHits(response.getHits(), dtoClass, elasticSearchIntegrationTestExtension.getObjectMapper());
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(indexName, dtoClass);
   }
 
   protected List<EventDto> getAllStoredExternalEvents() {
-    return elasticSearchIntegrationTestExtension.getAllStoredExternalEvents();
+    return databaseIntegrationTestExtension.getAllStoredExternalEvents();
   }
 
   protected List<EventTraceStateDto> getAllStoredExternalEventTraceStates() {
@@ -52,18 +50,18 @@ public abstract class AbstractEventTraceStateImportIT extends AbstractPlatformIT
   }
 
   protected void processEventCountAndTraces() {
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     embeddedOptimizeExtension.processEvents();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   protected Long getLastProcessedEntityTimestampFromElasticsearch(String definitionKey) {
     final OffsetDateTime lastImportTimestampOfTimestampBasedImportIndex =
-      elasticSearchIntegrationTestExtension.getLastImportTimestampOfTimestampBasedImportIndex(
+      databaseIntegrationTestExtension.getLastImportTimestampOfTimestampBasedImportIndex(
         // lowercase as the index names are automatically lowercased and thus the entry contains has a lowercase suffix
         DatabaseConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + definitionKey.toLowerCase(),
         DatabaseConstants.ENGINE_ALIAS_OPTIMIZE
-    );
+      );
     return lastImportTimestampOfTimestampBasedImportIndex.toInstant().toEpochMilli();
   }
 

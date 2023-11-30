@@ -10,7 +10,7 @@ import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
+import org.camunda.optimize.test.it.extension.DatabaseIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.camunda.optimize.util.BpmnModels;
@@ -51,8 +51,8 @@ public abstract class AbstractQueryPerformanceTest {
 
   @RegisterExtension
   @Order(1)
-  public ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension =
-    new ElasticSearchIntegrationTestExtension();
+  public DatabaseIntegrationTestExtension databaseIntegrationTestExtension =
+    new DatabaseIntegrationTestExtension();
 
   @RegisterExtension
   @Order(2)

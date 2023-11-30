@@ -56,7 +56,7 @@ public class CollectionConflictIT extends AbstractPlatformIT {
     String reportId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
     String[] expectedConflictedItemIds = {firstDashboardId, secondDashboardId, reportId};
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ConflictResponseDto conflictResponseDto = collectionClient.getDeleteCollectionConflicts(collectionId);
@@ -347,7 +347,7 @@ public class CollectionConflictIT extends AbstractPlatformIT {
 
   private void addTenantToElasticsearch(final String tenantId) {
     TenantDto tenantDto = new TenantDto(tenantId, "ATenantName", DEFAULT_ENGINE_ALIAS);
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(TENANT_INDEX_NAME, tenantId, tenantDto);
+    databaseIntegrationTestExtension.addEntryToDatabase(TENANT_INDEX_NAME, tenantId, tenantDto);
   }
 
   private void checkConflictedItems(ConflictResponseDto conflictResponseDto,

@@ -1437,7 +1437,7 @@ public class ProcessInstanceFrequencyByVariableReportEvaluationIT extends Abstra
 
     SearchResponse searchResponse;
     try {
-      searchResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient().search(searchRequest);
+      searchResponse = databaseIntegrationTestExtension.getOptimizeElasticsearchClient().search(searchRequest);
     } catch (IOException | ElasticsearchStatusException e) {
       throw new OptimizeIntegrationTestException(
         "Cannot evaluate variable instance count in process instance indices.",

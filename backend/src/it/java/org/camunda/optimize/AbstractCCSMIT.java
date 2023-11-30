@@ -19,10 +19,10 @@ import org.camunda.optimize.dto.zeebe.definition.ZeebeProcessDefinitionRecordDto
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.it.extension.ZeebeExtension;
-import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -63,7 +63,7 @@ public abstract class AbstractCCSMIT extends AbstractIT {
   @AfterEach
   public void after() {
     // Clear all potential existing Zeebe records in Optimize
-    elasticSearchIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(zeebeExtension.getZeebeRecordPrefix());
+    databaseIntegrationTestExtension.deleteAllZeebeRecordsForPrefix(zeebeExtension.getZeebeRecordPrefix());
   }
 
   protected void startAndUseNewOptimizeInstance() {
@@ -72,12 +72,12 @@ public abstract class AbstractCCSMIT extends AbstractIT {
 
   protected void importAllZeebeEntitiesFromScratch() {
     embeddedOptimizeExtension.importAllZeebeEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   protected void importAllZeebeEntitiesFromLastIndex() {
     embeddedOptimizeExtension.importAllZeebeEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   protected ProcessInstanceEvent deployAndStartInstanceForProcess(final BpmnModelInstance process) {
@@ -177,10 +177,9 @@ public abstract class AbstractCCSMIT extends AbstractIT {
   }
 
   protected void setTenantIdForExportedZeebeRecords(final String indexName, final String tenantId) {
-    elasticSearchIntegrationTestExtension.updateZeebeRecordsForPrefix(
+    databaseIntegrationTestExtension.updateZeebeRecordsForPrefix(
       zeebeExtension.getZeebeRecordPrefix(),
       indexName,
-      boolQuery(),
       String.format("ctx._source.value.tenantId = \"%s\";", tenantId)
     );
   }
@@ -208,7 +207,7 @@ public abstract class AbstractCCSMIT extends AbstractIT {
   protected void waitUntilMinimumDataExportedCount(final long minimumCount, final String indexName,
                                                    final BoolQueryBuilder boolQueryBuilder, final long countTimeoutInSeconds) {
     final String expectedIndex = zeebeExtension.getZeebeRecordPrefix() + "-" + indexName;
-    final OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
+    final OptimizeElasticsearchClient esClient = databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
     Awaitility.given().ignoreExceptions()
       .timeout(15, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(

@@ -35,7 +35,7 @@ public class ExternalProcessVariableRolloverIT extends AbstractPlatformIT {
   @BeforeEach
   @AfterEach
   public void cleanUpExternalVariableIndices() {
-    elasticSearchIntegrationTestExtension.deleteAllExternalVariableIndices();
+    databaseIntegrationTestExtension.deleteAllExternalVariableIndices();
     embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
       embeddedOptimizeExtension.getOptimizeElasticClient(),
       new ExternalProcessVariableIndexES()
@@ -121,11 +121,11 @@ public class ExternalProcessVariableRolloverIT extends AbstractPlatformIT {
       .hasSize(2)
       .containsExactlyInAnyOrder(getExpectedIndexNameBeforeRollover(), getExpectedIndexNameAfterFirstRollover());
     assertThat(getAllStoredExternalProcessVariables()).hasSize(NUMBER_OF_VARIABLES_IN_BATCH * 2);
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(getExpectedIndexNameBeforeRollover()))
+    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(getExpectedIndexNameBeforeRollover()))
       .isEqualTo(NUMBER_OF_VARIABLES_IN_BATCH);
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(getExpectedIndexNameAfterFirstRollover()))
+    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(getExpectedIndexNameAfterFirstRollover()))
       .isEqualTo(NUMBER_OF_VARIABLES_IN_BATCH);
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(getExpectedIndexNameAfterSecondRollover()))
+    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(getExpectedIndexNameAfterSecondRollover()))
       .isZero();
   }
 
@@ -134,7 +134,7 @@ public class ExternalProcessVariableRolloverIT extends AbstractPlatformIT {
       .mapToObj(i -> ingestionClient.createPrimitiveExternalVariable().setId("id" + i))
       .toList();
     ingestionClient.ingestVariables(variables);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private void setMaxIndexSizeGBForExternalVariableIndexRollover(final int maxIndexSizeGB) {
@@ -148,7 +148,7 @@ public class ExternalProcessVariableRolloverIT extends AbstractPlatformIT {
   }
 
   private List<ExternalProcessVariableDto> getAllStoredExternalProcessVariables() {
-    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       EXTERNAL_PROCESS_VARIABLE_INDEX_NAME, ExternalProcessVariableDto.class
     );
   }

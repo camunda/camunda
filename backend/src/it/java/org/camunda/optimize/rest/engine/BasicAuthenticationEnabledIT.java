@@ -71,7 +71,7 @@ public class BasicAuthenticationEnabledIT extends AbstractPlatformIT {
 
 
     // then
-    Integer activityCount = elasticSearchIntegrationTestExtension.getActivityCount();
+    Integer activityCount = databaseIntegrationTestExtension.getActivityCountForAllProcessInstances();
     assertThat(activityCount).isEqualTo(3);
   }
 

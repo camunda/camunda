@@ -800,7 +800,7 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
       .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
       .name(name)
       .build();
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    databaseIntegrationTestExtension.addEntryToDatabase(
       DECISION_DEFINITION_INDEX_NAME, decisionDefinitionDto.getId(), decisionDefinitionDto
     );
   }
@@ -815,7 +815,7 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
       .bpmn20Xml("someXml")
       .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
       .build();
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    databaseIntegrationTestExtension.addEntryToDatabase(
       PROCESS_DEFINITION_INDEX_NAME, expectedDto.getId(), expectedDto
     );
   }
@@ -832,7 +832,7 @@ public class CollectionRestServiceScopeIT extends AbstractPlatformIT {
 
   private void addTenantToElasticsearch(final String tenantId) {
     TenantDto tenantDto = new TenantDto(tenantId, "ATenantName", DEFAULT_ENGINE_ALIAS);
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(TENANT_INDEX_NAME, tenantId, tenantDto);
+    databaseIntegrationTestExtension.addEntryToDatabase(TENANT_INDEX_NAME, tenantId, tenantDto);
     embeddedOptimizeExtension.reloadEngineTenantCache();
   }
 

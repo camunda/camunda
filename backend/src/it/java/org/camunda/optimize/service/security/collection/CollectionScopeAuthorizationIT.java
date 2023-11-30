@@ -116,8 +116,8 @@ public class CollectionScopeAuthorizationIT extends AbstractPlatformIT {
     final String key1 = "eventBasedKey1";
     final String key2 = "eventBasedKey2";
 
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(key1);
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(key2);
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(key1);
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(key2);
 
     final String collectionId = collectionClient.createNewCollection();
     createScopeForCollection(collectionId, key1, RESOURCE_TYPE_PROCESS_DEFINITION);
@@ -150,10 +150,10 @@ public class CollectionScopeAuthorizationIT extends AbstractPlatformIT {
     final String key1 = "eventBasedKey1";
     final String key2 = "eventBasedKey2";
 
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       key1, "authorizedProcess", "1", ImmutableList.of(new UserDto(KERMIT_USER), new UserDto(DEFAULT_USERNAME))
     );
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(key2);
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(key2);
 
     final String collectionId = collectionClient.createNewCollection();
     createScopeForCollection(collectionId, key1, RESOURCE_TYPE_PROCESS_DEFINITION);
@@ -544,7 +544,7 @@ public class CollectionScopeAuthorizationIT extends AbstractPlatformIT {
   @Test
   public void addScope_unauthorizedEventProcessKeyThrowsError() {
     // given
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch("KEY", (IdentityDto) null);
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase("KEY", (IdentityDto) null);
     final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     addRoleToCollectionAsDefaultUser(new CollectionRoleRequestDto(
@@ -609,8 +609,8 @@ public class CollectionScopeAuthorizationIT extends AbstractPlatformIT {
     final String key1 = "eventBasedKey1";
     final String key2 = "eventBasedKey2";
 
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(key1, new UserDto(KERMIT_USER));
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(key2, new UserDto(KERMIT_USER));
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(key1, new UserDto(KERMIT_USER));
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(key2, new UserDto(KERMIT_USER));
 
     final String collectionId = collectionClient.createNewCollection();
     List<CollectionScopeEntryDto> entries = new ArrayList<>();

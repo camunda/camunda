@@ -466,7 +466,7 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
       evaluateReportWithFilter(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filters);
     // then
     assertThat(result.getData()).isEmpty();
-    elasticSearchIntegrationTestExtension.cleanAndVerify();
+    databaseIntegrationTestExtension.cleanAndVerify();
   }
 
   @ParameterizedTest

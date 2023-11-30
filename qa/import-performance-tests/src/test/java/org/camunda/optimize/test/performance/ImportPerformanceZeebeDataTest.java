@@ -8,7 +8,7 @@ package org.camunda.optimize.test.performance;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.importing.zeebe.ZeebeImportScheduler;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
+import org.camunda.optimize.test.it.extension.DatabaseIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
@@ -33,8 +33,8 @@ public class ImportPerformanceZeebeDataTest {
 
   @RegisterExtension
   @Order(1)
-  public ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension =
-    new ElasticSearchIntegrationTestExtension();
+  public DatabaseIntegrationTestExtension databaseIntegrationTestExtension =
+    new DatabaseIntegrationTestExtension();
   @RegisterExtension
   @Order(2)
   public static EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
@@ -47,7 +47,7 @@ public class ImportPerformanceZeebeDataTest {
   @BeforeEach
   public void setup() {
     zeebeImportTestStart = OffsetDateTime.now();
-    elasticSearchIntegrationTestExtension.disableCleanup();
+    databaseIntegrationTestExtension.disableCleanup();
     embeddedOptimizeExtension.getConfigurationService().getCleanupServiceConfiguration()
       .getProcessDataCleanupConfiguration()
       .setEnabled(false);
@@ -63,17 +63,17 @@ public class ImportPerformanceZeebeDataTest {
 
     // when
     importAllZeebeDataOrTimeout();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertImportedData();
   }
 
   private void assertImportedData() {
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME))
+    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME))
       .isEqualTo(expectedDefinitionCount);
 
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS))
+    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS))
       .isEqualTo(expectedInstanceCount);
   }
 

@@ -90,11 +90,11 @@ public class SingleProcessReportHandlingIT extends AbstractPlatformIT {
 
     // when
     GetRequest getRequest = new GetRequest(SINGLE_PROCESS_REPORT_INDEX_NAME).id(id);
-    GetResponse getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient().get(getRequest);
+    GetResponse getResponse = databaseIntegrationTestExtension.getOptimizeElasticsearchClient().get(getRequest);
 
     // then
     assertThat(getResponse.isExists()).isTrue();
-    SingleProcessReportDefinitionRequestDto definitionDto = elasticSearchIntegrationTestExtension.getObjectMapper()
+    SingleProcessReportDefinitionRequestDto definitionDto = databaseIntegrationTestExtension.getObjectMapper()
       .readValue(getResponse.getSourceAsString(), SingleProcessReportDefinitionRequestDto.class);
     assertThat(definitionDto.getData()).isNotNull();
     ProcessReportDataDto data = definitionDto.getData();

@@ -79,7 +79,7 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
     processOverviewClient.updateProcess(
       DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then we receive one email straight away from the update
     assertThat(greenMail.waitForIncomingEmail(10, 1)).isTrue();
@@ -98,7 +98,7 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
       DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
     processOverviewClient.updateProcess(
       DEF_KEY + "2", DEFAULT_USERNAME, new ProcessDigestRequestDto(false));
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then wait a bit to ensure no emails for process 2 are being sent
     assertThat(greenMail.waitForIncomingEmail(1000, 4)).isFalse();
@@ -113,7 +113,7 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
     processOverviewClient.updateProcess(
       DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then digest is sent
     assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
@@ -123,7 +123,7 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     // when digest is disabled
     processOverviewClient.updateProcess(
       DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(false));
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     greenMail.reset();
 
     // then no more emails are sent
@@ -138,7 +138,7 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
     processOverviewClient.updateProcess(
       DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
@@ -155,7 +155,7 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
     processOverviewClient.updateProcess(
       DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then email content for process without kpi reports is correct
     assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
@@ -170,7 +170,7 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
     processOverviewClient.updateProcess(
       DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
@@ -289,7 +289,7 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     runKpiSchedulerAndRefreshIndices();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    assertThat(databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       PROCESS_OVERVIEW_INDEX_NAME,
       ProcessOverviewDto.class
     ))
@@ -301,13 +301,13 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     // given
     processOverviewClient.updateProcess(
       DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    assertThat(databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       PROCESS_OVERVIEW_INDEX_NAME,
       ProcessOverviewDto.class
     ))
@@ -331,11 +331,11 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     // when the digest is run
     processOverviewClient.updateProcess(
       DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
 
     // then the null valued report is correctly saved in the most recent KPI report results
-    assertThat(elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    assertThat(databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       PROCESS_OVERVIEW_INDEX_NAME, ProcessOverviewDto.class))
       .singleElement()
       .satisfies(overview -> {
@@ -352,11 +352,11 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     // when the digest is run again
     processOverviewClient.updateProcess(
       DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
 
     // then the digest and most recent results still reflect the state correctly
-    assertThat(elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    assertThat(databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       PROCESS_OVERVIEW_INDEX_NAME, ProcessOverviewDto.class))
       .singleElement()
       .satisfies(overview -> {
@@ -376,15 +376,15 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
     importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    databaseIntegrationTestExtension.addEntryToDatabase(
       PROCESS_OVERVIEW_INDEX_NAME,
       DEF_KEY,
       new ProcessOverviewDto(DEFAULT_USERNAME, DEF_KEY, new ProcessDigestDto(false, null), Collections.emptyMap())
     );
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     processOverviewClient.updateProcess(
       DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then email sending does not fail
     assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
@@ -429,7 +429,7 @@ public class ProcessDigestNotificationIT extends AbstractPlatformIT {
 
   private void runKpiSchedulerAndRefreshIndices() {
     embeddedOptimizeExtension.getKpiSchedulerService().runKpiImportTask();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   @SneakyThrows

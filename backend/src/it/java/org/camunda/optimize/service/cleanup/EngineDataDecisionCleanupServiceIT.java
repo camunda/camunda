@@ -45,7 +45,7 @@ public class EngineDataDecisionCleanupServiceIT extends AbstractCleanupIT {
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertNoDecisionInstanceDataExists(decisionInstanceIds);
@@ -64,7 +64,7 @@ public class EngineDataDecisionCleanupServiceIT extends AbstractCleanupIT {
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertNoDecisionInstanceDataExists(instanceIdsToCleanup);
@@ -93,7 +93,7 @@ public class EngineDataDecisionCleanupServiceIT extends AbstractCleanupIT {
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // all data is still there
     assertDecisionInstancesExistInEs(
@@ -121,7 +121,7 @@ public class EngineDataDecisionCleanupServiceIT extends AbstractCleanupIT {
       .indices(DECISION_INSTANCE_MULTI_ALIAS)
       .source(searchSourceBuilder);
 
-    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient().search(searchRequest);
+    return databaseIntegrationTestExtension.getOptimizeElasticsearchClient().search(searchRequest);
   }
 
   @SneakyThrows

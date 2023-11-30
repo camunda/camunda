@@ -8,7 +8,6 @@ package org.camunda.optimize.test.performance;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.schema.index.BusinessKeyIndex;
-import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
 import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.db.es.report.MinMaxStatDto;
@@ -36,10 +35,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.BUSINESS_KEY_IND
 import static org.camunda.optimize.service.db.DatabaseConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @Slf4j
 @Tag("engine-cleanup")
@@ -71,11 +67,7 @@ public class ProcessCleanupPerformanceStaticDataTest extends AbstractDataCleanup
     // and run the cleanup
     runCleanupAndAssertFinishedWithinTimeout();
     // and refresh es
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // temporary logs for debugging
-    logEndDateRangeForInstancesWithVariables();
-    logProcessKeysOfCompletedInstancesWithVariables();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then no variables are left on finished process instances
     assertThat(getFinishedProcessInstanceVariableCount()).isZero();
@@ -97,7 +89,7 @@ public class ProcessCleanupPerformanceStaticDataTest extends AbstractDataCleanup
     // and run the cleanup
     runCleanupAndAssertFinishedWithinTimeout();
     // and refresh es
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then no finished process instances should be left in optimize
     assertThat(getFinishedProcessInstanceCount()).isZero();
@@ -142,7 +134,7 @@ public class ProcessCleanupPerformanceStaticDataTest extends AbstractDataCleanup
           .size(10_000)
       );
 
-    SearchResponse camundaActivityEventsResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+    SearchResponse camundaActivityEventsResponse = databaseIntegrationTestExtension.getOptimizeElasticsearchClient()
       .search(variableUpdateSearchRequest.scroll(SCROLL_KEEP_ALIVE));
 
     while (camundaActivityEventsResponse.getHits().getHits().length > 0) {
@@ -155,52 +147,26 @@ public class ProcessCleanupPerformanceStaticDataTest extends AbstractDataCleanup
       final Integer finishedProcessInstanceCount = countFinishedProcessInstancedById(processInstanceIds);
       assertThat(finishedProcessInstanceCount).isZero();
 
-      camundaActivityEventsResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient().scroll(
+      camundaActivityEventsResponse = databaseIntegrationTestExtension.getOptimizeElasticsearchClient().scroll(
         new SearchScrollRequest(camundaActivityEventsResponse.getScrollId()).scroll(SCROLL_KEEP_ALIVE)
       );
     }
   }
 
   private Integer countFinishedProcessInstancedById(final Set<Object> processInstanceIds) {
-    return elasticSearchIntegrationTestExtension.getDocumentCountOf(
-      PROCESS_INSTANCE_MULTI_ALIAS,
-      boolQuery()
-        .filter(termsQuery(ProcessInstanceIndex.PROCESS_INSTANCE_ID, processInstanceIds))
-        .filter(existsQuery(ProcessInstanceIndex.END_DATE))
-    );
+    return databaseIntegrationTestExtension.getCountOfCompletedInstancesWithIdsIn(processInstanceIds);
   }
 
   private Integer getCamundaProcessInstanceCount() {
-    return elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS);
+    return databaseIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS);
   }
 
   private Integer getFinishedProcessInstanceCount() {
-    return elasticSearchIntegrationTestExtension.getDocumentCountOf(
-      PROCESS_INSTANCE_MULTI_ALIAS, boolQuery().must(existsQuery(ProcessInstanceIndex.END_DATE))
-    );
+    return databaseIntegrationTestExtension.getCountOfCompletedInstances();
   }
 
   private Integer getFinishedProcessInstanceVariableCount() {
-    return elasticSearchIntegrationTestExtension.getVariableInstanceCount(
-      boolQuery().must(existsQuery(ProcessInstanceIndex.END_DATE))
-    );
-  }
-
-  // temporary debug logs
-  private void logEndDateRangeForInstancesWithVariables() {
-    final MinMaxStatDto endDateStats =
-      elasticSearchIntegrationTestExtension.getEndDateRangeForInstancesWithVariables();
-    log.info(
-      "End date range of completed instances with variables: min endDate is {} and max endDate is: {}. Now is {}.",
-      endDateStats.getMinAsString(),
-      endDateStats.getMaxAsString(),
-      LocalDateUtil.getCurrentDateTime()
-    );
-  }
-
-  private void logProcessKeysOfCompletedInstancesWithVariables() {
-    log.info("Definition Keys of completed instances with variables: " +
-               elasticSearchIntegrationTestExtension.getInstanceDefinitionKeysForFinishedInstancesWithVariables());
+    return databaseIntegrationTestExtension.getVariableInstanceCountForAllCompletedProcessInstances();
   }
 
 }

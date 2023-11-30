@@ -561,7 +561,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
 
     // These are the expected instances using their default sort
-    final List<String> expectedInstanceIds = elasticSearchIntegrationTestExtension.getAllDecisionInstances().stream()
+    final List<String> expectedInstanceIds = databaseIntegrationTestExtension.getAllDecisionInstances().stream()
       .sorted(Comparator.comparing(DecisionInstanceDto::getEvaluationDateTime).reversed())
       .map(DecisionInstanceDto::getDecisionInstanceId)
       .collect(Collectors.toList());
@@ -702,7 +702,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
     importAllEngineEntitiesFromScratch();
-    final String expectedDecisionInstanceId = elasticSearchIntegrationTestExtension.getAllDecisionInstances().stream()
+    final String expectedDecisionInstanceId = databaseIntegrationTestExtension.getAllDecisionInstances().stream()
       .sorted(Comparator.comparing(DecisionInstanceDto::getEvaluationDateTime).reversed())
       .map(DecisionInstanceDto::getDecisionInstanceId)
       .findFirst().orElseThrow(OptimizeIntegrationTestException::new);
@@ -768,7 +768,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     ));
 
     // These are the expected instances using their default sort
-    final List<String> expectedInstanceIds = elasticSearchIntegrationTestExtension.getAllDecisionInstances().stream()
+    final List<String> expectedInstanceIds = databaseIntegrationTestExtension.getAllDecisionInstances().stream()
       .sorted(Comparator.comparing(DecisionInstanceDto::getEvaluationDateTime).reversed())
       .map(DecisionInstanceDto::getDecisionInstanceId)
       .collect(Collectors.toList());

@@ -9,17 +9,15 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CCSM_PROFILE;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CLOUD_PROFILE;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_PROFILE;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPENSEARCH_PROFILE;
 
 @Getter
 @AllArgsConstructor
-public enum OptimizeProfile {
+public enum DatabaseProfile {
 
-  PLATFORM(PLATFORM_PROFILE),
-  CCSM(CCSM_PROFILE),
-  CLOUD(CLOUD_PROFILE);
+  ELASTICSEARCH(ELASTICSEARCH_PROFILE),
+  OPENSEARCH(OPENSEARCH_PROFILE);
 
   private final String id;
 
@@ -28,7 +26,7 @@ public enum OptimizeProfile {
     return this.name().toLowerCase();
   }
 
-  public static OptimizeProfile toProfile(final String profileString) {
+  public static DatabaseProfile toProfile(final String profileString) {
     return valueOf(profileString.toUpperCase());
   }
 

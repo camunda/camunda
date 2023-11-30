@@ -153,7 +153,7 @@ public abstract class AbstractDashboardDefinitionExportIT extends AbstractExport
       Collections.emptyList()
     );
     final String dashboardId = dashboardClient.createDashboard(null, Collections.singletonList(reportId));
-    elasticSearchIntegrationTestExtension.deleteAllDocsInIndex(new SingleProcessReportIndexES());
+    databaseIntegrationTestExtension.deleteAllSingleProcessReports();
 
     // when
     Response response = exportDashboardDefinitionAndReturnResponse(dashboardId);

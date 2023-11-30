@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.es.retrieval;
 
+import jakarta.ws.rs.core.Response;
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
@@ -15,8 +16,6 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
@@ -25,10 +24,8 @@ import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
-import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -38,10 +35,10 @@ import static jakarta.ws.rs.HttpMethod.PUT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
-import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.mockserver.model.HttpRequest.request;
 
 public class DashboardHandlingIT extends AbstractPlatformIT {
@@ -58,7 +55,7 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
 
     // when
     GetRequest getRequest = new GetRequest(DASHBOARD_INDEX_NAME).id(id);
-    GetResponse getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient().get(getRequest);
+    GetResponse getResponse = databaseIntegrationTestExtension.getOptimizeElasticsearchClient().get(getRequest);
 
     // then
     assertThat(getResponse.isExists()).isTrue();
@@ -548,14 +545,9 @@ public class DashboardHandlingIT extends AbstractPlatformIT {
 
   @SneakyThrows
   private boolean dashboardWithNameExists(final String dashboardName) {
-    SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(DASHBOARD_INDEX_NAME);
-    List<String> storedDashboards = new ArrayList<>();
-    for (SearchHit searchHitFields : idsResp.getHits()) {
-      storedDashboards.add(elasticSearchIntegrationTestExtension.getObjectMapper()
-                             .readValue(searchHitFields.getSourceAsString(), DashboardDefinitionRestDto.class).getName());
-    }
-    return storedDashboards.contains(dashboardName);
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(DASHBOARD_INDEX_NAME, DashboardDefinitionRestDto.class)
+      .stream()
+      .anyMatch(dashboard -> dashboard.getName().equals(dashboardName));
   }
 
 }

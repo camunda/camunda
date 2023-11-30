@@ -45,6 +45,7 @@ import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
+import org.camunda.optimize.service.util.configuration.DatabaseProfile;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.optimize.AlertClient;
 import org.camunda.optimize.test.optimize.CollectionClient;
@@ -65,7 +66,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_PROFILE;
 
 @Slf4j
 public class Generator {
@@ -87,7 +87,7 @@ public class Generator {
     final ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
     elasticsearchClient = new OptimizeElasticsearchClient(
       ElasticsearchHighLevelRestClientBuilder.build(configurationService),
-      new OptimizeIndexNameService(configurationService, ELASTICSEARCH_PROFILE)
+      new OptimizeIndexNameService(configurationService, DatabaseProfile.ELASTICSEARCH)
     );
 
     final OptimizeRequestExecutor requestExecutor = new OptimizeRequestExecutor(

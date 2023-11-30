@@ -188,7 +188,7 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
     executeImportCycle();
     // second cycle to make sure event process publish states are updated based on the previous cycle
     executeImportCycle();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   protected void createAndPublishEventProcessMapping(final Map<String, EventMappingDto> eventMappings, String bpmnXml) {
@@ -255,25 +255,25 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
 
   @SneakyThrows
   protected void executeImportCycle() {
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     embeddedOptimizeExtension.getEventBasedProcessesInstanceImportScheduler()
       .runImportRound(true)
       .get(10, TimeUnit.SECONDS);
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   protected void importEngineEntities() {
     importAllEngineEntitiesFromLastIndex();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   @SneakyThrows
   protected Map<String, List<AliasMetadata>> getEventProcessInstanceIndicesWithAliasesFromElasticsearch() {
     final OptimizeElasticsearchClient esClient =
-      elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
+      databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
     final OptimizeIndexNameService indexNameService = esClient
       .getIndexNameService();
     final GetIndexResponse getIndexResponse = esClient
@@ -295,15 +295,15 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
       )
       .sort(SortBuilders.fieldSort(EventProcessPublishStateIndexES.PUBLISH_DATE_TIME).order(SortOrder.DESC))
       .size(1);
-    final SearchResponse searchResponse = elasticSearchIntegrationTestExtension
-      .getOptimizeElasticClient()
+    final SearchResponse searchResponse = databaseIntegrationTestExtension
+      .getOptimizeElasticsearchClient()
       .search(
         new SearchRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME).source(searchSourceBuilder)
       );
 
     EventProcessPublishStateDto result = null;
     if (searchResponse.getHits().getTotalHits().value > 0) {
-      result = elasticSearchIntegrationTestExtension.getObjectMapper().readValue(
+      result = databaseIntegrationTestExtension.getObjectMapper().readValue(
         searchResponse.getHits().getAt(0).getSourceAsString(),
         EsEventProcessPublishStateDto.class
       ).toEventProcessPublishStateDto();
@@ -313,12 +313,12 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
 
   @SneakyThrows
   protected Optional<EventProcessDefinitionDto> getEventProcessDefinitionFromElasticsearch(final String definitionId) {
-    final GetResponse getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+    final GetResponse getResponse = databaseIntegrationTestExtension.getOptimizeElasticsearchClient()
       .get(new GetRequest(EVENT_PROCESS_DEFINITION_INDEX_NAME).id(definitionId));
 
     EventProcessDefinitionDto result = null;
     if (getResponse.isExists()) {
-      result = elasticSearchIntegrationTestExtension.getObjectMapper().readValue(
+      result = databaseIntegrationTestExtension.getObjectMapper().readValue(
         getResponse.getSourceAsString(), EventProcessDefinitionDto.class
       );
     }
@@ -334,11 +334,11 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
   @SneakyThrows
   protected List<EventProcessInstanceDto> getEventProcessInstancesFromElasticsearchForProcessPublishStateId(final String publishStateId) {
     final List<EventProcessInstanceDto> results = new ArrayList<>();
-    final SearchResponse searchResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+    final SearchResponse searchResponse = databaseIntegrationTestExtension.getOptimizeElasticsearchClient()
       .search(new SearchRequest(EventProcessInstanceIndex.constructIndexName(publishStateId)));
     for (SearchHit hit : searchResponse.getHits().getHits()) {
       results.add(
-        elasticSearchIntegrationTestExtension.getObjectMapper()
+        databaseIntegrationTestExtension.getObjectMapper()
           .readValue(hit.getSourceAsString(), EventProcessInstanceDto.class)
       );
     }
@@ -561,7 +561,7 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
     final ProcessInstanceDto eventInstanceContainingEvent =
       eventProcessClient.createEventInstanceWithEvents(eventsToAdd);
     final EventProcessInstanceIndexES eventInstanceIndex = createEventInstanceIndex(indexId);
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    databaseIntegrationTestExtension.addEntryToDatabase(
       eventInstanceIndex.getIndexName(),
       IdGenerator.getNextId(),
       eventInstanceContainingEvent
@@ -570,7 +570,7 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
   }
 
   protected List<EventProcessInstanceDto> getAllStoredEventInstances() {
-    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       embeddedOptimizeExtension.getOptimizeElasticClient()
         .getIndexNameService()
         .getOptimizeIndexNameWithVersionWithWildcardSuffix(new EventProcessInstanceIndexES("*")),
@@ -587,7 +587,7 @@ public abstract class AbstractEventProcessIT extends AbstractPlatformIT {
   }
 
   protected List<EventDto> getAllStoredEvents() {
-    return elasticSearchIntegrationTestExtension.getAllStoredExternalEvents();
+    return databaseIntegrationTestExtension.getAllStoredExternalEvents();
   }
 
   @SneakyThrows

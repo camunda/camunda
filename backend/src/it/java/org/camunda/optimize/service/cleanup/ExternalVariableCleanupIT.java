@@ -38,11 +38,11 @@ public class ExternalVariableCleanupIT extends AbstractCleanupIT {
     dateFreezer().dateToFreeze(getEndTimeLessThanGlobalTtl()).freezeDateAndReturn();
     ingestionClient.ingestVariables(variablesToClean);
     dateFreezer().dateToFreeze(now).freezeDateAndReturn();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertThat(getAllStoredExternalVariables())
@@ -65,11 +65,11 @@ public class ExternalVariableCleanupIT extends AbstractCleanupIT {
     dateFreezer().dateToFreeze(getEndTimeLessThanGlobalTtl()).freezeDateAndReturn();
     ingestionClient.ingestVariables(variables);
     dateFreezer().dateToFreeze(now).freezeDateAndReturn();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertThat(getAllStoredExternalVariables())
@@ -86,7 +86,7 @@ public class ExternalVariableCleanupIT extends AbstractCleanupIT {
   }
 
   private List<ExternalProcessVariableDto> getAllStoredExternalVariables() {
-    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       EXTERNAL_PROCESS_VARIABLE_INDEX_NAME, ExternalProcessVariableDto.class
     );
   }

@@ -735,23 +735,23 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
   }
 
   private String getVersionedEventProcessInstanceIndexNameForPublishedStateId(final String eventProcessPublishStateId) {
-    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+    return databaseIntegrationTestExtension.getOptimizeElasticsearchClient()
       .getIndexNameService()
       .getOptimizeIndexNameWithVersion(new EventProcessInstanceIndexES(eventProcessPublishStateId));
   }
 
   private String getOptimizeIndexAliasForIndexName(final String indexName) {
-    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+    return databaseIntegrationTestExtension.getOptimizeElasticsearchClient()
       .getIndexNameService()
       .getOptimizeIndexAliasForIndex(indexName);
   }
 
   @SneakyThrows
   private boolean eventProcessInstanceIndicesExist() {
-    final String indexAlias = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+    final String indexAlias = databaseIntegrationTestExtension.getOptimizeElasticsearchClient()
       .getIndexNameService()
       .getOptimizeIndexAliasForIndex(EVENT_PROCESS_INSTANCE_INDEX_PREFIX) + "*";
-    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+    return databaseIntegrationTestExtension.getOptimizeElasticsearchClient()
       .exists(new GetIndexRequest(indexAlias));
   }
 

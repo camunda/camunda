@@ -12,12 +12,11 @@ import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
+import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
@@ -26,10 +25,9 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.db.schema.index.index.TimestampBasedImportIndex.TIMESTAMP_OF_LAST_ENTITY;
-import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.util.BpmnModels.getExternalTaskProcess;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
@@ -44,8 +42,8 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     // when
     importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    List<ProcessDefinitionOptimizeDto> definitions = elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+    List<ProcessDefinitionOptimizeDto> definitions = databaseIntegrationTestExtension.getAllProcessDefinitions();
 
     // then
     assertThat(definitions)
@@ -63,8 +61,8 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     try {
       embeddedOptimizeExtension.startContinuousImportScheduling();
       embeddedOptimizeExtension.ensureImportSchedulerIsIdle(60);
-      elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-      List<ProcessDefinitionOptimizeDto> definitions = elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+      databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+      List<ProcessDefinitionOptimizeDto> definitions = databaseIntegrationTestExtension.getAllProcessDefinitions();
 
       // then
       assertThat(definitions)
@@ -84,8 +82,8 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     // when
     importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    List<ProcessInstanceDto> processInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+    List<ProcessInstanceDto> processInstances = databaseIntegrationTestExtension.getAllProcessInstances();
 
     // then
     assertProcessInstanceImportResults(processInstances, PROCESS_KEY_1, PROCESS_KEY_2);
@@ -101,8 +99,8 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     try {
       embeddedOptimizeExtension.startContinuousImportScheduling();
       embeddedOptimizeExtension.ensureImportSchedulerIsIdle(60);
-      elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-      List<ProcessInstanceDto> processInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+      databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+      List<ProcessInstanceDto> processInstances = databaseIntegrationTestExtension.getAllProcessInstances();
 
       // then
       assertProcessInstanceImportResults(processInstances, PROCESS_KEY_1);
@@ -123,8 +121,8 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     // when
     importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    List<ProcessInstanceDto> processInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+    List<ProcessInstanceDto> processInstances = databaseIntegrationTestExtension.getAllProcessInstances();
 
     // then
     assertProcessInstanceImportResults(processInstances, PROCESS_KEY_1, PROCESS_KEY_2);
@@ -144,10 +142,10 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     // when
     importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final List<TenantDto> tenants = elasticSearchIntegrationTestExtension.getAllTenants();
+    final List<TenantDto> tenants = databaseIntegrationTestExtension.getAllTenants();
     assertThat(tenants)
       .extracting(TenantDto::getId, TenantDto::getEngine)
       .containsExactlyInAnyOrder(
@@ -194,10 +192,10 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     // when
     importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final List<ProcessDefinitionOptimizeDto> storedDefinitions = elasticSearchIntegrationTestExtension
+    final List<ProcessDefinitionOptimizeDto> storedDefinitions = databaseIntegrationTestExtension
       .getAllDocumentsOfIndexAs(PROCESS_DEFINITION_INDEX_NAME, ProcessDefinitionOptimizeDto.class);
     assertThat(storedDefinitions)
       .hasSize(3)
@@ -216,25 +214,21 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
 
     importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     startAndUseNewOptimizeInstance();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final SearchResponse searchResponse = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(TIMESTAMP_BASED_IMPORT_INDEX_NAME);
-
-    assertThat(searchResponse.getHits().getTotalHits().value).isEqualTo(28L);
-    for (SearchHit searchHit : searchResponse.getHits().getHits()) {
-      String timestampOfLastEntity = searchHit.getSourceAsMap().get(TIMESTAMP_OF_LAST_ENTITY).toString();
-      OffsetDateTime timestamp = OffsetDateTime.parse(
-        timestampOfLastEntity,
-        embeddedOptimizeExtension.getDateTimeFormatter()
-      );
-      assertThat(timestamp).isAfter(OffsetDateTime.now().minusHours(1));
-    }
+    final List<TimestampBasedImportIndexDto> timestampIndexes = databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+      TIMESTAMP_BASED_IMPORT_INDEX_NAME,
+      TimestampBasedImportIndexDto.class
+    );
+    assertThat(timestampIndexes)
+      .hasSize(28)
+      .allSatisfy(timestampIndex ->
+                    assertThat(timestampIndex.getTimestampOfLastEntity()).isAfter(OffsetDateTime.now().minusHours(1)));
   }
 
   private ProcessDefinitionEngineDto deployProcessDefinitionWithTenantAndEngine(String tenantId,

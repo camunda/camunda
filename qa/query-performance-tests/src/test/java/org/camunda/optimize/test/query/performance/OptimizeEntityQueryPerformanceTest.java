@@ -235,8 +235,8 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
         definition.setId(IdGenerator.getNextId());
         reportsById.put(definition.getId(), definition);
       });
-    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(SINGLE_PROCESS_REPORT_INDEX_NAME, reportsById);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.addEntriesToDatabase(SINGLE_PROCESS_REPORT_INDEX_NAME, reportsById);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     return new ArrayList<>(reportsById.keySet());
   }
 
@@ -263,8 +263,8 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
         definition.setId(IdGenerator.getNextId());
         reportsById.put(definition.getId(), definition);
       });
-    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(SINGLE_DECISION_REPORT_INDEX_NAME, reportsById);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.addEntriesToDatabase(SINGLE_DECISION_REPORT_INDEX_NAME, reportsById);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private void addCombinedReportsToOptimize(final int numberOfReports) {
@@ -288,8 +288,8 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
     Map<String, Object> reportsById = new HashMap<>();
     IntStream.range(0, numberOfReports)
       .forEach(index -> reportsById.put(IdGenerator.getNextId(), definition));
-    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(COMBINED_REPORT_INDEX_NAME, reportsById);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.addEntriesToDatabase(COMBINED_REPORT_INDEX_NAME, reportsById);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private void addDashboardsToOptimize(final int numOfDashboards) {
@@ -311,17 +311,17 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
     Map<String, Object> dashboardsById = new HashMap<>();
     IntStream.range(0, numOfDashboards)
       .forEach(index -> dashboardsById.put(IdGenerator.getNextId(), definition));
-    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(DASHBOARD_INDEX_NAME, dashboardsById);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.addEntriesToDatabase(DASHBOARD_INDEX_NAME, dashboardsById);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private String addCollectionToOptimize() {
     CollectionDataDto collectionData = createCollectionData();
     CollectionDefinitionDto collection = createCollectionDefinition(collectionData);
-    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(
+    databaseIntegrationTestExtension.addEntriesToDatabase(
       COLLECTION_INDEX_NAME, ImmutableMap.of(collection.getId(), collection)
     );
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     return collection.getId();
   }
 
@@ -334,8 +334,8 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
         CollectionDefinitionDto definition = createCollectionDefinition(collectionData);
         collectionsById.put(definition.getId(), definition);
       });
-    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(COLLECTION_INDEX_NAME, collectionsById);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.addEntriesToDatabase(COLLECTION_INDEX_NAME, collectionsById);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // We add up to one of each entity randomly to each collection we have created
     for (String collectionId : collectionsById.keySet()) {
@@ -364,8 +364,8 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
     Map<String, Object> alertsById = new HashMap<>();
     IntStream.range(0, numberOfAlerts)
       .forEach(index -> alertsById.put(IdGenerator.getNextId(), definition));
-    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(ALERT_INDEX_NAME, alertsById);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.addEntriesToDatabase(ALERT_INDEX_NAME, alertsById);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private void addProcessDefinitionsToOptimize(final int numberOfDefinitions) {
@@ -379,8 +379,8 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
           final ProcessDefinitionOptimizeDto processDefinition = createProcessDefinition(definitionNumber, version);
           definitionsById.put(processDefinition.getId(), processDefinition);
         }));
-    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(PROCESS_DEFINITION_INDEX_NAME, definitionsById);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.addEntriesToDatabase(PROCESS_DEFINITION_INDEX_NAME, definitionsById);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private void addDecisionDefinitionsToOptimize(final int numberOfDefinitions) {
@@ -394,8 +394,8 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
           final DecisionDefinitionOptimizeDto decisionDefinition = createDecisionDefinition(definitionNumber, version);
           definitionsById.put(decisionDefinition.getId(), decisionDefinition);
         }));
-    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(DECISION_DEFINITION_INDEX_NAME, definitionsById);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.addEntriesToDatabase(DECISION_DEFINITION_INDEX_NAME, definitionsById);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private CollectionDataDto createCollectionData() {
@@ -446,7 +446,7 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
 
   private void addTenantsToElasticsearch() {
     final TenantDto tenantDto = new TenantDto("null", "null", DEFAULT_ENGINE_ALIAS);
-    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(
+    databaseIntegrationTestExtension.addEntriesToDatabase(
       TENANT_INDEX_NAME,
       ImmutableMap.of(tenantDto.getId(), tenantDto)
     );

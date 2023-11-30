@@ -1652,7 +1652,7 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
       });
 
     addProcessDefinitionsToElasticsearch(definitionMap);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<DefinitionResponseDto> definitions = definitionClient.getAllDefinitions();
@@ -1683,7 +1683,7 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
       });
 
     addProcessDefinitionsToElasticsearch(definitionMap);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<TenantWithDefinitionsResponseDto> definitions = definitionClient.getDefinitionsGroupedByTenant();
@@ -1694,7 +1694,7 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   }
 
   private DefinitionOptimizeResponseDto createEventBasedDefinition(final String key, final String name) {
-    return elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(key, name);
+    return databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(key, name);
   }
 
   private DefinitionOptimizeResponseDto createDefinitionAndAddToElasticsearch(final DefinitionType definitionType,
@@ -1737,7 +1737,7 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
       .dmn10Xml("id-" + key + "-version-" + version + "-" + tenantId)
       .deleted(deleted)
       .build();
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    databaseIntegrationTestExtension.addEntryToDatabase(
       DECISION_DEFINITION_INDEX_NAME, decisionDefinitionDto.getId(), decisionDefinitionDto
     );
     return decisionDefinitionDto;
@@ -1750,7 +1750,7 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
                                                                            final boolean deleted) {
     final ProcessDefinitionOptimizeDto expectedDto = createProcessDefinition(key, version, tenantId, name);
     expectedDto.setDeleted(deleted);
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    databaseIntegrationTestExtension.addEntryToDatabase(
       PROCESS_DEFINITION_INDEX_NAME,
       expectedDto.getId(),
       expectedDto
@@ -1775,11 +1775,11 @@ public class DefinitionRestServiceIT extends AbstractPlatformIT {
   }
 
   private void addProcessDefinitionsToElasticsearch(final Map<String, Object> definitions) {
-    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(PROCESS_DEFINITION_INDEX_NAME, definitions);
+    databaseIntegrationTestExtension.addEntriesToDatabase(PROCESS_DEFINITION_INDEX_NAME, definitions);
   }
 
   protected void createTenant(final TenantDto tenant) {
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(TENANT_INDEX_NAME, tenant.getId(), tenant);
+    databaseIntegrationTestExtension.addEntryToDatabase(TENANT_INDEX_NAME, tenant.getId(), tenant);
   }
 
   private ProcessInstanceEngineDto deployDefinitionAndStartInstance(final String processId) {

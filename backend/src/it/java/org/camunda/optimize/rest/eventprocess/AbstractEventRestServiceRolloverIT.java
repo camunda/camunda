@@ -46,7 +46,7 @@ public abstract class AbstractEventRestServiceRolloverIT extends AbstractEventPr
 
   @BeforeEach
   public void cleanUpEventIndices() {
-    elasticSearchIntegrationTestExtension.deleteAllExternalEventIndices();
+    databaseIntegrationTestExtension.deleteAllExternalEventIndices();
     embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
       embeddedOptimizeExtension.getOptimizeElasticClient(),
       new EventIndexES()
@@ -58,7 +58,7 @@ public abstract class AbstractEventRestServiceRolloverIT extends AbstractEventPr
 
   protected void ingestEventAndRolloverIndex(final CloudEventRequestDto cloudEventRequestDto) {
     ingestionClient.ingestEventBatch(Collections.singletonList(cloudEventRequestDto));
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     embeddedOptimizeExtension.getEventIndexRolloverService().triggerRollover();
   }
 

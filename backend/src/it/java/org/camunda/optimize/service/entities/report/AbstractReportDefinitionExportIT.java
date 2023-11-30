@@ -122,7 +122,7 @@ public abstract class AbstractReportDefinitionExportIT extends AbstractExportImp
     final String singleReportId = createSimpleReport(ReportType.PROCESS);
     final String combinedReportId =
       reportClient.createCombinedReport(null, Collections.singletonList(singleReportId));
-    elasticSearchIntegrationTestExtension.deleteAllDocsInIndex(new SingleProcessReportIndexES());
+    databaseIntegrationTestExtension.deleteAllSingleProcessReports();
 
     // when
     Response response = exportReportDefinitionAndReturnResponse(combinedReportId);

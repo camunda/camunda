@@ -51,7 +51,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
@@ -71,7 +71,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertProcessInstanceDataCompleteInEs(extractProcessInstanceIds(unaffectedProcessInstances));
@@ -94,7 +94,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
@@ -126,7 +126,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
@@ -148,7 +148,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
@@ -159,7 +159,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
     assertThat(getAllCamundaEventBusinessKeys())
       .extracting(BusinessKeyDto::getProcessInstanceId)
       .containsOnly(unaffectedProcessInstanceForSameDefinition.getId());
-    assertThat(elasticSearchIntegrationTestExtension.getAllStoredVariableUpdateInstanceDtos())
+    assertThat(databaseIntegrationTestExtension.getAllStoredVariableUpdateInstanceDtos())
       .isNotEmpty()
       .extracting(VariableUpdateInstanceDto::getProcessInstanceId)
       .containsOnly(unaffectedProcessInstanceForSameDefinition.getId());
@@ -182,7 +182,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
@@ -193,7 +193,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
     assertThat(getAllCamundaEventBusinessKeys())
       .extracting(BusinessKeyDto::getProcessInstanceId)
       .containsAnyElementsOf(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
-    assertThat(elasticSearchIntegrationTestExtension.getAllStoredVariableUpdateInstanceDtos())
+    assertThat(databaseIntegrationTestExtension.getAllStoredVariableUpdateInstanceDtos())
       .isNotEmpty()
       .extracting(VariableUpdateInstanceDto::getProcessInstanceId)
       .containsAnyElementsOf(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
@@ -213,7 +213,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesToGetCleanedUp));
@@ -237,7 +237,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesToGetCleanedUp));
@@ -271,7 +271,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesOfDefinitionWithVariableMode));
@@ -293,7 +293,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesToGetCleanedUp));
@@ -316,12 +316,12 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesToGetCleanedUp));
     assertProcessInstanceDataCompleteInEs(unaffectedProcessInstanceForSameDefinition.getId());
-    assertThat(elasticSearchIntegrationTestExtension.getAllStoredVariableUpdateInstanceDtos())
+    assertThat(databaseIntegrationTestExtension.getAllStoredVariableUpdateInstanceDtos())
       .isNotEmpty()
       .extracting(VariableUpdateInstanceDto::getProcessInstanceId)
       .containsOnly(unaffectedProcessInstanceForSameDefinition.getId());
@@ -345,12 +345,12 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesToGetCleanedUp));
     assertProcessInstanceDataCompleteInEs(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
-    assertThat(elasticSearchIntegrationTestExtension.getAllStoredVariableUpdateInstanceDtos())
+    assertThat(databaseIntegrationTestExtension.getAllStoredVariableUpdateInstanceDtos())
       .isNotEmpty()
       .extracting(VariableUpdateInstanceDto::getProcessInstanceId)
       .containsAnyElementsOf(extractProcessInstanceIds(instancesOfDefinitionWithHigherTtl));
@@ -376,7 +376,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // all data is still there
     assertProcessInstanceDataCompleteInEs(extractProcessInstanceIds(

@@ -309,7 +309,7 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
       .id(MetadataIndex.ID)
       .setRefreshPolicy(IMMEDIATE);
 
-    elasticSearchIntegrationTestExtension.getOptimizeElasticClient().delete(request);
+    databaseIntegrationTestExtension.getOptimizeElasticsearchClient().delete(request);
   }
 
   private LicenseKeyDto getTelemetryLicenseKey() {
@@ -347,7 +347,7 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
   private String getEsVersion() {
     try {
       final OptimizeElasticsearchClient optimizeElasticClient =
-        elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
+        databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
       return optimizeElasticClient.getHighLevelClient()
         .info(optimizeElasticClient.requestOptions())
         .getVersion()

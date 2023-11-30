@@ -29,7 +29,7 @@ public class CustomerOnboardingDataImportIT extends AbstractImportIT {
 
   @BeforeEach
   public void cleanUpExistingProcessInstanceIndices() {
-    elasticSearchIntegrationTestExtension.deleteAllProcessInstanceIndices();
+    databaseIntegrationTestExtension.deleteAllProcessInstanceIndices();
   }
 
   @Test
@@ -42,7 +42,7 @@ public class CustomerOnboardingDataImportIT extends AbstractImportIT {
     addDataToOptimize(CUSTOMER_ONBOARDING_PROCESS_INSTANCES, CUSTOMER_ONBOARDING_DEFINITION_FILE_NAME);
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    assertThat(databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       PROCESS_DEFINITION_INDEX_NAME,
       ProcessDefinitionOptimizeDto.class
     )).isEmpty();
@@ -59,7 +59,7 @@ public class CustomerOnboardingDataImportIT extends AbstractImportIT {
     addDataToOptimize(CUSTOMER_ONBOARDING_PROCESS_INSTANCES, CUSTOMER_ONBOARDING_DEFINITION_FILE_NAME);
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    assertThat(databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       PROCESS_DEFINITION_INDEX_NAME,
       ProcessDefinitionOptimizeDto.class
     )).isEmpty();
@@ -77,7 +77,7 @@ public class CustomerOnboardingDataImportIT extends AbstractImportIT {
     CustomerOnboardingDataImportService customerOnboardingDataImportService =
       embeddedOptimizeExtension.getBean(CustomerOnboardingDataImportService.class);
     customerOnboardingDataImportService.importData(processInstanceFile, processDefinitionFile, 1);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
 }

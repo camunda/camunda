@@ -65,10 +65,10 @@ public class EventBasedProcessQueryPerformanceTest extends AbstractQueryPerforma
           .build();
       })
       .collect(Collectors.toMap(EsEventProcessMappingDto::getId, mapping -> mapping));
-    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(
+    databaseIntegrationTestExtension.addEntriesToDatabase(
       new EventProcessMappingIndexES().getIndexName(), mappingsById
     );
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
 }

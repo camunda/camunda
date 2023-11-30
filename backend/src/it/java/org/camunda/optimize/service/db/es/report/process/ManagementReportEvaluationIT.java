@@ -411,7 +411,7 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
   }
 
   private List<SingleProcessReportDefinitionRequestDto> getAllManagementReports() {
-    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       SINGLE_PROCESS_REPORT_INDEX_NAME, SingleProcessReportDefinitionRequestDto.class);
   }
 

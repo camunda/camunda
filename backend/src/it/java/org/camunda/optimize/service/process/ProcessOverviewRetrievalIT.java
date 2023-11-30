@@ -93,7 +93,7 @@ public class ProcessOverviewRetrievalIT extends AbstractPlatformIT {
   @Test
   public void getProcessOverview_eventBasedProcessedNotShownOnProcessOverview() {
     // given
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       SECOND_PROCESS_DEFINITION_KEY, new IdentityDto(DEFAULT_USERNAME, IdentityType.USER));
     importAllEngineEntitiesFromScratch();
 
@@ -153,7 +153,7 @@ public class ProcessOverviewRetrievalIT extends AbstractPlatformIT {
     addProcessDefinitionWithGivenNameAndKeyToElasticSearch("sameName", "a");
     addProcessDefinitionWithGivenNameAndKeyToElasticSearch("sameName", "b");
     addProcessDefinitionWithGivenNameAndKeyToElasticSearch("sameName", "c");
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -175,7 +175,7 @@ public class ProcessOverviewRetrievalIT extends AbstractPlatformIT {
     addProcessDefinitionWithGivenNameAndKeyToElasticSearch(null, "b");
     final String thirdProcessName = "cProcessName";
     addProcessDefinitionWithGivenNameAndKeyToElasticSearch(thirdProcessName, "c");
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -340,11 +340,11 @@ public class ProcessOverviewRetrievalIT extends AbstractPlatformIT {
 
   private void addProcessDefinitionWithGivenNameAndKeyToElasticSearch(String name, String key) {
     final DefinitionOptimizeResponseDto definition = createProcessDefinition(key, name);
-    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(
+    databaseIntegrationTestExtension.addEntriesToDatabase(
       new ProcessDefinitionIndexES().getIndexName(),
       Map.of(definition.getId(), definition)
     );
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private void setProcessOwner(final String processDefKey, final String ownerId) {

@@ -29,6 +29,7 @@ import org.camunda.optimize.service.exceptions.evaluation.TooManyBucketsExceptio
 import org.camunda.optimize.service.util.ProcessReportDataType
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder
+import org.camunda.optimize.service.util.configuration.DatabaseProfile
 import org.camunda.optimize.test.optimize.AlertClient
 import org.camunda.optimize.test.optimize.CollectionClient
 import org.camunda.optimize.test.optimize.EntitiesClient
@@ -51,7 +52,6 @@ import java.util.stream.Collectors
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.fail
 import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_PROFILE
 
 class PostMigrationTest {
 
@@ -72,7 +72,7 @@ class PostMigrationTest {
     requestExecutor = new OptimizeRequestExecutor(DEFAULT_USER, DEFAULT_USER, "http://localhost:8090/api/");
     elasticsearchClient = new OptimizeElasticsearchClient(
       ElasticsearchHighLevelRestClientBuilder.build(configurationService),
-      new OptimizeIndexNameService(configurationService, ELASTICSEARCH_PROFILE)
+      new OptimizeIndexNameService(configurationService, DatabaseProfile.ELASTICSEARCH)
     );
 
     alertClient = new AlertClient(() -> requestExecutor);

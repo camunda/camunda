@@ -148,12 +148,12 @@ public class CacheRequestIT extends AbstractPlatformIT {
         decisionDefinitionDto.setDataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS));
         decisionDefinitionDto.setVersion(version);
         decisionDefinitionDto.setId("id-" + key + "-version-" + version);
-        elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+        databaseIntegrationTestExtension.addEntryToDatabase(
           DECISION_DEFINITION_INDEX_NAME, decisionDefinitionDto.getId(), decisionDefinitionDto
         );
       case PROCESS:
         if (isEventBased) {
-          elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+          databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
             key, key, version, ImmutableList.of(new IdentityDto(DEFAULT_USERNAME, IdentityType.USER))
           );
         } else {
@@ -163,12 +163,12 @@ public class CacheRequestIT extends AbstractPlatformIT {
           processDefinitionOptimizeDto.setVersion(version);
           processDefinitionOptimizeDto.setDataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS));
           processDefinitionOptimizeDto.setId("id-" + key + "-version-" + version);
-          elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+          databaseIntegrationTestExtension.addEntryToDatabase(
             PROCESS_DEFINITION_INDEX_NAME, processDefinitionOptimizeDto.getId(), processDefinitionOptimizeDto
           );
         }
     }
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private Response executeDefinitionRequest(final String key, final String version, final DefinitionType type) {

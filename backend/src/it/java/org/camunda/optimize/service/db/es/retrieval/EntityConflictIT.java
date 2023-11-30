@@ -65,7 +65,7 @@ public class EntityConflictIT extends AbstractPlatformIT {
     String reportId1 = reportClient.createEmptySingleProcessReport();
     String reportId2 = reportClient.createEmptySingleProcessReport();
     createNewDashboardAndAddReport(reportId1);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
       Arrays.asList(reportId1, reportId2),
       Collections.emptyList(),
@@ -86,7 +86,7 @@ public class EntityConflictIT extends AbstractPlatformIT {
     String reportId = reportClient.createEmptySingleProcessReport();
     String dashboardId2 = createNewDashboardAndAddReport(reportId);
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
       Collections.singletonList(reportId),
@@ -114,7 +114,7 @@ public class EntityConflictIT extends AbstractPlatformIT {
       )
     );
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
       Arrays.asList(reportId1, combinedReport),
@@ -136,7 +136,7 @@ public class EntityConflictIT extends AbstractPlatformIT {
     String collectionId2 = collectionClient.createNewCollectionWithDefaultProcessScope();
     String reportId = reportClient.createEmptySingleProcessReportInCollection(collectionId2);
     alertClient.createAlertForReport(reportId);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
       Collections.singletonList(reportId),
@@ -160,7 +160,7 @@ public class EntityConflictIT extends AbstractPlatformIT {
     String dashboardId1 = dashboardClient.createEmptyDashboard(null);
     String dashboardId2 = dashboardClient.createEmptyDashboard(null);
     String reportId = reportClient.createEmptySingleDecisionReportInCollection(collectionId3);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     EntitiesDeleteRequestDto entitiesDeleteRequestDto = new EntitiesDeleteRequestDto(
       Collections.singletonList(reportId),

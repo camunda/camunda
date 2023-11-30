@@ -44,14 +44,14 @@ public class IngestedEventCleanupServiceRolloverIT extends AbstractCleanupIT {
       ingestionClient.ingestEventBatchWithTimestamp(timestampLessThanTtl, 10);
     final List<CloudEventRequestDto> eventsToKeepIngestedAfterRollover =
       ingestionClient.ingestEventBatchWithTimestamp(Instant.now().minusSeconds(10L), 10);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllStoredExternalEvents())
+    assertThat(databaseIntegrationTestExtension.getAllStoredExternalEvents())
       .extracting(EventDto::getId)
       .containsExactlyInAnyOrderElementsOf(
         Stream.concat(eventsToKeepIngestedBeforeRollover.stream(), eventsToKeepIngestedAfterRollover.stream())

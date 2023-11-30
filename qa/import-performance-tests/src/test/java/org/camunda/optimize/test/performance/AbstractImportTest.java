@@ -7,7 +7,7 @@ package org.camunda.optimize.test.performance;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
+import org.camunda.optimize.test.it.extension.DatabaseIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,8 +37,8 @@ public abstract class AbstractImportTest {
 
   @RegisterExtension
   @Order(1)
-  public ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension =
-    new ElasticSearchIntegrationTestExtension();
+  public DatabaseIntegrationTestExtension databaseIntegrationTestExtension =
+    new DatabaseIntegrationTestExtension();
   @RegisterExtension
   @Order(2)
   public static EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
@@ -54,7 +54,7 @@ public abstract class AbstractImportTest {
   @BeforeEach
   public void setUp() {
     maxImportDurationInMin = Long.parseLong(properties.getProperty("import.test.max.duration.in.min", "240"));
-    elasticSearchIntegrationTestExtension.disableCleanup();
+    databaseIntegrationTestExtension.disableCleanup();
     configurationService = embeddedOptimizeExtension.getConfigurationService();
     configurationService.getCleanupServiceConfiguration().getProcessDataCleanupConfiguration().setEnabled(false);
   }
@@ -64,33 +64,33 @@ public abstract class AbstractImportTest {
       logger.info(
         "The Camunda Platform contains {} process definitions. Optimize: {}",
         (engineDatabaseExtension.countProcessDefinitions()),
-        elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME)
+        databaseIntegrationTestExtension.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME)
       );
       logger.info(
         "The Camunda Platform contains {} historic process instances. Optimize: {}",
         engineDatabaseExtension.countHistoricProcessInstances(),
-        elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS)
+        databaseIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS)
       );
       logger.info(
         "The Camunda Platform contains {} historic variable instances. Optimize: {}",
         engineDatabaseExtension.countHistoricVariableInstances(),
-        elasticSearchIntegrationTestExtension.getVariableInstanceCount()
+        databaseIntegrationTestExtension.getVariableInstanceCountForAllProcessInstances()
       );
       logger.info(
         "The Camunda Platform contains {} historic activity instances. Optimize: {}",
         engineDatabaseExtension.countHistoricActivityInstances(),
-        elasticSearchIntegrationTestExtension.getActivityCount()
+        databaseIntegrationTestExtension.getActivityCountForAllProcessInstances()
       );
 
       logger.info(
         "The Camunda Platform contains {} decision definitions. Optimize: {}",
         engineDatabaseExtension.countDecisionDefinitions(),
-        elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME)
+        databaseIntegrationTestExtension.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME)
       );
       logger.info(
         "The Camunda Platform contains {} historic decision instances. Optimize: {}",
         engineDatabaseExtension.countHistoricDecisionInstances(),
-        elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_INSTANCE_MULTI_ALIAS)
+        databaseIntegrationTestExtension.getDocumentCountOf(DECISION_INSTANCE_MULTI_ALIAS)
       );
     } catch (SQLException e) {
       logger.error("Failed producing stats", e);
@@ -113,7 +113,7 @@ public abstract class AbstractImportTest {
   private long computeImportProgress() {
     // assumption: we know how many process instances have been generated
     Integer processInstancesImported =
-      elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS);
+      databaseIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS);
     Long totalInstances;
     try {
       totalInstances = Math.max(engineDatabaseExtension.countHistoricProcessInstances(), 1L);
@@ -125,17 +125,17 @@ public abstract class AbstractImportTest {
   }
 
   protected void assertThatEngineAndElasticDataMatch() throws SQLException {
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME))
+    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME))
       .as("processDefinitionsCount").isEqualTo(engineDatabaseExtension.countProcessDefinitions());
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS))
+    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS))
       .as("processInstanceTypeCount").isEqualTo(engineDatabaseExtension.countHistoricProcessInstances());
-    assertThat(elasticSearchIntegrationTestExtension.getVariableInstanceCount())
+    assertThat(databaseIntegrationTestExtension.getVariableInstanceCountForAllProcessInstances())
       .as("variableInstanceCount").isGreaterThanOrEqualTo(engineDatabaseExtension.countHistoricVariableInstances());
-    assertThat(elasticSearchIntegrationTestExtension.getActivityCount())
+    assertThat(databaseIntegrationTestExtension.getActivityCountForAllProcessInstances())
       .as("historicActivityInstanceCount").isEqualTo(engineDatabaseExtension.countHistoricActivityInstances());
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME))
+    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME))
       .as("decisionDefinitionsCount").isEqualTo(engineDatabaseExtension.countDecisionDefinitions());
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_INSTANCE_MULTI_ALIAS))
+    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(DECISION_INSTANCE_MULTI_ALIAS))
       .as("decisionInstancesCount").isEqualTo(engineDatabaseExtension.countHistoricDecisionInstances());
   }
 }

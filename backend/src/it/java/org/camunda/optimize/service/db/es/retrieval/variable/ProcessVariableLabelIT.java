@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.es.retrieval.variable;
 
+import jakarta.ws.rs.core.Response;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
@@ -21,7 +22,6 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import jakarta.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -299,11 +299,11 @@ public class ProcessVariableLabelIT extends AbstractVariableIT {
   private void createEmptyDashboardAndAddReports(final List<String> reportIds, final String collectionId) {
     final DashboardDefinitionRestDto dashboardDefinitionDto = new DashboardDefinitionRestDto();
     dashboardDefinitionDto.setTiles(reportIds.stream()
-                                        .map(id -> DashboardReportTileDto.builder()
-                                          .id(id)
-                                          .type(DashboardTileType.OPTIMIZE_REPORT)
-                                          .build())
-                                        .collect(Collectors.toList()));
+                                      .map(id -> DashboardReportTileDto.builder()
+                                        .id(id)
+                                        .type(DashboardTileType.OPTIMIZE_REPORT)
+                                        .build())
+                                      .collect(Collectors.toList()));
     Optional.ofNullable(collectionId).ifPresent(dashboardDefinitionDto::setCollectionId);
     dashboardClient.createDashboard(dashboardDefinitionDto);
   }

@@ -49,7 +49,7 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
       definitionType, definitionCount, DEFAULT_ENGINE_ALIAS, null
     );
     addProcessDefinitionsToElasticsearch(definitionType, definitionMap);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when & then
     assertThatListEndpointMaxAllowedQueryTimeIsMet(
@@ -81,7 +81,7 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
     // and the EmbeddedOptimizeExtension#reloadConfiguration call happening after the engine has been added
     addSecondEngineAliasToConfiguration();
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when & then
     assertThatListEndpointMaxAllowedQueryTimeIsMet(
@@ -105,7 +105,7 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
     );
     addProcessDefinitionsToElasticsearch(definitionType, definitionMap);
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when & then
     assertThatListEndpointMaxAllowedQueryTimeIsMet(
@@ -143,7 +143,7 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
     // and the EmbeddedOptimizeExtension#reloadConfiguration call happening after the engine has been added
     addSecondEngineAliasToConfiguration();
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when & then
     assertThatListEndpointMaxAllowedQueryTimeIsMet(
@@ -174,7 +174,7 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
       definitionType, definitionCount, DEFAULT_ENGINE_ALIAS, null
     );
     addProcessDefinitionsToElasticsearch(definitionType, definitionMap);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when & then
     assertThatListEndpointMaxAllowedQueryTimeIsMet(
@@ -206,7 +206,7 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
     // and the EmbeddedOptimizeExtension#reloadConfiguration call happening after the engine has been added
     addSecondEngineAliasToConfiguration();
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when & then
     assertThatListEndpointMaxAllowedQueryTimeIsMet(
@@ -268,14 +268,14 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
 
   private void addProcessDefinitionsToElasticsearch(final DefinitionType definitionType,
                                                     final Map<String, Object> definitions) {
-    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(
+    databaseIntegrationTestExtension.addEntriesToDatabase(
       DefinitionType.PROCESS.equals(definitionType) ? PROCESS_DEFINITION_INDEX_NAME : DECISION_DEFINITION_INDEX_NAME,
       definitions
     );
   }
 
   private void addTenantsToElasticsearch() {
-    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(
+    databaseIntegrationTestExtension.addEntriesToDatabase(
       TENANT_INDEX_NAME,
       TENANT_IDS.stream()
         .filter(Objects::nonNull)

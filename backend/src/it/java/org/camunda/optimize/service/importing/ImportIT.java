@@ -147,7 +147,7 @@ public class ImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then no exceptions occur during import
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances()).hasSize(1);
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances()).hasSize(1);
   }
 
   private int getNestedDocumentCountForProcessInstance(final ProcessInstanceDto instance) {
@@ -156,7 +156,7 @@ public class ImportIT extends AbstractImportIT {
   }
 
   private ProcessInstanceDto getProcessInstanceForId(final String processInstanceId) {
-    final List<ProcessInstanceDto> instances = elasticSearchIntegrationTestExtension.getAllProcessInstances()
+    final List<ProcessInstanceDto> instances = databaseIntegrationTestExtension.getAllProcessInstances()
       .stream()
       .filter(instance -> instance.getProcessInstanceId().equals(processInstanceId))
       .collect(Collectors.toList());
@@ -167,7 +167,7 @@ public class ImportIT extends AbstractImportIT {
   @SneakyThrows
   private void updateProcessInstanceNestedDocLimit(final String processDefinitionKey, final int nestedDocLimit) {
     embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setNestedDocumentsLimit(nestedDocLimit);
-    final OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
+    final OptimizeElasticsearchClient esClient = databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
     final String indexName = esClient.getIndexNameService()
       .getOptimizeIndexNameWithVersionForAllIndicesOf(new ProcessInstanceIndexES(processDefinitionKey));
 

@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.db.es.retrieval;
 
 import com.google.common.collect.Lists;
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -24,10 +25,10 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUp
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 import org.camunda.optimize.dto.optimize.query.dashboard.tile.DimensionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.tile.PositionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -56,7 +57,6 @@ import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
-import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -67,23 +67,23 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.util.Collections.singletonList;
-import static java.util.stream.Collectors.toSet;
 import static jakarta.ws.rs.HttpMethod.POST;
 import static jakarta.ws.rs.HttpMethod.PUT;
+import static java.util.Collections.singletonList;
+import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
-import static org.camunda.optimize.service.db.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
-import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
-import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
-import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.camunda.optimize.service.db.DatabaseConstants.ALERT_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.COLLECTION_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
+import static org.camunda.optimize.service.db.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.mockserver.model.HttpError.error;
 import static org.mockserver.model.HttpRequest.request;
 
@@ -102,7 +102,7 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
     GetRequest getRequest = new GetRequest()
       .index(COLLECTION_INDEX_NAME)
       .id(id);
-    GetResponse getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient().get(getRequest);
+    GetResponse getResponse = databaseIntegrationTestExtension.getOptimizeElasticsearchClient().get(getRequest);
 
     // then
     assertThat(getResponse.isExists()).isTrue();
@@ -131,7 +131,7 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
     final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
     final String reportId = reportClient.createEmptySingleProcessReportInCollection(collectionId);
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     CollectionDefinitionRestDto collection = collectionClient.getCollectionById(collectionId);
@@ -399,7 +399,7 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
 
     reportClient.updateSingleProcessReport(reportId1, new SingleProcessReportDefinitionRequestDto());
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<EntityResponseDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId);
@@ -437,7 +437,7 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
     String singleReportIdToDelete = reportClient.createEmptySingleProcessReportInCollection(collectionId);
     String combinedReportIdToDelete = reportClient.createEmptyCombinedReport(collectionId);
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     reportClient.deleteReport(singleReportIdToDelete, true);
@@ -454,7 +454,7 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
     String collectionId = collectionClient.createNewCollection();
     String dashboardIdToDelete = dashboardClient.createEmptyDashboard(collectionId);
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     dashboardClient.deleteDashboard(dashboardIdToDelete, true);
@@ -472,7 +472,7 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
     String combinedReportId = reportClient.createEmptyCombinedReport(collectionId);
     String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     collectionClient.deleteCollection(collectionId);
@@ -508,7 +508,7 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
 
     // then
     esMockServer.verify(requestMatcher, VerificationTimes.once());
-    Integer alertCount = elasticSearchIntegrationTestExtension.getDocumentCountOf(ALERT_INDEX_NAME);
+    Integer alertCount = databaseIntegrationTestExtension.getDocumentCountOf(ALERT_INDEX_NAME);
     assertThat(alertCount).isEqualTo(3);
     assertThat(collectionClient.getCollectionById(collectionId)).isNotNull();
   }
@@ -695,7 +695,7 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
     List<EntityResponseDto> copiedCollectionEntities = collectionClient.getEntitiesForCollection(copiedCollectionId);
     SingleProcessReportDefinitionRequestDto originalSingleReportDefinition =
       reportClient.getSingleProcessReportDefinitionDto(
-      originalReportId);
+        originalReportId);
 
     assertThat(copiedCollectionEntities).hasSize(3);
 
@@ -965,31 +965,26 @@ public class CollectionHandlingIT extends AbstractPlatformIT {
   }
 
   private List<SingleProcessReportDefinitionRequestDto> getAllStoredProcessReports() {
-    return getAllStoredInIndexOfType(SINGLE_PROCESS_REPORT_INDEX_NAME, SingleProcessReportDefinitionRequestDto.class);
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+      SINGLE_PROCESS_REPORT_INDEX_NAME,
+      SingleProcessReportDefinitionRequestDto.class
+    );
   }
 
   private List<CollectionDefinitionDto> getAllStoredCollections() {
-    return getAllStoredInIndexOfType(COLLECTION_INDEX_NAME, CollectionDefinitionDto.class);
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(COLLECTION_INDEX_NAME, CollectionDefinitionDto.class);
   }
 
   private List<AlertDefinitionDto> getAllStoredAlerts() {
-    return getAllStoredInIndexOfType(ALERT_INDEX_NAME, AlertDefinitionDto.class);
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(ALERT_INDEX_NAME, AlertDefinitionDto.class);
   }
 
   private List<DashboardDefinitionRestDto> getAllStoredDashboards() {
-    return getAllStoredInIndexOfType(DASHBOARD_INDEX_NAME, DashboardDefinitionRestDto.class);
-  }
-
-  private <T> List<T> getAllStoredInIndexOfType(final String indexName, Class<T> type) {
-    return ElasticsearchReaderUtil.mapHits(
-      elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(indexName).getHits(),
-      type,
-      embeddedOptimizeExtension.getObjectMapper()
-    );
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(DASHBOARD_INDEX_NAME, DashboardDefinitionRestDto.class);
   }
 
   private void addTenantToElasticsearch(final String tenantId) {
     TenantDto tenantDto = new TenantDto(tenantId, "ATenantName", DEFAULT_ENGINE_ALIAS);
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(TENANT_INDEX_NAME, tenantId, tenantDto);
+    databaseIntegrationTestExtension.addEntryToDatabase(TENANT_INDEX_NAME, tenantId, tenantDto);
   }
 }

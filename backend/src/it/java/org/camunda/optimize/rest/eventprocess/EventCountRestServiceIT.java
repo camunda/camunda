@@ -7,6 +7,7 @@ package org.camunda.optimize.rest.eventprocess;
 
 import com.google.common.collect.ImmutableList;
 import io.github.netmikey.logunit.api.LogCapturer;
+import jakarta.ws.rs.core.Response;
 import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -33,7 +34,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.event.Level;
 
-import jakarta.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -58,7 +58,6 @@ import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamunda
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventAllGroupsSourceEntry;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntryForGroup;
-import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
 public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
 
@@ -876,7 +875,7 @@ public class EventCountRestServiceIT extends AbstractEventRestServiceIT {
   @Test
   public void getEventCounts_externalSource_countsEmptyWhenSequenceNotYetProcessed() {
     // given the external event sequence does not exist
-    elasticSearchIntegrationTestExtension.deleteIndexOfMapping(new EventSequenceCountIndexES(EXTERNAL_EVENTS_INDEX_SUFFIX));
+    databaseIntegrationTestExtension.deleteExternalEventSequenceCountIndex();
 
     // when
     List<EventCountResponseDto> eventCountDtos = createPostEventCountsRequestAllExternalEvents()

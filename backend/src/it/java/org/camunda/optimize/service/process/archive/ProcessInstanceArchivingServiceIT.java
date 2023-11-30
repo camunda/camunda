@@ -87,10 +87,10 @@ public class ProcessInstanceArchivingServiceIT extends AbstractPlatformIT {
   @SneakyThrows
   private List<String> getAllProcessInstanceArchiveIndexNames() {
     return Arrays.stream(
-        elasticSearchIntegrationTestExtension.getOptimizeElasticClient().getHighLevelClient()
+        databaseIntegrationTestExtension.getOptimizeElasticsearchClient().getHighLevelClient()
           .indices().get(
             new GetIndexRequest("*"),
-            elasticSearchIntegrationTestExtension.getOptimizeElasticClient().requestOptions()
+            databaseIntegrationTestExtension.getOptimizeElasticsearchClient().requestOptions()
           ).getIndices())
       .filter(index -> index.contains(DatabaseConstants.PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX))
       .collect(Collectors.toList());

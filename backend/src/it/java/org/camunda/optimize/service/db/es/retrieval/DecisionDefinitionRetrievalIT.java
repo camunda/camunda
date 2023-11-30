@@ -98,7 +98,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     importAllEngineEntitiesFromScratch();
 
     addDecisionDefinitionWithoutXmlToElasticsearch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<DecisionDefinitionOptimizeDto> definitions =
@@ -190,7 +190,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
       .key("aDecDefKey")
       .version("aDevDefVersion")
       .build();
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    databaseIntegrationTestExtension.addEntryToDatabase(
       DECISION_DEFINITION_INDEX_NAME,
       "fooId",
       decisionDefinitionWithoutXml

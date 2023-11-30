@@ -68,7 +68,7 @@ public class SchemaManagerIT extends AbstractPlatformIT {
   @BeforeEach
   public void setUp() {
     // given
-    elasticSearchIntegrationTestExtension.cleanAndVerify();
+    databaseIntegrationTestExtension.cleanAndVerify();
     prefixAwareRestHighLevelClient = embeddedOptimizeExtension.getOptimizeElasticClient();
     indexNameService = prefixAwareRestHighLevelClient.getIndexNameService();
   }
@@ -273,7 +273,7 @@ public class SchemaManagerIT extends AbstractPlatformIT {
 
     // then an exception is thrown when we add an event with an undefined type in schema
     ExtendedFlowNodeEventDto extendedEventDto = new ExtendedFlowNodeEventDto();
-    assertThatThrownBy(() -> elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    assertThatThrownBy(() -> databaseIntegrationTestExtension.addEntryToDatabase(
       DatabaseConstants.METADATA_INDEX_NAME,
       "12312412",
       extendedEventDto
@@ -354,7 +354,7 @@ public class SchemaManagerIT extends AbstractPlatformIT {
   }
 
   private void assertIndexExists(String indexName) throws IOException {
-    OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
+    OptimizeElasticsearchClient esClient = databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
     GetIndexRequest request = new GetIndexRequest(indexName);
     final boolean indexExists = esClient.exists(request);
 

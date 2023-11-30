@@ -147,16 +147,16 @@ public class ExportLimitsIT extends AbstractPlatformIT {
           new IndexRequest(getProcessInstanceIndexAliasName(processDefinitionKey))
             .id(processInstanceDto.getProcessInstanceId())
             .source(
-              elasticSearchIntegrationTestExtension.getObjectMapper().writeValueAsString(processInstanceDto),
+              databaseIntegrationTestExtension.getObjectMapper().writeValueAsString(processInstanceDto),
               XContentType.JSON
             );
 
         bulkInsert.add(indexRequest);
       }
 
-      elasticSearchIntegrationTestExtension.getOptimizeElasticClient().bulk(bulkInsert);
+      databaseIntegrationTestExtension.getOptimizeElasticsearchClient().bulk(bulkInsert);
     }
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private String createAndStoreRawReportDefinition(String processDefinitionKey,

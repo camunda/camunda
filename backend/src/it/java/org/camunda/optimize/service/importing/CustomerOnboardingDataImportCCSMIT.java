@@ -37,7 +37,7 @@ public class CustomerOnboardingDataImportCCSMIT extends AbstractCCSMIT {
 
   @BeforeEach
   public void cleanUpExistingProcessInstanceIndices() {
-    elasticSearchIntegrationTestExtension.deleteAllProcessInstanceIndices();
+    databaseIntegrationTestExtension.deleteAllProcessInstanceIndices();
   }
 
   @Test
@@ -50,7 +50,7 @@ public class CustomerOnboardingDataImportCCSMIT extends AbstractCCSMIT {
     addDataToOptimize(CUSTOMER_ONBOARDING_PROCESS_INSTANCES, CUSTOMER_ONBOARDING_DEFINITION_FILE_NAME);
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    assertThat(databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       PROCESS_DEFINITION_INDEX_NAME,
       ProcessDefinitionOptimizeDto.class
     )).isEmpty();
@@ -68,7 +68,7 @@ public class CustomerOnboardingDataImportCCSMIT extends AbstractCCSMIT {
 
     // then
     List<ProcessDefinitionOptimizeDto> processDefinitionDocuments =
-      elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+      databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
         PROCESS_DEFINITION_INDEX_NAME,
         ProcessDefinitionOptimizeDto.class
       );
@@ -77,11 +77,11 @@ public class CustomerOnboardingDataImportCCSMIT extends AbstractCCSMIT {
     // the onboarding data should already be considered onboarded to avoid the notification being sent upon import
     assertThat(processDefinition.isOnboarded()).isTrue();
     assertThat(indexExist(ProcessInstanceIndex.constructIndexName(processDefinition.getKey()))).isTrue();
-    assertThat(elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    assertThat(databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       ProcessInstanceIndex.constructIndexName(processDefinition.getKey()),
       ProcessDefinitionOptimizeDto.class
     )).hasSize(3);
-    List<ProcessInstanceDto> processInstanceDtos = elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    List<ProcessInstanceDto> processInstanceDtos = databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       ProcessInstanceIndex.constructIndexName(processDefinition.getKey()), ProcessInstanceDto.class);
     assertThat(processInstanceDtos).anyMatch(processInstanceDto -> processInstanceDto.getIncidents() != null);
   }
@@ -97,7 +97,7 @@ public class CustomerOnboardingDataImportCCSMIT extends AbstractCCSMIT {
 
     // then
     List<ProcessDefinitionOptimizeDto> processDefinitionDocuments =
-      elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+      databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
         PROCESS_DEFINITION_INDEX_NAME,
         ProcessDefinitionOptimizeDto.class
       );
@@ -117,7 +117,7 @@ public class CustomerOnboardingDataImportCCSMIT extends AbstractCCSMIT {
 
     // then
     List<ProcessDefinitionOptimizeDto> processDefinitionDocuments =
-      elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+      databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
         PROCESS_DEFINITION_INDEX_NAME,
         ProcessDefinitionOptimizeDto.class
       );
@@ -138,7 +138,7 @@ public class CustomerOnboardingDataImportCCSMIT extends AbstractCCSMIT {
 
     // then
     List<ProcessDefinitionOptimizeDto> processDefinitionDocuments =
-      elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+      databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
         PROCESS_DEFINITION_INDEX_NAME,
         ProcessDefinitionOptimizeDto.class
       );
@@ -159,7 +159,7 @@ public class CustomerOnboardingDataImportCCSMIT extends AbstractCCSMIT {
 
     // then
     List<ProcessDefinitionOptimizeDto> processDefinitionDocuments =
-      elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+      databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
         PROCESS_DEFINITION_INDEX_NAME,
         ProcessDefinitionOptimizeDto.class
       );
@@ -192,13 +192,13 @@ public class CustomerOnboardingDataImportCCSMIT extends AbstractCCSMIT {
 
     // then
     List<ProcessDefinitionOptimizeDto> processDefinitionDocuments =
-      elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+      databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
         PROCESS_DEFINITION_INDEX_NAME,
         ProcessDefinitionOptimizeDto.class
       );
     assertThat(processDefinitionDocuments).hasSize(1);
     assertThat(indexExist(ProcessInstanceIndex.constructIndexName(CUSTOMER_ONBOARDING_DEFINITION_NAME))).isTrue();
-    List<ProcessInstanceDto> processInstanceDto = elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    List<ProcessInstanceDto> processInstanceDto = databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       ProcessInstanceIndex.constructIndexName(processDefinitionDocuments.get(0).getKey()), ProcessInstanceDto.class);
 
     assertThat(processInstanceDto)
@@ -222,7 +222,7 @@ public class CustomerOnboardingDataImportCCSMIT extends AbstractCCSMIT {
     CustomerOnboardingDataImportService customerOnboardingDataImportService =
       embeddedOptimizeExtension.getBean(CustomerOnboardingDataImportService.class);
     customerOnboardingDataImportService.importData(processInstanceFile, processDefinitionFile, 1);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
 }

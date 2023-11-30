@@ -90,7 +90,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     // then
     final Map<String, List<ZeebeProcessInstanceRecordDto>> exportedEvents =
       getZeebeExportedProcessInstanceEventsByElementId();
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(savedInstance -> {
         assertThat(savedInstance.getProcessInstanceId()).isEqualTo(String.valueOf(deployedInstance.getProcessInstanceKey()));
@@ -130,7 +130,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then process activating event has been imported
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(savedInstance -> {
         assertThat(savedInstance.getState()).isEqualTo(ProcessInstanceConstants.ACTIVE_STATE);
@@ -142,7 +142,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromLastIndex(); // fetch and import flownode activating event
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(savedInstance -> {
         assertThat(savedInstance.getState()).isEqualTo(ProcessInstanceConstants.ACTIVE_STATE);
@@ -158,7 +158,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then we get the rest of the process data
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(savedInstance -> {
         assertThat(savedInstance.getState()).isEqualTo(ProcessInstanceConstants.COMPLETED_STATE);
@@ -183,7 +183,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     // then
     final Map<String, List<ZeebeProcessInstanceRecordDto>> exportedEvents =
       getZeebeExportedProcessInstanceEventsByElementId();
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(savedInstance -> {
         assertThat(savedInstance.getProcessInstanceId()).isEqualTo(String.valueOf(deployedInstance.getProcessInstanceKey()));
@@ -238,7 +238,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     // then
     final Map<String, List<ZeebeProcessInstanceRecordDto>> exportedEvents =
       getZeebeExportedProcessInstanceEventsByElementId();
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(savedInstance -> {
         assertThat(savedInstance.getProcessInstanceId()).isEqualTo(String.valueOf(deployedInstance.getProcessInstanceKey()));
@@ -285,7 +285,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     // then
     final Map<String, List<ZeebeProcessInstanceRecordDto>> exportedEvents =
       getZeebeExportedProcessInstanceEventsByElementId();
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(savedInstance -> {
         assertThat(savedInstance.getProcessInstanceId()).isEqualTo(String.valueOf(deployedInstance.getProcessInstanceKey()));
@@ -330,7 +330,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .hasSize(2)
       .allSatisfy(instance -> assertThat(instance.getFlowNodeInstances()).hasSize(2))
       .extracting(ProcessInstanceDto::getProcessInstanceId)
@@ -356,7 +356,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .hasSize(2)
       .allSatisfy(instance -> assertThat(instance.getFlowNodeInstances()).hasSize(2))
       .extracting(ProcessInstanceDto::getProcessInstanceId)
@@ -381,7 +381,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .hasSize(2)
       .allSatisfy(instance -> assertThat(instance.getFlowNodeInstances()).hasSize(2))
       .extracting(ProcessInstanceDto::getProcessInstanceId, ProcessInstanceDto::getProcessDefinitionVersion)
@@ -405,7 +405,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(instance -> assertThat(instance.getFlowNodeInstances())
         .filteredOn(flowNodeInstance -> flowNodeInstance.getFlowNodeId().equals(SERVICE_TASK))
@@ -425,7 +425,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(instance -> {
         assertThat(instance.getEndDate()).isNotNull();
@@ -451,7 +451,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(instance -> assertThat(instance.getFlowNodeInstances())
         .extracting(FlowNodeInstanceDto::getFlowNodeType)
@@ -474,7 +474,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(instance -> assertThat(instance.getFlowNodeInstances())
         .extracting(FlowNodeInstanceDto::getFlowNodeType)
@@ -496,7 +496,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(savedInstance -> {
         assertThat(savedInstance.getFlowNodeInstances())
@@ -536,7 +536,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then all new events were imported
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(instance -> assertThat(instance.getFlowNodeInstances())
         .extracting(FlowNodeInstanceDto::getFlowNodeId)
@@ -572,7 +572,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(instance -> assertThat(instance.getFlowNodeInstances())
         .extracting(FlowNodeInstanceDto::getFlowNodeId)
@@ -601,7 +601,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    final List<ProcessInstanceDto> instances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    final List<ProcessInstanceDto> instances = databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(instances)
       .extracting(ProcessInstanceDto::getTenantId)
       .singleElement()
@@ -626,7 +626,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    final List<ProcessInstanceDto> instances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    final List<ProcessInstanceDto> instances = databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(instances)
       .extracting(ProcessInstanceDto::getTenantId)
       .singleElement()
@@ -662,7 +662,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
     final String expectedIndex =
       zeebeExtension.getZeebeRecordPrefix() + "-" + DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
     final OptimizeElasticsearchClient esClient =
-      elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
+      databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
     SearchRequest searchRequest = new SearchRequest()
       .indices(expectedIndex)
       .source(new SearchSourceBuilder()

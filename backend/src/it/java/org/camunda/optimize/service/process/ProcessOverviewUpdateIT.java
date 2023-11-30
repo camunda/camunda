@@ -105,7 +105,7 @@ public class ProcessOverviewUpdateIT extends AbstractPlatformIT {
   @Test
   public void updateProcess_setEventBasedProcessOwnerNotPossible() {
     // given
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       DEF_KEY, new IdentityDto(DEFAULT_USERNAME, IdentityType.USER));
 
     // when

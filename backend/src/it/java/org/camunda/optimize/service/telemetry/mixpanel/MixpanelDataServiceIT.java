@@ -43,7 +43,7 @@ public class MixpanelDataServiceIT extends AbstractPlatformIT {
     dashboardShare.setDashboardId(dashboardId);
     sharingClient.createDashboardShareResponse(dashboardShare);
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final MixpanelHeartbeatProperties mixpanelHeartbeatProperties =

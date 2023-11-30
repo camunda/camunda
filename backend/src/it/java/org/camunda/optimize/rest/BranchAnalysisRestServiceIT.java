@@ -87,7 +87,7 @@ public class BranchAnalysisRestServiceIT extends AbstractPlatformIT {
       .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
       .bpmn20Xml(readDiagram())
       .build();
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    databaseIntegrationTestExtension.addEntryToDatabase(
       PROCESS_DEFINITION_INDEX_NAME,
       PROCESS_DEFINITION_ID,
       processDefinitionXmlDto
@@ -95,7 +95,7 @@ public class BranchAnalysisRestServiceIT extends AbstractPlatformIT {
 
     processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID_2);
     processDefinitionXmlDto.setVersion(PROCESS_DEFINITION_VERSION_2);
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    databaseIntegrationTestExtension.addEntryToDatabase(
       PROCESS_DEFINITION_INDEX_NAME,
       PROCESS_DEFINITION_ID_2,
       processDefinitionXmlDto
@@ -112,17 +112,17 @@ public class BranchAnalysisRestServiceIT extends AbstractPlatformIT {
       .build();
     embeddedOptimizeExtension.getElasticSearchSchemaManager()
       .createIndexIfMissing(
-        elasticSearchIntegrationTestExtension.getOptimizeElasticClient(),
+        databaseIntegrationTestExtension.getOptimizeElasticsearchClient(),
         new ProcessInstanceIndexES(PROCESS_DEFINITION_KEY)
       );
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    databaseIntegrationTestExtension.addEntryToDatabase(
       getProcessInstanceIndexAliasName(PROCESS_DEFINITION_KEY), PROCESS_INSTANCE_ID, procInst);
 
     procInst.setFlowNodeInstances(
       createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY})
     );
     procInst.setProcessInstanceId(PROCESS_INSTANCE_ID_2);
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    databaseIntegrationTestExtension.addEntryToDatabase(
       getProcessInstanceIndexAliasName(PROCESS_DEFINITION_KEY), PROCESS_INSTANCE_ID_2, procInst);
   }
 

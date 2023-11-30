@@ -510,7 +510,7 @@ public class EventBasedProcessRestServiceMappingCleanupIT extends AbstractEventP
   private void runEngineImportAndEventProcessing() {
     importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.processEvents();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private EventTypeDto createExternalEventTypeDto(final String eventName) {

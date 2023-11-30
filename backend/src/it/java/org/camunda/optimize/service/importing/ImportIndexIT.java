@@ -60,12 +60,12 @@ public class ImportIndexIT extends AbstractImportIT {
 
     importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     startAndUseNewOptimizeInstance();
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertThat(embeddedOptimizeExtension.getImportIndexes())
@@ -80,7 +80,7 @@ public class ImportIndexIT extends AbstractImportIT {
     deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     List<Long> firstRoundIndexes = embeddedOptimizeExtension.getImportIndexes();
 
     // when
@@ -122,7 +122,7 @@ public class ImportIndexIT extends AbstractImportIT {
     // when
     embeddedOptimizeExtension.resetImportStartIndexes();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     List<Long> indexes = embeddedOptimizeExtension.getImportIndexes();
 

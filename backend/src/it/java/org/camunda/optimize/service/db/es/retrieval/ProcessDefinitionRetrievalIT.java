@@ -96,7 +96,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractPlatformIT {
     String processDefinitionId = deploySimpleServiceTaskProcessDefinition(processId);
     importAllEngineEntitiesFromScratch();
     addProcessDefinitionWithoutXmlToElasticsearch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<ProcessDefinitionOptimizeDto> definitions =
@@ -217,7 +217,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractPlatformIT {
       .key("aProcDefKey")
       .version("aProcDefVersion")
       .build();
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    databaseIntegrationTestExtension.addEntryToDatabase(
       PROCESS_DEFINITION_INDEX_NAME,
       "fooId",
       processDefinitionWithoutXml

@@ -127,7 +127,7 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
     assertThat(getUserTaskIdentityCacheService().getUserIdentityById(ASSIGNEE_ID_JOHN)).isPresent();
     assertThat(getUserTaskIdentityCacheService().getUserIdentityById(ASSIGNEE_ID_JEAN)).isNotPresent();
 
-    final List<ProcessInstanceDto> processInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    final List<ProcessInstanceDto> processInstances = databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(processInstances)
       .hasSize(2)
       .flatExtracting(ProcessInstanceDto::getUserTasks)

@@ -114,10 +114,10 @@ public class CombinedReportHandlingIT extends AbstractPlatformIT {
 
     // then
     GetRequest getRequest = new GetRequest(COMBINED_REPORT_INDEX_NAME).id(id);
-    GetResponse getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient().get(getRequest);
+    GetResponse getResponse = databaseIntegrationTestExtension.getOptimizeElasticsearchClient().get(getRequest);
 
     assertThat(getResponse.isExists()).isTrue();
-    CombinedReportDefinitionRequestDto definitionDto = elasticSearchIntegrationTestExtension.getObjectMapper()
+    CombinedReportDefinitionRequestDto definitionDto = databaseIntegrationTestExtension.getObjectMapper()
       .readValue(getResponse.getSourceAsString(), CombinedReportDefinitionRequestDto.class);
     assertThat(definitionDto.getData()).isNotNull();
     CombinedReportDataDto data = definitionDto.getData();

@@ -48,10 +48,10 @@ public class ElasticMetadataVersionIT extends AbstractPlatformIT {
 
   @Test
   public void verifyNotStartingIfVersionDoesNotMatch() {
-    elasticSearchIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
 
     MetadataDto meta = new MetadataDto(SCHEMA_VERSION, INSTALLATION_ID);
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(METADATA_INDEX_NAME, MetadataIndex.ID, meta);
+    databaseIntegrationTestExtension.addEntryToDatabase(METADATA_INDEX_NAME, MetadataIndex.ID, meta);
     assertThatThrownBy(() -> {
       ConfigurableApplicationContext context = SpringApplication.run(Main.class);
       context.close();
@@ -59,7 +59,7 @@ public class ElasticMetadataVersionIT extends AbstractPlatformIT {
       .cause().cause()
       .hasMessageContaining("The database Optimize schema version [" + SCHEMA_VERSION + "]");
 
-    elasticSearchIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
   }
 
   @Test

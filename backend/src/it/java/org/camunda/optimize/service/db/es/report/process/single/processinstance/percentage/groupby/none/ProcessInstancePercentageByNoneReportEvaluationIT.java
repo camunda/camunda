@@ -196,7 +196,7 @@ public class ProcessInstancePercentageByNoneReportEvaluationIT extends AbstractP
         .buildList());
     ReportResultResponseDto<Double> result = reportClient.evaluateNumberReport(reportData).getResult();
     final Integer storedInstanceCount =
-      elasticSearchIntegrationTestExtension.getDocumentCountOf(ProcessInstanceIndex.constructIndexName(processInstance.getProcessDefinitionKey()));
+      databaseIntegrationTestExtension.getDocumentCountOf(ProcessInstanceIndex.constructIndexName(processInstance.getProcessDefinitionKey()));
 
     // then all three instance have been imported
     assertThat(storedInstanceCount).isEqualTo(3);

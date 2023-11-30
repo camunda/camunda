@@ -209,7 +209,7 @@ public class CamundaPlatformTenantServiceIT extends AbstractPlatformIT {
   }
 
   private void addTenantToElasticsearch(final TenantDto engine) {
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(TENANT_INDEX_NAME, engine.getId(), engine);
+    databaseIntegrationTestExtension.addEntryToDatabase(TENANT_INDEX_NAME, engine.getId(), engine);
   }
 
 }

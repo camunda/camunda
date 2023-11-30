@@ -330,7 +330,7 @@ public class MixedFilterIT extends AbstractFilterIT {
       .withResolvedAndOpenIncident()
       .executeDeployment();
     importAllEngineEntitiesFromScratch();
-    final ProcessDefinitionOptimizeDto def = elasticSearchIntegrationTestExtension.getAllProcessDefinitions().get(0);
+    final ProcessDefinitionOptimizeDto def = databaseIntegrationTestExtension.getAllProcessDefinitions().get(0);
 
     // when
     List<ProcessFilterDto<?>> filterList = ProcessFilterBuilder

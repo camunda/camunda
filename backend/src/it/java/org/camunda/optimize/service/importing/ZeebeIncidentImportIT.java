@@ -68,7 +68,7 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(savedInstance -> {
         assertThat(savedInstance.getProcessInstanceId())
@@ -106,7 +106,7 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(savedInstance -> assertThat(savedInstance.getIncidents()).isNotEmpty()
         .hasSize(1)
@@ -126,7 +126,7 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(savedInstance -> assertThat(savedInstance.getIncidents()).isNotEmpty()
         .hasSize(1)
@@ -149,7 +149,7 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(savedInstance -> assertThat(savedInstance.getIncidents()).isNotEmpty()
         .containsExactly(
@@ -169,7 +169,7 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(savedInstance -> assertThat(savedInstance.getIncidents()).isNotEmpty()
         .containsExactly(
@@ -182,7 +182,7 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromLastIndex();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(savedInstance -> assertThat(savedInstance.getIncidents()).isNotEmpty()
         .containsExactly(
@@ -203,7 +203,7 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .flatExtracting(ProcessInstanceDto::getIncidents)
       .extracting(IncidentDto::getTenantId)
       .singleElement()
@@ -224,7 +224,7 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .flatExtracting(ProcessInstanceDto::getIncidents)
       .extracting(IncidentDto::getTenantId)
       .singleElement()
@@ -285,7 +285,7 @@ public class ZeebeIncidentImportIT extends AbstractCCSMIT {
     final String expectedIndex =
       zeebeExtension.getZeebeRecordPrefix() + "-" + DatabaseConstants.ZEEBE_INCIDENT_INDEX_NAME;
     final OptimizeElasticsearchClient esClient =
-      elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
+      databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
     SearchRequest searchRequest = new SearchRequest()
       .indices(expectedIndex)
       .source(new SearchSourceBuilder()

@@ -138,7 +138,7 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
 
     final String reportId1 = createEventProcessReport(eventProcessMappingId, simpleEventProcessMappingDto.getXml());
     final String reportId2 = createEventProcessReport(eventProcessMappingId, simpleEventProcessMappingDto.getXml());
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     // process is republished with new XML
@@ -170,7 +170,7 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
     final String eventProcessMappingId1 = createAndPublishEventProcess(simpleEventProcessMappingDto1);
 
     final String reportId1 = createEventProcessReport(eventProcessMappingId1, simpleEventProcessMappingDto1.getXml());
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when another event process gets published
     final EventProcessMappingDto simpleEventProcessMappingDto2 = buildSimpleEventProcessMappingDto(

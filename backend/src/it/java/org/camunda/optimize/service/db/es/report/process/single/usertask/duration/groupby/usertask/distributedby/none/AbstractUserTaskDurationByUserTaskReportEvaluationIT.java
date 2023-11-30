@@ -1178,10 +1178,10 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
       .setAbortOnVersionConflict(false)
       .setScript(updateScript)
       .setRefresh(true);
-    elasticSearchIntegrationTestExtension.getOptimizeElasticClient().applyIndexPrefixes(request);
+    databaseIntegrationTestExtension.getOptimizeElasticsearchClient().applyIndexPrefixes(request);
 
     try {
-      elasticSearchIntegrationTestExtension.getOptimizeElasticClient().updateByQuery(request);
+      databaseIntegrationTestExtension.getOptimizeElasticsearchClient().updateByQuery(request);
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException(
         String.format("Could not set userTask duration field [%s] to null.", durationFieldName),

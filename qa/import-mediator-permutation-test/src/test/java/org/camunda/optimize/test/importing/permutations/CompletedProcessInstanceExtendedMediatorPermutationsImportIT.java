@@ -39,10 +39,10 @@ public class CompletedProcessInstanceExtendedMediatorPermutationsImportIT extend
       logMediatorOrder(log, mediatorOrder);
       // when
       performOrderedImport(mediatorOrder);
-      elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+      databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
       // then
-      assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+      assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
         .hasSize(1)
         .singleElement()
         .satisfies(persistedProcessInstanceDto -> {
@@ -80,7 +80,7 @@ public class CompletedProcessInstanceExtendedMediatorPermutationsImportIT extend
         });
 
       final List<CamundaActivityEventDto> allStoredCamundaActivityEventsForDefinition =
-        elasticSearchIntegrationTestExtension.getAllStoredCamundaActivityEventsForDefinition(TEST_PROCESS);
+        databaseIntegrationTestExtension.getAllStoredCamundaActivityEventsForDefinition(TEST_PROCESS);
       // start event, end event, user task start/end, process instance start/end
       assertThat(allStoredCamundaActivityEventsForDefinition).hasSize(6);
     });

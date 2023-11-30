@@ -87,10 +87,10 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, authorizedDefinitionKey1);
     addProcessDefinitionToElasticsearch(notAuthorizedDefinitionKey);
     final String authorizedProcessId = addProcessDefinitionToElasticsearch(authorizedDefinitionKey1).getId();
-    final String authorizedEventProcessId1 = elasticSearchIntegrationTestExtension
-      .addEventProcessDefinitionDtoToElasticsearch(authorizedDefinitionKey2, new UserDto(KERMIT_USER)).getId();
-    final String authorizedEventProcessId2 = elasticSearchIntegrationTestExtension
-      .addEventProcessDefinitionDtoToElasticsearch(authorizedDefinitionKey3, new UserDto(KERMIT_USER)).getId();
+    final String authorizedEventProcessId1 = databaseIntegrationTestExtension
+      .addEventProcessDefinitionDtoToDatabase(authorizedDefinitionKey2, new UserDto(KERMIT_USER)).getId();
+    final String authorizedEventProcessId2 = databaseIntegrationTestExtension
+      .addEventProcessDefinitionDtoToDatabase(authorizedDefinitionKey3, new UserDto(KERMIT_USER)).getId();
 
     // when
     List<ProcessDefinitionOptimizeDto> definitions = definitionClient.getAllProcessDefinitionsAsUser(
@@ -296,8 +296,8 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
     final String definitionKey = "anEventProcDefKey";
     engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
     engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
-    final ProcessDefinitionOptimizeDto expectedDefinition = elasticSearchIntegrationTestExtension
-      .addEventProcessDefinitionDtoToElasticsearch(definitionKey);
+    final ProcessDefinitionOptimizeDto expectedDefinition = databaseIntegrationTestExtension
+      .addEventProcessDefinitionDtoToDatabase(definitionKey);
 
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
@@ -366,7 +366,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
                                                                     final String type) {
     switch (type) {
       case EVENT_BASED:
-        return elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+        return databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
           key, key, version, Collections.singletonList(new IdentityDto(DEFAULT_USERNAME, IdentityType.USER))
         );
       case NOT_EVENT_BASED:
@@ -405,7 +405,7 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
       .bpmn20Xml(key + version + tenantId)
       .deleted(deleted)
       .build();
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    databaseIntegrationTestExtension.addEntryToDatabase(
       PROCESS_DEFINITION_INDEX_NAME,
       expectedDto.getId(),
       expectedDto

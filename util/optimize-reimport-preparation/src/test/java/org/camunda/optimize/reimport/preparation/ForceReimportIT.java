@@ -38,7 +38,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
 import static org.camunda.optimize.service.db.DatabaseConstants.BUSINESS_KEY_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
@@ -55,6 +54,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITI
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
 @Slf4j
@@ -105,7 +105,7 @@ public class ForceReimportIT extends AbstractEventProcessIT {
 
     importAllEngineEntitiesFromScratch();
 
-    final List<TenantDto> allTenants = elasticSearchIntegrationTestExtension.getAllTenants();
+    final List<TenantDto> allTenants = databaseIntegrationTestExtension.getAllTenants();
     assertThat(allTenants).isNotEmpty();
 
     // when
@@ -120,7 +120,7 @@ public class ForceReimportIT extends AbstractEventProcessIT {
     importAllEngineEntitiesFromLastIndex();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllTenants()).isEqualTo(allTenants);
+    assertThat(databaseIntegrationTestExtension.getAllTenants()).isEqualTo(allTenants);
   }
 
   @Test
@@ -132,7 +132,7 @@ public class ForceReimportIT extends AbstractEventProcessIT {
     runEventProcessing();
 
     final List<ProcessDefinitionOptimizeDto> allProcessDefinitions =
-      elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+      databaseIntegrationTestExtension.getAllProcessDefinitions();
     final List<String> allProcessInstanceIds = getProcessInstanceIds();
     assertThat(allProcessDefinitions).isNotEmpty();
     assertThat(allProcessInstanceIds).isNotEmpty();
@@ -150,7 +150,7 @@ public class ForceReimportIT extends AbstractEventProcessIT {
     runEventProcessing();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions()).isEqualTo(allProcessDefinitions);
+    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions()).isEqualTo(allProcessDefinitions);
     assertThat(getProcessInstanceIds()).isEqualTo(allProcessInstanceIds);
     assertThat(hasEngineProcessData()).isTrue();
   }
@@ -163,7 +163,7 @@ public class ForceReimportIT extends AbstractEventProcessIT {
     importAllEngineEntitiesFromScratch();
 
     final List<DecisionDefinitionOptimizeDto> allDecisionDefinitions =
-      elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
+      databaseIntegrationTestExtension.getAllDecisionDefinitions();
     final List<String> allDecisionInstanceIds = getDecisionInstanceIds();
     assertThat(allDecisionDefinitions).isNotEmpty();
     assertThat(allDecisionInstanceIds).isNotEmpty();
@@ -180,7 +180,7 @@ public class ForceReimportIT extends AbstractEventProcessIT {
     importAllEngineEntitiesFromLastIndex();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllDecisionDefinitions()).isEqualTo(allDecisionDefinitions);
+    assertThat(databaseIntegrationTestExtension.getAllDecisionDefinitions()).isEqualTo(allDecisionDefinitions);
     assertThat(getDecisionInstanceIds()).isEqualTo(allDecisionInstanceIds);
     assertThat(hasEngineDecisionData()).isTrue();
   }
@@ -210,7 +210,7 @@ public class ForceReimportIT extends AbstractEventProcessIT {
 
     // then
     assertThat(getAllProcessDefinitionKeys()).isEmpty();
-    assertThat(elasticSearchIntegrationTestExtension.indexExists(PROCESS_INSTANCE_MULTI_ALIAS)).isFalse();
+    assertThat(databaseIntegrationTestExtension.indexExists(PROCESS_INSTANCE_MULTI_ALIAS)).isFalse();
     assertThat(eventProcessClient.getAllEventProcessMappings())
       .isEqualTo(allEventProcessMappings)
       .extracting(EventProcessMappingDto::getState)
@@ -248,17 +248,17 @@ public class ForceReimportIT extends AbstractEventProcessIT {
   }
 
   private List<String> getAllProcessDefinitionKeys() {
-    return elasticSearchIntegrationTestExtension.getAllProcessDefinitions()
+    return databaseIntegrationTestExtension.getAllProcessDefinitions()
       .stream().map(DefinitionOptimizeResponseDto::getKey).collect(Collectors.toList());
   }
 
   private List<String> getProcessInstanceIds() {
-    return elasticSearchIntegrationTestExtension.getAllProcessInstances()
+    return databaseIntegrationTestExtension.getAllProcessInstances()
       .stream().map(ProcessInstanceDto::getProcessInstanceId).collect(Collectors.toList());
   }
 
   private List<String> getDecisionInstanceIds() {
-    return elasticSearchIntegrationTestExtension.getAllDecisionInstances()
+    return databaseIntegrationTestExtension.getAllDecisionInstances()
       .stream().map(DecisionInstanceDto::getDecisionInstanceId).collect(Collectors.toList());
   }
 
@@ -280,9 +280,8 @@ public class ForceReimportIT extends AbstractEventProcessIT {
 
   private boolean allIndexGroupsHaveData(final Set<List<String>> indexGroups) {
     final long groupsThatHaveData = indexGroups.stream()
-      .map(indexGroup -> elasticSearchIntegrationTestExtension
-        .getSearchResponseForAllDocumentsOfIndices(indexGroup.toArray(new String[0])))
-      .filter(response -> response.getHits().getTotalHits().value > 0L)
+      .filter(indexGroup -> indexGroup.stream()
+        .anyMatch(index -> databaseIntegrationTestExtension.getDocumentCountOf(index) > 0L))
       .count();
     return indexGroups.size() == groupsThatHaveData;
   }
@@ -297,9 +296,8 @@ public class ForceReimportIT extends AbstractEventProcessIT {
 
   private boolean noIndexGroupHasData(final Set<List<String>> indexGroups) {
     final long groupsThatHaveNoData = indexGroups.stream()
-      .map(indexGroup -> elasticSearchIntegrationTestExtension
-        .getSearchResponseForAllDocumentsOfIndices(indexGroup.toArray(new String[0])))
-      .filter(response -> response.getHits().getTotalHits().value == 0L)
+      .filter(indexGroup -> indexGroup.stream()
+        .allMatch(index -> databaseIntegrationTestExtension.getDocumentCountOf(index) == 0L))
       .count();
     return indexGroups.size() == groupsThatHaveNoData;
   }
@@ -354,7 +352,7 @@ public class ForceReimportIT extends AbstractEventProcessIT {
 
   private void runEventProcessing() {
     embeddedOptimizeExtension.processEvents();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private void forceReimportOfEngineData() {
