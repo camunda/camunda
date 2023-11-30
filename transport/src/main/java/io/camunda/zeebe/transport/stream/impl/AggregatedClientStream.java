@@ -35,6 +35,7 @@ final class AggregatedClientStream<M extends BufferWriter> {
   private final Int2ObjectHashMap<ClientStreamImpl<M>> clientStreams = new Int2ObjectHashMap<>();
 
   private boolean isOpened;
+  private boolean isReady;
   private int nextLocalId;
 
   AggregatedClientStream(final UUID streamId, final LogicalId<M> logicalId) {
@@ -51,6 +52,7 @@ final class AggregatedClientStream<M extends BufferWriter> {
   void addClient(final ClientStreamImpl<M> clientStream) {
     clientStreams.put(clientStream.streamId().localId(), clientStream);
     metrics.observeAggregatedClientCount(clientStreams.size());
+    isReady |= clientStream.isBlocked();
   }
 
   UUID getStreamId() {
@@ -192,5 +194,11 @@ final class AggregatedClientStream<M extends BufferWriter> {
         + ", nextLocalId="
         + nextLocalId
         + '}';
+  }
+
+  public boolean isBlocked() {
+    return clientStreams.values().stream()
+        .map(ClientStreamImpl::isBlocked)
+        .reduce(true, (a, b) -> a && b);
   }
 }

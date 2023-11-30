@@ -63,4 +63,20 @@
     <field name="code" id="1" type="errorCode" description="The specific error code" />
     <data name="message" id="2" type="varDataEncoding" />
   </sbe:message>
+
+  <sbe:message name="BlockStreamRequest" id="407" description="Blocks a stream such that nothing is pushed onto it">
+    <field name="id" id="1" type="UUID" description="The unique ID of the stream to block" />
+  </sbe:message>
+
+  <sbe:message name="BlockStreamResponse" id="408" description="Returned whenever a stream is successfully blocked">
+
+  </sbe:message>
+
+  <sbe:message name="UnblockStreamRequest" id="409" description="Unblocks a stream so payloads can be pushed onto it">
+    <field name="id" id="1" type="UUID" description="The unique ID of the stream to unblock" />
+  </sbe:message>
+
+  <sbe:message name="UnblockStreamResponse" id="410" description="Returned whenever a stream is successfully unblocked">
+
+  </sbe:message>
 </sbe:messageSchema>

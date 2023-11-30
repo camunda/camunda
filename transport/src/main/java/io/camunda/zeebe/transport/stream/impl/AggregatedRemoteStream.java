@@ -11,6 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamInfo;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
@@ -46,14 +47,67 @@ record AggregatedRemoteStream<M>(LogicalId<M> logicalId, List<StreamConsumer<M>>
     return logicalId.metadata();
   }
 
-  /**
-   * A stream consumer uniquely identified by the id, with its properties and streamType.
-   *
-   * @param id unique id
-   * @param logicalId logical id
-   * @param <M> type of the properties
-   */
-  record StreamConsumer<M>(StreamId id, LogicalId<M> logicalId) {}
+  @Override
+  public boolean isBlocked() {
+    return streamConsumers.stream().map(StreamConsumer::isBlocked).reduce(true, (a, b) -> a && b);
+  }
+
+  /** A stream consumer uniquely identified by the id, with its properties and streamType. */
+  static final class StreamConsumer<T> {
+    private final StreamId id;
+    private final LogicalId<T> logicalId;
+
+    private volatile boolean blocked;
+
+    StreamConsumer(final StreamId id, final LogicalId<T> logicalId) {
+      this.id = id;
+      this.logicalId = logicalId;
+    }
+
+    public StreamId id() {
+      return id;
+    }
+
+    public LogicalId<T> logicalId() {
+      return logicalId;
+    }
+
+    public void block() {
+      blocked = true;
+    }
+
+    public void unblock() {
+      blocked = false;
+    }
+
+    public boolean isBlocked() {
+      return blocked;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(id, logicalId);
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if (obj == this) {
+        return true;
+      }
+
+      if (obj == null || obj.getClass() != getClass()) {
+        return false;
+      }
+
+      final var that = (StreamConsumer<T>) obj;
+      return Objects.equals(id, that.id) && Objects.equals(logicalId, that.logicalId);
+    }
+
+    @Override
+    public String toString() {
+      return "StreamConsumer[" + "id=" + id + ", " + "logicalId=" + logicalId + ']';
+    }
+  }
 
   /**
    * Uniquely identifies a stream

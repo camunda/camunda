@@ -10,12 +10,16 @@ package io.camunda.zeebe.transport.stream.impl;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.transport.stream.impl.messages.AddStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.AddStreamResponse;
+import io.camunda.zeebe.transport.stream.impl.messages.BlockStreamRequest;
+import io.camunda.zeebe.transport.stream.impl.messages.BlockStreamResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.UUIDEncoder;
+import io.camunda.zeebe.transport.stream.impl.messages.UnblockStreamRequest;
+import io.camunda.zeebe.transport.stream.impl.messages.UnblockStreamResponse;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.util.UUID;
 import java.util.function.Function;
@@ -40,8 +44,10 @@ public final class RemoteStreamApiHandler<M> implements CloseableSilently {
       new UUID(UUIDEncoder.highNullValue(), UUIDEncoder.lowNullValue());
 
   private final AddStreamResponse addResponseOK = new AddStreamResponse();
+  private final BlockStreamResponse blockStreamResponseOK = new BlockStreamResponse();
   private final ErrorResponse errorResponse = new ErrorResponse();
   private final RemoveStreamResponse removeResponseOK = new RemoveStreamResponse();
+  private final UnblockStreamResponse unblockStreamResponseOK = new UnblockStreamResponse();
 
   private final RemoteStreamRegistry<M> registry;
   private final Function<DirectBuffer, M> metadataFactory;
@@ -102,6 +108,28 @@ public final class RemoteStreamApiHandler<M> implements CloseableSilently {
   public void removeAll(final MemberId sender) {
     registry.removeAll(sender);
     LOG.debug("Removed all streams from {}", sender);
+  }
+
+  public StreamResponse block(final MemberId sender, final BlockStreamRequest request) {
+    if (request.streamId() == null || request.streamId().equals(NULL_ID)) {
+      final String errorMessage =
+          "Expected a stream ID, but received a nil UUID ([%s])".formatted(request.streamId());
+      return failedResponse(sender, errorMessage);
+    }
+
+    registry.block(sender, request.streamId());
+    return blockStreamResponseOK;
+  }
+
+  public StreamResponse unblock(final MemberId sender, final UnblockStreamRequest request) {
+    if (request.streamId() == null || request.streamId().equals(NULL_ID)) {
+      final String errorMessage =
+          "Expected a stream ID, but received a nil UUID ([%s])".formatted(request.streamId());
+      return failedResponse(sender, errorMessage);
+    }
+
+    registry.unblock(sender, request.streamId());
+    return unblockStreamResponseOK;
   }
 
   private ErrorResponse failedResponse(

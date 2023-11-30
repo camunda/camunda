@@ -42,7 +42,8 @@ class RemoteStreamImplTest {
       new RemoteStreamPusher<>(transport, executor, RemoteStreamMetrics.noop());
   private RemoteStreamErrorHandler<TestSerializableData> errorHandler = (e, d) -> {};
   private final RemoteStreamImpl<TestSerializableData, TestSerializableData> remoteStream =
-      new RemoteStreamImpl<>(aggregatedStream, pusher, (e, d) -> errorHandler.handleError(e, d));
+      new RemoteStreamImpl<>(aggregatedStream.logicalId(), aggregatedStream.streamConsumers(),
+          pusher, (e, d) -> errorHandler.handleError(e, d));
 
   @BeforeEach
   void setup() {

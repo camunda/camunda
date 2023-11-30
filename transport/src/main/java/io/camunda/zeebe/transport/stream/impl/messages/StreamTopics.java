@@ -11,6 +11,8 @@ public enum StreamTopics {
   ADD("stream-add"),
   PUSH("stream-push"),
   REMOVE("stream-remove"),
+  BLOCK("stream-block"),
+  UNBLOCK("stream-unblock"),
   REMOVE_ALL("stream-remove-all"),
   RESTART_STREAMS("stream-recreate");
 

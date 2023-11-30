@@ -47,4 +47,8 @@ public interface ClientStreamer<M extends BufferWriter> extends CloseableSilentl
    * @return a future which will be completed after the stream is removed
    */
   ActorFuture<Void> remove(final ClientStreamId streamId);
+
+  default void block(final ClientStreamId streamId) {}
+
+  default void unblock(final ClientStreamId streamId) {}
 }

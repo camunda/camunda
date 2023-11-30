@@ -79,6 +79,37 @@ final class ClientStreamManager<M extends BufferWriter> {
         });
   }
 
+  void block(final ClientStreamId streamId) {
+    LOG.debug("Blocking client stream [{}]", streamId);
+    registry
+        .getClient(streamId)
+        .ifPresent(
+            stream -> {
+              stream.block();
+
+              if (stream.serverStream().isBlocked()) {
+                LOG.debug("Blocking aggregated stream [{}]", stream.serverStream().getStreamId());
+                requestManager.block(stream.serverStream(), servers);
+              }
+            });
+  }
+
+  void unblock(final ClientStreamId streamId) {
+    LOG.debug("Unblocking client stream [{}]", streamId);
+    registry
+        .getClient(streamId)
+        .ifPresent(
+            stream -> {
+              final var unblocksAggregated = stream.serverStream().isBlocked();
+              stream.unblock();
+
+              if (unblocksAggregated) {
+                LOG.debug("Unblocking aggregated stream [{}]", stream.serverStream().getStreamId());
+                requestManager.unblock(stream.serverStream(), servers);
+              }
+            });
+  }
+
   void close() {
     registry.clear();
     requestManager.removeAll(servers);

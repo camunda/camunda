@@ -89,6 +89,16 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
   }
 
   @Override
+  public void block(final ClientStreamId streamId) {
+    actor.run(() -> clientStreamManager.block(streamId));
+  }
+
+  @Override
+  public void unblock(final ClientStreamId streamId) {
+    actor.run(() -> clientStreamManager.unblock(streamId));
+  }
+
+  @Override
   public ActorFuture<Void> start(final ActorSchedulingService schedulingService) {
     return schedulingService.submitActor(this);
   }

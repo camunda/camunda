@@ -67,7 +67,7 @@ final class ClientStreamRegistration<M extends BufferWriter> {
   }
 
   void transitionToAdded() {
-    if (transition(State.ADDED, EnumSet.of(State.ADDING))) {
+    if (transition(State.ADDED, EnumSet.of(State.ADDING, State.BLOCKING, State.UNBLOCKING))) {
       stream.add(serverId);
     }
   }
@@ -85,6 +85,18 @@ final class ClientStreamRegistration<M extends BufferWriter> {
   void transitionToClosed() {
     transition(State.CLOSED, EnumSet.allOf(State.class));
     stream.remove(serverId);
+  }
+
+  boolean transitionToBlocking() {
+    return transition(State.BLOCKING, EnumSet.of(State.ADDED));
+  }
+
+  void transitionToBlocked() {
+    transition(State.BLOCKED, EnumSet.of(State.BLOCKING));
+  }
+
+  boolean transitionToUnblocking() {
+    return transition(State.UNBLOCKING, EnumSet.of(State.BLOCKED));
   }
 
   private boolean transition(final State target, final Set<State> allowed) {
@@ -113,9 +125,11 @@ final class ClientStreamRegistration<M extends BufferWriter> {
    * <ul>
    *   <li>INITIAL -> [ADDING, REMOVED]
    *   <li>ADDING -> [ADDED, REMOVING]
-   *   <li>ADDED -> [REMOVING]
+   *   <li>ADDED -> [BLOCKING, REMOVING]
    *   <li>REMOVING -> [REMOVED]
    *   <li>REMOVED -> []
+   *   <li>BLOCKING -> [BLOCKED, ADDED, REMOVING]
+   *   <li>UNBLOCKING -> [ADDED, REMOVING]
    * </ul>
    */
   enum State {
@@ -124,6 +138,9 @@ final class ClientStreamRegistration<M extends BufferWriter> {
     ADDED,
     REMOVING,
     REMOVED,
-    CLOSED
+    CLOSED,
+    BLOCKING,
+    BLOCKED,
+    UNBLOCKING,
   }
 }

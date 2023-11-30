@@ -19,4 +19,6 @@ public interface ClientStream<M> {
   M metadata();
 
   Set<MemberId> liveConnections();
+
+  boolean isBlocked();
 }

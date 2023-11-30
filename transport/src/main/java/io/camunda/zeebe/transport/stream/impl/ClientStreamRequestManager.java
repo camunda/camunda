@@ -9,6 +9,7 @@ package io.camunda.zeebe.transport.stream.impl;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.atomix.cluster.messaging.MessagingException.ProtocolException;
 import io.atomix.cluster.messaging.MessagingException.RemoteHandlerFailure;
@@ -16,11 +17,15 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.transport.stream.impl.ClientStreamRegistration.State;
 import io.camunda.zeebe.transport.stream.impl.messages.AddStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.AddStreamResponse;
+import io.camunda.zeebe.transport.stream.impl.messages.BlockStreamRequest;
+import io.camunda.zeebe.transport.stream.impl.messages.BlockStreamResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamResponseDecoder;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
+import io.camunda.zeebe.transport.stream.impl.messages.UnblockStreamRequest;
+import io.camunda.zeebe.transport.stream.impl.messages.UnblockStreamResponse;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -169,6 +174,70 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
         });
   }
 
+  /**
+   * Blocks the given stream, notifying brokers to stop pushing payloads onto it.
+   *
+   * <p>This operation is idempotent: if the stream is already blocked on a server, then nothing
+   * will happen.
+   *
+   * @param stream the stream to block
+   * @param serverIds the list of servers on which to block the stream
+   * @throws IllegalStateException if the stream was not added, was already removed, is currently
+   *     being removed, or has been closed, on any of the servers
+   */
+  void block(final AggregatedClientStream<M> stream, final Collection<MemberId> serverIds) {
+    for (final var serverId : serverIds) {
+      block(stream, serverId);
+    }
+  }
+
+  /**
+   * Blocks the given stream, notifying brokers to stop pushing payloads onto it.
+   *
+   * <p>This operation is idempotent: if the stream is already blocked on a server, then nothing
+   * will happen.
+   *
+   * @param stream the stream to block
+   * @param serverId the server on which to block the stream
+   * @throws IllegalStateException if the stream was not added, was already removed, is currently
+   *     being removed, or has been closed, on any of the servers
+   */
+  void block(final AggregatedClientStream<M> stream, final MemberId serverId) {
+    final var registration = registrationFor(stream, serverId);
+    block(registration);
+  }
+
+  /**
+   * Unblocks the given stream to all the given servers. See {@link #unblock(AggregatedClientStream,
+   * MemberId)} for the individual operation.
+   *
+   * @param stream the stream to unblock
+   * @param serverIds the list of servers on which to unblock the stream
+   * @throws IllegalStateException if the stream was not blocked, was not added, was already
+   *     removed, is currently being removed, or has been closed, on any of the servers
+   */
+  void unblock(final AggregatedClientStream<M> stream, final Collection<MemberId> serverIds) {
+    for (final var serverId : serverIds) {
+      unblock(stream, serverId);
+    }
+  }
+
+  /**
+   * Unblocks the given stream, notifying brokers to start pushing payloads onto it.
+   *
+   * <p>This operation is idempotent: if the stream is already unblocked on a server, then nothing
+   * will happen.
+   *
+   * @param stream the stream to block
+   * @param serverId the server on which to block the stream
+   * @throws IllegalStateException if the stream was not added, stream was already removed, is
+   *     currently being removed, or has been closed, on any of the servers
+   */
+  void unblock(final AggregatedClientStream<M> stream, final MemberId serverId) {
+    final var registration = registrationFor(stream, serverId);
+    unblock(registration);
+  }
+
   private void add(final ClientStreamRegistration<M> registration) {
     if (registration.state() == State.ADDING || !registration.transitionToAdding()) {
       return;
@@ -216,6 +285,40 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
     // current request is finished before sending the next request, regardless of the result
     pendingRequest.whenCompleteAsync(
         (ok, error) -> sendRemoveRequest(registration, payload), executor::run);
+  }
+
+  private void block(final ClientStreamRegistration<M> registration) {
+    if (registration.state() == State.BLOCKING || !registration.transitionToBlocking()) {
+      return;
+    }
+
+    final var request = new BlockStreamRequest().streamId(registration.streamId());
+    final var pendingRequest = registration.pendingRequest();
+    final var payload = BufferUtil.bufferAsArray(request);
+    if (pendingRequest == null) {
+      sendBlockRequest(registration, payload);
+      return;
+    }
+
+    pendingRequest.whenCompleteAsync(
+        (ok, error) -> sendBlockRequest(registration, payload), executor::run);
+  }
+
+  private void unblock(final ClientStreamRegistration<M> registration) {
+    if (registration.state() == State.UNBLOCKING || !registration.transitionToUnblocking()) {
+      return;
+    }
+
+    final var request = new UnblockStreamRequest().streamId(registration.streamId());
+    final var pendingRequest = registration.pendingRequest();
+    final var payload = BufferUtil.bufferAsArray(request);
+    if (pendingRequest == null) {
+      sendUnblockRequest(registration, payload);
+      return;
+    }
+
+    pendingRequest.whenCompleteAsync(
+        (ok, error) -> sendUnblockRequest(registration, payload), executor::run);
   }
 
   /**
@@ -362,6 +465,142 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
       default -> {
         LOGGER.debug(
             "Failed to remove remote stream {} on {}, will retry in {}",
+            registration.streamId(),
+            registration.serverId(),
+            RETRY_DELAY,
+            failure);
+        executor.schedule(RETRY_DELAY, () -> sendRemoveRequest(registration, request));
+      }
+    }
+  }
+
+  private void sendBlockRequest(
+      final ClientStreamRegistration<M> registration, final byte[] request) {
+    if (registration.state() != State.BLOCKING) {
+      return;
+    }
+
+    final var pendingRequest =
+        communicationService.send(
+            StreamTopics.BLOCK.topic(),
+            request,
+            Function.identity(),
+            Function.identity(),
+            registration.serverId(),
+            REQUEST_TIMEOUT);
+    registration.setPendingRequest(pendingRequest);
+    pendingRequest.whenCompleteAsync(
+        (response, error) -> handleBlockResponse(registration, request, response, error),
+        executor::run);
+  }
+
+  private void handleBlockResponse(
+      final ClientStreamRegistration<M> registration,
+      final byte[] request,
+      final byte[] responseBuffer,
+      final Throwable error) {
+    final var state = registration.state();
+    if (state != State.BLOCKING) {
+      LOGGER.trace("Skip handling BLOCK response since the state is {}", state, error);
+      return;
+    }
+
+    final Throwable failure;
+    final Either<ErrorResponse, BlockStreamResponse> response;
+    if (error == null) {
+      response = responseDecoder.decode(responseBuffer, new BlockStreamResponse());
+      if (response.isRight()) {
+        registration.transitionToBlocked();
+        return;
+      }
+
+      failure = response.getLeft().asException();
+    } else {
+      failure = error;
+    }
+
+    switch (failure) {
+        // all returned errors are currently unnecessary to retry
+      case final UnrecoverableException e -> {
+        handleUnrecoverableExceptionOnRemove(registration, e);
+        registration.transitionToAdded();
+      }
+        // no point retrying if the remote handler failed to handle our request
+      case final MessagingException e -> {
+        handleUnrecoverableExceptionOnRemove(registration, e);
+        registration.transitionToAdded();
+      }
+      default -> {
+        LOGGER.debug(
+            "Failed to block remote stream {} on {}, will retry in {}",
+            registration.streamId(),
+            registration.serverId(),
+            RETRY_DELAY,
+            failure);
+        executor.schedule(RETRY_DELAY, () -> sendRemoveRequest(registration, request));
+      }
+    }
+  }
+
+  private void sendUnblockRequest(
+      final ClientStreamRegistration<M> registration, final byte[] request) {
+    if (registration.state() != State.UNBLOCKING) {
+      return;
+    }
+
+    final var pendingRequest =
+        communicationService.send(
+            StreamTopics.UNBLOCK.topic(),
+            request,
+            Function.identity(),
+            Function.identity(),
+            registration.serverId(),
+            REQUEST_TIMEOUT);
+    registration.setPendingRequest(pendingRequest);
+    pendingRequest.whenCompleteAsync(
+        (response, error) -> handleUnblockResponse(registration, request, response, error),
+        executor::run);
+  }
+
+  private void handleUnblockResponse(
+      final ClientStreamRegistration<M> registration,
+      final byte[] request,
+      final byte[] responseBuffer,
+      final Throwable error) {
+    final var state = registration.state();
+    if (state != State.UNBLOCKING) {
+      LOGGER.trace("Skip handling UNBLOCK response since the state is {}", state, error);
+      return;
+    }
+
+    final Throwable failure;
+    final Either<ErrorResponse, UnblockStreamResponse> response;
+    if (error == null) {
+      response = responseDecoder.decode(responseBuffer, new UnblockStreamResponse());
+      if (response.isRight()) {
+        registration.transitionToAdded();
+        return;
+      }
+
+      failure = response.getLeft().asException();
+    } else {
+      failure = error;
+    }
+
+    switch (failure) {
+        // all returned errors are currently unnecessary to retry
+      case final UnrecoverableException e -> {
+        handleUnrecoverableExceptionOnRemove(registration, e);
+        registration.transitionToBlocked();
+      }
+        // no point retrying if the remote handler failed to handle our request
+      case final MessagingException e -> {
+        handleUnrecoverableExceptionOnRemove(registration, e);
+        registration.transitionToBlocked();
+      }
+      default -> {
+        LOGGER.debug(
+            "Failed to unblock remote stream {} on {}, will retry in {}",
             registration.streamId(),
             registration.serverId(),
             RETRY_DELAY,

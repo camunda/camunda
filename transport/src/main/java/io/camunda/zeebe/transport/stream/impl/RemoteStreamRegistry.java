@@ -33,7 +33,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  *
  * @param <M> the type of the properties of the stream.
  */
-public class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M> {
+public final class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M> {
   private final RemoteStreamMetrics metrics;
 
   // Needs to be thread-safe for readers
@@ -125,6 +125,32 @@ public class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M> {
         idToConsumer.keySet().stream().filter(id -> id.receiver().equals(receiver)).toList();
 
     streamOfReceiver.forEach(stream -> remove(stream.streamId(), stream.receiver()));
+  }
+
+  public void block(final MemberId receiver, final UUID streamId) {
+    final var uniqueId = new StreamId(streamId, receiver);
+    idToConsumer.compute(
+        uniqueId,
+        (ignored, consumer) -> {
+          if (consumer != null) {
+            consumer.block();
+          }
+
+          return consumer;
+        });
+  }
+
+  public void unblock(final MemberId receiver, final UUID streamId) {
+    final var uniqueId = new StreamId(streamId, receiver);
+    idToConsumer.compute(
+        uniqueId,
+        (ignored, consumer) -> {
+          if (consumer != null) {
+            consumer.unblock();
+          }
+
+          return consumer;
+        });
   }
 
   @Override

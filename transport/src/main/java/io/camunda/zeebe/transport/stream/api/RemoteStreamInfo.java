@@ -24,6 +24,8 @@ public interface RemoteStreamInfo<M> {
   /** The stream's metadata, used for aggregation and by consumers of the API */
   M metadata();
 
+  boolean isBlocked();
+
   /** A logical representation of a globally unique stream ID */
   interface RemoteStreamId {
 

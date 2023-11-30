@@ -13,17 +13,33 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStream;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.Objects;
 import java.util.Set;
 import org.agrona.DirectBuffer;
 
 /** Represents a registered client stream. * */
-record ClientStreamImpl<M extends BufferWriter>(
-    ClientStreamIdImpl streamId,
-    AggregatedClientStream<M> serverStream,
-    DirectBuffer streamType,
-    M metadata,
-    ClientStreamConsumer clientStreamConsumer)
-    implements ClientStream<M> {
+final class ClientStreamImpl<M extends BufferWriter> implements ClientStream<M> {
+  private final ClientStreamIdImpl streamId;
+  private final AggregatedClientStream<M> serverStream;
+  private final DirectBuffer streamType;
+  private final M metadata;
+  private final ClientStreamConsumer clientStreamConsumer;
+
+  private boolean blocked;
+
+  /** */
+  ClientStreamImpl(
+      final ClientStreamIdImpl streamId,
+      final AggregatedClientStream<M> serverStream,
+      final DirectBuffer streamType,
+      final M metadata,
+      final ClientStreamConsumer clientStreamConsumer) {
+    this.streamId = streamId;
+    this.serverStream = serverStream;
+    this.streamType = streamType;
+    this.metadata = metadata;
+    this.clientStreamConsumer = clientStreamConsumer;
+  }
 
   ActorFuture<Void> push(final DirectBuffer payload) {
     try {
@@ -33,8 +49,87 @@ record ClientStreamImpl<M extends BufferWriter>(
     }
   }
 
+  public void block() {
+    blocked = true;
+  }
+
+  public void unblock() {
+    blocked = false;
+  }
+
+  @Override
+  public ClientStreamIdImpl streamId() {
+    return streamId;
+  }
+
+  @Override
+  public DirectBuffer streamType() {
+    return streamType;
+  }
+
+  @Override
+  public M metadata() {
+    return metadata;
+  }
+
   @Override
   public Set<MemberId> liveConnections() {
     return serverStream().liveConnections();
+  }
+
+  @Override
+  public boolean isBlocked() {
+    return blocked;
+  }
+
+  public AggregatedClientStream<M> serverStream() {
+    return serverStream;
+  }
+
+  public ClientStreamConsumer clientStreamConsumer() {
+    return clientStreamConsumer;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(streamId, serverStream, streamType, metadata, clientStreamConsumer);
+  }
+
+  @Override
+  public boolean equals(final Object obj) {
+    if (obj == this) {
+      return true;
+    }
+
+    if (obj == null || obj.getClass() != getClass()) {
+      return false;
+    }
+
+    final var that = (ClientStreamImpl<M>) obj;
+    return Objects.equals(streamId, that.streamId)
+        && Objects.equals(serverStream, that.serverStream)
+        && Objects.equals(streamType, that.streamType)
+        && Objects.equals(metadata, that.metadata)
+        && Objects.equals(clientStreamConsumer, that.clientStreamConsumer);
+  }
+
+  @Override
+  public String toString() {
+    return "ClientStreamImpl["
+        + "streamId="
+        + streamId
+        + ", "
+        + "serverStream="
+        + serverStream
+        + ", "
+        + "streamType="
+        + streamType
+        + ", "
+        + "metadata="
+        + metadata
+        + ", "
+        + "clientStreamConsumer="
+        + clientStreamConsumer
+        + ']';
   }
 }

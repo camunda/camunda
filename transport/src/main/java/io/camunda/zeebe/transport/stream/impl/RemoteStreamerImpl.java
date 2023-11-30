@@ -14,6 +14,7 @@ import io.camunda.zeebe.transport.stream.api.RemoteStream;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamErrorHandler;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamer;
+import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamConsumer;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -71,18 +72,22 @@ public final class RemoteStreamerImpl<M, P extends BufferWriter> extends Actor
       return Optional.empty();
     }
 
-    return pickStream(consumers)
-        .map(target -> new RemoteStreamImpl<>(target, remoteStreamPusher, errorHandler));
+    return pickStream(consumers);
   }
 
-  private Optional<AggregatedRemoteStream<M>> pickStream(
-      final Set<AggregatedRemoteStream<M>> consumers) {
-    final var targets = new ArrayList<>(consumers);
+  private Optional<RemoteStream<M, P>> pickStream(final Set<AggregatedRemoteStream<M>> streams) {
+    final var targets = new ArrayList<>(streams);
     Collections.shuffle(targets);
 
     for (final var target : targets) {
-      if (!target.streamConsumers().isEmpty()) {
-        return Optional.of(target);
+      final var consumers =
+          target.streamConsumers().stream()
+              .filter(Predicate.not(StreamConsumer::isBlocked))
+              .toList();
+      if (!consumers.isEmpty()) {
+        final var stream =
+            new RemoteStreamImpl<>(target.logicalId(), consumers, remoteStreamPusher, errorHandler);
+        return Optional.of(stream);
       }
     }
 

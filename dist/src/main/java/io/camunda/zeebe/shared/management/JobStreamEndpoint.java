@@ -106,7 +106,10 @@ public final class JobStreamEndpoint {
             .map(id -> new RemoteStreamId(id.streamId(), id.receiver().id()))
             .toList();
     return new RemoteJobStream(
-        BufferUtil.bufferAsString(stream.streamType()), transform(stream.metadata()), consumers);
+        BufferUtil.bufferAsString(stream.streamType()),
+        transform(stream.metadata()),
+        consumers,
+        stream.isBlocked());
   }
 
   private ClientJobStream transformClient(final ClientStream<JobActivationProperties> stream) {
@@ -119,7 +122,8 @@ public final class JobStreamEndpoint {
         BufferUtil.bufferAsString(stream.streamType()),
         stream.streamId(),
         transform(stream.metadata()),
-        brokers);
+        brokers,
+        stream.isBlocked());
   }
 
   private Metadata transform(final JobActivationProperties properties) {
@@ -135,7 +139,7 @@ public final class JobStreamEndpoint {
 
   /** View model of a single remote job stream for JSON serialization */
   public record RemoteJobStream(
-      String jobType, Metadata metadata, Collection<RemoteStreamId> consumers)
+      String jobType, Metadata metadata, Collection<RemoteStreamId> consumers, boolean isBlocked)
       implements JobStream {}
 
   /**
@@ -143,7 +147,11 @@ public final class JobStreamEndpoint {
    * is the set of broker IDs this stream is registered on, from the gateway's point of view.
    */
   public record ClientJobStream(
-      String jobType, Object id, Metadata metadata, Collection<Integer> connectedTo)
+      String jobType,
+      Object id,
+      Metadata metadata,
+      Collection<Integer> connectedTo,
+      boolean isBlocked)
       implements JobStream {}
 
   /** View model for the {@link JobActivationProperties} of a job stream. */

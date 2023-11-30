@@ -15,6 +15,7 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,22 +23,25 @@ import org.slf4j.LoggerFactory;
 public final class RemoteStreamImpl<M, P extends BufferWriter> implements RemoteStream<M, P> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RemoteStreamImpl.class);
-  private final AggregatedRemoteStream<M> stream;
+  private final LogicalId<M> logicalId;
+  private final List<StreamConsumer<M>> streamConsumers;
   private final RemoteStreamPusher<P> streamer;
   private final RemoteStreamErrorHandler<P> errorHandler;
 
-  public RemoteStreamImpl(
-      final AggregatedRemoteStream<M> stream,
+  RemoteStreamImpl(
+      final LogicalId<M> logicalId,
+      final List<StreamConsumer<M>> streamConsumers,
       final RemoteStreamPusher<P> streamer,
       final RemoteStreamErrorHandler<P> errorHandler) {
-    this.stream = stream;
+    this.logicalId = logicalId;
+    this.streamConsumers = streamConsumers;
     this.streamer = streamer;
     this.errorHandler = errorHandler;
   }
 
   @Override
   public M metadata() {
-    return stream.logicalId().metadata();
+    return logicalId.metadata();
   }
 
   @Override
@@ -47,7 +51,7 @@ public final class RemoteStreamImpl<M, P extends BufferWriter> implements Remote
       errorHandler.handleError(
           new StreamExhaustedException(
               "Failed to push to stream %s, all consumers were removed since it was picked"
-                  .formatted(stream.logicalId())),
+                  .formatted(logicalId)),
           payload);
       return;
     }
@@ -57,7 +61,7 @@ public final class RemoteStreamImpl<M, P extends BufferWriter> implements Remote
   }
 
   private StreamConsumer<M> pickInitialConsumer() {
-    final var consumers = stream.streamConsumers();
+    final var consumers = streamConsumers;
     var size = consumers.size();
 
     // since we can get concurrent modifications of the stream consumers list, we have to handle the
@@ -90,7 +94,7 @@ public final class RemoteStreamImpl<M, P extends BufferWriter> implements Remote
     /** Called the first time a push is retried */
     @Override
     public void handleError(final Throwable error, final P data) {
-      final var consumers = new ArrayList<>(stream.streamConsumers());
+      final var consumers = new ArrayList<>(streamConsumers);
       if (consumers.isEmpty()) {
         onConsumersExhausted(error, data);
         return;
@@ -110,7 +114,13 @@ public final class RemoteStreamImpl<M, P extends BufferWriter> implements Remote
         return;
       }
 
-      final var client = iterator.next();
+      final StreamConsumer<M> client = iterator.next();
+      if (client.isBlocked()) {
+        LOGGER.trace("Skipping blocked stream consumer {}", client);
+        retry(throwable, payload, iterator);
+        return;
+      }
+
       LOGGER.debug(
           "Failed to push payload (size = {}), retrying with next stream", payload.getLength());
       streamer.pushAsync(payload, (error, data) -> retry(error, data, iterator), client.id());
