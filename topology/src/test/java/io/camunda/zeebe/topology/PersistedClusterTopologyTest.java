@@ -19,6 +19,7 @@ import io.camunda.zeebe.topology.state.TopologyChangeOperation;
 import io.camunda.zeebe.util.ReflectUtil;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
 import net.jqwik.api.Combinators;
@@ -28,6 +29,8 @@ import net.jqwik.api.Provide;
 import net.jqwik.api.domains.Domain;
 import net.jqwik.api.domains.DomainContext;
 import net.jqwik.api.domains.DomainContextBase;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 final class PersistedClusterTopologyTest {
 
@@ -51,6 +54,71 @@ final class PersistedClusterTopologyTest {
     assertEquals(updatedTopology, persistedClusterTopology.getTopology());
     assertEquals(
         updatedTopology, PersistedClusterTopology.ofFile(topologyFile, serializer).getTopology());
+  }
+
+  @Test
+  void shouldDetectFileWithMoreDataThanExpected() throws IOException {
+    // given
+    final var tmp = Files.createTempDirectory("topology");
+    final var topologyFile = tmp.resolve("topology.meta");
+    final var serializer = new ProtoBufSerializer();
+    final var persistedClusterTopology = PersistedClusterTopology.ofFile(topologyFile, serializer);
+    persistedClusterTopology.update(ClusterTopology.init());
+
+    // when
+    Files.write(topologyFile, "more data than expected".getBytes(), StandardOpenOption.APPEND);
+
+    // then
+    Assertions.assertThatCode(() -> PersistedClusterTopology.ofFile(topologyFile, serializer))
+        .hasMessageContaining("checksum");
+  }
+
+  @Test
+  void shouldDetectFileWithBrokenHeader() throws IOException {
+    // given
+    final var tmp = Files.createTempDirectory("topology");
+    final var topologyFile = tmp.resolve("topology.meta");
+    final var serializer = new ProtoBufSerializer();
+    final var persistedClusterTopology = PersistedClusterTopology.ofFile(topologyFile, serializer);
+    persistedClusterTopology.update(ClusterTopology.init());
+
+    // when
+    Files.write(topologyFile, "broken header".getBytes(), StandardOpenOption.WRITE);
+
+    // then
+    Assertions.assertThatCode(() -> PersistedClusterTopology.ofFile(topologyFile, serializer))
+        .hasMessageContaining("version");
+  }
+
+  @Test
+  void shouldFailOnEmptyFile() throws IOException {
+    // given
+    final var tmp = Files.createTempDirectory("topology");
+    final var topologyFile = tmp.resolve("topology.meta");
+    final var serializer = new ProtoBufSerializer();
+
+    // when
+    Files.createFile(topologyFile);
+
+    // then
+    Assertions.assertThatCode(() -> PersistedClusterTopology.ofFile(topologyFile, serializer))
+        .hasMessageContaining("too small");
+  }
+
+  @Test
+  void shouldFailOnMissingHeader() throws IOException {
+    // given
+    final var tmp = Files.createTempDirectory("topology");
+    final var topologyFile = tmp.resolve("topology.meta");
+    final var serializer = new ProtoBufSerializer();
+
+    // when
+    Files.write(
+        topologyFile, new byte[] {1, 2}, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+
+    // then
+    Assertions.assertThatCode(() -> PersistedClusterTopology.ofFile(topologyFile, serializer))
+        .hasMessageContaining("header");
   }
 
   /**
