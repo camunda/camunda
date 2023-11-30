@@ -83,4 +83,51 @@ public class CompensationEventExecutionTest {
                 ProcessInstanceIntent.ELEMENT_COMPLETED,
                 BpmnEventType.UNSPECIFIED));
   }
+
+  @Test
+  public void shouldExecuteAProcessWithCompensationEndEvent() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .userTask()
+            .endEvent(
+                "compensation-event",
+                e -> e.compensateEventDefinition().compensateEventDefinitionDone())
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType(Protocol.USER_TASK_JOB_TYPE).complete();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(
+            r -> r.getValue().getBpmnElementType(),
+            Record::getIntent,
+            r -> r.getValue().getBpmnEventType())
+        .containsSubsequence(
+            tuple(
+                BpmnElementType.USER_TASK,
+                ProcessInstanceIntent.ELEMENT_COMPLETED,
+                BpmnEventType.UNSPECIFIED),
+            tuple(
+                BpmnElementType.END_EVENT,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                BpmnEventType.COMPENSATION),
+            tuple(
+                BpmnElementType.END_EVENT,
+                ProcessInstanceIntent.ELEMENT_COMPLETED,
+                BpmnEventType.COMPENSATION),
+            tuple(
+                BpmnElementType.PROCESS,
+                ProcessInstanceIntent.ELEMENT_COMPLETED,
+                BpmnEventType.UNSPECIFIED));
+  }
 }

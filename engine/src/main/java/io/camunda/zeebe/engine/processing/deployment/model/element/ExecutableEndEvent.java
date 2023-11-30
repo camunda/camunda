@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
+import io.camunda.zeebe.protocol.record.value.BpmnEventType;
+
 public class ExecutableEndEvent extends ExecutableFlowNode implements ExecutableJobWorkerElement {
 
   private JobWorkerProperties jobWorkerProperties;
@@ -60,7 +62,8 @@ public class ExecutableEndEvent extends ExecutableFlowNode implements Executable
         && !isMessageEndEvent()
         && !isTerminateEndEvent
         && !isEscalationEndEvent()
-        && !isSignalEndEvent();
+        && !isSignalEndEvent()
+        && !isCompensationEvent();
   }
 
   public boolean isErrorEndEvent() {
@@ -85,5 +88,9 @@ public class ExecutableEndEvent extends ExecutableFlowNode implements Executable
 
   public void setTerminateEndEvent(final boolean isTerminateEndEvent) {
     this.isTerminateEndEvent = isTerminateEndEvent;
+  }
+
+  public boolean isCompensationEvent() {
+    return getEventType() == BpmnEventType.COMPENSATION;
   }
 }
