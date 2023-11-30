@@ -37,7 +37,7 @@ jobs:
 
       # Setup: configure Java, Maven, settings.xml
       - name: Setup Java ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: "adopt"
           java-version: ${{ env.JAVA_VERSION }}
