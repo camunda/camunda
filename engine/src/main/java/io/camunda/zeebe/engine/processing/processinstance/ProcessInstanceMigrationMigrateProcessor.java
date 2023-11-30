@@ -16,12 +16,15 @@ import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -52,18 +55,22 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
   private final JobState jobState;
+  private final VariableState variableState;
+  private final VariableRecord variableRecord = new VariableRecord();
 
   public ProcessInstanceMigrationMigrateProcessor(
       final Writers writers,
       final ElementInstanceState elementInstanceState,
       final ProcessState processState,
-      final JobState jobState) {
+      final JobState jobState,
+      final VariableState variableState) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     this.elementInstanceState = elementInstanceState;
     this.processState = processState;
     this.jobState = jobState;
+    this.variableState = variableState;
   }
 
   @Override
@@ -179,6 +186,22 @@ public class ProcessInstanceMigrationMigrateProcessor
                 .setElementId(targetElementId));
       }
     }
+
+    variableState
+        .getVariablesLocal(elementInstance.getKey())
+        .forEach(
+            variable ->
+                stateWriter.appendFollowUpEvent(
+                    variable.key(),
+                    VariableIntent.MIGRATED,
+                    variableRecord
+                        .setScopeKey(elementInstance.getKey())
+                        .setName(variable.name())
+                        .setValue(variable.value())
+                        .setProcessInstanceKey(elementInstance.getValue().getProcessInstanceKey())
+                        .setProcessDefinitionKey(processDefinition.getKey())
+                        .setBpmnProcessId(processDefinition.getBpmnProcessId())
+                        .setTenantId(elementInstance.getValue().getTenantId())));
   }
 
   /**
