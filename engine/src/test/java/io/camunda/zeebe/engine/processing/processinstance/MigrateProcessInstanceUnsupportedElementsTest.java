@@ -81,8 +81,8 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
         .contains(
             String.format(
                 """
-                Expected to migrate process instance '%s' but it contains an active \
-                element that is unsupported: %s. The migration of a %s is not supported""",
+                Expected to migrate process instance '%s' but active element with id '%s' \
+                has an unsupported type. The migration of a %s is not supported""",
                 processInstanceKey, "A", "USER_TASK"));
   }
 
@@ -140,8 +140,8 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
         .contains(
             String.format(
                 """
-                Expected to migrate process instance '%s' but it contains an active \
-                element that is unsupported: %s. The migration of a %s is not supported""",
+                Expected to migrate process instance '%s' but active element with id '%s' \
+                has an unsupported type. The migration of a %s is not supported""",
                 processInstanceKey, "sub", "SUB_PROCESS"));
   }
 
@@ -200,8 +200,8 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
         .contains(
             String.format(
                 """
-                Expected to migrate process instance '%s' but it contains an active \
-                element that is unsupported: %s. The migration of a %s is not supported""",
+                Expected to migrate process instance '%s' but active element with id '%s' \
+                has an unsupported type. The migration of a %s is not supported""",
                 processInstanceKey, "A", "INTERMEDIATE_CATCH_EVENT"));
   }
 
@@ -260,8 +260,8 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
         .contains(
             String.format(
                 """
-                Expected to migrate process instance '%s' but it contains an active \
-                element that is unsupported: %s. The migration of a %s is not supported""",
+                Expected to migrate process instance '%s' but active element with id '%s' \
+                has an unsupported type. The migration of a %s is not supported""",
                 processInstanceKey, "A", "RECEIVE_TASK"));
   }
 
@@ -318,8 +318,8 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
         .contains(
             String.format(
                 """
-                Expected to migrate process instance '%s' but it contains an active \
-                element that is unsupported: %s. The migration of a %s is not supported""",
+                Expected to migrate process instance '%s' but active element with id '%s' \
+                has an unsupported type. The migration of a %s is not supported""",
                 processInstanceKey, "A", "CALL_ACTIVITY"));
   }
 
@@ -378,8 +378,8 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
         .contains(
             String.format(
                 """
-                Expected to migrate process instance '%s' but it contains an active \
-                element that is unsupported: %s. The migration of a %s is not supported""",
+                Expected to migrate process instance '%s' but active element with id '%s' \
+                has an unsupported type. The migration of a %s is not supported""",
                 processInstanceKey, "A", "EXCLUSIVE_GATEWAY"));
   }
 
@@ -438,8 +438,8 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
         .contains(
             String.format(
                 """
-                Expected to migrate process instance '%s' but it contains an active \
-                element that is unsupported: %s. The migration of a %s is not supported""",
+                Expected to migrate process instance '%s' but active element with id '%s' \
+                has an unsupported type. The migration of a %s is not supported""",
                 processInstanceKey, "A", "INCLUSIVE_GATEWAY"));
   }
 
@@ -514,8 +514,8 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
         .contains(
             String.format(
                 """
-                Expected to migrate process instance '%s' but it contains an active \
-                element that is unsupported: %s. The migration of a %s is not supported""",
+                Expected to migrate process instance '%s' but active element with id '%s' \
+                has an unsupported type. The migration of a %s is not supported""",
                 processInstanceKey, "A", "EVENT_BASED_GATEWAY"));
   }
 
@@ -586,8 +586,8 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
         .contains(
             String.format(
                 """
-                Expected to migrate process instance '%s' but it contains an active \
-                element that is unsupported: %s. The migration of a %s is not supported""",
+                Expected to migrate process instance '%s' but active element with id '%s' \
+                has an unsupported type. The migration of a %s is not supported""",
                 processInstanceKey, "SUB", "EVENT_SUB_PROCESS"));
   }
 
@@ -648,8 +648,8 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
         .contains(
             String.format(
                 """
-                Expected to migrate process instance '%s' but it contains an active \
-                element that is unsupported: %s. The migration of a %s is not supported""",
+                Expected to migrate process instance '%s' but active element with id '%s' \
+                has an unsupported type. The migration of a %s is not supported""",
                 processInstanceKey, "A", "MULTI_INSTANCE_BODY"));
   }
 
@@ -702,8 +702,8 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
         .contains(
             String.format(
                 """
-                Expected to migrate process instance '%s' but it contains an active \
-                element that is unsupported: %s. The migration of a %s is not supported""",
+                Expected to migrate process instance '%s' but active element with id '%s' \
+                has an unsupported type. The migration of a %s is not supported""",
                 processInstanceKey, "A", "BUSINESS_RULE_TASK"));
   }
 
