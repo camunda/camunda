@@ -41,7 +41,7 @@ final class PersistedClusterTopologyTest {
     final var tmp = Files.createTempDirectory("topology");
     final var topologyFile = tmp.resolve("topology.meta");
     final var serializer = new ProtoBufSerializer();
-    final var persistedClusterTopology = new PersistedClusterTopology(topologyFile, serializer);
+    final var persistedClusterTopology = PersistedClusterTopology.ofFile(topologyFile, serializer);
 
     // when
     persistedClusterTopology.update(initialTopology);
@@ -50,7 +50,7 @@ final class PersistedClusterTopologyTest {
     // then
     assertEquals(updatedTopology, persistedClusterTopology.getTopology());
     assertEquals(
-        updatedTopology, new PersistedClusterTopology(topologyFile, serializer).getTopology());
+        updatedTopology, PersistedClusterTopology.ofFile(topologyFile, serializer).getTopology());
   }
 
   /**

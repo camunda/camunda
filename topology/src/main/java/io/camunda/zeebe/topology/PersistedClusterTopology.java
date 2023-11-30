@@ -33,6 +33,15 @@ final class PersistedClusterTopology {
   private final ClusterTopologySerializer serializer;
   private ClusterTopology clusterTopology;
 
+  private PersistedClusterTopology(
+      final Path topologyFile,
+      final ClusterTopologySerializer serializer,
+      final ClusterTopology clusterTopology) {
+    this.topologyFile = topologyFile;
+    this.serializer = serializer;
+    this.clusterTopology = clusterTopology;
+  }
+
   /**
    * Creates a new PersistedClusterTopology. If the file does not exist yet, the topology is
    * uninitialized. The file is created on the first {@link #update(ClusterTopology)}.
@@ -40,15 +49,20 @@ final class PersistedClusterTopology {
    * @param topologyFile Path to the persisted topology file. Does not need to exist yet.
    * @param serializer used to (de)serialize the topology. Does not need to care about versioning or
    *     checksums.
+   * @throws UncheckedIOException if any unexpected IO error occurs.
+   * @throws UnexpectedVersion if the file exists but has an unexpected version.
+   * @throws ChecksumMismatch if the file exists but the checksum does not match.
+   * @throws MissingHeader if the file exists but is too small to contain the header.
    */
-  PersistedClusterTopology(final Path topologyFile, final ClusterTopologySerializer serializer) {
-    this.topologyFile = topologyFile;
-    this.serializer = serializer;
+  static PersistedClusterTopology ofFile(
+      final Path topologyFile, final ClusterTopologySerializer serializer) {
+    final ClusterTopology currentlyPersisted;
     try {
-      clusterTopology = readFromFile();
+      currentlyPersisted = readFromFile(topologyFile, serializer);
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
+    return new PersistedClusterTopology(topologyFile, serializer, currentlyPersisted);
   }
 
   ClusterTopology getTopology() {
@@ -67,7 +81,8 @@ final class PersistedClusterTopology {
     return clusterTopology.isUninitialized();
   }
 
-  private ClusterTopology readFromFile() throws IOException {
+  private static ClusterTopology readFromFile(
+      final Path topologyFile, final ClusterTopologySerializer serializer) throws IOException {
     if (!Files.exists(topologyFile)) {
       return ClusterTopology.uninitialized();
     }
@@ -113,7 +128,7 @@ final class PersistedClusterTopology {
         StandardOpenOption.DSYNC);
   }
 
-  private long checksum(final byte[] bytes) {
+  private static long checksum(final byte[] bytes) {
     final var checksum = new CRC32C();
     checksum.update(bytes);
     return checksum.getValue();

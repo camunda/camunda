@@ -60,7 +60,8 @@ final class TopologyInitializerTest {
   @BeforeEach
   void init() {
     topologyFile = rootDir.resolve("topology.temp");
-    persistedClusterTopology = new PersistedClusterTopology(topologyFile, new ProtoBufSerializer());
+    persistedClusterTopology =
+        PersistedClusterTopology.ofFile(topologyFile, new ProtoBufSerializer());
   }
 
   @Test

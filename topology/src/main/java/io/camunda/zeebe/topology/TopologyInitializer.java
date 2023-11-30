@@ -135,7 +135,7 @@ public interface TopologyInitializer {
     public ActorFuture<ClusterTopology> initialize() {
       try {
         final var persistedTopology =
-            new PersistedClusterTopology(topologyFile, serializer).getTopology();
+            PersistedClusterTopology.ofFile(topologyFile, serializer).getTopology();
         if (!persistedTopology.isUninitialized()) {
           LOGGER.debug(
               "Initialized cluster topology '{}' from file '{}'", persistedTopology, topologyFile);

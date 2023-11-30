@@ -57,7 +57,7 @@ final class ClusterTopologyManagerTest {
   @BeforeEach
   void init() {
     persistedClusterTopology =
-        new PersistedClusterTopology(tempDir.resolve("topology.temp"), serializer);
+        PersistedClusterTopology.ofFile(tempDir.resolve("topology.temp"), serializer);
   }
 
   private ActorFuture<ClusterTopologyManagerImpl> startTopologyManager(

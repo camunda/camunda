@@ -65,7 +65,8 @@ public final class ClusterTopologyManagerService extends Actor implements Topolo
 
     final MemberId localMemberId = memberShipService.getLocalMember().id();
     topologyFile = dataRootDirectory.resolve(TOPOLOGY_FILE_NAME);
-    persistedClusterTopology = new PersistedClusterTopology(topologyFile, new ProtoBufSerializer());
+    persistedClusterTopology =
+        PersistedClusterTopology.ofFile(topologyFile, new ProtoBufSerializer());
     clusterTopologyManager =
         new ClusterTopologyManagerImpl(this, localMemberId, persistedClusterTopology);
     clusterTopologyGossiper =
