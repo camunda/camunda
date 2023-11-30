@@ -180,6 +180,7 @@ test('sort table columns', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Raw Data');
+  await t.resizeWindow(1600, 750);
 
   await t.click(e.configurationButton);
   await t.click(e.selectSectionWithLabel('VARIABLES'));
@@ -232,6 +233,7 @@ test('view a variable object in rawdata table', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Raw Data');
+  await t.resizeWindow(1600, 750);
 
   await t.click(e.configurationButton);
   await t.click(e.selectSectionWithLabel('VARIABLES'));
