@@ -116,7 +116,7 @@ public final class EventAppliers implements EventApplier {
     final VariableApplier variableApplier = new VariableApplier(state.getVariableState());
     register(VariableIntent.CREATED, variableApplier);
     register(VariableIntent.UPDATED, variableApplier);
-    register(VariableIntent.MIGRATED, variableApplier);
+    register(VariableIntent.MIGRATED, new VariableMigratedApplier());
   }
 
   private void registerProcessInstanceEventAppliers(final MutableProcessingState state) {

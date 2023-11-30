@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -35,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class ProcessInstanceMigrationMigrateProcessor
     implements TypedRecordProcessor<ProcessInstanceMigrationRecord> {
@@ -49,7 +51,8 @@ public class ProcessInstanceMigrationMigrateProcessor
   private static final String ERROR_MESSAGE_PROCESS_DEFINITION_NOT_FOUND =
       "Expected to migrate process instance to process definition but no process definition found with key '%d'";
 
-  private final VariableRecord variableRecord = new VariableRecord();
+  private static final UnsafeBuffer NIL_VALUE = new UnsafeBuffer(MsgPackHelper.NIL);
+  private final VariableRecord variableRecord = new VariableRecord().setValue(NIL_VALUE);
 
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
@@ -198,7 +201,6 @@ public class ProcessInstanceMigrationMigrateProcessor
                     variableRecord
                         .setScopeKey(elementInstance.getKey())
                         .setName(variable.name())
-                        .setValue(variable.value())
                         .setProcessInstanceKey(elementInstance.getValue().getProcessInstanceKey())
                         .setProcessDefinitionKey(processDefinition.getKey())
                         .setBpmnProcessId(processDefinition.getBpmnProcessId())
