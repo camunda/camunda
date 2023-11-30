@@ -22,16 +22,24 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayDeque;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ProcessInstanceMigrationMigrateProcessor
     implements TypedRecordProcessor<ProcessInstanceMigrationRecord> {
+
+  private static final EnumSet<BpmnElementType> SUPPORTED_ELEMENT_TYPES =
+      EnumSet.of(BpmnElementType.PROCESS, BpmnElementType.SERVICE_TASK);
+  private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
+      EnumSet.complementOf(SUPPORTED_ELEMENT_TYPES);
 
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
       "Expected to migrate process instance but no process instance found with key '%d'";
@@ -92,8 +100,9 @@ public class ProcessInstanceMigrationMigrateProcessor
     final var elementInstances = new ArrayDeque<>(List.of(processInstance));
     while (!elementInstances.isEmpty()) {
       final var elementInstance = elementInstances.poll();
+      tryMigrateElementInstance(elementInstance, processDefinition, mappedElementIds);
       final List<ElementInstance> children =
-          migrateElementInstance(elementInstance, processDefinition, mappedElementIds);
+          elementInstanceState.getChildren(elementInstance.getKey());
       elementInstances.addAll(children);
     }
 
@@ -101,6 +110,21 @@ public class ProcessInstanceMigrationMigrateProcessor
         processInstanceKey, ProcessInstanceMigrationIntent.MIGRATED, value);
     responseWriter.writeEventOnCommand(
         processInstanceKey, ProcessInstanceMigrationIntent.MIGRATED, value, command);
+  }
+
+  @Override
+  public ProcessingError tryHandleError(
+      final TypedRecord<ProcessInstanceMigrationRecord> command, final Throwable error) {
+    if (error instanceof final UnsupportedElementMigrationException e) {
+      final String reason =
+          "Expected to migrate process instance '%s' but it contains an active element that is unsupported: %s"
+              .formatted(command.getKey(), e.getMessage());
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, reason);
+      return ProcessingError.EXPECTED_ERROR;
+    }
+
+    return ProcessingError.UNEXPECTED_ERROR;
   }
 
   private Map<String, String> mapElementIds(
@@ -120,19 +144,24 @@ public class ProcessInstanceMigrationMigrateProcessor
     return mappedElementIds;
   }
 
-  private List<ElementInstance> migrateElementInstance(
+  private void tryMigrateElementInstance(
       final ElementInstance elementInstance,
       final DeployedProcess processDefinition,
       final Map<String, String> sourceElementIdToTargetElementId) {
 
+    final var elementInstanceRecord = elementInstance.getValue();
+    if (UNSUPPORTED_ELEMENT_TYPES.contains(elementInstanceRecord.getBpmnElementType())) {
+      throw new UnsupportedElementMigrationException(
+          elementInstanceRecord.getElementId(), elementInstanceRecord.getBpmnElementType());
+    }
+
     final String targetElementId =
-        sourceElementIdToTargetElementId.get(elementInstance.getValue().getElementId());
+        sourceElementIdToTargetElementId.get(elementInstanceRecord.getElementId());
 
     stateWriter.appendFollowUpEvent(
         elementInstance.getKey(),
         ProcessInstanceIntent.ELEMENT_MIGRATED,
-        elementInstance
-            .getValue()
+        elementInstanceRecord
             .setProcessDefinitionKey(processDefinition.getKey())
             .setBpmnProcessId(processDefinition.getBpmnProcessId())
             .setVersion(processDefinition.getVersion())
@@ -150,7 +179,16 @@ public class ProcessInstanceMigrationMigrateProcessor
                 .setElementId(targetElementId));
       }
     }
+  }
 
-    return elementInstanceState.getChildren(elementInstance.getKey());
+  /**
+   * Exception that can be thrown during the migration of a process instance, in case the engine
+   * attempts to migrate an element which is not supported at this time.
+   */
+  private static final class UnsupportedElementMigrationException extends RuntimeException {
+    UnsupportedElementMigrationException(
+        final String elementId, final BpmnElementType bpmnElementType) {
+      super("%s. The migration of a %s is not supported.".formatted(elementId, bpmnElementType));
+    }
   }
 }
