@@ -129,6 +129,7 @@
     <version.swagger-annotations>2.2.19</version.swagger-annotations>
     <version.checker-qual>3.32.0</version.checker-qual>
     <version.reactive-streams>1.0.4</version.reactive-streams>
+    <version.tomcat>10.1.16</version.tomcat>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
@@ -975,6 +976,12 @@
         <groupId>com.esotericsoftware</groupId>
         <artifactId>minlog</artifactId>
         <version>${version.minlog}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.tomcat.embed</groupId>
+        <artifactId>tomcat-embed-core</artifactId>
+        <version>${version.tomcat}</version>
       </dependency>
 
       <dependency>
