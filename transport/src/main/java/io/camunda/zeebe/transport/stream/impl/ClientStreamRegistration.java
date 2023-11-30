@@ -96,7 +96,7 @@ final class ClientStreamRegistration<M extends BufferWriter> {
   }
 
   boolean transitionToUnblocking() {
-    return transition(State.UNBLOCKING, EnumSet.of(State.BLOCKED));
+    return transition(State.UNBLOCKING, EnumSet.of(State.UNBLOCKING, State.BLOCKED));
   }
 
   private boolean transition(final State target, final Set<State> allowed) {
