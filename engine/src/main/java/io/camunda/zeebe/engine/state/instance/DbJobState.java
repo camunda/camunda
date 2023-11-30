@@ -258,7 +258,7 @@ public final class DbJobState implements JobState, MutableJobState {
         key -> {
           jobKey.wrapLong(key);
           final var jobRecord = jobsColumnFamily.get(jobKey);
-          if (jobRecord != null) {
+          if (jobRecord != null && jobRecord.getRecord().getRecurringTime() > -1) {
             addJobBackoff(key, jobRecord.getRecord().getRecurringTime());
           }
         });
