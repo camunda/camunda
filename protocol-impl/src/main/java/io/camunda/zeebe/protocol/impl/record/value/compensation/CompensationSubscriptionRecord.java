@@ -29,24 +29,24 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
       new LongProperty("processInstanceKey", -1);
   private final LongProperty processDefinitionKeyProperty =
       new LongProperty("processDefinitionKey", -1);
-  private final StringProperty elementActivityIdProperty =
-      new StringProperty("elementActivityId", EMPTY_STRING);
-  private final LongProperty flowScopeElementActivityIdProperty =
-      new LongProperty("flowScopeElementActivityId", -1);
-  private final StringProperty elementThrowEventIdProperty =
-      new StringProperty("elementThrowEventId", EMPTY_STRING);
-  private final LongProperty elementThrowEventKeyProperty =
-      new LongProperty("elementThrowEventKey", -1);
+  private final StringProperty compensableActivityIdProperty =
+      new StringProperty("compensableActivityId", EMPTY_STRING);
+  private final LongProperty compensableActivityScopeIdProperty =
+      new LongProperty("compensableActivityScopeId", -1);
+  private final StringProperty throwEventIdProperty =
+      new StringProperty("throwEventId", EMPTY_STRING);
+  private final LongProperty throwEventInstanceKeyProperty =
+      new LongProperty("throwEventInstanceKey", -1);
   private final DocumentProperty variablesProperty = new DocumentProperty("variables");
 
   public CompensationSubscriptionRecord() {
     declareProperty(tenantIdProperty)
         .declareProperty(processInstanceKeyProperty)
         .declareProperty(processDefinitionKeyProperty)
-        .declareProperty(elementActivityIdProperty)
-        .declareProperty(flowScopeElementActivityIdProperty)
-        .declareProperty(elementThrowEventIdProperty)
-        .declareProperty(elementThrowEventKeyProperty)
+        .declareProperty(compensableActivityIdProperty)
+        .declareProperty(compensableActivityScopeIdProperty)
+        .declareProperty(throwEventIdProperty)
+        .declareProperty(throwEventInstanceKeyProperty)
         .declareProperty(variablesProperty);
   }
 
@@ -81,44 +81,23 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
   }
 
   @Override
-  public String getElementActivityId() {
-    return BufferUtil.bufferAsString(elementActivityIdProperty.getValue());
-  }
-
-  public CompensationSubscriptionRecord setElementActivityId(final String elementActivityId) {
-    elementActivityIdProperty.setValue(elementActivityId);
-    return this;
+  public String getCompensableActivityId() {
+    return BufferUtil.bufferAsString(compensableActivityIdProperty.getValue());
   }
 
   @Override
-  public long getFlowScopeElementActivityId() {
-    return flowScopeElementActivityIdProperty.getValue();
-  }
-
-  public CompensationSubscriptionRecord setFlowScopeElementActivityId(
-      final long flowScopeElementActivityId) {
-    flowScopeElementActivityIdProperty.setValue(flowScopeElementActivityId);
-    return this;
+  public long getCompensableActivityScopeId() {
+    return compensableActivityScopeIdProperty.getValue();
   }
 
   @Override
-  public String getElementThrowEventId() {
-    return BufferUtil.bufferAsString(elementThrowEventIdProperty.getValue());
-  }
-
-  public CompensationSubscriptionRecord setElementThrowEventId(final String elementThrowEventId) {
-    elementThrowEventIdProperty.setValue(elementThrowEventId);
-    return this;
+  public String getThrowEventId() {
+    return BufferUtil.bufferAsString(throwEventIdProperty.getValue());
   }
 
   @Override
-  public long getElementThrowEventKey() {
-    return elementThrowEventKeyProperty.getValue();
-  }
-
-  public CompensationSubscriptionRecord setElementThrowEventKey(final long elementThrowEventKey) {
-    elementThrowEventKeyProperty.setValue(elementThrowEventKey);
-    return this;
+  public long getThrowEventInstanceKey() {
+    return throwEventInstanceKeyProperty.getValue();
   }
 
   @Override
@@ -128,6 +107,28 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
 
   public CompensationSubscriptionRecord setVariables(final DirectBuffer variables) {
     variablesProperty.setValue(variables);
+    return this;
+  }
+
+  public CompensationSubscriptionRecord setThrowEventInstanceKey(final long throwEventInstanceKey) {
+    throwEventInstanceKeyProperty.setValue(throwEventInstanceKey);
+    return this;
+  }
+
+  public CompensationSubscriptionRecord setThrowEventId(final String throwEventId) {
+    throwEventIdProperty.setValue(throwEventId);
+    return this;
+  }
+
+  public CompensationSubscriptionRecord setCompensableActivityScopeId(
+      final long compensableActivityScopeId) {
+    compensableActivityScopeIdProperty.setValue(compensableActivityScopeId);
+    return this;
+  }
+
+  public CompensationSubscriptionRecord setCompensableActivityId(
+      final String compensableActivityId) {
+    compensableActivityIdProperty.setValue(compensableActivityId);
     return this;
   }
 }

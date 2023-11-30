@@ -2238,20 +2238,20 @@ final class JsonSerializableToJsonTest {
                     .setTenantId("tenantId")
                     .setProcessInstanceKey(123L)
                     .setProcessDefinitionKey(456L)
-                    .setElementActivityId("elementActivityId")
-                    .setFlowScopeElementActivityId(789L)
-                    .setElementThrowEventId("elementThrowEventId")
-                    .setElementThrowEventKey(123L)
+                    .setCompensableActivityId("elementActivityId")
+                    .setCompensableActivityScopeId(789L)
+                    .setThrowEventId("elementThrowEventId")
+                    .setThrowEventInstanceKey(123L)
                     .setVariables(VARIABLES_MSGPACK),
         """
         {
           "tenantId": "tenantId",
           "processInstanceKey": 123,
           "processDefinitionKey": 456,
-          "elementActivityId": "elementActivityId",
-          "flowScopeElementActivityId": 789,
-          "elementThrowEventId": "elementThrowEventId",
-          "elementThrowEventKey": 123,
+          "compensableActivityId": "elementActivityId",
+          "compensableActivityScopeId": 789,
+          "throwEventId": "elementThrowEventId",
+          "throwEventInstanceKey": 123,
           "variables": {
             "foo": "bar"
           }
@@ -2270,10 +2270,10 @@ final class JsonSerializableToJsonTest {
           "tenantId": "<default>",
           "processInstanceKey": -1,
           "processDefinitionKey": -1,
-          "elementActivityId": "",
-          "flowScopeElementActivityId": -1,
-          "elementThrowEventId": "",
-          "elementThrowEventKey": -1,
+          "compensableActivityId": "",
+          "compensableActivityScopeId": -1,
+          "throwEventId": "",
+          "throwEventInstanceKey": -1,
           "variables": {}
         }
         """

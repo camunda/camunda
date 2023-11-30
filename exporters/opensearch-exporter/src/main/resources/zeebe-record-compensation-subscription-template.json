@@ -28,16 +28,16 @@
             "processDefinitionKey": {
               "type": "long"
             },
-            "elementActivityId": {
+            "compensableActivityId": {
               "type": "keyword"
             },
-            "flowScopeElementActivityId": {
+            "compensableActivityScopeId": {
               "type": "long"
             },
-            "elementThrowEventId": {
+            "throwEventId": {
               "type": "keyword"
             },
-            "elementThrowEventKey": {
+            "throwEventInstanceKey": {
               "type": "long"
             },
             "variables": {
