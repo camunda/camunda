@@ -444,6 +444,82 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
   }
 
   @Test
+  public void shouldRejectMigrationForActiveEventBasedGateway() {
+    // given
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(SOURCE_PROCESS)
+                    .startEvent()
+                    .eventBasedGateway("A")
+                    .intermediateCatchEvent(
+                        "MSG_1",
+                        e -> e.message(m -> m.name("msg_1").zeebeCorrelationKeyExpression("key")))
+                    .endEvent()
+                    .moveToLastGateway()
+                    .intermediateCatchEvent(
+                        "MSG_2",
+                        e -> e.message(m -> m.name("msg_2").zeebeCorrelationKeyExpression("key")))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(TARGET_PROCESS)
+                    .startEvent()
+                    .eventBasedGateway("A")
+                    .intermediateCatchEvent(
+                        "MSG_1",
+                        e -> e.message(m -> m.name("msg_1").zeebeCorrelationKeyExpression("key")))
+                    .endEvent()
+                    .moveToLastGateway()
+                    .intermediateCatchEvent(
+                        "MSG_2",
+                        e -> e.message(m -> m.name("msg_2").zeebeCorrelationKeyExpression("key")))
+                    .endEvent()
+                    .moveToLastGateway()
+                    .intermediateCatchEvent(
+                        "MSG_3",
+                        e -> e.message(m -> m.name("msg_3").zeebeCorrelationKeyExpression("key")))
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey = extractTargetProcessDefinitionKey(deployment);
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(SOURCE_PROCESS)
+            .withVariable("key", helper.getCorrelationValue())
+            .create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("A", "A")
+            .expectRejection()
+            .migrate();
+
+    // then
+    assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
+    Assertions.assertThat(rejection.getRejectionReason())
+        .contains(
+            String.format(
+                """
+                Expected to migrate process instance '%s' but it contains an active \
+                element that is unsupported: %s. The migration of a %s is not supported""",
+                processInstanceKey, "A", "EVENT_BASED_GATEWAY"));
+  }
+
+  @Test
   public void shouldRejectMigrationForActiveEventBasedSubProcess() {
     // given
     final var deployment =
