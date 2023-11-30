@@ -16,6 +16,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.topology.TopologyInitializer.FileInitializer;
 import io.camunda.zeebe.topology.TopologyInitializer.GossipInitializer;
+import io.camunda.zeebe.topology.TopologyInitializer.InitializerError.PersistedTopologyIsBroken;
 import io.camunda.zeebe.topology.TopologyInitializer.RollingUpdateAwareInitializerV83ToV84;
 import io.camunda.zeebe.topology.TopologyInitializer.StaticInitializer;
 import io.camunda.zeebe.topology.TopologyInitializer.SyncInitializer;
@@ -92,7 +93,22 @@ public final class ClusterTopologyManagerService extends Actor implements Topolo
   private TopologyInitializer getNonCoordinatorInitializer(
       final ClusterMembershipService membershipService,
       final StaticConfiguration staticConfiguration) {
+    final var otherKnownMembers =
+        staticConfiguration.clusterMembers().stream()
+            .filter(m -> !m.equals(staticConfiguration.localMemberId()))
+            .toList();
     return new FileInitializer(topologyFile, new ProtoBufSerializer())
+        // Recover via sync to ensure that we don't gossip an uninitialized topology.
+        // This is important so that we don't silently revert to uninitialized topology when
+        // multiple members have a broken topology file at the same time, for example because of
+        // a serialization bug.
+        .recover(
+            PersistedTopologyIsBroken.class,
+            new SyncInitializer(
+                clusterTopologyGossiper,
+                otherKnownMembers,
+                this,
+                clusterTopologyGossiper::queryClusterTopology))
         // Only to support rolling update from 8.3 to 8.4. Should be removed after 8.4 release
         .orThen(
             new RollingUpdateAwareInitializerV83ToV84(membershipService, staticConfiguration, this))
