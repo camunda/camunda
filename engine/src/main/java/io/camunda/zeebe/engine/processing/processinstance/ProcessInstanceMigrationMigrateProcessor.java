@@ -202,7 +202,7 @@ public class ProcessInstanceMigrationMigrateProcessor
           String.format(
               """
               Expected to migrate process instance '%s' \
-              but it contains an active element that is unsupported: %s. \
+              but active element with id '%s' has an unsupported type. \
               The migration of a %s is not supported.""",
               processInstanceKey, elementId, bpmnElementType));
     }
@@ -218,7 +218,7 @@ public class ProcessInstanceMigrationMigrateProcessor
           String.format(
               """
               Expected to migrate process instance '%s' \
-              but no mapping instruction defined for active element '%s'. \
+              but no mapping instruction defined for active element with id '%s'. \
               Elements cannot be migrated without a mapping.""",
               processInstanceKey, elementId));
     }

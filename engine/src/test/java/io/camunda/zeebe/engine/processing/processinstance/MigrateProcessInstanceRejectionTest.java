@@ -140,7 +140,7 @@ public class MigrateProcessInstanceRejectionTest {
             String.format(
                 """
                 Expected to migrate process instance '%d' \
-                but no mapping instruction defined for active element 'A'. \
+                but no mapping instruction defined for active element with id 'A'. \
                 Elements cannot be migrated without a mapping.""",
                 processInstanceKey))
         .hasKey(processInstanceKey);
