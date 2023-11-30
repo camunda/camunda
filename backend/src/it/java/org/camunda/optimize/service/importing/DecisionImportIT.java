@@ -19,7 +19,7 @@ import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResp
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
-import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndexES;
+import org.camunda.optimize.service.db.es.schema.index.DecisionInstanceIndexES;
 import org.camunda.optimize.service.importing.engine.fetcher.definition.DecisionDefinitionFetcher;
 import org.camunda.optimize.service.importing.engine.service.DecisionInstanceImportService;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;

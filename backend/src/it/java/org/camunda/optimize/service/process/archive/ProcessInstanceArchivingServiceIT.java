@@ -8,7 +8,7 @@ package org.camunda.optimize.service.process.archive;
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.service.archive.ProcessInstanceArchivingService;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceArchiveIndexES;
+import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceArchiveIndexES;
 import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.junit.jupiter.api.Test;

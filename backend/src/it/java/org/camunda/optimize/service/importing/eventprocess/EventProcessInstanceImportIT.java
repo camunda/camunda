@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublish
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndexES;
+import org.camunda.optimize.service.db.es.schema.index.events.EventProcessInstanceIndexES;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.optimize.EventProcessClient;
 import org.elasticsearch.client.indices.GetIndexRequest;

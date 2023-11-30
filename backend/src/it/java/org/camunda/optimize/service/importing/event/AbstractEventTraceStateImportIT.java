@@ -18,7 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.mapHits;
+import static org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil.mapHits;
 import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
 public abstract class AbstractEventTraceStateImportIT extends AbstractPlatformIT {

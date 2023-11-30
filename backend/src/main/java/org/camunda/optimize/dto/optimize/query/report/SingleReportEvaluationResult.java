@@ -10,7 +10,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginatedDataExportDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableDto;
-import org.camunda.optimize.service.es.report.result.RawDataCommandResult;
+import org.camunda.optimize.service.db.es.report.result.RawDataCommandResult;
 
 import java.time.ZoneId;
 import java.util.ArrayList;

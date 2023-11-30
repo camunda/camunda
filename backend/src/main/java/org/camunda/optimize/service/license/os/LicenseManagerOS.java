@@ -10,16 +10,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.LicenseDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.license.LicenseManager;
-import org.camunda.optimize.service.os.OptimizeOpenSearchClient;
+import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.opensearch.client.opensearch._types.Refresh;
-import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.IndexResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
 import java.util.Optional;
 
 import static org.camunda.optimize.service.db.DatabaseConstants.LICENSE_INDEX_NAME;

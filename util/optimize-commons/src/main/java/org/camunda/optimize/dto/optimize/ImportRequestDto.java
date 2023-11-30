@@ -7,7 +7,7 @@ package org.camunda.optimize.dto.optimize;
 
 import lombok.Builder;
 import lombok.Data;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.elasticsearch.action.DocWriteRequest;
 
 @Data

@@ -7,17 +7,15 @@ package org.camunda.optimize.service.export;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
-import org.camunda.optimize.service.es.report.ReportEvaluationInfo;
+import org.camunda.optimize.service.db.es.report.AuthorizationCheckReportEvaluationHandler;
+import org.camunda.optimize.service.db.es.report.ReportEvaluationInfo;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
 import jakarta.ws.rs.NotFoundException;
 import java.time.ZoneId;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 

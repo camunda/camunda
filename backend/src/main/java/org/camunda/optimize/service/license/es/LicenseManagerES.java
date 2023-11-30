@@ -7,7 +7,7 @@ package org.camunda.optimize.service.license.es;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.license.OptimizeInvalidLicenseException;
 import org.camunda.optimize.service.license.LicenseManager;

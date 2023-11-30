@@ -11,7 +11,7 @@ import org.camunda.optimize.service.db.schema.index.BusinessKeyIndex;
 import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.db.schema.index.VariableUpdateInstanceIndex;
 import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
-import org.camunda.optimize.service.es.report.MinMaxStatDto;
+import org.camunda.optimize.service.db.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import org.elasticsearch.action.search.SearchRequest;

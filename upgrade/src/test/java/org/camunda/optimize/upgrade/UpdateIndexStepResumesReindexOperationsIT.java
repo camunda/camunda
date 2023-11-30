@@ -8,7 +8,7 @@ package org.camunda.optimize.upgrade;
 import com.google.common.collect.ImmutableList;
 import io.github.netmikey.logunit.api.LogCapturer;
 import org.camunda.optimize.service.db.schema.IndexMappingCreator;
-import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
+import org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 import org.camunda.optimize.upgrade.es.index.UpdateLogEntryIndex;

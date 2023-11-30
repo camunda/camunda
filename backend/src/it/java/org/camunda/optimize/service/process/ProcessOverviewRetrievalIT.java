@@ -22,7 +22,7 @@ import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewRe
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.sorting.ProcessOverviewSorter;
-import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndexES;
+import org.camunda.optimize.service.db.es.schema.index.ProcessDefinitionIndexES;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;

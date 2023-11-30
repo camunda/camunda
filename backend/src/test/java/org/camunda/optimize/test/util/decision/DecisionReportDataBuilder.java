@@ -17,12 +17,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.report.command.decision.util.DecisionGroupByDtoCreator.createGroupDecisionByEvaluationDateTime;
-import static org.camunda.optimize.service.es.report.command.decision.util.DecisionGroupByDtoCreator.createGroupDecisionByInputVariable;
-import static org.camunda.optimize.service.es.report.command.decision.util.DecisionGroupByDtoCreator.createGroupDecisionByNone;
-import static org.camunda.optimize.service.es.report.command.decision.util.DecisionGroupByDtoCreator.createGroupDecisionByOutputVariable;
-import static org.camunda.optimize.service.es.report.command.decision.util.DecisionViewDtoCreator.createCountFrequencyView;
-import static org.camunda.optimize.service.es.report.command.decision.util.DecisionViewDtoCreator.createDecisionRawDataView;
+import static org.camunda.optimize.service.db.es.report.command.decision.util.DecisionGroupByDtoCreator.createGroupDecisionByEvaluationDateTime;
+import static org.camunda.optimize.service.db.es.report.command.decision.util.DecisionGroupByDtoCreator.createGroupDecisionByInputVariable;
+import static org.camunda.optimize.service.db.es.report.command.decision.util.DecisionGroupByDtoCreator.createGroupDecisionByNone;
+import static org.camunda.optimize.service.db.es.report.command.decision.util.DecisionGroupByDtoCreator.createGroupDecisionByOutputVariable;
+import static org.camunda.optimize.service.db.es.report.command.decision.util.DecisionViewDtoCreator.createCountFrequencyView;
+import static org.camunda.optimize.service.db.es.report.command.decision.util.DecisionViewDtoCreator.createDecisionRawDataView;
 
 public class DecisionReportDataBuilder {
 

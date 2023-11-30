@@ -22,7 +22,7 @@ import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndexES;
+import org.camunda.optimize.service.db.es.schema.index.events.EventSequenceCountIndexES;
 import org.camunda.optimize.service.events.EventCountService;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;

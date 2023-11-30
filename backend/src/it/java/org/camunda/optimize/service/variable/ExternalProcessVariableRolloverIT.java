@@ -9,7 +9,7 @@ import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto;
-import org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndexES;
+import org.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableIndexES;
 import org.camunda.optimize.service.events.rollover.ExternalProcessVariableIndexRolloverService;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.cluster.metadata.AliasMetadata;

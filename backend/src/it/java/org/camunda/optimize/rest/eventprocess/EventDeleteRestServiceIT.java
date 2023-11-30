@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanc
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.service.db.schema.index.events.EventProcessInstanceIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventIndexES;
+import org.camunda.optimize.service.db.es.schema.index.events.EventIndexES;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;

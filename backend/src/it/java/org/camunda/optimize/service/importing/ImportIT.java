@@ -12,9 +12,9 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.importing.job.VariableUpdateDatabaseImportJob;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
+import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.junit.jupiter.api.AfterEach;
@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.es.schema.ElasticSearchIndexSettingsBuilder.buildDynamicSettings;
+import static org.camunda.optimize.service.db.es.schema.ElasticSearchIndexSettingsBuilder.buildDynamicSettings;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public class ImportIT extends AbstractImportIT {

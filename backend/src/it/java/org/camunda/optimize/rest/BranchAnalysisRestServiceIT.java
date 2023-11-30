@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
+import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import org.junit.jupiter.api.Test;
 
 import jakarta.ws.rs.core.Response;
@@ -33,7 +33,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITI
 
 public class BranchAnalysisRestServiceIT extends AbstractPlatformIT {
 
-  private static final String DIAGRAM = "org/camunda/optimize/service/es/reader/gateway_process.bpmn";
+  private static final String DIAGRAM = "org/camunda/optimize/service/db/es/reader/gateway_process.bpmn";
   private static final String PROCESS_DEFINITION_ID_2 = "procDef2";
   private static final String PROCESS_DEFINITION_ID = "procDef1";
   private static final String PROCESS_DEFINITION_KEY = "procDef";

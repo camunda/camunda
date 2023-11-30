@@ -6,7 +6,7 @@
 package org.camunda.optimize.plugin.elasticsearch;
 
 import org.camunda.optimize.AbstractPlatformIT;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClientConfiguration;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClientConfiguration;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.junit.jupiter.api.BeforeEach;

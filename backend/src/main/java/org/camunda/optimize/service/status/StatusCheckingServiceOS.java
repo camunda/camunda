@@ -11,7 +11,7 @@ import net.jodah.failsafe.RetryPolicy;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.importing.ImportSchedulerManagerService;
-import org.camunda.optimize.service.os.OptimizeOpenSearchClient;
+import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.opensearch.client.opensearch._types.HealthStatus;

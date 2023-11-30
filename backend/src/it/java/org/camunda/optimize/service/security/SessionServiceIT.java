@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.security;
 
 import org.camunda.optimize.AbstractPlatformIT;
-import org.camunda.optimize.service.es.schema.index.TerminatedUserSessionIndexES;
+import org.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
 

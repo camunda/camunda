@@ -9,7 +9,7 @@ import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.Main;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.db.schema.index.MetadataIndex;
-import org.camunda.optimize.service.es.schema.ElasticSearchMetadataService;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpResponse;
