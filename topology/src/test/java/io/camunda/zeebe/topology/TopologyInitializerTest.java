@@ -9,15 +9,20 @@ package io.camunda.zeebe.topology;
 
 import static io.camunda.zeebe.topology.ClusterTopologyAssert.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.topology.TopologyInitializer.FileInitializer;
 import io.camunda.zeebe.topology.TopologyInitializer.GossipInitializer;
+import io.camunda.zeebe.topology.TopologyInitializer.InitializerError.PersistedTopologyIsBroken;
 import io.camunda.zeebe.topology.TopologyInitializer.StaticInitializer;
 import io.camunda.zeebe.topology.TopologyInitializer.SyncInitializer;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
@@ -348,6 +353,94 @@ final class TopologyInitializerTest {
 
       // then
       assertThatClusterTopology(initializeFuture.join()).isInitialized();
+    }
+  }
+
+  @Nested
+  final class RecoveryTest {
+    @Test
+    void shouldRecoverFromExpectedException() throws IOException {
+      // given
+      final TopologyInitializer recovery =
+          () -> CompletableActorFuture.completed(initialClusterTopology);
+      final TopologyInitializer failingInitializer =
+          () ->
+              CompletableActorFuture.completedExceptionally(
+                  new PersistedTopologyIsBroken(topologyFile, null));
+      final var recoveringInitializer =
+          failingInitializer.recover(PersistedTopologyIsBroken.class, recovery);
+
+      // when
+      Files.write(
+          topologyFile, "broken".getBytes(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+
+      // then
+      assertThat(recoveringInitializer.initialize().join()).isEqualTo(initialClusterTopology);
+    }
+
+    @Test
+    void shouldIgnoreRecoveryOnSuccess() throws IOException {
+      // given
+      final var recovery = mock(TopologyInitializer.class);
+      final var fileInitializer = new FileInitializer(topologyFile, new ProtoBufSerializer());
+      final var recoveringInitializer =
+          fileInitializer.recover(PersistedTopologyIsBroken.class, recovery);
+
+      // when
+      persistedClusterTopology.update(initialClusterTopology);
+
+      // then
+      assertThat(recoveringInitializer.initialize().join()).isEqualTo(initialClusterTopology);
+      verify(recovery, never()).initialize();
+    }
+
+    @Test
+    void shouldUseChainedInitializerAfterSkippingRecovery() {
+      // given
+      final TopologyInitializer unsuccessfulInitializer =
+          () -> CompletableActorFuture.completed(ClusterTopology.uninitialized());
+
+      final TopologyInitializer successfulInitializer =
+          () -> CompletableActorFuture.completed(initialClusterTopology);
+
+      final TopologyInitializer recoveryInitializer =
+          () ->
+              CompletableActorFuture.completedExceptionally(
+                  new RuntimeException("shouldn't happen"));
+
+      // when
+      final var chainedInitializer =
+          unsuccessfulInitializer
+              .recover(PersistedTopologyIsBroken.class, recoveryInitializer)
+              .orThen(successfulInitializer);
+
+      // then
+      assertThat(chainedInitializer.initialize().join()).isEqualTo(initialClusterTopology);
+      verify(recoveryInitializer, never()).initialize();
+    }
+
+    @Test
+    void shouldUseChainedInitializerAfterUnsuccessfulRecovery() {
+      // given
+      final TopologyInitializer failingInitializer =
+          () ->
+              CompletableActorFuture.completedExceptionally(
+                  new PersistedTopologyIsBroken(topologyFile, null));
+
+      final TopologyInitializer unsuccessfulRecovery =
+          () -> CompletableActorFuture.completed(ClusterTopology.uninitialized());
+
+      final TopologyInitializer finalInitializer =
+          () -> CompletableActorFuture.completed(initialClusterTopology);
+
+      // when
+      final var chainedInitializer =
+          failingInitializer
+              .recover(PersistedTopologyIsBroken.class, unsuccessfulRecovery)
+              .orThen(finalInitializer);
+
+      // then
+      assertThat(chainedInitializer.initialize().join()).isEqualTo(initialClusterTopology);
     }
   }
 }

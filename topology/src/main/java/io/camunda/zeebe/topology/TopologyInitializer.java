@@ -14,6 +14,7 @@ import io.atomix.utils.Version;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.topology.TopologyInitializer.InitializerError.PersistedTopologyIsBroken;
 import io.camunda.zeebe.topology.TopologyUpdateNotifier.TopologyUpdateListener;
 import io.camunda.zeebe.topology.serializer.ClusterTopologySerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
@@ -80,6 +81,38 @@ public interface TopologyInitializer {
     };
   }
 
+  /**
+   * If this initializer completed exceptionally with the given exception, the recovery initializer
+   * is used instead. If this initializer completed exceptionally with a different exception, the
+   * recovery is not used and the exception is propagated.
+   *
+   * @param exception The class of the exceptions to recover from. If the exception is assignable
+   *     from the given class, the recovery initializer is used.
+   * @param recovery A regular {@link TopologyInitializer}.
+   * @return a {@link TopologyInitializer} that can be used for further chaining with {@link
+   *     #orThen(TopologyInitializer)}.
+   */
+  default TopologyInitializer recover(
+      final Class<? extends InitializerError> exception, final TopologyInitializer recovery) {
+    final TopologyInitializer actual = this;
+    return () -> {
+      final ActorFuture<ClusterTopology> chainedInitialize = new CompletableActorFuture<>();
+      actual
+          .initialize()
+          .onComplete(
+              (topology, error) -> {
+                if (error != null && exception.isAssignableFrom(error.getClass())) {
+                  recovery.initialize().onComplete(chainedInitialize);
+                } else if (error != null) {
+                  chainedInitialize.completeExceptionally(error);
+                } else {
+                  chainedInitialize.complete(topology);
+                }
+              });
+      return chainedInitialize;
+    };
+  }
+
   /** Initialized topology from the locally persisted topology */
   class FileInitializer implements TopologyInitializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileInitializer.class);
@@ -103,7 +136,8 @@ public interface TopologyInitializer {
         }
         return CompletableActorFuture.completed(persistedTopology);
       } catch (final Exception e) {
-        return CompletableActorFuture.completedExceptionally(e);
+        return CompletableActorFuture.completedExceptionally(
+            new PersistedTopologyIsBroken(topologyFile, e));
       }
     }
   }
@@ -380,6 +414,15 @@ public interface TopologyInitializer {
 
     private boolean isVersion83(final Version version) {
       return version.major() == 8 && version.minor() == 3;
+    }
+  }
+
+  sealed interface InitializerError permits PersistedTopologyIsBroken {
+    final class PersistedTopologyIsBroken extends RuntimeException implements InitializerError {
+
+      public PersistedTopologyIsBroken(final Path file, final Throwable cause) {
+        super("File %s is corrupted".formatted(file), cause);
+      }
     }
   }
 }
