@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
  *     topology from the coordinator via gossip. See {@link GossipInitializer}.
  */
 public interface TopologyInitializer {
+  Logger LOG = LoggerFactory.getLogger(TopologyInitializer.class);
 
   /**
    * Initializes the cluster topology.
@@ -102,6 +103,7 @@ public interface TopologyInitializer {
           .onComplete(
               (topology, error) -> {
                 if (error != null && exception.isAssignableFrom(error.getClass())) {
+                  LOG.warn("Recovering from {} by falling back to {}", error, recovery);
                   recovery.initialize().onComplete(chainedInitialize);
                 } else if (error != null) {
                   chainedInitialize.completeExceptionally(error);
