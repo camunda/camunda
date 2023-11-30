@@ -25,7 +25,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITI
 
 @AllArgsConstructor
 @Conditional(ElasticSearchCondition.class)
-public abstract class AbstractProcessDefinitionWriterES implements AbstractProcessDefinitionWriter {
+public abstract class AbstractProcessDefinitionWriterES implements AbstractProcessDefinitionWriter<BulkRequest> {
 
   protected final Logger log = LoggerFactory.getLogger(getClass());
   protected final ObjectMapper objectMapper;

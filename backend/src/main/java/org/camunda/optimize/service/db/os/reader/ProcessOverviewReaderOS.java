@@ -14,6 +14,7 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -27,7 +28,7 @@ public class ProcessOverviewReaderOS implements ProcessOverviewReader {
   @Override
   public Map<String, ProcessOverviewDto> getProcessOverviewsByKey(final Set<String> processDefinitionKeys) {
     //todo will be handled in the OPT-7230
-    return null;
+    return new HashMap<>();
   }
 
   @Override
@@ -39,13 +40,13 @@ public class ProcessOverviewReaderOS implements ProcessOverviewReader {
   @Override
   public Map<String, ProcessDigestResponseDto> getAllActiveProcessDigestsByKey() {
     //todo will be handled in the OPT-7230
-    return null;
+    return new HashMap<>();
   }
 
   @Override
   public Map<String, ProcessOverviewDto> getProcessOverviewsWithPendingOwnershipData() {
     //todo will be handled in the OPT-7230
-    return null;
+    return new HashMap<>();
   }
 
 }
