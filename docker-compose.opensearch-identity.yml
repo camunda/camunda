@@ -58,7 +58,7 @@ services:
     depends_on:
       - keycloak
     container_name: identity
-    image: camunda/identity:8.4.0-alpha1
+    image: camunda/identity:SNAPSHOT
     ports:
       - "8080:8080"
     volumes:
@@ -101,7 +101,7 @@ services:
       start_period: 30s
   zeebe:
     container_name: zeebe
-    image: camunda/zeebe:8.4.0-alpha1
+    image: camunda/zeebe:SNAPSHOT
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}
@@ -133,14 +133,16 @@ services:
       - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
       - CAMUNDA_OPERATE_OPENSEARCH_URL=http://opensearch:9200
       - CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL=http://opensearch:9200
-      - SPRING_PROFILES_ACTIVE=identity-auth,dev-data
-      # Identity
+      # Keys for usage of Public API
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
+      # Identity
+      - CAMUNDA_IDENTITY_ISSUER=http://keycloak:8080/auth/realms/camunda-platform
       - CAMUNDA_IDENTITY_ISSUER_BACKEND_URL=http://keycloak:8080/auth/realms/camunda-platform
       - CAMUNDA_IDENTITY_CLIENT_ID=operate
       - CAMUNDA_IDENTITY_CLIENT_SECRET=the-cake-is-alive
       - CAMUNDA_IDENTITY_AUDIENCE=operate-api
       - CAMUNDA_IDENTITY_BASE_URL=http://identity:8080
+      #
       - CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED=false
       #
       - CAMUNDA_OPERATE_MULTITENANCY_ENABLED=true
