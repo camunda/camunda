@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.variable.VariableInstance;
 import java.util.Collection;
+import java.util.List;
 import org.agrona.DirectBuffer;
 
 public interface VariableState {
@@ -30,6 +31,17 @@ public interface VariableState {
 
   boolean isEmpty();
 
+  /**
+   * Returns a list of all variables at the given scope key.
+   *
+   * <p>This method differs from most other methods on this interface in that it does not traverse
+   * the scope hierarchy. It only returns variables that are directly stored at the given scope key.
+   *
+   * @param scopeKey the scope key to get the variables for
+   * @return a list of all variables at the given scope key
+   */
+  List<Variable> getVariablesLocal(long scopeKey);
+
   VariableInstance getVariableInstanceLocal(long scopeKey, DirectBuffer name);
 
   /**
@@ -37,4 +49,7 @@ public interface VariableState {
    *     VariableState#NO_PARENT}
    */
   long getParentScopeKey(long childScopeKey);
+
+  /** Data wrapper for a variable. */
+  record Variable(long key, long scopeKey, DirectBuffer name, DirectBuffer value) {}
 }
