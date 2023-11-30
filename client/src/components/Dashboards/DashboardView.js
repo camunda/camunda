@@ -122,8 +122,9 @@ export function DashboardView(props) {
   async function handleInstantPreviewDashboardCopying(dashboardState) {
     const {definitions} = dashboardState;
     const [definition] = definitions || [];
-    const {displayName, name, key, tenantIds: tenants} = definition || {};
-    const collectionName = displayName || name || key;
+    const {displayName, name, key} = definition || {};
+    const collectionName =
+      definitions.length === 1 ? displayName || name || key : dashboardState.name;
     let collectionId, existingCollection;
 
     mightFail(
@@ -136,14 +137,14 @@ export function DashboardView(props) {
         } else {
           collectionId = await createEntity('collection', {name: collectionName});
         }
-
-        await addSources(collectionId, [
-          {
-            definitionKey: key,
+        await addSources(
+          collectionId,
+          definitions.map((def) => ({
+            definitionKey: def.key,
             definitionType: 'process',
-            tenants,
-          },
-        ]);
+            tenants: def.tenantIds,
+          }))
+        );
       })(),
       () =>
         history.push({
