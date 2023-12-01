@@ -39,6 +39,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
       new ObjectProperty<>("elementRecord", new IndexedRecord());
   private final IntegerProperty activeSequenceFlowsProp =
       new IntegerProperty("activeSequenceFlows", 0);
+  private final LongProperty userTaskKeyProp = new LongProperty("userTaskKey", -1L);
 
   public ElementInstance() {
     declareProperty(parentKeyProp)
@@ -51,7 +52,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
         .declareProperty(interruptingEventKeyProp)
         .declareProperty(calledChildInstanceKeyProp)
         .declareProperty(recordProp)
-        .declareProperty(activeSequenceFlowsProp);
+        .declareProperty(activeSequenceFlowsProp)
+        .declareProperty(userTaskKeyProp);
   }
 
   public ElementInstance(
@@ -218,5 +220,13 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
 
   public void resetActiveSequenceFlows() {
     activeSequenceFlowsProp.setValue(0);
+  }
+
+  public long getUserTaskKey() {
+    return userTaskKeyProp.getValue();
+  }
+
+  public void setUserTaskKey(final long userTaskKey) {
+    userTaskKeyProp.setValue(userTaskKey);
   }
 }
