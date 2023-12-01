@@ -93,7 +93,7 @@ final class ClientStreamManager<M extends BufferWriter> {
               stream.block();
               metrics.clientBlocked();
 
-              if (stream.serverStream().isBlocked()) {
+              if (stream.serverStream().shouldBlock()) {
                 LOG.debug("Blocking aggregated stream [{}]", stream.serverStream().getStreamId());
                 requestManager.block(stream.serverStream(), servers);
                 metrics.streamBlocked();

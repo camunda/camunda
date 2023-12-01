@@ -115,6 +115,13 @@ final class AggregatedClientStream<M extends BufferWriter> {
     return blocked;
   }
 
+  public boolean shouldBlock() {
+    return clientStreams.values().stream()
+        .map(ClientStreamImpl::isBlocked)
+        .reduce((a, b) -> a && b)
+        .orElse(false);
+  }
+
   void close() {
     isOpened = false;
   }
