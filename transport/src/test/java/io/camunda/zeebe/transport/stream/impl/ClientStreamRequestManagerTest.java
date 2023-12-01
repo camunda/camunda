@@ -516,6 +516,28 @@ final class ClientStreamRequestManagerTest {
   }
 
   @Test
+  void shouldWaitForPendingBlockOnUnblock() {
+    // given
+    final var pendingRequest = new CompletableFuture<byte[]>();
+    final var serverId = MemberId.anonymous();
+    final var registration = requestManager.registrationFor(clientStream, serverId);
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.BLOCK.topic()), any(), any(), any(), any(), any()))
+        .thenReturn(pendingRequest);
+    requestManager.add(clientStream, serverId);
+    requestManager.block(clientStream, serverId);
+
+    // when
+    requestManager.unblock(clientStream, serverId);
+
+    // then - completes once future is completed
+    pendingRequest.complete(unblockStreamSuccess);
+    verify(mockTransport, times(1))
+        .send(eq(StreamTopics.UNBLOCK.topic()), any(), any(), any(), eq(serverId), any());
+    assertThat(registration.state()).isEqualTo(State.ADDED);
+  }
+
+  @Test
   void shouldSkipBlockIfRemoving() {
     // given
     final var pendingRequest = new CompletableFuture<byte[]>();
