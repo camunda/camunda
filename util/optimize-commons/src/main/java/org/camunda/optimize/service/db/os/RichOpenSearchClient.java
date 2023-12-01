@@ -7,21 +7,15 @@ package org.camunda.optimize.service.db.os;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchClusterOperations;
 import org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations;
 import org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchIndexOperations;
 import org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchPipelineOperations;
 import org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchTaskOperations;
 import org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchTemplateOperations;
-import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.stereotype.Component;
 
-
-@Conditional(OpenSearchCondition.class)
-@Component
 @Slf4j
 public class RichOpenSearchClient {
 

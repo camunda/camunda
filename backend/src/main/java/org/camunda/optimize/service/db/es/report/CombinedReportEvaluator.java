@@ -11,6 +11,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.report.command.Command;
 import org.camunda.optimize.service.db.es.report.command.NotSupportedCommand;
@@ -40,12 +41,12 @@ import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 public class CombinedReportEvaluator {
 
   private final SingleReportEvaluator singleReportEvaluatorInjected;
-  private final OptimizeElasticsearchClient esClient;
+  private final DatabaseClient databaseClient;
 
   public CombinedReportEvaluator(final SingleReportEvaluator singleReportEvaluator,
-                                 final OptimizeElasticsearchClient esClient) {
+                                 final DatabaseClient databaseClient) {
     this.singleReportEvaluatorInjected = singleReportEvaluator;
-    this.esClient = esClient;
+    this.databaseClient = databaseClient;
   }
 
   @SuppressWarnings(UNCHECKED_CAST)
@@ -73,7 +74,7 @@ public class CombinedReportEvaluator {
     final List<QueryBuilder> baseQueries = getAllBaseQueries(singleReportDefinitions, singleReportEvaluator);
     final CountRequest instanceCountRequest = createInstanceCountRequest(baseQueries);
     try {
-      return esClient.count(instanceCountRequest).getCount();
+      return databaseClient.count(instanceCountRequest).getCount();
     } catch (IOException e) {
       final String message = String.format(
         "Could not count instances in combined report with single report IDs: [%s]",

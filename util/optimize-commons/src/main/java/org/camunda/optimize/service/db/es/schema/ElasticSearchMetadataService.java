@@ -12,6 +12,7 @@ import org.camunda.optimize.service.db.schema.DatabaseMetadataService;
 import org.camunda.optimize.service.db.schema.index.MetadataIndex;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.get.GetRequest;
@@ -21,6 +22,7 @@ import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.xcontent.XContentType;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -32,6 +34,7 @@ import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDI
 
 @Component
 @Slf4j
+@Conditional(ElasticSearchCondition.class)
 public class ElasticSearchMetadataService extends DatabaseMetadataService<OptimizeElasticsearchClient> {
 
   public ElasticSearchMetadataService(final ObjectMapper objectMapper) {

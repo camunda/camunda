@@ -10,14 +10,14 @@ import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.service.db.reader.DecisionDefinitionReader;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.es.filter.DecisionQueryFilterEnhancer;
 import org.camunda.optimize.service.db.es.report.command.exec.DecisionReportCmdExecutionPlan;
 import org.camunda.optimize.service.db.es.report.command.modules.distributed_by.decision.DecisionDistributedByPart;
 import org.camunda.optimize.service.db.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.db.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.db.es.report.command.modules.view.decision.DecisionViewPart;
+import org.camunda.optimize.service.db.reader.DecisionDefinitionReader;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
@@ -29,7 +29,7 @@ import java.util.function.Function;
 public class DecisionExecutionPlanBuilder {
 
   private final ApplicationContext context;
-  private final OptimizeElasticsearchClient esClient;
+  private final DatabaseClient databaseClient;
   private final DecisionQueryFilterEnhancer decisionQueryFilterEnhancer;
   private final DecisionDefinitionReader decisionDefinitionReader;
 
@@ -141,7 +141,7 @@ public class DecisionExecutionPlanBuilder {
         groupByPart,
         distributedByPart,
         mapToReportResult,
-        esClient,
+        databaseClient,
         decisionDefinitionReader,
         decisionQueryFilterEnhancer
       );

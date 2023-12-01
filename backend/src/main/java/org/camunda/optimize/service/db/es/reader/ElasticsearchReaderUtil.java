@@ -10,6 +10,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.PageResultDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.get.MultiGetResponse;
@@ -54,7 +55,7 @@ public class ElasticsearchReaderUtil {
   public static <T> List<T> retrieveScrollResultsTillLimit(final SearchResponse initialScrollResponse,
                                                            final Class<T> itemClass,
                                                            final ObjectMapper objectMapper,
-                                                           final OptimizeElasticsearchClient esClient,
+                                                           final DatabaseClient databaseClient,
                                                            final Integer scrollingTimeoutInSeconds,
                                                            final Integer limit) {
     Function<SearchHit, T> mappingFunction = hit -> {
@@ -70,7 +71,7 @@ public class ElasticsearchReaderUtil {
       }
     };
     return retrieveScrollResultsTillLimit(
-      initialScrollResponse, itemClass, mappingFunction, esClient, scrollingTimeoutInSeconds, limit
+      initialScrollResponse, itemClass, mappingFunction, databaseClient, scrollingTimeoutInSeconds, limit
     );
   }
 
@@ -126,7 +127,7 @@ public class ElasticsearchReaderUtil {
   public static <T> List<T> retrieveScrollResultsTillLimit(final SearchResponse initialScrollResponse,
                                                            final Class<T> itemClass,
                                                            final Function<SearchHit, T> mappingFunction,
-                                                           final OptimizeElasticsearchClient esClient,
+                                                           final DatabaseClient databaseClient,
                                                            final Integer scrollingTimeoutInSeconds,
                                                            final Integer limit) {
     final List<T> results = new ArrayList<>();
@@ -141,7 +142,7 @@ public class ElasticsearchReaderUtil {
         final SearchScrollRequest scrollRequest = new SearchScrollRequest(currentScrollResp.getScrollId());
         scrollRequest.scroll(TimeValue.timeValueSeconds(scrollingTimeoutInSeconds));
         try {
-          currentScrollResp = esClient.scroll(scrollRequest);
+          currentScrollResp = databaseClient.scroll(scrollRequest);
           hits = currentScrollResp.getHits();
         } catch (IOException e) {
           String reason = String.format(
@@ -155,18 +156,18 @@ public class ElasticsearchReaderUtil {
         hits = null;
       }
     }
-    clearScroll(itemClass, esClient, currentScrollResp.getScrollId());
+    clearScroll(itemClass, databaseClient , currentScrollResp.getScrollId());
 
     return results;
   }
 
   private static <T> void clearScroll(final Class<T> itemClass,
-                                      final OptimizeElasticsearchClient esClient,
+                                      final DatabaseClient databaseClient,
                                       final String scrollId) {
     try {
       ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
       clearScrollRequest.addScrollId(scrollId);
-      ClearScrollResponse clearScrollResponse = esClient.clearScroll(clearScrollRequest);
+      ClearScrollResponse clearScrollResponse = databaseClient.clearScroll(clearScrollRequest);
       boolean succeeded = clearScrollResponse.isSucceeded();
       if (!succeeded) {
         String reason = String.format(

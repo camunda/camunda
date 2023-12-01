@@ -20,6 +20,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.view.Decis
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.db.reader.DecisionVariableReader;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
@@ -74,7 +75,7 @@ public class DecisionViewRawData extends DecisionViewPart {
 
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
-  private final OptimizeElasticsearchClient esClient;
+  private final DatabaseClient databaseClient;
 
   private final DecisionVariableReader decisionVariableReader;
   private final RawDecisionDataResultDtoMapper rawDataSingleReportResultDtoMapper =
@@ -128,7 +129,7 @@ public class DecisionViewRawData extends DecisionViewPart {
           response,
           DecisionInstanceDto.class,
           objectMapper,
-          esClient,
+          databaseClient,
           configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds(),
           context.getPagination().orElse(new PaginationDto()).getLimit()
         );

@@ -15,6 +15,11 @@ import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.action.search.ClearScrollRequest;
+import org.elasticsearch.action.search.ClearScrollResponse;
+import org.elasticsearch.action.search.SearchScrollRequest;
+import org.elasticsearch.client.core.CountRequest;
+import org.elasticsearch.client.core.CountResponse;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.GetRequest;
@@ -161,6 +166,36 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       log.error(message, e);
       throw new OptimizeRuntimeException(message, e);
     }
+  }
+
+  @Override
+  public CountResponse count(final CountRequest unfilteredTotalInstanceCountRequest) throws IOException {
+    //todo will be handle in the OPT-7469
+    return null;
+  }
+
+  @Override
+  public org.elasticsearch.action.search.SearchResponse scroll(final SearchScrollRequest scrollRequest) throws IOException {
+    //todo will be handle in the OPT-7469
+    return null;
+  }
+
+  @Override
+  public org.elasticsearch.action.search.SearchResponse search(final org.elasticsearch.action.search.SearchRequest searchRequest) throws
+                                                                                                                                  IOException {
+    //todo will be handle in the OPT-7469
+    return null;
+  }
+
+  @Override
+  public ClearScrollResponse clearScroll(final ClearScrollRequest clearScrollRequest) throws IOException {
+    //todo will be handle in the OPT-7469
+    return null;
+  }
+
+  @Override
+  public String getElasticsearchVersion() throws IOException {
+    return null;
   }
 
   @Override

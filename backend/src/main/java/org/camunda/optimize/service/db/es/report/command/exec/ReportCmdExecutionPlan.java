@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableDto;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.es.report.ReportEvaluationContext;
 import org.camunda.optimize.service.db.es.report.command.modules.distributed_by.DistributedByPart;
 import org.camunda.optimize.service.db.es.report.command.modules.group_by.GroupByPart;
@@ -44,21 +44,21 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
   protected ViewPart<D> viewPart;
   protected GroupByPart<D> groupByPart;
   protected DistributedByPart<D> distributedByPart;
-  protected OptimizeElasticsearchClient esClient;
+  protected DatabaseClient databaseClient;
   private final Function<CompositeCommandResult, CommandEvaluationResult<T>> mapToReportResult;
 
   protected ReportCmdExecutionPlan(final ViewPart<D> viewPart,
                                    final GroupByPart<D> groupByPart,
                                    final DistributedByPart<D> distributedByPart,
                                    final Function<CompositeCommandResult, CommandEvaluationResult<T>> mapToReportResult,
-                                   final OptimizeElasticsearchClient esClient) {
+                                   final DatabaseClient databaseClient) {
     groupByPart.setDistributedByPart(distributedByPart);
     distributedByPart.setViewPart(viewPart);
     this.viewPart = viewPart;
     this.groupByPart = groupByPart;
     this.distributedByPart = distributedByPart;
     this.mapToReportResult = mapToReportResult;
-    this.esClient = esClient;
+    this.databaseClient = databaseClient;
   }
 
   public abstract BoolQueryBuilder setupBaseQuery(final ExecutionContext<D> context);
@@ -140,7 +140,7 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
     SearchResponse response;
     CountResponse unfilteredInstanceCountResponse;
     response = executeElasticSearchCommand(executionContext, searchRequest);
-    unfilteredInstanceCountResponse = esClient.count(unfilteredTotalInstanceCountRequest);
+    unfilteredInstanceCountResponse = databaseClient.count(unfilteredTotalInstanceCountRequest);
     executionContext.setUnfilteredTotalInstanceCount(unfilteredInstanceCountResponse.getCount());
     return response;
   }
@@ -160,9 +160,9 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
       } else {
         searchRequest.scroll(TimeValue.timeValueSeconds(timeout));
       }
-      response = (scrollRequest != null ? esClient.scroll(scrollRequest) : esClient.search(searchRequest));
+      response = (scrollRequest != null ? databaseClient.scroll(scrollRequest) : databaseClient.search(searchRequest));
     } else {
-      response = esClient.search(searchRequest);
+      response = databaseClient.search(searchRequest);
     }
     return response;
   }

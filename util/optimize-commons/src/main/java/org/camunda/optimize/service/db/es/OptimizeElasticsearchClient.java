@@ -189,6 +189,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     return highLevelClient.bulk(bulkRequest, requestOptions());
   }
 
+  @Override
   public final CountResponse count(final CountRequest countRequest) throws IOException {
     applyIndexPrefixes(countRequest);
     return highLevelClient.count(countRequest, requestOptions());
@@ -265,17 +266,20 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     return highLevelClient.mget(multiGetRequest, requestOptions());
   }
 
+  @Override
   public final SearchResponse scroll(final SearchScrollRequest searchScrollRequest)
     throws IOException {
     // nothing to modify here, still exposing to not force usage of highLevelClient for this common use case
     return highLevelClient.scroll(searchScrollRequest, requestOptions());
   }
 
+  @Override
   public final ClearScrollResponse clearScroll(final ClearScrollRequest clearScrollRequest) throws IOException {
     // nothing to modify here, still exposing to not force usage of highLevelClient for this common use case
     return highLevelClient.clearScroll(clearScrollRequest, requestOptions());
   }
 
+  @Override
   public final SearchResponse search(final SearchRequest searchRequest)
     throws IOException {
     applyIndexPrefixes(searchRequest);

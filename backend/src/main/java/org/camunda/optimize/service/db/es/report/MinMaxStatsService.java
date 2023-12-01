@@ -8,7 +8,7 @@ package org.camunda.optimize.service.db.es.report;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.ElasticsearchStatusException;
@@ -29,10 +29,10 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Optional;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.service.db.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
 import static org.camunda.optimize.service.db.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
-import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
 @RequiredArgsConstructor
@@ -48,7 +48,7 @@ public class MinMaxStatsService {
   private static final String STATS_AGGREGATION_FIRST_FIELD = "statsAggField1";
   private static final String STATS_AGGREGATION_SECOND_FIELD = "statsAggField2";
 
-  private final OptimizeElasticsearchClient esClient;
+  private final DatabaseClient databaseClient;
 
   public MinMaxStatDto getMinMaxDateRange(final ExecutionContext<? extends SingleReportDataDto> context,
                                           final QueryBuilder query,
@@ -145,7 +145,7 @@ public class MinMaxStatsService {
     final SearchRequest searchRequest = new SearchRequest(indexNames).source(searchSourceBuilder);
     final SearchResponse response;
     try {
-      response = esClient.search(searchRequest);
+      response = databaseClient.search(searchRequest);
     } catch (IOException e) {
       final String reason = String.format(
         "Could not retrieve stats for script %s on indices %s", script.toString(), Arrays.toString(indexNames)
@@ -234,7 +234,7 @@ public class MinMaxStatsService {
 
     SearchResponse response;
     try {
-      response = esClient.search(searchRequest);
+      response = databaseClient.search(searchRequest);
     } catch (IOException e) {
       String reason = String.format(
         "Could not retrieve stats for firstField %s and secondField %s on index %s",
@@ -315,4 +315,5 @@ public class MinMaxStatsService {
     }
     throw e;
   }
+
 }

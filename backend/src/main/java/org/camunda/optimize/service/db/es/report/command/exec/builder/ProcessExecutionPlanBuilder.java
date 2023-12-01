@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.filter.ProcessQueryFilterEnhancer;
@@ -30,7 +31,7 @@ import java.util.function.Function;
 public class ProcessExecutionPlanBuilder {
 
   private final ApplicationContext context;
-  private final OptimizeElasticsearchClient esClient;
+  private final DatabaseClient databaseClient;
   private final ProcessQueryFilterEnhancer processQueryFilterEnhancer;
   private final ProcessDefinitionReader processDefinitionReader;
 
@@ -140,7 +141,7 @@ public class ProcessExecutionPlanBuilder {
         groupByPart,
         distributedByPart,
         mapToReportResult,
-        esClient,
+        databaseClient,
         processDefinitionReader,
         processQueryFilterEnhancer
       );

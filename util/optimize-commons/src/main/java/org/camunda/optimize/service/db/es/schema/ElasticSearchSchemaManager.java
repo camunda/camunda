@@ -44,6 +44,7 @@ import org.camunda.optimize.service.db.es.schema.index.report.SingleDecisionRepo
 import org.camunda.optimize.service.db.es.schema.index.report.SingleProcessReportIndexES;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
@@ -56,6 +57,7 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.xcontent.XContentBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -73,6 +75,7 @@ import static org.camunda.optimize.service.db.es.schema.ElasticSearchIndexSettin
 
 @Component
 @Slf4j
+@Conditional(ElasticSearchCondition.class)
 public class ElasticSearchSchemaManager {
     private static final String INDEX_READ_ONLY_SETTING = "index.blocks.read_only_allow_delete";
     public static final int INDEX_EXIST_BATCH_SIZE = 10;

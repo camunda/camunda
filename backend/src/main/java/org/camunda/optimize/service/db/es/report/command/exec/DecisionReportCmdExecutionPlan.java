@@ -8,14 +8,14 @@ package org.camunda.optimize.service.db.es.report.command.exec;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.service.db.reader.DecisionDefinitionReader;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.es.filter.DecisionQueryFilterEnhancer;
 import org.camunda.optimize.service.db.es.report.command.modules.distributed_by.DistributedByPart;
 import org.camunda.optimize.service.db.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.db.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.db.es.report.command.modules.view.ViewPart;
 import org.camunda.optimize.service.db.es.schema.index.DecisionInstanceIndexES;
+import org.camunda.optimize.service.db.reader.DecisionDefinitionReader;
 import org.camunda.optimize.service.util.DefinitionQueryUtil;
 import org.camunda.optimize.service.util.InstanceIndexUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -36,10 +36,10 @@ public class DecisionReportCmdExecutionPlan<T> extends ReportCmdExecutionPlan<T,
                                         final GroupByPart<DecisionReportDataDto> groupByPart,
                                         final DistributedByPart<DecisionReportDataDto> distributedByPart,
                                         final Function<CompositeCommandResult, CommandEvaluationResult<T>> mapToReportResult,
-                                        final OptimizeElasticsearchClient esClient,
+                                        final DatabaseClient databaseClient,
                                         final DecisionDefinitionReader decisionDefinitionReader,
                                         final DecisionQueryFilterEnhancer queryFilterEnhancer) {
-    super(viewPart, groupByPart, distributedByPart, mapToReportResult, esClient);
+    super(viewPart, groupByPart, distributedByPart, mapToReportResult, databaseClient);
     this.decisionDefinitionReader = decisionDefinitionReader;
     this.queryFilterEnhancer = queryFilterEnhancer;
   }

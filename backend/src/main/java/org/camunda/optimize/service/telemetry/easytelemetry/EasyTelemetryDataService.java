@@ -17,8 +17,8 @@ import org.camunda.optimize.dto.optimize.query.telemetry.LicenseKeyDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.ProductDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.TelemetryDataDto;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
+import org.camunda.optimize.service.db.DatabaseClient;
+import org.camunda.optimize.service.db.schema.DatabaseMetadataService;
 import org.camunda.optimize.service.license.LicenseManager;
 import org.camunda.optimize.service.telemetry.TelemetryDataConstants;
 import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
@@ -49,15 +49,15 @@ public class EasyTelemetryDataService {
   public static final String CAWEMO_FEATURE = "cawemo";
   public static final Set<String> FEATURE_NAMES = Set.of(OPTIMIZE_FEATURE, CAMUNDA_BPM_FEATURE, CAWEMO_FEATURE);
 
-  private final ElasticSearchMetadataService elasticsearchMetadataService;
+  private final DatabaseMetadataService databaseMetadataService;
   private final EngineContextFactory engineContextFactory;
   private final LicenseManager licenseManager;
-  private final OptimizeElasticsearchClient esClient;
+  private final DatabaseClient databaseClient;
 
   public TelemetryDataDto getTelemetryData() {
     Optional<MetadataDto> metadata = Optional.empty();
     try {
-      metadata = elasticsearchMetadataService.readMetadata(esClient);
+      metadata = databaseMetadataService.readMetadata(databaseClient);
     } catch (final Exception e) {
       log.error("Failed retrieving Optimize metadata.", e);
     }
@@ -93,7 +93,7 @@ public class EasyTelemetryDataService {
   private DatabaseDto getDatabaseData() {
     String esVersion = null;
     try {
-      esVersion = esClient.getElasticsearchVersion();
+      esVersion = databaseClient.getElasticsearchVersion();
     } catch (IOException e) {
       log.info("Failed to retrieve Elasticsearch version for telemetry data.");
     }
