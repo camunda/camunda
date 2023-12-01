@@ -95,8 +95,8 @@ camunda-platform:
     image:
       # Image.repository defines which image repository to use
       repository: gcr.io/zeebe-io/zeebe
-      tag: np-propagate-block-1
+      tag: np-propagate-block-2
   zeebe-gateway:
     image:
       repository: gcr.io/zeebe-io/zeebe
-      tag: np-propagate-block-1
+      tag: np-propagate-block-2

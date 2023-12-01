@@ -53,6 +53,13 @@ final class JobClientStreamMetrics implements ClientStreamMetrics {
           .help("Count of the number of blocked client streams")
           .register();
 
+  private static final Gauge BLOCKED_STREAMS =
+      Gauge.build()
+          .namespace(NAMESPACE)
+          .name("blocked_aggregated_streams")
+          .help("Count of the number of blocked aggregated streams")
+          .register();
+
   private final Counter.Child pushSuccessCount;
   private final Counter.Child pushFailureCount;
 
@@ -99,5 +106,15 @@ final class JobClientStreamMetrics implements ClientStreamMetrics {
   @Override
   public void clientUnblocked() {
     BLOCKED_CLIENTS.dec();
+  }
+
+  @Override
+  public void streamBlocked() {
+    BLOCKED_STREAMS.inc();
+  }
+
+  @Override
+  public void streamUnblocked() {
+    BLOCKED_STREAMS.dec();
   }
 }

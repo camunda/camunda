@@ -582,7 +582,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
     if (error == null) {
       response = responseDecoder.decode(responseBuffer, new UnblockStreamResponse());
       if (response.isRight()) {
-        registration.transitionToAdded();
+        registration.transitionToUnblocked();
         return;
       }
 

@@ -86,10 +86,12 @@ final class ClientStreamManager<M extends BufferWriter> {
         .ifPresent(
             stream -> {
               stream.block();
+              metrics.clientBlocked();
 
               if (stream.serverStream().isBlocked()) {
                 LOG.debug("Blocking aggregated stream [{}]", stream.serverStream().getStreamId());
                 requestManager.block(stream.serverStream(), servers);
+                metrics.streamBlocked();
               }
             });
   }
@@ -102,10 +104,12 @@ final class ClientStreamManager<M extends BufferWriter> {
             stream -> {
               final var unblocksAggregated = stream.serverStream().isBlocked();
               stream.unblock();
+              metrics.clientUnblocked();
 
               if (unblocksAggregated) {
                 LOG.debug("Unblocking aggregated stream [{}]", stream.serverStream().getStreamId());
                 requestManager.unblock(stream.serverStream(), servers);
+                metrics.streamUnblocked();
               }
             });
   }

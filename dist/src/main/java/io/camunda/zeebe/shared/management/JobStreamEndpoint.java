@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.shared.management;
 
-import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.transport.stream.api.ClientStream;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamInfo;
@@ -15,9 +14,11 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
@@ -116,7 +117,8 @@ public final class JobStreamEndpoint {
     // it's safe to cast any filtered member ID to an integer, since a client stream can only be
     // connected to a broker, and brokers always have integer node IDs
     final var brokers =
-        stream.liveConnections().stream().map(MemberId::id).map(Integer::valueOf).toList();
+        stream.liveConnections().entrySet().stream()
+            .collect(Collectors.toMap(e -> Integer.parseInt(e.getKey().id()), Entry::getValue));
 
     return new ClientJobStream(
         BufferUtil.bufferAsString(stream.streamType()),
@@ -150,8 +152,8 @@ public final class JobStreamEndpoint {
       String jobType,
       Object id,
       Metadata metadata,
-      Collection<Integer> connectedTo,
-      boolean isBlocked)
+      Map<Integer, String> connectedTo,
+      boolean blocked)
       implements JobStream {}
 
   /** View model for the {@link JobActivationProperties} of a job stream. */

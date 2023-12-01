@@ -28,6 +28,7 @@ import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -90,6 +91,7 @@ class ClientStreamManagerTest {
     // then
     assertThat(registry.getClient(streamId))
         .map(ClientStreamImpl::liveConnections)
+        .map(Map::keySet)
         .hasValue(Set.of(serverId));
   }
 

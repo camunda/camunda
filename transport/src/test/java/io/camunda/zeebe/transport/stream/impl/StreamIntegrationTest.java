@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -136,6 +137,7 @@ final class StreamIntegrationTest {
         stream ->
             assertThat(stream)
                 .map(ClientStream::liveConnections)
+                .map(Map::keySet)
                 .hasValueSatisfying(s -> assertThat(s).containsAll(addedIds)));
   }
 
@@ -445,6 +447,7 @@ final class StreamIntegrationTest {
           stream ->
               assertThat(stream)
                   .map(ClientStream::liveConnections)
+                  .map(Map::keySet)
                   .hasValue(Set.of(server2.memberId())));
     }
 
@@ -464,6 +467,7 @@ final class StreamIntegrationTest {
           stream ->
               assertThat(stream)
                   .map(ClientStream::liveConnections)
+                  .map(Map::keySet)
                   .hasValue(Set.of(server2.memberId())));
 
       // when
@@ -519,6 +523,7 @@ final class StreamIntegrationTest {
           stream ->
               assertThat(stream)
                   .map(ClientStream::liveConnections)
+                  .map(Map::keySet)
                   .hasValue(Set.of(server2.memberId())));
 
       // when - simulate restart by recreating the server entirely

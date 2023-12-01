@@ -113,9 +113,9 @@ public abstract class AbstractJobStreamsAssert<
   public static Condition<ClientJobStream> isConnectedTo(final int... nodeId) {
     final var members = Arrays.stream(nodeId).boxed().collect(Collectors.toSet());
     return VerboseCondition.verboseCondition(
-        stream -> stream.connectedTo().containsAll(members),
+        stream -> stream.connectedTo().keySet().containsAll(members),
         "a stream connected to brokers %s".formatted(Arrays.toString(nodeId)),
-        stream -> " but actual connections are '%s'".formatted(stream.connectedTo()));
+        stream -> " but actual connections are '%s'".formatted(stream.connectedTo().keySet()));
   }
 
   /** Returns a condition which checks that a stream has the given timeout in milliseconds. */

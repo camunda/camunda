@@ -13,8 +13,10 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStream;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Set;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 /** Represents a registered client stream. * */
@@ -73,8 +75,9 @@ final class ClientStreamImpl<M extends BufferWriter> implements ClientStream<M> 
   }
 
   @Override
-  public Set<MemberId> liveConnections() {
-    return serverStream().liveConnections();
+  public Map<MemberId, String> liveConnections() {
+    return serverStream().liveConnections().entrySet().stream()
+        .collect(Collectors.toMap(Entry::getKey, e -> e.getValue().name()));
   }
 
   @Override
@@ -84,10 +87,6 @@ final class ClientStreamImpl<M extends BufferWriter> implements ClientStream<M> 
 
   public AggregatedClientStream<M> serverStream() {
     return serverStream;
-  }
-
-  public ClientStreamConsumer clientStreamConsumer() {
-    return clientStreamConsumer;
   }
 
   @Override

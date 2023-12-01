@@ -16,7 +16,8 @@ import io.camunda.zeebe.transport.stream.api.StreamExhaustedException;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -31,13 +32,13 @@ final class AggregatedClientStream<M extends BufferWriter> {
   private static final Logger LOGGER = LoggerFactory.getLogger(AggregatedClientStream.class);
   private final UUID streamId;
   private final LogicalId<M> logicalId;
-  private final Set<MemberId> liveConnections = new HashSet<>();
+  private final Map<MemberId, RemoteState> liveConnections = new HashMap<>();
   private final ClientStreamMetrics metrics;
   private final Int2ObjectHashMap<ClientStreamImpl<M>> clientStreams = new Int2ObjectHashMap<>();
 
   private boolean isOpened;
-  private boolean isReady;
   private int nextLocalId;
+  private boolean blocked;
 
   AggregatedClientStream(final UUID streamId, final LogicalId<M> logicalId) {
     this(streamId, logicalId, ClientStreamMetrics.noop());
@@ -53,7 +54,6 @@ final class AggregatedClientStream<M extends BufferWriter> {
   void addClient(final ClientStreamImpl<M> clientStream) {
     clientStreams.put(clientStream.streamId().localId(), clientStream);
     metrics.observeAggregatedClientCount(clientStreams.size());
-    isReady |= clientStream.isBlocked();
   }
 
   UUID getStreamId() {
@@ -77,7 +77,7 @@ final class AggregatedClientStream<M extends BufferWriter> {
    * @param serverId id of the server
    */
   void add(final MemberId serverId) {
-    liveConnections.add(serverId);
+    liveConnections.put(serverId, RemoteState.ADDED);
   }
 
   /**
@@ -88,7 +88,7 @@ final class AggregatedClientStream<M extends BufferWriter> {
    * @return true if a server has acknowledged to add stream request
    */
   boolean isConnected(final MemberId serverId) {
-    return liveConnections.contains(serverId);
+    return liveConnections.get(serverId) != null;
   }
 
   /**
@@ -98,6 +98,21 @@ final class AggregatedClientStream<M extends BufferWriter> {
    */
   void remove(final MemberId serverId) {
     liveConnections.remove(serverId);
+  }
+
+  void block(final MemberId serverId) {
+    liveConnections.put(serverId, RemoteState.BLOCKED);
+    blocked = liveConnections.values().stream().allMatch(s -> s == RemoteState.BLOCKED);
+  }
+
+  void unblock(final MemberId serverId) {
+    liveConnections.put(serverId, RemoteState.ADDED);
+    blocked = false;
+    metrics.streamUnblocked();
+  }
+
+  public boolean isBlocked() {
+    return blocked;
   }
 
   void close() {
@@ -118,7 +133,7 @@ final class AggregatedClientStream<M extends BufferWriter> {
     return logicalId;
   }
 
-  Set<MemberId> liveConnections() {
+  Map<MemberId, RemoteState> liveConnections() {
     return liveConnections;
   }
 
@@ -201,13 +216,13 @@ final class AggregatedClientStream<M extends BufferWriter> {
         + isOpened
         + ", nextLocalId="
         + nextLocalId
+        + ", blocked="
+        + blocked
         + '}';
   }
 
-  public boolean isBlocked() {
-    return clientStreams.values().stream()
-        .map(ClientStreamImpl::isBlocked)
-        .reduce((a, b) -> a && b)
-        .orElse(false);
+  public enum RemoteState {
+    ADDED,
+    BLOCKED
   }
 }

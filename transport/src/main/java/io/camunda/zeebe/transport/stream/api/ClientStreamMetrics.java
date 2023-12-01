@@ -34,6 +34,10 @@ public interface ClientStreamMetrics {
 
   default void clientUnblocked() {}
 
+  default void streamBlocked() {}
+
+  default void streamUnblocked() {}
+
   static ClientStreamMetrics noop() {
     return new ClientStreamMetrics() {};
   }
