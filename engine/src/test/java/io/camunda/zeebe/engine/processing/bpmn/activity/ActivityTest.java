@@ -78,7 +78,7 @@ public final class ActivityTest {
                       .zeebeInput("https://github.com/{{orgId}}/{{repoId}}", "urlStatic")
                       .zeebeInputExpression(
                           "\"https://github.com/{{orgId}}/{{repoId}}\"", "urlExpression")
-                      .zeebeInput("My Name is \"Zeebe\", nice to meet you", "quotesStatic")
+                      .zeebeInput("My Name is &#34;Zeebe&#34;, nice to meet you", "quotesStatic")
                       .zeebeInputExpression(
                           "\"My Name is \\\"Zeebe\\\", nice to meet you\"", "quotesExpression"))
           .endEvent()
@@ -143,7 +143,7 @@ public final class ActivityTest {
             entry("nullExpression", "\"null\""),
             entry("urlStatic", "\"https://github.com/{{orgId}}/{{repoId}}\""),
             entry("urlExpression", "\"https://github.com/{{orgId}}/{{repoId}}\""),
-            entry("quotesStatic", "\"My Name is \\\\\\\"Zeebe\\\\\\\", nice to meet you\""),
+            entry("quotesStatic", "\"My Name is &#34;Zeebe&#34;, nice to meet you\""),
             entry("quotesExpression", "\"My Name is \\\\\\\"Zeebe\\\\\\\", nice to meet you\""));
   }
 

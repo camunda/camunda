@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
-import org.apache.commons.text.StringEscapeUtils;
 
 /**
  * Transform variable mappings into an expression.
@@ -155,9 +154,7 @@ public final class VariableMappingTransformer {
         final String expression;
 
         if (sourceExpression instanceof StaticExpression) {
-          expression =
-              String.format(
-                  "\"%s\"", StringEscapeUtils.escapeJava(sourceExpression.getExpression()));
+          expression = String.format("\"%s\"", sourceExpression.getExpression());
         } else {
           expression = sourceExpression.getExpression();
         }
