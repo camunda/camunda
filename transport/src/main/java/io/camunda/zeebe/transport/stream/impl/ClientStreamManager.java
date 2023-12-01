@@ -85,6 +85,11 @@ final class ClientStreamManager<M extends BufferWriter> {
         .getClient(streamId)
         .ifPresent(
             stream -> {
+              if (stream.isBlocked()) {
+                LOG.trace("Skip blocking already blocked client stream [{}]", streamId);
+                return;
+              }
+
               stream.block();
               metrics.clientBlocked();
 
@@ -102,6 +107,11 @@ final class ClientStreamManager<M extends BufferWriter> {
         .getClient(streamId)
         .ifPresent(
             stream -> {
+              if (!stream.isBlocked()) {
+                LOG.trace("Skip unblocking already blocked client stream [{}]", streamId);
+                return;
+              }
+
               final var unblocksAggregated = stream.serverStream().isBlocked();
               stream.unblock();
               metrics.clientUnblocked();
