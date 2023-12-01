@@ -412,6 +412,11 @@ public class PassiveRole extends InactiveRole {
   protected CompletableFuture<AppendResponse> handleAppend(final InternalAppendRequest request) {
     final CompletableFuture<AppendResponse> future = new CompletableFuture<>();
 
+    // Check that there is a configuration and reject the request if there isn't.
+    if (!checkConfiguration(request, future)) {
+      return future;
+    }
+
     // Check that the term of the given request matches the local term or update the term.
     if (!checkTerm(request, future)) {
       return future;
@@ -429,6 +434,16 @@ public class PassiveRole extends InactiveRole {
     // wait for ever for the snapshot to be received.
     abortPendingSnapshots();
     return future;
+  }
+
+  private boolean checkConfiguration(
+      final InternalAppendRequest request, final CompletableFuture<AppendResponse> future) {
+    if (raft.getCurrentConfigurationIndex() == -1) {
+      log.debug("Rejected {}: No current configuration", request);
+      return failAppend(raft.getLog().getLastIndex(), future);
+    } else {
+      return true;
+    }
   }
 
   /**
