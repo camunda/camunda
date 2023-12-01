@@ -244,6 +244,24 @@ final class LeaderAppender {
     member.resetFailureCount();
   }
 
+  /**
+   * Updates the configuration index of the member based on the append response. This allows members
+   * which lost a configuration to update the leader and effectively request a configuration update.
+   */
+  private void updateConfigurationIndex(
+      final RaftMemberContext member, final AppendResponse response) {
+    final var configIndex = response.configurationIndex();
+    if (configIndex == 0) {
+      // Backwards compatibility: old members don't send a configuration index in the response.
+      // When we find the default value of 0, don't update the index and rely on the old behaviour
+      // where the configuration index is only updated in handleConfigureResponse.
+      // Otherwise, we'd constantly update the configuration index of old members to 0 and keep
+      // re-sending the configuration instead of appending.
+      return;
+    }
+    member.setConfigIndex(configIndex);
+  }
+
   /** Updates the match index when a response is received. */
   private void updateMatchIndex(final RaftMemberContext member, final AppendResponse response) {
     // If the replica returned a valid match index then update the existing match index.
@@ -645,6 +663,8 @@ final class LeaderAppender {
       final AppendResponse response) {
     // Reset the member failure count and update the member's availability status if necessary.
     succeedAttempt(member);
+
+    updateConfigurationIndex(member, response);
 
     // If replication succeeded then trigger commit futures.
     if (response.succeeded()) {
