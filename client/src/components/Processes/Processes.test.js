@@ -10,7 +10,7 @@ import {shallow} from 'enzyme';
 
 import {addNotification} from 'notifications';
 import {EntityList} from 'components';
-import {getOptimizeProfile} from 'config';
+import {isUserSearchAvailable} from 'config';
 import {track} from 'tracking';
 
 import {Processes} from './Processes';
@@ -38,7 +38,7 @@ jest.mock('./service', () => ({
 }));
 
 jest.mock('config', () => ({
-  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
+  isUserSearchAvailable: jest.fn().mockReturnValue(true),
 }));
 
 jest.mock('tracking', () => ({track: jest.fn()}));
@@ -87,8 +87,8 @@ it('should load processes with sort parameters', () => {
   expect(node.find('EntityList').prop('sorting')).toEqual({key: 'lastModifier', order: 'desc'});
 });
 
-it('should hide owner column and process config button in ccsm mode', async () => {
-  getOptimizeProfile.mockReturnValueOnce('ccsm');
+it('should hide owner column and process config button if user search is not available', async () => {
+  isUserSearchAvailable.mockReturnValueOnce(false);
   const node = shallow(<Processes {...props} />);
 
   await runAllEffects();
