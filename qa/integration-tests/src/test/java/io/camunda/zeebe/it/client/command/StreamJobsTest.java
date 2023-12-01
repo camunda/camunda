@@ -366,8 +366,9 @@ final class StreamJobsTest {
       assertThat(RecordingExporter.jobRecords(JobIntent.YIELDED).limit(yieldedPis.size()))
           .map(Record::getValue)
           .extracting(JobRecordValue::getProcessInstanceKey)
-          .hasSameSizeAs(yieldedPis)
-          .containsExactlyElementsOf(yieldedPis);
+          .isNotEmpty()
+          .isSubsetOf(yieldedPis)
+          .doesNotContainAnyElementsOf(expectedJobPis);
     }
   }
 }

@@ -114,7 +114,9 @@ final class JobStreamConsumerTest {
     final var consumer = new JobStreamConsumer(clientObserver, executor, streamer);
     final var streamId = new ClientStreamId() {};
     consumer.streamId(streamId);
-    streamer.block(streamId);
+    clientObserver.isReady = false;
+    consumer.push(BufferUtil.createCopy(new ActivatedJobImpl()));
+    assertThat(streamer.blocked).isEqualTo(streamId);
 
     // when
     clientObserver.isReady = true;

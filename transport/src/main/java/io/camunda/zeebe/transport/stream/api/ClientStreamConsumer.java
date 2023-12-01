@@ -25,8 +25,4 @@ public interface ClientStreamConsumer {
    * @param payload the data to be consumed by the client
    */
   ActorFuture<Void> push(DirectBuffer payload);
-
-  default ActorFuture<Void> push(final ClientStreamId id, final DirectBuffer payload) {
-    return push(payload);
-  }
 }
