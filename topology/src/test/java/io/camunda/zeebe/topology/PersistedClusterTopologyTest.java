@@ -9,14 +9,18 @@ package io.camunda.zeebe.topology;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.topology.PersistedClusterTopology.ChecksumMismatch;
 import io.camunda.zeebe.topology.PersistedClusterTopology.MissingHeader;
 import io.camunda.zeebe.topology.PersistedClusterTopology.UnexpectedVersion;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.topology.state.MemberState;
+import io.camunda.zeebe.topology.state.PartitionState;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -84,5 +88,39 @@ final class PersistedClusterTopologyTest {
     // then
     Assertions.assertThatCode(() -> PersistedClusterTopology.ofFile(topologyFile, serializer))
         .isInstanceOf(MissingHeader.class);
+  }
+
+  @Test
+  void shouldFailOnChangedTopology() throws IOException {
+    // given
+    final var tmp = Files.createTempDirectory("topology");
+    final var topologyFile = tmp.resolve("topology.meta");
+    final var serializer = new ProtoBufSerializer();
+    final var persistedClusterTopology = PersistedClusterTopology.ofFile(topologyFile, serializer);
+
+    // two very similar topologies with a single bit different (2 vs 3)
+    final var initialTopology =
+        ClusterTopology.init()
+            .addMember(
+                MemberId.from("1"),
+                MemberState.initializeAsActive(Map.of(1, PartitionState.active(2))));
+    final var changedTopology =
+        ClusterTopology.init()
+            .addMember(
+                MemberId.from("1"),
+                MemberState.initializeAsActive(Map.of(1, PartitionState.active(3))));
+
+    persistedClusterTopology.update(initialTopology);
+
+    // when -- keep the same header but change the body
+    final var fileContent = Files.readAllBytes(topologyFile);
+    final var newBody = serializer.encode(changedTopology);
+    System.arraycopy(
+        newBody, 0, fileContent, PersistedClusterTopology.HEADER_LENGTH, newBody.length);
+    Files.write(topologyFile, fileContent, StandardOpenOption.WRITE);
+
+    // then -- checksum mismatch is detected
+    Assertions.assertThatCode(() -> PersistedClusterTopology.ofFile(topologyFile, serializer))
+        .isInstanceOf(ChecksumMismatch.class);
   }
 }

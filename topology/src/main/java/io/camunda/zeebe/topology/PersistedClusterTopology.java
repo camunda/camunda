@@ -24,11 +24,10 @@ import java.util.zip.CRC32C;
  * fixed-size header containing a version and a checksum, followed by the serialized topology.
  */
 final class PersistedClusterTopology {
+  // Header is a single byte for the version, followed by a long for the checksum.
+  public static final int HEADER_LENGTH = Byte.BYTES + Long.BYTES;
   // Constant version, to be incremented if the format changes.
   private static final byte VERSION = 1;
-
-  // Header is a single byte for the version, followed by a long for the checksum.
-  private static final int HEADER_LENGTH = Byte.BYTES + Long.BYTES;
   private final Path topologyFile;
   private final ClusterTopologySerializer serializer;
   private ClusterTopology clusterTopology;
