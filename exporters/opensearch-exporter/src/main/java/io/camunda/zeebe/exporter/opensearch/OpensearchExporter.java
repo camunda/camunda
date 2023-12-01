@@ -292,6 +292,9 @@ public class OpensearchExporter implements Exporter {
       if (index.userTask) {
         createValueIndexTemplate(ValueType.USER_TASK);
       }
+      if (index.compensationSubscription) {
+        createValueIndexTemplate(ValueType.COMPENSATION_SUBSCRIPTION);
+      }
     }
 
     indexTemplatesCreated = true;

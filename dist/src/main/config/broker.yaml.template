@@ -624,6 +624,7 @@
         #     rejection: false
         #
         #     commandDistribution: true
+        #     compensationSubscription: true
         #     decisionRequirements: true
         #     decision: true
         #     decisionEvaluation: true
@@ -704,6 +705,7 @@
         #     rejection: false
         #
         #     commandDistribution: true
+        #     compensationSubscription: true
         #     decisionRequirements: true
         #     decision: true
         #     decisionEvaluation: true
