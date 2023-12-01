@@ -49,7 +49,10 @@ record AggregatedRemoteStream<M>(LogicalId<M> logicalId, List<StreamConsumer<M>>
 
   @Override
   public boolean isBlocked() {
-    return streamConsumers.stream().map(StreamConsumer::isBlocked).reduce(true, (a, b) -> a && b);
+    return streamConsumers.stream()
+        .map(StreamConsumer::isBlocked)
+        .reduce((a, b) -> a && b)
+        .orElse(false);
   }
 
   /** A stream consumer uniquely identified by the id, with its properties and streamType. */
