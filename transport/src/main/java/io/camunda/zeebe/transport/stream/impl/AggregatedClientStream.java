@@ -150,13 +150,16 @@ final class AggregatedClientStream<M extends BufferWriter> {
           new ClientStreamBlockedException(
               "Cannot forward remote payload as aggregated stream %s is blocked"
                   .formatted(streamId)));
+      return;
     }
 
     final var streams = clientStreams.values();
     if (streams.isEmpty()) {
-      throw new NoSuchStreamException(
-          "Cannot forward remote payload as there is no known client streams for aggregated stream %s"
-              .formatted(logicalId));
+      future.completeExceptionally(
+          new NoSuchStreamException(
+              "Cannot forward remote payload as there is no known client streams for aggregated stream %s"
+                  .formatted(logicalId)));
+      return;
     }
 
     final var targets = new ArrayList<>(streams);

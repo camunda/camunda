@@ -80,7 +80,6 @@ final class ClientStreamManager<M extends BufferWriter> {
   }
 
   void block(final ClientStreamId streamId) {
-    LOG.debug("Blocking client stream [{}]", streamId);
     registry
         .getClient(streamId)
         .ifPresent(
@@ -90,11 +89,12 @@ final class ClientStreamManager<M extends BufferWriter> {
                 return;
               }
 
+              LOG.trace("Blocking client stream [{}]", streamId);
               stream.block();
               metrics.clientBlocked();
 
               if (stream.serverStream().shouldBlock()) {
-                LOG.debug("Blocking aggregated stream [{}]", stream.serverStream().getStreamId());
+                LOG.trace("Blocking aggregated stream [{}]", stream.serverStream().getStreamId());
                 requestManager.block(stream.serverStream(), servers);
                 metrics.streamBlocked();
               }
@@ -102,7 +102,6 @@ final class ClientStreamManager<M extends BufferWriter> {
   }
 
   void unblock(final ClientStreamId streamId) {
-    LOG.debug("Unblocking client stream [{}]", streamId);
     registry
         .getClient(streamId)
         .ifPresent(
@@ -112,12 +111,13 @@ final class ClientStreamManager<M extends BufferWriter> {
                 return;
               }
 
-              final var unblocksAggregated = stream.serverStream().isBlocked();
+              LOG.trace("Unblocking client stream [{}]", streamId);
+              final var unblocksAggregated = stream.serverStream().shouldBlock();
               stream.unblock();
               metrics.clientUnblocked();
 
               if (unblocksAggregated) {
-                LOG.debug("Unblocking aggregated stream [{}]", stream.serverStream().getStreamId());
+                LOG.trace("Unblocking aggregated stream [{}]", stream.serverStream().getStreamId());
                 requestManager.unblock(stream.serverStream(), servers);
                 metrics.streamUnblocked();
               }

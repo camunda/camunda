@@ -117,7 +117,7 @@ public final class RemoteStreamApiHandler<M> implements CloseableSilently {
       return failedResponse(sender, errorMessage);
     }
 
-    LOG.debug("Blocking stream '{}' from '{}'", request.streamId(), sender);
+    LOG.trace("Blocking stream '{}' from '{}'", request.streamId(), sender);
     registry.block(sender, request.streamId());
     return blockStreamResponseOK;
   }
@@ -129,7 +129,7 @@ public final class RemoteStreamApiHandler<M> implements CloseableSilently {
       return failedResponse(sender, errorMessage);
     }
 
-    LOG.debug("Unblocking stream '{}' from '{}'", request.streamId(), sender);
+    LOG.trace("Unblocking stream '{}' from '{}'", request.streamId(), sender);
     registry.unblock(sender, request.streamId());
     return unblockStreamResponseOK;
   }
