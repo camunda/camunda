@@ -134,7 +134,7 @@ final class PersistedClusterTopology {
     return checksum.getValue();
   }
 
-  private static final class UnexpectedVersion extends RuntimeException {
+  public static final class UnexpectedVersion extends RuntimeException {
     private UnexpectedVersion(final Path topologyFile, final byte version) {
       super(
           "Topology file %s had version '%s', but expected version '%s'"
@@ -142,7 +142,7 @@ final class PersistedClusterTopology {
     }
   }
 
-  private static final class MissingHeader extends RuntimeException {
+  public static final class MissingHeader extends RuntimeException {
     private MissingHeader(final Path topologyFile, final Object fileSize) {
       super(
           "Topology file %s is too small to contain the expected header: %s bytes"
@@ -150,7 +150,7 @@ final class PersistedClusterTopology {
     }
   }
 
-  private static final class ChecksumMismatch extends RuntimeException {
+  public static final class ChecksumMismatch extends RuntimeException {
     private ChecksumMismatch(
         final Path topologyFile, final long expectedChecksum, final long actualChecksum) {
       super(

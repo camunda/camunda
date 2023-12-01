@@ -9,6 +9,9 @@ package io.camunda.zeebe.topology;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import io.camunda.zeebe.topology.PersistedClusterTopology.ChecksumMismatch;
+import io.camunda.zeebe.topology.PersistedClusterTopology.MissingHeader;
+import io.camunda.zeebe.topology.PersistedClusterTopology.UnexpectedVersion;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 import java.io.IOException;
@@ -32,7 +35,7 @@ final class PersistedClusterTopologyTest {
 
     // then
     Assertions.assertThatCode(() -> PersistedClusterTopology.ofFile(topologyFile, serializer))
-        .hasMessageContaining("checksum");
+        .isInstanceOf(ChecksumMismatch.class);
   }
 
   @Test
@@ -49,7 +52,7 @@ final class PersistedClusterTopologyTest {
 
     // then
     Assertions.assertThatCode(() -> PersistedClusterTopology.ofFile(topologyFile, serializer))
-        .hasMessageContaining("version");
+        .isInstanceOf(UnexpectedVersion.class);
   }
 
   @Test
@@ -64,7 +67,7 @@ final class PersistedClusterTopologyTest {
 
     // then
     Assertions.assertThatCode(() -> PersistedClusterTopology.ofFile(topologyFile, serializer))
-        .hasMessageContaining("too small");
+        .isInstanceOf(MissingHeader.class);
   }
 
   @Test
@@ -80,6 +83,6 @@ final class PersistedClusterTopologyTest {
 
     // then
     Assertions.assertThatCode(() -> PersistedClusterTopology.ofFile(topologyFile, serializer))
-        .hasMessageContaining("header");
+        .isInstanceOf(MissingHeader.class);
   }
 }
