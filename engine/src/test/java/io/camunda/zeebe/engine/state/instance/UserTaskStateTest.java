@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState.State;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
@@ -23,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
+import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -49,7 +51,7 @@ public class UserTaskStateTest {
 
     // then
     final UserTaskRecord storedRecord = userTaskState.getUserTask(5_000);
-    assertUserTask(expectedRecord, storedRecord);
+    assertUserTask(expectedRecord, storedRecord, State.CREATING);
   }
 
   @Test
@@ -62,7 +64,7 @@ public class UserTaskStateTest {
 
     // then
     final UserTaskRecord storedRecord = userTaskState.getUserTask(5_000);
-    assertUserTask(expectedRecord, "customTenantId", storedRecord);
+    assertUserTask(expectedRecord, "customTenantId", storedRecord, State.CREATING);
   }
 
   @Test
@@ -78,6 +80,33 @@ public class UserTaskStateTest {
     // then
     final UserTaskRecord storedRecord = userTaskState.getUserTask(5_000);
     assertThat(storedRecord).hasAssignee("myNewAssignee");
+  }
+
+  @Test
+  public void shouldUpdateUserTaskWithModifier() {
+    // given
+    final UserTaskRecord expectedRecord = createUserTask(5_000);
+    userTaskState.create(expectedRecord);
+
+    // when
+    userTaskState.update(5_000, record -> record.setAssignee("myNewAssignee"));
+
+    // then
+    final UserTaskRecord storedRecord = userTaskState.getUserTask(5_000);
+    assertThat(storedRecord).hasAssignee("myNewAssignee");
+  }
+
+  @Test
+  public void shouldUpdateUserTaskState() {
+    // given
+    final UserTaskRecord expectedRecord = createUserTask(5_000);
+    userTaskState.create(expectedRecord);
+
+    // when
+    userTaskState.updateUserTaskState(5_000, State.CREATED);
+
+    // then
+    assertUserTaskState(5_000, State.CREATED);
   }
 
   @Test
@@ -157,14 +186,18 @@ public class UserTaskStateTest {
   }
 
   private void assertUserTask(
-      final UserTaskRecord expectedRecord, final UserTaskRecord storedRecord) {
-    assertUserTask(expectedRecord, TenantOwned.DEFAULT_TENANT_IDENTIFIER, storedRecord);
+      final UserTaskRecord expectedRecord,
+      final UserTaskRecord storedRecord,
+      final State expectedState) {
+    assertUserTask(
+        expectedRecord, TenantOwned.DEFAULT_TENANT_IDENTIFIER, storedRecord, expectedState);
   }
 
   private void assertUserTask(
       final UserTaskRecord expectedRecord,
       final String expectedTenantId,
-      final UserTaskRecord storedRecord) {
+      final UserTaskRecord storedRecord,
+      final State expectedState) {
     assertThat(storedRecord)
         .hasElementInstanceKey(expectedRecord.getElementInstanceKey())
         .hasBpmnProcessId(expectedRecord.getBpmnProcessId())
@@ -180,5 +213,10 @@ public class UserTaskStateTest {
         .hasFormKey(expectedRecord.getFormKey())
         .hasUserTaskKey(expectedRecord.getUserTaskKey())
         .hasTenantId(expectedTenantId);
+    assertUserTaskState(expectedRecord.getUserTaskKey(), expectedState);
+  }
+
+  private void assertUserTaskState(final long userTaskKey, final State expectedState) {
+    Assertions.assertThat(userTaskState.getState(userTaskKey)).isEqualTo(expectedState);
   }
 }
