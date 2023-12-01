@@ -33,6 +33,8 @@ func TestDeployResourceCommand_AddResourceFile(t *testing.T) {
 	demoBytes := readBytes(t, demoName)
 	anotherName := "../../cmd/zbctl/testdata/drg-force-user.dmn"
 	anotherBytes := readBytes(t, anotherName)
+	formName := "../../cmd/zbctl/testdata/deploy_form.form"
+	formBytes := readBytes(t, formName)
 
 	request := &pb.DeployResourceRequest{
 		Resources: []*pb.Resource{
@@ -43,6 +45,10 @@ func TestDeployResourceCommand_AddResourceFile(t *testing.T) {
 			{
 				Name:    anotherName,
 				Content: anotherBytes,
+			},
+			{
+				Name:    formName,
+				Content: formBytes,
 			},
 		},
 	}
@@ -55,6 +61,7 @@ func TestDeployResourceCommand_AddResourceFile(t *testing.T) {
 	response, err := command.
 		AddResourceFile(demoName).
 		AddResourceFile(anotherName).
+		AddResourceFile(formName).
 		Send(context.Background())
 
 	if err != nil {

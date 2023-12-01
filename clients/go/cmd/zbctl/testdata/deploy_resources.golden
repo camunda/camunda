@@ -41,6 +41,15 @@
         "resourceName": "drg-force-user.dmn",
         "tenantId": "<default>"
       }
+    },
+    {
+      "form": {
+        "formId": "simple_form",
+        "version": 1,
+        "formKey": "2251799813685255",
+        "resourceName": "deploy_form.form",
+        "tenantId": "<default>"
+      }
     }
   ],
   "tenantId": "<default>"
