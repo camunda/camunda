@@ -1260,6 +1260,14 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     return currentSnapshot != null ? currentSnapshot.getIndex() : 0L;
   }
 
+  /**
+   * @return the current configuration index or -1 if there is no configuration yet.
+   */
+  public long getCurrentConfigurationIndex() {
+    final var configuration = cluster.getConfiguration();
+    return configuration != null ? configuration.index() : -1L;
+  }
+
   public boolean isRunning() {
     return started;
   }

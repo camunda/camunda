@@ -29,6 +29,7 @@ public class AppendResponse extends AbstractRaftResponse {
   private final boolean succeeded;
   private final long lastLogIndex;
   private final long lastSnapshotIndex;
+  private final long configurationIndex;
 
   public AppendResponse(
       final Status status,
@@ -36,12 +37,14 @@ public class AppendResponse extends AbstractRaftResponse {
       final long term,
       final boolean succeeded,
       final long lastLogIndex,
-      final long lastSnapshotIndex) {
+      final long lastSnapshotIndex,
+      final long configurationIndex) {
     super(status, error);
     this.term = term;
     this.succeeded = succeeded;
     this.lastLogIndex = lastLogIndex;
     this.lastSnapshotIndex = lastSnapshotIndex;
+    this.configurationIndex = configurationIndex;
   }
 
   /**
@@ -89,20 +92,34 @@ public class AppendResponse extends AbstractRaftResponse {
     return lastSnapshotIndex;
   }
 
+  /**
+   * The members current configuration index at the time of handling the append request.
+   *
+   * <p>If the index is 0, this may indicate that the member is older and does not include the
+   * configuration index in the response.
+   *
+   * <p>If the index is -1, the member has no configuration and requires a configuration update from
+   * the leader.
+   */
+  public long configurationIndex() {
+    return configurationIndex;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(getClass(), status, term, succeeded, lastLogIndex, lastSnapshotIndex);
+    return Objects.hash(
+        getClass(), status, term, succeeded, lastLogIndex, lastSnapshotIndex, configurationIndex);
   }
 
   @Override
   public boolean equals(final Object object) {
-    if (object instanceof AppendResponse) {
-      final AppendResponse response = (AppendResponse) object;
+    if (object instanceof final AppendResponse response) {
       return response.status == status
           && response.term == term
           && response.succeeded == succeeded
           && response.lastLogIndex == lastLogIndex
-          && response.lastSnapshotIndex == lastSnapshotIndex;
+          && response.lastSnapshotIndex == lastSnapshotIndex
+          && response.configurationIndex == configurationIndex;
     }
     return false;
   }
@@ -116,6 +133,7 @@ public class AppendResponse extends AbstractRaftResponse {
           .add("succeeded", succeeded)
           .add("lastLogIndex", lastLogIndex)
           .add("lastSnapshotIndex", lastSnapshotIndex)
+          .add("configurationIndex", configurationIndex)
           .toString();
     } else {
       return toStringHelper(this).add("status", status).add("error", error).toString();
@@ -129,6 +147,7 @@ public class AppendResponse extends AbstractRaftResponse {
     private boolean succeeded;
     private long lastLogIndex;
     private long lastSnapshotIndex;
+    private long configurationIndex;
 
     /**
      * Sets the response term.
@@ -173,6 +192,11 @@ public class AppendResponse extends AbstractRaftResponse {
       return this;
     }
 
+    public Builder withConfigurationIndex(final long configurationIndex) {
+      this.configurationIndex = configurationIndex;
+      return this;
+    }
+
     /**
      * @throws IllegalStateException if status is ok and term is not positive or log index is
      *     negative
@@ -180,7 +204,8 @@ public class AppendResponse extends AbstractRaftResponse {
     @Override
     public AppendResponse build() {
       validate();
-      return new AppendResponse(status, error, term, succeeded, lastLogIndex, lastSnapshotIndex);
+      return new AppendResponse(
+          status, error, term, succeeded, lastLogIndex, lastSnapshotIndex, configurationIndex);
     }
 
     @Override
