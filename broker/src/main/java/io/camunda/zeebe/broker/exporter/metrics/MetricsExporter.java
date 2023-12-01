@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.time.Duration;
 import java.util.NavigableMap;
@@ -118,9 +119,12 @@ public class MetricsExporter implements Exporter {
       storeProcessInstanceCreation(record.getTimestamp(), recordKey);
     } else if (currentIntent == ProcessInstanceIntent.ELEMENT_COMPLETED
         && isProcessInstanceRecord(record)) {
+
+      final var recordValue = (ProcessInstanceRecordValue) record.getValue();
+      final String bpmnProcessId = recordValue.getBpmnProcessId();
       final var creationTime = processInstanceKeyToCreationTimeMap.remove(recordKey);
       executionLatencyMetrics.observeProcessInstanceExecutionTime(
-          partitionId, creationTime, record.getTimestamp());
+          partitionId, bpmnProcessId, creationTime, record.getTimestamp());
     }
   }
 
@@ -136,8 +140,11 @@ public class MetricsExporter implements Exporter {
     if (currentIntent == JobIntent.CREATED) {
       storeJobCreation(record.getTimestamp(), recordKey);
     } else if (currentIntent == JobIntent.COMPLETED) {
+      final var value = (JobRecordValue) (record.getValue());
+      final String bpmnProcessId = value.getBpmnProcessId();
       final var creationTime = jobKeyToCreationTimeMap.remove(recordKey);
-      executionLatencyMetrics.observeJobLifeTime(partitionId, creationTime, record.getTimestamp());
+      executionLatencyMetrics.observeJobLifeTime(
+          partitionId, bpmnProcessId, creationTime, record.getTimestamp());
     }
   }
 

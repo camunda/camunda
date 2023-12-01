@@ -16,7 +16,7 @@ public class ExecutionLatencyMetrics {
           .namespace("zeebe")
           .name("process_instance_execution_time")
           .help("The execution time of processing a complete process instance")
-          .labelNames("partition")
+          .labelNames("partition", "bpmnProcessId")
           .buckets(0.10f, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4, 12.8, 25.6, 51.2)
           .register();
 
@@ -25,7 +25,7 @@ public class ExecutionLatencyMetrics {
           .namespace("zeebe")
           .name("job_life_time")
           .help("The life time of an job")
-          .labelNames("partition")
+          .labelNames("partition", "bpmnProcessId")
           .buckets(0.10f, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4, 12.8, 25.6, 51.2)
           .register();
 
@@ -39,16 +39,22 @@ public class ExecutionLatencyMetrics {
           .register();
 
   public void observeProcessInstanceExecutionTime(
-      final int partitionId, final long creationTimeMs, final long completionTimeMs) {
+      final int partitionId,
+      final String bpmnProcessId,
+      final long creationTimeMs,
+      final long completionTimeMs) {
     PROCESS_INSTANCE_EXECUTION
-        .labels(Integer.toString(partitionId))
+        .labels(Integer.toString(partitionId), bpmnProcessId)
         .observe(latencyInSeconds(creationTimeMs, completionTimeMs));
   }
 
   public void observeJobLifeTime(
-      final int partitionId, final long creationTimeMs, final long completionTimeMs) {
+      final int partitionId,
+      final String bpmnProcessId,
+      final long creationTimeMs,
+      final long completionTimeMs) {
     JOB_LIFE_TIME
-        .labels(Integer.toString(partitionId))
+        .labels(Integer.toString(partitionId), bpmnProcessId)
         .observe(latencyInSeconds(creationTimeMs, completionTimeMs));
   }
 
