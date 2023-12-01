@@ -35,6 +35,13 @@ public class JobStreamMetrics implements RemoteStreamMetrics {
           .help("Total number of failures when pushing jobs to the streams")
           .register();
 
+  private static final Gauge BLOCKED_STREAM_COUNT =
+      Gauge.build()
+          .name(NAMESPACE)
+          .name("broker_blocked_job_stream_count")
+          .help("Total number of blocked job streams from the server side point-of-view")
+          .register();
+
   @Override
   public void addStream() {
     STREAM_COUNT.inc();
@@ -53,5 +60,15 @@ public class JobStreamMetrics implements RemoteStreamMetrics {
   @Override
   public void pushFailed() {
     PUSH_FAILED_COUNT.inc();
+  }
+
+  @Override
+  public void streamBlocked() {
+    BLOCKED_STREAM_COUNT.inc();
+  }
+
+  @Override
+  public void streamUnblocked() {
+    BLOCKED_STREAM_COUNT.dec();
   }
 }

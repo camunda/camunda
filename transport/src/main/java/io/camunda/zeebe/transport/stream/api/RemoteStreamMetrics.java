@@ -21,6 +21,10 @@ public interface RemoteStreamMetrics {
   /** Invoked if pushing a payload to a stream failed */
   default void pushFailed() {}
 
+  default void streamBlocked() {}
+
+  default void streamUnblocked() {}
+
   static RemoteStreamMetrics noop() {
     return new RemoteStreamMetrics() {};
   }

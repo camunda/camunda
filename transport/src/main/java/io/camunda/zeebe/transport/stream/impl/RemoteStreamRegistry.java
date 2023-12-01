@@ -135,6 +135,7 @@ public final class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M>
           if (consumer != null) {
             consumer.block();
           }
+          metrics.streamBlocked();
 
           return consumer;
         });
@@ -148,6 +149,7 @@ public final class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M>
           if (consumer != null) {
             consumer.unblock();
           }
+          metrics.streamUnblocked();
 
           return consumer;
         });

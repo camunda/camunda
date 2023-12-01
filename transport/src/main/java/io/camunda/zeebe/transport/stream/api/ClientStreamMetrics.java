@@ -30,6 +30,10 @@ public interface ClientStreamMetrics {
   /** Invoked if pushing a payload to a stream failed */
   default void pushFailed() {}
 
+  default void clientBlocked() {}
+
+  default void clientUnblocked() {}
+
   static ClientStreamMetrics noop() {
     return new ClientStreamMetrics() {};
   }
