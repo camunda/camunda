@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+  labels:
+    app: worker-slow
+    app.kubernetes.io/managed-by: Helm
+  name: worker-slow
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: worker-slow
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: worker-slow
+        app.kubernetes.io/component: zeebe-client
+    spec:
+      containers:
+      - env:
+        - name: JDK_JAVA_OPTIONS
+          value: -Dconfig.override_with_env_vars=true -Dapp.brokerUrl=np-ck-propagate-block-zeebe-gateway:26500
+            -Dzeebe.client.requestTimeout=62000 -Dapp.worker.capacity=60 -Dapp.worker.pollingDelay=1ms
+            -Dapp.worker.completionDelay=50ms -XX:+HeapDumpOnOutOfMemoryError
+            -Dapp.worker.jobType=slow-task
+        - name: LOG_LEVEL
+          value: warn
+        envFrom:
+        - configMapRef:
+            name: worker-config
+            optional: true
+        image: gcr.io/zeebe-io/worker:ck-latency-metrics-a8c3e43
+        imagePullPolicy: Always
+        name: worker
+        ports:
+        - containerPort: 9600
+          name: http
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 500m
+            memory: 256Mi
+          requests:
+            cpu: 500m
+            memory: 256Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
