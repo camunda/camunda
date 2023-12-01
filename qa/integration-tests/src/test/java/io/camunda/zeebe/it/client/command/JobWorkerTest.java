@@ -115,7 +115,11 @@ final class JobWorkerTest {
     assertThat(job.getProcessInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(job.getElementId()).isEqualTo("task");
     assertThat(job.getCustomHeaders()).isEqualTo(Map.of("x", "1", "y", "2"));
-    assertThat(job.getVariablesAsMap()).isEqualTo(Map.of("a", 1, "b", 2));
+    assertThat(job.getVariablesAsMap())
+        .isEqualTo(
+            Map.of(
+                "a", 1,
+                "b", 2));
   }
 
   @ParameterizedTest
@@ -215,6 +219,50 @@ final class JobWorkerTest {
       Awaitility.await("until all jobs are activated")
           .untilAsserted(() -> assertThat(jobHandler.getHandledJobs()).hasSize(1));
     }
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideWorkerConfigurators")
+  void shouldNotEscapeCharactersOfInputs(
+      final BiFunction<String, JobWorkerBuilderStep3, JobWorker> configurator) {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType(jobType)
+                        .zeebeInput("Hello\nWorld", "newline")
+                        .zeebeInput("Hello\rWorld", "carriageReturn")
+                        .zeebeInput("Hello\tWorld", "tab"))
+            .done();
+    final var processDefinitionKey = client.deployProcess(process);
+    client.createProcessInstance(processDefinitionKey);
+
+    // when
+    final var jobHandler = new RecordingJobHandler();
+    final var builder =
+        client
+            .getClient()
+            .newWorker()
+            .jobType(jobType)
+            .handler(jobHandler)
+            .name("test")
+            .timeout(5000);
+    try (final var ignored = configurator.apply(jobType, builder)) {
+      Awaitility.await("until all jobs are activated")
+          .untilAsserted(() -> assertThat(jobHandler.getHandledJobs()).hasSize(1));
+    }
+
+    // then
+    final var job = jobHandler.getHandledJobs().get(0);
+    assertThat(job.getVariablesAsMap())
+        .isEqualTo(
+            Map.of(
+                "tab", "Hello\tWorld",
+                "newline", "Hello\nWorld",
+                "carriageReturn", "Hello\rWorld"));
   }
 
   private long createProcessInstance(final String processId, final Map<String, Object> variables) {
