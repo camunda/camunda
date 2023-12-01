@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import java.util.Arrays;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
@@ -45,6 +46,7 @@ class MetricsExporterTest {
             .withIntent(JobIntent.CREATED)
             .withTimestamp(1651505728460L)
             .withKey(Protocol.encodePartitionId(1, 1))
+            .withValue(ImmutableJobRecordValue.builder().withBpmnProcessId("process").build())
             .build());
     exporter.export(
         ImmutableRecord.builder()
@@ -53,6 +55,7 @@ class MetricsExporterTest {
             .withIntent(JobIntent.COMPLETED)
             .withTimestamp(1651505729571L)
             .withKey(Protocol.encodePartitionId(1, 1))
+            .withValue(ImmutableJobRecordValue.builder().withBpmnProcessId("process").build())
             .build());
 
     // then
