@@ -150,7 +150,7 @@ final class StandaloneGatewaySecurityTest {
 
     return new StandaloneGateway(
         new GatewayConfiguration(gatewayCfg),
-        null,
+        null, // identity is disabled by default
         new SpringGatewayBridge(),
         actorScheduler,
         atomixCluster,
