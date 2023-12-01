@@ -12,10 +12,12 @@ import static io.camunda.zeebe.test.util.MsgPackUtil.assertEquality;
 import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.state.immutable.VariableState;
+import io.camunda.zeebe.engine.state.immutable.VariableState.Variable;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -25,6 +27,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;
 import org.junit.After;
@@ -410,6 +413,53 @@ public final class VariableStateTest {
 
     // then
     assertThat(variable).isNull();
+  }
+
+  @Test
+  public void shouldGetVariablesLocalAtGlobalScope() {
+    // given
+    declareScope(parent);
+
+    final long keyVariableA = setVariableLocal(parent, wrapString("a"), wrapString("1"));
+    final long keyVariableB = setVariableLocal(parent, wrapString("b"), wrapString("2"));
+    final long keyVariableC = setVariableLocal(parent, wrapString("c"), wrapString("3"));
+
+    // when
+    final List<Variable> variablesLocal = variableState.getVariablesLocal(parent);
+
+    // then
+    assertThat(variablesLocal)
+        .hasSize(3)
+        .extracting(Variable::key, Variable::scopeKey, Variable::name, Variable::value)
+        .containsExactlyInAnyOrder(
+            tuple(keyVariableA, parent, wrapString("a"), wrapString("1")),
+            tuple(keyVariableB, parent, wrapString("b"), wrapString("2")),
+            tuple(keyVariableC, parent, wrapString("c"), wrapString("3")));
+  }
+
+  @Test
+  public void shouldGetVariablesLocalAtLocalScopeOnly() {
+    // given
+    declareScope(parent);
+    declareScope(parent, child);
+    declareScope(child, child2);
+
+    setVariableLocal(parent, wrapString("a"), wrapString("1"));
+    final long keyVariableB = setVariableLocal(child, wrapString("b"), wrapString("2"));
+    final long keyVariableC = setVariableLocal(child, wrapString("c"), wrapString("3"));
+    setVariableLocal(child2, wrapString("d"), wrapString("4"));
+
+    // when
+    final List<Variable> variablesLocal = variableState.getVariablesLocal(child);
+
+    // then
+    assertThat(variablesLocal)
+        .hasSize(2)
+        .extracting(Variable::key, Variable::scopeKey, Variable::name, Variable::value)
+        .describedAs("Expected to encounter only the variables scoped at the child scope")
+        .containsExactlyInAnyOrder(
+            tuple(keyVariableB, child, wrapString("b"), wrapString("2")),
+            tuple(keyVariableC, child, wrapString("c"), wrapString("3")));
   }
 
   private void declareScope(final long key) {

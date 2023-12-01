@@ -16,12 +16,16 @@ import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -32,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class ProcessInstanceMigrationMigrateProcessor
     implements TypedRecordProcessor<ProcessInstanceMigrationRecord> {
@@ -46,24 +51,30 @@ public class ProcessInstanceMigrationMigrateProcessor
   private static final String ERROR_MESSAGE_PROCESS_DEFINITION_NOT_FOUND =
       "Expected to migrate process instance to process definition but no process definition found with key '%d'";
 
+  private static final UnsafeBuffer NIL_VALUE = new UnsafeBuffer(MsgPackHelper.NIL);
+  private final VariableRecord variableRecord = new VariableRecord().setValue(NIL_VALUE);
+
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
   private final JobState jobState;
+  private final VariableState variableState;
 
   public ProcessInstanceMigrationMigrateProcessor(
       final Writers writers,
       final ElementInstanceState elementInstanceState,
       final ProcessState processState,
-      final JobState jobState) {
+      final JobState jobState,
+      final VariableState variableState) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     this.elementInstanceState = elementInstanceState;
     this.processState = processState;
     this.jobState = jobState;
+    this.variableState = variableState;
   }
 
   @Override
@@ -187,6 +198,21 @@ public class ProcessInstanceMigrationMigrateProcessor
                 .setElementId(targetElementId));
       }
     }
+
+    variableState
+        .getVariablesLocal(elementInstance.getKey())
+        .forEach(
+            variable ->
+                stateWriter.appendFollowUpEvent(
+                    variable.key(),
+                    VariableIntent.MIGRATED,
+                    variableRecord
+                        .setScopeKey(elementInstance.getKey())
+                        .setName(variable.name())
+                        .setProcessInstanceKey(elementInstance.getValue().getProcessInstanceKey())
+                        .setProcessDefinitionKey(processDefinition.getKey())
+                        .setBpmnProcessId(processDefinition.getBpmnProcessId())
+                        .setTenantId(elementInstance.getValue().getTenantId())));
   }
 
   /**

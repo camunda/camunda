@@ -17,7 +17,10 @@ import io.camunda.zeebe.engine.state.instance.ParentScopeKey;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
@@ -272,6 +275,23 @@ public class DbVariableState implements MutableVariableState {
   @Override
   public boolean isEmpty() {
     return variablesColumnFamily.isEmpty() && childParentColumnFamily.isEmpty();
+  }
+
+  @Override
+  public List<Variable> getVariablesLocal(final long scopeKey) {
+    final List<Variable> variables = new ArrayList<>();
+    visitVariablesLocal(
+        scopeKey,
+        name -> true,
+        (name, variable) ->
+            variables.add(
+                new Variable(
+                    variable.getKey(),
+                    scopeKey,
+                    BufferUtil.cloneBuffer(name.getBuffer()),
+                    BufferUtil.cloneBuffer(variable.getValue()))),
+        () -> false);
+    return variables;
   }
 
   @Override
