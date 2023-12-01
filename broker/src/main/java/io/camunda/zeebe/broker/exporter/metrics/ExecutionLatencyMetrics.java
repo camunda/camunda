@@ -17,6 +17,7 @@ public class ExecutionLatencyMetrics {
           .name("process_instance_execution_time")
           .help("The execution time of processing a complete process instance")
           .labelNames("partition")
+          .buckets(0.10f, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4, 12.8, 25.6, 51.2)
           .register();
 
   private static final Histogram JOB_LIFE_TIME =
@@ -25,6 +26,7 @@ public class ExecutionLatencyMetrics {
           .name("job_life_time")
           .help("The life time of an job")
           .labelNames("partition")
+          .buckets(0.10f, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4, 12.8, 25.6, 51.2)
           .register();
 
   private static final Histogram JOB_ACTIVATION_TIME =
@@ -33,6 +35,7 @@ public class ExecutionLatencyMetrics {
           .name("job_activation_time")
           .help("The time until an job was activated")
           .labelNames("partition")
+          .buckets(0.10f, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4, 12.8, 25.6, 51.2)
           .register();
 
   public void observeProcessInstanceExecutionTime(
