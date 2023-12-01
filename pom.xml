@@ -31,7 +31,7 @@
 
     <version.zeebe>8.4.0-alpha1</version.zeebe>
     <version.identity>8.4.0-alpha1</version.identity>
-    <version.elasticsearch>7.17.14</version.elasticsearch>
+    <version.elasticsearch>7.17.15</version.elasticsearch>
     <version.elasticsearch-client>8.7.1</version.elasticsearch-client>
     <version.opensearch>2.7.0</version.opensearch>
     <version.spring.boot>3.1.5</version.spring.boot>
@@ -40,9 +40,9 @@
     <version.jakarta.json>2.0.1</version.jakarta.json>
     <version.micrometer>1.12.0</version.micrometer>
     <version.mockito>5.0.0</version.mockito>
-    <version.byte.buddy>1.14.9</version.byte.buddy>
+    <version.byte.buddy>1.14.10</version.byte.buddy>
     <version.assertj-core>3.24.2</version.assertj-core>
-    <version.jackson>2.16.0</version.jackson>
+    <version.jackson>2.15.2</version.jackson>
     <version.graphql>15.0.0</version.graphql>
     <version.graphql.tools>13.0.3</version.graphql.tools>
     <version.graphql-java>21.2</version.graphql-java>
@@ -51,13 +51,13 @@
     <version.commons-text>1.11.0</version.commons-text>
     <version.failsafe>2.4.4</version.failsafe>
     <version.guava>32.1.3-jre</version.guava>
-    <version.apache.http5>5.2.1</version.apache.http5>
+    <version.apache.http5>5.2.2</version.apache.http5>
 
     <version.node>v20.9.0</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
     <zeebe-test-container.version>3.6.0</zeebe-test-container.version>
-    <elasticsearch-test-container.version>1.19.2</elasticsearch-test-container.version>
+    <elasticsearch-test-container.version>1.19.3</elasticsearch-test-container.version>
     <opensearch-testcontainers.version>2.0.0</opensearch-testcontainers.version>
     <postgres-test-container.version>1.17.6</postgres-test-container.version>
     <testcontainers.version>1.17.6</testcontainers.version>
@@ -80,7 +80,7 @@
     <version.auth0.jwt>4.4.0</version.auth0.jwt>
     <version.jakarta.servlet>6.0.0</version.jakarta.servlet>
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
-    <version.commons.lang>3.14.0</version.commons.lang>
+    <version.commons.lang>3.12.0</version.commons.lang>
     <version.guava.annotations>r03</version.guava.annotations>
     <version.commons.codec>1.15</version.commons.codec>
   </properties>
@@ -117,6 +117,7 @@
         <version>${version.identity}</version>
       </dependency>
 
+      <!-- Elasticsearch  -->
       <dependency>
         <groupId>org.elasticsearch.client</groupId>
         <artifactId>elasticsearch-rest-high-level-client</artifactId>
@@ -342,7 +343,7 @@
         <version>${version.auth0}</version>
       </dependency>
 
-     <dependency>
+      <dependency>
         <groupId>com.auth0</groupId>
         <artifactId>java-jwt</artifactId>
         <version>${version.auth0.jwt}</version>
@@ -388,7 +389,7 @@
       <dependency>
         <groupId>com.amazonaws</groupId>
         <artifactId>aws-java-sdk-sts</artifactId>
-        <version>1.12.415</version>
+        <version>1.12.598</version>
       </dependency>
 
       <dependency>
@@ -422,7 +423,7 @@
         <plugin>
           <groupId>com.github.eirslett</groupId>
           <artifactId>frontend-maven-plugin</artifactId>
-          <version>1.14.2</version>
+          <version>1.12.1</version>
         </plugin>
 
         <plugin>
@@ -506,7 +507,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-failsafe-plugin</artifactId>
-          <version>3.2.1</version>
+          <version>3.2.2</version>
           <configuration>
             <forkCount>${env.LIMITS_CPU}</forkCount>
             <reuseForks>true</reuseForks>
@@ -598,7 +599,7 @@
         </plugin>
 
 
-<!--         Google code format plugin -->
+        <!--         Google code format plugin -->
         <plugin>
           <groupId>com.coveo</groupId>
           <artifactId>fmt-maven-plugin</artifactId>
@@ -614,7 +615,7 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.9</version>
+          <version>0.8.11</version>
         </plugin>
       </plugins>
 
@@ -629,10 +630,10 @@
         <groupId>com.coveo</groupId>
         <artifactId>fmt-maven-plugin</artifactId>
       </plugin>
-<!--      <plugin>-->
-<!--        <groupId>org.apache.maven.plugins</groupId>-->
-<!--        <artifactId>maven-checkstyle-plugin</artifactId>-->
-<!--      </plugin>-->
+      <!--      <plugin>-->
+      <!--        <groupId>org.apache.maven.plugins</groupId>-->
+      <!--        <artifactId>maven-checkstyle-plugin</artifactId>-->
+      <!--      </plugin>-->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
