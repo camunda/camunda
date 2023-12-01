@@ -77,6 +77,18 @@ public final class RemoteStreamTransport<M> extends Actor {
         this::onRemoveAll,
         Function.identity(),
         actor::run);
+    transport.replyTo(
+        StreamTopics.BLOCK.topic(),
+        MessageUtil::parseBlockRequest,
+        requestHandler::block,
+        BufferUtil::bufferAsArray,
+        actor::run);
+    transport.replyTo(
+        StreamTopics.UNBLOCK.topic(),
+        MessageUtil::parseUnblockRequest,
+        requestHandler::unblock,
+        BufferUtil::bufferAsArray,
+        actor::run);
   }
 
   @Override

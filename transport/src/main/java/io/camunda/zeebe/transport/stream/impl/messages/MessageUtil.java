@@ -28,6 +28,14 @@ public final class MessageUtil {
     return parseRequest(bytes, new AddStreamRequest());
   }
 
+  public static BlockStreamRequest parseBlockRequest(final byte[] bytes) {
+    return parseRequest(bytes, new BlockStreamRequest());
+  }
+
+  public static UnblockStreamRequest parseUnblockRequest(final byte[] bytes) {
+    return parseRequest(bytes, new UnblockStreamRequest());
+  }
+
   private static <R extends BufferReader> R parseRequest(final byte[] bytes, final R request) {
     final var buffer = new UnsafeBuffer(bytes);
     request.wrap(buffer, 0, buffer.capacity());

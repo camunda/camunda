@@ -67,24 +67,27 @@ public class StreamJobsHandler extends Actor {
       final JobActivationProperties jobActivationProperties,
       final ServerCallStreamObserver<ActivatedJob> responseObserver) {
     final var streamType = wrapString(jobType);
-    final var consumer = new JobStreamConsumer(responseObserver, actor);
+    final var consumer = new JobStreamConsumer(responseObserver, actor, jobStreamer);
     final var cleaner = new AsyncJobStreamRemover(jobStreamer, actor);
 
     // setting the handlers has to be done before the call is started, so we cannot do it in the
     // actor callbacks, which is why the remover can handle being called out of order
     responseObserver.setOnCloseHandler(cleaner);
     responseObserver.setOnCancelHandler(cleaner);
+    responseObserver.setOnReadyHandler(consumer::onReadyHandler);
 
     actor.run(
         () ->
             actor.runOnCompletion(
                 jobStreamer.add(streamType, jobActivationProperties, consumer),
-                (streamId, error) -> onStreamAdded(responseObserver, cleaner, streamId, error)));
+                (streamId, error) ->
+                    onStreamAdded(responseObserver, cleaner, consumer, streamId, error)));
   }
 
   private void onStreamAdded(
       final StreamObserver<ActivatedJob> responseObserver,
       final AsyncJobStreamRemover cleaner,
+      final JobStreamConsumer consumer,
       final ClientStreamId streamId,
       final Throwable error) {
     // the only possible reason it would fail is due to the actor being closed, meaning we would be
@@ -100,6 +103,7 @@ public class StreamJobsHandler extends Actor {
       return;
     }
 
+    consumer.streamId(streamId);
     cleaner.streamId(streamId);
   }
 
@@ -118,13 +122,19 @@ public class StreamJobsHandler extends Actor {
   static final class JobStreamConsumer implements ClientStreamConsumer {
     private final ServerCallStreamObserver<ActivatedJob> responseObserver;
     private final ConcurrencyControl executor;
+    private final ClientStreamer<JobActivationProperties> jobStreamer;
+
+    private ClientStreamId streamId;
+    private boolean wasReady = true;
 
     @VisibleForTesting("Allow unit testing behavior")
     JobStreamConsumer(
         final ServerCallStreamObserver<ActivatedJob> responseObserver,
-        final ConcurrencyControl executor) {
+        final ConcurrencyControl executor,
+        final ClientStreamer<JobActivationProperties> jobStreamer) {
       this.responseObserver = responseObserver;
       this.executor = executor;
+      this.jobStreamer = jobStreamer;
     }
 
     @Override
@@ -142,12 +152,38 @@ public class StreamJobsHandler extends Actor {
       return result;
     }
 
+    void streamId(final ClientStreamId streamId) {
+      executor.run(() -> this.streamId = streamId);
+    }
+
+    void onReadyHandler() {
+      if (!responseObserver.isReady() || streamId == null) {
+        return;
+      }
+
+      executor.run(
+          () -> {
+            if (!wasReady) {
+              wasReady = true;
+              jobStreamer.unblock(streamId);
+            }
+          });
+    }
+
     private void handlePushedJob(
         final DirectBuffer payload, final CompletableActorFuture<Void> result) {
       final var deserializedJob = new ActivatedJobImpl();
       final ActivatedJob activatedJob;
 
       if (!responseObserver.isReady()) {
+        wasReady = false;
+
+        // streamId can only be null for a tiny window of time at the beginning, but it's extremely
+        // unlikely it would be null once a job is received
+        if (streamId != null) {
+          jobStreamer.block(streamId);
+        }
+
         result.completeExceptionally(
             new ClientStreamBlockedException(
                 "Expected to push payload (size = '%d') to stream, but stream is blocked"

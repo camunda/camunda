@@ -9,7 +9,6 @@ package io.camunda.zeebe.transport.stream.impl;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.atomix.cluster.messaging.MessagingException.ProtocolException;
 import io.atomix.cluster.messaging.MessagingException.RemoteHandlerFailure;
@@ -203,8 +202,15 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
    *     being removed, or has been closed, on any of the servers
    */
   void block(final AggregatedClientStream<M> stream, final MemberId serverId) {
-    final var registration = registrationFor(stream, serverId);
-    block(registration);
+    final var streamsPerHost = registrations.get(serverId);
+    if (streamsPerHost == null) {
+      return;
+    }
+
+    final var registration = streamsPerHost.get(stream.getStreamId());
+    if (registration != null) {
+      block(registration);
+    }
   }
 
   /**
@@ -234,8 +240,15 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
    *     currently being removed, or has been closed, on any of the servers
    */
   void unblock(final AggregatedClientStream<M> stream, final MemberId serverId) {
-    final var registration = registrationFor(stream, serverId);
-    unblock(registration);
+    final var streamsPerHost = registrations.get(serverId);
+    if (streamsPerHost == null) {
+      return;
+    }
+
+    final var registration = streamsPerHost.get(stream.getStreamId());
+    if (registration != null) {
+      unblock(registration);
+    }
   }
 
   private void add(final ClientStreamRegistration<M> registration) {
@@ -519,27 +532,18 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
       failure = error;
     }
 
-    switch (failure) {
-        // all returned errors are currently unnecessary to retry
-      case final UnrecoverableException e -> {
-        handleUnrecoverableExceptionOnRemove(registration, e);
-        registration.transitionToAdded();
-      }
-        // no point retrying if the remote handler failed to handle our request
-      case final MessagingException e -> {
-        handleUnrecoverableExceptionOnRemove(registration, e);
-        registration.transitionToAdded();
-      }
-      default -> {
-        LOGGER.debug(
-            "Failed to block remote stream {} on {}, will retry in {}",
-            registration.streamId(),
-            registration.serverId(),
-            RETRY_DELAY,
-            failure);
-        executor.schedule(RETRY_DELAY, () -> sendRemoveRequest(registration, request));
-      }
-    }
+    // For now, always retry; in some cases, the request will eventually go through. However, in
+    // some cases it never will. This should be covered in a follow-up issue.
+    // Unrecoverable cases:
+    //   - RemoteHandlerError
+    //   - ErrorResponse.code in [ MALFORMED, INVALID ]
+    LOGGER.warn(
+        "Failed to block stream {} on {}; will retry in {}",
+        registration.streamId(),
+        registration.serverId(),
+        RETRY_DELAY,
+        failure);
+    executor.schedule(RETRY_DELAY, () -> sendBlockRequest(registration, request));
   }
 
   private void sendUnblockRequest(
@@ -587,27 +591,18 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
       failure = error;
     }
 
-    switch (failure) {
-        // all returned errors are currently unnecessary to retry
-      case final UnrecoverableException e -> {
-        handleUnrecoverableExceptionOnRemove(registration, e);
-        registration.transitionToBlocked();
-      }
-        // no point retrying if the remote handler failed to handle our request
-      case final MessagingException e -> {
-        handleUnrecoverableExceptionOnRemove(registration, e);
-        registration.transitionToBlocked();
-      }
-      default -> {
-        LOGGER.debug(
-            "Failed to unblock remote stream {} on {}, will retry in {}",
-            registration.streamId(),
-            registration.serverId(),
-            RETRY_DELAY,
-            failure);
-        executor.schedule(RETRY_DELAY, () -> sendRemoveRequest(registration, request));
-      }
-    }
+    // For now, always retry; in some cases, the request will eventually go through. However, in
+    // some cases it never will. This should be covered in a follow-up issue.
+    // Unrecoverable cases:
+    //   - RemoteHandlerError
+    //   - ErrorResponse.code in [ MALFORMED, INVALID ]
+    LOGGER.warn(
+        "Failed to unblock stream {} on {}; will retry in {}",
+        registration.streamId(),
+        registration.serverId(),
+        RETRY_DELAY,
+        failure);
+    executor.schedule(RETRY_DELAY, () -> sendUnblockRequest(registration, request));
   }
 
   private void handleUnrecoverableExceptionOnRemove(
@@ -621,6 +616,18 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
         e);
     registration.transitionToRemoved();
     purgeRegistration(registration.streamId(), registration.serverId());
+  }
+
+  private void handleUnrecoverableExceptionOnBlock(
+      final ClientStreamRegistration<M> registration, final Throwable e) {
+    LOGGER.debug(
+        """
+        Failed to block stream '{}' for member '{}'; unrecoverable error occurred on recipient
+        side, will not retry.""",
+        registration.streamId(),
+        registration.serverId(),
+        e);
+    registration.transitionToAdded();
   }
 
   private void purgeRegistration(final UUID streamId, final MemberId serverId) {

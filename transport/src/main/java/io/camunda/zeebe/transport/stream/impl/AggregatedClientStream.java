@@ -9,6 +9,7 @@ package io.camunda.zeebe.transport.stream.impl;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.transport.stream.api.ClientStreamBlockedException;
 import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
 import io.camunda.zeebe.transport.stream.api.NoSuchStreamException;
 import io.camunda.zeebe.transport.stream.api.StreamExhaustedException;
@@ -122,6 +123,13 @@ final class AggregatedClientStream<M extends BufferWriter> {
   }
 
   void push(final DirectBuffer buffer, final ActorFuture<Void> future) {
+    if (isBlocked()) {
+      future.completeExceptionally(
+          new ClientStreamBlockedException(
+              "Cannot forward remote payload as aggregated stream %s is blocked"
+                  .formatted(streamId)));
+    }
+
     final var streams = clientStreams.values();
     if (streams.isEmpty()) {
       throw new NoSuchStreamException(
@@ -199,6 +207,7 @@ final class AggregatedClientStream<M extends BufferWriter> {
   public boolean isBlocked() {
     return clientStreams.values().stream()
         .map(ClientStreamImpl::isBlocked)
-        .reduce(true, (a, b) -> a && b);
+        .reduce((a, b) -> a && b)
+        .orElse(false);
   }
 }

@@ -28,8 +28,8 @@ import io.camunda.zeebe.transport.stream.api.ClientStreamId;
 import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
 import io.camunda.zeebe.transport.stream.api.ClientStreamService;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
-import io.camunda.zeebe.transport.stream.api.RemoteStream;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamErrorHandler;
+import io.camunda.zeebe.transport.stream.api.RemoteStreamInfo;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamer;
@@ -95,66 +95,28 @@ final class StreamIntegrationTest {
   }
 
   @Test
-  void shouldReceiveStreamPayloads() throws InterruptedException {
+  void shouldRegisterStreamsAgainInCaseOfAsymmetricPartition() {
     // given
-    final AtomicReference<List<Integer>> payloads = new AtomicReference<>(new ArrayList<>());
-    final var latch = new CountDownLatch(2);
     final var streamType = BufferUtil.wrapString("foo");
+    final var properties = new TestSerializableData();
     final var streamId =
         clientStreamer
-            .add(
-                streamType,
-                metadata,
-                p -> {
-                  final TestSerializableData payload = new TestSerializableData();
-                  payload.wrap(p, 0, p.capacity());
-                  payloads.get().add(payload.data());
-                  latch.countDown();
-                  return CompletableActorFuture.completed(null);
-                })
+            .add(streamType, properties, p -> CompletableActorFuture.completed(null))
             .join();
+    final var member = client.cluster.getMembershipService().getLocalMember();
+    final var memberRemovedEvent = new ClusterMembershipEvent(Type.MEMBER_REMOVED, member);
+    final var memberAddedEvent = new ClusterMembershipEvent(Type.MEMBER_ADDED, member);
     awaitStreamAdded(streamType, streamId, server1, server2);
 
-    // when
-    server1.streamer.streamFor(streamType).orElseThrow().push(new TestSerializableData().data(100));
-    server1.streamer.streamFor(streamType).orElseThrow().push(new TestSerializableData().data(200));
+    // when - remove client from server's members, then add it back, and expect it to be
+    // re-registered
+    assertThat(server1.streamService.isRelevant(memberRemovedEvent)).isTrue();
+    server1.streamService.event(memberRemovedEvent);
+    awaitStreamOnServer(streamType, server1, stream -> assertThat(stream).isEmpty());
+    assertThat(server1.streamService.isRelevant(memberAddedEvent)).isTrue();
+    server1.streamService.event(memberAddedEvent);
 
-    // then
-    // verify client receives payload
-    latch.await();
-    assertThat(payloads.get()).asList().containsExactly(100, 200);
-  }
-
-  @Test
-  void shouldReturnErrorWhenClientStreamIsClosed() throws InterruptedException {
-    // given
-    final AtomicReference<Throwable> error = new AtomicReference<>();
-    final var latch = new CountDownLatch(1);
-    final var streamType = BufferUtil.wrapString("foo");
-    final var clientStreamId =
-        clientStreamer
-            .add(streamType, metadata, p -> CompletableActorFuture.completed(null))
-            .join();
-    awaitStreamAdded(streamType, clientStreamId, server1, server2);
-    final var serverStream = server1.streamer.streamFor(streamType).orElseThrow();
-    server1.errorHandler =
-        (e, p) -> {
-          error.set(e);
-          latch.countDown();
-        };
-
-    // when
-    clientStreamer.remove(clientStreamId);
-
-    // Use serverStream obtained before stream is removed
-    serverStream.push(new TestSerializableData(100));
-
-    // then
-    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
-    assertThat(error.get())
-        .isInstanceOf(StreamResponseException.class)
-        .asInstanceOf(InstanceOfAssertFactories.throwable(StreamResponseException.class))
-        .returns(ErrorCode.NOT_FOUND, StreamResponseException::code);
+    awaitStreamAdded(streamType, streamId, server1, server2);
   }
 
   private Node createNode(final String id) {
@@ -180,10 +142,14 @@ final class StreamIntegrationTest {
   private void awaitStreamOnServer(
       final DirectBuffer streamType,
       final TestServer server,
-      final Consumer<Optional<RemoteStream<TestSerializableData, TestSerializableData>>>
-          assertions) {
+      final Consumer<Optional<RemoteStreamInfo<TestSerializableData>>> assertions) {
     Awaitility.await()
-        .untilAsserted(() -> assertions.accept(server.streamer.streamFor(streamType)));
+        .untilAsserted(
+            () ->
+                assertions.accept(
+                    server.streamService.streams().stream()
+                        .filter(s -> s.streamType().equals(streamType))
+                        .findFirst()));
   }
 
   private void awaitStreamOnClient(
@@ -207,29 +173,215 @@ final class StreamIntegrationTest {
         .build();
   }
 
-  @Test
-  void shouldRegisterStreamsAgainInCaseOfAsymmetricPartition() {
-    // given
-    final var streamType = BufferUtil.wrapString("foo");
-    final var properties = new TestSerializableData();
-    final var streamId =
-        clientStreamer
-            .add(streamType, properties, p -> CompletableActorFuture.completed(null))
-            .join();
-    final var member = client.cluster.getMembershipService().getLocalMember();
-    final var memberRemovedEvent = new ClusterMembershipEvent(Type.MEMBER_REMOVED, member);
-    final var memberAddedEvent = new ClusterMembershipEvent(Type.MEMBER_ADDED, member);
-    awaitStreamAdded(streamType, streamId, server1, server2);
+  private void awaitStreamBlocked(
+      final boolean isBlocked, final DirectBuffer streamType, final ClientStreamId streamId) {
+    awaitStreamOnServer(
+        streamType,
+        server1,
+        stream -> assertThat(stream).get().returns(isBlocked, RemoteStreamInfo::isBlocked));
+    awaitStreamOnServer(
+        streamType,
+        server2,
+        stream -> assertThat(stream).get().returns(isBlocked, RemoteStreamInfo::isBlocked));
+    awaitStreamOnClient(
+        streamId, stream -> assertThat(stream).get().returns(isBlocked, ClientStream::isBlocked));
+  }
 
-    // when - remove client from server's members, then add it back, and expect it to be
-    // re-registered
-    assertThat(server1.streamService.isRelevant(memberRemovedEvent)).isTrue();
-    server1.streamService.event(memberRemovedEvent);
-    awaitStreamOnServer(streamType, server1, stream -> assertThat(stream).isEmpty());
-    assertThat(server1.streamService.isRelevant(memberAddedEvent)).isTrue();
-    server1.streamService.event(memberAddedEvent);
+  @Nested
+  final class BlockTest {
+    @Test
+    void shouldBlockStream() {
+      // given
+      final var streamType = BufferUtil.wrapString("foo");
+      final var properties = new TestSerializableData();
+      final var streamId =
+          clientStreamer
+              .add(streamType, properties, p -> CompletableActorFuture.completed(null))
+              .join();
 
-    awaitStreamAdded(streamType, streamId, server1, server2);
+      // must wait until the stream is connected everywhere before removal, as otherwise there is a
+      // race condition
+      awaitStreamAdded(streamType, streamId, server1, server2);
+
+      // when
+      clientStreamer.block(streamId);
+
+      // then
+      awaitStreamBlocked(true, streamType, streamId);
+    }
+
+    @Test
+    void shouldFailPushOnBlockedStream() throws InterruptedException {
+      // given
+      final var latch = new CountDownLatch(1);
+      final AtomicReference<Throwable> error = new AtomicReference<>();
+      final var streamType = BufferUtil.wrapString("foo");
+      final var properties = new TestSerializableData();
+      final var streamId =
+          clientStreamer
+              .add(streamType, properties, p -> CompletableActorFuture.completed(null))
+              .join();
+
+      // must wait until the stream is connected everywhere before removal, as otherwise there is a
+      // race condition
+      awaitStreamAdded(streamType, streamId, server1, server2);
+      final var serverStream = server1.streamer.streamFor(streamType).orElseThrow();
+      server1.errorHandler =
+          (e, p) -> {
+            error.set(e);
+            latch.countDown();
+          };
+
+      clientStreamer.block(streamId);
+      awaitStreamBlocked(true, streamType, streamId);
+
+      // when
+      serverStream.push(new TestSerializableData(100));
+
+      // then
+      assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+      assertThat(error.get())
+          .isInstanceOf(StreamResponseException.class)
+          .asInstanceOf(InstanceOfAssertFactories.throwable(StreamResponseException.class))
+          .returns(ErrorCode.BLOCKED, StreamResponseException::code);
+    }
+
+    @Test
+    void shouldUnblockStream() {
+      // given
+      final var streamType = BufferUtil.wrapString("foo");
+      final var properties = new TestSerializableData();
+      final var streamId =
+          clientStreamer
+              .add(streamType, properties, p -> CompletableActorFuture.completed(null))
+              .join();
+
+      // must wait until the stream is connected everywhere before removal, as otherwise there is a
+      // race condition
+      awaitStreamAdded(streamType, streamId, server1, server2);
+      clientStreamer.block(streamId);
+      awaitStreamBlocked(true, streamType, streamId);
+
+      // when
+      clientStreamer.unblock(streamId);
+
+      // then
+      awaitStreamBlocked(false, streamType, streamId);
+    }
+
+    @Test
+    void shouldPushAfterUnblockingStream() throws InterruptedException {
+      // given
+      final AtomicReference<List<Integer>> payloads = new AtomicReference<>(new ArrayList<>());
+      final var latch = new CountDownLatch(1);
+      final var streamType = BufferUtil.wrapString("foo");
+      final var streamId =
+          clientStreamer
+              .add(
+                  streamType,
+                  metadata,
+                  p -> {
+                    final TestSerializableData payload = new TestSerializableData();
+                    payload.wrap(p, 0, p.capacity());
+                    payloads.get().add(payload.data());
+                    latch.countDown();
+                    return CompletableActorFuture.completed(null);
+                  })
+              .join();
+
+      // must wait until the stream is connected everywhere before removal, as otherwise there is a
+      // race condition
+      awaitStreamAdded(streamType, streamId, server1, server2);
+
+      // when
+      clientStreamer.block(streamId);
+      awaitStreamBlocked(true, streamType, streamId);
+      clientStreamer.unblock(streamId);
+      awaitStreamBlocked(false, streamType, streamId);
+      server1
+          .streamer
+          .streamFor(streamType)
+          .orElseThrow()
+          .push(new TestSerializableData().data(100));
+
+      // then
+      assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+      assertThat(payloads.get()).asList().containsExactly(100);
+    }
+  }
+
+  @Nested
+  final class PushTest {
+    @Test
+    void shouldReceiveStreamPayloads() throws InterruptedException {
+      // given
+      final AtomicReference<List<Integer>> payloads = new AtomicReference<>(new ArrayList<>());
+      final var latch = new CountDownLatch(2);
+      final var streamType = BufferUtil.wrapString("foo");
+      final var streamId =
+          clientStreamer
+              .add(
+                  streamType,
+                  metadata,
+                  p -> {
+                    final TestSerializableData payload = new TestSerializableData();
+                    payload.wrap(p, 0, p.capacity());
+                    payloads.get().add(payload.data());
+                    latch.countDown();
+                    return CompletableActorFuture.completed(null);
+                  })
+              .join();
+      awaitStreamAdded(streamType, streamId, server1, server2);
+
+      // when
+      server1
+          .streamer
+          .streamFor(streamType)
+          .orElseThrow()
+          .push(new TestSerializableData().data(100));
+      server1
+          .streamer
+          .streamFor(streamType)
+          .orElseThrow()
+          .push(new TestSerializableData().data(200));
+
+      // then
+      // verify client receives payload
+      latch.await();
+      assertThat(payloads.get()).asList().containsExactly(100, 200);
+    }
+
+    @Test
+    void shouldReturnErrorWhenClientStreamIsClosed() throws InterruptedException {
+      // given
+      final AtomicReference<Throwable> error = new AtomicReference<>();
+      final var latch = new CountDownLatch(1);
+      final var streamType = BufferUtil.wrapString("foo");
+      final var clientStreamId =
+          clientStreamer
+              .add(streamType, metadata, p -> CompletableActorFuture.completed(null))
+              .join();
+      awaitStreamAdded(streamType, clientStreamId, server1, server2);
+      final var serverStream = server1.streamer.streamFor(streamType).orElseThrow();
+      server1.errorHandler =
+          (e, p) -> {
+            error.set(e);
+            latch.countDown();
+          };
+
+      // when
+      clientStreamer.remove(clientStreamId);
+
+      // Use serverStream obtained before stream is removed
+      serverStream.push(new TestSerializableData(100));
+
+      // then
+      assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+      assertThat(error.get())
+          .isInstanceOf(StreamResponseException.class)
+          .asInstanceOf(InstanceOfAssertFactories.throwable(StreamResponseException.class))
+          .returns(ErrorCode.NOT_FOUND, StreamResponseException::code);
+    }
   }
 
   @Nested
@@ -270,7 +422,6 @@ final class StreamIntegrationTest {
       // then
       awaitStreamOnServer(streamType, server1, stream -> assertThat(stream).isEmpty());
       awaitStreamOnServer(streamType, server2, stream -> assertThat(stream).isEmpty());
-      awaitStreamOnClient(streamId, stream -> assertThat(stream).isEmpty());
       awaitStreamOnClient(streamId, stream -> assertThat(stream).isEmpty());
     }
 

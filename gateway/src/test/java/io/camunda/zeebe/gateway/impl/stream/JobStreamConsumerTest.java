@@ -13,26 +13,33 @@ import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler.JobStreamConsumer;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.msgpack.spec.MsgpackReaderException;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
+import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.transport.stream.api.ClientStreamBlockedException;
+import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
+import io.camunda.zeebe.transport.stream.api.ClientStreamId;
+import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
 import org.junit.jupiter.api.Test;
 
 final class JobStreamConsumerTest {
   private final TestConcurrencyControl executor = new TestConcurrencyControl();
+  private final TestStreamer streamer = new TestStreamer();
 
   @Test
   void shouldRethrowExceptionOnPushFailure() {
     // given
     final var failure = new RuntimeException("failed");
     final var clientObserver = new TestStreamObserver();
-    final var consumer = new JobStreamConsumer(clientObserver, executor);
+    final var consumer = new JobStreamConsumer(clientObserver, executor, streamer);
     clientObserver.failure = failure;
 
     // when
@@ -51,7 +58,7 @@ final class JobStreamConsumerTest {
   void shouldFailPushOnSerialization() {
     // given
     final var clientObserver = new TestStreamObserver();
-    final var consumer = new JobStreamConsumer(clientObserver, executor);
+    final var consumer = new JobStreamConsumer(clientObserver, executor, streamer);
 
     // when
     final var result = consumer.push(BufferUtil.wrapString("i am not a job"));
@@ -69,7 +76,7 @@ final class JobStreamConsumerTest {
   void shouldFailPushOnClientStreamNotReady() {
     // given
     final var clientObserver = new TestStreamObserver();
-    final var consumer = new JobStreamConsumer(clientObserver, executor);
+    final var consumer = new JobStreamConsumer(clientObserver, executor, streamer);
     clientObserver.isReady = false;
 
     // when
@@ -85,10 +92,43 @@ final class JobStreamConsumerTest {
   }
 
   @Test
+  void shouldBlockStreamIfNotReady() {
+    // given
+    final var clientObserver = new TestStreamObserver();
+    final var consumer = new JobStreamConsumer(clientObserver, executor, streamer);
+    final var streamId = new ClientStreamId() {};
+    consumer.streamId(streamId);
+    clientObserver.isReady = false;
+
+    // when
+    consumer.push(BufferUtil.createCopy(new ActivatedJobImpl()));
+
+    // then
+    assertThat(streamer.blocked).isEqualTo(streamId);
+  }
+
+  @Test
+  void shouldUnblockOnReady() {
+    // given
+    final var clientObserver = new TestStreamObserver();
+    final var consumer = new JobStreamConsumer(clientObserver, executor, streamer);
+    final var streamId = new ClientStreamId() {};
+    consumer.streamId(streamId);
+    streamer.block(streamId);
+
+    // when
+    clientObserver.isReady = true;
+    consumer.onReadyHandler();
+
+    // then
+    assertThat(streamer.blocked).isNull();
+  }
+
+  @Test
   void shouldPushPayload() {
     // given
     final var clientObserver = new TestStreamObserver();
-    final var consumer = new JobStreamConsumer(clientObserver, executor);
+    final var consumer = new JobStreamConsumer(clientObserver, executor, streamer);
     final var job = new ActivatedJobImpl().setJobKey(1);
 
     // when
@@ -164,6 +204,40 @@ final class JobStreamConsumerTest {
 
     @Override
     public void onCompleted() {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  private static final class TestStreamer implements ClientStreamer<JobActivationProperties> {
+    private ClientStreamId blocked;
+
+    @Override
+    public ActorFuture<ClientStreamId> add(
+        final DirectBuffer streamType,
+        final JobActivationProperties metadata,
+        final ClientStreamConsumer clientStreamConsumer) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ActorFuture<Void> remove(final ClientStreamId streamId) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void block(final ClientStreamId streamId) {
+      blocked = streamId;
+    }
+
+    @Override
+    public void unblock(final ClientStreamId streamId) {
+      if (blocked.equals(streamId)) {
+        blocked = null;
+      }
+    }
+
+    @Override
+    public void close() {
       throw new UnsupportedOperationException();
     }
   }

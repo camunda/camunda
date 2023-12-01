@@ -123,6 +123,53 @@ final class RemoteStreamerTest {
             Mockito.any());
   }
 
+  @Test
+  void shouldNotGetStreamIfBlocked() {
+    // given
+    final var type = new UnsafeBuffer(BufferUtil.wrapString("foo"));
+    final var streamId = new StreamId(UUID.randomUUID(), MemberId.from("a"));
+    final var streamMeta = new TestMetadata(1);
+    registry.add(type, streamId.streamId(), streamId.receiver(), streamMeta);
+    final var stream =
+        registry.list().stream()
+            .flatMap(a -> a.streamConsumers().stream())
+            .filter(s -> s.id().equals(streamId))
+            .findFirst()
+            .orElseThrow();
+    stream.block();
+
+    // when
+    final var empty = streamer.streamFor(type);
+
+    // then
+    assertThat(empty).isEmpty();
+  }
+
+  @Test
+  void shouldGetStreamIfOneConsumerIsNotBlocked() {
+    // given
+    final var type = new UnsafeBuffer(BufferUtil.wrapString("foo"));
+    final var streamAId = new StreamId(UUID.randomUUID(), MemberId.from("a"));
+    final var streamAMeta = new TestMetadata(1);
+    final var streamBId = new StreamId(UUID.randomUUID(), MemberId.from("b"));
+    final var streamBMeta = new TestMetadata(2);
+    registry.add(type, streamBId.streamId(), streamBId.receiver(), streamBMeta);
+    registry.add(type, streamAId.streamId(), streamAId.receiver(), streamAMeta);
+    final var streamA =
+        registry.list().stream()
+            .flatMap(a -> a.streamConsumers().stream())
+            .filter(s -> s.id().equals(streamAId))
+            .findFirst()
+            .orElseThrow();
+    streamA.block();
+
+    // when
+    final var streamB = streamer.streamFor(type);
+
+    // then
+    assertThat(streamB).isNotEmpty();
+  }
+
   private record TestPayload(long key) implements BufferWriter {
 
     @Override

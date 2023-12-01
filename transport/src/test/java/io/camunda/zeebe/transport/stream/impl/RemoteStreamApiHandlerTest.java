@@ -11,15 +11,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
+import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamConsumer;
 import io.camunda.zeebe.transport.stream.impl.messages.AddStreamRequest;
+import io.camunda.zeebe.transport.stream.impl.messages.BlockStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.UUIDEncoder;
+import io.camunda.zeebe.transport.stream.impl.messages.UnblockStreamRequest;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.List;
 import java.util.UUID;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -185,6 +189,79 @@ final class RemoteStreamApiHandlerTest {
     // then
     final var consumers = registry.get(streamType);
     assertThat(consumers).isEmpty();
+  }
+
+  @Test
+  void shouldNotBlockStreamIfNoId() {
+    // given
+    final var sender = MemberId.anonymous();
+    final var request = new BlockStreamRequest();
+
+    // when
+    final var response = server.block(sender, request);
+
+    // then
+    assertThat(response)
+        .asInstanceOf(InstanceOfAssertFactories.type(ErrorResponse.class))
+        .returns(ErrorCode.INVALID, ErrorResponse::code);
+  }
+
+  @Test
+  void shouldBlockStream() {
+    // given
+    final var streamType = new UnsafeBuffer(BufferUtil.wrapString("foo"));
+    final var streamId = UUID.randomUUID();
+    final var sender = MemberId.anonymous();
+    final var request = new BlockStreamRequest().streamId(streamId);
+    registry.add(streamType, streamId, sender, new TestMetadata());
+    final var stream = getStreamById(streamId);
+
+    // when
+    server.block(sender, request);
+
+    // then
+    assertThat(stream.isBlocked()).isTrue();
+  }
+
+  @Test
+  void shouldUnblockStream() {
+    // given
+    final var streamType = new UnsafeBuffer(BufferUtil.wrapString("foo"));
+    final var streamId = UUID.randomUUID();
+    final var sender = MemberId.anonymous();
+    final var request = new UnblockStreamRequest().streamId(streamId);
+    registry.add(streamType, streamId, sender, new TestMetadata());
+    final var stream = getStreamById(streamId);
+
+    // when
+    server.unblock(sender, request);
+
+    // then
+    assertThat(stream.isBlocked()).isFalse();
+  }
+
+  @Test
+  void shouldNotUnblockStreamIfNoId() {
+    // given
+    final var sender = MemberId.anonymous();
+    final var request = new UnblockStreamRequest();
+
+    // when
+    final var response = server.unblock(sender, request);
+
+    // then
+    assertThat(response)
+        .asInstanceOf(InstanceOfAssertFactories.type(ErrorResponse.class))
+        .returns(ErrorCode.INVALID, ErrorResponse::code);
+  }
+
+  private StreamConsumer<TestMetadata> getStreamById(final UUID streamId) {
+    return registry.list().stream()
+        .map(AggregatedRemoteStream::streamConsumers)
+        .flatMap(List::stream)
+        .filter(s -> s.id().streamId().equals(streamId))
+        .findFirst()
+        .orElseThrow();
   }
 
   private static final class TestMetadata implements BufferReader {

@@ -73,7 +73,8 @@ final class ClientStreamRegistration<M extends BufferWriter> {
   }
 
   boolean transitionToRemoving() {
-    return transition(State.REMOVING, EnumSet.of(State.INITIAL, State.ADDING, State.ADDED));
+    return transition(
+        State.REMOVING, EnumSet.complementOf(EnumSet.of(State.REMOVED, State.CLOSED)));
   }
 
   void transitionToRemoved() {
@@ -88,7 +89,7 @@ final class ClientStreamRegistration<M extends BufferWriter> {
   }
 
   boolean transitionToBlocking() {
-    return transition(State.BLOCKING, EnumSet.of(State.ADDED));
+    return transition(State.BLOCKING, EnumSet.of(State.ADDED, State.UNBLOCKING));
   }
 
   void transitionToBlocked() {

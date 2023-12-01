@@ -27,10 +27,12 @@ import io.atomix.cluster.messaging.MessagingException.RemoteHandlerFailure;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.transport.stream.impl.ClientStreamRegistration.State;
 import io.camunda.zeebe.transport.stream.impl.messages.AddStreamResponse;
+import io.camunda.zeebe.transport.stream.impl.messages.BlockStreamResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
+import io.camunda.zeebe.transport.stream.impl.messages.UnblockStreamResponse;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collections;
@@ -58,6 +60,8 @@ final class ClientStreamRequestManagerTest {
           new LogicalId<>(new UnsafeBuffer(BufferUtil.wrapString("foo")), new TestMetadata()));
   private final byte[] addStreamSuccess = BufferUtil.bufferAsArray(new AddStreamResponse());
   private final byte[] removeStreamSuccess = BufferUtil.bufferAsArray(new RemoveStreamResponse());
+  private final byte[] blockStreamSuccess = BufferUtil.bufferAsArray(new BlockStreamResponse());
+  private final byte[] unblockStreamSuccess = BufferUtil.bufferAsArray(new UnblockStreamResponse());
 
   @BeforeEach
   void setup() {
@@ -67,6 +71,10 @@ final class ClientStreamRequestManagerTest {
         .thenReturn(CompletableFuture.completedFuture(addStreamSuccess));
     when(mockTransport.send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(removeStreamSuccess));
+    when(mockTransport.send(eq(StreamTopics.BLOCK.topic()), any(), any(), any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(blockStreamSuccess));
+    when(mockTransport.send(eq(StreamTopics.UNBLOCK.topic()), any(), any(), any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(unblockStreamSuccess));
     clientStream.open(requestManager, Collections.emptySet());
   }
 
@@ -427,6 +435,217 @@ final class ClientStreamRequestManagerTest {
         .unicast(eq(StreamTopics.REMOVE_ALL.topic()), any(), any(), eq(server1), anyBoolean());
     verify(mockTransport)
         .unicast(eq(StreamTopics.REMOVE_ALL.topic()), any(), any(), eq(server2), anyBoolean());
+  }
+
+  @Test
+  void shouldSendBlockRequest() {
+    // given
+    final var serverId = MemberId.anonymous();
+    final var registration = requestManager.registrationFor(clientStream, serverId);
+    requestManager.add(clientStream, serverId);
+
+    // when
+    requestManager.block(clientStream, serverId);
+
+    // then
+    verify(mockTransport)
+        .send(eq(StreamTopics.BLOCK.topic()), any(), any(), any(), eq(serverId), any());
+    assertThat(registration.state()).isEqualTo(State.BLOCKED);
+  }
+
+  @Test
+  void shouldSendUnblockRequest() {
+    // given
+    final var serverId = MemberId.anonymous();
+    final var registration = requestManager.registrationFor(clientStream, serverId);
+    requestManager.add(clientStream, serverId);
+    requestManager.block(clientStream, serverId);
+
+    // when
+    requestManager.unblock(clientStream, serverId);
+
+    // then
+    verify(mockTransport)
+        .send(eq(StreamTopics.UNBLOCK.topic()), any(), any(), any(), eq(serverId), any());
+    assertThat(registration.state()).isEqualTo(State.ADDED);
+  }
+
+  @Test
+  void shouldSendBlockAfterUnblockRequest() {
+    // given
+    final var serverId = MemberId.anonymous();
+    final var registration = requestManager.registrationFor(clientStream, serverId);
+    requestManager.add(clientStream, serverId);
+    requestManager.block(clientStream, serverId);
+    requestManager.unblock(clientStream, serverId);
+
+    // when
+    requestManager.block(clientStream, serverId);
+
+    // then
+    verify(mockTransport)
+        .send(eq(StreamTopics.UNBLOCK.topic()), any(), any(), any(), eq(serverId), any());
+    assertThat(registration.state()).isEqualTo(State.BLOCKED);
+  }
+
+  @Test
+  void shouldWaitForPendingUnblockOnBlock() {
+    // given
+    final var pendingRequest = new CompletableFuture<byte[]>();
+    final var serverId = MemberId.anonymous();
+    final var registration = requestManager.registrationFor(clientStream, serverId);
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.UNBLOCK.topic()), any(), any(), any(), any(), any()))
+        .thenReturn(pendingRequest);
+    requestManager.add(clientStream, serverId);
+    requestManager.block(clientStream, serverId);
+    requestManager.unblock(clientStream, serverId);
+
+    // when
+    requestManager.block(clientStream, serverId);
+
+    // then - no request sent until we complete the future
+    verify(mockTransport, times(1))
+        .send(eq(StreamTopics.BLOCK.topic()), any(), any(), any(), eq(serverId), any());
+
+    // then - completes once future is completed
+    pendingRequest.complete(unblockStreamSuccess);
+    verify(mockTransport, times(2))
+        .send(eq(StreamTopics.BLOCK.topic()), any(), any(), any(), eq(serverId), any());
+    assertThat(registration.state()).isEqualTo(State.BLOCKED);
+  }
+
+  @Test
+  void shouldSkipBlockIfRemoving() {
+    // given
+    final var pendingRequest = new CompletableFuture<byte[]>();
+    final var serverId = MemberId.anonymous();
+    final var registration = requestManager.registrationFor(clientStream, serverId);
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.REMOVE.topic()), any(), any(), any(), any(), any()))
+        .thenReturn(pendingRequest);
+    requestManager.add(clientStream, serverId);
+    requestManager.remove(clientStream, serverId);
+
+    // when
+    requestManager.block(clientStream, serverId);
+
+    // then - no request sent until we complete the future
+    pendingRequest.complete(removeStreamSuccess);
+    verify(mockTransport, never())
+        .send(eq(StreamTopics.BLOCK.topic()), any(), any(), any(), eq(serverId), any());
+    assertThat(registration.state()).isEqualTo(State.CLOSED);
+  }
+
+  @Test
+  void shouldSkipUnblockIfRemoving() {
+    // given
+    final var pendingRequest = new CompletableFuture<byte[]>();
+    final var serverId = MemberId.anonymous();
+    final var registration = requestManager.registrationFor(clientStream, serverId);
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.REMOVE.topic()), any(), any(), any(), any(), any()))
+        .thenReturn(pendingRequest);
+    requestManager.add(clientStream, serverId);
+    requestManager.block(clientStream, serverId);
+    requestManager.remove(clientStream, serverId);
+
+    // when
+    requestManager.unblock(clientStream, serverId);
+
+    // then - no request sent until we complete the future
+    pendingRequest.complete(removeStreamSuccess);
+    verify(mockTransport, never())
+        .send(eq(StreamTopics.UNBLOCK.topic()), any(), any(), any(), eq(serverId), any());
+    assertThat(registration.state()).isEqualTo(State.CLOSED);
+  }
+
+  @Test
+  void shouldRetryWhenBlockRequestFails() {
+    // given
+    final var serverId = MemberId.anonymous();
+    final var registration = requestManager.registrationFor(clientStream, serverId);
+    when(mockTransport.send(
+            eq(StreamTopics.BLOCK.topic()), any(), any(), any(), eq(serverId), any()))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Expected")))
+        .thenReturn(CompletableFuture.completedFuture(blockStreamSuccess));
+    requestManager.add(clientStream, serverId);
+
+    // when
+    requestManager.block(clientStream, serverId);
+
+    // then
+    verify(mockTransport, times(2))
+        .send(eq(StreamTopics.BLOCK.topic()), any(), any(), any(), eq(serverId), any());
+    assertThat(registration.state()).isEqualTo(State.BLOCKED);
+  }
+
+  @ParameterizedTest
+  @EnumSource(value = ErrorCode.class)
+  void shouldRetryBlockOnErrorResponse(final ErrorCode code) {
+    // given
+    final var errorResponseBuffer =
+        BufferUtil.bufferAsArray(new ErrorResponse().code(code).message("Failed"));
+    final var serverId = MemberId.anonymous();
+    final var registration = requestManager.registrationFor(clientStream, serverId);
+    when(mockTransport.send(
+            eq(StreamTopics.BLOCK.topic()), any(), any(), any(), eq(serverId), any()))
+        .thenReturn(CompletableFuture.completedFuture(errorResponseBuffer))
+        .thenReturn(CompletableFuture.completedFuture(blockStreamSuccess));
+    requestManager.add(clientStream, serverId);
+
+    // when
+    requestManager.block(clientStream, serverId);
+
+    // then
+    verify(mockTransport, times(2))
+        .send(eq(StreamTopics.BLOCK.topic()), any(), any(), any(), eq(serverId), any());
+    assertThat(registration.state()).isEqualTo(State.BLOCKED);
+  }
+
+  @Test
+  void shouldRetryWhenUnblockRequestFails() {
+    // given
+    final var serverId = MemberId.anonymous();
+    final var registration = requestManager.registrationFor(clientStream, serverId);
+    when(mockTransport.send(
+            eq(StreamTopics.BLOCK.topic()), any(), any(), any(), eq(serverId), any()))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Expected")))
+        .thenReturn(CompletableFuture.completedFuture(blockStreamSuccess));
+    requestManager.add(clientStream, serverId);
+    requestManager.block(clientStream, serverId);
+
+    // when
+    requestManager.unblock(clientStream, serverId);
+
+    // then
+    verify(mockTransport, times(2))
+        .send(eq(StreamTopics.BLOCK.topic()), any(), any(), any(), eq(serverId), any());
+    assertThat(registration.state()).isEqualTo(State.ADDED);
+  }
+
+  @ParameterizedTest
+  @EnumSource(value = ErrorCode.class)
+  void shouldRetryUnblockOnErrorResponse(final ErrorCode code) {
+    // given
+    final var errorResponseBuffer =
+        BufferUtil.bufferAsArray(new ErrorResponse().code(code).message("Failed"));
+    final var serverId = MemberId.anonymous();
+    final var registration = requestManager.registrationFor(clientStream, serverId);
+    when(mockTransport.send(
+            eq(StreamTopics.UNBLOCK.topic()), any(), any(), any(), eq(serverId), any()))
+        .thenReturn(CompletableFuture.completedFuture(errorResponseBuffer))
+        .thenReturn(CompletableFuture.completedFuture(unblockStreamSuccess));
+    requestManager.add(clientStream, serverId);
+    requestManager.block(clientStream, serverId);
+
+    // when
+    requestManager.unblock(clientStream, serverId);
+
+    // then
+    verify(mockTransport, times(2))
+        .send(eq(StreamTopics.UNBLOCK.topic()), any(), any(), any(), eq(serverId), any());
+    assertThat(registration.state()).isEqualTo(State.ADDED);
   }
 
   private static Stream<MessagingException> provideMessagingFailures() {
