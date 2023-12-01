@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
@@ -24,6 +25,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnUserTaskBehavior userTaskBehavior;
+  private final BpmnStateBehavior stateBehavior;
 
   public UserTaskProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -34,6 +36,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
     this.stateTransitionBehavior = stateTransitionBehavior;
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
     userTaskBehavior = bpmnBehaviors.userTaskBehavior();
+    stateBehavior = bpmnBehaviors.stateBehavior();
   }
 
   @Override
@@ -80,6 +83,30 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   @Override
   protected void onTerminateInternal(
       final ExecutableUserTask element, final BpmnElementContext context) {
-    // TODO will be added with increment 2 of https://github.com/camunda/zeebe/issues/14938
+    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
+
+    userTaskBehavior.cancelUserTask(context);
+    eventSubscriptionBehavior.unsubscribeFromEvents(context);
+    incidentBehavior.resolveIncidents(context);
+
+    eventSubscriptionBehavior
+        .findEventTrigger(context)
+        .filter(eventTrigger -> flowScopeInstance.isActive())
+        .filter(eventTrigger -> !flowScopeInstance.isInterrupted())
+        .ifPresentOrElse(
+            eventTrigger -> {
+              final var terminated =
+                  stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
+              eventSubscriptionBehavior.activateTriggeredEvent(
+                  context.getElementInstanceKey(),
+                  terminated.getFlowScopeKey(),
+                  eventTrigger,
+                  terminated);
+            },
+            () -> {
+              final var terminated =
+                  stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
+              stateTransitionBehavior.onElementTerminated(element, terminated);
+            });
   }
 }
