@@ -20,9 +20,9 @@ import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
 import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
+import io.camunda.tasklist.util.Either;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.micrometer.core.instrument.Timer;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -30,9 +30,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
@@ -123,70 +121,41 @@ public class ProcessInstanceArchiverJobElasticSearch extends AbstractArchiverJob
   public CompletableFuture<ArchiveBatch> getNextBatch() {
     final var nextBatchFuture = new CompletableFuture<ArchiveBatch>();
     final var searchRequest = createFinishedProcessInstanceSearchRequest();
-    searchRequest.scroll(TimeValue.timeValueMillis(ElasticsearchUtil.SCROLL_KEEP_ALIVE_MS));
 
     final var startTimer = Timer.start();
     sendSearchRequest(searchRequest)
-        .thenCompose(this::fetchFinishedProcessInstanceIds)
-        .thenApply(this::createArchiveBatch)
-        .thenAccept(nextBatchFuture::complete)
-        .exceptionally(
-            (t) -> {
-              final var message =
-                  String.format(
-                      "Exception occurred, while obtaining finished batch operations: %s",
-                      t.getMessage());
-              nextBatchFuture.completeExceptionally(new TasklistRuntimeException(message, t));
-              return null;
-            })
-        .thenAccept(
-            (ignore) -> {
+        .whenComplete(
+            (response, e) -> {
               final var timer = getArchiverQueryTimer();
               startTimer.stop(timer);
+
+              final var result = handleSearchResponse(response, e);
+              result.ifRightOrLeft(
+                  nextBatchFuture::complete, nextBatchFuture::completeExceptionally);
             });
 
     return nextBatchFuture;
   }
 
-  protected CompletableFuture<List<String>> fetchFinishedProcessInstanceIds(
-      final SearchResponse response) {
-    final CompletableFuture<List<String>> srcollFuture;
-    final var result = new ArrayList<String>();
-
-    final var scrollId = response.getScrollId();
-    final var hits = response.getHits();
-
-    if (hits.getHits().length > 0) {
-      srcollFuture = new CompletableFuture<>();
-      final var ids =
-          Arrays.asList(hits.getHits()).stream().map(SearchHit::getId).collect(Collectors.toList());
-      result.addAll(ids);
-
-      final var scrollRequest = new SearchScrollRequest(scrollId);
-      scrollRequest.scroll(TimeValue.timeValueMillis(ElasticsearchUtil.SCROLL_KEEP_ALIVE_MS));
-
-      ElasticsearchUtil.scrollAsync(scrollRequest, archiverExecutor, esClient)
-          .thenCompose(this::fetchFinishedProcessInstanceIds)
-          .thenAccept(
-              (resultingIds) -> {
-                result.addAll(resultingIds);
-                srcollFuture.complete(result);
-              })
-          .exceptionally(
-              (e) -> {
-                srcollFuture.completeExceptionally(e);
-                return null;
-              });
-
-    } else {
-      srcollFuture = CompletableFuture.completedFuture(result);
+  protected Either<Throwable, ArchiveBatch> handleSearchResponse(
+      final SearchResponse searchResponse, final Throwable error) {
+    if (error != null) {
+      final var message =
+          String.format(
+              "Exception occurred, while obtaining finished process instances: %s",
+              error.getMessage());
+      return Either.left(new TasklistRuntimeException(message, error));
     }
 
-    return srcollFuture;
+    final var batch = createArchiveBatch(searchResponse);
+    return Either.right(batch);
   }
 
-  protected ArchiveBatch createArchiveBatch(final List<String> ids) {
-    if (ids != null && ids.size() > 0) {
+  protected ArchiveBatch createArchiveBatch(final SearchResponse response) {
+    final var hits = response.getHits();
+    if (hits.getHits().length > 0) {
+      final var ids =
+          Arrays.asList(hits.getHits()).stream().map(SearchHit::getId).collect(Collectors.toList());
       return new ArchiveBatch(ids);
     } else {
       return null;

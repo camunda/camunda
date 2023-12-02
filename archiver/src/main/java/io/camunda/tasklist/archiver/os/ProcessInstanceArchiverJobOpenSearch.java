@@ -18,9 +18,10 @@ import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
 import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
+import io.camunda.tasklist.util.Either;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.micrometer.core.instrument.Timer;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -31,7 +32,6 @@ import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch.core.ScrollRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -122,74 +122,40 @@ public class ProcessInstanceArchiverJobOpenSearch extends AbstractArchiverJobOpe
 
     final var startTimer = Timer.start();
     sendSearchRequest(searchRequest)
-        .thenCompose(this::fetchFinishedProcessInstanceIds)
-        .thenApply(this::createArchiveBatch)
-        .thenAccept(nextBatchFuture::complete)
-        .exceptionally(
-            (exception) -> {
-              final var message =
-                  String.format(
-                      "Exception occurred, while obtaining finished batch operations: %s",
-                      exception.getMessage());
-              nextBatchFuture.completeExceptionally(
-                  new TasklistRuntimeException(message, exception));
-              return null;
-            })
-        .thenAccept(
-            (ignore) -> {
+        .whenComplete(
+            (response, e) -> {
               final var timer = getArchiverQueryTimer();
               startTimer.stop(timer);
+
+              final var result = handleSearchResponse(response, e);
+              result.ifRightOrLeft(
+                  nextBatchFuture::complete, nextBatchFuture::completeExceptionally);
             });
 
     return nextBatchFuture;
   }
 
-  protected CompletableFuture<List<String>> fetchFinishedProcessInstanceIds(
-      final SearchResponse response) {
-    final CompletableFuture<List<String>> scrollFuture;
-    final var result = new ArrayList<String>();
-
-    final var scrollId = response.scrollId();
-    final var hits = response.hits();
-
-    if (hits.hits().size() > 0) {
-      scrollFuture = new CompletableFuture<>();
-      /*final var ids222 =
-      Arrays.asList(hits.getHits()).stream().map(SearchHit::getId).collect(Collectors.toList());*/
-      final List<String> ids = new ArrayList<>();
-      for (Object hit : hits.hits()) {
-        ids.add(((Hit) hit).id());
-      }
-      result.addAll(ids);
-
-      final var scrollRequest =
-          new ScrollRequest.Builder()
-              .scrollId(scrollId)
-              .scroll(Time.of(t -> t.time(String.valueOf(SCROLL_KEEP_ALIVE_MS))))
-              .build();
-
-      OpenSearchUtil.scrollAsync(scrollRequest, archiverExecutor, openSearchAsyncClient)
-          .thenCompose(this::fetchFinishedProcessInstanceIds)
-          .thenAccept(
-              (resultingIds) -> {
-                result.addAll(resultingIds);
-                scrollFuture.complete(result);
-              })
-          .exceptionally(
-              (e) -> {
-                scrollFuture.completeExceptionally(e);
-                return null;
-              });
-
-    } else {
-      scrollFuture = CompletableFuture.completedFuture(result);
+  protected Either<Throwable, ArchiveBatch> handleSearchResponse(
+      final SearchResponse searchResponse, final Throwable error) {
+    if (error != null) {
+      final var message =
+          String.format(
+              "Exception occurred, while obtaining finished process instances: %s",
+              error.getMessage());
+      return Either.left(new TasklistRuntimeException(message, error));
     }
 
-    return scrollFuture;
+    final var batch = createArchiveBatch(searchResponse);
+    return Either.right(batch);
   }
 
-  protected ArchiveBatch createArchiveBatch(final List<String> ids) {
-    if (ids != null && ids.size() > 0) {
+  protected ArchiveBatch createArchiveBatch(final SearchResponse response) {
+    final var hits = response.hits();
+    if (!hits.hits().isEmpty()) {
+      final var ids =
+          Arrays.asList(hits.hits()).stream()
+              .map((hit) -> ((Hit) hit).id())
+              .collect(Collectors.toList());
       return new ArchiveBatch(ids);
     } else {
       return null;
