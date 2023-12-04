@@ -16,6 +16,14 @@ security:
       tokenUrl: ${CAMUNDA_OPTIMIZE_AUTH0_TOKEN_URL:}
     ccsm:
       redirectRootUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_REDIRECT_ROOT_URL:}
+      # These are here for backwards compatibility, but should not be used anymore. The values are now set using the
+      # application-ccsm.yaml file
+      issuerUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL:}
+      issuerBackendUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL:}
+      clientId: ${CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID:}
+      clientSecret: ${CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET:}
+      audience: ${CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE:}
+      baseUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL:}
     cookie:
       same-site:
         # decides if the Optimize auth cookie has the same site cookie flag set
@@ -547,6 +555,8 @@ email:
   hostname: ${CAMUNDA_OPTIMIZE_EMAIL_HOSTNAME:}
   # The smtp server port. This one is also used as SSL port for the security connection.
   port: ${CAMUNDA_OPTIMIZE_EMAIL_PORT:587}
+  # A switch to control the checking of server identities for SSL email sending
+  checkServerIdentity: ${CAMUNDA_OPTIMIZE_EMAIL_CHECK_SERVER_IDENTITY:false}
   # This is the company name that will be shown in the subject and body of e-mails sent by Optimize
   # This configuration's setting is subject to any legal agreements between Camunda and the user's organization.
   # Changes are only permitted with formal, written approval by Camunda.

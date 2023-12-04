@@ -74,7 +74,7 @@ public class CCSMTokenService {
     final Cookie optimizeRefreshCookie = authCookieService.createCookie(
       OPTIMIZE_REFRESH_TOKEN,
       tokens.getRefreshToken(),
-      refreshTokenExpirationDate == null ? null : refreshTokenExpirationDate.toInstant(),
+      Optional.ofNullable(refreshTokenExpirationDate).map(Date::toInstant).orElse(null),
       scheme
     );
     return List.of(optimizeAuthCookie, optimizeRefreshCookie);

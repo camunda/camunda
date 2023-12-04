@@ -890,7 +890,8 @@ public class ConfigurationService {
 
   public Boolean getNotificationEmailCheckServerIdentity() {
     if (notificationEmailCheckServerIdentity == null) {
-      notificationEmailCheckServerIdentity = Boolean.TRUE;
+      notificationEmailCheckServerIdentity =
+              configJsonContext.read(ConfigurationServiceConstants.CHECK_SERVER_IDENTITY, Boolean.class);
     }
     return notificationEmailCheckServerIdentity;
   }

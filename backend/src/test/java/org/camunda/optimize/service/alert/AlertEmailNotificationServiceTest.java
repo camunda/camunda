@@ -60,7 +60,6 @@ public class AlertEmailNotificationServiceTest {
     configurationService.setNotificationEmailAddress("from@localhost.com");
     configurationService.setNotificationEmailHostname("127.0.0.1");
     configurationService.setNotificationEmailPort(4444);
-    configurationService.setNotificationEmailCheckServerIdentity(false);
     EmailService emailService = new EmailService(configurationService, freemarkerConfigurer);
     this.notificationService = new AlertEmailNotificationService(configurationService, emailService);
   }
