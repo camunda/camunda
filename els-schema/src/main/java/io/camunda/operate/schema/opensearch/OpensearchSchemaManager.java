@@ -15,11 +15,13 @@ import io.camunda.operate.schema.indices.AbstractIndexDescriptor;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.operate.util.MapPath;
 import jakarta.json.spi.JsonProvider;
 import jakarta.json.stream.JsonParser;
 import org.opensearch.client.json.ObjectDeserializer;
 import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
 import org.opensearch.client.opensearch.indices.Alias;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
@@ -34,6 +36,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
@@ -42,8 +45,11 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
+
+import static java.lang.String.format;
 
 @Component("schemaManager")
 @Profile("!test")
@@ -55,6 +61,7 @@ public class OpensearchSchemaManager implements SchemaManager {
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchSchemaManager.class);
   public static final String SCHEMA_OPENSEARCH_CREATE_TEMPLATE_JSON = "/schema/opensearch/create/template/operate-%s.json";
   public static final String SCHEMA_OPENSEARCH_CREATE_INDEX_JSON = "/schema/opensearch/create/index/operate-%s.json";
+  public static final String SCHEMA_OPENSEARCH_CREATE_POLICY_JSON = "/schema/opensearch/create/policy/%s.json";
 
   @Autowired protected OperateProperties operateProperties;
 
@@ -68,9 +75,9 @@ public class OpensearchSchemaManager implements SchemaManager {
 
   @Override
   public void createSchema() {
-    /*if (operateProperties.getArchiver().isIlmEnabled()) {
-      createIndexLifeCycles();
-    }*/
+    if (operateProperties.getArchiver().isIlmEnabled()) {
+      createIsmPolicy();
+    }
     createDefaults();
     createTemplates();
     createIndices();
@@ -180,7 +187,7 @@ public class OpensearchSchemaManager implements SchemaManager {
 
   private String settingsTemplateName() {
     final OperateOpensearchProperties osConfig = operateProperties.getOpensearch();
-    return String.format("%s_template", osConfig.getIndexPrefix());
+    return format("%s_template", osConfig.getIndexPrefix());
   }
 
   private void createTemplates() {
@@ -202,7 +209,7 @@ public class OpensearchSchemaManager implements SchemaManager {
 
     // This is necessary, otherwise operate won't find indexes at startup
     final String indexName = templateDescriptor.getFullQualifiedName();
-    final String templateFileName = String.format(SCHEMA_OPENSEARCH_CREATE_TEMPLATE_JSON, templateDescriptor.getIndexName());
+    final String templateFileName = format(SCHEMA_OPENSEARCH_CREATE_TEMPLATE_JSON, templateDescriptor.getIndexName());
     try {
       final InputStream description = OpensearchSchemaManager.class.getResourceAsStream(templateFileName);
       var request = createIndexFromJson(
@@ -237,7 +244,7 @@ public class OpensearchSchemaManager implements SchemaManager {
 
   private void createIndex(final IndexDescriptor indexDescriptor)  {
     try {
-      final String indexFilename = String.format(SCHEMA_OPENSEARCH_CREATE_INDEX_JSON, indexDescriptor.getIndexName());
+      final String indexFilename = format(SCHEMA_OPENSEARCH_CREATE_INDEX_JSON, indexDescriptor.getIndexName());
       final InputStream description = OpensearchSchemaManager.class.getResourceAsStream(indexFilename);
       var request = createIndexFromJson(
           StreamUtils.copyToString(description, Charset.defaultCharset()),
@@ -284,5 +291,37 @@ public class OpensearchSchemaManager implements SchemaManager {
   @Override
   public String getIndexPrefix() {
     return operateProperties.getOpensearch().getIndexPrefix();
+  }
+
+  private Optional<Map<String, Object>> fetchIsmPolicy() {
+    try {
+      return Optional.ofNullable(richOpenSearchClient.ism().getPolicy(OPERATE_DELETE_ARCHIVED_INDICES));
+    } catch (OpenSearchException e) {
+      if(e.status() != 404) {
+        logger.error(format("Failed to get policy %s", OPERATE_DELETE_ARCHIVED_INDICES), e);
+      }
+      return Optional.empty();
+    }
+  }
+
+  private String loadIsmPolicy() throws IOException {
+    var policyFilename = format(SCHEMA_OPENSEARCH_CREATE_POLICY_JSON, OPERATE_DELETE_ARCHIVED_INDICES);
+    var inputStream = OpensearchSchemaManager.class.getResourceAsStream(policyFilename);
+    var policyContent = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
+    return policyContent.replace("$MIN_INDEX_AGE", operateProperties.getArchiver().getIlmMinAgeForDeleteArchivedIndices());
+  }
+
+  private void createIsmPolicy() {
+    fetchIsmPolicy().ifPresentOrElse(
+      ismPolicy -> logger.warn("ISM policy {} already exists: {}.", OPERATE_DELETE_ARCHIVED_INDICES, ismPolicy),
+      () -> {
+        try {
+          richOpenSearchClient.ism().createPolicy(OPERATE_DELETE_ARCHIVED_INDICES, loadIsmPolicy());
+          logger.info("Created ISM policy {} for min age of {}.", OPERATE_DELETE_ARCHIVED_INDICES, operateProperties.getArchiver().getIlmMinAgeForDeleteArchivedIndices());
+        } catch(Exception e){
+          throw new OperateRuntimeException("Failed to create ISM policy " + OPERATE_DELETE_ARCHIVED_INDICES, e);
+        }
+      }
+    );
   }
 }

@@ -52,6 +52,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
@@ -63,7 +64,9 @@ import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInst
 import static io.camunda.operate.util.CollectionUtil.filter;
 import static io.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
+import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -481,7 +484,7 @@ public class OperateTester {
 
   private MvcResult postOperation(CreateOperationRequestDto operationRequest) throws Exception {
     MockHttpServletRequestBuilder postOperationRequest =
-        post(String.format( "/api/process-instances/%s/operation", processInstanceKey))
+        post(format( "/api/process-instances/%s/operation", processInstanceKey))
             .content(mockMvcTestRule.json(operationRequest))
             .contentType(mockMvcTestRule.getContentType());
 
@@ -495,7 +498,7 @@ public class OperateTester {
 
   private MvcResult postOperation(ModifyProcessInstanceRequestDto operationRequest) throws Exception {
     final MockHttpServletRequestBuilder ope =
-        post(String.format(PROCESS_INSTANCE_URL+"/%s/modify", processInstanceKey))
+        post(format(PROCESS_INSTANCE_URL+"/%s/modify", processInstanceKey))
             .content(mockMvcTestRule.json(operationRequest))
             .contentType(mockMvcTestRule.getContentType());
 
@@ -565,7 +568,7 @@ public class OperateTester {
 
   private MvcResult postOperation(CreateBatchOperationRequestDto operationRequest) throws Exception {
     MockHttpServletRequestBuilder postOperationRequest =
-      post(String.format( "/api/process-instances/%s/operation", processInstanceKey))
+      post(format( "/api/process-instances/%s/operation", processInstanceKey))
         .content(mockMvcTestRule.json(operationRequest))
         .contentType(mockMvcTestRule.getContentType());
 
@@ -730,7 +733,7 @@ public class OperateTester {
         .setFlowNodeType(flowNodeType)
         .setFlowNodeInstanceId(flowNodeInstanceId);
     MvcResult mvcResult = postRequest(
-        String.format(PROCESS_INSTANCE_URL + "/%s/flow-node-metadata", processInstanceId),
+        format(PROCESS_INSTANCE_URL + "/%s/flow-node-metadata", processInstanceId),
         request);
     return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
     });
@@ -807,5 +810,25 @@ public class OperateTester {
   public List<Long> getFlowNodeInstanceKeysFor(final String flowNodeId) {
     return flowNodeInstanceReader.getFlowNodeInstanceKeysByIdAndStates(processInstanceKey, flowNodeId,
         List.of(FlowNodeState.ACTIVE, FlowNodeState.COMPLETED, FlowNodeState.TERMINATED));
+  }
+
+  public void waitIndexDeletion(String index, int maxWaitMillis) throws IOException {
+    var start = System.currentTimeMillis();
+    var deleted = false;
+
+    assertTrue(format("Index %s doesn't exist!", index), searchTestRule.indexExists(index));
+    logger.info(format("Index exists %s", index));
+
+    while (!deleted & System.currentTimeMillis() < start + maxWaitMillis) {
+      deleted = !searchTestRule.indexExists(index);
+      logger.info(format("Index %s is deleted after %s seconds: %s. Expectation is 1000 seconds", index, (System.currentTimeMillis() - start)/1000, deleted));
+      try {
+        Thread.sleep(10000);
+      } catch (Exception e ) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    assertTrue(format("Index %s was not deleted after %s ms!", index, maxWaitMillis), deleted);
   }
 }

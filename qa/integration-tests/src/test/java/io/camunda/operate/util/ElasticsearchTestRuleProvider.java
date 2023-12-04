@@ -139,6 +139,12 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   }
 
   @Override
+  public boolean indexExists(String index) throws IOException {
+    var request = new GetIndexRequest(index);
+    return esClient.indices().exists(request, RequestOptions.DEFAULT);
+  }
+
+  @Override
   public void failed(Throwable e, Description description) {
     this.failed = true;
   }
@@ -159,6 +165,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
 
   @Override
   public void finished(Description description) {
+    TestUtil.removeIlmPolicy(esClient);
     if (!failed) {
       String indexPrefix = operateProperties.getElasticsearch().getIndexPrefix();
       TestUtil.removeAllIndices(esClient, indexPrefix);

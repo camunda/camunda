@@ -8,6 +8,7 @@ package io.camunda.operate.util;
 
 import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.exceptions.PersistenceException;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.RecordsReader;
 import org.junit.rules.TestWatcher;
@@ -16,9 +17,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -29,11 +32,20 @@ public class SearchTestRule extends TestWatcher {
   @Autowired
   protected SearchTestRuleProvider searchTestRuleProvider;
 
+  @Autowired
+  protected OperateProperties operateProperties;
+
+  Consumer<OperateProperties> operatePropertiesCustomizer = operateProperties -> {};
+
   public SearchTestRule() {
   }
 
   public SearchTestRule(String indexPrefix) {
     searchTestRuleProvider.setIndexPrefix(indexPrefix);
+  }
+
+  public SearchTestRule(Consumer<OperateProperties> operatePropertiesCustomizer) {
+    this.operatePropertiesCustomizer = operatePropertiesCustomizer;
   }
 
   @Override
@@ -44,6 +56,7 @@ public class SearchTestRule extends TestWatcher {
 
   @Override
   protected void starting(Description description) {
+    operatePropertiesCustomizer.accept(operateProperties);
     searchTestRuleProvider.starting(description);
   }
 
@@ -121,5 +134,9 @@ public class SearchTestRule extends TestWatcher {
 
   public int getOpenScrollcontextSize() {
     return searchTestRuleProvider.getOpenScrollcontextSize();
+  }
+
+  public boolean indexExists(String index) throws IOException {
+    return searchTestRuleProvider.indexExists(index);
   }
 }

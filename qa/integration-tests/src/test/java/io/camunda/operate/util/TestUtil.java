@@ -8,6 +8,7 @@ package io.camunda.operate.util;
 
 import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
 import static io.camunda.operate.property.OperationExecutorProperties.LOCK_TIMEOUT_DEFAULT;
+import static io.camunda.operate.schema.SchemaManager.OPERATE_DELETE_ARCHIVED_INDICES;
 import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
 import static io.camunda.operate.util.OperateAbstractIT.DEFAULT_USER;
 
@@ -41,10 +42,12 @@ import java.util.UUID;
 
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchIndexOperations;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchTemplateOperations;
+import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indexlifecycle.DeleteLifecyclePolicyRequest;
 import org.elasticsearch.client.indices.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -368,6 +371,21 @@ public abstract class TestUtil {
     } catch (Exception ex) {
       logger.error(ex.getMessage(), ex);
     }
+  }
+
+  public static void removeIlmPolicy(RestHighLevelClient esClient) {
+    try {
+      logger.info("Removing ILM policy " + OPERATE_DELETE_ARCHIVED_INDICES);
+      var request = new DeleteLifecyclePolicyRequest(OPERATE_DELETE_ARCHIVED_INDICES);
+      esClient.indexLifecycle().deleteLifecyclePolicy(request, RequestOptions.DEFAULT);
+    } catch (ElasticsearchStatusException | IOException ex) {
+      logger.error(ex.getMessage(), ex);
+    }
+  }
+
+  public static void removeIlmPolicy(RichOpenSearchClient richOpenSearchClient) {
+      logger.info("Removing ILM policy " + OPERATE_DELETE_ARCHIVED_INDICES);
+      richOpenSearchClient.ism().deletePolicy(OPERATE_DELETE_ARCHIVED_INDICES);
   }
 
   public static OperationEntity createOperationEntity(Long processInstanceKey, Long incidentKey, String varName, String username) {

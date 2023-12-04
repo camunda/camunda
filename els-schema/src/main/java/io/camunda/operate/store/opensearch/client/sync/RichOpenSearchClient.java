@@ -38,6 +38,7 @@ public class RichOpenSearchClient {
   final OpenSearchSnapshotOperations openSearchSnapshotOperations;
   final OpenSearchTaskOperations openSearchTaskOperations;
   final OpenSearchTemplateOperations openSearchTemplateOperations;
+  final OpenSearchISMOperations openSearchISMOperations;
 
   public class Async {
     final OpenSearchAsyncDocumentOperations openSearchAsyncDocumentOperations;
@@ -80,6 +81,7 @@ public class RichOpenSearchClient {
     openSearchSnapshotOperations = new OpenSearchSnapshotOperations(LOGGER, openSearchClient);
     openSearchTaskOperations = new OpenSearchTaskOperations(LOGGER, openSearchClient);
     openSearchTemplateOperations = new OpenSearchTemplateOperations(LOGGER, openSearchClient);
+    openSearchISMOperations = new OpenSearchISMOperations(LOGGER, openSearchClient);
   }
 
   public Async async() {
@@ -100,6 +102,9 @@ public class RichOpenSearchClient {
 
   public OpenSearchIndexOperations index() {
     return openSearchIndexOperations;
+  }
+  public OpenSearchISMOperations ism() {
+    return openSearchISMOperations;
   }
 
   public OpenSearchPipelineOperations pipeline() {

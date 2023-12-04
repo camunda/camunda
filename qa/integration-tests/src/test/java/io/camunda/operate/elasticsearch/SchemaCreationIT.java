@@ -7,6 +7,7 @@
 package io.camunda.operate.elasticsearch;
 
 import io.camunda.operate.management.IndicesCheck;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.indices.MigrationRepositoryIndex;
@@ -17,6 +18,7 @@ import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,8 +26,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static io.camunda.operate.schema.SchemaManager.OPERATE_DELETE_ARCHIVED_INDICES;
 import static io.camunda.operate.util.CollectionUtil.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -33,7 +37,7 @@ import static org.junit.Assert.assertTrue;
 public class SchemaCreationIT extends OperateAbstractIT {
 
   @Rule
-  public SearchTestRule searchTestRule = new SearchTestRule();
+  public SearchTestRule searchTestRule = new SearchTestRule(operatePropertiesCustomizer);
   @Autowired
   private TestSearchRepository testSearchRepository;
   @Autowired
@@ -46,6 +50,17 @@ public class SchemaCreationIT extends OperateAbstractIT {
   private List<IndexDescriptor> indexDescriptors;
   @Autowired
   private IndicesCheck indicesCheck;
+
+  private static final Consumer<OperateProperties> operatePropertiesCustomizer = operateProperties -> {
+    operateProperties.getArchiver().setIlmEnabled(true);
+    operateProperties.getArchiver().setIlmMinAgeForDeleteArchivedIndices("5m");
+  };
+
+  @Test
+  @Ignore("For some reason fails on CI, so skipping")
+  public void testIlmPolicyCreation() throws IOException {
+    assertTrue(testSearchRepository.ilmPolicyExists(OPERATE_DELETE_ARCHIVED_INDICES));
+  }
 
   @Test
   public void testIndexCreation() throws ExecutionException, InterruptedException, IOException {

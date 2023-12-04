@@ -27,8 +27,15 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
-import static io.camunda.operate.store.opensearch.dsl.RequestDSL.*;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.constantScore;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.longTerms;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.matchAll;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.script;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
+import static io.camunda.operate.store.opensearch.dsl.RequestDSL.getIndexRequestBuilder;
+import static io.camunda.operate.store.opensearch.dsl.RequestDSL.indexRequestBuilder;
+import static io.camunda.operate.store.opensearch.dsl.RequestDSL.reindexRequestBuilder;
+import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 
 @Component
 @Conditional(OpensearchCondition.class)
@@ -188,5 +195,10 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   public void reindex(String srcIndex, String dstIndex, String script, Map<String, Object> scriptParams) throws IOException {
     var request = reindexRequestBuilder(srcIndex, dstIndex, script, scriptParams).build();
     richOpenSearchClient.index().reindexWithRetries(request);
+  }
+
+  @Override
+  public boolean ilmPolicyExists(String policyName) {
+    return ! richOpenSearchClient.ism().getPolicy(policyName).isEmpty();
   }
 }

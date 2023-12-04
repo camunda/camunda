@@ -22,16 +22,17 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indexlifecycle.GetLifecyclePolicyRequest;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
+import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
-import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.xcontent.XContentType;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +46,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.operate.util.ElasticsearchUtil.requestOptions;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -207,5 +209,11 @@ public class TestElasticSearchRepository implements TestSearchRepository {
       .setScript(new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, scriptParams));
 
     esClient.reindex(reindexRequest, RequestOptions.DEFAULT);
+  }
+
+  @Override
+  public boolean ilmPolicyExists(String policyName) throws IOException {
+    var request = new GetLifecyclePolicyRequest(policyName);
+    return esClient.indexLifecycle().getLifecyclePolicy(request, requestOptions).getPolicies().get(policyName) != null;
   }
 }

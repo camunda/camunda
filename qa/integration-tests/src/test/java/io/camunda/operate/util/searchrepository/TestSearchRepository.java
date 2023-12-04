@@ -50,4 +50,6 @@ public interface TestSearchRepository {
   List<VariableEntity> getVariablesByProcessInstanceKey(String index, Long processInstanceKey);
 
   void reindex(String srcIndex, String dstIndex, String script, Map<String, Object> scriptParams) throws IOException;
+
+  boolean ilmPolicyExists(String policyName) throws IOException;
 }

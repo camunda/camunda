@@ -12,6 +12,7 @@ import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.RecordsReader;
 import org.junit.runner.Description;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -65,4 +66,6 @@ public interface SearchTestRuleProvider {
   String getIndexPrefix();
 
   void setIndexPrefix(String indexPrefix);
+
+  boolean indexExists(String index) throws IOException;
 }

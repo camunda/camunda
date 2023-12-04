@@ -141,6 +141,11 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   }
 
   @Override
+  public boolean indexExists(String index) {
+    return richOpenSearchClient.index().indexExists(index);
+  }
+
+  @Override
   public void failed(Throwable e, Description description) {
     this.failed = true;
   }
@@ -161,6 +166,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
 
   @Override
   public void finished(Description description) {
+    TestUtil.removeIlmPolicy(richOpenSearchClient);
     String indexPrefix = operateProperties.getOpensearch().getIndexPrefix();
     TestUtil.removeAllIndices(richOpenSearchClient.index(), richOpenSearchClient.template(), indexPrefix);
     operateProperties.getOpensearch().setIndexPrefix(OperateOpensearchProperties.DEFAULT_INDEX_PREFIX);

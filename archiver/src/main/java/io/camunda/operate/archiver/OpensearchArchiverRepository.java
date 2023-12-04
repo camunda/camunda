@@ -158,7 +158,7 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
   public void setIndexLifeCycle(final String destinationIndexName){
     try {
       if ( operateProperties.getArchiver().isIlmEnabled() ) {
-        richOpenSearchClient.index().setIndexLifeCycle(destinationIndexName, OPERATE_DELETE_ARCHIVED_INDICES);
+        richOpenSearchClient.ism().addPolicyToIndex(destinationIndexName, OPERATE_DELETE_ARCHIVED_INDICES);
       }
     } catch (Exception e){
       logger.warn("Could not set ILM policy {} for index {}: {}", OPERATE_DELETE_ARCHIVED_INDICES, destinationIndexName, e.getMessage());
