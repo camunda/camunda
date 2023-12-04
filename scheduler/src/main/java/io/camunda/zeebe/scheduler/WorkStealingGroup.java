@@ -9,8 +9,6 @@ package io.camunda.zeebe.scheduler;
 
 import static io.camunda.zeebe.scheduler.ActorTask.TaskSchedulingState.QUEUED;
 
-import java.util.concurrent.ThreadLocalRandom;
-
 /** Workstealing group maintains a queue per thread. */
 public final class WorkStealingGroup implements TaskScheduler {
   private final int numOfThreads;
@@ -60,35 +58,6 @@ public final class WorkStealingGroup implements TaskScheduler {
    * there is more work to do than there is resources (threads) to run it.
    */
   private ActorTask trySteal(final ActorThread currentThread) {
-    /*
-     * This implementation uses a random offset into the runner array. The idea is to
-     *
-     * a) reduce probability for contention in situations where we have multiple runners
-     *    (threads) trying to steal work at the same time: if they all started at the same
-     *    offset, they would all look at the same runner as potential victim and contend
-     *    on it's job queue
-     *
-     * b) to make sure a runner does not always look at the same other runner first and by
-     *    this potentially increase the probability to find work on the first attempt
-     *
-     * However, the calculation of the random and the handling also needs additional compute time.
-     * Experimental verification of the effectiveness of the optimization has not been conducted yet.
-     * Also, the optimization only makes sense if the system uses at least 3 runners.
-     */
-    final int offset = ThreadLocalRandom.current().nextInt(numOfThreads);
-
-    for (int i = offset; i < offset + numOfThreads; i++) {
-      final int runnerId = i % numOfThreads;
-
-      if (runnerId != currentThread.getRunnerId()) {
-        final ActorTask stolenActor = taskQueues[runnerId].trySteal();
-
-        if (stolenActor != null) {
-          return stolenActor;
-        }
-      }
-    }
-
     return null;
   }
 }
