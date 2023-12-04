@@ -134,7 +134,7 @@
     <version.reactor-netty>1.1.13</version.reactor-netty>
     <version.tc-keycloak>3.2.0</version.tc-keycloak>
     <version.jakarta-activation>2.1.2</version.jakarta-activation>
-    <version.jakarta.json-api>2.0.1</version.jakarta.json-api>
+    <version.jakarta.json-api>2.1.3</version.jakarta.json-api>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
