@@ -1140,17 +1140,17 @@
   resolved "https://registry.yarnpkg.com/@carbon/colors/-/colors-11.20.1.tgz#15bf97aa075674f9a198c0ce89f7dadde1d0499c"
   integrity sha512-CiW+05/LaYCZ8LW5ioEz4EL0DBxI0psZGdiA7leQSH/Wvec7mvEANhze3lYhfx3ZH700Q4Y2O9/roW+yLB1CQw==
 
-"@carbon/elements@11.33.1":
-  version "11.33.1"
-  resolved "https://registry.yarnpkg.com/@carbon/elements/-/elements-11.33.1.tgz#adccce43689b4eba093d3c879c6879b64ea87a77"
-  integrity sha512-HVJOBSHmdBKHC6WRWJnkRE8W9apIC+cqT3o25hsYIE28vd27gKlqpOZOKMVsvCUASIa2cIDGfVkW0shd6lRtCQ==
+"@carbon/elements@11.34.0":
+  version "11.34.0"
+  resolved "https://registry.yarnpkg.com/@carbon/elements/-/elements-11.34.0.tgz#dbf72867de725471cd3de15c3c0c36d11b1c2886"
+  integrity sha512-RcK+06KJl655bFP/IImgE9xpFnk1sYkCZaQFmnWl4itj9wFphrYn0ifr5H0P87zNAHl++nBkMWHROjF6KJfoPA==
   dependencies:
     "@carbon/colors" "^11.20.0"
     "@carbon/grid" "^11.21.0"
-    "@carbon/icons" "^11.30.1"
+    "@carbon/icons" "^11.31.0"
     "@carbon/layout" "^11.20.0"
     "@carbon/motion" "^11.16.0"
-    "@carbon/themes" "^11.27.1"
+    "@carbon/themes" "^11.28.0"
     "@carbon/type" "^11.25.0"
 
 "@carbon/feature-flags@^0.16.0":
@@ -1179,10 +1179,10 @@
     "@carbon/telemetry" "0.1.0"
     prop-types "^15.7.2"
 
-"@carbon/icons@^11.30.1":
-  version "11.30.1"
-  resolved "https://registry.yarnpkg.com/@carbon/icons/-/icons-11.30.1.tgz#2aeda2de600cb6495f062a852e5529c82a36bc37"
-  integrity sha512-PKJU+QYLfEpsE5aL3EwjPZOaOL8X81a9Aw+HYa4yh9v7k/L4nqndr5oXgR+hheKHerE0/tj+dDqTVopUtd79TA==
+"@carbon/icons@^11.31.0":
+  version "11.31.0"
+  resolved "https://registry.yarnpkg.com/@carbon/icons/-/icons-11.31.0.tgz#fe8f27d52c806c29509be30a7bcb29a2f20156cc"
+  integrity sha512-sQ7ghpj4vtvU71s6U82UZDWZ7Om9tVnKPNBNZrejQYJqAJWQ0L1MIzQATnnOxKPK76ZxqvszpwPOwgy47USRCQ==
 
 "@carbon/layout@^11.20.0", "@carbon/layout@^11.20.1":
   version "11.20.1"
@@ -1244,6 +1244,16 @@
   version "11.27.1"
   resolved "https://registry.yarnpkg.com/@carbon/themes/-/themes-11.27.1.tgz#3ddd917cb1f200707edd18f675d7fb96ac34c3df"
   integrity sha512-yWSsQ59chdU6AwBEWTT4sNOUI1D2hyybaB6xuYoQHjCZ3wG7WBNbIGUD/QN7HxlCZVftRpTB7WwszY0g1IGS+A==
+  dependencies:
+    "@carbon/colors" "^11.20.0"
+    "@carbon/layout" "^11.20.0"
+    "@carbon/type" "^11.25.0"
+    color "^4.0.0"
+
+"@carbon/themes@^11.28.0":
+  version "11.28.0"
+  resolved "https://registry.yarnpkg.com/@carbon/themes/-/themes-11.28.0.tgz#415caa175dbb77ef3ca5ee8725c600e79a6beaa7"
+  integrity sha512-LvUFGXjsJ6csTrSjSOhkmvKHA0wcJOGchPaBrnWZB5J0UVCW+66P7lLuQBkTab7qgwRp4VgOSOkGdPPFQuchWQ==
   dependencies:
     "@carbon/colors" "^11.20.0"
     "@carbon/layout" "^11.20.0"
