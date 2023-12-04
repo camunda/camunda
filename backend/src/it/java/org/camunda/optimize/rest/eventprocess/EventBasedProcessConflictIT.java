@@ -61,7 +61,7 @@ public class EventBasedProcessConflictIT extends AbstractEventProcessIT {
     eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey);
 
     String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     collectionClient.addScopeEntryToCollection(
       collectionId,
@@ -142,7 +142,7 @@ public class EventBasedProcessConflictIT extends AbstractEventProcessIT {
     eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey1);
 
     String collectionId = createNewCollectionWithScope(eventProcessDefinitionKey1);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     String reportId1 = reportClient.createSingleReport(
       collectionId,
@@ -174,7 +174,7 @@ public class EventBasedProcessConflictIT extends AbstractEventProcessIT {
     eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey3);
 
     String collectionId = createNewCollectionWithScope(eventProcessDefinitionKey1);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     String reportId1 = reportClient.createSingleReport(
       collectionId,
@@ -209,7 +209,7 @@ public class EventBasedProcessConflictIT extends AbstractEventProcessIT {
     String eventProcessDefinitionKey3 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
 
     eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey1);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     String collectionId = createNewCollectionWithScope(eventProcessDefinitionKey1);
 
     String reportId1 = reportClient.createSingleReport(

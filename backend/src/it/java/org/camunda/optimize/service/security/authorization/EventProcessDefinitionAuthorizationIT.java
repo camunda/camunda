@@ -42,10 +42,10 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractPlatformIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey1, new GroupDto(GROUP_ID)
     );
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey2, new GroupDto("otherGroup")
     );
 
@@ -66,10 +66,10 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractPlatformIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey1, new UserDto(KERMIT_USER)
     );
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey2, new UserDto(DEFAULT_USERNAME)
     );
 
@@ -91,7 +91,7 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractPlatformIT {
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantSingleResourceAuthorizationForKermit(definitionKey, RESOURCE_TYPE_PROCESS_DEFINITION);
 
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey,
       new UserDto(DEFAULT_USERNAME)
     );
@@ -115,7 +115,7 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractPlatformIT {
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantSingleResourceAuthorizationForKermitGroup(definitionKey, RESOURCE_TYPE_PROCESS_DEFINITION);
 
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey, new UserDto(DEFAULT_USERNAME)
     );
 
@@ -137,7 +137,7 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractPlatformIT {
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.revokeSingleResourceAuthorizationsForKermit(definitionKey, RESOURCE_TYPE_PROCESS_DEFINITION);
 
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey, new UserDto(KERMIT_USER)
     );
 
@@ -161,7 +161,7 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractPlatformIT {
       definitionKey, RESOURCE_TYPE_PROCESS_DEFINITION
     );
 
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey, new UserDto(KERMIT_USER)
     );
 
@@ -182,10 +182,10 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractPlatformIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey1, new GroupDto(GROUP_ID)
     );
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey2, new GroupDto("otherGroup")
     );
 
@@ -207,10 +207,10 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractPlatformIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey1, new UserDto(KERMIT_USER)
     );
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey2, new UserDto(DEFAULT_USERNAME)
     );
 
@@ -231,10 +231,10 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractPlatformIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey1, new GroupDto(GROUP_ID)
     );
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey2, new GroupDto("otherGroup")
     );
 
@@ -256,10 +256,10 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractPlatformIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey1, new UserDto(KERMIT_USER)
     );
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey2, new UserDto(DEFAULT_USERNAME)
     );
 
@@ -281,10 +281,10 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractPlatformIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey1, new GroupDto(GROUP_ID)
     );
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey2, new GroupDto("otherGroup")
     );
 
@@ -305,10 +305,10 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractPlatformIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey1, new UserDto(KERMIT_USER)
     );
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey2, new UserDto(DEFAULT_USERNAME)
     );
 
@@ -329,10 +329,10 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractPlatformIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey1, new GroupDto(GROUP_ID)
     );
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey2, new GroupDto("otherGroup")
     );
 
@@ -361,10 +361,10 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractPlatformIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey1, new UserDto(KERMIT_USER)
     );
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey2, new UserDto(DEFAULT_USERNAME)
     );
 
@@ -391,11 +391,11 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractPlatformIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey1,
       new GroupDto(GROUP_ID)
     );
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey2,
       new GroupDto("otherGroup")
     );
@@ -425,11 +425,11 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractPlatformIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey1,
       new UserDto(KERMIT_USER)
     );
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey2,
       new UserDto(DEFAULT_USERNAME)
     );
@@ -460,11 +460,11 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractPlatformIT {
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
     final EventProcessDefinitionDto eventProcessDefinition1 =
-      elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+      databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
         definitionKey1,
         new GroupDto(GROUP_ID)
       );
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey2,
       new GroupDto("otherGroup")
     );
@@ -494,11 +494,11 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractPlatformIT {
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
     final EventProcessDefinitionDto eventProcessDefinition1 =
-      elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+      databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
         definitionKey1,
         new UserDto(KERMIT_USER)
       );
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       definitionKey2,
       new UserDto(DEFAULT_USERNAME)
     );

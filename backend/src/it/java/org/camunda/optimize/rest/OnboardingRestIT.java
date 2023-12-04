@@ -127,8 +127,8 @@ public class OnboardingRestIT extends AbstractPlatformIT {
 
   @SneakyThrows
   private Optional<OnboardingStateDto> getOnboardingStateFromElasticsearch(final String userId, final String key) {
-    final GetResponse getResponse = elasticSearchIntegrationTestExtension
-      .getOptimizeElasticClient()
+    final GetResponse getResponse = databaseIntegrationTestExtension
+      .getOptimizeElasticsearchClient()
       .get(new GetRequest(ONBOARDING_INDEX_NAME).id(userId + ":" + key));
     return Optional.ofNullable(getResponse.getSourceAsString())
       .map(json -> {

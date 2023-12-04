@@ -78,7 +78,7 @@ public class ExternalVariableIngestionRestIT extends AbstractPlatformIT {
     final Response response = ingestionClient.ingestVariablesAndReturnResponse(variablesToIngest);
 
     // then
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
     assertExternalVariablesArePersisted(variablesToIngest);
   }
@@ -336,7 +336,7 @@ public class ExternalVariableIngestionRestIT extends AbstractPlatformIT {
   }
 
   private void assertExternalVariablesArePersisted(final Map<Long, List<ExternalProcessVariableRequestDto>> variablesByIngestionTimestamp) {
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     final List<ExternalProcessVariableDto> expectedVariables = new ArrayList<>();
     variablesByIngestionTimestamp.forEach((ingestionTimestamp, variables) -> {
       final List<ExternalProcessVariableDto> varsPerTimestamp = variables.stream()
@@ -359,7 +359,7 @@ public class ExternalVariableIngestionRestIT extends AbstractPlatformIT {
   }
 
   private List<ExternalProcessVariableDto> getAllStoredExternalProcessVariables() {
-    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       EXTERNAL_PROCESS_VARIABLE_INDEX_NAME, ExternalProcessVariableDto.class
     );
   }

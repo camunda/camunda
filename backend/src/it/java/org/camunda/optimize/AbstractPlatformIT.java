@@ -62,7 +62,7 @@ public abstract class AbstractPlatformIT extends AbstractIT {
   }
 
   protected ClientAndServer useAndGetElasticsearchMockServer() {
-    final ClientAndServer esMockServer = elasticSearchIntegrationTestExtension.useEsMockServer();
+    final ClientAndServer esMockServer = databaseIntegrationTestExtension.useDbMockServer();
     embeddedOptimizeExtension.configureEsHostAndPort(MOCKSERVER_HOST, esMockServer.getLocalPort());
     // clear any requests that might have been recorded during configuration reload
     esMockServer.clear(HttpRequest.request());
@@ -71,12 +71,12 @@ public abstract class AbstractPlatformIT extends AbstractIT {
 
   protected void importAllEngineEntitiesFromScratch() {
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   protected void importAllEngineEntitiesFromLastIndex() {
     embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
 }

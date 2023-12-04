@@ -7,6 +7,7 @@
 
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
+import {InlineNotification, TextInputSkeleton} from '@carbon/react';
 
 import {StringInput} from './string';
 import FilterInstance from './FilterInstance';
@@ -129,4 +130,20 @@ it('should invoke onRemove when clicking the remove button', () => {
   node.find('.sectionTitle .removeButton').simulate('click', {stopPropagation: jest.fn()});
 
   expect(props.onRemove).toHaveBeenCalled();
+});
+
+it('should display a warning if there are no variables found', () => {
+  const node = shallow(<FilterInstance {...props} variables={[]} />);
+
+  runAllEffects();
+
+  expect(node.find(InlineNotification).prop('subtitle')).toBe('No variables found');
+});
+
+it('should display a loading state while loading the data', () => {
+  const node = shallow(<FilterInstance {...props} variables={null} />);
+
+  runAllEffects();
+
+  expect(node.find(TextInputSkeleton)).toExist();
 });

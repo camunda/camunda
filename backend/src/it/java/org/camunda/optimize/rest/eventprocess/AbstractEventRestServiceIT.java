@@ -18,8 +18,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toList;
-
 public abstract class AbstractEventRestServiceIT extends AbstractEventProcessIT {
 
   protected static final String CAMUNDA_START_EVENT = ActivityTypes.START_EVENT;
@@ -92,9 +90,9 @@ public abstract class AbstractEventRestServiceIT extends AbstractEventProcessIT 
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
     embeddedOptimizeExtension.reloadConfiguration();
     ingestionClient.ingestEventBatch(allEventDtos);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     processEventTracesAndSequences();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   protected List<CloudEventRequestDto> createTraceFromEventList(String traceId, List<CloudEventRequestDto> events) {
@@ -123,7 +121,7 @@ public abstract class AbstractEventRestServiceIT extends AbstractEventProcessIT 
 
   protected void processEventTracesAndSequences() {
     embeddedOptimizeExtension.processEvents();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   protected void removeAllUserEventProcessAuthorizations() {

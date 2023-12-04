@@ -562,7 +562,7 @@ public class ProcessKpiRetrievalIT extends AbstractPlatformIT {
 
   private void runKpiSchedulerAndRefreshIndices() {
     embeddedOptimizeExtension.getKpiSchedulerService().runKpiImportTask();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
 }

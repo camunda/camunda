@@ -11,7 +11,7 @@ import {EntityList, PageTitle, Tooltip} from 'components';
 import {t} from 'translation';
 import {withErrorHandling, withUser} from 'HOC';
 import {addNotification, showError} from 'notifications';
-import {getOptimizeProfile} from 'config';
+import {isUserSearchAvailable} from 'config';
 import {track} from 'tracking';
 
 import {DashboardView} from '../Dashboards/DashboardView';
@@ -27,7 +27,7 @@ export function Processes({mightFail, user}) {
   const [processes, setProcesses] = useState();
   const [sorting, setSorting] = useState();
   const [editProcessConfig, setEditProcessConfig] = useState();
-  const [optimizeProfile, setOptimizeProfile] = useState();
+  const [userSearchAvailable, setUserSearchAvailable] = useState();
   const [dashboard, setDashboard] = useState();
 
   useEffect(() => {
@@ -48,7 +48,7 @@ export function Processes({mightFail, user}) {
 
   useEffect(() => {
     (async () => {
-      setOptimizeProfile(await getOptimizeProfile());
+      setUserSearchAvailable(await isUserSearchAvailable());
     })();
   }, []);
 
@@ -62,7 +62,7 @@ export function Processes({mightFail, user}) {
     </>,
   ];
 
-  if (optimizeProfile === 'cloud' || optimizeProfile === 'platform') {
+  if (userSearchAvailable) {
     const ownerColumn = t('processes.owner');
     columns.splice(1, 0, ownerColumn);
   }
@@ -138,7 +138,7 @@ export function Processes({mightFail, user}) {
               actions: [],
             };
 
-            if (optimizeProfile === 'cloud' || optimizeProfile === 'platform') {
+            if (userSearchAvailable) {
               meta.unshift(owner?.name);
 
               listItem.actions.push({

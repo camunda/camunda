@@ -122,7 +122,7 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     collectionClient.addScopeEntryToCollection(
       collectionId,
@@ -230,7 +230,7 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     String eventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
     eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey);
     String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     collectionClient.addScopeEntryToCollection(
       collectionId,
       new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey)
@@ -270,7 +270,7 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     String eventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
     eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey);
     String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     collectionClient.addScopeEntryToCollection(
       collectionId,
       new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey)
@@ -438,7 +438,7 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey1);
     eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey2);
     String reportUsingMapping = reportClient.createAndStoreProcessReport(eventProcessDefinitionKey1);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest requestMatcher = request()
@@ -536,7 +536,7 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     String eventProcessDefinitionKey2 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
     eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey1);
     String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     collectionClient.addScopeEntryToCollection(
       collectionId,
       new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey1)
@@ -589,7 +589,7 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     addLabelForEventProcessDefinition(firstDeletingEventProcessDefinitionKey, FIRST_LABEL);
     DefinitionVariableLabelsDto nonDeletedDefinitionVariableLabelsDto = addLabelForEventProcessDefinition(
@@ -681,7 +681,7 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
 
   @SneakyThrows
   private List<CollectionDefinitionDto> getAllCollectionDefinitions() {
-    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       COLLECTION_INDEX_NAME,
       CollectionDefinitionDto.class
     );
@@ -700,7 +700,7 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
   }
 
   private List<DefinitionVariableLabelsDto> getAllDocumentsOfVariableLabelIndex() {
-    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       VARIABLE_LABEL_INDEX_NAME,
       DefinitionVariableLabelsDto.class
     );

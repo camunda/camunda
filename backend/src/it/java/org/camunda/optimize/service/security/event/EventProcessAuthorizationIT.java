@@ -308,7 +308,7 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
       .version("1")
       .bpmn20Xml(processDefinitionKey + "1")
       .build();
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    databaseIntegrationTestExtension.addEntryToDatabase(
       PROCESS_DEFINITION_INDEX_NAME, processDefinitionDto.getId(), processDefinitionDto
     );
     return createSimpleCamundaEventSourceEntry(processDefinitionKey);

@@ -520,7 +520,7 @@ public class OnboardingSchedulerServiceIT extends AbstractPlatformIT {
     CustomerOnboardingDataImportService customerOnboardingDataImportService =
       embeddedOptimizeExtension.getBean(CustomerOnboardingDataImportService.class);
     customerOnboardingDataImportService.importData(processInstanceFile, processDefinitionFile, 1);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private EngineUserDto createKermitUserDtoWithEmail(final String email) {
@@ -532,13 +532,13 @@ public class OnboardingSchedulerServiceIT extends AbstractPlatformIT {
   }
 
   private static void assertDefinitionHasOnboardedState(final boolean onboardedState) {
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions())
+    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
       .singleElement()
       .satisfies(definition -> assertThat(definition.isOnboarded()).isEqualTo(onboardedState));
   }
 
   private static void assertDefinitionHasOnboardedStateForDefinition(final boolean onboardedState, final String defKey) {
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions())
+    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
       .filteredOn(definition -> definition.getKey().equals(defKey))
       .singleElement()
       .satisfies(definition -> assertThat(definition.isOnboarded()).isEqualTo(onboardedState));

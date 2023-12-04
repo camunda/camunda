@@ -11,7 +11,7 @@
   <logger name="org.camunda.optimize" level="INFO" />
   <logger name="org.camunda.optimize.service" level="INFO" />
   <logger name="org.camunda.optimize.service.importing.engine.service.VariableUpdateInstanceImportService" level="OFF" />
-  <logger name="org.camunda.optimize.service.es.writer" level="INFO" />
+  <logger name="org.camunda.optimize.service.db.es.writer" level="INFO" />
   <logger name="org.camunda.optimize.data.generation" level="OFF" />
   <logger name="org.camunda.optimize.data.generation.DataGenerationExecutor" level="INFO" />
   <logger name="org.camunda.optimize.service.importing.DatabaseImportJobExecutor" level="DEBUG" />

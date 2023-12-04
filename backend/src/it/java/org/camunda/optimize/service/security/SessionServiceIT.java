@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.security;
 
 import org.camunda.optimize.AbstractPlatformIT;
-import org.camunda.optimize.service.es.schema.index.TerminatedUserSessionIndexES;
+import org.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
 
@@ -44,7 +44,7 @@ public class SessionServiceIT extends AbstractPlatformIT {
     getTerminatedSessionService().cleanup();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(TERMINATED_USER_SESSION_INDEX_NAME))
+    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(TERMINATED_USER_SESSION_INDEX_NAME))
       .isEqualTo(0);
   }
 
@@ -87,7 +87,7 @@ public class SessionServiceIT extends AbstractPlatformIT {
     embeddedOptimizeExtension.getRequestExecutor().buildLogOutRequest().withGivenAuthToken(token).execute();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(TERMINATED_USER_SESSION_INDEX_NAME))
+    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(TERMINATED_USER_SESSION_INDEX_NAME))
       .isEqualTo(1);
   }
 
@@ -235,7 +235,7 @@ public class SessionServiceIT extends AbstractPlatformIT {
 
       // when
       // provoke failure for terminated session check
-      elasticSearchIntegrationTestExtension.deleteIndexOfMapping(new TerminatedUserSessionIndexES());
+      databaseIntegrationTestExtension.deleteTerminatedSessionsIndex();
 
       final Response getPrivateReportsResponse =
         embeddedOptimizeExtension

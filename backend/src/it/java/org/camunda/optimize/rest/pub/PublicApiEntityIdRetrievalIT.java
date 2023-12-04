@@ -107,7 +107,7 @@ public class PublicApiEntityIdRetrievalIT extends AbstractPlatformIT {
       .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
       .bpmn20Xml("processXmlString")
       .build();
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    databaseIntegrationTestExtension.addEntryToDatabase(
       PROCESS_DEFINITION_INDEX_NAME,
       processDefinition.getId(),
       processDefinition
@@ -120,7 +120,7 @@ public class PublicApiEntityIdRetrievalIT extends AbstractPlatformIT {
       .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
       .dmn10Xml("DecisionDef")
       .build();
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    databaseIntegrationTestExtension.addEntryToDatabase(
       DECISION_DEFINITION_INDEX_NAME,
       decisionDefinition.getId(),
       decisionDefinition

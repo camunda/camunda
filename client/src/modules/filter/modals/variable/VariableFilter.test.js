@@ -6,7 +6,7 @@
  */
 
 import React, {runAllEffects} from 'react';
-import {Button} from '@carbon/react';
+import {Button, InlineNotification, TextInputSkeleton} from '@carbon/react';
 
 import VariableFilter from './VariableFilter';
 
@@ -267,4 +267,19 @@ it('should disable add filter button if variable selection is invalid', async ()
   const buttons = node.find(Button);
   expect(buttons.at(0).prop('disabled')).toBeFalsy(); // abort
   expect(buttons.at(1).prop('disabled')).toBeFalsy(); // create filter
+});
+
+it('should display a warning if there are no variables found', async () => {
+  props.config.getVariables.mockReturnValueOnce([]);
+  const node = shallow(<VariableFilter {...props} />);
+
+  await runAllEffects();
+
+  expect(node.find(InlineNotification).prop('subtitle')).toBe('No variables found');
+});
+
+it('should display a loading state while loading the data', async () => {
+  const node = shallow(<VariableFilter {...props} variables={null} />);
+
+  expect(node.find(TextInputSkeleton)).toExist();
 });

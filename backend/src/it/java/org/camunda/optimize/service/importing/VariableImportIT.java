@@ -23,13 +23,11 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDt
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.VariableDto;
-import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
-import org.camunda.optimize.service.util.importing.EngineConstants;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
+import org.camunda.optimize.service.util.importing.EngineConstants;
 import org.camunda.optimize.test.util.VariableTestUtil;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -46,7 +44,6 @@ import org.mockserver.verify.VerificationTimes;
 import java.nio.CharBuffer;
 import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -54,9 +51,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static jakarta.ws.rs.HttpMethod.POST;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toSet;
-import static jakarta.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.BOOLEAN;
@@ -65,13 +62,10 @@ import static org.camunda.optimize.dto.optimize.query.variable.VariableType.DOUB
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.LONG;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.OBJECT;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRING;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLES;
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.VARIABLE_VALUE;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.service.db.DatabaseConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
-import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.StringBody.subString;
 
@@ -590,17 +584,19 @@ public class VariableImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    SearchResponse responseForAllDocumentsOfIndex = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_MULTI_ALIAS);
+    final List<ProcessInstanceDto> savedInstances = databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+      PROCESS_INSTANCE_MULTI_ALIAS,
+      ProcessInstanceDto.class
+    );
     List<VariableUpdateInstanceDto> storedVariableUpdateInstances = getStoredVariableUpdateInstances();
 
     // then
-    for (SearchHit searchHit : responseForAllDocumentsOfIndex.getHits()) {
-      @SuppressWarnings(UNCHECKED_CAST)
-      List<Map> retrievedVariables = (List<Map>) searchHit.getSourceAsMap().get(VARIABLES);
-      assertThat(retrievedVariables).hasSize(variables.size());
-      retrievedVariables.forEach(var -> assertThat((List<String>) var.get(VARIABLE_VALUE)).isEmpty());
-    }
+    assertThat(savedInstances)
+      .allSatisfy(instance -> {
+        assertThat(instance.getVariables())
+          .hasSize(variables.size())
+          .allSatisfy(variableMap -> assertThat(variableMap.getValue()).isEmpty());
+      });
     assertThat(storedVariableUpdateInstances)
       .hasSize(variables.size())
       .allSatisfy(instance -> assertThat(instance.getValue()).isEmpty());
@@ -923,21 +919,18 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   private List<SimpleProcessVariableDto> getVariablesForProcessInstance(ProcessInstanceEngineDto instanceDto) {
-    return elasticSearchIntegrationTestExtension.getProcessInstanceById(instanceDto.getId())
-      .map(ProcessInstanceDto::getVariables)
-      .orElse(Collections.emptyList());
+    return databaseIntegrationTestExtension.getAllProcessInstances()
+      .stream()
+      .filter(instance -> instance.getProcessInstanceId().equals(instanceDto.getId()))
+      .flatMap(instance -> instance.getVariables().stream())
+      .toList();
   }
 
-  private List<VariableUpdateInstanceDto> getStoredVariableUpdateInstances() throws JsonProcessingException {
-    SearchResponse response = elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(
-      VARIABLE_UPDATE_INSTANCE_INDEX_NAME);
-    List<VariableUpdateInstanceDto> storedVariableUpdateInstances = new ArrayList<>();
-    for (SearchHit searchHitFields : response.getHits()) {
-      final VariableUpdateInstanceDto variableUpdateInstanceDto = embeddedOptimizeExtension.getObjectMapper().readValue(
-        searchHitFields.getSourceAsString(), VariableUpdateInstanceDto.class);
-      storedVariableUpdateInstances.add(variableUpdateInstanceDto);
-    }
-    return storedVariableUpdateInstances;
+  private List<VariableUpdateInstanceDto> getStoredVariableUpdateInstances() {
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+      VARIABLE_UPDATE_INSTANCE_INDEX_NAME,
+      VariableUpdateInstanceDto.class
+    );
   }
 
   private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstances() {

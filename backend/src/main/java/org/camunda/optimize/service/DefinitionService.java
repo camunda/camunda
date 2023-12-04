@@ -404,9 +404,11 @@ public class DefinitionService implements ConfigurationReloadable {
 
   public Optional<DefinitionOptimizeResponseDto> getLatestCachedDefinitionOnAnyTenant(final DefinitionType type,
                                                                                       final String definitionKey) {
+    final Comparator<Map.Entry<String, DefinitionOptimizeResponseDto>> defVersionComparator =
+      Comparator.comparingInt(e -> Integer.parseInt(e.getValue().getVersion()));
     return getCachedTenantToLatestDefinitionMap(type, definitionKey).entrySet()
       .stream()
-      .sorted(Comparator.comparing(e -> Integer.parseInt(e.getValue().getVersion())))
+      .sorted(defVersionComparator.reversed())
       .map(Map.Entry::getValue)
       .findFirst();
   }

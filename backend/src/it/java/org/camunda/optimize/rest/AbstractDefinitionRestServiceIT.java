@@ -33,6 +33,6 @@ public abstract class AbstractDefinitionRestServiceIT extends AbstractPlatformIT
   }
 
   protected void createTenant(final TenantDto tenantDto) {
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(TENANT_INDEX_NAME, tenantDto.getId(), tenantDto);
+    databaseIntegrationTestExtension.addEntryToDatabase(TENANT_INDEX_NAME, tenantDto.getId(), tenantDto);
   }
 }

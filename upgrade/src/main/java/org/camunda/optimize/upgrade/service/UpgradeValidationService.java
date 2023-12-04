@@ -8,7 +8,7 @@ package org.camunda.optimize.upgrade.service;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 
 import java.io.IOException;

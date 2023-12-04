@@ -194,7 +194,7 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractPlatformIT {
   }
 
   private List<DecisionInstanceDto> getDecisionInstanceDtos(final String decisionDefinitionKey) {
-    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       getDecisionInstanceIndexAliasName(decisionDefinitionKey),
       DecisionInstanceDto.class
     );

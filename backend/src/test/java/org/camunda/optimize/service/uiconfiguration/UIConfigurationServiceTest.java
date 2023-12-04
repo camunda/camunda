@@ -90,7 +90,7 @@ public class UIConfigurationServiceTest {
     // then
     assertThatThrownBy(() -> underTest.getUIConfiguration())
       .isInstanceOf(OptimizeConfigurationException.class)
-      .hasMessage("Cannot configure more than one profile for Optimize");
+      .hasMessage("Cannot configure more than one Optimize profile");
   }
 
   @Test

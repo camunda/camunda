@@ -35,7 +35,7 @@ public class PublicApiReportDeletionIT extends AbstractPlatformIT {
 
     // then
     assertThat(deleteResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(SINGLE_PROCESS_REPORT_INDEX_NAME)).isEqualTo(0);
+    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(SINGLE_PROCESS_REPORT_INDEX_NAME)).isEqualTo(0);
   }
 
   @Test
@@ -82,7 +82,7 @@ public class PublicApiReportDeletionIT extends AbstractPlatformIT {
 
     // then
     assertThat(deleteResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(SINGLE_DECISION_REPORT_INDEX_NAME)).isEqualTo(0);
+    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(SINGLE_DECISION_REPORT_INDEX_NAME)).isEqualTo(0);
   }
 
   @Test
@@ -102,7 +102,7 @@ public class PublicApiReportDeletionIT extends AbstractPlatformIT {
   }
 
   private String findManagementReportId() {
-    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
         SINGLE_PROCESS_REPORT_INDEX_NAME, SingleProcessReportDefinitionRequestDto.class)
       .stream()
       .filter(reportDef -> reportDef.getData().isManagementReport())

@@ -6,12 +6,13 @@
 package org.camunda.optimize.service.db.writer;
 
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
+import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.springframework.context.ApplicationContext;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 
-public interface DecisionInstanceWriter {
+public interface DecisionInstanceWriter extends ConfigurationReloadable {
 
   void importDecisionInstances(List<DecisionInstanceDto> decisionInstanceDtos);
 

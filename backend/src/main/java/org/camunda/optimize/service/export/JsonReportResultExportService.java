@@ -15,8 +15,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginatedDataExportDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
-import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
-import org.camunda.optimize.service.es.report.ReportEvaluationInfo;
+import org.camunda.optimize.service.db.es.report.PlainReportEvaluationHandler;
+import org.camunda.optimize.service.db.es.report.ReportEvaluationInfo;
 import org.camunda.optimize.service.report.ReportService;
 import org.springframework.stereotype.Component;
 

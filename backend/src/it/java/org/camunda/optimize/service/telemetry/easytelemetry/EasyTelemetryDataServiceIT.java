@@ -17,8 +17,8 @@ import org.camunda.optimize.dto.optimize.query.telemetry.TelemetryDataDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.service.db.schema.index.MetadataIndex;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.ElasticSearchMetadataService;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
 import org.camunda.optimize.service.license.LicenseManager;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -309,7 +309,7 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
       .id(MetadataIndex.ID)
       .setRefreshPolicy(IMMEDIATE);
 
-    elasticSearchIntegrationTestExtension.getOptimizeElasticClient().delete(request);
+    databaseIntegrationTestExtension.getOptimizeElasticsearchClient().delete(request);
   }
 
   private LicenseKeyDto getTelemetryLicenseKey() {
@@ -347,7 +347,7 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
   private String getEsVersion() {
     try {
       final OptimizeElasticsearchClient optimizeElasticClient =
-        elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
+        databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
       return optimizeElasticClient.getHighLevelClient()
         .info(optimizeElasticClient.requestOptions())
         .getVersion()

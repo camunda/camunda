@@ -11,7 +11,7 @@ import lombok.SneakyThrows;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
+import org.camunda.optimize.test.it.extension.DatabaseIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
 import org.junit.jupiter.api.AfterEach;
@@ -46,8 +46,8 @@ public abstract class AbstractImportMediatorPermutationsIT {
   // static extension setup with disabled cleanup to reduce initialization/cleanup overhead
   @RegisterExtension
   @Order(1)
-  public static ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension
-    = new ElasticSearchIntegrationTestExtension(false);
+  public static DatabaseIntegrationTestExtension databaseIntegrationTestExtension
+    = new DatabaseIntegrationTestExtension(false);
   @RegisterExtension
   @Order(2)
   public static EngineIntegrationExtension engineIntegrationExtension = new EngineIntegrationExtension(false);
@@ -58,9 +58,9 @@ public abstract class AbstractImportMediatorPermutationsIT {
   @BeforeAll
   static void beforeAll() {
     engineIntegrationExtension.cleanEngine();
-    elasticSearchIntegrationTestExtension.deleteAllOptimizeData();
-    elasticSearchIntegrationTestExtension.deleteAllProcessInstanceIndices();
-    elasticSearchIntegrationTestExtension.deleteAllDecisionInstanceIndices();
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.deleteAllProcessInstanceIndices();
+    databaseIntegrationTestExtension.deleteAllDecisionInstanceIndices();
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
   }
 
@@ -68,7 +68,7 @@ public abstract class AbstractImportMediatorPermutationsIT {
   public void after() {
     embeddedOptimizeExtension.resetImportStartIndexes();
     embeddedOptimizeExtension.resetInstanceDataWriters();
-    elasticSearchIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
   }
 
   @SneakyThrows

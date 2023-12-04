@@ -9,7 +9,7 @@ import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.Main;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.db.schema.index.MetadataIndex;
-import org.camunda.optimize.service.es.schema.ElasticSearchMetadataService;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpResponse;
@@ -48,10 +48,10 @@ public class ElasticMetadataVersionIT extends AbstractPlatformIT {
 
   @Test
   public void verifyNotStartingIfVersionDoesNotMatch() {
-    elasticSearchIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
 
     MetadataDto meta = new MetadataDto(SCHEMA_VERSION, INSTALLATION_ID);
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(METADATA_INDEX_NAME, MetadataIndex.ID, meta);
+    databaseIntegrationTestExtension.addEntryToDatabase(METADATA_INDEX_NAME, MetadataIndex.ID, meta);
     assertThatThrownBy(() -> {
       ConfigurableApplicationContext context = SpringApplication.run(Main.class);
       context.close();
@@ -59,7 +59,7 @@ public class ElasticMetadataVersionIT extends AbstractPlatformIT {
       .cause().cause()
       .hasMessageContaining("The database Optimize schema version [" + SCHEMA_VERSION + "]");
 
-    elasticSearchIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
   }
 
   @Test

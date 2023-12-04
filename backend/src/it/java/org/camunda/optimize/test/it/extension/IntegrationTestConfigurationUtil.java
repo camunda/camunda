@@ -35,12 +35,12 @@ public class IntegrationTestConfigurationUtil {
     return System.getProperty("enginePrefix", "") + engineName;
   }
 
-  public static String getEngineVersion() {
-    return PROPERTIES.getProperty("camunda.engine.version");
-  }
-
   public static String getZeebeDockerVersion() {
     return PROPERTIES.getProperty("zeebe.docker.version");
+  }
+
+  public static String getDatabaseProfile() {
+    return PROPERTIES.getProperty("database.profile");
   }
 
   public static String getEngineDateFormat() {

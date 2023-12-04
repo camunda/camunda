@@ -42,7 +42,7 @@ public class ProcessDefinitionImportIT extends AbstractImportIT {
 
     // when
     importAllEngineEntitiesFromScratch();
-    List<ProcessDefinitionOptimizeDto> processDefinitions = elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+    List<ProcessDefinitionOptimizeDto> processDefinitions = databaseIntegrationTestExtension.getAllProcessDefinitions();
 
     // then
     assertThat(processDefinitions)
@@ -65,7 +65,7 @@ public class ProcessDefinitionImportIT extends AbstractImportIT {
 
     // when
     importAllEngineEntitiesFromScratch();
-    List<ProcessDefinitionOptimizeDto> processDefinitions = elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+    List<ProcessDefinitionOptimizeDto> processDefinitions = databaseIntegrationTestExtension.getAllProcessDefinitions();
 
     // then
     assertThat(processDefinitions)
@@ -81,7 +81,7 @@ public class ProcessDefinitionImportIT extends AbstractImportIT {
 
     // when
     importAllEngineEntitiesFromScratch();
-    List<ProcessDefinitionOptimizeDto> processDefinitions = elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+    List<ProcessDefinitionOptimizeDto> processDefinitions = databaseIntegrationTestExtension.getAllProcessDefinitions();
 
     // then
     assertThat(processDefinitions)
@@ -95,7 +95,7 @@ public class ProcessDefinitionImportIT extends AbstractImportIT {
 
     // when
     importAllEngineEntitiesFromScratch();
-    processDefinitions = elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+    processDefinitions = databaseIntegrationTestExtension.getAllProcessDefinitions();
 
     // then
     assertThat(processDefinitions)
@@ -126,7 +126,7 @@ public class ProcessDefinitionImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions())
+    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
       .singleElement()
       .satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
   }

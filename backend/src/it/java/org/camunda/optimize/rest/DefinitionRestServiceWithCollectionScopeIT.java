@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import com.google.common.collect.Lists;
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -25,8 +26,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import jakarta.ws.rs.core.Response;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -35,11 +34,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
-import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
-import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
+import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 
 public class DefinitionRestServiceWithCollectionScopeIT extends AbstractPlatformIT {
 
@@ -87,7 +86,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractPlatform
       collectionId, new CollectionScopeEntryDto(type, definitionKey2, scopeTenantIds)
     );
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<DefinitionKeyResponseDto> definitionKeys = definitionClient.getDefinitionKeysByType(type, collectionId);
@@ -116,7 +115,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractPlatform
       collectionId, new CollectionScopeEntryDto(type, definitionKey2, scopeTenantIds)
     );
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<DefinitionKeyResponseDto> definitionKeys = definitionClient.getDefinitionKeysByType(type, collectionId);
@@ -144,7 +143,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractPlatform
       new CollectionScopeEntryDto(type, definitionKey, scopeTenantIds)
     );
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when we get definition keys for the scope of the collection
     final List<DefinitionKeyResponseDto> definitionKeys = definitionClient.getDefinitionKeysByType(type, collectionId);
@@ -177,7 +176,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractPlatform
     createDefinition(type, definitionKey1, "1", null, "the name");
     final String collectionId = collectionClient.createNewCollection();
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<DefinitionKeyResponseDto> definitionKeys = definitionClient.getDefinitionKeysByType(type, collectionId);
@@ -204,7 +203,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractPlatform
       collectionId, new CollectionScopeEntryDto(type, definitionKey1, scopeTenantIds)
     );
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when definition keys of the other type are requested
     final List<DefinitionKeyResponseDto> definitionKeys = definitionClient
@@ -255,7 +254,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractPlatform
     collectionClient.addScopeEntryToCollection(
       collectionId, new CollectionScopeEntryDto(otherDefinitionType, definitionKey1, scopeTenantIds)
     );
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<DefinitionVersionResponseDto> versions = definitionClient
@@ -278,7 +277,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractPlatform
     collectionClient.addScopeEntryToCollection(
       collectionId, new CollectionScopeEntryDto(type, definitionKey1, scopeTenantIds)
     );
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<DefinitionVersionResponseDto> versions = definitionClient
@@ -305,7 +304,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractPlatform
     collectionClient.addScopeEntryToCollection(
       collectionId, new CollectionScopeEntryDto(type, definitionKey1, scopeTenantIds)
     );
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<DefinitionVersionResponseDto> versions = definitionClient
@@ -332,7 +331,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractPlatform
     collectionClient.addScopeEntryToCollection(
       collectionId, new CollectionScopeEntryDto(type, definitionKey1, scopeTenantIds)
     );
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<DefinitionVersionResponseDto> versions = definitionClient
@@ -363,7 +362,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractPlatform
     collectionClient.addScopeEntryToCollection(
       collectionId, new CollectionScopeEntryDto(type, definitionKey1, scopeTenantIds)
     );
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<DefinitionVersionResponseDto> versions = definitionClient
@@ -392,7 +391,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractPlatform
     collectionClient.addScopeEntryToCollection(
       collectionId, new CollectionScopeEntryDto(type, definitionKey2, scopeTenantIds)
     );
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when trying to get versions for a definition key that is not in the scope
     final Response responseForWrongKey = embeddedOptimizeExtension
@@ -734,7 +733,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractPlatform
     collectionClient.addScopeEntryToCollection(
       collectionId, new CollectionScopeEntryDto(type, definitionKey2, scopeTenantIds)
     );
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when trying to get tenants for a definition key that is not in the scope
     final Response responseForWrongKey = embeddedOptimizeExtension
@@ -814,7 +813,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractPlatform
       .deleted(deleted)
       .dmn10Xml("id-" + key + "-version-" + version + "-" + tenantId)
       .build();
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    databaseIntegrationTestExtension.addEntryToDatabase(
       DECISION_DEFINITION_INDEX_NAME, decisionDefinitionDto.getId(), decisionDefinitionDto
     );
   }
@@ -833,7 +832,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractPlatform
       .deleted(deleted)
       .bpmn20Xml(key + version + tenantId)
       .build();
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    databaseIntegrationTestExtension.addEntryToDatabase(
       PROCESS_DEFINITION_INDEX_NAME,
       expectedDto.getId(),
       expectedDto
@@ -842,7 +841,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractPlatform
 
   protected void createTenant(final String tenantId) {
     final TenantDto tenantDto = new TenantDto(tenantId, tenantId, DEFAULT_ENGINE_ALIAS);
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(TENANT_INDEX_NAME, tenantId, tenantDto);
+    databaseIntegrationTestExtension.addEntryToDatabase(TENANT_INDEX_NAME, tenantId, tenantDto);
   }
 
 }

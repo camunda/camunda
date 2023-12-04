@@ -245,9 +245,9 @@ public abstract class AbstractEventProcessAutogenerationIT extends AbstractEvent
   }
 
   protected void processEventCountAndTraces() {
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     embeddedOptimizeExtension.processEvents();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   protected CloudEventRequestDto createCloudEventOfType(final EventTypeDto eventType,
@@ -285,7 +285,7 @@ public abstract class AbstractEventProcessAutogenerationIT extends AbstractEvent
 
   protected void processEventTracesAndSequences() {
     embeddedOptimizeExtension.processEvents();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   protected String idOf(EventTypeDto eventTypeDto) {

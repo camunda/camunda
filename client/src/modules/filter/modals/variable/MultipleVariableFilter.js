@@ -34,7 +34,7 @@ export default function MultipleVariableFilter({
   const [valid, setValid] = useState(false);
   const [filters, setFilters] = useState([{}]);
   const [expandedFilter, setExpandedFilter] = useState(0);
-  const [variables, setVariables] = useState([]);
+  const [variables, setVariables] = useState(null);
   const [applyTo, setApplyTo] = useState(null);
 
   // load the available variables for the selected definition
@@ -186,7 +186,7 @@ export default function MultipleVariableFilter({
         })}
         <Button
           className="orButton"
-          disabled={!valid || variables.length <= filters.length}
+          disabled={!valid || !variables || variables.length <= filters.length}
           onClick={() => {
             setExpandedFilter(filters.length);
             setFilters([...filters, {}]);

@@ -8,8 +8,6 @@ package org.camunda.optimize.service.importing;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
@@ -17,7 +15,6 @@ import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static jakarta.ws.rs.HttpMethod.POST;
@@ -63,7 +60,8 @@ public class BusinessKeyImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void importOfBusinessKeyForRunningProcess_isImportedOnNextSuccessfulAttemptAfterEsFailures() throws JsonProcessingException {
+  public void importOfBusinessKeyForRunningProcess_isImportedOnNextSuccessfulAttemptAfterEsFailures() throws
+                                                                                                      JsonProcessingException {
     // given
     importAllEngineEntitiesFromScratch();
 
@@ -91,7 +89,8 @@ public class BusinessKeyImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void importOfBusinessKeyForCompletedProcess_isImportedOnNextSuccessfulAttemptAfterEsFailures() throws JsonProcessingException {
+  public void importOfBusinessKeyForCompletedProcess_isImportedOnNextSuccessfulAttemptAfterEsFailures() throws
+                                                                                                        JsonProcessingException {
     // given
     importAllEngineEntitiesFromScratch();
 
@@ -137,16 +136,8 @@ public class BusinessKeyImportIT extends AbstractImportIT {
     assertThat(storedBusinessKeys).isEmpty();
   }
 
-  private List<BusinessKeyDto> getAllStoredBusinessKeys() throws JsonProcessingException {
-    SearchResponse response = elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(
-      BUSINESS_KEY_INDEX_NAME);
-    List<BusinessKeyDto> businessKeyDtos = new ArrayList<>();
-    for (SearchHit searchHitFields : response.getHits()) {
-      final BusinessKeyDto businessKeyDto = embeddedOptimizeExtension.getObjectMapper().readValue(
-        searchHitFields.getSourceAsString(), BusinessKeyDto.class);
-      businessKeyDtos.add(businessKeyDto);
-    }
-    return businessKeyDtos;
+  private List<BusinessKeyDto> getAllStoredBusinessKeys() {
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(BUSINESS_KEY_INDEX_NAME, BusinessKeyDto.class);
   }
 
 }

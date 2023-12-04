@@ -28,7 +28,7 @@ public class ProcessDefinitionImportPartitionIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME))
+    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME))
       .isEqualTo(definitionsToDeploy);
   }
 

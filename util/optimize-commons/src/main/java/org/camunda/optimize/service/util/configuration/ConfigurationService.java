@@ -55,6 +55,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PANEL_NOTIFICATION_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.TELEMETRY_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.optimizeDatabaseProfiles;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.optimizeModeProfiles;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.getLocationsAsInputStream;
@@ -229,9 +230,23 @@ public class ConfigurationService {
       .map(OptimizeProfile::toProfile)
       .toList();
     if (specifiedProfiles.size() > 1) {
-      throw new OptimizeConfigurationException("Cannot configure more than one profile for Optimize");
+      throw new OptimizeConfigurationException("Cannot configure more than one Optimize profile");
     } else if (specifiedProfiles.isEmpty()) {
       return OptimizeProfile.PLATFORM;
+    } else {
+      return specifiedProfiles.get(0);
+    }
+  }
+
+  public static DatabaseProfile getDatabaseProfile(Environment environment) {
+    final List<DatabaseProfile> specifiedProfiles = Arrays.stream(environment.getActiveProfiles())
+      .filter(optimizeDatabaseProfiles::contains)
+      .map(DatabaseProfile::toProfile)
+      .toList();
+    if (specifiedProfiles.size() > 1) {
+      throw new OptimizeConfigurationException("Cannot configure more than one Database profile");
+    } else if (specifiedProfiles.isEmpty()) {
+      return DatabaseProfile.ELASTICSEARCH;
     } else {
       return specifiedProfiles.get(0);
     }

@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import {Accordion, AccordionItem} from '@carbon/react';
+import {Accordion, AccordionItem, Layer, Tag} from '@carbon/react';
 import {Db2Database, Factor, Filter as FilterIcon} from '@carbon/icons-react';
 
 import {DefinitionSelection} from 'components';
@@ -145,7 +145,7 @@ export class DecisionControlPanel extends React.Component {
 
     return (
       <div className="DecisionControlPanel ReportControlPanel">
-        <div className="controlSections" style={{overflow: 'initial'}}>
+        <Layer className="controlSections" style={{overflow: 'initial'}}>
           {/* manual style override will be removed once decision reports use multi-definition setup */}
           <Accordion>
             <AccordionItem
@@ -198,7 +198,11 @@ export class DecisionControlPanel extends React.Component {
                 <>
                   <FilterIcon />
                   {t('common.filter.label')}
-                  {filter?.length > 0 && <span className="filterCount">{filter.length}</span>}
+                  {data.filter?.length > 0 && (
+                    <Tag type="high-contrast" className="filterCount">
+                      {filter.length}
+                    </Tag>
+                  )}
                 </>
               }
             >
@@ -213,7 +217,7 @@ export class DecisionControlPanel extends React.Component {
               />
             </AccordionItem>
           </Accordion>
-        </div>
+        </Layer>
         {result && typeof result.instanceCount !== 'undefined' && (
           <div className="instanceCount">
             {t(

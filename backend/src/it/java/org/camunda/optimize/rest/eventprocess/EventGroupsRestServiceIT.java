@@ -145,7 +145,7 @@ public class EventGroupsRestServiceIT extends AbstractEventRestServiceIT {
     // given
     final String longGroupName = "longGroupName";
     final EventDto longGroupNameEvent = ingestTestEventForGroup(longGroupName);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     EventGroupRequestDto groupRequest = new EventGroupRequestDto(longGroupName.substring(0, 11), 10);
 
     // when
@@ -218,7 +218,7 @@ public class EventGroupsRestServiceIT extends AbstractEventRestServiceIT {
     embeddedOptimizeExtension.getRequestExecutor()
       .buildDeleteEventsRequest(eventIdsToDelete)
       .execute();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
 }

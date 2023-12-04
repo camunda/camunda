@@ -41,8 +41,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Runn
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.SuspendedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.rest.mapper.ReportRestMapper;
-import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
-import org.camunda.optimize.service.es.report.ReportEvaluationInfo;
+import org.camunda.optimize.service.db.es.report.PlainReportEvaluationHandler;
+import org.camunda.optimize.service.db.es.report.ReportEvaluationInfo;
 import org.camunda.optimize.service.report.ReportService;
 import org.springframework.stereotype.Component;
 
@@ -52,8 +52,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
-import static java.util.stream.Collectors.toList;
 
 @Component
 @Slf4j
@@ -106,7 +104,7 @@ public class KpiService {
     for (SingleProcessReportDefinitionRequestDto report : currentKpiReports) {
       // If the most recent results don't include one of the current KPI reports, we exclude it from the results
       if (lastKpiEvaluationResults.containsKey(report.getId())) {
-        ReportRestMapper.localizeReportNames(report, locale, localizationService);
+        ReportRestMapper.localizeReportData(report, locale, localizationService);
         KpiResultDto kpiResponseDto = new KpiResultDto();
         kpiResponseDto.setValue(lastKpiEvaluationResults.get(report.getId()));
         getTargetAndUnit(report)

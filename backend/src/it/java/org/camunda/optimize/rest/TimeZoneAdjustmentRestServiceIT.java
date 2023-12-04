@@ -45,9 +45,9 @@ import org.camunda.optimize.dto.optimize.rest.report.measure.MapMeasureResponseD
 import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.service.db.es.report.process.AbstractProcessDefinitionIT;
 
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
+import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.service.util.ProcessReportDataBuilderHelper;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
@@ -1079,10 +1079,10 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .build();
     embeddedOptimizeExtension.getElasticSearchSchemaManager()
       .createIndexIfMissing(
-        elasticSearchIntegrationTestExtension.getOptimizeElasticClient(),
+        databaseIntegrationTestExtension.getOptimizeElasticsearchClient(),
         new ProcessInstanceIndexES("aKey")
       );
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    databaseIntegrationTestExtension.addEntryToDatabase(
       getProcessInstanceIndexAliasName("aKey"),
       instanceDto.getProcessInstanceId(),
       instanceDto
@@ -1090,7 +1090,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     instanceDto.setProcessInstanceId("124");
     instanceDto.setStartDate(date.plusHours(1));
     instanceDto.setEndDate(date.plusHours(1));
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    databaseIntegrationTestExtension.addEntryToDatabase(
       getProcessInstanceIndexAliasName("aKey"),
       instanceDto.getProcessInstanceId(),
       instanceDto

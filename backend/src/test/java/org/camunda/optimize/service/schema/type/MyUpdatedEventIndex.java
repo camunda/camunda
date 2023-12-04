@@ -7,7 +7,6 @@ package org.camunda.optimize.service.schema.type;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.schema.IndexMappingCreator;
-import org.camunda.optimize.service.es.schema.ElasticSearchIndexSettingsBuilder;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.xcontent.XContentBuilder;

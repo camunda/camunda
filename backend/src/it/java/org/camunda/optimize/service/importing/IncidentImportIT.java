@@ -14,9 +14,9 @@ import org.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentType;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer;
+import org.camunda.optimize.service.db.es.report.process.single.incident.duration.IncidentDataDeployer;
 
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
+import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedIncidentEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.OpenIncidentEngineImportMediator;
@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 
 import static jakarta.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
+import static org.camunda.optimize.service.db.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX;
@@ -58,7 +58,7 @@ public class IncidentImportIT extends AbstractImportIT {
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
-      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+      databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .hasSize(1)
       .first()
@@ -90,7 +90,7 @@ public class IncidentImportIT extends AbstractImportIT {
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
-      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+      databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .hasSize(1)
       .first()
@@ -122,7 +122,7 @@ public class IncidentImportIT extends AbstractImportIT {
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
-      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+      databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .hasSize(1)
       .first()
@@ -156,7 +156,7 @@ public class IncidentImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .extracting(ProcessInstanceDto::getIncidents)
       .satisfies(incidents -> assertThat(incidents)
@@ -180,7 +180,7 @@ public class IncidentImportIT extends AbstractImportIT {
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
-      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+      databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .hasSize(1)
       .singleElement()
@@ -214,7 +214,7 @@ public class IncidentImportIT extends AbstractImportIT {
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
-      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+      databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .hasSize(1)
       .first()
@@ -246,7 +246,7 @@ public class IncidentImportIT extends AbstractImportIT {
 
     // then there should be one complete one open incident
     final List<ProcessInstanceDto> storedProcessInstances =
-      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+      databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .hasSize(1)
       .first()
@@ -271,7 +271,7 @@ public class IncidentImportIT extends AbstractImportIT {
 
     // then the open incident should not overwrite the existing resolved one
     final List<ProcessInstanceDto> storedProcessInstances =
-      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+      databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .hasSize(1)
       .first()
@@ -297,7 +297,7 @@ public class IncidentImportIT extends AbstractImportIT {
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
-      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+      databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .hasSize(2)
       .allSatisfy(processInstanceDto -> {
@@ -353,7 +353,7 @@ public class IncidentImportIT extends AbstractImportIT {
       .when(processInstanceIndexMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
     importOpenIncidents();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     esMockServer.verify(processInstanceIndexMatcher);
 
     // then the incident is stored after successful write
@@ -381,7 +381,7 @@ public class IncidentImportIT extends AbstractImportIT {
       .when(processInstanceIndexMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
     importResolvedIncidents();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     esMockServer.verify(processInstanceIndexMatcher);
 
     // then the incident is stored after successful write
@@ -414,7 +414,7 @@ public class IncidentImportIT extends AbstractImportIT {
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
-      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+      databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .hasSize(2)
       .flatExtracting(ProcessInstanceDto::getIncidents)
@@ -435,7 +435,7 @@ public class IncidentImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    final List<IncidentDto> incidents = elasticSearchIntegrationTestExtension.getAllProcessInstances()
+    final List<IncidentDto> incidents = databaseIntegrationTestExtension.getAllProcessInstances()
       .stream()
       .flatMap(inst -> inst.getIncidents().stream())
       .toList();
@@ -453,7 +453,7 @@ public class IncidentImportIT extends AbstractImportIT {
 
   private long getIncidentCount() {
     final List<ProcessInstanceDto> storedProcessInstances =
-      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+      databaseIntegrationTestExtension.getAllProcessInstances();
     return storedProcessInstances.stream().mapToLong(p -> p.getIncidents().size()).sum();
   }
 
@@ -516,11 +516,11 @@ public class IncidentImportIT extends AbstractImportIT {
       .build();
     embeddedOptimizeExtension.getElasticSearchSchemaManager()
       .createIndexIfMissing(
-        elasticSearchIntegrationTestExtension.getOptimizeElasticClient(),
+        databaseIntegrationTestExtension.getOptimizeElasticsearchClient(),
         new ProcessInstanceIndexES(processInstanceWithIncident.getProcessDefinitionKey()),
         Collections.singleton(PROCESS_INSTANCE_MULTI_ALIAS)
       );
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    databaseIntegrationTestExtension.addEntryToDatabase(
       getProcessInstanceIndexAliasName(processInstanceWithIncident.getProcessDefinitionKey()),
       processInstanceWithIncident.getId(),
       procInst

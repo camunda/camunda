@@ -107,7 +107,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // given
     ingestTestEvent(STARTED_EVENT);
     ingestTestEvent(FINISHED_EVENT);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
@@ -131,7 +131,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // given
     ingestTestEvent(STARTED_EVENT);
     ingestTestEvent(FINISHED_EVENT);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     final String eventProcessMappingId1 = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
     final String eventProcessMappingId2 = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
@@ -220,7 +220,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     LocalDateUtil.setCurrentTime(timeBaseLine);
     ingestTestEvent(STARTED_EVENT, timeBaseLine);
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
@@ -280,7 +280,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     LocalDateUtil.setCurrentTime(lastEventTimestamp);
     ingestTestEvent(FINISHED_EVENT, lastEventTimestamp);
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
@@ -292,7 +292,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     LocalDateUtil.setCurrentTime(timeBaseLine.plusSeconds(10));
     ingestTestEvent(STARTED_EVENT, LocalDateUtil.getCurrentDateTime());
     ingestTestEvent(STARTED_EVENT, LocalDateUtil.getCurrentDateTime());
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     executeImportCycle();
     executeImportCycle();
@@ -343,7 +343,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     final OffsetDateTime lastEventTimestamp = timeBaseLine.minusSeconds(30);
     LocalDateUtil.setCurrentTime(lastEventTimestamp);
     ingestTestEvent(FINISHED_EVENT, lastEventTimestamp);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
@@ -415,7 +415,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceEngineDto.getId(), timeBaseLine);
 
     importEngineEntities();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     final CamundaEventSourceEntryDto eventSource = camundaEventSource();
     final CamundaEventSourceConfigDto sourceConfig = eventSource.getConfiguration();
@@ -486,7 +486,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceEngineDto.getId(), timeBaseLine);
 
     importEngineEntities();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     final CamundaEventSourceEntryDto eventSourceDto = camundaEventSource();
     final CamundaEventSourceConfigDto eventsourceConfig = eventSourceDto.getConfiguration();
@@ -539,7 +539,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     ingestTestEvent(FINISHED_EVENT, lastEventTimestamp);
 
     final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     LocalDateUtil.setCurrentTime(OffsetDateTime.now());
@@ -628,7 +628,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     LocalDateUtil.setCurrentTime(timeBaseLine);
     ingestTestEvent(USER_TASK_ID_ONE, timeBaseLine);
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     final CamundaEventSourceEntryDto camundaEventSource = camundaEventSource();
     final CamundaEventSourceConfigDto eventSourceConfig = camundaEventSource.getConfiguration();
@@ -717,7 +717,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     ingestTestEventForGroup(USER_TASK_ID_ONE, secondExternalEventTimestamp.minusSeconds(10), otherGroup);
     ingestTestEventForGroup(FINISHED_EVENT, timeBaseLine.minusSeconds(10), otherGroup);
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     final String eventProcessMappingId = createEventProcessMappingWithMappingsAndEventSources(
       ImmutableMap.of(
@@ -816,7 +816,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     LocalDateUtil.setCurrentTime(timeBaseLine);
     ingestTestEventForGroup(FINISHED_EVENT, timeBaseLine, secondGroup);
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     final CamundaEventSourceEntryDto camundaEventSource = camundaEventSource();
     final CamundaEventSourceConfigDto eventSourceConfig = camundaEventSource.getConfiguration();
@@ -1002,7 +1002,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       });
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     // then we remove all imported data so the test can use its own fixtures
-    elasticSearchIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
   }
 
 }

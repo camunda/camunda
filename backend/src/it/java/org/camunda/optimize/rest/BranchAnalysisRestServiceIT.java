@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
+import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import org.junit.jupiter.api.Test;
 
 import jakarta.ws.rs.core.Response;
@@ -33,7 +33,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITI
 
 public class BranchAnalysisRestServiceIT extends AbstractPlatformIT {
 
-  private static final String DIAGRAM = "org/camunda/optimize/service/es/reader/gateway_process.bpmn";
+  private static final String DIAGRAM = "org/camunda/optimize/service/db/es/reader/gateway_process.bpmn";
   private static final String PROCESS_DEFINITION_ID_2 = "procDef2";
   private static final String PROCESS_DEFINITION_ID = "procDef1";
   private static final String PROCESS_DEFINITION_KEY = "procDef";
@@ -87,7 +87,7 @@ public class BranchAnalysisRestServiceIT extends AbstractPlatformIT {
       .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
       .bpmn20Xml(readDiagram())
       .build();
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    databaseIntegrationTestExtension.addEntryToDatabase(
       PROCESS_DEFINITION_INDEX_NAME,
       PROCESS_DEFINITION_ID,
       processDefinitionXmlDto
@@ -95,7 +95,7 @@ public class BranchAnalysisRestServiceIT extends AbstractPlatformIT {
 
     processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID_2);
     processDefinitionXmlDto.setVersion(PROCESS_DEFINITION_VERSION_2);
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    databaseIntegrationTestExtension.addEntryToDatabase(
       PROCESS_DEFINITION_INDEX_NAME,
       PROCESS_DEFINITION_ID_2,
       processDefinitionXmlDto
@@ -112,17 +112,17 @@ public class BranchAnalysisRestServiceIT extends AbstractPlatformIT {
       .build();
     embeddedOptimizeExtension.getElasticSearchSchemaManager()
       .createIndexIfMissing(
-        elasticSearchIntegrationTestExtension.getOptimizeElasticClient(),
+        databaseIntegrationTestExtension.getOptimizeElasticsearchClient(),
         new ProcessInstanceIndexES(PROCESS_DEFINITION_KEY)
       );
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    databaseIntegrationTestExtension.addEntryToDatabase(
       getProcessInstanceIndexAliasName(PROCESS_DEFINITION_KEY), PROCESS_INSTANCE_ID, procInst);
 
     procInst.setFlowNodeInstances(
       createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY})
     );
     procInst.setProcessInstanceId(PROCESS_INSTANCE_ID_2);
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    databaseIntegrationTestExtension.addEntryToDatabase(
       getProcessInstanceIndexAliasName(PROCESS_DEFINITION_KEY), PROCESS_INSTANCE_ID_2, procInst);
   }
 

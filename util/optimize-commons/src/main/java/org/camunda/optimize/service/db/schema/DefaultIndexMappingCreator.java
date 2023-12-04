@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.db.schema;
 
 import lombok.Setter;
-import org.camunda.optimize.service.es.schema.PropertiesAppender;
+import org.camunda.optimize.service.db.es.schema.PropertiesAppender;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.xcontent.XContentBuilder;
 import org.elasticsearch.xcontent.XContentFactory;

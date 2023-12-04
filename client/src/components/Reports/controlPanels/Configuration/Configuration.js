@@ -147,6 +147,7 @@ export default class Configuration extends Component {
           className="configurationPopover"
           tooltipPosition="bottom"
           align="bottom-right"
+          floating
         >
           <Form onSubmit={(e) => e.preventDefault()} className="content">
             <Stack gap={4}>

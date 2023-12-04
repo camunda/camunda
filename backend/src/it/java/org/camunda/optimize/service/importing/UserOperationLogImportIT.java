@@ -35,7 +35,7 @@ public class UserOperationLogImportIT extends AbstractImportIT {
 
     engineIntegrationExtension.suspendProcessInstanceByInstanceId(processInstance.getId());
 
-    List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
 
     // then
     assertInstanceHasState(allProcessInstances, ACTIVE_STATE);
@@ -54,7 +54,7 @@ public class UserOperationLogImportIT extends AbstractImportIT {
     engineIntegrationExtension.suspendProcessInstanceByInstanceId(processInstance.getId());
     importAllEngineEntitiesFromLastIndex();
 
-    List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
 
     // then
     assertInstanceHasState(allProcessInstances, SUSPENDED_STATE);
@@ -75,7 +75,7 @@ public class UserOperationLogImportIT extends AbstractImportIT {
     engineIntegrationExtension.unsuspendProcessInstanceByInstanceId(processInstance.getId());
     importAllEngineEntitiesFromLastIndex();
 
-    List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
 
     // then
     assertInstanceHasState(allProcessInstances, ACTIVE_STATE);
@@ -91,7 +91,7 @@ public class UserOperationLogImportIT extends AbstractImportIT {
     engineIntegrationExtension.suspendProcessInstanceByDefinitionId(processInstance.getDefinitionId());
     importAllEngineEntitiesFromLastIndex();
 
-    List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
 
     // then
     assertInstanceHasState(allProcessInstances, SUSPENDED_STATE);
@@ -112,7 +112,7 @@ public class UserOperationLogImportIT extends AbstractImportIT {
     engineIntegrationExtension.unsuspendProcessInstanceByDefinitionId(processInstance.getDefinitionId());
     importAllEngineEntitiesFromLastIndex();
 
-    List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
 
     // then
     assertInstanceHasState(allProcessInstances, ACTIVE_STATE);
@@ -128,7 +128,7 @@ public class UserOperationLogImportIT extends AbstractImportIT {
     engineIntegrationExtension.suspendProcessInstanceByDefinitionKey(processInstance.getProcessDefinitionKey());
     importAllEngineEntitiesFromLastIndex();
 
-    List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
 
     // then
     assertInstanceHasState(allProcessInstances, SUSPENDED_STATE);
@@ -149,7 +149,7 @@ public class UserOperationLogImportIT extends AbstractImportIT {
     engineIntegrationExtension.unsuspendProcessInstanceByDefinitionKey(processInstance.getProcessDefinitionKey());
     importAllEngineEntitiesFromLastIndex();
 
-    List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
 
     // then
     assertInstanceHasState(allProcessInstances, ACTIVE_STATE);
@@ -165,7 +165,7 @@ public class UserOperationLogImportIT extends AbstractImportIT {
     engineIntegrationExtension.suspendProcessDefinitionById(processInstance.getDefinitionId());
     importAllEngineEntitiesFromLastIndex();
 
-    List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
 
     // then
     assertInstanceHasState(allProcessInstances, SUSPENDED_STATE);
@@ -186,7 +186,7 @@ public class UserOperationLogImportIT extends AbstractImportIT {
     engineIntegrationExtension.unsuspendProcessDefinitionById(processInstance.getDefinitionId());
     importAllEngineEntitiesFromLastIndex();
 
-    List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
 
     // then
     assertInstanceHasState(allProcessInstances, ACTIVE_STATE);
@@ -202,7 +202,7 @@ public class UserOperationLogImportIT extends AbstractImportIT {
     engineIntegrationExtension.suspendProcessDefinitionByKey(processInstance.getProcessDefinitionKey());
     importAllEngineEntitiesFromLastIndex();
 
-    List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
 
     // then
     assertInstanceHasState(allProcessInstances, SUSPENDED_STATE);
@@ -223,7 +223,7 @@ public class UserOperationLogImportIT extends AbstractImportIT {
     engineIntegrationExtension.unsuspendProcessDefinitionByKey(processInstance.getProcessDefinitionKey());
     importAllEngineEntitiesFromLastIndex();
 
-    List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
 
     // then
     assertInstanceHasState(allProcessInstances, ACTIVE_STATE);
@@ -240,7 +240,7 @@ public class UserOperationLogImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromLastIndex();
     importAllEngineEntitiesFromLastIndex(); // import twice to ensure running instance import had a chance to rerun
 
-    List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
 
     // then
     assertInstanceHasState(allProcessInstances, SUSPENDED_STATE);
@@ -262,7 +262,7 @@ public class UserOperationLogImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromLastIndex();
     importAllEngineEntitiesFromLastIndex(); // import twice to ensure running instance import had a chance to rerun
 
-    List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
 
     // then
     assertInstanceHasState(allProcessInstances, ACTIVE_STATE);
@@ -280,7 +280,7 @@ public class UserOperationLogImportIT extends AbstractImportIT {
     engineIntegrationExtension.suspendProcessInstanceByInstanceId(processInstance.getId());
     importAllEngineEntitiesFromLastIndex();
 
-    List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
 
     // then
     assertInstanceHasState(allProcessInstances, COMPLETED_STATE);
@@ -298,7 +298,7 @@ public class UserOperationLogImportIT extends AbstractImportIT {
     engineIntegrationExtension.suspendProcessInstanceByDefinitionId(processInstance.getDefinitionId());
     importAllEngineEntitiesFromLastIndex();
 
-    List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
 
     // then
     assertInstanceHasState(allProcessInstances, COMPLETED_STATE);
@@ -316,7 +316,7 @@ public class UserOperationLogImportIT extends AbstractImportIT {
     engineIntegrationExtension.suspendProcessInstanceByDefinitionKey(processInstance.getProcessDefinitionKey());
     importAllEngineEntitiesFromLastIndex();
 
-    List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
 
     // then
     assertInstanceHasState(allProcessInstances, COMPLETED_STATE);
@@ -334,7 +334,7 @@ public class UserOperationLogImportIT extends AbstractImportIT {
     engineIntegrationExtension.suspendProcessInstanceByDefinitionId(processInstance.getDefinitionId());
     importAllEngineEntitiesFromLastIndex();
 
-    List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
 
     // then
     assertInstanceHasState(allProcessInstances, COMPLETED_STATE);
@@ -352,7 +352,7 @@ public class UserOperationLogImportIT extends AbstractImportIT {
     engineIntegrationExtension.suspendProcessInstanceByDefinitionKey(processInstance.getProcessDefinitionKey());
     importAllEngineEntitiesFromLastIndex();
 
-    List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
 
     // then
     assertInstanceHasState(allProcessInstances, COMPLETED_STATE);
@@ -370,7 +370,7 @@ public class UserOperationLogImportIT extends AbstractImportIT {
     engineIntegrationExtension.suspendProcessInstanceViaBatch(processInstance.getId());
     importAllEngineEntitiesFromLastIndex();
 
-    List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
 
     // then
     assertInstanceHasState(allProcessInstances, COMPLETED_STATE);

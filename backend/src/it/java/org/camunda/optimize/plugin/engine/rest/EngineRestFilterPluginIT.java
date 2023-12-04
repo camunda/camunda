@@ -8,7 +8,6 @@ package org.camunda.optimize.plugin.engine.rest;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
-import org.elasticsearch.action.search.SearchResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +16,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
 public class EngineRestFilterPluginIT extends AbstractPlatformIT {
@@ -61,7 +59,7 @@ public class EngineRestFilterPluginIT extends AbstractPlatformIT {
     );
 
     // then
-    allEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_MULTI_ALIAS);
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances().size()).isEqualTo(1L);
   }
 
   private void deployAndStartSimpleServiceTask() {
@@ -72,16 +70,6 @@ public class EngineRestFilterPluginIT extends AbstractPlatformIT {
 
   private void deployAndStartSimpleServiceTaskWithVariables(Map<String, Object> variables) {
     engineIntegrationExtension.deployAndStartProcessWithVariables(getSingleServiceTaskProcess(), variables);
-  }
-
-  private void allEntriesInElasticsearchHaveAllData(String elasticsearchType) {
-    allEntriesInElasticsearchHaveAllDataWithCount(elasticsearchType, 1L);
-  }
-
-  private void allEntriesInElasticsearchHaveAllDataWithCount(String elasticsearchType, long count) {
-    SearchResponse idsResp = elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(
-      elasticsearchType);
-    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(count);
   }
 
 }

@@ -42,7 +42,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
     String dashboardId = addDashboardToOptimize("aDashboardName");
     String collectionId = addCollection("aCollectionName");
     String eventProcessId = addEventProcessMappingToOptimize("anEventProcessName");
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     EntityNameResponseDto result = entitiesClient.getEntityNames(collectionId, dashboardId, reportId, eventProcessId);
@@ -60,7 +60,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
     String reportId = addSingleReportToOptimize("aReportName", ReportType.PROCESS);
     String dashboardId = addDashboardToOptimize("aDashboardName");
     String collectionId = addCollection("aCollectionName");
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     EntityNameResponseDto result = entitiesClient.getEntityNames(collectionId, dashboardId, reportId, "eventProcessId");
@@ -78,7 +78,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
     String reportId = addSingleReportToOptimize("aProcessReportName", ReportType.PROCESS);
     addSingleReportToOptimize("aDecisionReportName", ReportType.DECISION);
     addCombinedReport("aCombinedReportName");
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     EntityNameResponseDto result = entitiesClient.getEntityNames(null, null, reportId, null);
@@ -94,7 +94,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
   public void getEntityNames_WorksForDecisionReports() {
     // given
     String reportId = addSingleReportToOptimize("aDecisionReportName", ReportType.DECISION);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     EntityNameResponseDto result = entitiesClient.getEntityNames(null, null, reportId, null);
@@ -110,7 +110,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
   public void getEntityNames_WorksForCombinedReports() {
     // given
     String reportId = addCombinedReport("aCombinedReportName");
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     EntityNameResponseDto result = entitiesClient.getEntityNames(null, null, reportId, null);
@@ -125,7 +125,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
   @Test
   public void getEntityNames_NotAvailableIdReturns404() {
     // given
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     Response response = embeddedOptimizeExtension
@@ -140,7 +140,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
   @Test
   public void getEntityNames_NoIdProvidedReturns400() {
     // given
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     Response response = embeddedOptimizeExtension
@@ -244,7 +244,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
   }
 
   private String getIdForManagementReport() {
-    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
         SINGLE_PROCESS_REPORT_INDEX_NAME,
         SingleProcessReportDefinitionRequestDto.class
       )

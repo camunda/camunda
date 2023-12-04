@@ -384,7 +384,7 @@ public class EventBasedProcessRestServiceEventSourceIT extends AbstractEventProc
   }
 
   private void addEventProcessDefinitionDtoToElasticsearch() {
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(
       PROCESS_DEF_KEY_1,
       PROCESS_DEF_KEY_1,
       "1",

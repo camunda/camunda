@@ -11,8 +11,8 @@ import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEva
 import org.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
-import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
-import org.camunda.optimize.service.es.report.ReportEvaluationInfo;
+import org.camunda.optimize.service.db.es.report.AuthorizationCheckReportEvaluationHandler;
+import org.camunda.optimize.service.db.es.report.ReportEvaluationInfo;
 import org.springframework.stereotype.Component;
 
 import java.time.ZoneId;

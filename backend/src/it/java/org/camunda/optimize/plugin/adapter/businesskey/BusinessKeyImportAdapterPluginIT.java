@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.List;
 
-import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class BusinessKeyImportAdapterPluginIT extends AbstractPlatformIT {
@@ -100,7 +99,7 @@ public class BusinessKeyImportAdapterPluginIT extends AbstractPlatformIT {
   }
 
   private List<String> getBusinessKeysForAllImportedProcessInstances(){
-    return elasticSearchIntegrationTestExtension.getAllProcessInstances()
+    return databaseIntegrationTestExtension.getAllProcessInstances()
       .stream()
       .map(ProcessInstanceDto::getBusinessKey)
       .toList();

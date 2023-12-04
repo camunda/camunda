@@ -7,8 +7,8 @@ package org.camunda.optimize.upgrade;
 
 import io.github.netmikey.logunit.api.LogCapturer;
 import org.camunda.optimize.service.db.schema.index.MetadataIndex;
-import org.camunda.optimize.service.es.schema.ElasticSearchMetadataService;
-import org.camunda.optimize.service.es.schema.index.MetadataIndexES;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
+import org.camunda.optimize.service.db.es.schema.index.MetadataIndexES;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.factories.CurrentVersionNoOperationUpgradePlanFactory;

@@ -18,8 +18,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.service.db.reader.AlertReader;
 import org.camunda.optimize.service.db.reader.ReportReader;
 import org.camunda.optimize.service.db.writer.AlertWriter;
-import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
-import org.camunda.optimize.service.es.report.ReportEvaluationInfo;
+import org.camunda.optimize.service.db.es.report.PlainReportEvaluationHandler;
+import org.camunda.optimize.service.db.es.report.ReportEvaluationInfo;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.DurationFormatterUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;

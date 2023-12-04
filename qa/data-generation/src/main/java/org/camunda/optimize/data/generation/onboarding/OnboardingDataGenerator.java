@@ -14,16 +14,18 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.schema.ElasticSearchMetadataService;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndexES;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
+import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.db.es.schema.index.ProcessDefinitionIndexES;
+import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.service.exceptions.DataGenerationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
+import org.camunda.optimize.service.util.configuration.DatabaseProfile;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
@@ -45,7 +47,6 @@ import java.util.UUID;
 import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_PROFILE;
 
 @Slf4j
 public class OnboardingDataGenerator {
@@ -58,7 +59,7 @@ public class OnboardingDataGenerator {
 
   public OnboardingDataGenerator() {
     final ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
-    this.optimizeIndexNameService = new OptimizeIndexNameService(configurationService, ELASTICSEARCH_PROFILE);
+    this.optimizeIndexNameService = new OptimizeIndexNameService(configurationService, DatabaseProfile.ELASTICSEARCH);
     ElasticSearchMetadataService elasticsearchMetadataService = new ElasticSearchMetadataService(OBJECT_MAPPER);
     this.elasticSearchSchemaManager = new ElasticSearchSchemaManager(
       elasticsearchMetadataService,
@@ -101,7 +102,8 @@ public class OnboardingDataGenerator {
         );
         if (processDefinitionDto != null) {
           String json = OBJECT_MAPPER.writeValueAsString(processDefinitionDto);
-          IndexRequest request = new IndexRequest(optimizeIndexNameService.getOptimizeIndexAliasForIndex(PROCESS_DEFINITION_INDEX_NAME))
+          IndexRequest request = new IndexRequest(optimizeIndexNameService.getOptimizeIndexAliasForIndex(
+            PROCESS_DEFINITION_INDEX_NAME))
             .id(processDefinitionDto.getId())
             .source(json, XContentType.JSON);
           elasticsearchClient.index(request);

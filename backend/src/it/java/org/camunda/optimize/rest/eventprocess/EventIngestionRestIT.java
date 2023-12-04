@@ -86,7 +86,7 @@ public class EventIngestionRestIT extends AbstractPlatformIT {
     // then
 
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(elasticSearchIntegrationTestExtension.getAllStoredExternalEvents()).isEmpty();
+    assertThat(databaseIntegrationTestExtension.getAllStoredExternalEvents()).isEmpty();
   }
 
   @Test
@@ -387,7 +387,7 @@ public class EventIngestionRestIT extends AbstractPlatformIT {
   }
 
   private void assertEventDtosArePersisted(final List<CloudEventRequestDto> cloudEventDtos) {
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     Instant rightNow = LocalDateUtil.getCurrentDateTime().toInstant();
     final List<EventDto> expectedEventDtos = cloudEventDtos.stream()
       .map(cloudEventDto -> EventDto.builder()
@@ -406,7 +406,7 @@ public class EventIngestionRestIT extends AbstractPlatformIT {
         .build()
       )
       .collect(Collectors.toList());
-    final List<EventDto> indexedEventDtos = elasticSearchIntegrationTestExtension.getAllStoredExternalEvents();
+    final List<EventDto> indexedEventDtos = databaseIntegrationTestExtension.getAllStoredExternalEvents();
     assertThat(indexedEventDtos).containsExactlyInAnyOrderElementsOf(expectedEventDtos);
   }
 

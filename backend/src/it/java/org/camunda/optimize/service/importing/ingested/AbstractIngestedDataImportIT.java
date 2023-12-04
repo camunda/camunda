@@ -18,14 +18,14 @@ public class AbstractIngestedDataImportIT extends AbstractImportIT {
   }
 
   protected void importIngestedDataFromScratchRefreshIndicesBeforeAndAfter() {
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     embeddedOptimizeExtension.importIngestedDataFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   protected void importIngestedDataFromLastIndexRefreshIndicesBeforeAndAfter() {
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     embeddedOptimizeExtension.importIngestedDataFromLastIndex();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 }

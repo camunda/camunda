@@ -55,7 +55,7 @@ export function post(
 
 export function get(
   url: string,
-  query: Record<string, unknown> = {},
+  query?: Record<string, unknown>,
   options: Record<string, unknown> = {}
 ): Promise<Response> {
   return request({
@@ -68,7 +68,7 @@ export function get(
 
 export function del(
   url: string,
-  query: Record<string, unknown> = {},
+  query?: Record<string, unknown>,
   options: Record<string, unknown> = {}
 ): Promise<Response> {
   return request({

@@ -214,7 +214,7 @@ public class ManagementDashboardIT extends AbstractPlatformIT {
   }
 
   private List<DashboardDefinitionRestDto> getAllSavedDashboards() {
-    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(DASHBOARD_INDEX_NAME, DashboardDefinitionRestDto.class);
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(DASHBOARD_INDEX_NAME, DashboardDefinitionRestDto.class);
   }
 
   private static DashboardFilterDto<?> createDashboardStartDateFilterWithDefaultValues(final DateFilterDataDto<?> defaultValues) {
@@ -224,7 +224,7 @@ public class ManagementDashboardIT extends AbstractPlatformIT {
   }
 
   private List<SingleProcessReportDefinitionRequestDto> getAllSavedManagementReports() {
-    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       SINGLE_PROCESS_REPORT_INDEX_NAME,
       SingleProcessReportDefinitionRequestDto.class
     );

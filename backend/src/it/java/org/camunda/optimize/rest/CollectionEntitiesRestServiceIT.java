@@ -119,7 +119,7 @@ public class CollectionEntitiesRestServiceIT extends AbstractEntitiesRestService
     reportClient.createEmptyCombinedReport(collectionId);
     dashboardClient.createEmptyDashboard(collectionId);
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     return collectionId;
   }
 

@@ -21,7 +21,7 @@ public enum OptimizeProfile {
   CCSM(CCSM_PROFILE),
   CLOUD(CLOUD_PROFILE);
 
-  private String id;
+  private final String id;
 
   @JsonValue
   public String getId() {

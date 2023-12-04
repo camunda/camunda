@@ -9,15 +9,15 @@ import org.apache.http.client.methods.HttpGet;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.db.schema.IndexMappingCreator;
-import org.camunda.optimize.service.es.schema.ElasticSearchIndexSettingsBuilder;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchIndexSettingsBuilder;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndexES;
+import org.camunda.optimize.service.db.es.schema.index.ProcessDefinitionIndexES;
 
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
-import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndexES;
+import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
+import org.camunda.optimize.service.db.es.schema.index.report.SingleDecisionReportIndexES;
 import org.camunda.optimize.service.schema.type.MyUpdatedEventIndex;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.db.DatabaseConstants;
@@ -51,7 +51,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.camunda.optimize.service.db.DatabaseConstants.MAX_NGRAM_DIFF;
-import static org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager.INDEX_EXIST_BATCH_SIZE;
+import static org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager.INDEX_EXIST_BATCH_SIZE;
 import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_NESTED_OBJECTS_LIMIT;
 import static org.camunda.optimize.service.db.DatabaseConstants.METADATA_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_REPLICAS_SETTING;
@@ -68,7 +68,7 @@ public class SchemaManagerIT extends AbstractPlatformIT {
   @BeforeEach
   public void setUp() {
     // given
-    elasticSearchIntegrationTestExtension.cleanAndVerify();
+    databaseIntegrationTestExtension.cleanAndVerify();
     prefixAwareRestHighLevelClient = embeddedOptimizeExtension.getOptimizeElasticClient();
     indexNameService = prefixAwareRestHighLevelClient.getIndexNameService();
   }
@@ -273,7 +273,7 @@ public class SchemaManagerIT extends AbstractPlatformIT {
 
     // then an exception is thrown when we add an event with an undefined type in schema
     ExtendedFlowNodeEventDto extendedEventDto = new ExtendedFlowNodeEventDto();
-    assertThatThrownBy(() -> elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    assertThatThrownBy(() -> databaseIntegrationTestExtension.addEntryToDatabase(
       DatabaseConstants.METADATA_INDEX_NAME,
       "12312412",
       extendedEventDto
@@ -354,7 +354,7 @@ public class SchemaManagerIT extends AbstractPlatformIT {
   }
 
   private void assertIndexExists(String indexName) throws IOException {
-    OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
+    OptimizeElasticsearchClient esClient = databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
     GetIndexRequest request = new GetIndexRequest(indexName);
     final boolean indexExists = esClient.exists(request);
 

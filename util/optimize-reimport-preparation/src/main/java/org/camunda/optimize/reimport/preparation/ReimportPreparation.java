@@ -9,25 +9,26 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.plugin.ElasticsearchCustomHeaderProvider;
 import org.camunda.optimize.plugin.PluginJarFileLoader;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.schema.ElasticSearchMetadataService;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
 import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.RequestOptionsProvider;
-import org.camunda.optimize.service.es.schema.index.BusinessKeyIndexES;
-import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndexES;
-import org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndexES;
-import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndexES;
-import org.camunda.optimize.service.es.schema.index.TenantIndexES;
-import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndexES;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndexES;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndexES;
-import org.camunda.optimize.service.es.schema.index.index.ImportIndexIndexES;
-import org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndexES;
+import org.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
+import org.camunda.optimize.service.db.es.schema.index.BusinessKeyIndexES;
+import org.camunda.optimize.service.db.es.schema.index.DecisionDefinitionIndexES;
+import org.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableIndexES;
+import org.camunda.optimize.service.db.es.schema.index.ProcessDefinitionIndexES;
+import org.camunda.optimize.service.db.es.schema.index.TenantIndexES;
+import org.camunda.optimize.service.db.es.schema.index.VariableUpdateInstanceIndexES;
+import org.camunda.optimize.service.db.es.schema.index.events.EventProcessDefinitionIndexES;
+import org.camunda.optimize.service.db.es.schema.index.events.EventProcessPublishStateIndexES;
+import org.camunda.optimize.service.db.es.schema.index.index.ImportIndexIndexES;
+import org.camunda.optimize.service.db.es.schema.index.index.TimestampBasedImportIndexES;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
+import org.camunda.optimize.service.util.configuration.DatabaseProfile;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.util.jetty.LoggingConfigurationReader;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -44,7 +45,6 @@ import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_TRACE_STAT
 import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_PROFILE;
 
 /**
  * Deletes all engine data and the import indexes from Elasticsearch such that Optimize reimports all data from the
@@ -88,7 +88,7 @@ public class ReimportPreparation {
       customHeaderProvider.initPlugins();
       final OptimizeElasticsearchClient prefixAwareClient = new OptimizeElasticsearchClient(
         restHighLevelClient,
-        new OptimizeIndexNameService(configurationService, ELASTICSEARCH_PROFILE),
+        new OptimizeIndexNameService(configurationService, DatabaseProfile.ELASTICSEARCH),
         new RequestOptionsProvider(customHeaderProvider.getPlugins(), configurationService)
       );
 

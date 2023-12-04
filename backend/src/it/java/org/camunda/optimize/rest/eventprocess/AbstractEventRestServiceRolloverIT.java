@@ -8,7 +8,7 @@ package org.camunda.optimize.rest.eventprocess;
 import org.camunda.optimize.dto.optimize.query.event.DeletableEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
-import org.camunda.optimize.service.es.schema.index.events.EventIndexES;
+import org.camunda.optimize.service.db.es.schema.index.events.EventIndexES;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -46,7 +46,7 @@ public abstract class AbstractEventRestServiceRolloverIT extends AbstractEventPr
 
   @BeforeEach
   public void cleanUpEventIndices() {
-    elasticSearchIntegrationTestExtension.deleteAllExternalEventIndices();
+    databaseIntegrationTestExtension.deleteAllExternalEventIndices();
     embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
       embeddedOptimizeExtension.getOptimizeElasticClient(),
       new EventIndexES()
@@ -58,7 +58,7 @@ public abstract class AbstractEventRestServiceRolloverIT extends AbstractEventPr
 
   protected void ingestEventAndRolloverIndex(final CloudEventRequestDto cloudEventRequestDto) {
     ingestionClient.ingestEventBatch(Collections.singletonList(cloudEventRequestDto));
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     embeddedOptimizeExtension.getEventIndexRolloverService().triggerRollover();
   }
 
