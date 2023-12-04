@@ -39,6 +39,7 @@ import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOp
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.util.Either;
+import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -85,9 +86,12 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
   }
 
   @Override
-  public ClusterTopology decodeClusterTopology(final byte[] encodedClusterTopology) {
+  public ClusterTopology decodeClusterTopology(
+      final byte[] encodedClusterTopology, final int offset, final int length) {
     try {
-      final var topology = Topology.ClusterTopology.parseFrom(encodedClusterTopology);
+      final var topology =
+          Topology.ClusterTopology.parseFrom(
+              ByteBuffer.wrap(encodedClusterTopology, offset, length));
       return decodeClusterTopology(topology);
 
     } catch (final InvalidProtocolBufferException e) {

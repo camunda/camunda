@@ -18,5 +18,6 @@ public interface ClusterTopologySerializer {
 
   byte[] encode(ClusterTopology clusterTopology);
 
-  ClusterTopology decodeClusterTopology(byte[] encodedClusterTopology);
+  ClusterTopology decodeClusterTopology(
+      byte[] encodedClusterTopology, final int offset, final int length);
 }

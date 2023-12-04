@@ -16,7 +16,6 @@ import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Arrays;
 import java.util.zip.CRC32C;
 
 /**
@@ -98,20 +97,18 @@ final class PersistedClusterTopology {
       throw new UnexpectedVersion(topologyFile, version);
     }
 
-    final var body = Arrays.copyOfRange(content, HEADER_LENGTH, content.length);
-
-    final var actualChecksum = checksum(body);
+    final var actualChecksum = checksum(content, HEADER_LENGTH, content.length - HEADER_LENGTH);
     if (expectedChecksum != actualChecksum) {
       throw new ChecksumMismatch(topologyFile, expectedChecksum, actualChecksum);
     }
 
     // deserialize the topology
-    return serializer.decodeClusterTopology(body);
+    return serializer.decodeClusterTopology(content, HEADER_LENGTH, content.length - HEADER_LENGTH);
   }
 
   private void writeToFile(final ClusterTopology clusterTopology) throws IOException {
     final var body = serializer.encode(clusterTopology);
-    final var checksum = checksum(body);
+    final var checksum = checksum(body, 0, body.length);
     final var buffer =
         ByteBuffer.allocate(HEADER_LENGTH + body.length)
             .order(ByteOrder.LITTLE_ENDIAN)
@@ -127,9 +124,9 @@ final class PersistedClusterTopology {
         StandardOpenOption.DSYNC);
   }
 
-  private static long checksum(final byte[] bytes) {
+  private static long checksum(final byte[] bytes, final int offset, final int length) {
     final var checksum = new CRC32C();
-    checksum.update(bytes);
+    checksum.update(bytes, offset, length);
     return checksum.getValue();
   }
 

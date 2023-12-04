@@ -60,8 +60,9 @@ final class ProtoBufSerializerTest {
     final var initialClusterTopology = topologyWithTwoMembers();
 
     // when
+    final var encoded = protoBufSerializer.encode(initialClusterTopology);
     final var decodedClusterTopology =
-        protoBufSerializer.decodeClusterTopology(protoBufSerializer.encode(initialClusterTopology));
+        protoBufSerializer.decodeClusterTopology(encoded, 0, encoded.length);
 
     // then
     assertThat(decodedClusterTopology)
