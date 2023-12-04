@@ -10,19 +10,14 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>io.camunda</groupId>
-    <artifactId>zeebe-root</artifactId>
+    <artifactId>zeebe-parent</artifactId>
     <version>8.4.0-SNAPSHOT</version>
-    <relativePath>../../pom.xml</relativePath>
+    <relativePath>../../parent/pom.xml</relativePath>
   </parent>
 
   <artifactId>zeebe-backup-store-azure</artifactId>
   <packaging>jar</packaging>
-
-  <properties>
-    <maven.compiler.source>21</maven.compiler.source>
-    <maven.compiler.target>21</maven.compiler.target>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
+  <name>Zeebe Backup Store for Azure</name>
 
   <dependencies>
     <dependency>

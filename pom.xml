@@ -58,9 +58,9 @@
     <module>backup-stores/testkit</module>
     <module>backup-stores/s3</module>
     <module>backup-stores/gcs</module>
+    <module>backup-stores/azure</module>
     <module>restore</module>
     <module>topology</module>
-    <module>backup-stores/azure</module>
   </modules>
 
   <scm>

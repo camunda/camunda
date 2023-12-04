@@ -103,10 +103,10 @@ public class AzureBackupStoreConfig implements ConfigurationEntry {
         + accountName
         + '\''
         + ", accountKey='"
-        + accountKey
+        + "<redacted>"
         + '\''
         + ", connectionString='"
-        + connectionString
+        + "<redacted>"
         + '\''
         + ", basePath='"
         + basePath

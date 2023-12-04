@@ -131,9 +131,6 @@ public final class SystemContext {
             GcsBackupStoreConfig.toStoreConfig(backup.getGcs()));
         case AZURE -> AzureBackupStore.validateConfig(
             AzureBackupStoreConfig.toStoreConfig(backup.getAzure()));
-        default -> throw new UnsupportedOperationException(
-            "Does not support validating configuration of backup store %s"
-                .formatted(backup.getStore()));
       }
     } catch (final Exception e) {
       throw new InvalidConfigurationException(
