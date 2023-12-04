@@ -135,12 +135,12 @@ public class EngineLargeStatePerformanceTest {
   void shouldProcessWithinExpectedDeviation(final JMHTestCase testCase) {
     // given - an expected ops/s score, as measured in CI
     // when running this test locally, you're likely to have a different score
-    final var referenceScore = 450;
+    final var referenceScore = 1000;
 
     // when
     final var assertResult = testCase.run();
 
     // then
-    assertResult.isWithinDeviation(referenceScore, 0.15);
+    assertResult.isAtLeast(referenceScore, 0.25);
   }
 }
