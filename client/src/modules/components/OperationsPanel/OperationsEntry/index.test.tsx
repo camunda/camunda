@@ -127,6 +127,20 @@ describe('OperationsEntry', () => {
     expect(screen.getByTestId('operation-modify-icon')).toBeInTheDocument();
   });
 
+  it('should render migrate operation', () => {
+    render(<OperationsEntry {...mockProps} operation={OPERATIONS.MIGRATE} />, {
+      wrapper: createWrapper(),
+    });
+
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
+    expect(
+      screen.getByText('8ba1a9a7-8537-4af3-97dc-f7249743b20b'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Migrate')).toBeInTheDocument();
+    expect(screen.getByTestId('operation-migrate-icon')).toBeInTheDocument();
+  });
+
   it('should render delete process definition operation', () => {
     render(
       <OperationsEntry

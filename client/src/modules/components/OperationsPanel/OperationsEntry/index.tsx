@@ -9,7 +9,14 @@ import {formatDate} from 'modules/utils/date';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {useLoadingProgress} from './useLoadingProgress';
 import {Container, Details, Title, Header, ProgressBar} from './styled';
-import {TrashCan, Error, Tools, RetryFailed, Edit} from '@carbon/react/icons';
+import {
+  TrashCan,
+  Error,
+  Tools,
+  RetryFailed,
+  Edit,
+  MigrateAlt,
+} from '@carbon/react/icons';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
@@ -81,6 +88,9 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
         )}
         {label === 'Edit' && (
           <Edit size={16} data-testid="operation-edit-icon" />
+        )}
+        {label === 'Migrate' && (
+          <MigrateAlt size={16} data-testid="operation-migrate-icon" />
         )}
       </Header>
       <div data-testid="operation-id">{id}</div>
