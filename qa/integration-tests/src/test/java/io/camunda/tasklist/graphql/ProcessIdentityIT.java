@@ -8,17 +8,19 @@ package io.camunda.tasklist.graphql;
 
 import static io.camunda.tasklist.Application.SPRING_THYMELEAF_PREFIX_KEY;
 import static io.camunda.tasklist.Application.SPRING_THYMELEAF_PREFIX_VALUE;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.*;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.DependencyInjectionTestExecutionListener;
-import io.camunda.tasklist.util.*;
+import io.camunda.tasklist.util.IdentityTester;
+import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import java.io.IOException;
 import org.json.JSONException;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -49,49 +51,18 @@ import org.springframework.test.context.junit4.SpringRunner;
 @ActiveProfiles({TasklistProfileService.IDENTITY_AUTH_PROFILE, "test"})
 public class ProcessIdentityIT extends IdentityTester {
 
+  @BeforeClass
+  public static void beforeClass() {
+    IdentityTester.beforeClass(false);
+  }
+
   @DynamicPropertySource
-  static void registerProperties(DynamicPropertyRegistry registry) {
-    registry.add(
-        "camunda.tasklist.identity.baseUrl",
-        () ->
-            "http://"
-                + testContext.getExternalIdentityHost()
-                + ":"
-                + testContext.getExternalIdentityPort());
-    registry.add("camunda.tasklist.identity.resourcePermissionsEnabled", () -> true);
-    registry.add(
-        "camunda.tasklist.identity.issuerBackendUrl",
-        () ->
-            "http://"
-                + testContext.getExternalKeycloakHost()
-                + ":"
-                + testContext.getExternalKeycloakPort()
-                + "/auth/realms/camunda-platform");
-    registry.add(
-        "camunda.tasklist.identity.issuerUrl",
-        () ->
-            "http://"
-                + testContext.getExternalKeycloakHost()
-                + ":"
-                + testContext.getExternalKeycloakPort()
-                + "/auth/realms/camunda-platform");
-    registry.add("camunda.tasklist.identity.clientId", () -> "tasklist");
-    registry.add("camunda.tasklist.identity.clientSecret", () -> "the-cake-is-alive");
-    registry.add("camunda.tasklist.identity.audience", () -> "tasklist-api");
-    registry.add("server.servlet.session.cookie.name", () -> COOKIE_JSESSIONID);
-    registry.add(TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup", () -> false);
-    registry.add(TasklistProperties.PREFIX + ".archiver.rolloverEnabled", () -> false);
-    registry.add(TasklistProperties.PREFIX + "importer.jobType", () -> "testJobType");
-    registry.add("graphql.servlet.exception-handlers-enabled", () -> true);
-    registry.add(
-        "management.endpoints.web.exposure.include", () -> "info,prometheus,loggers,usage-metrics");
-    registry.add(SPRING_THYMELEAF_PREFIX_KEY, () -> SPRING_THYMELEAF_PREFIX_VALUE);
-    registry.add("server.servlet.session.cookie.name", () -> TasklistURIs.COOKIE_JSESSIONID);
+  protected static void registerProperties(DynamicPropertyRegistry registry) {
+    IdentityTester.registerProperties(registry, false);
   }
 
   @Test
   public void shouldReturnProcessAfterAssigningAuthorizations() throws IOException, JSONException {
-
     tester.deployProcess("simple_process.bpmn").waitUntil().processIsDeployed();
 
     final String querySimpleProcess = "simple";

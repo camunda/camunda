@@ -280,7 +280,7 @@ public class TestContext<T extends TestContext<T>> {
     return this;
   }
 
-  public Integer getInternalIdendityPort() {
+  public Integer getInternalIdentityPort() {
     return internalIdentityPort;
   }
 
@@ -314,5 +314,21 @@ public class TestContext<T extends TestContext<T>> {
   public TestContext<T> setInternalIdentityHost(String internalIdentityHost) {
     this.internalIdentityHost = internalIdentityHost;
     return this;
+  }
+
+  public String getInternalKeycloakBaseUrl() {
+    return String.format("http://%s:%d", this.internalKeycloakHost, this.internalKeycloakPort);
+  }
+
+  public String getInternalIdentityBaseUrl() {
+    return String.format("http://%s:%d", this.internalIdentityHost, this.internalIdentityPort);
+  }
+
+  public String getExternalKeycloakBaseUrl() {
+    return String.format("http://%s:%d", this.externalKeycloakHost, this.externalKeycloakPort);
+  }
+
+  public String getExternalIdentityBaseUrl() {
+    return String.format("http://%s:%d", this.externalIdentityHost, this.externalIdentityPort);
   }
 }

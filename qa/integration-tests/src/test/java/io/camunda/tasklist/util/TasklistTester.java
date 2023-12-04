@@ -31,6 +31,7 @@ import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.graphql.mutation.TaskMutationResolver;
+import io.camunda.tasklist.webapp.security.oauth.IdentityJwt2AuthenticationTokenConverter;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -45,6 +46,10 @@ import java.util.stream.IntStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -56,6 +61,7 @@ public class TasklistTester {
 
   private ZeebeClient zeebeClient;
   private TasklistTestRule tasklistTestRule;
+  private JwtDecoder jwtDecoder;
   //
   private String processDefinitionKey;
   private String processInstanceId;
@@ -115,6 +121,9 @@ public class TasklistTester {
 
   @Autowired private ObjectMapper objectMapper;
 
+  @Autowired(required = false)
+  private IdentityJwt2AuthenticationTokenConverter jwtAuthenticationConverter;
+
   private GraphQLResponse graphQLResponse;
 
   //
@@ -125,6 +134,12 @@ public class TasklistTester {
   public TasklistTester(ZeebeClient zeebeClient, TasklistTestRule elasticsearchTestRule) {
     this.zeebeClient = zeebeClient;
     this.tasklistTestRule = elasticsearchTestRule;
+  }
+
+  public TasklistTester(
+      ZeebeClient zeebeClient, TasklistTestRule elasticsearchTestRule, JwtDecoder jwtDecoder) {
+    this(zeebeClient, elasticsearchTestRule);
+    this.jwtDecoder = jwtDecoder;
   }
 
   //
@@ -365,6 +380,11 @@ public class TasklistTester {
     return this;
   }
 
+  public TasklistTester deployProcessForTenant(String tenantId, String... classpathResources) {
+    processDefinitionKey = ZeebeTestUtil.deployProcess(tenantId, zeebeClient, classpathResources);
+    return this;
+  }
+
   public TasklistTester deployProcess(BpmnModelInstance processModel, String resourceName) {
     processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, processModel, resourceName);
     return this;
@@ -391,6 +411,13 @@ public class TasklistTester {
 
   public TasklistTester startProcessInstance(String bpmnProcessId, String payload) {
     processInstanceId = ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, payload);
+    return this;
+  }
+
+  public TasklistTester startProcessInstance(
+      String tenantId, String bpmnProcessId, String payload) {
+    processInstanceId =
+        ZeebeTestUtil.startProcessInstance(tenantId, zeebeClient, bpmnProcessId, payload);
     return this;
   }
 
@@ -572,5 +599,21 @@ public class TasklistTester {
 
   public String getTaskId() {
     return taskId;
+  }
+
+  public TasklistTester withAuthenticationToken(String token) {
+    final Jwt jwt;
+    try {
+      jwt = jwtDecoder.decode(token);
+    } catch (JwtException e) {
+      throw new RuntimeException(e);
+    }
+    SecurityContextHolder.getContext().setAuthentication(jwtAuthenticationConverter.convert(jwt));
+    return this;
+  }
+
+  public TasklistTester unsetAuthorization() {
+    SecurityContextHolder.getContext().setAuthentication(null);
+    return this;
   }
 }

@@ -61,6 +61,7 @@
     <opensearch-testcontainers.version>2.0.0</opensearch-testcontainers.version>
     <postgres-test-container.version>1.17.6</postgres-test-container.version>
     <testcontainers.version>1.17.6</testcontainers.version>
+    <keycloak-client.version>22.0.1</keycloak-client.version>
 
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.source>17</maven.compiler.source>
@@ -226,6 +227,11 @@
         <groupId>org.testcontainers</groupId>
         <artifactId>testcontainers</artifactId>
         <version>${testcontainers.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.keycloak</groupId>
+        <artifactId>keycloak-admin-client</artifactId>
+        <version>${keycloak-client.version}</version>
       </dependency>
 
       <dependency>

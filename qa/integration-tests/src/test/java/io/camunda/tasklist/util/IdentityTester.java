@@ -6,54 +6,141 @@
  */
 package io.camunda.tasklist.util;
 
+import static io.camunda.tasklist.Application.SPRING_THYMELEAF_PREFIX_KEY;
+import static io.camunda.tasklist.Application.SPRING_THYMELEAF_PREFIX_VALUE;
+import static io.camunda.tasklist.qa.util.TestContainerUtil.*;
+import static io.camunda.tasklist.webapp.security.TasklistURIs.COOKIE_JSESSIONID;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestContainerUtil;
 import io.camunda.tasklist.qa.util.TestContext;
+import io.camunda.tasklist.webapp.security.TasklistURIs;
+import io.camunda.tasklist.webapp.security.oauth.IdentityJwt2AuthenticationTokenConverter;
+import io.camunda.zeebe.client.impl.util.Environment;
 import java.util.Collections;
-import org.json.JSONException;
+import java.util.Map;
 import org.json.JSONObject;
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
-public abstract class IdentityTester extends TasklistZeebeIntegrationTest {
-
-  protected static TestContext testContext;
+public abstract class IdentityTester extends SessionlessTasklistZeebeIntegrationTest {
+  public static TestContext testContext;
+  protected static final String USER = KEYCLOAK_USERNAME;
+  protected static final String USER_2 = KEYCLOAK_USERNAME_2;
   private static final String REALM = "camunda-platform";
   private static final String CONTEXT_PATH = "/auth";
-  private static final String USER = "demo";
-  private static final String PASSWORD = "demo";
+  private static final Map<String, String> USERS_STORE =
+      Map.of(USER, KEYCLOAK_PASSWORD, USER_2, KEYCLOAK_PASSWORD_2);
+  private static JwtDecoder jwtDecoder;
   @Autowired private static TestContainerUtil testContainerUtil;
   @Autowired private ObjectMapper objectMapper;
+  @Autowired private IdentityJwt2AuthenticationTokenConverter jwtAuthenticationConverter;
 
-  @BeforeClass
-  public static void beforeClass() {
+  protected static void beforeClass(boolean multiTenancyEnabled) {
+
     testContainerUtil = new TestContainerUtil();
     testContext = new TestContext();
     testContainerUtil.startIdentity(
         testContext,
         ContainerVersionsUtil.readProperty(
             ContainerVersionsUtil.IDENTITY_CURRENTVERSION_DOCKER_PROPERTY_NAME),
-        false);
+        multiTenancyEnabled);
+    jwtDecoder =
+        NimbusJwtDecoder.withJwkSetUri(
+                testContext.getExternalKeycloakBaseUrl()
+                    + "/auth/realms/camunda-platform/protocol/openid-connect/certs")
+            .build();
+    Environment.system().put("ZEEBE_CLIENT_ID", "zeebe");
+    Environment.system().put("ZEEBE_CLIENT_SECRET", "zecret");
+    Environment.system().put("ZEEBE_TOKEN_AUDIENCE", "zeebe-api");
+    Environment.system()
+        .put(
+            "ZEEBE_AUTHORIZATION_SERVER_URL",
+            testContext.getExternalKeycloakBaseUrl()
+                + "/auth/realms/camunda-platform/protocol/openid-connect/token");
   }
 
-  protected String generateCamundaIdentityToken() throws JsonProcessingException {
+  @Before
+  public void before() {
+    super.before();
+    tester =
+        beanFactory
+            .getBean(TasklistTester.class, zeebeClient, tasklistTestRule, jwtDecoder)
+            .withAuthenticationToken(generateCamundaIdentityToken());
+  }
+
+  protected static void registerProperties(
+      DynamicPropertyRegistry registry, boolean multiTenancyEnabled) {
+    registry.add(
+        "camunda.tasklist.identity.baseUrl", () -> testContext.getExternalIdentityBaseUrl());
+    registry.add("camunda.tasklist.identity.resourcePermissionsEnabled", () -> true);
+    registry.add(
+        "camunda.tasklist.identity.issuerBackendUrl",
+        () -> testContext.getExternalKeycloakBaseUrl() + "/auth/realms/camunda-platform");
+    registry.add(
+        "camunda.tasklist.identity.issuerUrl",
+        () -> testContext.getExternalKeycloakBaseUrl() + "/auth/realms/camunda-platform");
+    registry.add("camunda.tasklist.identity.clientId", () -> "tasklist");
+    registry.add("camunda.tasklist.identity.clientSecret", () -> "the-cake-is-alive");
+    registry.add("camunda.tasklist.identity.audience", () -> "tasklist-api");
+    registry.add("server.servlet.session.cookie.name", () -> COOKIE_JSESSIONID);
+    registry.add(TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup", () -> false);
+    registry.add(TasklistProperties.PREFIX + ".archiver.rolloverEnabled", () -> false);
+    registry.add(TasklistProperties.PREFIX + "importer.jobType", () -> "testJobType");
+    registry.add("graphql.servlet.exception-handlers-enabled", () -> true);
+    registry.add(
+        "management.endpoints.web.exposure.include", () -> "info,prometheus,loggers,usage-metrics");
+    registry.add(SPRING_THYMELEAF_PREFIX_KEY, () -> SPRING_THYMELEAF_PREFIX_VALUE);
+    registry.add("server.servlet.session.cookie.name", () -> TasklistURIs.COOKIE_JSESSIONID);
+    registry.add(
+        "camunda.tasklist.multiTenancy.enabled", () -> String.valueOf(multiTenancyEnabled));
+  }
+
+  protected String generateCamundaIdentityToken() {
     return generateToken(
-        USER, PASSWORD, "camunda-identity", "integration-tests-secret", "password", null);
+        USER,
+        KEYCLOAK_PASSWORD,
+        "camunda-identity",
+        testContainerUtil.getIdentityClientSecret(),
+        "password",
+        null);
   }
 
-  protected String generateTasklistToken() throws JsonProcessingException {
+  protected String generateTasklistToken() {
     return generateToken(
-        USER, PASSWORD, "camunda-identity", "integration-tests-secret", "password", "tasklist-api");
+        USER,
+        KEYCLOAK_PASSWORD,
+        "camunda-identity",
+        testContainerUtil.getIdentityClientSecret(),
+        "password",
+        "tasklist-api");
   }
 
-  private String generateToken(String clientId, String clientSecret)
-      throws JsonProcessingException {
+  protected String generateTokenForUser(String username) {
+    return generateToken(
+        username,
+        USERS_STORE.get(username),
+        "camunda-identity",
+        testContainerUtil.getIdentityClientSecret(),
+        "password",
+        null);
+  }
+
+  private String generateToken(String clientId, String clientSecret) {
     return generateToken(null, null, clientId, clientSecret, "client_credentials", null);
   }
 
@@ -63,8 +150,7 @@ public abstract class IdentityTester extends TasklistZeebeIntegrationTest {
       final String clientId,
       final String clientSecret,
       final String grantType,
-      final String audience)
-      throws JsonProcessingException {
+      final String audience) {
     final MultiValueMap<String, String> formValues = new LinkedMultiValueMap<>();
     formValues.put("grant_type", Collections.singletonList(grantType));
     formValues.put("client_id", Collections.singletonList(clientId));
@@ -85,19 +171,31 @@ public abstract class IdentityTester extends TasklistZeebeIntegrationTest {
     final String tokenJson =
         restTemplate.postForObject(
             getAuthTokenUrl(), new HttpEntity<>(formValues, httpHeaders), String.class);
-    return objectMapper.readTree(tokenJson).get("access_token").asText();
+    try {
+      return objectMapper.readTree(tokenJson).get("access_token").asText();
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
   }
 
-  protected String getDemoUserId() throws JsonProcessingException {
+  protected String getDemoUserId() {
+    return getUserId(0);
+  }
+
+  protected String getUserId(int index) {
     final String response = getUsers();
-    return objectMapper.readTree(response).get(0).get("id").asText();
+    try {
+      return objectMapper.readTree(response).get(index).get("id").asText();
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
   }
 
-  protected String getUsers() throws JsonProcessingException {
+  protected String getUsers() {
     final HttpHeaders httpHeaders = new HttpHeaders();
     httpHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
     httpHeaders.setBearerAuth(generateCamundaIdentityToken());
-    final HttpEntity<String> entity = new HttpEntity<String>(httpHeaders);
+    final HttpEntity<String> entity = new HttpEntity<>(httpHeaders);
     final RestTemplate restTemplate = new RestTemplate();
     final ResponseEntity<String> response =
         restTemplate.exchange(getUsersUrl(), HttpMethod.GET, entity, String.class);
@@ -110,8 +208,7 @@ public abstract class IdentityTester extends TasklistZeebeIntegrationTest {
       String entityType,
       String resourceKey,
       String resourceType,
-      String permission)
-      throws JsonProcessingException, JSONException {
+      String permission) {
     final JSONObject obj = new JSONObject();
 
     obj.put("entityId", entityId);
@@ -167,6 +264,10 @@ public abstract class IdentityTester extends TasklistZeebeIntegrationTest {
 
   @AfterClass
   public static void stopContainers() {
+    Environment.system().remove("ZEEBE_CLIENT_ID");
+    Environment.system().remove("ZEEBE_CLIENT_SECRET");
+    Environment.system().remove("ZEEBE_TOKEN_AUDIENCE");
+    Environment.system().remove("ZEEBE_AUTHORIZATION_SERVER_URL");
     testContainerUtil.stopIdentity(testContext);
   }
 }

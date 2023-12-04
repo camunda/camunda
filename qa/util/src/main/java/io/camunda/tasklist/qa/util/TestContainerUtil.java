@@ -7,12 +7,16 @@
 package io.camunda.tasklist.qa.util;
 
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.util.RetryOperation;
 import io.camunda.tasklist.util.TasklistPropertiesUtil;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebePort;
 import jakarta.annotation.PreDestroy;
+import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.apache.http.HttpHost;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
@@ -22,6 +26,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
+import org.keycloak.admin.client.Keycloak;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.HealthStatus;
 import org.opensearch.client.opensearch._types.OpenSearchException;
@@ -41,7 +46,6 @@ import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.utility.DockerImageName;
-import org.testcontainers.utility.MountableFile;
 
 @Component
 @Configuration
@@ -64,6 +68,8 @@ public class TestContainerUtil {
   public static final String KEYCLOAK_INIT_TASKLIST_SECRET = "the-cake-is-alive";
   public static final String KEYCLOAK_USERNAME = "demo";
   public static final String KEYCLOAK_PASSWORD = "demo";
+  public static final String KEYCLOAK_USERNAME_2 = "user2";
+  public static final String KEYCLOAK_PASSWORD_2 = "user2";
   public static final String KEYCLOAK_USERS_0_ROLES_0 = "Identity";
   public static final String KEYCLOAK_USERS_0_ROLES_1 = "Tasklist";
   public static final String KEYCLOAK_USERS_0_ROLES_2 = "Operate";
@@ -71,8 +77,9 @@ public class TestContainerUtil {
   public static final String IDENTITY_DATABASE_NAME = "identity";
   public static final String IDENTITY_DATABASE_USERNAME = "identity";
   public static final String IDENTITY_DATABASE_PASSWORD = "t2L@!AqSMg8%I%NmHM";
-  public static final String IDENTITY_CLIENT_SECRET = "integration-tests-secret";
   public static final String PROPERTIES_PREFIX = "camunda.tasklist.";
+  public static final String TENANT_1 = "tenant_1";
+  public static final String TENANT_2 = "tenant_2";
   private static final Logger LOGGER = LoggerFactory.getLogger(TestContainerUtil.class);
   private static final String DOCKER_TASKLIST_IMAGE_NAME = "camunda/tasklist";
   private static final Integer TASKLIST_HTTP_PORT = 8080;
@@ -80,7 +87,11 @@ public class TestContainerUtil {
       "docker.elastic.co/elasticsearch/elasticsearch";
   private static final String DOCKER_OPENSEARCH_IMAGE_NAME = "opensearchproject/opensearch";
   private static final String DOCKER_OPENSEARCH_IMAGE_VERSION = "2.9.0";
-  private Network network;
+  private static final String ZEEBE = "zeebe";
+  private static final String KEYCLOAK_ZEEBE_SECRET = "zecret";
+  private static final String USER_MEMBER_TYPE = "USER";
+  private static final String APPLICATION_MEMBER_TYPE = "APPLICATION";
+  private static final String TASKLIST = "tasklist";
   private ElasticsearchContainer elsContainer;
   private OpensearchContainer osContainer;
   private ZeebeContainer broker;
@@ -89,22 +100,21 @@ public class TestContainerUtil {
   private GenericContainer keycloakContainer;
   private PostgreSQLContainer postgreSQLContainer;
 
+  private Keycloak keycloakClient;
+
   public void startIdentity(TestContext testContext, String version, boolean multiTenancyEnabled) {
-    startKeyCloak(testContext);
     startPostgres(testContext);
+    startKeyCloak(testContext);
 
     LOGGER.info("************ Starting Identity ************");
     identityContainer =
         new GenericContainer<>(String.format("%s:%s", "camunda/identity", version))
             .withExposedPorts(IDENTITY_PORT)
-            .withNetwork(getNetwork());
+            .withNetwork(Network.SHARED)
+            .withNetworkAliases(IDENTITY_NETWORK_ALIAS);
 
     identityContainer.withEnv("SERVER_PORT", String.valueOf(IDENTITY_PORT));
-    identityContainer.withEnv(
-        "KEYCLOAK_URL",
-        String.format(
-            "http://%s:%s/auth",
-            testContext.getInternalKeycloakHost(), testContext.getInternalKeycloakPort()));
+    identityContainer.withEnv("KEYCLOAK_URL", testContext.getInternalKeycloakBaseUrl() + "/auth");
     identityContainer.withEnv(
         "IDENTITY_AUTH_PROVIDER_BACKEND_URL",
         String.format(
@@ -117,16 +127,49 @@ public class TestContainerUtil {
     identityContainer.withEnv("IDENTITY_DATABASE_PASSWORD", IDENTITY_DATABASE_PASSWORD);
     identityContainer.withEnv("KEYCLOAK_INIT_OPERATE_SECRET", KEYCLOAK_INIT_OPERATE_SECRET);
     identityContainer.withEnv("KEYCLOAK_INIT_OPERATE_ROOT_URL", "http://localhost:8081");
-    identityContainer.withEnv("KEYCLOAK_INIT_TASKLIST_SECRET:", KEYCLOAK_INIT_TASKLIST_SECRET);
+    identityContainer.withEnv("KEYCLOAK_INIT_TASKLIST_SECRET", KEYCLOAK_INIT_TASKLIST_SECRET);
     identityContainer.withEnv("KEYCLOAK_INIT_TASKLIST_ROOT_URL", "http://localhost:8082");
+    identityContainer.withEnv("KEYCLOAK_INIT_ZEEBE_SECRET", KEYCLOAK_ZEEBE_SECRET);
+    identityContainer.withEnv("KEYCLOAK_CLIENTS_0_NAME", ZEEBE);
+    identityContainer.withEnv("KEYCLOAK_CLIENTS_0_ID", ZEEBE);
+    identityContainer.withEnv("KEYCLOAK_CLIENTS_0_SECRET", KEYCLOAK_ZEEBE_SECRET);
+    identityContainer.withEnv("KEYCLOAK_CLIENTS_0_TYPE", "M2M");
+    identityContainer.withEnv("KEYCLOAK_CLIENTS_0_PERMISSIONS_0_RESOURCE_SERVER_ID", "zeebe-api");
+    identityContainer.withEnv("KEYCLOAK_CLIENTS_0_PERMISSIONS_0_DEFINITION", "write:*");
     identityContainer.withEnv("KEYCLOAK_USERS_0_USERNAME", KEYCLOAK_USERNAME);
     identityContainer.withEnv("KEYCLOAK_USERS_0_PASSWORD", KEYCLOAK_PASSWORD);
     identityContainer.withEnv("KEYCLOAK_USERS_0_ROLES_0", KEYCLOAK_USERS_0_ROLES_0);
     identityContainer.withEnv("KEYCLOAK_USERS_0_ROLES_1", KEYCLOAK_USERS_0_ROLES_1);
     identityContainer.withEnv("KEYCLOAK_USERS_0_ROLES_2", KEYCLOAK_USERS_0_ROLES_2);
+    identityContainer.withEnv("KEYCLOAK_USERS_1_USERNAME", KEYCLOAK_USERNAME_2);
+    identityContainer.withEnv("KEYCLOAK_USERS_1_PASSWORD", KEYCLOAK_PASSWORD_2);
+    identityContainer.withEnv("KEYCLOAK_USERS_1_ROLES_0", KEYCLOAK_USERS_0_ROLES_0);
+    identityContainer.withEnv("KEYCLOAK_USERS_1_ROLES_1", KEYCLOAK_USERS_0_ROLES_1);
+    identityContainer.withEnv("KEYCLOAK_USERS_1_ROLES_2", KEYCLOAK_USERS_0_ROLES_2);
     identityContainer.withEnv("RESOURCE_PERMISSIONS_ENABLED", "true");
-    identityContainer.withEnv("IDENTITY_CLIENT_SECRET", IDENTITY_CLIENT_SECRET);
     identityContainer.withEnv("MULTITENANCY_ENABLED", String.valueOf(multiTenancyEnabled));
+    if (multiTenancyEnabled) {
+      // tenant1 (members: demo)
+      identityContainer.withEnv("IDENTITY_TENANTS_0_NAME", TENANT_1);
+      identityContainer.withEnv("IDENTITY_TENANTS_0_TENANT_ID", TENANT_1);
+      identityContainer.withEnv("IDENTITY_TENANTS_0_MEMBERS_0_TYPE", USER_MEMBER_TYPE);
+      identityContainer.withEnv("IDENTITY_TENANTS_0_MEMBERS_0_USERNAME", KEYCLOAK_USERNAME);
+      identityContainer.withEnv("IDENTITY_TENANTS_0_MEMBERS_1_TYPE", APPLICATION_MEMBER_TYPE);
+      identityContainer.withEnv("IDENTITY_TENANTS_0_MEMBERS_1_APPLICATION_ID", ZEEBE);
+      identityContainer.withEnv("IDENTITY_TENANTS_0_MEMBERS_2_TYPE", APPLICATION_MEMBER_TYPE);
+      identityContainer.withEnv("IDENTITY_TENANTS_0_MEMBERS_2_APPLICATION_ID", TASKLIST);
+      // tenant2 (members: user2, demo)
+      identityContainer.withEnv("IDENTITY_TENANTS_1_NAME", TENANT_2);
+      identityContainer.withEnv("IDENTITY_TENANTS_1_TENANT_ID", TENANT_2);
+      identityContainer.withEnv("IDENTITY_TENANTS_1_MEMBERS_0_TYPE", USER_MEMBER_TYPE);
+      identityContainer.withEnv("IDENTITY_TENANTS_1_MEMBERS_0_USERNAME", KEYCLOAK_USERNAME_2);
+      identityContainer.withEnv("IDENTITY_TENANTS_1_MEMBERS_1_TYPE", APPLICATION_MEMBER_TYPE);
+      identityContainer.withEnv("IDENTITY_TENANTS_1_MEMBERS_1_APPLICATION_ID", ZEEBE);
+      identityContainer.withEnv("IDENTITY_TENANTS_1_MEMBERS_2_TYPE", APPLICATION_MEMBER_TYPE);
+      identityContainer.withEnv("IDENTITY_TENANTS_1_MEMBERS_2_APPLICATION_ID", TASKLIST);
+      identityContainer.withEnv("IDENTITY_TENANTS_1_MEMBERS_3_TYPE", USER_MEMBER_TYPE);
+      identityContainer.withEnv("IDENTITY_TENANTS_1_MEMBERS_3_USERNAME", KEYCLOAK_USERNAME);
+    }
 
     identityContainer.start();
 
@@ -142,21 +185,30 @@ public class TestContainerUtil {
 
   public void startKeyCloak(TestContext testContext) {
     LOGGER.info("************ Starting Keycloak ************");
-    final String containerPath = "/opt/jboss/keycloak/imports/realm.json";
     keycloakContainer =
-        new GenericContainer<>("jboss/keycloak:16.1.1")
-            .withCommand("-Dkeycloak.profile.feature.upload_scripts=enabled")
-            .withNetwork(getNetwork())
-            .withNetworkAliases(KEYCLOAK_NETWORK_ALIAS)
+        new GenericContainer<>(DockerImageName.parse("bitnami/keycloak:22.0.1"))
             .withExposedPorts(KEYCLOAK_PORT)
-            .withCopyFileToContainer(
-                MountableFile.forClasspathResource("realm.json"), containerPath)
-            .withEnv("KEYCLOAK_USER", "admin")
-            .withEnv("KEYCLOAK_PASSWORD", "admin")
-            .withEnv("KEYCLOAK_IMPORT", containerPath);
-
+            .withEnv(
+                Map.of(
+                    "KEYCLOAK_HTTP_RELATIVE_PATH",
+                    "/auth",
+                    "KEYCLOAK_DATABASE_USER",
+                    IDENTITY_DATABASE_USERNAME,
+                    "KEYCLOAK_DATABASE_PASSWORD",
+                    IDENTITY_DATABASE_PASSWORD,
+                    "KEYCLOAK_DATABASE_NAME",
+                    IDENTITY_DATABASE_NAME,
+                    "KEYCLOAK_ADMIN_USER",
+                    "admin",
+                    "KEYCLOAK_ADMIN_PASSWORD",
+                    "admin",
+                    "KEYCLOAK_DATABASE_HOST",
+                    POSTGRES_NETWORK_ALIAS))
+            .dependsOn(postgreSQLContainer)
+            .withNetwork(Network.SHARED)
+            .withNetworkAliases(KEYCLOAK_NETWORK_ALIAS);
     keycloakContainer.start();
-    testContext.setExternalKeycloakHost(keycloakContainer.getHost());
+    testContext.setExternalKeycloakHost(keycloakContainer.getContainerIpAddress());
     testContext.setExternalKeycloakPort(keycloakContainer.getFirstMappedPort());
     testContext.setInternalKeycloakHost(KEYCLOAK_NETWORK_ALIAS);
     testContext.setInternalKeycloakPort(KEYCLOAK_PORT);
@@ -165,6 +217,14 @@ public class TestContainerUtil {
         "************ Keycloak started on {}:{} ************",
         testContext.getExternalKeycloakHost(),
         testContext.getExternalKeycloakPort());
+
+    keycloakClient =
+        Keycloak.getInstance(
+            testContext.getExternalKeycloakBaseUrl() + "/auth",
+            "master",
+            "admin",
+            "admin",
+            "admin-cli");
   }
 
   public void startPostgres(TestContext testContext) {
@@ -174,7 +234,7 @@ public class TestContainerUtil {
             .withDatabaseName(IDENTITY_DATABASE_NAME)
             .withUsername(IDENTITY_DATABASE_USERNAME)
             .withPassword(IDENTITY_DATABASE_PASSWORD);
-    postgreSQLContainer.withNetwork(getNetwork());
+    postgreSQLContainer.withNetwork(Network.SHARED);
     postgreSQLContainer.withExposedPorts(POSTGRES_PORT);
     postgreSQLContainer.withNetworkAliases(POSTGRES_NETWORK_ALIAS);
     postgreSQLContainer.start();
@@ -195,7 +255,7 @@ public class TestContainerUtil {
         new OpensearchContainer(
                 String.format(
                     "%s:%s", DOCKER_OPENSEARCH_IMAGE_NAME, DOCKER_OPENSEARCH_IMAGE_VERSION))
-            .withNetwork(getNetwork())
+            .withNetwork(Network.SHARED)
             .withEnv("path.repo", "~/")
             .withNetworkAliases(OS_NETWORK_ALIAS)
             .withExposedPorts(OS_PORT);
@@ -203,7 +263,7 @@ public class TestContainerUtil {
         new HostPortWaitStrategy().withStartupTimeout(Duration.ofSeconds(240L)));
     osContainer.start();
 
-    testContext.setNetwork(getNetwork());
+    testContext.setNetwork(Network.SHARED);
     testContext.setExternalOsHost(osContainer.getContainerIpAddress());
     testContext.setExternalOsPort(osContainer.getMappedPort(OS_PORT));
     testContext.setInternalOsHost(OS_NETWORK_ALIAS);
@@ -223,7 +283,7 @@ public class TestContainerUtil {
                     "%s:%s",
                     DOCKER_ELASTICSEARCH_IMAGE_NAME,
                     ElasticsearchClient.class.getPackage().getImplementationVersion()))
-            .withNetwork(getNetwork())
+            .withNetwork(Network.SHARED)
             .withEnv("xpack.security.enabled", "false")
             .withEnv("path.repo", "~/")
             .withNetworkAliases(ELS_NETWORK_ALIAS)
@@ -232,7 +292,7 @@ public class TestContainerUtil {
         new HostPortWaitStrategy().withStartupTimeout(Duration.ofSeconds(240L)));
     elsContainer.start();
 
-    testContext.setNetwork(getNetwork());
+    testContext.setNetwork(Network.SHARED);
     testContext.setExternalElsHost(elsContainer.getContainerIpAddress());
     testContext.setExternalElsPort(elsContainer.getMappedPort(ELS_PORT));
     testContext.setInternalElsHost(ELS_NETWORK_ALIAS);
@@ -242,6 +302,28 @@ public class TestContainerUtil {
         "************ Elasticsearch started on {}:{} ************",
         testContext.getExternalElsHost(),
         testContext.getExternalElsPort());
+  }
+
+  public String getIdentityClientSecret() {
+    try {
+      return RetryOperation.<String>newBuilder()
+          .noOfRetry(5)
+          .retryOn(NotFoundException.class)
+          .delayInterval(3, TimeUnit.SECONDS)
+          .message("Trying to get Identity keycloak client secret")
+          .retryConsumer(
+              () ->
+                  keycloakClient
+                      .realm("camunda-platform")
+                      .clients()
+                      .findByClientId("camunda-identity")
+                      .get(0)
+                      .getSecret())
+          .build()
+          .retry();
+    } catch (Exception ex) {
+      throw new RuntimeException(ex);
+    }
   }
 
   @Retryable(
@@ -441,7 +523,6 @@ public class TestContainerUtil {
     if (keycloakContainer != null) {
       keycloakContainer.close();
     }
-    closeNetwork();
   }
 
   protected void stopZeebe(TestContext testContext) {
@@ -462,29 +543,14 @@ public class TestContainerUtil {
     testContext.setExternalTasklistPort(null);
   }
 
-  public Network getNetwork() {
-    if (network == null) {
-      network = Network.newNetwork();
-    }
-    return network;
-  }
-
   @PreDestroy
   public void stopElasticsearch() {
     stopEls();
-    closeNetwork();
   }
 
   private void stopEls() {
     if (elsContainer != null) {
       elsContainer.stop();
-    }
-  }
-
-  private void closeNetwork() {
-    if (network != null) {
-      network.close();
-      network = null;
     }
   }
 }
