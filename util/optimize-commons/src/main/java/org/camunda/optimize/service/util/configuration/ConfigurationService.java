@@ -904,11 +904,8 @@ public class ConfigurationService {
   }
 
   public Boolean getNotificationEmailCheckServerIdentity() {
-    if (notificationEmailCheckServerIdentity == null) {
-      notificationEmailCheckServerIdentity =
-              configJsonContext.read(ConfigurationServiceConstants.CHECK_SERVER_IDENTITY, Boolean.class);
-    }
-    return notificationEmailCheckServerIdentity;
+    return Optional.ofNullable(notificationEmailCheckServerIdentity)
+            .orElse(configJsonContext.read(ConfigurationServiceConstants.CHECK_SERVER_IDENTITY, Boolean.class));
   }
 
   public String getNotificationEmailCompanyBranding() {
