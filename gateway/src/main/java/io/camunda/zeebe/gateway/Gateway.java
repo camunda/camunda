@@ -7,12 +7,14 @@
  */
 package io.camunda.zeebe.gateway;
 
+import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.zeebe.gateway.health.GatewayHealthManager;
 import io.camunda.zeebe.gateway.health.Status;
 import io.camunda.zeebe.gateway.health.impl.GatewayHealthManagerImpl;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.configuration.AuthenticationCfg.AuthMode;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.camunda.zeebe.gateway.impl.configuration.IdentityCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
@@ -64,6 +66,7 @@ public final class Gateway implements CloseableSilently {
       MonitoringServerInterceptor.create(Configuration.allMetrics());
 
   private final GatewayCfg gatewayCfg;
+  private final IdentityConfiguration identityCfg;
   private final ActorSchedulingService actorSchedulingService;
   private final GatewayHealthManager healthManager;
   private final ClientStreamer<JobActivationProperties> jobStreamer;
@@ -74,15 +77,25 @@ public final class Gateway implements CloseableSilently {
 
   public Gateway(
       final GatewayCfg gatewayCfg,
+      final IdentityConfiguration identityCfg,
       final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService,
       final ClientStreamer<JobActivationProperties> jobStreamer) {
     this.gatewayCfg = gatewayCfg;
+    this.identityCfg = identityCfg;
     this.brokerClient = brokerClient;
     this.actorSchedulingService = actorSchedulingService;
     this.jobStreamer = jobStreamer;
 
     healthManager = new GatewayHealthManagerImpl();
+  }
+
+  public Gateway(
+      final GatewayCfg gatewayCfg,
+      final BrokerClient brokerClient,
+      final ActorSchedulingService actorSchedulingService,
+      final ClientStreamer<JobActivationProperties> jobStreamer) {
+    this(gatewayCfg, null, brokerClient, actorSchedulingService, jobStreamer);
   }
 
   public GatewayCfg getGatewayCfg() {
@@ -321,13 +334,23 @@ public final class Gateway implements CloseableSilently {
     interceptors.add(new ContextInjectingInterceptor(queryApi));
     interceptors.add(MONITORING_SERVER_INTERCEPTOR);
     if (AuthMode.IDENTITY == gatewayCfg.getSecurity().getAuthentication().getMode()) {
-      interceptors.add(
-          new IdentityInterceptor(
-              gatewayCfg.getSecurity().getAuthentication().getIdentity(),
-              gatewayCfg.getMultiTenancy()));
+      final var zeebeIdentityCfg = gatewayCfg.getSecurity().getAuthentication().getIdentity();
+      if (isZeebeIdentityConfigurationNotNull(zeebeIdentityCfg)) {
+        interceptors.add(new IdentityInterceptor(zeebeIdentityCfg, gatewayCfg.getMultiTenancy()));
+        LOG.warn(
+            "These Zeebe configuration properties for Camunda Identity are deprecated! Please use the "
+                + "corresponding Camunda Identity properties or the environment variables defined here: "
+                + "https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/");
+      } else {
+        interceptors.add(new IdentityInterceptor(identityCfg, gatewayCfg.getMultiTenancy()));
+      }
     }
 
     return ServerInterceptors.intercept(service, interceptors);
+  }
+
+  private boolean isZeebeIdentityConfigurationNotNull(final IdentityCfg identityCfg) {
+    return identityCfg.getIssuerBackendUrl() != null || identityCfg.getBaseUrl() != null;
   }
 
   private static final class NamedForkJoinPoolThreadFactory implements ForkJoinWorkerThreadFactory {

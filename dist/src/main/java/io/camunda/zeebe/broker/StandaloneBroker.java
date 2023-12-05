@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.zeebe.broker.shared.BrokerConfiguration;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
@@ -39,6 +40,7 @@ public class StandaloneBroker
   private static final Logger LOGGER = Loggers.SYSTEM_LOGGER;
 
   private final BrokerConfiguration configuration;
+  private final IdentityConfiguration identityConfiguration;
   private final SpringBrokerBridge springBrokerBridge;
   private final ActorScheduler actorScheduler;
   private final AtomixCluster cluster;
@@ -49,11 +51,13 @@ public class StandaloneBroker
   @Autowired
   public StandaloneBroker(
       final BrokerConfiguration configuration,
+      final IdentityConfiguration identityConfiguration,
       final SpringBrokerBridge springBrokerBridge,
       final ActorScheduler actorScheduler,
       final AtomixCluster cluster,
       final BrokerClient brokerClient) {
     this.configuration = configuration;
+    this.identityConfiguration = identityConfiguration;
     this.springBrokerBridge = springBrokerBridge;
     this.actorScheduler = actorScheduler;
     this.cluster = cluster;
@@ -77,7 +81,8 @@ public class StandaloneBroker
   @Override
   public void run(final String... args) throws IOException {
     final SystemContext systemContext =
-        new SystemContext(configuration.config(), actorScheduler, cluster, brokerClient);
+        new SystemContext(
+            configuration.config(), identityConfiguration, actorScheduler, cluster, brokerClient);
 
     broker = new Broker(systemContext, springBrokerBridge);
     broker.start();

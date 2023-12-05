@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system;
 import static io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector.MINIMUM_SNAPSHOT_PERIOD;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
@@ -45,6 +46,7 @@ public final class SystemContext {
       "Expected to have an append batch size maximum which is non negative and smaller then '%d', but was '%s'.";
 
   private final BrokerCfg brokerCfg;
+  private final IdentityConfiguration identityConfiguration;
   private Map<String, String> diagnosticContext;
   private final ActorScheduler scheduler;
   private final AtomixCluster cluster;
@@ -52,14 +54,24 @@ public final class SystemContext {
 
   public SystemContext(
       final BrokerCfg brokerCfg,
+      final IdentityConfiguration identityConfiguration,
       final ActorScheduler scheduler,
       final AtomixCluster cluster,
       final BrokerClient brokerClient) {
     this.brokerCfg = brokerCfg;
+    this.identityConfiguration = identityConfiguration;
     this.scheduler = scheduler;
     this.cluster = cluster;
     this.brokerClient = brokerClient;
     initSystemContext();
+  }
+
+  public SystemContext(
+      final BrokerCfg brokerCfg,
+      final ActorScheduler scheduler,
+      final AtomixCluster cluster,
+      final BrokerClient brokerClient) {
+    this(brokerCfg, null, scheduler, cluster, brokerClient);
   }
 
   private void initSystemContext() {
@@ -248,6 +260,10 @@ public final class SystemContext {
 
   public BrokerCfg getBrokerConfiguration() {
     return brokerCfg;
+  }
+
+  public IdentityConfiguration getIdentityConfiguration() {
+    return identityConfiguration;
   }
 
   public AtomixCluster getCluster() {

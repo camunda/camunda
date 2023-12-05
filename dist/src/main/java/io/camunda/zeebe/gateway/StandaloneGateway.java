@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
@@ -46,6 +47,7 @@ public class StandaloneGateway
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
 
   private final GatewayConfiguration configuration;
+  private final IdentityConfiguration identityConfiguration;
   private final SpringGatewayBridge springGatewayBridge;
   private final ActorScheduler actorScheduler;
   private final AtomixCluster atomixCluster;
@@ -57,12 +59,14 @@ public class StandaloneGateway
   @Autowired
   public StandaloneGateway(
       final GatewayConfiguration configuration,
+      final IdentityConfiguration identityConfiguration,
       final SpringGatewayBridge springGatewayBridge,
       final ActorScheduler actorScheduler,
       final AtomixCluster atomixCluster,
       final BrokerClient brokerClient,
       final JobStreamClient jobStreamClient) {
     this.configuration = configuration;
+    this.identityConfiguration = identityConfiguration;
     this.springGatewayBridge = springGatewayBridge;
     this.actorScheduler = actorScheduler;
     this.atomixCluster = atomixCluster;
@@ -100,7 +104,11 @@ public class StandaloneGateway
 
     gateway =
         new Gateway(
-            configuration.config(), brokerClient, actorScheduler, jobStreamClient.streamer());
+            configuration.config(),
+            identityConfiguration,
+            brokerClient,
+            actorScheduler,
+            jobStreamClient.streamer());
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
     springGatewayBridge.registerClusterStateSupplier(
         () ->

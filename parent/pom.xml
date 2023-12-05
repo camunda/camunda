@@ -60,7 +60,7 @@
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.14</version.httpclient>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.3.3</version.identity>
+    <version.identity>8.4.0-SNAPSHOT</version.identity>
     <version.jackson>2.16.0</version.jackson>
     <version.java-grpc-prometheus>0.6.0</version.java-grpc-prometheus>
     <version.jna>5.13.0</version.jna>
@@ -1130,6 +1130,12 @@
         <version>${version.identity}</version>
       </dependency>
 
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>identity-spring-boot-autoconfigure</artifactId>
+        <version>${version.identity}</version>
+      </dependency>
+
       <!--      JMH Tests   -->
       <dependency>
         <groupId>org.openjdk.jmh</groupId>
@@ -1682,6 +1688,7 @@
                       <exclude>com.auth0:java-jwt</exclude>
                       <exclude>org.jetbrains.kotlin:kotlin-stdlib-common</exclude>
                       <exclude>org.jetbrains.kotlin:kotlin-stdlib-jdk8</exclude>
+                      <exclude>com.squareup.okio:okio</exclude>
                     </excludes>
                   </dependencyConvergence>
                 </rules>

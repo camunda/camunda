@@ -104,6 +104,16 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>identity-sdk</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>identity-spring-boot-autoconfigure</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
@@ -415,6 +425,8 @@
             <dependency>org.openapitools:jackson-databind-nullable</dependency>
             <dependency>io.micrometer:micrometer-registry-prometheus</dependency>
 
+            <!-- Needed for configuring the Identity SDK by providing an IdentityConfiguration bean -->
+            <dependency>io.camunda:identity-spring-boot-autoconfigure</dependency>
           </usedDependencies>
         </configuration>
       </plugin>

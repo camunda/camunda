@@ -82,6 +82,8 @@
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_MODE.
           # mode: none
 
+          # WARNING: These settings are deprecated! Please use the corresponding Camunda Identity
+          # properties or the environment variables defined here: https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/
           # identity:
             # The URL to the auth provider backend, used to validate tokens.
             # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_ISSUERBACKENDURL.

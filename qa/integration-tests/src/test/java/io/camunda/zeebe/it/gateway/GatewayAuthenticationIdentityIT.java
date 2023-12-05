@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
+import io.camunda.identity.sdk.Identity;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
@@ -124,9 +125,9 @@ public class GatewayAuthenticationIdentityIT {
             cfg -> {
               final var auth = cfg.getGateway().getSecurity().getAuthentication();
               auth.setMode(AuthMode.IDENTITY);
-              auth.getIdentity().setIssuerBackendUrl(getKeycloakRealmAddress());
-              auth.getIdentity().setAudience(ZEEBE_CLIENT_AUDIENCE);
             })
+        .withProperty("camunda.identity.issuerBackendUrl", getKeycloakRealmAddress())
+        .withProperty("camunda.identity.audience", ZEEBE_CLIENT_AUDIENCE)
         .start()
         .await(TestHealthProbe.READY);
   }
@@ -245,7 +246,11 @@ public class GatewayAuthenticationIdentityIT {
   }
 
   private static String getIdentityImageTag() {
-    return System.getProperty("identity.docker.image.version", SNAPSHOT_TAG);
+    final String identityVersion = Identity.class.getPackage().getImplementationVersion();
+    final String dockerImageTag =
+        System.getProperty("identity.docker.image.version", identityVersion);
+
+    return dockerImageTag.contains("SNAPSHOT") ? SNAPSHOT_TAG : dockerImageTag;
   }
 
   private static final class InvalidAuthTokenProvider implements CredentialsProvider {

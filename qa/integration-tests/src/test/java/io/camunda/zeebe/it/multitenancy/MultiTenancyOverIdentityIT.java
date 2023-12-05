@@ -75,10 +75,9 @@ import org.testcontainers.utility.DockerImageName;
 @AutoCloseResources
 public class MultiTenancyOverIdentityIT {
 
+  private static final String IDENTITY_SNAPSHOT_TAG = "SNAPSHOT";
   @TempDir private static Path credentialsCacheDir;
-
   private static final String DEFAULT_TENANT = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
-
   private static final String DATABASE_HOST = "postgres";
   private static final int DATABASE_PORT = 5432;
   private static final String DATABASE_USER = "postgres";
@@ -123,11 +122,7 @@ public class MultiTenancyOverIdentityIT {
   @SuppressWarnings("resource")
   private static final GenericContainer<?> IDENTITY =
       new GenericContainer<>(
-              DockerImageName.parse("camunda/identity")
-                  .withTag(
-                      System.getProperty(
-                          "identity.docker.image.version",
-                          Identity.class.getPackage().getImplementationVersion())))
+              DockerImageName.parse("camunda/identity").withTag(getIdentityImageTag()))
           .withImagePullPolicy(
               System.getProperty("identity.docker.image.version", "SNAPSHOT").equals("SNAPSHOT")
                   ? PullPolicy.alwaysPull()
@@ -206,28 +201,16 @@ public class MultiTenancyOverIdentityIT {
             gateway -> {
               gateway.getMultiTenancy().setEnabled(true);
               gateway.getSecurity().getAuthentication().setMode(AuthMode.IDENTITY);
-              gateway
-                  .getSecurity()
-                  .getAuthentication()
-                  .getIdentity()
-                  .setBaseUrl(
-                      "http://%s:%d".formatted(IDENTITY.getHost(), IDENTITY.getMappedPort(8080)));
-              gateway
-                  .getSecurity()
-                  .getAuthentication()
-                  .getIdentity()
-                  .setIssuerBackendUrl(
-                      "http://%s:%d%s"
-                          .formatted(
-                              KEYCLOAK.getHost(),
-                              KEYCLOAK.getMappedPort(8080),
-                              KEYCLOAK_PATH_CAMUNDA_REALM));
-              gateway
-                  .getSecurity()
-                  .getAuthentication()
-                  .getIdentity()
-                  .setAudience(ZEEBE_CLIENT_AUDIENCE);
             })
+        .withProperty(
+            "camunda.identity.baseUrl",
+            "http://%s:%d".formatted(IDENTITY.getHost(), IDENTITY.getMappedPort(8080)))
+        .withProperty(
+            "camunda.identity.issuerBackendUrl",
+            "http://%s:%d%s"
+                .formatted(
+                    KEYCLOAK.getHost(), KEYCLOAK.getMappedPort(8080), KEYCLOAK_PATH_CAMUNDA_REALM))
+        .withProperty("camunda.identity.audience", ZEEBE_CLIENT_AUDIENCE)
         .withRecordingExporter(true)
         .start()
         .await(TestHealthProbe.READY);
@@ -1330,6 +1313,22 @@ public class MultiTenancyOverIdentityIT {
                       ON CONFLICT DO NOTHING"""
                       .formatted(tenantId, accessRuleId)));
     }
+  }
+
+  /**
+   * Helper method to determine the Docker image tag for the Camunda Identity version used in Zeebe.
+   * If a SNAPSHOT version of Identity is used, the method will return 'SNAPSHOT' instead of the
+   * format '8.X.Y-SNAPSHOT', as Identity doesn't provide versioned snapshots of their Docker
+   * images.
+   *
+   * @return a String specifying the Identity Docker image tag
+   */
+  private static String getIdentityImageTag() {
+    final String identityVersion = Identity.class.getPackage().getImplementationVersion();
+    final String dockerImageTag =
+        System.getProperty("identity.docker.image.version", identityVersion);
+
+    return dockerImageTag.contains("SNAPSHOT") ? IDENTITY_SNAPSHOT_TAG : dockerImageTag;
   }
 
   /**
