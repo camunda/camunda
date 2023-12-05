@@ -113,15 +113,15 @@ public class AppendResponse extends AbstractRaftResponse {
 
   @Override
   public boolean equals(final Object object) {
-    if (object instanceof final AppendResponse response) {
-      return response.status == status
-          && response.term == term
-          && response.succeeded == succeeded
-          && response.lastLogIndex == lastLogIndex
-          && response.lastSnapshotIndex == lastSnapshotIndex
-          && response.configurationIndex == configurationIndex;
+    if (!(object instanceof final AppendResponse response)) {
+      return false;
     }
-    return false;
+    return response.status == status
+        && response.term == term
+        && response.succeeded == succeeded
+        && response.lastLogIndex == lastLogIndex
+        && response.lastSnapshotIndex == lastSnapshotIndex
+        && response.configurationIndex == configurationIndex;
   }
 
   @Override
