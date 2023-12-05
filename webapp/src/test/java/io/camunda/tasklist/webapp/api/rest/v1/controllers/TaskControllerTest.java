@@ -568,7 +568,7 @@ class TaskControllerTest {
     when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
     when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
     when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
-    when(taskService.getTasks(searchQuery)).thenReturn(List.of(providedTask));
+    when(taskService.getTasks(searchQuery, emptyList())).thenReturn(List.of(providedTask));
     when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
 
     // When
@@ -626,7 +626,7 @@ class TaskControllerTest {
     when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
     when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
     when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
-    when(taskService.getTasks(searchQuery)).thenReturn(List.of(providedTask));
+    when(taskService.getTasks(searchQuery, emptyList())).thenReturn(List.of(providedTask));
     when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
 
     // When
@@ -686,7 +686,7 @@ class TaskControllerTest {
     when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
     when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
     when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
-    when(taskService.getTasks(searchQuery)).thenReturn(List.of(providedTask));
+    when(taskService.getTasks(searchQuery, emptyList())).thenReturn(List.of(providedTask));
     when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
 
     // When
@@ -724,7 +724,7 @@ class TaskControllerTest {
     when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
     when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
     when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
-    when(taskService.getTasks(searchQuery)).thenReturn(emptyList());
+    when(taskService.getTasks(searchQuery, emptyList())).thenReturn(emptyList());
 
     // When
     final var responseAsString =
