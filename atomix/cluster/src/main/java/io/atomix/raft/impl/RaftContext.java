@@ -104,6 +104,11 @@ import org.slf4j.MDC;
  */
 public class RaftContext implements AutoCloseable, HealthMonitorable {
 
+  /**
+   * Configuration index returned when no configuration is available, i.e. configuration is null .
+   */
+  private static final long NO_CONFIGURATION_INDEX = -1L;
+
   protected final String name;
   protected final ThreadContext threadContext;
   protected final ClusterMembershipService membershipService;
@@ -1265,7 +1270,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    */
   public long getCurrentConfigurationIndex() {
     final var configuration = cluster.getConfiguration();
-    return configuration != null ? configuration.index() : -1L;
+    return configuration != null ? configuration.index() : NO_CONFIGURATION_INDEX;
   }
 
   public boolean isRunning() {
