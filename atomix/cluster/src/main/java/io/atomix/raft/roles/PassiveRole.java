@@ -49,13 +49,16 @@ import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
+import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /** Passive state. */
 public class PassiveRole extends InactiveRole {
 
+  private final ThrottledLogger throttledLogger = new ThrottledLogger(log, Duration.ofSeconds(5));
   private final SnapshotReplicationMetrics snapshotReplicationMetrics;
   private long pendingSnapshotStartTimestamp;
   private ReceivedSnapshot pendingSnapshot;
@@ -439,7 +442,7 @@ public class PassiveRole extends InactiveRole {
   private boolean checkConfiguration(
       final InternalAppendRequest request, final CompletableFuture<AppendResponse> future) {
     if (raft.getCurrentConfigurationIndex() == -1) {
-      log.debug("Rejected {}: No current configuration", request);
+      throttledLogger.warn("Rejected {}: No current configuration", request);
       return failAppend(raft.getLog().getLastIndex(), future);
     } else {
       return true;
