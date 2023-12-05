@@ -31,6 +31,7 @@ public class TaskQuery {
   private DateFilter followUpDate;
   private DateFilter dueDate;
   private TaskOrderBy[] sort;
+  private TaskByCandidateUserOrGroup taskByCandidateUserOrGroups;
 
   public TaskState getState() {
     return state;
@@ -194,6 +195,16 @@ public class TaskQuery {
     return this;
   }
 
+  public TaskByCandidateUserOrGroup getTaskByCandidateUserOrGroups() {
+    return taskByCandidateUserOrGroups;
+  }
+
+  public TaskQuery setTaskByCandidateUserOrGroups(
+      TaskByCandidateUserOrGroup taskByCandidateUserOrGroups) {
+    this.taskByCandidateUserOrGroups = taskByCandidateUserOrGroups;
+    return this;
+  }
+
   public TaskQuery createCopy() {
     return new TaskQuery()
         .setAssigned(this.assigned)
@@ -207,7 +218,8 @@ public class TaskQuery {
         .setState(this.state)
         .setTaskVariables(this.taskVariables)
         .setTenantIds(this.tenantIds)
-        .setCandidateGroup(this.candidateGroup);
+        .setCandidateGroup(this.candidateGroup)
+        .setTaskByCandidateUserOrGroups(this.taskByCandidateUserOrGroups);
   }
 
   @Override
@@ -228,6 +240,7 @@ public class TaskQuery {
         && Objects.equals(candidateUser, taskQuery.candidateUser)
         && Objects.equals(processDefinitionId, taskQuery.processDefinitionId)
         && Objects.equals(processInstanceId, taskQuery.processInstanceId)
+        && Objects.equals(taskByCandidateUserOrGroups, taskQuery.taskByCandidateUserOrGroups)
         && Arrays.equals(taskVariables, taskQuery.taskVariables)
         && Arrays.equals(tenantIds, taskQuery.tenantIds)
         && Arrays.equals(searchAfter, taskQuery.searchAfter)
@@ -249,6 +262,7 @@ public class TaskQuery {
             taskDefinitionId,
             candidateGroup,
             candidateUser,
+            taskByCandidateUserOrGroups,
             processDefinitionId,
             processInstanceId,
             pageSize,
@@ -273,6 +287,7 @@ public class TaskQuery {
         .add("taskDefinitionId='" + taskDefinitionId + "'")
         .add("candidateGroup='" + candidateGroup + "'")
         .add("candidateUser='" + candidateUser + "'")
+        .add("candidateUserAndGroups='" + taskByCandidateUserOrGroups + "'")
         .add("processDefinitionId='" + processDefinitionId + "'")
         .add("processInstanceId='" + processInstanceId + "'")
         .add("pageSize=" + pageSize)

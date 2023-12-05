@@ -384,6 +384,14 @@ public class TaskStoreOpenSearch implements TaskStore {
               t.field(TaskTemplate.CANDIDATE_USERS).value(FieldValue.of(query.getCandidateUser())));
     }
 
+    Query.Builder candidateGroupsAndUserByCurrentUserQ = null;
+    if (query.getTaskByCandidateUserOrGroups() != null) {
+      candidateGroupsAndUserByCurrentUserQ =
+          returnUserGroupBoolQuery(
+              List.of(query.getTaskByCandidateUserOrGroups().getUserGroups()),
+              query.getTaskByCandidateUserOrGroups().getUserName());
+    }
+
     Query.Builder processInstanceIdQ = null;
     if (query.getProcessInstanceId() != null) {
       processInstanceIdQ = new Query.Builder();
@@ -429,6 +437,7 @@ public class TaskStoreOpenSearch implements TaskStore {
             taskDefinitionQ,
             candidateGroupQ,
             candidateUserQ,
+            candidateGroupsAndUserByCurrentUserQ,
             processInstanceIdQ,
             processDefinitionIdQ,
             followUpQ,
@@ -440,6 +449,48 @@ public class TaskStoreOpenSearch implements TaskStore {
     final Query.Builder result = new Query.Builder();
     result.constantScore(cs -> cs.filter(jointQ.build()));
     return result;
+  }
+
+  private Query.Builder returnUserGroupBoolQuery(List<String> userGroups, String userName) {
+    final Query.Builder userNameAssigneeQ = new Query.Builder();
+    userNameAssigneeQ.term(t -> t.field(TaskTemplate.ASSIGNEE).value(FieldValue.of(userName)));
+
+    final Query.Builder userNameCandidateUserQ = new Query.Builder();
+    userNameCandidateUserQ.term(
+        t -> t.field(TaskTemplate.CANDIDATE_USERS).value(FieldValue.of(userName)));
+
+    Query.Builder userNameCandidateGroupsQ = null;
+    for (String group : userGroups) {
+      final Query.Builder singleUserNameCandidateGroupQ = new Query.Builder();
+      singleUserNameCandidateGroupQ.term(
+          t -> t.field(TaskTemplate.CANDIDATE_GROUPS).value(FieldValue.of(group)));
+
+      if (userNameCandidateGroupsQ == null) {
+        userNameCandidateGroupsQ = singleUserNameCandidateGroupQ;
+      } else {
+        userNameCandidateGroupsQ =
+            OpenSearchUtil.joinQueryBuilderWithOr(
+                userNameCandidateGroupsQ, singleUserNameCandidateGroupQ);
+      }
+    }
+
+    final Query.Builder shouldNotContainCandidateUserQ = new Query.Builder();
+    shouldNotContainCandidateUserQ.bool(
+        b -> b.mustNot(mn -> mn.exists(e -> e.field(TaskTemplate.CANDIDATE_USERS))));
+
+    final Query.Builder shouldNotContainCandidateGroupQ = new Query.Builder();
+    shouldNotContainCandidateGroupQ.bool(
+        b -> b.mustNot(mn -> mn.exists(e -> e.field(TaskTemplate.CANDIDATE_GROUPS))));
+
+    final Query.Builder shouldNotContainCandidateUserAndGroupQ =
+        OpenSearchUtil.joinQueryBuilderWithAnd(
+            shouldNotContainCandidateUserQ, shouldNotContainCandidateGroupQ);
+
+    return OpenSearchUtil.joinQueryBuilderWithOr(
+        userNameAssigneeQ,
+        userNameCandidateUserQ,
+        userNameCandidateGroupsQ,
+        shouldNotContainCandidateUserAndGroupQ);
   }
 
   /**

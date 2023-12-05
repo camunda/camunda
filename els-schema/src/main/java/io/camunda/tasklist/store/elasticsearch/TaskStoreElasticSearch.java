@@ -369,6 +369,14 @@ public class TaskStoreElasticSearch implements TaskStore {
       candidateUserQ = termQuery(TaskTemplate.CANDIDATE_USERS, query.getCandidateUser());
     }
 
+    QueryBuilder candidateGroupsAndUserByCurrentUserQ = null;
+    if (query.getTaskByCandidateUserOrGroups() != null) {
+      candidateGroupsAndUserByCurrentUserQ =
+          returnUserGroupBoolQuery(
+              List.of(query.getTaskByCandidateUserOrGroups().getUserGroups()),
+              query.getTaskByCandidateUserOrGroups().getUserName());
+    }
+
     QueryBuilder processInstanceIdQ = null;
     if (query.getProcessInstanceId() != null) {
       processInstanceIdQ = termQuery(PROCESS_INSTANCE_ID, query.getProcessInstanceId());
@@ -405,6 +413,7 @@ public class TaskStoreElasticSearch implements TaskStore {
             taskDefinitionQ,
             candidateGroupQ,
             candidateUserQ,
+            candidateGroupsAndUserByCurrentUserQ,
             processInstanceIdQ,
             processDefinitionIdQ,
             followUpQ,
@@ -683,6 +692,27 @@ public class TaskStoreElasticSearch implements TaskStore {
                   return set1;
                 })
             .orElse(Collections.emptySet()));
+  }
+
+  private BoolQueryBuilder returnUserGroupBoolQuery(List<String> userGroups, String userName) {
+    final SearchRequest searchRequest = new SearchRequest(taskTemplate.getFullQualifiedName());
+    final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+
+    // Additional clause for TaskTemplate.ASSIGNEE
+    boolQuery.should(QueryBuilders.termQuery(TaskTemplate.ASSIGNEE, userName));
+
+    userGroups.forEach(
+        group -> boolQuery.should(QueryBuilders.termsQuery(TaskTemplate.CANDIDATE_GROUPS, group)));
+
+    boolQuery.should(QueryBuilders.termQuery(TaskTemplate.CANDIDATE_USERS, userName));
+
+    // Consider the tasks that have no candidate users and groups
+    boolQuery.should(
+        QueryBuilders.boolQuery()
+            .mustNot(QueryBuilders.existsQuery(TaskTemplate.CANDIDATE_USERS))
+            .mustNot(QueryBuilders.existsQuery(TaskTemplate.CANDIDATE_GROUPS)));
+
+    return boolQuery;
   }
 
   private List<String> retrieveTaskIdByProcessInstanceId(

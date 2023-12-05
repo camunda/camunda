@@ -8,6 +8,7 @@ package io.camunda.tasklist.webapp.graphql.entity;
 
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.queries.DateFilter;
+import io.camunda.tasklist.queries.TaskByCandidateUserOrGroup;
 import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskOrderBy;
 import io.camunda.tasklist.queries.TaskQuery;
@@ -36,6 +37,7 @@ public class TaskQueryDTO {
   private DateFilter followUpDate;
   private DateFilter dueDate;
   private TaskOrderBy[] sort;
+  private TaskByCandidateUserOrGroup taskByCandidateUserOrGroup;
 
   public TaskState getState() {
     return state;
@@ -199,6 +201,16 @@ public class TaskQueryDTO {
     return this;
   }
 
+  public TaskByCandidateUserOrGroup getTaskByCandidateUserOrGroup() {
+    return taskByCandidateUserOrGroup;
+  }
+
+  public TaskQueryDTO setTaskByCandidateUserOrGroup(
+      TaskByCandidateUserOrGroup taskByCandidateUserOrGroup) {
+    this.taskByCandidateUserOrGroup = taskByCandidateUserOrGroup;
+    return this;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -218,6 +230,7 @@ public class TaskQueryDTO {
         && Objects.equals(processInstanceId, that.processInstanceId)
         && Objects.equals(followUpDate, that.followUpDate)
         && Objects.equals(dueDate, that.dueDate)
+        && Objects.equals(taskByCandidateUserOrGroup, that.taskByCandidateUserOrGroup)
         && Arrays.equals(taskVariables, that.taskVariables)
         && Arrays.equals(tenantIds, that.tenantIds)
         && Arrays.equals(sort, that.sort)
@@ -248,6 +261,7 @@ public class TaskQueryDTO {
     result = 31 * result + Arrays.hashCode(searchAfterOrEqual);
     result = 31 * result + Arrays.hashCode(searchBefore);
     result = 31 * result + Arrays.hashCode(searchBeforeOrEqual);
+    result = 31 * result + Objects.hashCode(taskByCandidateUserOrGroup);
     return result;
   }
 
@@ -259,6 +273,7 @@ public class TaskQueryDTO {
         .setTaskDefinitionId(this.taskDefinitionId)
         .setCandidateGroup(this.candidateGroup)
         .setCandidateUser(this.candidateUser)
+        .setTaskByCandidateUserOrGroups(this.taskByCandidateUserOrGroup)
         .setProcessDefinitionId(this.processDefinitionId)
         .setProcessInstanceId(this.processInstanceId)
         .setPageSize(this.pageSize)

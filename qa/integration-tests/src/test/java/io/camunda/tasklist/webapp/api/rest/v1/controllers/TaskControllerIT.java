@@ -7,15 +7,18 @@
 package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
 import static io.camunda.tasklist.util.assertions.CustomAssertions.assertThat;
+import static java.util.Collections.emptyList;
 import static org.apache.commons.lang3.RandomStringUtils.randomNumeric;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.TaskState;
+import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.util.MockMvcHelper;
 import io.camunda.tasklist.util.TasklistTester;
@@ -34,17 +37,24 @@ import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
+import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import java.util.List;
 import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InjectMocks;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 public class TaskControllerIT extends TasklistZeebeIntegrationTest {
+
+  @InjectMocks private IdentityProperties identityProperties;
+
+  @MockBean private IdentityAuthorizationService identityAuthorizationService;
 
   @Autowired private WebApplicationContext context;
 
@@ -1196,6 +1206,145 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
+  public void searchTasksWithAccessRestrictionsShouldReturnAdminsTasks() {
+    // given
+    final String bpmnProcessId = "testProcess";
+    final String flowNodeBpmnId = "taskA_".concat(UUID.randomUUID().toString());
+    final int numberOfInstances = 3;
+
+    createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "Admins");
+    createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "Users");
+
+    // Mock identity service behaviour
+    identityProperties.setUserAccessRestrictionsEnabled(true);
+    tasklistProperties.setIdentity(identityProperties);
+    when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
+
+    // when
+    final var result = mockMvcHelper.doRequest(post(TasklistURIs.TASKS_URL_V1.concat("/search")));
+
+    // then
+    assertThat(result)
+        .hasOkHttpStatus()
+        .hasApplicationJsonContentType()
+        .extractingListContent(objectMapper, TaskSearchResponse.class)
+        .hasSize(numberOfInstances)
+        .allSatisfy(
+            task -> {
+              assertThat(task.getName()).isEqualTo(flowNodeBpmnId);
+              assertThat(task.getProcessName()).isEqualTo(bpmnProcessId);
+              assertThat(task.getTaskState()).isEqualTo(TaskState.CREATED);
+              assertThat(task.getAssignee()).isNull();
+            });
+  }
+
+  @Test
+  public void searchTasksWithAccessRestrictionsShouldReturnAdminsAndUserTasks() {
+    // given
+    final String bpmnProcessId = "testProcess";
+    final String flowNodeBpmnId = "taskA_".concat(UUID.randomUUID().toString());
+    final int numberOfInstancesAdmin = 3;
+    final int numberOfInstancesUser = 4;
+
+    createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstancesAdmin, "Admins");
+    createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstancesUser, "Users");
+
+    // Mock identity service behaviour
+    identityProperties.setUserAccessRestrictionsEnabled(true);
+    tasklistProperties.setIdentity(identityProperties);
+    when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins", "Users"));
+
+    // when
+    final var result = mockMvcHelper.doRequest(post(TasklistURIs.TASKS_URL_V1.concat("/search")));
+
+    // then
+    assertThat(result)
+        .hasOkHttpStatus()
+        .hasApplicationJsonContentType()
+        .extractingListContent(objectMapper, TaskSearchResponse.class)
+        .hasSize(numberOfInstancesAdmin + numberOfInstancesUser)
+        .allSatisfy(
+            task -> {
+              assertThat(task.getName()).isEqualTo(flowNodeBpmnId);
+              assertThat(task.getProcessName()).isEqualTo(bpmnProcessId);
+              assertThat(task.getTaskState()).isEqualTo(TaskState.CREATED);
+              assertThat(task.getAssignee()).isNull();
+            });
+  }
+
+  @Test
+  public void searchTasksWithAccessRestrictionsShouldReturnOnlyTasksForAllUsers() {
+    // given
+    final String bpmnProcessId = "testProcess";
+    final String flowNodeBpmnId = "taskA_".concat(UUID.randomUUID().toString());
+    final int numberOfInstancesAdmin = 3;
+    final int numberOfInstancesUser = 2;
+    final int numberOfInstancesAllUsers = 1;
+
+    createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstancesAdmin, "Admins");
+    createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstancesUser, "Users");
+    createTask(bpmnProcessId, flowNodeBpmnId, numberOfInstancesAllUsers);
+
+    // Mock identity service behaviour
+    identityProperties.setUserAccessRestrictionsEnabled(true);
+    tasklistProperties.setIdentity(identityProperties);
+    when(identityAuthorizationService.getUserGroups()).thenReturn(emptyList());
+
+    // when
+    final var result = mockMvcHelper.doRequest(post(TasklistURIs.TASKS_URL_V1.concat("/search")));
+
+    // then
+    assertThat(result)
+        .hasOkHttpStatus()
+        .hasApplicationJsonContentType()
+        .extractingListContent(objectMapper, TaskSearchResponse.class)
+        .hasSize(numberOfInstancesAllUsers)
+        .allSatisfy(
+            task -> {
+              assertThat(task.getName()).isEqualTo(flowNodeBpmnId);
+              assertThat(task.getProcessName()).isEqualTo(bpmnProcessId);
+              assertThat(task.getTaskState()).isEqualTo(TaskState.CREATED);
+              assertThat(task.getAssignee()).isNull();
+            });
+  }
+
+  @Test
+  public void searchTasksWithAccessRestrictionsShouldReturnOnlyTaskForCandidateUserAndGroupAdmin() {
+    // given
+    final String bpmnProcessId = "testProcess";
+    final String flowNodeBpmnId = "taskA_".concat(UUID.randomUUID().toString());
+    final int numberOfInstancesAdmin = 3;
+    final int numberOfInstancesUser = 2;
+    final int numberOfInstancesCandidateUser = 2;
+
+    createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstancesAdmin, "Admins");
+    createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstancesUser, "Users");
+    createTaskWithCandidateUser(bpmnProcessId, flowNodeBpmnId, numberOfInstancesUser, "Demo User");
+
+    // Mock identity service behaviour
+    identityProperties.setUserAccessRestrictionsEnabled(true);
+    tasklistProperties.setIdentity(identityProperties);
+    when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
+
+    // when
+    final var result = mockMvcHelper.doRequest(post(TasklistURIs.TASKS_URL_V1.concat("/search")));
+
+    // then
+    assertThat(result)
+        .hasOkHttpStatus()
+        .hasApplicationJsonContentType()
+        .extractingListContent(objectMapper, TaskSearchResponse.class)
+        .hasSize(numberOfInstancesCandidateUser + numberOfInstancesAdmin)
+        .allSatisfy(
+            task -> {
+              assertThat(task.getName()).isEqualTo(flowNodeBpmnId);
+              assertThat(task.getProcessName()).isEqualTo(bpmnProcessId);
+              assertThat(task.getTaskState()).isEqualTo(TaskState.CREATED);
+              assertThat(task.getAssignee()).isNull();
+            });
+  }
+
+  @Test
   public void searchTaskVariablesWhenTaskIsNotExistThen404ErrorExpected() {
     // given
     final var randomTaskId = randomNumeric(16);
@@ -1234,6 +1383,31 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
         .processIsDeployed()
         .and()
         .startProcessInstance(bpmnProcessId, payload)
+        .then()
+        .taskIsCreated(flowNodeBpmnId);
+  }
+
+  private TasklistTester createTaskWithCandidateGroup(
+      String bpmnProcessId, String flowNodeBpmnId, int numberOfInstances, String candidateGroup) {
+    return tester
+        .createAndDeploySimpleProcessWithCandidateGroup(
+            bpmnProcessId, flowNodeBpmnId, candidateGroup)
+        .then()
+        .processIsDeployed()
+        .and()
+        .startProcessInstances(bpmnProcessId, numberOfInstances)
+        .then()
+        .taskIsCreated(flowNodeBpmnId);
+  }
+
+  private TasklistTester createTaskWithCandidateUser(
+      String bpmnProcessId, String flowNodeBpmnId, int numberOfInstances, String candidateUser) {
+    return tester
+        .createAndDeploySimpleProcessWithCandidateUser(bpmnProcessId, flowNodeBpmnId, candidateUser)
+        .then()
+        .processIsDeployed()
+        .and()
+        .startProcessInstances(bpmnProcessId, numberOfInstances)
         .then()
         .taskIsCreated(flowNodeBpmnId);
   }

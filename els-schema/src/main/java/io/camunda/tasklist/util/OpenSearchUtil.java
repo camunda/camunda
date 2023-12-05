@@ -168,6 +168,22 @@ public abstract class OpenSearchUtil {
     }
   }
 
+  public static Query.Builder joinQueryBuilderWithOr(ObjectBuilder... queries) {
+    final List<ObjectBuilder> notNullQueries = throwAwayNullElements(queries);
+    final Query.Builder queryBuilder = new Query.Builder();
+    switch (notNullQueries.size()) {
+      case 0:
+        return null;
+      default:
+        final BoolQuery.Builder boolQ = boolQuery();
+        for (ObjectBuilder query : notNullQueries) {
+          boolQ.should((Query) query.build());
+        }
+        queryBuilder.bool(boolQ.build());
+        return queryBuilder;
+    }
+  }
+
   public static <T> T fromSearchHit(
       String searchHitString, ObjectMapper objectMapper, Class<T> clazz) {
     final T entity;

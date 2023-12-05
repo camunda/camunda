@@ -8,6 +8,7 @@ package io.camunda.tasklist.property;
 
 public class IdentityProperties {
   public static final String ALL_RESOURCES = "*";
+  public static final String FULL_GROUP_ACCESS = "";
   private String issuerUrl;
   private String baseUrl;
   private String issuerBackendUrl;
@@ -16,6 +17,7 @@ public class IdentityProperties {
   private String clientSecret;
   private String audience;
   private boolean resourcePermissionsEnabled = false;
+  private boolean userAccessRestrictionsEnabled = true;
 
   public String getIssuerUrl() {
     return issuerUrl;
@@ -67,6 +69,16 @@ public class IdentityProperties {
 
   public String getBaseUrl() {
     return baseUrl;
+  }
+
+  public boolean isUserAccessRestrictionsEnabled() {
+    return userAccessRestrictionsEnabled;
+  }
+
+  public IdentityProperties setUserAccessRestrictionsEnabled(
+      boolean userAccessRestrictionsEnabled) {
+    this.userAccessRestrictionsEnabled = userAccessRestrictionsEnabled;
+    return this;
   }
 
   public IdentityProperties setBaseUrl(String baseUrl) {

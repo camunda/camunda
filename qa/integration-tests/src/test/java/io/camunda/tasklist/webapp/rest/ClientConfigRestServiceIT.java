@@ -81,6 +81,7 @@ public class ClientConfigRestServiceIT {
                 + "\"stage\":\"stage\","
                 + "\"mixpanelToken\":\"i-am-a-token\","
                 + "\"mixpanelAPIHost\":\"https://fake.mixpanel.com\","
-                + "\"isResourcePermissionsEnabled\":false};");
+                + "\"isResourcePermissionsEnabled\":false,"
+                + "\"isUserAccessRestrictionsEnabled\":true};");
   }
 }

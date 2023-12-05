@@ -59,6 +59,23 @@ public class IdentityAuthorizationService {
     return result;
   }
 
+  public List<String> getUserGroups() {
+    final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication instanceof IdentityAuthentication) {
+      final IdentityAuthentication identityAuthentication = (IdentityAuthentication) authentication;
+      final Identity identity = SpringContextHolder.getBean(Identity.class);
+      return identity
+          .authentication()
+          .verifyToken(identityAuthentication.getTokens().getAccessToken())
+          .getUserDetails()
+          .getGroups();
+    }
+
+    final List<String> result = new ArrayList<String>();
+    result.add(IdentityProperties.FULL_GROUP_ACCESS);
+    return result;
+  }
+
   public boolean isAllowedToStartProcess(String processDefinitionKey) {
     return !Collections.disjoint(
         getProcessDefinitionsFromAuthorization(),
