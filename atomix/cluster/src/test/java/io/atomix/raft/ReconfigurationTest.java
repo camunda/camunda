@@ -26,7 +26,10 @@ import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.net.Address;
+import io.camunda.zeebe.util.FileUtil;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -204,6 +207,40 @@ final class ReconfigurationTest {
       // then - m3 can join again
       m3.shutdown().join();
       m3.join(id1, id2).join();
+    }
+
+    @Test
+    void canJoinAgainAfterDataloss(@TempDir final Path tmp) throws IOException {
+      // given - a cluster with 3 members
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+      final var id3 = MemberId.from("3");
+
+      final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
+      final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
+      final var m3 = createServer(tmp, createMembershipService(id3, id2, id1));
+
+      // when - m3 joined once and then joins again after dataloss
+      CompletableFuture.allOf(m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3)).join();
+      m3.join(id1, id2).join();
+      m3.shutdown().join();
+      servers.remove(m3);
+
+      FileUtil.deleteFolder(tmp.resolve(id3.toString()));
+      Files.createDirectory(tmp.resolve(id3.toString()));
+      final var recreatedM3 = createServer(tmp, createMembershipService(id3, id2, id1));
+      recreatedM3.join(id1, id2).join();
+
+      // then - leader can append on m3
+      final var leader = awaitLeader(m1, m2);
+      final var index = appendEntry(leader).write().join();
+      Awaitility.await("All members have committed the entry")
+          .untilAsserted(
+              () ->
+                  assertThat(List.of(m1, m2, recreatedM3))
+                      .allSatisfy(
+                          server ->
+                              assertThat(server.getContext().getCommitIndex()).isEqualTo(index)));
     }
 
     @Test
