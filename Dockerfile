@@ -151,19 +151,19 @@ VOLUME /tmp
 VOLUME ${ZB_HOME}/data
 VOLUME ${ZB_HOME}/logs
 
-RUN groupadd -g 1000 zeebe && \
-    adduser -u 1000 zeebe --system --ingroup zeebe && \
+RUN groupadd --gid 1001 camunda && \
+    adduser --system --gid 1001 --uid 1001 --home ${ZB_HOME} camunda && \
     chmod g=u /etc/passwd && \
     # These directories are to be mounted by users, eagerly creating them and setting ownership
     # helps to avoid potential permission issues due to default volume ownership.
     mkdir ${ZB_HOME}/data && \
     mkdir ${ZB_HOME}/logs && \
-    chown -R 1000:0 ${ZB_HOME} && \
+    chown -R 1001:0 ${ZB_HOME} && \
     chmod -R 0775 ${ZB_HOME}
 
-COPY --link --chown=1000:0 docker/utils/startup.sh /usr/local/bin/startup.sh
-COPY --from=dist --chown=1000:0 /zeebe/camunda-zeebe ${ZB_HOME}
+COPY --link --chown=1001:0 docker/utils/startup.sh /usr/local/bin/startup.sh
+COPY --from=dist --chown=1001:0 /zeebe/camunda-zeebe ${ZB_HOME}
 
-USER zeebe:zeebe
+USER 1001:1001
 
 ENTRYPOINT ["tini", "--", "/usr/local/bin/startup.sh"]
