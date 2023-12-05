@@ -7,14 +7,19 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
+import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public final class UserTaskClient {
   private static final long DEFAULT_KEY = -1L;
@@ -58,6 +63,26 @@ public final class UserTaskClient {
     return this;
   }
 
+  public UserTaskClient withVariables(final String variables) {
+    userTaskRecord.setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variables)));
+    return this;
+  }
+
+  public UserTaskClient withVariables(final DirectBuffer variables) {
+    userTaskRecord.setVariables(variables);
+    return this;
+  }
+
+  public UserTaskClient withVariable(final String key, final Object value) {
+    userTaskRecord.setVariables(MsgPackUtil.asMsgPack(key, value));
+    return this;
+  }
+
+  public UserTaskClient withVariables(final Map<String, Object> variables) {
+    userTaskRecord.setVariables(MsgPackUtil.asMsgPack(variables));
+    return this;
+  }
+
   public UserTaskClient expectRejection() {
     expectation = REJECTION_SUPPLIER;
     return this;
@@ -82,7 +107,7 @@ public final class UserTaskClient {
         writer.writeCommand(
             userTaskKey,
             UserTaskIntent.COMPLETE,
-            userTaskRecord,
+            userTaskRecord.setUserTaskKey(userTaskKey),
             authorizedTenantIds.toArray(new String[0]));
     return expectation.apply(position);
   }
