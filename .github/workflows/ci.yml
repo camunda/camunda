@@ -594,7 +594,7 @@ jobs:
       id-token: 'write'
     steps:
       - uses: actions/checkout@v4
-      - uses: google-github-actions/auth@v1
+      - uses: google-github-actions/auth@v2
         id: auth
         with:
           token_format: 'access_token'
