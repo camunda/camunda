@@ -14,10 +14,10 @@ import io.atomix.utils.Version;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.topology.TopologyInitializer.InitializerError.PersistedTopologyIsBroken;
 import io.camunda.zeebe.topology.TopologyUpdateNotifier.TopologyUpdateListener;
 import io.camunda.zeebe.topology.serializer.ClusterTopologySerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
  *     topology from the coordinator via gossip. See {@link GossipInitializer}.
  */
 public interface TopologyInitializer {
+  Logger LOG = LoggerFactory.getLogger(TopologyInitializer.class);
 
   /**
    * Initializes the cluster topology.
@@ -56,11 +57,12 @@ public interface TopologyInitializer {
   ActorFuture<ClusterTopology> initialize();
 
   /**
-   * Chain initializers in oder. If this.initialize did not successfully initialize, then the
-   * topology is initialized using the provided initializer
+   * Chain initializers in oder. If this initializer returns an uninitialized topology, the provided
+   * initializer is tried instead. If this initializer completes exceptionally, the exceptions
+   * propagates. See {@link #recover(Class, TopologyInitializer)} to handle exceptions.
    *
    * @param after the next initializer used to initialize topology if the current one did not
-   *     succeed.
+   *     succeed with an initialized topology.
    * @return a chained TopologyInitializer
    */
   default TopologyInitializer orThen(final TopologyInitializer after) {
@@ -71,8 +73,44 @@ public interface TopologyInitializer {
           .initialize()
           .onComplete(
               (topology, error) -> {
-                if (error != null || topology.isUninitialized()) {
+                if (error != null) {
+                  LOG.error("Failed to initialize topology", error);
+                  chainedInitialize.completeExceptionally(error);
+                } else if (topology.isUninitialized()) {
                   after.initialize().onComplete(chainedInitialize);
+                } else {
+                  chainedInitialize.complete(topology);
+                }
+              });
+      return chainedInitialize;
+    };
+  }
+
+  /**
+   * If this initializer completed exceptionally with the given exception, the recovery initializer
+   * is used instead. If this initializer completed exceptionally with a different exception, the
+   * recovery is not used and the exception is propagated.
+   *
+   * @param exception The class of the exceptions to recover from. If the exception is assignable
+   *     from the given class, the recovery initializer is used.
+   * @param recovery A regular {@link TopologyInitializer}.
+   * @return a {@link TopologyInitializer} that can be used for further chaining with {@link
+   *     #orThen(TopologyInitializer)}.
+   */
+  default TopologyInitializer recover(
+      final Class<? extends InitializerError> exception, final TopologyInitializer recovery) {
+    final TopologyInitializer actual = this;
+    return () -> {
+      final ActorFuture<ClusterTopology> chainedInitialize = new CompletableActorFuture<>();
+      actual
+          .initialize()
+          .onComplete(
+              (topology, error) -> {
+                if (error != null && exception.isAssignableFrom(error.getClass())) {
+                  LOG.warn("Recovering from {} by falling back to {}", error, recovery);
+                  recovery.initialize().onComplete(chainedInitialize);
+                } else if (error != null) {
+                  chainedInitialize.completeExceptionally(error);
                 } else {
                   chainedInitialize.complete(topology);
                 }
@@ -96,20 +134,17 @@ public interface TopologyInitializer {
     @Override
     public ActorFuture<ClusterTopology> initialize() {
       try {
-        if (Files.exists(topologyFile)) {
-          final var serializedTopology = Files.readAllBytes(topologyFile);
-          if (serializedTopology.length > 0) {
-            final var clusterTopology = serializer.decodeClusterTopology(serializedTopology);
-            LOGGER.debug(
-                "Initialized cluster topology '{}' from file '{}'", clusterTopology, topologyFile);
-            return CompletableActorFuture.completed(clusterTopology);
-          }
+        final var persistedTopology =
+            PersistedClusterTopology.ofFile(topologyFile, serializer).getTopology();
+        if (!persistedTopology.isUninitialized()) {
+          LOGGER.debug(
+              "Initialized cluster topology '{}' from file '{}'", persistedTopology, topologyFile);
         }
+        return CompletableActorFuture.completed(persistedTopology);
       } catch (final Exception e) {
-        return CompletableActorFuture.completedExceptionally(e);
+        return CompletableActorFuture.completedExceptionally(
+            new PersistedTopologyIsBroken(topologyFile, e));
       }
-
-      return CompletableActorFuture.completed(ClusterTopology.uninitialized());
     }
   }
 
@@ -385,6 +420,15 @@ public interface TopologyInitializer {
 
     private boolean isVersion83(final Version version) {
       return version.major() == 8 && version.minor() == 3;
+    }
+  }
+
+  sealed interface InitializerError permits PersistedTopologyIsBroken {
+    final class PersistedTopologyIsBroken extends RuntimeException implements InitializerError {
+
+      public PersistedTopologyIsBroken(final Path file, final Throwable cause) {
+        super("File %s is corrupted".formatted(file), cause);
+      }
     }
   }
 }

@@ -10,85 +10,117 @@ package io.camunda.zeebe.topology;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.topology.PersistedClusterTopology.ChecksumMismatch;
+import io.camunda.zeebe.topology.PersistedClusterTopology.MissingHeader;
+import io.camunda.zeebe.topology.PersistedClusterTopology.UnexpectedVersion;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
-import io.camunda.zeebe.topology.state.ClusterChangePlan;
 import io.camunda.zeebe.topology.state.ClusterTopology;
-import io.camunda.zeebe.topology.state.CompletedChange;
 import io.camunda.zeebe.topology.state.MemberState;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation;
-import io.camunda.zeebe.util.ReflectUtil;
+import io.camunda.zeebe.topology.state.PartitionState;
 import java.io.IOException;
 import java.nio.file.Files;
-import net.jqwik.api.Arbitraries;
-import net.jqwik.api.Arbitrary;
-import net.jqwik.api.Combinators;
-import net.jqwik.api.ForAll;
-import net.jqwik.api.Property;
-import net.jqwik.api.Provide;
-import net.jqwik.api.domains.Domain;
-import net.jqwik.api.domains.DomainContext;
-import net.jqwik.api.domains.DomainContextBase;
+import java.nio.file.StandardOpenOption;
+import java.util.Map;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 final class PersistedClusterTopologyTest {
-
-  @Property(tries = 100)
-  @Domain(ClusterTopologyDomain.class)
-  @Domain(DomainContext.Global.class)
-  void shouldUpdatePersistedFile(
-      @ForAll final ClusterTopology initialTopology, @ForAll final ClusterTopology updatedTopology)
-      throws IOException {
+  @Test
+  void shouldDetectFileWithMoreDataThanExpected() throws IOException {
     // given
     final var tmp = Files.createTempDirectory("topology");
     final var topologyFile = tmp.resolve("topology.meta");
     final var serializer = new ProtoBufSerializer();
-    final var persistedClusterTopology = new PersistedClusterTopology(topologyFile, serializer);
+    final var persistedClusterTopology = PersistedClusterTopology.ofFile(topologyFile, serializer);
+    persistedClusterTopology.update(ClusterTopology.init());
 
     // when
-    persistedClusterTopology.update(initialTopology);
-    persistedClusterTopology.update(updatedTopology);
+    Files.write(topologyFile, "more data than expected".getBytes(), StandardOpenOption.APPEND);
 
     // then
-    assertEquals(updatedTopology, persistedClusterTopology.getTopology());
-    assertEquals(
-        updatedTopology, serializer.decodeClusterTopology(Files.readAllBytes(topologyFile)));
+    Assertions.assertThatCode(() -> PersistedClusterTopology.ofFile(topologyFile, serializer))
+        .isInstanceOf(ChecksumMismatch.class);
   }
 
-  /**
-   * Contains all arbitraries needed to generate a {@link ClusterTopology}. The topology is not
-   * semantically correct (e.g. contains operations for members that don't exist) but all fields
-   * should have valid values.
-   */
-  static final class ClusterTopologyDomain extends DomainContextBase {
+  @Test
+  void shouldDetectFileWithBrokenHeader() throws IOException {
+    // given
+    final var tmp = Files.createTempDirectory("topology");
+    final var topologyFile = tmp.resolve("topology.meta");
+    final var serializer = new ProtoBufSerializer();
+    final var persistedClusterTopology = PersistedClusterTopology.ofFile(topologyFile, serializer);
+    persistedClusterTopology.update(ClusterTopology.init());
 
-    @Provide
-    Arbitrary<ClusterTopology> clusterTopologies() {
-      // Combine arbitraries (instead of just using `Arbitraries.forType(ClusterTopology.class)`
-      // here so that we have control over the version. Version must be greater than 0 for
-      // `ClusterTopology#isUninitialized` to return false.
-      final var arbitraryVersion = Arbitraries.integers().greaterOrEqual(0);
-      final var arbitraryMembers =
-          Arbitraries.maps(memberIds(), Arbitraries.forType(MemberState.class).enableRecursion());
-      final var arbitraryCompletedChange =
-          Arbitraries.forType(CompletedChange.class).enableRecursion().optional();
-      final var arbitraryChangePlan =
-          Arbitraries.forType(ClusterChangePlan.class).enableRecursion().optional();
-      return Combinators.combine(
-              arbitraryVersion, arbitraryMembers, arbitraryCompletedChange, arbitraryChangePlan)
-          .as(ClusterTopology::new);
-    }
+    // when
+    Files.write(topologyFile, "broken header".getBytes(), StandardOpenOption.WRITE);
 
-    @Provide
-    Arbitrary<TopologyChangeOperation> topologyChangeOperations() {
-      // jqwik does not support sealed classes yet, so we have to use reflection to get all possible
-      // types. See https://github.com/jqwik-team/jqwik/issues/523
-      return Arbitraries.of(
-              ReflectUtil.implementationsOfSealedInterface(TopologyChangeOperation.class).toList())
-          .flatMap(Arbitraries::forType);
-    }
+    // then
+    Assertions.assertThatCode(() -> PersistedClusterTopology.ofFile(topologyFile, serializer))
+        .isInstanceOf(UnexpectedVersion.class);
+  }
 
-    @Provide
-    Arbitrary<MemberId> memberIds() {
-      return Arbitraries.integers().greaterOrEqual(0).map(id -> MemberId.from(id.toString()));
-    }
+  @Test
+  void shouldFailOnEmptyFile() throws IOException {
+    // given
+    final var tmp = Files.createTempDirectory("topology");
+    final var topologyFile = tmp.resolve("topology.meta");
+    final var serializer = new ProtoBufSerializer();
+
+    // when
+    Files.createFile(topologyFile);
+
+    // then
+    Assertions.assertThatCode(() -> PersistedClusterTopology.ofFile(topologyFile, serializer))
+        .isInstanceOf(MissingHeader.class);
+  }
+
+  @Test
+  void shouldFailOnMissingHeader() throws IOException {
+    // given
+    final var tmp = Files.createTempDirectory("topology");
+    final var topologyFile = tmp.resolve("topology.meta");
+    final var serializer = new ProtoBufSerializer();
+
+    // when
+    Files.write(
+        topologyFile, new byte[] {1, 2}, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+
+    // then
+    Assertions.assertThatCode(() -> PersistedClusterTopology.ofFile(topologyFile, serializer))
+        .isInstanceOf(MissingHeader.class);
+  }
+
+  @Test
+  void shouldFailOnChangedTopology() throws IOException {
+    // given
+    final var tmp = Files.createTempDirectory("topology");
+    final var topologyFile = tmp.resolve("topology.meta");
+    final var serializer = new ProtoBufSerializer();
+    final var persistedClusterTopology = PersistedClusterTopology.ofFile(topologyFile, serializer);
+
+    // two very similar topologies with a single bit different (2 vs 3)
+    final var initialTopology =
+        ClusterTopology.init()
+            .addMember(
+                MemberId.from("1"),
+                MemberState.initializeAsActive(Map.of(1, PartitionState.active(2))));
+    final var changedTopology =
+        ClusterTopology.init()
+            .addMember(
+                MemberId.from("1"),
+                MemberState.initializeAsActive(Map.of(1, PartitionState.active(3))));
+
+    persistedClusterTopology.update(initialTopology);
+
+    // when -- keep the same header but change the body
+    final var fileContent = Files.readAllBytes(topologyFile);
+    final var newBody = serializer.encode(changedTopology);
+    System.arraycopy(
+        newBody, 0, fileContent, PersistedClusterTopology.HEADER_LENGTH, newBody.length);
+    Files.write(topologyFile, fileContent, StandardOpenOption.WRITE);
+
+    // then -- checksum mismatch is detected
+    Assertions.assertThatCode(() -> PersistedClusterTopology.ofFile(topologyFile, serializer))
+        .isInstanceOf(ChecksumMismatch.class);
   }
 }
