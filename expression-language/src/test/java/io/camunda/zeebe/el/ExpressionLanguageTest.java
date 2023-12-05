@@ -216,4 +216,13 @@ public class ExpressionLanguageTest {
             tuple("NO_VARIABLE_FOUND", "No variable found with name 'x'"),
             tuple("ASSERT_FAILURE", "The condition is not fulfilled"));
   }
+
+  @Test
+  public void shouldNotEscapeSpecialCharactersInString() {
+    final var expression = expressionLanguage.parseExpression("Hello\nWorld");
+    final var evaluationResult = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
+
+    assertThat(evaluationResult).isNotNull();
+    assertThat(evaluationResult.getString()).isEqualTo("Hello\nWorld");
+  }
 }

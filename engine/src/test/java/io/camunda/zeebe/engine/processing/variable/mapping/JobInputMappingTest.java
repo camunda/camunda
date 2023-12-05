@@ -66,6 +66,26 @@ public final class JobInputMappingTest {
         mapping(b -> b.zeebeInputExpression("x.y", "y")),
         "{'x': {'y': 2}, 'y': 2}"
       },
+      {
+        "{}",
+        mapping(b -> b.zeebeInputExpression("\"Hello\\nWorld\"", "input")),
+        "{\"input\": \"Hello\\nWorld\"}"
+      },
+      {
+        "{}",
+        mapping(b -> b.zeebeInputExpression("\"Hello\\rWorld\"", "input")),
+        "{\"input\": \"Hello\\rWorld\"}"
+      },
+      {
+        "{}",
+        mapping(b -> b.zeebeInputExpression("\"Hello\\tWorld\"", "input")),
+        "{\"input\": \"Hello\\tWorld\"}"
+      },
+      {
+        "{}",
+        mapping(b -> b.zeebeInputExpression("\"Hello\\'World\"", "input")),
+        "{\"input\": \"Hello\\'World\"}"
+      },
     };
   }
 
