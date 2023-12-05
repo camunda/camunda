@@ -29,6 +29,9 @@ import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
+import org.elasticsearch.action.admin.indices.alias.Alias;
+import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest;
+import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
@@ -47,12 +50,14 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.support.IndicesOptions;
+import org.elasticsearch.client.GetAliasesResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.indexlifecycle.PutLifecyclePolicyRequest;
 import org.elasticsearch.client.indices.*;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
+import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.settings.Settings;
@@ -182,6 +187,32 @@ public class RetryElasticsearchClient {
         });
   }
 
+  public Set<String> getAliasesNames(String namePattern) {
+    return executeWithRetries(
+        "Get aliases for " + namePattern,
+        () -> {
+          try {
+            final GetAliasesRequest request = new GetAliasesRequest(namePattern);
+            final GetAliasesResponse response =
+                esClient.indices().getAlias(request, requestOptions);
+
+            final Set<String> returnAliases = new HashSet<>();
+            final Map<String, Set<AliasMetadata>> mapAliases = response.getAliases();
+            for (Map.Entry<String, Set<AliasMetadata>> a : mapAliases.entrySet()) {
+              returnAliases.addAll(
+                  a.getValue().stream().map(m -> m.getAlias()).collect(Collectors.toSet()));
+            }
+
+            return returnAliases;
+          } catch (ElasticsearchException e) {
+            if (e.status().equals(RestStatus.NOT_FOUND)) {
+              return Set.of();
+            }
+            throw e;
+          }
+        });
+  }
+
   public boolean createIndex(CreateIndexRequest createIndexRequest) {
     return executeWithRetries(
         "CreateIndex " + createIndexRequest.index(),
@@ -189,8 +220,44 @@ public class RetryElasticsearchClient {
           if (!indicesExist(createIndexRequest.index())) {
             return esClient.indices().create(createIndexRequest, requestOptions).isAcknowledged();
           }
+          try {
+            if (createIndexRequest.aliases() != null
+                && !createIndexRequest.aliases().isEmpty()
+                && !aliasExist(
+                    createIndexRequest.aliases().iterator().next(), createIndexRequest.index())) {
+              final IndicesAliasesRequest request = new IndicesAliasesRequest();
+              final IndicesAliasesRequest.AliasActions aliasAction =
+                  new IndicesAliasesRequest.AliasActions(
+                          IndicesAliasesRequest.AliasActions.Type.ADD)
+                      .index(createIndexRequest.index())
+                      .alias(createIndexRequest.aliases().iterator().next().name())
+                      .writeIndex(false);
+              request.addAliasAction(aliasAction);
+
+              esClient.indices().updateAliases(request, RequestOptions.DEFAULT);
+              LOGGER.info(
+                  "Alias is created. Index: {}, alias: {} ",
+                  createIndexRequest.index(),
+                  createIndexRequest.aliases().iterator().next().name());
+
+              return true;
+            }
+          } catch (Exception ex) {
+            LOGGER.error(
+                String.format(
+                    "Exception occurred when creating an alias. Index: %s, alias: %s, error: %s ",
+                    createIndexRequest.index(),
+                    createIndexRequest.aliases().iterator().next().name(),
+                    ex.getMessage()),
+                ex);
+          }
           return true;
         });
+  }
+
+  private boolean aliasExist(Alias alias, String index) throws IOException {
+    final GetAliasesRequest aliasExistsReq = new GetAliasesRequest(alias.name()).indices(index);
+    return esClient.indices().existsAlias(aliasExistsReq, RequestOptions.DEFAULT);
   }
 
   public boolean createOrUpdateDocument(String name, String id, Map source) {

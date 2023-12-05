@@ -138,7 +138,13 @@ public class IndexSchemaValidatorElasticSearch implements IndexSchemaValidator {
               tasklistProperties.getElasticsearch().getIndexPrefix() + "*");
       final List<String> allIndexNames =
           map(indexDescriptors, IndexDescriptor::getFullQualifiedName);
-      return indices.containsAll(allIndexNames);
+
+      final Set<String> aliases =
+          retryElasticsearchClient.getAliasesNames(
+              tasklistProperties.getElasticsearch().getIndexPrefix() + "*");
+      final List<String> allAliasesNames = map(indexDescriptors, IndexDescriptor::getAlias);
+
+      return indices.containsAll(allIndexNames) && aliases.containsAll(allAliasesNames);
     } catch (Exception e) {
       LOGGER.error("Check for existing schema failed", e);
       return false;
