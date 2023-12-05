@@ -81,7 +81,7 @@ VOLUME /tmp
 
 COPY --from=prepare /tmp/operate /usr/local/operate
 
-RUN addgroup --gid 1004 operate && adduser -h /usr/local/operate -G operate -u 1004 -D operate
-USER operate:operate
+RUN addgroup --gid 1001 1001 && adduser -h /usr/local/operate -G 1001 -u 1001 -D 1001
+USER 1001:1001
 
 ENTRYPOINT ["/sbin/tini", "--", "/usr/local/operate/bin/operate"]
