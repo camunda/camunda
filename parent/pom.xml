@@ -51,7 +51,7 @@
     <version.commons-text>1.11.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.3.4</version.docker-java-api>
-    <version.elasticsearch>8.7.1</version.elasticsearch>
+    <version.elasticsearch>8.9.2</version.elasticsearch>
     <version.error-prone>2.23.0</version.error-prone>
     <version.grpc>1.59.0</version.grpc>
     <version.gson>2.10.1</version.gson>
@@ -134,6 +134,7 @@
     <version.reactor-netty>1.1.13</version.reactor-netty>
     <version.tc-keycloak>3.2.0</version.tc-keycloak>
     <version.jakarta-activation>2.1.2</version.jakarta-activation>
+    <version.jakarta.json-api>2.1.3</version.jakarta.json-api>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
@@ -1219,6 +1220,13 @@
         <groupId>jakarta.activation</groupId>
         <artifactId>jakarta.activation-api</artifactId>
         <version>${version.jakarta-activation}</version>
+      </dependency>
+
+      <!-- needed for tests in elasticsearch-exporter -->
+      <dependency>
+        <groupId>jakarta.json</groupId>
+        <artifactId>jakarta.json-api</artifactId>
+        <version>${version.jakarta.json-api}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
