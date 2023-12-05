@@ -1,9 +1,8 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more
+ * contributor license agreements. See the NOTICE file distributed with this work for additional
+ * information regarding copyright ownership. Licensed under the Zeebe Community License 1.1. You
+ * may not use this file except in compliance with the Zeebe Community License 1.1.
  */
 package io.camunda.zeebe.exporter;
 
@@ -14,6 +13,7 @@ import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.exporter.operate.OperateExporter;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -96,7 +96,11 @@ public class ElasticsearchExporter implements Exporter {
     }
 
     final var recordSequence = recordCounters.getNextRecordSequence(record);
-    client.index(record, recordSequence);
+
+    // TODO: put somewhere else
+    OperateExporter exporter = new OperateExporter();
+    exporter.exportRecord(record);
+    //    client.index(record, recordSequence);
     lastPosition = record.getPosition();
 
     if (client.shouldFlush()) {
