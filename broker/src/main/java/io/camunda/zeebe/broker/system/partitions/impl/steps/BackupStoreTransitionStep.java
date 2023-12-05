@@ -9,8 +9,10 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
+import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
@@ -58,6 +60,7 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
         }
         case S3 -> installS3Store(context, backupCfg, installed);
         case GCS -> installGcsStore(context, backupCfg, installed);
+        case AZURE -> installAzureStore(context, backupCfg, installed);
         default -> installed.completeExceptionally(
             new IllegalArgumentException(
                 "Unknown backup store type %s".formatted(backupCfg.getStore())));
@@ -96,6 +99,21 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
       final var storeGcsConfig = GcsBackupStoreConfig.toStoreConfig(brokerGcsConfig);
       final var gcsStore = new GcsBackupStore(storeGcsConfig);
       context.setBackupStore(gcsStore);
+      installed.complete(null);
+    } catch (final Exception error) {
+      installed.completeExceptionally("Failed to create backup store", error);
+    }
+  }
+
+  private static void installAzureStore(
+      final PartitionTransitionContext context,
+      final BackupStoreCfg backupCfg,
+      final ActorFuture<Void> installed) {
+    try {
+      final var brokerAzureConfig = backupCfg.getAzure();
+      final var storeAzureConfig = AzureBackupStoreConfig.toStoreConfig(brokerAzureConfig);
+      final var azureStore = new AzureBackupStore(storeAzureConfig);
+      context.setBackupStore(azureStore);
       installed.complete(null);
     } catch (final Exception error) {
       installed.completeExceptionally("Failed to create backup store", error);

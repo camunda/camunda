@@ -398,6 +398,30 @@
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_GCS_AUTH.
           # auth: auto
 
+        # Configure the following if store is set to AZURE
+        # azure:
+          # Name of the endpoint where the backup will be stored.
+          # Sets the blob service endpoint.
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_ENDPOINT
+          # endpoint:
+
+          # Account name that is used to connect to the service.
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_ACCOUNTNAME
+          # accountName:
+
+          # Account key that is used to connect to the service.
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_ACCOUNTKEY
+          # accountKey:
+
+          # The connection string to connect to the service.
+          # If this is defined, it will override the account name, account key, and endpoint.
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_CONNECTIONSTRING
+          # connectionString:
+
+          # Used to define the container name where the blobs will be saved.
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_BASEPATH
+          # basePath:
+
     # cluster:
       # This section contains all cluster related configurations, to setup a zeebe cluster
 
