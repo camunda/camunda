@@ -337,6 +337,10 @@ public final class Gateway implements CloseableSilently {
       final var zeebeIdentityCfg = gatewayCfg.getSecurity().getAuthentication().getIdentity();
       if (isZeebeIdentityConfigurationNotNull(zeebeIdentityCfg)) {
         interceptors.add(new IdentityInterceptor(zeebeIdentityCfg, gatewayCfg.getMultiTenancy()));
+        LOG.warn(
+            "These Zeebe configuration properties for Camunda Identity are deprecated! Please use the "
+                + "corresponding Camunda Identity properties or the environment variables defined here: "
+                + "https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/");
       } else {
         interceptors.add(new IdentityInterceptor(identityCfg, gatewayCfg.getMultiTenancy()));
       }
