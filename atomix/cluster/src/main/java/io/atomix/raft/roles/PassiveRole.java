@@ -49,13 +49,16 @@ import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
+import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /** Passive state. */
 public class PassiveRole extends InactiveRole {
 
+  private final ThrottledLogger throttledLogger = new ThrottledLogger(log, Duration.ofSeconds(5));
   private final SnapshotReplicationMetrics snapshotReplicationMetrics;
   private long pendingSnapshotStartTimestamp;
   private ReceivedSnapshot pendingSnapshot;
@@ -412,6 +415,11 @@ public class PassiveRole extends InactiveRole {
   protected CompletableFuture<AppendResponse> handleAppend(final InternalAppendRequest request) {
     final CompletableFuture<AppendResponse> future = new CompletableFuture<>();
 
+    // Check that there is a configuration and reject the request if there isn't.
+    if (!checkConfiguration(request, future)) {
+      return future;
+    }
+
     // Check that the term of the given request matches the local term or update the term.
     if (!checkTerm(request, future)) {
       return future;
@@ -429,6 +437,16 @@ public class PassiveRole extends InactiveRole {
     // wait for ever for the snapshot to be received.
     abortPendingSnapshots();
     return future;
+  }
+
+  private boolean checkConfiguration(
+      final InternalAppendRequest request, final CompletableFuture<AppendResponse> future) {
+    if (raft.getCurrentConfigurationIndex() == -1) {
+      throttledLogger.warn("Rejected {}: No current configuration", request);
+      return failAppend(raft.getLog().getLastIndex(), future);
+    } else {
+      return true;
+    }
   }
 
   /**
@@ -769,6 +787,7 @@ public class PassiveRole extends InactiveRole {
                 .withSucceeded(succeeded)
                 .withLastLogIndex(lastLogIndex)
                 .withLastSnapshotIndex(raft.getCurrentSnapshotIndex())
+                .withConfigurationIndex(raft.getCurrentConfigurationIndex())
                 .build()));
     return succeeded;
   }
