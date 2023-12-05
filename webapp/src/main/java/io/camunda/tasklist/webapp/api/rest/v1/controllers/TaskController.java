@@ -108,7 +108,7 @@ public class TaskController extends ApiErrorController {
                 .map(IncludeVariable::getName)
                 .toList()
             : Collections.emptyList();
-    
+
     final var tasks =
         taskService.getTasks(query, includeVariableNames).stream()
             .map(taskMapper::toTaskSearchResponse)
