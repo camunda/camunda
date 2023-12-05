@@ -75,7 +75,7 @@ import org.testcontainers.utility.DockerImageName;
 @AutoCloseResources
 public class MultiTenancyOverIdentityIT {
 
-  public static final String IDENTITY_SNAPSHOT_TAG = "SNAPSHOT";
+  private static final String IDENTITY_SNAPSHOT_TAG = "SNAPSHOT";
   @TempDir private static Path credentialsCacheDir;
   private static final String DEFAULT_TENANT = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   private static final String DATABASE_HOST = "postgres";
