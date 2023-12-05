@@ -21,7 +21,6 @@ import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.util.Either;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.micrometer.core.instrument.Timer;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -35,6 +34,7 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
+import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -150,12 +150,9 @@ public class ProcessInstanceArchiverJobOpenSearch extends AbstractArchiverJobOpe
   }
 
   protected ArchiveBatch createArchiveBatch(final SearchResponse response) {
-    final var hits = response.hits();
+    final HitsMetadata<?> hits = response.hits();
     if (!hits.hits().isEmpty()) {
-      final var ids =
-          Arrays.asList(hits.hits()).stream()
-              .map((hit) -> ((Hit) hit).id())
-              .collect(Collectors.toList());
+      final List<String> ids = hits.hits().stream().map(Hit::id).collect(Collectors.toList());
       return new ArchiveBatch(ids);
     } else {
       return null;
