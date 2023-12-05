@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
+import static io.camunda.zeebe.engine.processing.variable.mapping.VariableValue.variable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -17,6 +18,7 @@ import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -578,6 +580,70 @@ public final class NativeUserTaskTest {
             .getFirst();
 
     Assertions.assertThat(userTask.getValue()).hasFollowUpDate("");
+  }
+
+  @Test
+  public void shouldCompleteUserTask() {
+    // given
+    ENGINE.deployment().withXmlResource(process()).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SEQUENCE_FLOW, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    assertThat(RecordingExporter.userTaskRecords().withProcessInstanceKey(processInstanceKey))
+        .extracting(Record::getValueType, Record::getIntent)
+        .containsSubsequence(
+            tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETING),
+            tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETED));
+  }
+
+  @Test
+  public void shouldCompleteUserTaskWithVariables() {
+    // given
+    ENGINE.deployment().withXmlResource(process()).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE.userTask().ofInstance(processInstanceKey).withVariable("foo", "bar").complete();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SEQUENCE_FLOW, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    assertThat(RecordingExporter.userTaskRecords().withProcessInstanceKey(processInstanceKey))
+        .extracting(Record::getValueType, Record::getIntent)
+        .containsSubsequence(
+            tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETING),
+            tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETED));
+
+    assertThat(
+            RecordingExporter.variableRecords().withProcessInstanceKey(processInstanceKey).limit(1))
+        .extracting(Record::getValue)
+        .extracting(v -> variable(v.getName(), v.getValue()))
+        .containsExactly(variable("foo", "\"bar\""));
   }
 
   @Test
