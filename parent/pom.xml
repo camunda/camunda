@@ -43,7 +43,7 @@
     <version.camunda>7.20.0</version.camunda>
     <version.checkstyle>10.12.5</version.checkstyle>
     <version.commons-lang>3.14.0</version.commons-lang>
-    <version.commons-logging>1.2</version.commons-logging>
+    <version.commons-logging>1.3.0</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.16.0</version.commons-codec>
     <version.commons-compress>1.25.0</version.commons-compress>
@@ -68,7 +68,7 @@
     <version.junit4>4.13.2</version.junit4>
     <version.log4j>2.22.0</version.log4j>
     <version.minlog>1.3.1</version.minlog>
-    <version.mockito>5.7.0</version.mockito>
+    <version.mockito>5.8.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.6</version.msgpack>
     <version.netty>4.1.100.Final</version.netty>
@@ -113,20 +113,20 @@
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
     <version.spotbugs>4.8.2</version.spotbugs>
-    <version.archunit>1.2.0</version.archunit>
+    <version.archunit>1.2.1</version.archunit>
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.18</version.jnr-posix>
     <version.zpt>8.3.3</version.zpt>
     <version.feign>13.1</version.feign>
     <version.google-sdk>26.27.0</version.google-sdk>
-    <version.awssdk>2.21.31</version.awssdk>
+    <version.awssdk>2.21.38</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.0.2</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.jackson-annotations>2.16.0</version.jackson-annotations>
     <version.swagger-annotations>2.2.19</version.swagger-annotations>
-    <version.checker-qual>3.40.0</version.checker-qual>
+    <version.checker-qual>3.41.0</version.checker-qual>
     <version.java-jwt>4.4.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.postgresql>42.7.0</version.postgresql>
