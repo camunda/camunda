@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {ReactNode} from 'react';
+import {ComponentProps, ReactNode} from 'react';
 import classnames from 'classnames';
 
 import {t} from 'translation';
@@ -15,7 +15,7 @@ import {Version} from './service';
 
 import './VersionPopover.scss';
 
-interface VersionPopoverProps {
+interface VersionPopoverProps extends Pick<ComponentProps<typeof Popover>, 'align'> {
   versions?: Version[];
   selected: Version['version'][];
   selectedSpecificVersions?: Version['version'][];
@@ -35,6 +35,7 @@ export default function VersionPopover({
   tooltip,
   loading,
   label,
+  align = 'bottom-right',
 }: VersionPopoverProps) {
   const specific = usesSpecificVersions(selected);
 
@@ -53,7 +54,7 @@ export default function VersionPopover({
     <Popover
       className="VersionPopover"
       tooltip={tooltip}
-      align="bottom-right"
+      align={align}
       trigger={
         <Popover.ListBox label={label} disabled={disabled || !versions}>
           {title}
