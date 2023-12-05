@@ -1,0 +1,25 @@
+# This workflow assigns the current iteration to issue card once the issue gets moved to
+# the current iteration board.
+
+name: assign current iteration
+on:
+  project_card:
+    types:
+      - moved
+jobs:
+  assign_lable:
+    if: github.event.project_card.column_id == '47fc9ee4' # this id can be found via the inspection tool on the browser
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: blombard/move-to-current-iteration@master
+        with:
+          owner: camunda
+          number: 92 # project number
+          token: ${{secrets.GITHUB_TOKEN}}
+          iteration-field: Iteration
+          iteration: last
+          new-iteration: Current
+          statuses: In Progress
