@@ -1,61 +1,4 @@
 {
-  "__inputs": [
-    {
-      "name": "DS_PROMETHEUS",
-      "label": "Prometheus",
-      "description": "",
-      "type": "datasource",
-      "pluginId": "prometheus",
-      "pluginName": "Prometheus"
-    },
-    {
-      "name": "DS_THANOS",
-      "label": "Thanos",
-      "description": "",
-      "type": "datasource",
-      "pluginId": "prometheus",
-      "pluginName": "Prometheus"
-    }
-  ],
-  "__elements": {},
-  "__requires": [
-    {
-      "type": "grafana",
-      "id": "grafana",
-      "name": "Grafana",
-      "version": "10.1.5"
-    },
-    {
-      "type": "panel",
-      "id": "graph",
-      "name": "Graph (old)",
-      "version": ""
-    },
-    {
-      "type": "datasource",
-      "id": "prometheus",
-      "name": "Prometheus",
-      "version": "1.0.0"
-    },
-    {
-      "type": "panel",
-      "id": "stat",
-      "name": "Stat",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "table",
-      "name": "Table",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "timeseries",
-      "name": "Time series",
-      "version": ""
-    }
-  ],
   "annotations": {
     "list": [
       {
@@ -75,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
-  "id": null,
+  "id": 106,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -96,7 +39,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -153,7 +96,7 @@
             "h": 3,
             "w": 12,
             "x": 0,
-            "y": 13
+            "y": 1
           },
           "id": 92,
           "links": [],
@@ -177,7 +120,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "expr": "scalar(elasticsearch_cluster_health_status{color=\"green\",cluster=~\"$cluster\",namespace=~\"$namespace\"}) + scalar(elasticsearch_cluster_health_status{color=\"yellow\",cluster=~\"$cluster\",namespace=~\"$namespace\"}) * 2 + scalar(elasticsearch_cluster_health_status{color=\"red\",cluster=~\"$cluster\",namespace=~\"$namespace\"}) * 3",
               "format": "time_series",
@@ -193,7 +136,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -233,7 +176,7 @@
             "h": 3,
             "w": 4,
             "x": 12,
-            "y": 13
+            "y": 1
           },
           "id": 8,
           "links": [],
@@ -257,7 +200,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "expr": "sum(elasticsearch_cluster_health_number_of_nodes{cluster=~\"$cluster\",namespace=~\"$namespace\"})/count(elasticsearch_cluster_health_number_of_nodes{cluster=~\"$cluster\",namespace=~\"$namespace\"})",
               "format": "time_series",
@@ -275,7 +218,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -315,7 +258,7 @@
             "h": 3,
             "w": 4,
             "x": 16,
-            "y": 13
+            "y": 1
           },
           "id": 94,
           "links": [],
@@ -339,7 +282,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "quantile(0.99, elasticsearch_cluster_health_number_of_data_nodes{cluster=~\"$cluster\",namespace=~\"$namespace\"})",
@@ -356,7 +299,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -399,7 +342,7 @@
             "h": 3,
             "w": 4,
             "x": 20,
-            "y": 13
+            "y": 1
           },
           "id": 96,
           "links": [],
@@ -423,7 +366,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "quantile(0.99, elasticsearch_cluster_health_number_of_pending_tasks{cluster=~\"$cluster\",namespace=~\"$namespace\"})",
@@ -467,7 +410,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -507,7 +450,7 @@
             "h": 3,
             "w": 4,
             "x": 0,
-            "y": 14
+            "y": 2
           },
           "id": 78,
           "links": [],
@@ -531,7 +474,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "quantile(0.99, elasticsearch_cluster_health_active_shards{cluster=~\"$cluster\",namespace=~\"$namespace\"})",
@@ -548,7 +491,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -588,7 +531,7 @@
             "h": 3,
             "w": 4,
             "x": 4,
-            "y": 14
+            "y": 2
           },
           "id": 80,
           "links": [],
@@ -612,7 +555,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "quantile(0.99, elasticsearch_cluster_health_active_primary_shards{cluster=~\"$cluster\",namespace=~\"$namespace\"})",
@@ -629,7 +572,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -672,7 +615,7 @@
             "h": 3,
             "w": 4,
             "x": 8,
-            "y": 14
+            "y": 2
           },
           "id": 82,
           "links": [],
@@ -696,7 +639,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "quantile(0.99, elasticsearch_cluster_health_initializing_shards{cluster=~\"$cluster\",namespace=~\"$namespace\"})",
@@ -713,7 +656,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -756,7 +699,7 @@
             "h": 3,
             "w": 4,
             "x": 12,
-            "y": 14
+            "y": 2
           },
           "id": 84,
           "links": [],
@@ -780,7 +723,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "quantile(0.99, elasticsearch_cluster_health_relocating_shards{cluster=~\"$cluster\",namespace=~\"$namespace\"})",
@@ -797,7 +740,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -840,7 +783,7 @@
             "h": 3,
             "w": 4,
             "x": 16,
-            "y": 14
+            "y": 2
           },
           "id": 86,
           "links": [],
@@ -864,7 +807,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "quantile(0.99, elasticsearch_cluster_health_unassigned_shards{cluster=~\"$cluster\",namespace=~\"$namespace\"})",
@@ -881,7 +824,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -924,7 +867,7 @@
             "h": 3,
             "w": 4,
             "x": 20,
-            "y": 14
+            "y": 2
           },
           "id": 88,
           "links": [],
@@ -948,7 +891,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "quantile(0.99, elasticsearch_cluster_health_delayed_unassigned_shards{cluster=~\"$cluster\",namespace=~\"$namespace\"})",
@@ -996,7 +939,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "editable": true,
           "error": false,
@@ -1041,7 +984,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(elasticsearch_indices_docs{cluster=~\"$cluster\",namespace=~\"$namespace\"})",
@@ -1094,7 +1037,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "editable": true,
           "error": false,
@@ -1139,7 +1082,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(elasticsearch_indices_store_size_bytes{cluster=~\"$cluster\",namespace=~\"$namespace\"})",
@@ -1192,7 +1135,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fill": 1,
           "fillGradient": 0,
@@ -1234,7 +1177,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(elasticsearch_indices_indexing_index_total{cluster=~\"$cluster\",namespace=~\"$namespace\"}[1h]))",
@@ -1285,7 +1228,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fill": 1,
           "fillGradient": 0,
@@ -1327,7 +1270,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(elasticsearch_indices_search_fetch_total{cluster=~\"$cluster\",namespace=~\"$namespace\"}[1h]))",
@@ -1378,7 +1321,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "editable": true,
           "error": false,
@@ -1425,7 +1368,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(elasticsearch_thread_pool_queue_count{cluster=~\"$cluster\",namespace=~\"$namespace\", type!=\"management\"}) by (type)",
@@ -1472,7 +1415,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -1553,7 +1496,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(elasticsearch_breakers_tripped{cluster=~\"$cluster\", namespace=~\"$namespace\"}[5m])) by (breaker)",
@@ -1601,7 +1544,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fill": 1,
           "fillGradient": 0,
@@ -1651,7 +1594,7 @@
               ],
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "dsType": "elasticsearch",
               "expr": "avg(avg_over_time(irate(elasticsearch_process_cpu_seconds_total{cluster=~\"$cluster\",namespace=~\"$namespace\"}[3m])[15m:2m])) by (type)",
@@ -1697,7 +1640,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -1760,7 +1703,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(elasticsearch_jvm_memory_max_bytes{area=\"heap\",cluster=~\"$cluster\",namespace=~\"$namespace\"})",
@@ -1782,7 +1725,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "editable": true,
           "error": false,
@@ -1828,7 +1771,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(avg_over_time(elasticsearch_jvm_memory_used_bytes{area=\"heap\",cluster=~\"$cluster\",namespace=~\"$namespace\"}[15m]) / elasticsearch_jvm_memory_max_bytes{area=\"heap\",cluster=~\"$cluster\",namespace=~\"$namespace\"})",
@@ -1883,7 +1826,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "editable": true,
           "error": false,
@@ -1929,7 +1872,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "sum(irate(elasticsearch_jvm_gc_collection_seconds_sum{cluster=~\"$cluster\",namespace=~\"$namespace\"}[1m])) by (gc)",
@@ -1980,7 +1923,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "editable": true,
           "error": false,
@@ -2026,7 +1969,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(elasticsearch_thread_pool_active_count{cluster=~\"$cluster\",namespace=~\"$namespace\", type!=\"management\"}) by (type)",
@@ -2079,7 +2022,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "editable": true,
           "error": false,
@@ -2125,7 +2068,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(elasticsearch_thread_pool_rejected_count{cluster=~\"$cluster\",namespace=~\"$namespace\", type!=\"management\"}[5m]))",
@@ -2200,7 +2143,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -2280,7 +2223,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg by (index) (\n  rate(elasticsearch_index_stats_refresh_total{cluster=~\"$cluster\",namespace=~\"$namespace\"}[5m]) +\n  rate(elasticsearch_index_stats_merge_total{cluster=~\"$cluster\",namespace=~\"$namespace\"}[5m]) +\n  rate(elasticsearch_index_stats_indexing_index_total{cluster=~\"$cluster\",namespace=~\"$namespace\"}[5m]) +\n  rate(elasticsearch_index_stats_indexing_delete_total{cluster=~\"$cluster\",namespace=~\"$namespace\"}[5m]) +\n  rate(elasticsearch_index_stats_flush_total{cluster=~\"$cluster\",namespace=~\"$namespace\"}[5m]) +\n  rate(elasticsearch_index_stats_get_total{cluster=~\"$cluster\",namespace=~\"$namespace\"}[5m]) +\n  rate(elasticsearch_index_stats_search_fetch_total{cluster=~\"$cluster\",namespace=~\"$namespace\"}[5m]) +\n  rate(elasticsearch_index_stats_search_query_total{cluster=~\"$cluster\",namespace=~\"$namespace\"}[5m]) +\n  rate(elasticsearch_index_stats_search_scroll_total{cluster=~\"$cluster\",namespace=~\"$namespace\"}[5m]) +\n  rate(elasticsearch_index_stats_search_suggest_total{cluster=~\"$cluster\",namespace=~\"$namespace\"}[5m])\n)",
@@ -2295,7 +2238,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -2380,7 +2323,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(elasticsearch_index_stats_refresh_total{cluster=~\"$cluster\",namespace=~\"$namespace\"}[5m]))",
@@ -2392,7 +2335,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(elasticsearch_index_stats_merge_total{cluster=~\"$cluster\",namespace=~\"$namespace\"}[5m]))",
@@ -2404,7 +2347,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(elasticsearch_index_stats_indexing_index_total{cluster=~\"$cluster\",namespace=~\"$namespace\"}[5m]))",
@@ -2416,7 +2359,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(elasticsearch_index_stats_indexing_delete_total{cluster=~\"$cluster\",namespace=~\"$namespace\"}[5m]))",
@@ -2428,7 +2371,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(elasticsearch_index_stats_flush_total{cluster=~\"$cluster\",namespace=~\"$namespace\"}[5m]))",
@@ -2440,7 +2383,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(elasticsearch_index_stats_get_total{cluster=~\"$cluster\",namespace=~\"$namespace\"}[5m]))",
@@ -2452,7 +2395,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(elasticsearch_index_stats_search_fetch_total{cluster=~\"$cluster\",namespace=~\"$namespace\"}[5m]))",
@@ -2464,7 +2407,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(elasticsearch_index_stats_search_query_total{cluster=~\"$cluster\",namespace=~\"$namespace\"}[5m]))",
@@ -2476,7 +2419,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(elasticsearch_index_stats_search_scroll_total{cluster=~\"$cluster\",namespace=~\"$namespace\"}[5m]))",
@@ -2488,7 +2431,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(elasticsearch_index_stats_search_suggest_total{cluster=~\"$cluster\",namespace=~\"$namespace\"}[5m]))",
@@ -2535,7 +2478,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "editable": true,
           "error": false,
@@ -2586,7 +2529,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(elasticsearch_index_stats_refresh_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"$index\"}[5m])) by (index)",
@@ -2638,7 +2581,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "editable": true,
           "error": false,
@@ -2689,7 +2632,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(elasticsearch_index_stats_merge_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"$index\"}[5m])) by (index)",
@@ -2741,7 +2684,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "editable": true,
           "error": false,
@@ -2792,7 +2735,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(elasticsearch_index_stats_indexing_index_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"$index\"}[5m])) by (index)",
@@ -2844,7 +2787,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "editable": true,
           "error": false,
@@ -2895,7 +2838,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(elasticsearch_index_stats_indexing_delete_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"$index\"}[5m])) by (index)",
@@ -2947,7 +2890,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "editable": true,
           "error": false,
@@ -2998,7 +2941,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(elasticsearch_index_stats_flush_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"$index\"}[5m])) by (index)",
@@ -3050,7 +2993,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "editable": true,
           "error": false,
@@ -3101,7 +3044,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(elasticsearch_index_stats_get_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"$index\"}[5m])) by (index)",
@@ -3153,7 +3096,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "editable": true,
           "error": false,
@@ -3204,7 +3147,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(elasticsearch_index_stats_search_fetch_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"$index\"}[5m])) by (index)",
@@ -3256,7 +3199,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "editable": true,
           "error": false,
@@ -3307,7 +3250,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(elasticsearch_index_stats_search_query_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"$index\"}[5m])) by (index)",
@@ -3359,7 +3302,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "editable": true,
           "error": false,
@@ -3410,7 +3353,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(elasticsearch_index_stats_search_scroll_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"$index\"}[5m])) by (index)",
@@ -3462,7 +3405,7 @@
           "dashes": false,
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${datasource}"
           },
           "editable": true,
           "error": false,
@@ -3513,7 +3456,7 @@
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
+                "uid": "${datasource}"
               },
               "exemplar": true,
               "expr": "avg(rate(elasticsearch_index_stats_search_suggest_total{cluster=~\"$cluster\",namespace=~\"$namespace\", index=~\"$index\"}[5m])) by (index)",
@@ -3584,7 +3527,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_THANOS}"
+            "uid": "${datasource}"
           },
           "fieldConfig": {
             "defaults": {
@@ -3633,14 +3576,20 @@
               ],
               "show": false
             },
-            "showHeader": true
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": true,
+                "displayName": "Value"
+              }
+            ]
           },
           "pluginVersion": "10.1.5",
           "targets": [
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "${DS_THANOS}"
+                "uid": "${datasource}"
               },
               "editorMode": "code",
               "exemplar": false,
@@ -3672,7 +3621,7 @@
       "type": "row"
     }
   ],
-  "refresh": false,
+  "refresh": "",
   "schemaVersion": 38,
   "style": "dark",
   "tags": [
@@ -3683,7 +3632,7 @@
     "list": [
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "Prometheus",
           "value": "prometheus"
         },
@@ -3701,10 +3650,14 @@
         "type": "datasource"
       },
       {
-        "current": {},
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "${datasource}"
         },
         "definition": "",
         "hide": 2,
@@ -3726,10 +3679,14 @@
         "useTags": false
       },
       {
-        "current": {},
+        "current": {
+          "selected": true,
+          "text": "medic-y-2023-cw-48-ce0b3b8-benchmark-mixed",
+          "value": "medic-y-2023-cw-48-ce0b3b8-benchmark-mixed"
+        },
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "${datasource}"
         },
         "definition": "",
         "hide": 0,
@@ -3752,10 +3709,14 @@
       },
       {
         "allValue": ".*",
-        "current": {},
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_PROMETHEUS}"
+          "uid": "${datasource}"
         },
         "definition": "label_values(elasticsearch_indices_store_size_bytes_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}, index)",
         "hide": 0,
