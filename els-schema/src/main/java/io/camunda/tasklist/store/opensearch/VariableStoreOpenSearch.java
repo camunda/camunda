@@ -380,9 +380,7 @@ public class VariableStoreOpenSearch implements VariableStore {
           processInstanceIds.addAll(scrollProcessIds);
         }
 
-        final ClearScrollRequest clearScrollRequest =
-            new ClearScrollRequest.Builder().scrollId(scrollId).build();
-        osClient.clearScroll(clearScrollRequest);
+        OpenSearchUtil.clearScroll(scrollId, osClient);
 
         listProcessIdsMatchingVars.add(processInstanceIds);
 

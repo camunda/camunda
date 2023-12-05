@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.util.CollectionUtil;
+import io.camunda.tasklist.util.OpenSearchUtil;
 import jakarta.json.stream.JsonParser;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -446,11 +447,7 @@ public class RetryOpenSearchClient {
               .build();
       response = openSearchClient.scroll(scrollRequest, clazz);
     }
-    if (scrollId != null) {
-      final ClearScrollRequest clearScrollRequest =
-          new ClearScrollRequest.Builder().scrollId(scrollId).build();
-      openSearchClient.clearScroll(clearScrollRequest);
-    }
+    OpenSearchUtil.clearScroll(scrollId, openSearchClient);
     return results;
   }
 
@@ -538,11 +535,7 @@ public class RetryOpenSearchClient {
 
             response = openSearchClient.scroll(scrollRequest, Object.class);
           }
-          if (scrollId != null) {
-            final ClearScrollRequest clearScrollRequest =
-                new ClearScrollRequest.Builder().scrollId(scrollId).build();
-            openSearchClient.clearScroll(clearScrollRequest);
-          }
+          OpenSearchUtil.clearScroll(scrollId, openSearchClient);
           return doneOnSearchHits;
         });
   }

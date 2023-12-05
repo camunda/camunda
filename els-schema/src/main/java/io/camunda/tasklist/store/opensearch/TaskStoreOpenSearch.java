@@ -59,7 +59,6 @@ import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch.core.ClearScrollRequest;
 import org.opensearch.client.opensearch.core.ScrollRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -802,9 +801,7 @@ public class TaskStoreOpenSearch implements TaskStore {
           taskIdsForCurrentVar.addAll(scrollTaskIds);
         }
 
-        final ClearScrollRequest clearScrollRequest =
-            new ClearScrollRequest.Builder().scrollId(scrollId).build();
-        osClient.clearScroll(clearScrollRequest);
+        OpenSearchUtil.clearScroll(scrollId, osClient);
 
         listOfTaskIdsSets.add(taskIdsForCurrentVar);
 
