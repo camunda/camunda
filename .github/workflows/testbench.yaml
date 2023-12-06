@@ -66,6 +66,11 @@ jobs:
           version: ${{ steps.image-tag.outputs.image-tag }}
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
+      - run: ./mvnw -B -D skipTests -D skipChecks -pl benchmarks/project -am install
+      - name: Build and Push Starter Image
+        run: ./mvnw -pl benchmarks/project jib:build -P starter -D image="gcr.io/zeebe-io/starter:${{ steps.image-tag.outputs.image-tag }}"
+      - name: Build and Push Worker Image
+        run: ./mvnw -pl benchmarks/project jib:build -P worker -D image="gcr.io/zeebe-io/worker:${{ steps.image-tag.outputs.image-tag }}"
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@v2.7.4
@@ -77,7 +82,6 @@ jobs:
           secrets: |
             secret/data/products/zeebe/ci/zeebe TESTBENCH_PROD_CLIENT_SECRET;
             secret/data/products/zeebe/ci/zeebe TESTBENCH_PROD_CONTACT_POINT;
-        # Start e2e test instance, do not wait for the result
       - name: Start Test
         shell: bash
         run: |
