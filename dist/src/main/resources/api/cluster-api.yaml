@@ -245,8 +245,32 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/BrokerState"
-        change:
-            $ref: "#/components/schemas/TopologyChange"
+        lastChange:
+          $ref: "#/components/schemas/CompletedChange"
+        pendingChange:
+          $ref: "#/components/schemas/TopologyChange"
+
+    CompletedChange:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/ChangeId"
+        status:
+          type: string
+          enum:
+            - COMPLETED
+            - FAILED
+            - CANCELLED
+        startedAt:
+          type: string
+          format: date-time
+          description: The time when the topology change was started
+          example: "2020-01-01T00:00:00Z"
+        completedAt:
+          type: string
+          format: date-time
+          description: The time when the topology change was completed
+          example: "2020-01-01T00:00:00Z"
 
     TopologyChange:
       type: object

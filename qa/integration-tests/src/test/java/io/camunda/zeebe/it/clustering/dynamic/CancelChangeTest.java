@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.clustering.dynamic;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.management.cluster.TopologyChange.StatusEnum;
+import io.camunda.zeebe.management.cluster.CompletedChange;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -46,8 +46,9 @@ final class CancelChangeTest {
     final var cancelResponse = actuator.cancelChange(addResponse.getChangeId());
 
     // then
-    assertThat(cancelResponse.getChange().getStatus()).isEqualTo(StatusEnum.CANCELLED);
-    assertThat(cancelResponse.getChange().getId()).isEqualTo(addResponse.getChangeId());
+    assertThat(cancelResponse.getLastChange().getStatus())
+        .isEqualTo(CompletedChange.StatusEnum.CANCELLED);
+    assertThat(cancelResponse.getLastChange().getId()).isEqualTo(addResponse.getChangeId());
     assertThat(cancelResponse.getBrokers())
         .describedAs("Topology is not changed")
         .isEqualTo(initialTopology.getBrokers());

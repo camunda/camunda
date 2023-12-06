@@ -11,7 +11,6 @@ import io.camunda.zeebe.management.cluster.BrokerStateCode;
 import io.camunda.zeebe.management.cluster.CompletedChange;
 import io.camunda.zeebe.management.cluster.PartitionStateCode;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
-import io.camunda.zeebe.management.cluster.TopologyChange.StatusEnum;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import java.time.OffsetDateTime;
@@ -92,9 +91,8 @@ public final class ClusterActuatorAssert
   }
 
   public ClusterActuatorAssert doesNotHavePendingChanges() {
-    final var currentChange = actual.getTopology().getChange();
-    Assertions.assertThat(currentChange).isNotNull();
-    Assertions.assertThat(currentChange.getStatus()).isEqualTo(StatusEnum.COMPLETED);
+    final var currentChange = actual.getTopology().getPendingChange();
+    Assertions.assertThat(currentChange).isNull();
     return this;
   }
 
