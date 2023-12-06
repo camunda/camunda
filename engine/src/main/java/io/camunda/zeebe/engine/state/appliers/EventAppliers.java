@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -77,6 +78,8 @@ public final class EventAppliers implements EventApplier {
     registerDecisionRequirementsAppliers(state);
 
     registerFormAppliers(state);
+
+    registerUserTaskAppliers(state);
 
     registerSignalSubscriptionAppliers(state);
 
@@ -298,6 +301,11 @@ public final class EventAppliers implements EventApplier {
   private void registerFormAppliers(final MutableProcessingState state) {
     register(FormIntent.CREATED, new FormCreatedApplier(state.getFormState()));
     register(FormIntent.DELETED, new FormDeletedApplier(state.getFormState()));
+  }
+
+  private void registerUserTaskAppliers(final MutableProcessingState state) {
+    register(UserTaskIntent.CREATING, new UserTaskCreatingApplier(state));
+    register(UserTaskIntent.CREATED, new UserTaskCreatedApplier(state));
   }
 
   private void registerCommandDistributionAppliers(final MutableProcessingState state) {

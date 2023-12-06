@@ -10,15 +10,30 @@ package io.camunda.zeebe.engine.processing.bpmn.task;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 
 public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<ExecutableUserTask> {
+
+  private final BpmnIncidentBehavior incidentBehavior;
+  private final BpmnStateTransitionBehavior stateTransitionBehavior;
+  private final BpmnVariableMappingBehavior variableMappingBehavior;
+  private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
+  private final BpmnUserTaskBehavior userTaskBehavior;
 
   public UserTaskProcessor(
       final BpmnBehaviors bpmnBehaviors,
       final BpmnStateTransitionBehavior stateTransitionBehavior) {
     super(bpmnBehaviors, stateTransitionBehavior);
+    eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
+    incidentBehavior = bpmnBehaviors.incidentBehavior();
+    this.stateTransitionBehavior = stateTransitionBehavior;
+    variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
+    userTaskBehavior = bpmnBehaviors.userTaskBehavior();
   }
 
   @Override
@@ -42,7 +57,18 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   @Override
   protected void onActivateInternal(
       final ExecutableUserTask element, final BpmnElementContext context) {
-    // TODO will be added with https://github.com/camunda/zeebe/issues/15275
+    variableMappingBehavior
+        .applyInputMappings(context, element)
+        .flatMap(ok -> userTaskBehavior.evaluateUserTaskExpressions(element, context))
+        .flatMap(j -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> j))
+        .ifRightOrLeft(
+            userTaskProperties -> {
+              final var userTaskKey =
+                  userTaskBehavior.createNewUserTask(context, element, userTaskProperties);
+              userTaskBehavior.userTaskCreated(userTaskKey, context, element, userTaskProperties);
+              stateTransitionBehavior.transitionToActivated(context, element.getEventType());
+            },
+            failure -> incidentBehavior.createIncident(failure, context));
   }
 
   @Override

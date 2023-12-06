@@ -18,9 +18,11 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
@@ -313,7 +315,7 @@ public final class ReplayStateTest {
                       .withElementType(BpmnElementType.PROCESS)
                       .getFirst();
                 }),
-        testCase("link deployed form")
+        testCase("link deployed form to job-based user task")
             .withProcess(
                 Bpmn.createExecutableProcess(PROCESS_ID)
                     .startEvent()
@@ -329,6 +331,23 @@ public final class ReplayStateTest {
                   assertThat(job.getValue().getCustomHeaders())
                       .containsKey("io.camunda.zeebe:formKey");
                   return job;
+                }),
+        testCase("link deployed form to native user task")
+            .withProcess(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .userTask("task", t -> t.zeebeFormId("Form_0w7r08e"))
+                    .zeebeUserTask()
+                    .endEvent()
+                    .done())
+            .withForm("/form/test-form-1.form")
+            .withExecution(
+                engine -> {
+                  engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+                  final Record<UserTaskRecordValue> userTask =
+                      RecordingExporter.userTaskRecords(UserTaskIntent.CREATED).getFirst();
+                  assertThat(userTask.getValue().getFormKey()).isGreaterThan(-1L);
+                  return userTask;
                 }),
         testCase("correlate buffered message to start event")
             .withProcess(
