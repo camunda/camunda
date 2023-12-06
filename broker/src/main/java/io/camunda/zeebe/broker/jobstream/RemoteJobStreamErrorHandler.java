@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.broker.jobstream;
 
-import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
@@ -21,6 +20,7 @@ import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.time.Duration;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A {@link RemoteStreamErrorHandler} for {@link ActivatedJob} payloads, which will write any
@@ -36,9 +36,8 @@ import org.slf4j.Logger;
  * until it times out.
  */
 final class RemoteJobStreamErrorHandler implements RemoteStreamErrorHandler<ActivatedJob> {
-  private static final Logger LOGGER = Loggers.JOB_STREAM;
+  private static final Logger LOGGER = LoggerFactory.getLogger(RemoteStreamErrorHandler.class);
   private static final Logger NO_WRITER_LOGGER = new ThrottledLogger(LOGGER, Duration.ofSeconds(1));
-  private static final Logger NO_ACTION_LOGGER = new ThrottledLogger(LOGGER, Duration.ofSeconds(1));
   private static final Logger FAILED_WRITER_LOGGER =
       new ThrottledLogger(LOGGER, Duration.ofSeconds(1));
 
@@ -89,7 +88,7 @@ final class RemoteJobStreamErrorHandler implements RemoteStreamErrorHandler<Acti
       FAILED_WRITER_LOGGER.warn(
           """
           Failed to handle failed job push {} on partition {}. Write to logstream failed with {};
-          job will remain activated until it times out. """,
+          job will remain activated until it times out.""",
           job.jobKey(),
           partitionId,
           writeResult.getLeft());
