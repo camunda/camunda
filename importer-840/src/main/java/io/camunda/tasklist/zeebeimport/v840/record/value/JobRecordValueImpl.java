@@ -75,6 +75,11 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   }
 
   @Override
+  public long getTimeout() {
+    return 0;
+  }
+
+  @Override
   public String getErrorMessage() {
     return errorMessage;
   }
