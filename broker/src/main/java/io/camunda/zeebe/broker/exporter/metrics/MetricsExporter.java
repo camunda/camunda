@@ -29,7 +29,23 @@ import org.agrona.collections.Long2LongHashMap;
 
 public class MetricsExporter implements Exporter {
 
-  public static final Duration TIME_TO_LIVE = Duration.ofSeconds(10);
+  /**
+   * Defines the time after instances or jobs are getting removed from the cache/map.
+   *
+   * <p>Using large TTL or increasing the current needs to be done with care. Right now we assume
+   * that we can create at max ~150 PI per partition per second.
+   *
+   * <p>This means: 150 * TIME_TO_LIVE = max_cache_size max_cache_size * 4 (cache counts) * 8 (long)
+   * * 8 (long) = estimated_max_used_spaced_per_partition (roughly)
+   * estimated_max_used_spaced_per_partition * partitions = max_used_spaced_per_broker When using a
+   * TTL of 60 seconds this means: max_cache_size = 9000 (entries)
+   * estimated_max_used_spaced_per_partition = 2.304.000 (bytes) = 2.3 MB
+   *
+   * <p>The estimated_max_used_spaced_per_partition is slightly a little more, since the TreeMap
+   * might consume more memory than the Long2LongHashMap.
+   */
+  public static final Duration TIME_TO_LIVE = Duration.ofSeconds(60);
+
   private final ExecutionLatencyMetrics executionLatencyMetrics;
   private final Long2LongHashMap jobKeyToCreationTimeMap;
   private final Long2LongHashMap processInstanceKeyToCreationTimeMap;
