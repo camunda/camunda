@@ -19,7 +19,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.engine.state.immutable.FormState;
-import io.camunda.zeebe.engine.state.immutable.UserTaskState.State;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
@@ -35,7 +35,8 @@ import java.util.Set;
 
 public final class BpmnUserTaskBehavior {
 
-  private static final Set<State> CANCELABLE_STATES = EnumSet.of(State.CREATING, State.CREATED);
+  private static final Set<LifecycleState> CANCELABLE_LIFECYCLE_STATES =
+      EnumSet.of(LifecycleState.CREATING, LifecycleState.CREATED);
   private final UserTaskRecord userTaskRecord =
       new UserTaskRecord().setVariables(DocumentValue.EMPTY_DOCUMENT);
   private final KeyGenerator keyGenerator;
@@ -179,8 +180,8 @@ public final class BpmnUserTaskBehavior {
   public void cancelUserTask(final ElementInstance elementInstance) {
     final long userTaskKey = elementInstance.getUserTaskKey();
     if (userTaskKey > 0) {
-      final State state = userTaskState.getState(userTaskKey);
-      if (CANCELABLE_STATES.contains(state)) {
+      final LifecycleState lifecycleState = userTaskState.getLifecycleState(userTaskKey);
+      if (CANCELABLE_LIFECYCLE_STATES.contains(lifecycleState)) {
         final UserTaskRecord userTask = userTaskState.getUserTask(userTaskKey);
         stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELING, userTask);
         stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELED, userTask);

@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
-import io.camunda.zeebe.engine.state.immutable.UserTaskState.State;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
@@ -25,6 +25,6 @@ public final class UserTaskCancelingApplier
 
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
-    userTaskState.updateUserTaskState(key, State.CANCELING);
+    userTaskState.updateUserTaskLifecycleState(key, LifecycleState.CANCELING);
   }
 }

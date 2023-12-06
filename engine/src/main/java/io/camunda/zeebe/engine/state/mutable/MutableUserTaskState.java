@@ -19,7 +19,7 @@ public interface MutableUserTaskState extends UserTaskState {
 
   void update(final long userTaskKey, final Consumer<UserTaskRecord> modifier);
 
-  void updateUserTaskState(final long userTaskKey, final State newState);
+  void updateUserTaskLifecycleState(final long userTaskKey, final LifecycleState newLifecycleState);
 
   void delete(final long userTaskKey);
 }

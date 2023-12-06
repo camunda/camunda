@@ -11,7 +11,7 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
-import io.camunda.zeebe.engine.state.immutable.UserTaskState.State;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
@@ -51,7 +51,7 @@ public class UserTaskStateTest {
 
     // then
     final UserTaskRecord storedRecord = userTaskState.getUserTask(5_000);
-    assertUserTask(expectedRecord, storedRecord, State.CREATING);
+    assertUserTask(expectedRecord, storedRecord, LifecycleState.CREATING);
   }
 
   @Test
@@ -64,7 +64,7 @@ public class UserTaskStateTest {
 
     // then
     final UserTaskRecord storedRecord = userTaskState.getUserTask(5_000);
-    assertUserTask(expectedRecord, "customTenantId", storedRecord, State.CREATING);
+    assertUserTask(expectedRecord, "customTenantId", storedRecord, LifecycleState.CREATING);
   }
 
   @Test
@@ -103,10 +103,10 @@ public class UserTaskStateTest {
     userTaskState.create(expectedRecord);
 
     // when
-    userTaskState.updateUserTaskState(5_000, State.CREATED);
+    userTaskState.updateUserTaskLifecycleState(5_000, LifecycleState.CREATED);
 
     // then
-    assertUserTaskState(5_000, State.CREATED);
+    assertUserTaskState(5_000, LifecycleState.CREATED);
   }
 
   @Test
@@ -188,16 +188,19 @@ public class UserTaskStateTest {
   private void assertUserTask(
       final UserTaskRecord expectedRecord,
       final UserTaskRecord storedRecord,
-      final State expectedState) {
+      final LifecycleState expectedLifecycleState) {
     assertUserTask(
-        expectedRecord, TenantOwned.DEFAULT_TENANT_IDENTIFIER, storedRecord, expectedState);
+        expectedRecord,
+        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+        storedRecord,
+        expectedLifecycleState);
   }
 
   private void assertUserTask(
       final UserTaskRecord expectedRecord,
       final String expectedTenantId,
       final UserTaskRecord storedRecord,
-      final State expectedState) {
+      final LifecycleState expectedLifecycleState) {
     assertThat(storedRecord)
         .hasElementInstanceKey(expectedRecord.getElementInstanceKey())
         .hasBpmnProcessId(expectedRecord.getBpmnProcessId())
@@ -213,10 +216,12 @@ public class UserTaskStateTest {
         .hasFormKey(expectedRecord.getFormKey())
         .hasUserTaskKey(expectedRecord.getUserTaskKey())
         .hasTenantId(expectedTenantId);
-    assertUserTaskState(expectedRecord.getUserTaskKey(), expectedState);
+    assertUserTaskState(expectedRecord.getUserTaskKey(), expectedLifecycleState);
   }
 
-  private void assertUserTaskState(final long userTaskKey, final State expectedState) {
-    Assertions.assertThat(userTaskState.getState(userTaskKey)).isEqualTo(expectedState);
+  private void assertUserTaskState(
+      final long userTaskKey, final LifecycleState expectedLifecycleState) {
+    Assertions.assertThat(userTaskState.getLifecycleState(userTaskKey))
+        .isEqualTo(expectedLifecycleState);
   }
 }

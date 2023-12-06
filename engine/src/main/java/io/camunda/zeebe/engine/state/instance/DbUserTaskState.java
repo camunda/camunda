@@ -35,8 +35,9 @@ public class DbUserTaskState implements UserTaskState, MutableUserTaskState {
 
   // key => job state
   private final DbForeignKey<DbLong> fkUserTask;
-  private final UserTaskStateValue userTaskState = new UserTaskStateValue();
-  private final ColumnFamily<DbForeignKey<DbLong>, UserTaskStateValue> statesUserTaskColumnFamily;
+  private final UserTaskLifecycleStateValue userTaskState = new UserTaskLifecycleStateValue();
+  private final ColumnFamily<DbForeignKey<DbLong>, UserTaskLifecycleStateValue>
+      statesUserTaskColumnFamily;
 
   public DbUserTaskState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -59,7 +60,7 @@ public class DbUserTaskState implements UserTaskState, MutableUserTaskState {
     userTaskRecordToWrite.setRecordWithoutVariables(userTask);
     userTasksColumnFamily.insert(userTaskKey, userTaskRecordToWrite);
     // initialize state
-    userTaskState.setState(State.CREATING);
+    userTaskState.setLifecycleState(LifecycleState.CREATING);
     statesUserTaskColumnFamily.insert(fkUserTask, userTaskState);
   }
 
@@ -79,9 +80,9 @@ public class DbUserTaskState implements UserTaskState, MutableUserTaskState {
   }
 
   @Override
-  public void updateUserTaskState(final long key, final State newState) {
+  public void updateUserTaskLifecycleState(final long key, final LifecycleState newLifecycleState) {
     userTaskKey.wrapLong(key);
-    userTaskState.setState(newState);
+    userTaskState.setLifecycleState(newLifecycleState);
     statesUserTaskColumnFamily.update(fkUserTask, userTaskState);
   }
 
@@ -93,13 +94,14 @@ public class DbUserTaskState implements UserTaskState, MutableUserTaskState {
   }
 
   @Override
-  public State getState(final long key) {
+  public LifecycleState getLifecycleState(final long key) {
     userTaskKey.wrapLong(key);
-    final UserTaskStateValue storedState = statesUserTaskColumnFamily.get(fkUserTask);
-    if (storedState == null) {
-      return State.NOT_FOUND;
+    final UserTaskLifecycleStateValue storedLifecycleState =
+        statesUserTaskColumnFamily.get(fkUserTask);
+    if (storedLifecycleState == null) {
+      return LifecycleState.NOT_FOUND;
     }
-    return storedState.getState();
+    return storedLifecycleState.getLifecycleState();
   }
 
   @Override
