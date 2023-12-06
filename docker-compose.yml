@@ -6,7 +6,7 @@ networks:
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.7.1
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.9.2
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -51,7 +51,7 @@ services:
       - zeebe_network
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.7.1
+    image: docker.elastic.co/kibana/kibana:8.9.2
     ports:
       - 5601:5601
     environment:

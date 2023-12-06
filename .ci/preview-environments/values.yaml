@@ -121,7 +121,7 @@ camunda-platform:
   # Feel free to enable persistence and adjust storage on a per-branch level whenever needed.
   elasticsearch:
     replicas: 1
-    imageTag: 7.16.2
+    imageTag: 8.9.2
     persistence:
       enabled: false
     volumeClaimTemplate:

@@ -6,10 +6,15 @@
  */
 package io.camunda.tasklist.util;
 
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.rest_client.RestClientOptions;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.tasklist.Application;
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.data.es.DevDataGeneratorElasticSearch;
 import io.camunda.tasklist.data.os.DevDataGeneratorOpenSearch;
+import org.elasticsearch.client.RestClient;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -40,5 +45,13 @@ public class TestApplication {
     return TasklistZeebeIntegrationTest.IS_ELASTIC
         ? new DevDataGeneratorElasticSearch()
         : new DevDataGeneratorOpenSearch();
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
+  RestClientTransport restClientTransport(
+      RestClient restClient, ObjectProvider<RestClientOptions> restClientOptions) {
+    return new RestClientTransport(
+        restClient, new JacksonJsonpMapper(), restClientOptions.getIfAvailable());
   }
 }

@@ -6,8 +6,23 @@
  */
 package io.camunda.tasklist.util.apps.nobeans;
 
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.rest_client.RestClientOptions;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.graphql.spring.boot.test.GraphQLTestAutoConfiguration;
+import org.elasticsearch.client.RestClient;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.annotation.Bean;
 
 @SpringBootApplication(exclude = GraphQLTestAutoConfiguration.class)
-public class TestApplicationWithNoBeans {}
+public class TestApplicationWithNoBeans {
+  @Bean
+  @ConditionalOnMissingBean
+  RestClientTransport restClientTransport(
+      RestClient restClient, ObjectProvider<RestClientOptions> restClientOptions) {
+    return new RestClientTransport(
+        restClient, new JacksonJsonpMapper(), restClientOptions.getIfAvailable());
+  }
+}

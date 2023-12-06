@@ -138,6 +138,8 @@ public class Application {
 
     @Override
     public void onApplicationEvent(ApplicationFailedEvent event) {
+      LOGGER.error(event.getException().getMessage(), event.getException().getCause());
+
       event.getApplicationContext().close();
       System.exit(-1);
     }
