@@ -17,7 +17,7 @@ import io.camunda.zeebe.management.cluster.Operation;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
 import io.camunda.zeebe.management.cluster.PartitionState;
 import io.camunda.zeebe.management.cluster.PartitionStateCode;
-import io.camunda.zeebe.management.cluster.PostOperationResponse;
+import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.management.cluster.TopologyChange;
 import io.camunda.zeebe.management.cluster.TopologyChange.StatusEnum;
 import io.camunda.zeebe.management.cluster.TopologyChangeCompletedInner;
@@ -303,8 +303,8 @@ public class ClusterEndpoint {
     return ResponseEntity.status(errorCode).body(error);
   }
 
-  private static PostOperationResponse mapResponseType(final TopologyChangeResponse response) {
-    return new PostOperationResponse()
+  private static PlannedOperationsResponse mapResponseType(final TopologyChangeResponse response) {
+    return new PlannedOperationsResponse()
         .changeId(response.changeId())
         .currentTopology(mapBrokerStates(response.currentTopology()))
         .expectedTopology(mapBrokerStates(response.expectedTopology()))

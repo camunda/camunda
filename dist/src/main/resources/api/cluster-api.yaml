@@ -167,21 +167,21 @@ components:
       content:
         application.json:
           schema:
-            $ref: "#/components/schemas/PostOperationResponse"
+            $ref: "#/components/schemas/PlannedOperationsResponse"
 
     ScaleBrokersResponse:
       description: Request to reconfigure brokers is accepted.
       content:
         application.json:
           schema:
-            $ref: "#/components/schemas/PostOperationResponse"
+            $ref: "#/components/schemas/PlannedOperationsResponse"
 
     RemoveBrokerResponse:
       description: Request to remove broker is accepted.
       content:
         application.json:
           schema:
-            $ref: "#/components/schemas/PostOperationResponse"
+            $ref: "#/components/schemas/PlannedOperationsResponse"
 
     GetTopologyResponse:
       description: response body for getting current topology
@@ -208,8 +208,8 @@ components:
       items:
         $ref: "#/components/schemas/BrokerId"
 
-    PostOperationResponse:
-      title: PostOperationResponse
+    PlannedOperationsResponse:
+      title: PlannedOperationsResponse
       description: Returns the current topology, planned changes and the expected final topology
                    when the planned changes have completed.
       type: object
@@ -222,7 +222,8 @@ components:
           items:
             $ref: "#/components/schemas/BrokerState"
         plannedChanges:
-          description: A sequence operations for processing to the request.
+          description: A sequence of operations that will be performed to transform the current
+                       topology into the expected topology.
           type: array
           items:
             $ref: "#/components/schemas/Operation"
