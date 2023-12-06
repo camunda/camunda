@@ -161,9 +161,15 @@ public class AuthCookieService {
     }
     final jakarta.servlet.http.Cookie cookie = new jakarta.servlet.http.Cookie(cookieName, cookieValue);
     cookie.setPath(cookiePath);
-    cookie.setMaxAge(isDelete ? 0 : (int) Duration.between(Instant.now(), expiresAt).toSeconds());
     cookie.setHttpOnly(true);
     cookie.setSecure(isSecureScheme(requestScheme));
+
+    if (expiresAt == null) {
+      cookie.setMaxAge(-1);
+    } else {
+      cookie.setMaxAge(isDelete ? 0 : (int) Duration.between(Instant.now(), expiresAt).toSeconds());
+    }
+
     return cookie;
   }
 

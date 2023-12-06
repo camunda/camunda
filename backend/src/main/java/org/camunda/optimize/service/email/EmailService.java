@@ -139,6 +139,8 @@ public class EmailService {
         properties.setProperty("mail.smtp.socketFactory.port", configurationService.getNotificationEmailPort().toString());
         properties.setProperty("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
         properties.setProperty("mail.smtp.socketFactory.fallback", "false");
+        properties.setProperty("mail.smtp.ssl.checkserveridentity",
+                configurationService.getNotificationEmailCheckServerIdentity().toString());
       }
       session = Session.getInstance(properties, auth);
     } else {
