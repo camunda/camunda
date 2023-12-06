@@ -42,7 +42,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 @SpringBootTest(
     classes = {
       TasklistProperties.class,
-      ElasticsearchConnector.class,
       TestApplicationWithNoBeans.class,
       SearchEngineHealthIndicator.class,
       WebSecurityConfig.class,
@@ -50,7 +49,8 @@ import org.springframework.test.context.junit4.SpringRunner;
       ElasticsearchSessionRepository.class,
       RetryElasticsearchClient.class,
       ElasticsearchInternalTask.class,
-      TasklistProperties.class
+      TasklistProperties.class,
+      ElasticsearchConnector.class
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)

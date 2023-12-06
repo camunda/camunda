@@ -10,7 +10,6 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.cluster.HealthResponse;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
-import co.elastic.clients.transport.rest_client.RestClientOptions;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -60,15 +59,17 @@ import org.apache.http.ssl.TrustStrategy;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
-import org.elasticsearch.client.*;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.RestHighLevelClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -82,14 +83,6 @@ public class ElasticsearchConnector {
   @Autowired private TasklistProperties tasklistProperties;
 
   private ElasticsearchClient elasticsearchClient;
-
-  @Bean
-  @Primary
-  RestClientTransport restClientTransport(
-      RestClient restClient, ObjectProvider<RestClientOptions> restClientOptions) {
-    return new RestClientTransport(
-        restClient, new JacksonJsonpMapper(), restClientOptions.getIfAvailable());
-  }
 
   @Bean
   public co.elastic.clients.elasticsearch.ElasticsearchClient elasticsearchClient() {

@@ -28,11 +28,11 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    
+
     <version.zeebe>8.4.0-alpha2</version.zeebe>
     <version.identity>8.4.0-alpha2</version.identity>
     <version.elasticsearch>7.17.15</version.elasticsearch>
-    <version.elasticsearch-client>8.9.2</version.elasticsearch-client>
+    <version.elasticsearch-client>8.7.1</version.elasticsearch-client>
     <version.opensearch>2.7.0</version.opensearch>
     <version.spring.boot>3.1.6</version.spring.boot>
     <version.log4j>2.19.0</version.log4j>
@@ -417,7 +417,6 @@
           <version>3.11.0</version>
           <configuration>
             <forceJavacCompilerUse>true</forceJavacCompilerUse>
-            <parameters>true</parameters>
           </configuration>
         </plugin>
 
