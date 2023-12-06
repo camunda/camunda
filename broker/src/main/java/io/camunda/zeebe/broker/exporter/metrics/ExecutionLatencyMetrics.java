@@ -46,7 +46,7 @@ public class ExecutionLatencyMetrics {
           .help(
               "A current estimation of active instances (jobs or process instances). This can only be an estimation, since long lived instances are excluded from this.")
           .labelNames("partition", "type")
-          .create();
+          .register();
 
   public void observeProcessInstanceExecutionTime(
       final int partitionId, final long creationTimeMs, final long completionTimeMs) {
