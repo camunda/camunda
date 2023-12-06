@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.exporter.metrics;
 
+import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
 
 public class ExecutionLatencyMetrics {
@@ -38,6 +39,15 @@ public class ExecutionLatencyMetrics {
           .buckets(0.10f, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4, 12.8, 25.6, 51.2)
           .register();
 
+  private static final Gauge CURRENT_ACTIVE_INSTANCE =
+      Gauge.build()
+          .namespace("zeebe")
+          .name("estimated_current_active_instances")
+          .help(
+              "A current estimation of active instances (jobs or process instances). This can only be an estimation, since long lived instances are excluded from this.")
+          .labelNames("partition", "type")
+          .create();
+
   public void observeProcessInstanceExecutionTime(
       final int partitionId, final long creationTimeMs, final long completionTimeMs) {
     PROCESS_INSTANCE_EXECUTION
@@ -57,6 +67,14 @@ public class ExecutionLatencyMetrics {
     JOB_ACTIVATION_TIME
         .labels(Integer.toString(partitionId))
         .observe(latencyInSeconds(creationTimeMs, activationTimeMs));
+  }
+
+  public void setCurrentJobsCount(final int partitionId, final int count) {
+    CURRENT_ACTIVE_INSTANCE.labels(Integer.toString(partitionId), "jobs").set(count);
+  }
+
+  public void setCurrentProcessInstanceCount(final int partitionId, final int count) {
+    CURRENT_ACTIVE_INSTANCE.labels(Integer.toString(partitionId), "processInstances").set(count);
   }
 
   public Histogram getJobLifeTime() {

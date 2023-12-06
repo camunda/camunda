@@ -138,6 +138,8 @@ public class MetricsExporter implements Exporter {
       executionLatencyMetrics.observeProcessInstanceExecutionTime(
           partitionId, creationTime, record.getTimestamp());
     }
+    executionLatencyMetrics.setCurrentProcessInstanceCount(
+        partitionId, processInstanceKeyToCreationTimeMap.size());
   }
 
   private void storeProcessInstanceCreation(final long creationTime, final long recordKey) {
@@ -155,6 +157,7 @@ public class MetricsExporter implements Exporter {
       final var creationTime = jobKeyToCreationTimeMap.remove(recordKey);
       executionLatencyMetrics.observeJobLifeTime(partitionId, creationTime, record.getTimestamp());
     }
+    executionLatencyMetrics.setCurrentJobsCount(partitionId, jobKeyToCreationTimeMap.size());
   }
 
   private void handleJobBatchRecord(final Record<?> record, final int partitionId) {
@@ -213,5 +216,17 @@ public class MetricsExporter implements Exporter {
   private static boolean isProcessInstanceRecord(final Record<?> record) {
     final var recordValue = (ProcessInstanceRecordValue) record.getValue();
     return BpmnElementType.PROCESS == recordValue.getBpmnElementType();
+  }
+
+  public static class MetricsExporterConfiguration {
+    private String maxExecutionTimeToTrack = TIME_TO_LIVE.toString();
+
+    public String getMaxExecutionTimeToTrack() {
+      return maxExecutionTimeToTrack;
+    }
+
+    public void setMaxExecutionTimeToTrack(final String maxExecutionTimeToTrack) {
+      this.maxExecutionTimeToTrack = maxExecutionTimeToTrack;
+    }
   }
 }
