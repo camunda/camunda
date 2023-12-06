@@ -136,6 +136,11 @@ public class ProcessInstanceMigrationMigrateProcessor
       responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }
+    if (error instanceof final IncorrectMappingException e) {
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, e.getMessage());
+      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
+      return ProcessingError.EXPECTED_ERROR;
+    }
 
     return ProcessingError.UNEXPECTED_ERROR;
   }
@@ -175,6 +180,17 @@ public class ProcessInstanceMigrationMigrateProcessor
     if (targetElementId == null) {
       throw new UnmappedActiveElementException(
           elementInstanceRecord.getProcessInstanceKey(), elementInstanceRecord.getElementId());
+    }
+
+    final BpmnElementType targetElementType =
+        processDefinition.getProcess().getElementById(targetElementId).getElementType();
+    if (elementInstanceRecord.getBpmnElementType() != targetElementType) {
+      throw new IncorrectMappingException(
+          elementInstanceRecord.getProcessInstanceKey(),
+          elementInstanceRecord.getElementId(),
+          elementInstanceRecord.getBpmnElementType(),
+          targetElementId,
+          targetElementType);
     }
 
     stateWriter.appendFollowUpEvent(
@@ -247,6 +263,33 @@ public class ProcessInstanceMigrationMigrateProcessor
               but no mapping instruction defined for active element with id '%s'. \
               Elements cannot be migrated without a mapping.""",
               processInstanceKey, elementId));
+    }
+  }
+
+  /**
+   * Exception that can be thrown during the migration of a process instance, in case any of the
+   * mapping instructions of the command refer to a source and a target element with different
+   * element type, or different event type.
+   */
+  private static final class IncorrectMappingException extends RuntimeException {
+    IncorrectMappingException(
+        final long processInstanceKey,
+        final String elementId,
+        final BpmnElementType bpmnElementType,
+        final String targetElementId,
+        final BpmnElementType targetBpmnElementType) {
+      super(
+          String.format(
+              """
+              Expected to migrate process instance '%s' \
+              but active element with id '%s' and type '%s' is mapped to \
+              an element with id '%s' and different type '%s'. \
+              Active elements must be mapped to the same type.""",
+              processInstanceKey,
+              elementId,
+              bpmnElementType,
+              targetElementId,
+              targetBpmnElementType));
     }
   }
 }
