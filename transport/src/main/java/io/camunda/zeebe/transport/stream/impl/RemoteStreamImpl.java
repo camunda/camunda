@@ -111,13 +111,13 @@ public final class RemoteStreamImpl<M, P extends BufferWriter> implements Remote
       }
 
       final var client = iterator.next();
-      LOGGER.debug(
+      LOGGER.trace(
           "Failed to push payload (size = {}), retrying with next stream", payload.getLength());
       streamer.pushAsync(payload, (error, data) -> retry(error, data, iterator), client.id());
     }
 
     private void onConsumersExhausted(final Throwable throwable, final P payload) {
-      LOGGER.debug(
+      LOGGER.trace(
           "Failed to push payload (size = {}), no more streams to retry", payload.getLength());
       errorHandler.handleError(throwable, payload);
     }

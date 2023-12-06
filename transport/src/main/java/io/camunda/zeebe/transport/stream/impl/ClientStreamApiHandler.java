@@ -55,20 +55,21 @@ final class ClientStreamApiHandler {
       return;
     }
 
-    final var errorResponse = new ErrorResponse();
-    switch (error) {
-      case final StreamExhaustedException e -> errorResponse
-          .code(ErrorCode.EXHAUSTED)
-          .message(e.getMessage());
-      case final ClientStreamBlockedException e -> errorResponse
-          .code(ErrorCode.BLOCKED)
-          .message(e.getMessage());
-      case final NoSuchStreamException e -> errorResponse
-          .code(ErrorCode.NOT_FOUND)
-          .message(e.getMessage());
-      default -> errorResponse.code(ErrorCode.INTERNAL_ERROR).message(error.getMessage());
+    final var errorResponse =
+        new ErrorResponse().code(mapErrorToCode(error)).message(error.getMessage());
+    for (final var detail : error.getSuppressed()) {
+      errorResponse.addDetail(mapErrorToCode(detail), detail.getMessage());
     }
 
     response.complete(errorResponse);
+  }
+
+  private ErrorCode mapErrorToCode(final Throwable error) {
+    return switch (error) {
+      case final ClientStreamBlockedException ignored -> ErrorCode.BLOCKED;
+      case final NoSuchStreamException ignored -> ErrorCode.NOT_FOUND;
+      case final StreamExhaustedException ignored -> ErrorCode.EXHAUSTED;
+      default -> ErrorCode.INTERNAL;
+    };
   }
 }

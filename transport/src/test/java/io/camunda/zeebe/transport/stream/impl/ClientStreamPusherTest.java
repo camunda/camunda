@@ -23,6 +23,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
 final class ClientStreamPusherTest {
@@ -98,17 +99,48 @@ final class ClientStreamPusherTest {
     assertThat(pushSucceeded.get()).isTrue();
   }
 
+  @Test
+  void shouldAddIndividualErrorsAsSuppressed() {
+    // given
+    final var expected =
+        List.of(
+            new RuntimeException("Foo"),
+            new IllegalStateException("Foo"),
+            new IllegalArgumentException("Foo"));
+    expected.forEach(f -> addFailingClient(ignored -> {}, f));
+
+    // when
+    final TestActorFuture<Void> future = new TestActorFuture<>();
+    streamPusher.push(stream, null, future);
+
+    // then
+    assertThat(future)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableThat()
+        .havingCause()
+        .asInstanceOf(InstanceOfAssertFactories.throwable(StreamExhaustedException.class))
+        .extracting(
+            StreamExhaustedException::getSuppressed,
+            InstanceOfAssertFactories.array(Throwable[].class))
+        .containsExactlyInAnyOrderElementsOf(expected);
+  }
+
   private ClientStreamIdImpl getNextStreamId() {
     return new ClientStreamIdImpl(stream.streamId(), stream.nextLocalId());
   }
 
   private ClientStreamId addFailingClient(final Consumer<ClientStreamId> consumer) {
+    return addFailingClient(consumer, new RuntimeException("Failed"));
+  }
+
+  private ClientStreamId addFailingClient(
+      final Consumer<ClientStreamId> consumer, final RuntimeException failure) {
     final ClientStreamIdImpl streamId = getNextStreamId();
     addClient(
         streamId,
         p -> {
           consumer.accept(streamId);
-          throw new RuntimeException("Failed");
+          throw failure;
         });
     return streamId;
   }

@@ -14,8 +14,10 @@ import io.camunda.zeebe.transport.stream.api.NoSuchStreamException;
 import io.camunda.zeebe.transport.stream.api.StreamExhaustedException;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 import java.util.UUID;
 import org.agrona.DirectBuffer;
@@ -63,17 +65,18 @@ final class ClientStreamPusher {
     final LinkedList<ClientStreamImpl<?>> targets = new LinkedList<>(streams);
     Collections.shuffle(targets);
 
-    tryPush(stream.streamId(), targets, payload, future);
+    tryPush(stream.streamId(), targets, payload, future, new ArrayList<>());
   }
 
   private void tryPush(
       final UUID streamId,
       final Queue<ClientStreamImpl<?>> targets,
       final DirectBuffer buffer,
-      final ActorFuture<Void> future) {
+      final ActorFuture<Void> future,
+      final List<Throwable> errors) {
     final var clientStream = targets.poll();
     if (clientStream == null) {
-      failOnStreamExhausted(future);
+      failOnStreamExhausted(future, errors);
       return;
     }
 
@@ -86,8 +89,9 @@ final class ClientStreamPusher {
                 return;
               }
 
+              errors.add(pushFailed);
               logFailedPush(pushFailed, clientStream);
-              tryPush(streamId, targets, buffer, future);
+              tryPush(streamId, targets, buffer, future, errors);
             });
   }
 
@@ -99,10 +103,11 @@ final class ClientStreamPusher {
     }
   }
 
-  private void failOnStreamExhausted(final ActorFuture<Void> future) {
+  private void failOnStreamExhausted(final ActorFuture<Void> future, final List<Throwable> errors) {
     final StreamExhaustedException error =
         new StreamExhaustedException(
             "Failed to push data to all available clients. No more clients left to retry.");
+    errors.forEach(error::addSuppressed);
     future.completeExceptionally(error);
   }
 
