@@ -217,16 +217,4 @@ public class MetricsExporter implements Exporter {
     final var recordValue = (ProcessInstanceRecordValue) record.getValue();
     return BpmnElementType.PROCESS == recordValue.getBpmnElementType();
   }
-
-  public static class MetricsExporterConfiguration {
-    private String maxExecutionTimeToTrack = TIME_TO_LIVE.toString();
-
-    public String getMaxExecutionTimeToTrack() {
-      return maxExecutionTimeToTrack;
-    }
-
-    public void setMaxExecutionTimeToTrack(final String maxExecutionTimeToTrack) {
-      this.maxExecutionTimeToTrack = maxExecutionTimeToTrack;
-    }
-  }
 }
