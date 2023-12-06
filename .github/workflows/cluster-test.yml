@@ -41,7 +41,7 @@ jobs:
         sudo apt install -y netcat
 
     - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v1
+      uses: google-github-actions/auth@67e9c72af6e0492df856527b474995862b7b6591 # v2
       with:
         credentials_json: ${{ steps.secrets.outputs.GCP_CREDENTIALS }}
 
