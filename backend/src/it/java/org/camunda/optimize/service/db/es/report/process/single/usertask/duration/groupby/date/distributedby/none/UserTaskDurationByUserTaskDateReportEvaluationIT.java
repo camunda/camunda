@@ -57,7 +57,6 @@ import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.S
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
-import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.getSupportedAggregationTypes;
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
@@ -105,7 +104,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT
       assertThat(MapResultUtil.getEntryForKey(measureResult.getData(), groupedByDayDateAsString(today)))
         .get()
         .extracting(MapResultEntryDto::getValue)
-        .isEqualTo(calculateExpectedValueGivenDurations(10., 20.).get(measureResult.getAggregationType()));
+        .isEqualTo(databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(10., 20.).get(measureResult.getAggregationType()));
     });
   }
 
@@ -151,7 +150,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT
       assertThat(MapResultUtil.getEntryForKey(measureResult.getData(), groupedByDayDateAsString(today)))
         .get()
         .extracting(MapResultEntryDto::getValue)
-        .isEqualTo(calculateExpectedValueGivenDurations(10., 20.).get(measureResult.getAggregationType()));
+        .isEqualTo(databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(10., 20.).get(measureResult.getAggregationType()));
     });
   }
 

@@ -25,10 +25,9 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.db.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
-import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
+import static org.camunda.optimize.service.util.ProcessReportDataType.USER_TASK_DUR_GROUP_BY_USER_TASK_BY_CANDIDATE_GROUP;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.getSupportedAggregationTypes;
-import static org.camunda.optimize.service.util.ProcessReportDataType.USER_TASK_DUR_GROUP_BY_USER_TASK_BY_CANDIDATE_GROUP;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
@@ -195,7 +194,7 @@ public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
           .groupByContains(USER_TASK_1)
             .distributedByContains(
               FIRST_CANDIDATE_GROUP_ID,
-              calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
+              databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
               FIRST_CANDIDATE_GROUP_NAME
             )
             .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
@@ -204,14 +203,14 @@ public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
             .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
             .distributedByContains(
               SECOND_CANDIDATE_GROUP_ID,
-              calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
+              databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
               SECOND_CANDIDATE_GROUP_NAME
             )
             .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
           .groupByContains(USER_TASK_A)
             .distributedByContains(
               FIRST_CANDIDATE_GROUP_ID,
-              calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
+              databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
               FIRST_CANDIDATE_GROUP_NAME
             )
             .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
@@ -220,7 +219,7 @@ public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
             .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
             .distributedByContains(
               SECOND_CANDIDATE_GROUP_ID,
-              calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
+              databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
               SECOND_CANDIDATE_GROUP_NAME
             )
             .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
@@ -247,7 +246,7 @@ public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
           .groupByContains(USER_TASK_1)
             .distributedByContains(
               FIRST_CANDIDATE_GROUP_ID,
-              calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
+              databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
               FIRST_CANDIDATE_GROUP_NAME
             )
             .distributedByContains(SECOND_CANDIDATE_GROUP_ID, null, SECOND_CANDIDATE_GROUP_NAME)
@@ -256,7 +255,7 @@ public class UserTaskWorkDurationByUserTaskByCandidateGroupReportEvaluationIT
             .distributedByContains(FIRST_CANDIDATE_GROUP_ID, null, FIRST_CANDIDATE_GROUP_NAME)
             .distributedByContains(
               SECOND_CANDIDATE_GROUP_ID,
-              calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
+              databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType),
               SECOND_CANDIDATE_GROUP_NAME
             )
             .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())

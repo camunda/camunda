@@ -23,8 +23,8 @@ import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.db.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.db.es.report.util.MapResultAsserter;
-import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -54,8 +54,8 @@ import static org.camunda.optimize.service.db.es.report.process.single.incident.
 import static org.camunda.optimize.service.db.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.TWO_PARALLEL_TASKS;
 import static org.camunda.optimize.service.db.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.TWO_SEQUENTIAL_TASKS;
 import static org.camunda.optimize.service.db.es.report.process.single.incident.duration.IncidentDataDeployer.PROCESS_DEFINITION_KEY;
-import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT;
 import static org.camunda.optimize.service.util.ProcessReportDataType.INCIDENT_DUR_GROUP_BY_FLOW_NODE;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT;
 import static org.camunda.optimize.util.BpmnModels.END_EVENT_ID_1;
 import static org.camunda.optimize.util.BpmnModels.END_EVENT_ID_2;
 import static org.camunda.optimize.util.BpmnModels.END_EVENT_NAME;
@@ -809,26 +809,22 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // @formatter:on
   }
 
-  private Stream<Arguments> aggregationTypes() {
-    // @formatter:off
+  private Stream<AggregationDto> aggregationTypes() {
     return Stream.of(
-      Arguments.of(new AggregationDto(MIN), 1000.),
-      Arguments.of(new AggregationDto(MAX), 9000.),
-      Arguments.of(new AggregationDto(AVERAGE), 4000.),
-      Arguments.of(new AggregationDto(PERCENTILE, 99.), 9000.),
-      Arguments.of(new AggregationDto(PERCENTILE, 95.), 9000.),
-      Arguments.of(new AggregationDto(PERCENTILE, 75.), 7250.),
-      Arguments.of(new AggregationDto(PERCENTILE, 50.), 2000.),
-      Arguments.of(new AggregationDto(PERCENTILE, 25.), 1250.),
-      Arguments.of(new AggregationDto(PERCENTILE, 100.), 9000.),
-      Arguments.of(new AggregationDto(PERCENTILE, 0.), 1000.)
+      new AggregationDto(MIN),
+      new AggregationDto(MAX),
+      new AggregationDto(AVERAGE),
+      new AggregationDto(PERCENTILE, 99.),
+      new AggregationDto(PERCENTILE, 95.),
+      new AggregationDto(PERCENTILE, 75.),
+      new AggregationDto(PERCENTILE, 50.),
+      new AggregationDto(PERCENTILE, 25.)
     );
-    // @formatter:on
   }
 
   @ParameterizedTest
   @MethodSource("aggregationTypes")
-  public void aggregationTypes(final AggregationDto aggregationType, final double expectedResult) {
+  public void aggregationTypes(final AggregationDto aggregationType) {
     // given
     // @formatter:off
     IncidentDataDeployer.dataDeployer(incidentClient)
@@ -858,7 +854,8 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
       .processInstanceCount(3L)
       .measure(ViewProperty.DURATION, aggregationType)
         .groupedByContains(END_EVENT, null, END_EVENT_NAME)
-        .groupedByContains(SERVICE_TASK_ID_1, expectedResult, SERVICE_TASK_NAME_1)
+        .groupedByContains(SERVICE_TASK_ID_1,
+                           databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(1000., 2000., 9000.).get(aggregationType), SERVICE_TASK_NAME_1)
         .groupedByContains(START_EVENT, null, START_EVENT_NAME)
       .doAssert(resultDto);
     // @formatter:on

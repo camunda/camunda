@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.db.es.report.process.single.usertask.duration.groupby.candidategroup.distributedby.usertask;
 
 import com.google.common.collect.ImmutableList;
+import jakarta.ws.rs.core.Response;
 import lombok.Data;
 import org.assertj.core.api.Assertions;
 import org.camunda.bpm.model.bpmn.Bpmn;
@@ -37,7 +38,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import jakarta.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,7 +51,6 @@ import static org.camunda.optimize.dto.optimize.query.report.single.configuratio
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.service.db.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
-import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.getSupportedAggregationTypes;
 
@@ -410,15 +409,15 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
       hyperMapAsserter
         .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
           .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
-            .distributedByContains(USER_TASK_1, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType))
+            .distributedByContains(USER_TASK_1, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType))
             .distributedByContains(USER_TASK_2, null)
-            .distributedByContains(USER_TASK_A, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType))
+            .distributedByContains(USER_TASK_A, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType))
             .distributedByContains(USER_TASK_B, null)
           .groupByContains(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME)
             .distributedByContains(USER_TASK_1, null)
-            .distributedByContains(USER_TASK_2, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType))
+            .distributedByContains(USER_TASK_2, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType))
             .distributedByContains(USER_TASK_A, null)
-            .distributedByContains(USER_TASK_B, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType))
+            .distributedByContains(USER_TASK_B, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType))
           .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
             .distributedByContains(USER_TASK_1, null)
             .distributedByContains(USER_TASK_2, UNASSIGNED_TASK_DURATION)
@@ -532,12 +531,12 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
         .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
           .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
             .distributedByContains(
-              USER_TASK_1, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), USER_TASK_1_NAME
+              USER_TASK_1, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), USER_TASK_1_NAME
             )
             .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
           .groupByContains(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME)
             .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
-            .distributedByContains(USER_TASK_2, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType), USER_TASK_2_NAME)
+            .distributedByContains(USER_TASK_2, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType), USER_TASK_2_NAME)
           .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
             .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
             .distributedByContains(USER_TASK_2, UNASSIGNED_TASK_DURATION, USER_TASK_2_NAME)
@@ -590,13 +589,13 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
             .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
             .distributedByContains(
               USER_TASK_2,
-              calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
+              databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
               USER_TASK_2_NAME
             )
           .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
             .distributedByContains(
               USER_TASK_1,
-              calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
+              databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
               USER_TASK_1_NAME
             )
             .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
@@ -648,13 +647,13 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
             .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
             .distributedByContains(
               USER_TASK_2,
-              calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
+              databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
               USER_TASK_2_NAME
             )
           .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
             .distributedByContains(
               USER_TASK_1,
-              calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
+              databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
               USER_TASK_1_NAME
             )
             .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
@@ -962,7 +961,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
         .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
           .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
             .distributedByContains(
-            USER_TASK_1, calculateExpectedValueGivenDurations(setDurations).get(aggType),
+            USER_TASK_1, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(setDurations).get(aggType),
             USER_TASK_1_NAME
           )
         .add()

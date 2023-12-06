@@ -54,7 +54,6 @@ import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.db.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
-import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.getSupportedAggregationTypes;
 import static org.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
@@ -373,15 +372,15 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
       hyperMapAsserter
         .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
           .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
-            .distributedByContains(USER_TASK_1, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType))
+            .distributedByContains(USER_TASK_1, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType))
             .distributedByContains(USER_TASK_2, null)
-            .distributedByContains(USER_TASK_A, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType))
+            .distributedByContains(USER_TASK_A, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType))
             .distributedByContains(USER_TASK_B, null)
           .groupByContains(SECOND_USER, SECOND_USER_FULL_NAME)
             .distributedByContains(USER_TASK_1, null)
-            .distributedByContains(USER_TASK_2, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType))
+            .distributedByContains(USER_TASK_2, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType))
             .distributedByContains(USER_TASK_A, null)
-            .distributedByContains(USER_TASK_B, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType))
+            .distributedByContains(USER_TASK_B, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType))
           .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
             .distributedByContains(USER_TASK_1, null)
             .distributedByContains(USER_TASK_2, UNASSIGNED_TASK_DURATION)
@@ -494,7 +493,7 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
         .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
           .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
             .distributedByContains(
-              USER_TASK_1, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), USER_TASK_1_NAME
+              USER_TASK_1, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), USER_TASK_1_NAME
             )
             .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
           .groupByContains(SECOND_USER, SECOND_USER_FULL_NAME)
@@ -551,11 +550,11 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
           .groupByContains(SECOND_USER, SECOND_USER_FULL_NAME)
             .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
             .distributedByContains(
-              USER_TASK_2, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), USER_TASK_2_NAME
+              USER_TASK_2, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), USER_TASK_2_NAME
             )
           .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
             .distributedByContains(
-              USER_TASK_1, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), USER_TASK_1_NAME
+              USER_TASK_1, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), USER_TASK_1_NAME
             )
             .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
           .add()
@@ -607,11 +606,11 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
           .groupByContains(SECOND_USER, SECOND_USER_FULL_NAME)
             .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
             .distributedByContains(
-              USER_TASK_2, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), USER_TASK_2_NAME
+              USER_TASK_2, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), USER_TASK_2_NAME
             )
           .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
             .distributedByContains(
-              USER_TASK_1, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), USER_TASK_1_NAME
+              USER_TASK_1, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), USER_TASK_1_NAME
             )
             .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
           .add()
@@ -919,7 +918,7 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluati
         .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
           .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
             .distributedByContains(
-              USER_TASK_1, calculateExpectedValueGivenDurations(setDurations).get(aggType), USER_TASK_1_NAME
+              USER_TASK_1, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(setDurations).get(aggType), USER_TASK_1_NAME
             )
           .add()
         .add();

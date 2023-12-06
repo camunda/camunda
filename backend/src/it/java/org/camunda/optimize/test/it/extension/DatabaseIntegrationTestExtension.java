@@ -22,6 +22,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
@@ -347,6 +348,10 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
   public void updateUserTaskDurations(final String processInstanceId, final String processDefinitionKey,
                                       final long duration) {
     databaseTestService.updateUserTaskDurations(processInstanceId, processDefinitionKey, duration);
+  }
+
+  public Map<AggregationDto, Double> calculateExpectedValueGivenDurations(final Number... setDuration) {
+    return databaseTestService.calculateExpectedValueGivenDurations(setDuration);
   }
 
 }

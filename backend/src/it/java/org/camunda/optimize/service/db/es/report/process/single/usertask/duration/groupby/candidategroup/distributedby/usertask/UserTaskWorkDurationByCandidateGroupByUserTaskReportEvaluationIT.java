@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.getSupportedAggregationTypes;
 import static org.camunda.optimize.service.util.ProcessReportDataType.USER_TASK_DUR_GROUP_BY_CANDIDATE_BY_USER_TASK;
@@ -115,15 +114,15 @@ public class UserTaskWorkDurationByCandidateGroupByUserTaskReportEvaluationIT
         hyperMapAsserter
           .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
             .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
-              .distributedByContains(USER_TASK_1, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType))
+              .distributedByContains(USER_TASK_1, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType))
               .distributedByContains(USER_TASK_2, null)
-              .distributedByContains(USER_TASK_A, calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType))
+              .distributedByContains(USER_TASK_A, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType))
               .distributedByContains(USER_TASK_B, null)
             .groupByContains(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME)
               .distributedByContains(USER_TASK_1, null)
-              .distributedByContains(USER_TASK_2, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType))
+              .distributedByContains(USER_TASK_2, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType))
               .distributedByContains(USER_TASK_A, null)
-              .distributedByContains(USER_TASK_B, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType))
+              .distributedByContains(USER_TASK_B, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType))
             .add()
           .add();
         // @formatter:on
@@ -165,13 +164,13 @@ public class UserTaskWorkDurationByCandidateGroupByUserTaskReportEvaluationIT
           .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
             .distributedByContains(
               USER_TASK_1,
-              calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
+              databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType),
               USER_TASK_1_NAME
             )
             .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
           .groupByContains(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME)
             .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
-            .distributedByContains(USER_TASK_2, calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType), USER_TASK_2_NAME)
+            .distributedByContains(USER_TASK_2, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType), USER_TASK_2_NAME)
           .add()
         .add();
       // @formatter:on

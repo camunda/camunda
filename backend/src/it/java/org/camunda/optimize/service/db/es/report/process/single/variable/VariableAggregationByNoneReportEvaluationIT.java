@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.db.es.report.process.single.variable;
 
 import com.google.common.collect.ImmutableMap;
+import jakarta.ws.rs.core.Response;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
@@ -24,10 +25,8 @@ import org.camunda.optimize.service.db.es.report.process.AbstractProcessDefiniti
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import jakarta.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -197,7 +196,7 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
 
   @ParameterizedTest
   @MethodSource("aggregationTypes")
-  public void supportsAllAggregationTypes(final AggregationDto aggregationType, final Double expectedResult) {
+  public void supportsAllAggregationTypes(final AggregationDto aggregationType) {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put(TEST_VARIABLE, 1);
@@ -217,20 +216,20 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
     assertThat(evaluationResponse.getInstanceCount()).isEqualTo(3L);
     assertThat(evaluationResponse.getMeasures())
       .extracting(MeasureResponseDto::getAggregationType).containsExactly(aggregationType);
-    assertThat(evaluationResponse.getFirstMeasureData()).isEqualTo(expectedResult);
+    assertThat(evaluationResponse.getFirstMeasureData())
+      .isEqualTo(databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(1., 5., 6.).get(aggregationType));
   }
 
-  private static Stream<Arguments> aggregationTypes() {
+  private static Stream<AggregationDto> aggregationTypes() {
     return Stream.of(
-      Arguments.of(new AggregationDto(MIN), 1.),
-      Arguments.of(new AggregationDto(MAX), 6.),
-      Arguments.of(new AggregationDto(AVERAGE), 4.),
-      Arguments.of(new AggregationDto(SUM), 12.),
-      Arguments.of(new AggregationDto(PERCENTILE, 99.), 6.),
-      Arguments.of(new AggregationDto(PERCENTILE, 95.), 6.),
-      Arguments.of(new AggregationDto(PERCENTILE, 75.), 5.75),
-      Arguments.of(new AggregationDto(PERCENTILE, 50.), 5.),
-      Arguments.of(new AggregationDto(PERCENTILE, 25.), 2.)
+      new AggregationDto(MIN),
+      new AggregationDto(MAX),
+      new AggregationDto(AVERAGE),
+      new AggregationDto(SUM),
+      new AggregationDto(PERCENTILE, 99.),
+      new AggregationDto(PERCENTILE, 95.),
+      new AggregationDto(PERCENTILE, 50.),
+      new AggregationDto(PERCENTILE, 25.)
     );
   }
 

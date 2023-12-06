@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
@@ -110,6 +111,8 @@ public abstract class DatabaseTestService {
   public abstract boolean indexExists(final String indexOrAliasName);
 
   public abstract OffsetDateTime getLastImportTimestampOfTimestampBasedImportIndex(final String dbType, final String engine);
+
+  public abstract Map<AggregationDto, Double> calculateExpectedValueGivenDurations(final Number... setDuration);
 
   public void cleanAndVerifyDatabase() {
     try {

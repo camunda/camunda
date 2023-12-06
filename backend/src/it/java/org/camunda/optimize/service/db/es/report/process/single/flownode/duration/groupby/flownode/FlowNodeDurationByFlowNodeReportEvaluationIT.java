@@ -65,7 +65,6 @@ import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.S
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.tenant.CamundaPlatformTenantService.TENANT_NOT_DEFINED;
-import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.getSupportedAggregationTypes;
 import static org.camunda.optimize.util.BpmnModels.START_EVENT_ID;
@@ -277,7 +276,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       assertThat(MapResultUtil.getEntryForKey(measureData, SERVICE_TASK_ID))
         .isPresent().get()
         .extracting(MapResultEntryDto::getValue)
-        .isEqualTo(calculateExpectedValueGivenDurations(expectedDurations).get(measureResult.getAggregationType()));
+        .isEqualTo(databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(expectedDurations).get(measureResult.getAggregationType()));
     });
   }
 
@@ -616,7 +615,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       assertThat(MapResultUtil.getEntryForKey(measureData, SERVICE_TASK_ID))
         .isPresent().get()
         .extracting(MapResultEntryDto::getValue)
-        .isEqualTo(calculateExpectedValueGivenDurations(expectedDurations).get(measureResult.getAggregationType()));
+        .isEqualTo(databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(expectedDurations).get(measureResult.getAggregationType()));
     });
   }
 

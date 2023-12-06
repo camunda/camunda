@@ -57,7 +57,6 @@ import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.S
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
-import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.getSupportedAggregationTypes;
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
@@ -740,7 +739,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
 
     Arrays.stream(getSupportedAggregationTypes()).forEach(aggregationType -> {
       assertThat(resultByAggregationType.get(aggregationType).get(0).getValue())
-        .isEqualTo(calculateExpectedValueGivenDurations(expectedDurations).get(aggregationType));
+        .isEqualTo(databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(expectedDurations).get(aggregationType));
     });
   }
 

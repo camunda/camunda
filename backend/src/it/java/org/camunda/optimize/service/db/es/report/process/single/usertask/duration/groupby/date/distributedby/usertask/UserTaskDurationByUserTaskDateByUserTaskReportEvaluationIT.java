@@ -71,7 +71,6 @@ import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.S
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
-import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.getSupportedAggregationTypes;
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
@@ -255,9 +254,9 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
         .measure(ViewProperty.DURATION, aggType, getUserTaskDurationTime())
           .groupByContains(groupedByDayDateAsString(today.minusDays(1)))
             .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
-            .distributedByContains(USER_TASK_2, calculateExpectedValueGivenDurations(10., 20.).get(aggType), USER_TASK_2_NAME)
+            .distributedByContains(USER_TASK_2, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(10., 20.).get(aggType), USER_TASK_2_NAME)
           .groupByContains(groupedByDayDateAsString(today))
-            .distributedByContains(USER_TASK_1, calculateExpectedValueGivenDurations(10., 20.).get(aggType), USER_TASK_1_NAME)
+            .distributedByContains(USER_TASK_1, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(10., 20.).get(aggType), USER_TASK_1_NAME)
             .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
           .add()
         .add();

@@ -61,7 +61,6 @@ import static org.camunda.optimize.dto.optimize.query.report.single.group.Aggreg
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
-import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.getAggregationTypesAsListForProcessParts;
 import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_VARIABLE;
@@ -318,7 +317,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
         .extracting(MapResultEntryDto::getKey)
         .isSortedAccordingTo(Comparator.reverseOrder());
       assertThat(MapResultUtil.getEntryForKey(resultData, DEFAULT_VARIABLE_VALUE).get().getValue())
-        .isEqualTo(calculateExpectedValueGivenDurations(1000., 9000., 2000.).get(measureResult.getAggregationType()));
+        .isEqualTo(databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(1000., 9000., 2000.).get(measureResult.getAggregationType()));
     });
   }
 

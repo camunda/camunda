@@ -66,7 +66,6 @@ import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.db.es.report.command.modules.distributed_by.process.identity.ProcessDistributedByIdentity.DISTRIBUTE_BY_IDENTITY_MISSING_KEY;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
-import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.getSupportedAggregationTypes;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
@@ -1258,7 +1257,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
           .extracting(MapResultEntryDto::getValue)
           .withFailMessage(getIncorrectValueForKeyAssertionMsg(userTaskKey))
           .isEqualTo(
-            calculateExpectedValueGivenDurations(expectedUserTaskValues.get(userTaskKey))
+            databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(expectedUserTaskValues.get(userTaskKey))
               .get(measureResult.getAggregationType())
           );
       });

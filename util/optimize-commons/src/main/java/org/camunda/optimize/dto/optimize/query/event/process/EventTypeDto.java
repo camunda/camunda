@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.event.process;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,8 +16,6 @@ import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
-
-import jakarta.validation.constraints.NotBlank;
 
 @Getter
 @Setter

@@ -10,7 +10,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.rest.queryparam.QueryParamUtil;
 import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;

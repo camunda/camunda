@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.test.it.extension.db;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -12,7 +14,10 @@ import jakarta.ws.rs.NotFoundException;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
@@ -67,6 +72,7 @@ import org.elasticsearch.xcontent.XContentType;
 import org.mockserver.integration.ClientAndServer;
 
 import java.io.IOException;
+import java.lang.module.ModuleDescriptor;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -74,6 +80,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
@@ -93,6 +100,8 @@ import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
 import static org.camunda.optimize.service.util.importing.EngineConstants.FLOW_NODE_TYPE_USER_TASK;
+import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsWithPercentileInterpolation;
+import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsWithoutPercentileInterpolation;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -115,6 +124,7 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
 
   private final String customIndexPrefix;
   private boolean haveToClean;
+  private String elasticsearchDatabaseVersion;
 
   private OptimizeElasticsearchClient prefixAwareRestHighLevelClient;
 
@@ -496,6 +506,38 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
     getOptimizeElasticClient().update(update);
+  }
+
+  @Override
+  public Map<AggregationDto, Double> calculateExpectedValueGivenDurations(final Number... setDuration) {
+    // For percentiles, the result we get from ES depends on the version being used
+    if (isDatabaseVersionGreaterThanOrEqualTo("8.9.0")) {
+      // Versions newer than 8.9.0 used interpolation to determine percentiles, so we use a library that does the same to
+      // calculate the expected results
+      return calculateExpectedValueGivenDurationsWithPercentileInterpolation(setDuration);
+    } else {
+      // Versions before 8.9.0 used the TDigest algorithm internally without interpolation, so we must use the same
+      // here when calculating the expected results
+      return calculateExpectedValueGivenDurationsWithoutPercentileInterpolation(setDuration);
+    }
+  }
+
+  @SneakyThrows
+  private boolean isDatabaseVersionGreaterThanOrEqualTo(final String dbVersion) {
+    if (elasticsearchDatabaseVersion == null) {
+      final Request request = new Request(HttpGet.METHOD_NAME, "/");
+      final String responseJson = EntityUtils.toString(
+        prefixAwareRestHighLevelClient.getLowLevelClient().performRequest(request).getEntity());
+      ObjectNode node = new ObjectMapper().readValue(responseJson, ObjectNode.class);
+      this.elasticsearchDatabaseVersion = node.get("version").get("number").toString().replace("\"", "");
+    }
+
+    return Stream.of(dbVersion, elasticsearchDatabaseVersion)
+      .map(ModuleDescriptor.Version::parse)
+      .sorted()
+      .findFirst()
+      .map(firstVersion -> firstVersion.toString().equals(dbVersion))
+      .orElseThrow(() -> new OptimizeIntegrationTestException("Could not determine ES version"));
   }
 
   @SneakyThrows

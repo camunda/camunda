@@ -16,9 +16,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.google.common.math.Quantiles.percentiles;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
@@ -30,13 +32,13 @@ public class DurationAggregationUtil {
 
   public static Double calculateExpectedValueGivenDurationsDefaultAggr(final Number setDuration) {
     return Optional.ofNullable(setDuration)
-      .map(DurationAggregationUtil::calculateExpectedValueGivenDurations)
+      .map(DurationAggregationUtil::calculateExpectedValueGivenDurationsWithoutPercentileInterpolation)
       .map(stats -> stats.get(new AggregationDto(AVERAGE)))
       .orElse(null);
   }
 
   public static Double calculateExpectedValueGivenDurationsDefaultAggr(final Number... setDuration) {
-    final double aggregatedDuration = calculateExpectedValueGivenDurations(setDuration)
+    final double aggregatedDuration = calculateExpectedValueGivenDurationsWithoutPercentileInterpolation(setDuration)
       .get(new AggregationDto(AVERAGE));
     // for duration, we should omit the decimal numbers since it's not relevant for the user
     return Precision.round(aggregatedDuration, 0);
@@ -66,25 +68,37 @@ public class DurationAggregationUtil {
       .toArray(AggregationDto[]::new);
   }
 
-  public static Map<AggregationDto, Double> calculateExpectedValueGivenDurations(final Number... setDuration) {
-    final DescriptiveStatistics statistics = new DescriptiveStatistics();
-    Stream.of(setDuration).map(Number::longValue).forEach(statistics::addValue);
-    // Elasticsearch uses the TDigest algorithm internally for percentile calculations, so we must use the same
-    // here when calculating the expected results
+  public static Map<AggregationDto, Double> calculateExpectedValueGivenDurationsWithoutPercentileInterpolation(final Number... setDuration) {
     final TDigest tDigest = TDigest.createAvlTreeDigest(100);
     Arrays.stream(setDuration).forEach(duration -> tDigest.add((double) duration));
+    return calculateExpectedValueGivenDurationsUsingPercentilesFunction(
+      q -> Precision.round(tDigest.quantile(q), 0), setDuration);
+  }
 
-    // for duration, we should omit the decimal numbers since it's not relevant for the user
+  public static Map<AggregationDto, Double> calculateExpectedValueGivenDurationsWithPercentileInterpolation(final Number... setDuration) {
+    return calculateExpectedValueGivenDurationsUsingPercentilesFunction(
+      percentile -> percentiles().index((int) (percentile * 100)).compute(Arrays.asList(setDuration)),
+      setDuration
+    );
+  }
+
+  private static Map<AggregationDto, Double> calculateExpectedValueGivenDurationsUsingPercentilesFunction(
+    final Function<Double, Double> percentileFunction,
+    final Number... setDuration) {
+    final DescriptiveStatistics statistics = new DescriptiveStatistics();
+    Stream.of(setDuration).map(Number::longValue).forEach(statistics::addValue);
+
     return ImmutableMap.of(
       new AggregationDto(MIN), Precision.round(statistics.getMin(), 0),
       new AggregationDto(MAX), Precision.round(statistics.getMax(), 0),
       new AggregationDto(AVERAGE), Precision.round(statistics.getMean(), 0),
       new AggregationDto(SUM), Precision.round(statistics.getSum(), 0),
-      new AggregationDto(PERCENTILE, 99.), Precision.round(tDigest.quantile(0.99), 0),
-      new AggregationDto(PERCENTILE, 95.), Precision.round(tDigest.quantile(0.95), 0),
-      new AggregationDto(PERCENTILE, 75.), Precision.round(tDigest.quantile(0.75), 0),
-      new AggregationDto(PERCENTILE, 50.), Precision.round(tDigest.quantile(0.50), 0),
-      new AggregationDto(PERCENTILE, 25.), Precision.round(tDigest.quantile(0.25), 0)
+      new AggregationDto(PERCENTILE, 99.), percentileFunction.apply(0.99),
+      new AggregationDto(PERCENTILE, 95.), percentileFunction.apply(0.95),
+      new AggregationDto(PERCENTILE, 75.), percentileFunction.apply(0.75),
+      new AggregationDto(PERCENTILE, 50.), percentileFunction.apply(0.50),
+      new AggregationDto(PERCENTILE, 25.), percentileFunction.apply(0.25)
     );
   }
+
 }
