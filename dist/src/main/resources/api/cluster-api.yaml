@@ -240,10 +240,7 @@ components:
       type: object
       properties:
         version:
-          type: integer
-          format: int64
-          description: The version of the topology
-          example: 1
+          $ref: "#/components/schemas/TopologyVersion"
         brokers:
           type: array
           items:
@@ -375,6 +372,13 @@ components:
         - JOINING
         - ACTIVE
         - LEAVING
+
+    TopologyVersion:
+      title: TopologyVersion
+      description: The version of the topology
+      type: integer
+      format: int64
+      example: 1
 
     ChangeId:
       title: ChangeId
