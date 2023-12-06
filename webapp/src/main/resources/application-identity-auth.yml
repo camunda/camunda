@@ -6,13 +6,13 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${camunda.identity.issuer:${camunda.tasklist.identity.issuerUrl:}}
+          issuer-uri: ${camunda.identity.issuer:${camunda.tasklist.identity.issuerUrl:${CAMUNDA_TASKLIST_IDENTITY_ISSUER_URL:}}}
 # Fallback Identity configuration for deprecated env variable naming
 camunda:
   identity:
-    issuer: ${camunda.tasklist.identity.issuerUrl:}
-    issuerBackendUrl: ${camunda.tasklist.identity.issuerBackendUrl:}
-    clientId: ${camunda.tasklist.identity.clientId:}
-    clientSecret: ${camunda.tasklist.identity.clientSecret:}
+    issuer: ${camunda.tasklist.identity.issuerUrl:${CAMUNDA_TASKLIST_IDENTITY_ISSUER_URL:}}
+    issuerBackendUrl: ${camunda.tasklist.identity.issuerBackendUrl:${CAMUNDA_TASKLIST_IDENTITY_ISSUER_BACKEND_URL:}}
+    clientId: ${camunda.tasklist.identity.clientId:${CAMUNDA_TASKLIST_IDENTITY_CLIENT_ID:}}
+    clientSecret: ${camunda.tasklist.identity.clientSecret:${CAMUNDA_TASKLIST_IDENTITY_CLIENT_SECRET:}}
     audience: ${camunda.tasklist.identity.audience:}
     baseUrl: ${camunda.tasklist.identity.baseUrl:}
