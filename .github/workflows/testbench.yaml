@@ -66,7 +66,6 @@ jobs:
           version: ${{ steps.image-tag.outputs.image-tag }}
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
-      - run: ./mvnw -B -D skipTests -D skipChecks -pl benchmarks/project -am install
       - name: Build and Push Starter Image
         run: ./mvnw -pl benchmarks/project jib:build -P starter -D image="gcr.io/zeebe-io/starter:${{ steps.image-tag.outputs.image-tag }}"
       - name: Build and Push Worker Image
