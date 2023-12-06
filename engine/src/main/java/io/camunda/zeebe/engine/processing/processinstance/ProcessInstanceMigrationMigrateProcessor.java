@@ -223,11 +223,11 @@ public class ProcessInstanceMigrationMigrateProcessor
                         .setBpmnProcessId(processDefinition.getBpmnProcessId())
                         .setTenantId(elementInstance.getValue().getTenantId())));
 
-    final ExecutableCatchEventSupplier targetElement =
+    final var targetElement =
         processDefinition
             .getProcess()
             .getElementById(targetElementId, ExecutableCatchEventSupplier.class);
-    final BpmnElementContextImpl bpmnElementContext = new BpmnElementContextImpl();
+    final var bpmnElementContext = new BpmnElementContextImpl();
     bpmnElementContext.init(
         elementInstance.getKey(), elementInstance.getValue(), elementInstance.getState());
     eventSubscriptionBehavior.subscribeToEvents(targetElement, bpmnElementContext);

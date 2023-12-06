@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
@@ -142,13 +143,11 @@ public class MigrateProcessInstanceEventSubscriptionsTest {
 
     final long processDefinitionKey =
         extractProcessDefinitionKeyByProcessId(deployment, processId1);
-    assertThat(
-            RecordingExporter.timerRecords(TimerIntent.CREATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withProcessDefinitionKey(processDefinitionKey)
-                .getFirst()
-                .getValue())
-        .hasTargetElementId("boundaryEvent");
+
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withProcessDefinitionKey(processDefinitionKey)
+        .await();
 
     // when
     ENGINE
@@ -343,13 +342,11 @@ public class MigrateProcessInstanceEventSubscriptionsTest {
 
     final long processDefinitionKey =
         extractProcessDefinitionKeyByProcessId(deployment, processId1);
-    assertThat(
-            RecordingExporter.timerRecords(TimerIntent.CREATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withProcessDefinitionKey(processDefinitionKey)
-                .getFirst()
-                .getValue())
-        .hasTargetElementId("eventSubProcessStart");
+
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withProcessDefinitionKey(processDefinitionKey)
+        .await();
 
     // when
     ENGINE
@@ -468,6 +465,11 @@ public class MigrateProcessInstanceEventSubscriptionsTest {
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId1).create();
 
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
     // when
     ENGINE
         .processInstance()
@@ -532,6 +534,11 @@ public class MigrateProcessInstanceEventSubscriptionsTest {
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId1).create();
 
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
     // when
     ENGINE
         .processInstance()
@@ -585,6 +592,11 @@ public class MigrateProcessInstanceEventSubscriptionsTest {
         extractProcessDefinitionKeyByProcessId(deployment, processId2);
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId1).create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
 
     // when
     ENGINE
@@ -645,6 +657,11 @@ public class MigrateProcessInstanceEventSubscriptionsTest {
         extractProcessDefinitionKeyByProcessId(deployment, processId2);
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId1).create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
 
     // when
     ENGINE
@@ -711,6 +728,11 @@ public class MigrateProcessInstanceEventSubscriptionsTest {
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId1).create();
 
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
     // when
     ENGINE
         .processInstance()
@@ -761,6 +783,11 @@ public class MigrateProcessInstanceEventSubscriptionsTest {
         extractProcessDefinitionKeyByProcessId(deployment, processId2);
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId1).create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
 
     // when
     ENGINE
