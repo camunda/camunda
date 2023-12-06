@@ -29,7 +29,7 @@ public class IdentityConfigurer {
   }
 
   @Bean
-  @ConditionalOnBean(Identity.class)
+  @ConditionalOnProperty("camunda.identity.baseUrl")
   public PermissionsService getPermissionsService(OperateProperties operateProperties) {
     return new PermissionsService(operateProperties);
   }

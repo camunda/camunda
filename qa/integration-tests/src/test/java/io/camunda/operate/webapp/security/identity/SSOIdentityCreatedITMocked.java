@@ -25,7 +25,8 @@ import static org.assertj.core.api.Assertions.assertThat;
         IdentityConfigurer.class,
         OperateProperties.class},
     properties = {
-        OperateProperties.PREFIX + ".identity.resourcePermissionsEnabled = true"
+        OperateProperties.PREFIX + ".identity.resourcePermissionsEnabled = true",
+        "camunda.identity.baseUrl=http://IdentiyURL:8080"
     }
 )
 public class SSOIdentityCreatedITMocked {
