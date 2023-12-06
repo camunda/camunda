@@ -132,6 +132,10 @@ func (c *ClientImpl) NewUpdateJobRetriesCommand() commands.UpdateJobRetriesComma
 	return commands.NewUpdateJobRetriesCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
+func (c *ClientImpl) NewUpdateJobTimeoutCommand() commands.UpdateJobTimeoutCommandStep1 {
+	return commands.NewUpdateJobTimeoutCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
+}
+
 func (c *ClientImpl) NewSetVariablesCommand() commands.SetVariablesCommandStep1 {
 	return commands.NewSetVariablesCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
