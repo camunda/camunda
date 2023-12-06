@@ -88,15 +88,15 @@ RUN apk add --no-cache bash curl tini openjdk17-jre tzdata && \
     apk -U upgrade && \
     curl "https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh" --output /usr/local/bin/wait-for-it.sh && \
     chmod +x /usr/local/bin/wait-for-it.sh && \
-    addgroup -S optimize && \
-    adduser -S -g optimize optimize && \
+    addgroup -S -g 1001 camunda && \
+    adduser -S -g 1001 -u 1001 camunda && \
     mkdir -p /optimize && \
-    chown optimize:optimize /optimize
+    chown 1001:1001 /optimize
 
 WORKDIR /optimize
-USER optimize
+USER 1001:1001
 
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["./optimize.sh"]
 
-COPY --chown=optimize:optimize --from=builder /tmp/build .
+COPY --chown=1001:1001 --from=builder /tmp/build .
