@@ -63,7 +63,7 @@
     <version.yarn>v1.22.10</version.yarn>
     <version.failsafe>2.4.4</version.failsafe>
     <version.log4j.testjar>2.17.2</version.log4j.testjar>
-    <version.awssdk>2.21.30</version.awssdk>
+    <version.awssdk>2.21.37</version.awssdk>
     <zeebe-test-container.version>3.6.0</zeebe-test-container.version>
     <elasticsearch-test-container.version>1.19.3</elasticsearch-test-container.version>
 
