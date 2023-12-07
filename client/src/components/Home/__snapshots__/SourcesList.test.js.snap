@@ -31,7 +31,7 @@ exports[`should match snapshot 1`] = `
       Array [
         <BulkDeleterErrorHandler
           checkConflicts={[Function]}
-          conflictMessage="Removing Data Sources deletes all associated Reports and their Alerts."
+          conflictMessage="Removing Data sources deletes all associated Reports and their Alerts."
           deleteEntities={[Function]}
           type="remove"
         />,
@@ -94,7 +94,7 @@ exports[`should match snapshot 1`] = `
       </React.Fragment>
     }
     isLoading={false}
-    name="Data Sources"
+    name="Data sources"
     onChange={[Function]}
   />
   <DeleterErrorHandler

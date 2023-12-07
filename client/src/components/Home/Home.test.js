@@ -113,7 +113,7 @@ it('should show empty state component', async () => {
 
   expect(emptyState.prop('title')).toBe('Start by creating a Dashboard');
   expect(emptyState.prop('description')).toBe(
-    'Click Create New Dashboard to get insights into business processes'
+    'Click Create new dashboard to get insights into business processes'
   );
   expect(emptyState.prop('icon')).toBe('dashboard-optimize-accent');
 

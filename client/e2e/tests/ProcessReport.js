@@ -13,7 +13,7 @@ import {addAnnotation, clearAllAnnotations} from '../browserMagic';
 import * as e from './ProcessReport.elements.js';
 import * as Common from './Common.elements.js';
 
-fixture('Process Report')
+fixture('Process report')
   .page(config.endpoint)
   .beforeEach(async (t) => {
     await u.login(t);
@@ -25,7 +25,7 @@ test('create a report from a template', async (t) => {
   await t.resizeWindow(1300, 750);
   await t.click(Common.createNewButton);
   await t.hover(Common.newReportOption);
-  await t.click(Common.submenuOption('Process Report'));
+  await t.click(Common.submenuOption('Process report'));
 
   await t.click(Common.templateModalProcessField);
   await t.click(Common.carbonOption('Invoice Receipt with alternative correlation variable'));

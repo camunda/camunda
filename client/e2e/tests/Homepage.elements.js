@@ -7,9 +7,9 @@
 
 import {Selector} from 'testcafe';
 
-export const createNewDashboardButton = Selector('button').withText('Create New Dashboard');
+export const createNewDashboardButton = Selector('button').withText('Create new dashboard');
 export const emptyStateComponent = Selector('.EmptyState');
-export const blankDashboardButton = Selector('.Button').withText('Blank Dashboard');
+export const blankDashboardButton = Selector('.Button').withText('Blank dashboard');
 export const homepageLink = Selector('.NavItem a').withText('Collections');
 export const noDataNotice = Selector('.NoDataNotice');
 export const dashboardReportLink = Selector('.OptimizeReportTile .EntityName a');

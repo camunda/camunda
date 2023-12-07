@@ -63,13 +63,13 @@ test('combine two single number reports', async (t) => {
 
   await t.click(Common.createNewButton);
   await t.hover(Common.newReportOption);
-  await t.hover(Common.submenuOption('Combined Process Report'));
+  await t.hover(Common.submenuOption('Combined process report'));
 
   await t.takeElementScreenshot(Common.entityList, 'img/combined-report-create.png', {
     crop: {left: 1000, bottom: 300},
   });
 
-  await t.click(Common.submenuOption('Combined Process Report'));
+  await t.click(Common.submenuOption('Combined process report'));
   await t.typeText(Common.nameEditField, 'Combined Report', {replace: true});
 
   await t

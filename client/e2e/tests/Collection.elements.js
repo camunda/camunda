@@ -20,11 +20,11 @@ export const copyCollectionButton = overflowMenuOption('Copy');
 export const deleteCollectionButton = overflowMenuOption('Delete');
 export const remove = (element) => element.find('.DropdownOption').withText('Remove');
 const tabButton = Selector('.Collection .content .cds--tabs__nav-item');
-export const entityTab = tabButton.withText('Dashboards & Reports');
+export const entityTab = tabButton.withText('Dashboards & reports');
 export const entitiesTab = tabButton.withText('Dashboards');
 export const userTab = tabButton.withText('Users');
 export const alertTab = tabButton.withText('Alerts');
-export const sourcesTab = tabButton.withText('Data Sources');
+export const sourcesTab = tabButton.withText('Data sources');
 export const activeTab = Selector('.Collection .content .cds--tab-content:not([hidden]');
 export const addButton = activeTab.find('.cds--btn--primary');
 export const typeaheadInput = Selector('.Typeahead input');
@@ -41,7 +41,7 @@ export const carbonRoleOption = (text) =>
 export const userList = Selector('.UserList');
 export const addUserModal = Selector('.AddUserModal');
 export const logoutButton = Selector('header button').withText('Logout');
-export const usernameDropdown = Selector('header button').withAttribute('aria-label', 'Open User');
+export const usernameDropdown = Selector('header button').withAttribute('aria-label', 'Open user');
 export const searchField = Selector('.cds--search-input');
 export const selectAllCheckbox = Selector('.Table thead .cds--table-column-checkbox label');
 export const itemCheckbox = (idx) =>

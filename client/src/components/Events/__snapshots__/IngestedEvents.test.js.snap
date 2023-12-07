@@ -5,12 +5,12 @@ exports[`should match snapshot 1`] = `
   className="IngestedEvents"
 >
   <PageTitle
-    pageName="Ingested External Events"
+    pageName="Ingested external events"
   />
   <h1
     className="title"
   >
-    External Events
+    External events
   </h1>
   <Table
     body={
@@ -115,7 +115,7 @@ exports[`should match snapshot 1`] = `
         "order": "desc",
       }
     }
-    title="Ingested External Events"
+    title="Ingested external events"
     toolbar={
       <TableToolbar
         aria-label="data table toolbar"

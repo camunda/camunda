@@ -11,7 +11,7 @@ exports[`should show an info message to add sources 1`] = `
   className="info"
 >
   <Message>
-    To enable selection, Data Sources must be added to the Collection.
+    To enable selection, data sources must be added to the collection.
   </Message>
 </div>
 `;

@@ -48,7 +48,7 @@ export function getUser(t, userHandle) {
 export async function createNewReport(t) {
   await t.click(Common.createNewButton);
   await t.hover(Common.newReportOption);
-  await t.click(Common.submenuOption('Process Report'));
+  await t.click(Common.submenuOption('Process report'));
   await t.click(Selector('.Button').withText('Blank report'));
   await t.click(Selector(Common.modalConfirmButton));
   await toggleReportAutoPreviewUpdate(t);
@@ -64,7 +64,7 @@ export async function createNewDecisionReport(t) {
 export async function createNewCombinedReport(t) {
   await t.click(Common.createNewButton);
   await t.hover(Common.newReportOption);
-  await t.click(Common.submenuOption('Combined Process Report'));
+  await t.click(Common.submenuOption('Combined process report'));
   await toggleReportAutoPreviewUpdate(t);
 }
 

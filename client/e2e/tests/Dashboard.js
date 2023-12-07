@@ -35,8 +35,8 @@ test('create a dashboard and reports from a template', async (t) => {
   await t.click(Common.menuOption('Dashboard'));
 
   await t.click(Common.templateModalProcessField);
-  await t.click(Common.carbonOption('Invoice Receipt with alternative correlation variable'));
-  await t.click(e.templateOption('Improve Productivity'));
+  await t.click(Common.carbonOption('Invoice receipt with alternative correlation variable'));
+  await t.click(e.templateOption('Improve productivity'));
 
   await t.takeScreenshot('img/dashboardTemplate.png', {fullPage: true});
   await t.resizeWindow(1200, 600);
@@ -78,7 +78,7 @@ test('create a dashboard and reports from a template', async (t) => {
 
   await u.save(t);
 
-  await t.expect(e.dashboardName.textContent).eql('Improve Productivity');
+  await t.expect(e.dashboardName.textContent).eql('Improve productivity');
   await t
     .expect(e.reportTile.nth(0).textContent)
     .contains('Max number of processes in progress per day');
@@ -149,7 +149,7 @@ test('sharing', async (t) => {
   await t.click(Common.createNewButton);
   await t.click(Common.menuOption('Dashboard'));
 
-  await t.click(e.templateOption('Improve Productivity'));
+  await t.click(e.templateOption('Improve productivity'));
 
   await t.click(Common.templateModalProcessField);
   await t.click(Common.carbonOption('Invoice Receipt with alternative correlation variable'));
@@ -411,30 +411,30 @@ test('version selection', async (t) => {
   await t.click(Common.modalConfirmButton);
 
   await u.createNewReport(t);
-  await t.typeText(Common.nameEditField, 'Number Report', {replace: true});
-  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
-  await u.selectView(t, 'Process Instance', 'Count');
+  await t.typeText(Common.nameEditField, 'Number report', {replace: true});
+  await u.selectReportDefinition(t, 'Invoice receipt with alternative correlation variable');
+  await u.selectView(t, 'Process instance', 'Count');
   await u.save(t);
 
   await t.click(e.collectionLink);
   await u.createNewDashboard(t);
-  await u.addReportToDashboard(t, 'Number Report');
+  await u.addReportToDashboard(t, 'Number report');
   await u.save(t);
 
   // Creating
   await t.click(e.alertsDropdown);
-  await t.click(Common.overflowMenuOption('Create New Alert'));
-  await t.typeText(Alert.inputWithLabel('Alert Name'), 'Test alert', {replace: true});
+  await t.click(Common.overflowMenuOption('Create new alert'));
+  await t.typeText(Alert.inputWithLabel('Alert name'), 'Test alert', {replace: true});
   await t.click(Common.comboBox);
-  await t.click(Common.carbonOption('Number Report'));
-  await t.typeText(Alert.inputWithLabel('Send Email to'), 'test@email.com ');
+  await t.click(Common.carbonOption('Number report'));
+  await t.typeText(Alert.inputWithLabel('Send email to'), 'test@email.com ');
   await t.click(Common.modalConfirmButton);
   await t.click(Common.notificationCloseButton);
 
   // editing
   await t.click(e.alertsDropdown);
   await t.click(Common.overflowMenuOption('Test alert'));
-  await t.typeText(Alert.inputWithLabel('Alert Name'), 'another alert name', {replace: true});
+  await t.typeText(Alert.inputWithLabel('Alert name'), 'another alert name', {replace: true});
   await t.click(Common.modalConfirmButton);
   await t.click(Common.notificationCloseButton);
 
@@ -454,12 +454,12 @@ test('add a report from the dashboard', async (t) => {
   await t
     .click(Common.addButton)
     .click(e.createTileModalReportOptions)
-    .click(Common.carbonOption('New Report from a template'))
+    .click(Common.carbonOption('New report from a template'))
     .click(e.addTileButton);
 
   await t
     .click(Common.templateModalProcessField)
-    .click(Common.carbonOption('Invoice Receipt with alternative correlation variable'))
+    .click(Common.carbonOption('Invoice receipt with alternative correlation variable'))
     .click(e.blankReportButton)
     .click(Common.modalConfirmButton)
     .click('.DashboardRenderer');
@@ -467,13 +467,13 @@ test('add a report from the dashboard', async (t) => {
   await t
     .click(Common.addButton)
     .click(e.createTileModalReportOptions)
-    .click(Common.carbonOption('New Report from a template'))
+    .click(Common.carbonOption('New report from a template'))
     .click(e.addTileButton);
 
   await t.click(Common.templateModalProcessField);
 
   await t
-    .expect(Common.selectedOption('Invoice Receipt with alternative correlation variable').exists)
+    .expect(Common.selectedOption('Invoice receipt with alternative correlation variable').exists)
     .ok();
 
   await t.click(Common.modalConfirmButton).click('.DashboardRenderer');

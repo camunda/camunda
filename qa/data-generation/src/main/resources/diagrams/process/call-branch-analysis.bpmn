@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_0x76ynk" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.12.0">
-  <bpmn:process id="call_branch_analysis_process" name="Call the Branch Analysis Process" isExecutable="true">
+  <bpmn:process id="call_branch_analysis_process" name="Call the branch analysis process" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1" camunda:asyncBefore="true">
       <bpmn:extensionElements>
         <camunda:formData>
@@ -14,7 +14,7 @@
       <bpmn:incoming>SequenceFlow_1ogdhhl</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="SequenceFlow_1ogdhhl" sourceRef="Task_0koddw1" targetRef="EndEvent_0mkcy10" />
-    <bpmn:callActivity id="Task_0koddw1" name="Call Branch Analysis Process" calledElement="branch_analysis_process">
+    <bpmn:callActivity id="Task_0koddw1" name="Call branch analysis process" calledElement="branch_analysis_process">
       <bpmn:extensionElements>
         <camunda:in source="x" target="sleepTime" />
       </bpmn:extensionElements>

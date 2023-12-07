@@ -24,7 +24,7 @@ export const optionsButton = (typeahead) => typeahead.find('.optionsButton');
 export const typeaheadInput = (typeahead) => typeahead.find('input');
 export const typeaheadOption = (typeahead, text) =>
   typeahead.find('.DropdownOption').withText(text);
-export const externalEvents = Selector('.cds--tabs button').withText('External Events');
+export const externalEvents = Selector('.cds--tabs button').withText('External events');
 export const startNode = Selector('g[data-element-id=StartEvent_1]');
 export const startAndEndEvents = Selector('input[type=radio]').nth(3);
 export const startEvent = Selector('.StartEvent_1 .cds--table-column-checkbox label');
@@ -36,11 +36,11 @@ export const endEvent = Selector('.invoiceProcessed .cds--table-column-checkbox 
 export const eventsTable = Selector('.EventTable');
 export const publishButton = Selector('.publish-button');
 export const permissionButton = Selector('.permission button');
-export const addEventSourceBtn = Selector('.GenerationModal button').withText('Add Event Source');
+export const addEventSourceBtn = Selector('.GenerationModal button').withText('Add event source');
 export const zoomButton = Selector('.zoomIn');
 export const diagram = Selector('.ProcessView .BPMNDiagram');
-export const businessKey = Selector('.label').withText('Business Key').prevSibling();
-export const externalEventsTab = Selector('.NavItem').withText('External Events');
+export const businessKey = Selector('.label').withText('Business key').prevSibling();
+export const externalEventsTab = Selector('.NavItem').withText('External events');
 export const eventCheckbox = (index) =>
   Selector('.Table tbody tr').nth(index).find('.cds--table-column-checkbox label');
 export const selectionDropdown = Selector('.selectionActions button');

@@ -35,8 +35,8 @@ exports[`should match snapshot 1`] = `
     </Dropdown>
     <Dropdown
       className="isActive"
-      key="External Events"
-      label="External Events"
+      key="External events"
+      label="External events"
     >
       <ForwardRef(DropdownOption)
         onClick={[Function]}
