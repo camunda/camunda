@@ -146,6 +146,22 @@ public class ProcessInstanceMigrationMigrateProcessor
       return;
     }
 
+    final DeployedProcess sourceProcessDefinition =
+        processState.getProcessByKeyAndTenant(
+            targetProcessDefinitionKey, processInstance.getValue().getTenantId());
+    mappingInstructions.forEach(
+        instruction -> {
+          final String targetElementId = instruction.getTargetElementId();
+          if (processDefinition.getProcess().getElementById(targetElementId) == null) {
+            throw new NonExistingElementException(processInstanceKey, targetElementId, "target");
+          }
+
+          final String sourceElementId = instruction.getSourceElementId();
+          if (sourceProcessDefinition.getProcess().getElementById(sourceElementId) == null) {
+            throw new NonExistingElementException(processInstanceKey, sourceElementId, "source");
+          }
+        });
+
     final Map<String, String> mappedElementIds =
         mapElementIds(mappingInstructions, processInstance, processDefinition);
 
@@ -196,6 +212,12 @@ public class ProcessInstanceMigrationMigrateProcessor
     if (error instanceof final ChildProcessMigrationException e) {
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, e.getMessage());
       responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
+      return ProcessingError.EXPECTED_ERROR;
+    }
+    if (error instanceof final NonExistingElementException e) {
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, e.getMessage());
+      responseWriter.writeRejectionOnCommand(
+          command, RejectionType.INVALID_ARGUMENT, e.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }
 
@@ -440,6 +462,29 @@ public class ProcessInstanceMigrationMigrateProcessor
               but process instance is a child process instance. \
               Child process instances cannot be migrated.""",
               processInstanceKey));
+    }
+  }
+
+  /**
+   * Exception that can be thrown during the migration of a process instance, in following cases:
+   *
+   * <p>1) A mapping instruction contains a source element id that does not exist in the source
+   * process definition.
+   *
+   * <p>2) A mapping instruction contains a target element id that does not exist in the target
+   * process definition.
+   */
+  private static final class NonExistingElementException extends RuntimeException {
+    NonExistingElementException(
+        final long processInstanceKey, final String elementId, final String elementSource) {
+      super(
+          String.format(
+              """
+              Expected to migrate process instance '%s' \
+              but mapping instructions contain a non-existing %s element id '%s'. \
+              Elements provided in mapping instructions must exist \
+              in the %s process definition.""",
+              processInstanceKey, elementSource, elementId, elementSource));
     }
   }
 }
