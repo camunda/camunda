@@ -55,6 +55,7 @@ public class ProcessInstanceMigrationMigrateProcessor
   private static final String ERROR_MESSAGE_PROCESS_DEFINITION_NOT_FOUND =
       "Expected to migrate process instance to process definition but no process definition found with key '%d'";
 
+  private static final long NO_PARENT = -1L;
   private static final UnsafeBuffer NIL_VALUE = new UnsafeBuffer(MsgPackHelper.NIL);
   private final VariableRecord variableRecord = new VariableRecord().setValue(NIL_VALUE);
 
@@ -98,6 +99,10 @@ public class ProcessInstanceMigrationMigrateProcessor
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
       return;
+    }
+
+    if (processInstance.getValue().getParentProcessInstanceKey() != NO_PARENT) {
+      throw new ChildProcessMigrationException(processInstanceKey);
     }
 
     final DeployedProcess processDefinition =
@@ -144,6 +149,11 @@ public class ProcessInstanceMigrationMigrateProcessor
       return ProcessingError.EXPECTED_ERROR;
     }
     if (error instanceof final IncorrectMappingException e) {
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, e.getMessage());
+      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
+      return ProcessingError.EXPECTED_ERROR;
+    }
+    if (error instanceof final ChildProcessMigrationException e) {
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, e.getMessage());
       responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
       return ProcessingError.EXPECTED_ERROR;
@@ -308,6 +318,22 @@ public class ProcessInstanceMigrationMigrateProcessor
               bpmnElementType,
               targetElementId,
               targetBpmnElementType));
+    }
+  }
+
+  /**
+   * Exception that can be thrown during the migration of a process instance, in case any of the
+   * process instance is a child process instance.
+   */
+  private static final class ChildProcessMigrationException extends RuntimeException {
+    ChildProcessMigrationException(final long processInstanceKey) {
+      super(
+          String.format(
+              """
+              Expected to migrate process instance '%s' \
+              but process instance is a child process instance. \
+              Child process instances cannot be migrated.""",
+              processInstanceKey));
     }
   }
 }
