@@ -17,7 +17,7 @@ import io.camunda.zeebe.management.cluster.Operation;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
 import io.camunda.zeebe.management.cluster.PartitionState;
 import io.camunda.zeebe.management.cluster.PartitionStateCode;
-import io.camunda.zeebe.management.cluster.PostOperationResponse;
+import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.management.cluster.TopologyChange;
 import io.camunda.zeebe.management.cluster.TopologyChange.StatusEnum;
 import io.camunda.zeebe.management.cluster.TopologyChangeCompletedInner;
@@ -303,8 +303,8 @@ public class ClusterEndpoint {
     return ResponseEntity.status(errorCode).body(error);
   }
 
-  private static PostOperationResponse mapResponseType(final TopologyChangeResponse response) {
-    return new PostOperationResponse()
+  private static PlannedOperationsResponse mapResponseType(final TopologyChangeResponse response) {
+    return new PlannedOperationsResponse()
         .changeId(response.changeId())
         .currentTopology(mapBrokerStates(response.currentTopology()))
         .expectedTopology(mapBrokerStates(response.expectedTopology()))
@@ -391,25 +391,19 @@ public class ClusterEndpoint {
   private static GetTopologyResponse mapClusterTopology(final ClusterTopology topology) {
     final var response = new GetTopologyResponse();
     final List<BrokerState> brokers = mapBrokerStates(topology.members());
-    final TopologyChange change;
 
-    if (topology.pendingChanges().isPresent()) {
-      change = mapOngoingChange(topology.pendingChanges().get());
-    } else if (topology.lastChange().isPresent()) {
-      change = mapCompletedChange(topology.lastChange().get());
-    } else {
-      change = new TopologyChange();
-    }
-
-    response.version(topology.version()).brokers(brokers).change(change);
+    response.version(topology.version()).brokers(brokers);
+    topology.lastChange().ifPresent(change -> response.lastChange(mapCompletedChange(change)));
+    topology.pendingChanges().ifPresent(change -> response.pendingChange(mapOngoingChange(change)));
 
     return response;
   }
 
-  private static TopologyChange mapCompletedChange(final CompletedChange completedChange) {
-    return new TopologyChange()
+  private static io.camunda.zeebe.management.cluster.CompletedChange mapCompletedChange(
+      final CompletedChange completedChange) {
+    return new io.camunda.zeebe.management.cluster.CompletedChange()
         .id(completedChange.id())
-        .status(mapChangeStatus(completedChange.status()))
+        .status(mapCompletedChangeStatus(completedChange.status()))
         .startedAt(mapInstantToDateTime(completedChange.startedAt()))
         .completedAt(mapInstantToDateTime(completedChange.completedAt()));
   }
@@ -420,6 +414,16 @@ public class ClusterEndpoint {
         .status(mapChangeStatus(clusterChangePlan.status()))
         .pending(mapOperations(clusterChangePlan.pendingOperations()))
         .completed(mapCompletedOperations(clusterChangePlan.completedOperations()));
+  }
+
+  private static io.camunda.zeebe.management.cluster.CompletedChange.StatusEnum
+      mapCompletedChangeStatus(final Status status) {
+    return switch (status) {
+      case COMPLETED -> io.camunda.zeebe.management.cluster.CompletedChange.StatusEnum.COMPLETED;
+      case FAILED -> io.camunda.zeebe.management.cluster.CompletedChange.StatusEnum.FAILED;
+      case CANCELLED -> io.camunda.zeebe.management.cluster.CompletedChange.StatusEnum.CANCELLED;
+      case IN_PROGRESS -> throw new IllegalStateException("Completed change cannot be in progress");
+    };
   }
 
   private static StatusEnum mapChangeStatus(final Status status) {
