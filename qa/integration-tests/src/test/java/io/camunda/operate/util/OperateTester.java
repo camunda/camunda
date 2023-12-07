@@ -59,8 +59,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesQuery;
-import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
+import static io.camunda.operate.qa.util.RestAPITestUtil.*;
 import static io.camunda.operate.util.CollectionUtil.filter;
 import static io.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
@@ -81,9 +80,9 @@ public class OperateTester {
   @Autowired
   private BeanFactory beanFactory;
 
-  private ZeebeClient zeebeClient;
-  private MockMvcTestRule mockMvcTestRule;
-  private SearchTestRule searchTestRule;
+  private final ZeebeClient zeebeClient;
+  private final MockMvcTestRule mockMvcTestRule;
+  private final SearchTestRule searchTestRule;
 
   private Long processDefinitionKey;
   private Long processInstanceKey;
@@ -286,6 +285,12 @@ public class OperateTester {
   public OperateTester startProcessInstance(String bpmnProcessId, String payload) {
     logger.debug("Start process instance '{}' with payload '{}'", bpmnProcessId, payload);
     processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, payload);
+    return this;
+  }
+
+  public OperateTester startProcessInstance(String bpmnProcessId, int processVersion, String payload) {
+    logger.debug("Start process instance '{}' version '{}' with payload '{}'", bpmnProcessId, processVersion, payload);
+    processInstanceKey = ZeebeTestUtil. startProcessInstance(false, zeebeClient, null, bpmnProcessId, processVersion, payload);
     return this;
   }
 
@@ -747,6 +752,13 @@ public class OperateTester {
     assertThat(listViewResponse.getTotalCount()).isEqualTo(1);
     assertThat(listViewResponse.getProcessInstances()).hasSize(1);
     return listViewResponse.getProcessInstances().get(0);
+  }
+
+  public List<ListViewProcessInstanceDto> getProcessInstanceByIds(List<Long> ids) {
+    final ListViewRequestDto request = new ListViewRequestDto(createGetProcessInstancesByIdsQuery(ids));
+    request.setPageSize(100);
+    final ListViewResponseDto listViewResponse = listViewReader.queryProcessInstances(request);
+    return listViewResponse.getProcessInstances();
   }
 
   public void cancelFlowNodeByInstanceKey(final Long processInstanceKey, final Long flowNodeInstanceKey) {

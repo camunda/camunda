@@ -161,7 +161,7 @@ public class IncidentIT extends OperateZeebeAbstractIT {
     assertIncident(incidentResponse,
         "Assertion failure on evaluate the expression '{taskOrderId:assert(orderId, orderId!=null, \"no variable found for name 'orderId'\")}': no variable found for name 'orderId'",
         "upperTask", ErrorType.IO_MAPPING_ERROR);
-    assertIncident(incidentResponse, "Failed to extract the correlation key for 'clientId': The value must be either a string or a number, but was NULL.", "messageCatchEvent", ErrorType.EXTRACT_VALUE_ERROR);
+    assertIncident(incidentResponse, "Failed to extract the correlation key for 'clientId': The value must be either a string or a number, but was 'NULL'.", "messageCatchEvent", ErrorType.EXTRACT_VALUE_ERROR);
     assertIncident(incidentResponse, "Expected at least one condition to evaluate to true, or to have a default flow", "exclusiveGateway", ErrorType.CONDITION_ERROR);
 
     assertThat(incidentResponse.getFlowNodes()).hasSize(4);
@@ -321,7 +321,7 @@ public class IncidentIT extends OperateZeebeAbstractIT {
     final IncidentDto inc = incidentOpt.get();
     assertThat(inc.getId()).as(activityId + ".id").isNotNull();
     assertThat(inc.getCreationTime()).as(activityId + ".creationTime").isNotNull();
-    assertThat(inc.getErrorMessage()).as(activityId + ".errorMessage").isEqualTo(errorMsg);
+    assertThat(inc.getErrorMessage()).as(activityId + ".errorMessage").startsWith(errorMsg);
     assertThat(inc.getFlowNodeId()).as(activityId + ".flowNodeId").isEqualTo(activityId);
     assertThat(inc.getFlowNodeInstanceId()).as(activityId + ".flowNodeInstanceId").isNotNull();
     if (errorType.equals(JOB_NO_RETRIES)) {

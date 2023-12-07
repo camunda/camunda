@@ -58,6 +58,7 @@ public class EventZeebeRecordProcessor {
     JOB_EVENTS.add(JobIntent.FAILED.name());
     JOB_EVENTS.add(JobIntent.RETRIES_UPDATED.name());
     JOB_EVENTS.add(JobIntent.CANCELED.name());
+    JOB_EVENTS.add(JobIntent.MIGRATED.name());
 
     PROCESS_INSTANCE_STATES.add(ELEMENT_ACTIVATING.name());
     PROCESS_INSTANCE_STATES.add(ELEMENT_ACTIVATED.name());
@@ -283,6 +284,9 @@ public class EventZeebeRecordProcessor {
       jsonMap.put(EventTemplate.EVENT_SOURCE_TYPE, entity.getEventSourceType());
       jsonMap.put(EventTemplate.EVENT_TYPE, entity.getEventType());
       jsonMap.put(EventTemplate.DATE_TIME, entity.getDateTime());
+      jsonMap.put(EventTemplate.PROCESS_KEY, entity.getProcessDefinitionKey());
+      jsonMap.put(EventTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
+      jsonMap.put(EventTemplate.FLOW_NODE_ID, entity.getFlowNodeId());
       if (entity.getMetadata() != null) {
         Map<String, Object> metadataMap = new HashMap<>();
         if (

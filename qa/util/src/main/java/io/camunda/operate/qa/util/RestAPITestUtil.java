@@ -11,7 +11,9 @@ import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDt
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 
+import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class RestAPITestUtil {
 
@@ -19,6 +21,10 @@ public class RestAPITestUtil {
     ListViewQueryDto query = new ListViewQueryDto();
     filtersSupplier.accept(query);
     return query;
+  }
+
+  public static ListViewQueryDto createGetProcessInstancesByIdsQuery(List<Long> ids) {
+    return createGetAllProcessInstancesQuery().setIds(ids.stream().map(String::valueOf).collect(Collectors.toList()));
   }
 
   public static ListViewQueryDto createGetAllProcessInstancesQuery() {

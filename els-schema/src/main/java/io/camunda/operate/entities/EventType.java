@@ -39,6 +39,7 @@ public enum EventType {
 
   CANCELED,
 
+  MIGRATED,
   UNKNOWN;
 
   private static final Logger logger = LoggerFactory.getLogger(EventType.class);

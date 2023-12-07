@@ -125,9 +125,14 @@ public abstract class ZeebeTestUtil {
   }
 
   public static long startProcessInstance(boolean ignoreException, ZeebeClient client, String tenantId, String bpmnProcessId, String payload) {
+    return startProcessInstance(false, client, tenantId, bpmnProcessId, null, payload);
+  }
+
+  public static long startProcessInstance(boolean ignoreException, ZeebeClient client, String tenantId, String bpmnProcessId, Integer processVersion, String payload) {
     try {
-      final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3 createProcessInstanceCommandStep3 = client.newCreateInstanceCommand()
-          .bpmnProcessId(bpmnProcessId).latestVersion();
+      final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3 createProcessInstanceCommandStep3 = (processVersion == null) ?
+          client.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion() :
+          client.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).version(processVersion);
       if (tenantId != null) {
         createProcessInstanceCommandStep3.tenantId(tenantId);
       }

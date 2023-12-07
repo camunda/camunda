@@ -196,6 +196,9 @@ public class ListViewZeebeRecordProcessor {
             if (isProcessInstanceTerminated(record)) {
               //resolve corresponding operation
               operationsManager.completeOperation(null, record.getKey(), null, OperationType.CANCEL_PROCESS_INSTANCE, batchRequest);
+            } else if (isProcessInstanceMigrated(record)) {
+              //resolve corresponding operation
+              operationsManager.completeOperation(null, record.getKey(), null, OperationType.MIGRATE_PROCESS_INSTANCE, batchRequest);
             }
             piEntity = updateProcessInstance(importBatch, record, piEntity, treePathMap, batchRequest);
           } else {
@@ -218,6 +221,8 @@ public class ListViewZeebeRecordProcessor {
           }
           updateFields.put(ListViewTemplate.PROCESS_NAME, piEntity.getProcessName());
           updateFields.put(ListViewTemplate.PROCESS_VERSION, piEntity.getProcessVersion());
+          updateFields.put(ListViewTemplate.PROCESS_KEY, piEntity.getProcessDefinitionKey());
+          updateFields.put(ListViewTemplate.BPMN_PROCESS_ID, piEntity.getBpmnProcessId());
           if (piEntity.getState() != null) {
             updateFields.put(ListViewTemplate.STATE, piEntity.getState());
           }
@@ -232,9 +237,11 @@ public class ListViewZeebeRecordProcessor {
         } else {
           Map<String, Object> updateFields = new HashMap<>();
           updateFields.put(ListViewTemplate.ID, actEntity.getId());
-          updateFields.put( ListViewTemplate.PARTITION_ID, actEntity.getPartitionId());
-          updateFields.put(  ListViewTemplate.ACTIVITY_TYPE, actEntity.getActivityType());
-          updateFields.put(  ListViewTemplate.ACTIVITY_STATE, actEntity.getActivityState());
+          updateFields.put(ListViewTemplate.PARTITION_ID, actEntity.getPartitionId());
+          updateFields.put(ListViewTemplate.PROCESS_KEY, actEntity.getProcessInstanceKey());
+          updateFields.put(ListViewTemplate.ACTIVITY_ID, actEntity.getActivityId());
+          updateFields.put(ListViewTemplate.ACTIVITY_TYPE, actEntity.getActivityType());
+          updateFields.put(ListViewTemplate.ACTIVITY_STATE, actEntity.getActivityState());
 
           batchRequest.upsertWithRouting(listViewTemplate.getFullQualifiedName(),actEntity.getId() , actEntity, updateFields, processInstanceKey.toString());
         }
@@ -260,11 +267,15 @@ public class ListViewZeebeRecordProcessor {
 
   private boolean shouldProcessProcessInstanceRecord(final Record<ProcessInstanceRecordValue> record) {
     final var intent = record.getIntent().name();
-    return PI_AND_AI_START_STATES.contains(intent) || PI_AND_AI_FINISH_STATES.contains(intent);
+    return PI_AND_AI_START_STATES.contains(intent) || PI_AND_AI_FINISH_STATES.contains(intent) || ELEMENT_MIGRATED.name().equals(intent);
   }
 
   private boolean isProcessInstanceTerminated(final Record<ProcessInstanceRecordValue> record) {
     return record.getIntent() == ELEMENT_TERMINATED;
+  }
+
+  private boolean isProcessInstanceMigrated(final Record<ProcessInstanceRecordValue> record) {
+    return record.getIntent() == ELEMENT_MIGRATED;
   }
 
   private ProcessInstanceForListViewEntity updateProcessInstance(ImportBatch importBatch,
@@ -414,7 +425,7 @@ public class ListViewZeebeRecordProcessor {
     final var intentStr = record.getIntent().name();
 
     entity.setKey(record.getKey());
-    entity.setId( ConversionUtils.toStringOrNull(record.getKey()));
+    entity.setId(ConversionUtils.toStringOrNull(record.getKey()));
     entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());

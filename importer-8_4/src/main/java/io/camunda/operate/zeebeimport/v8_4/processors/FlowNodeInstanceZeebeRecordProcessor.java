@@ -116,6 +116,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
             updateFields.put(FlowNodeInstanceTemplate.TREE_PATH, fniEntity.getTreePath());
             updateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, fniEntity.getFlowNodeId());
             updateFields.put(FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, fniEntity.getProcessDefinitionKey());
+            updateFields.put(FlowNodeInstanceTemplate.BPMN_PROCESS_ID, fniEntity.getBpmnProcessId());
             updateFields.put(FlowNodeInstanceTemplate.LEVEL, fniEntity.getLevel());
             if (fniEntity.getStartDate() != null) {
               updateFields.put(FlowNodeInstanceTemplate.START_DATE, fniEntity.getStartDate());
@@ -135,7 +136,8 @@ public class FlowNodeInstanceZeebeRecordProcessor {
   private boolean shouldProcessProcessInstanceRecord(final Record<ProcessInstanceRecordValue> processInstanceRecord) {
     final var processInstanceRecordValue = processInstanceRecord.getValue();
     final var intent = processInstanceRecord.getIntent().name();
-    return !isProcessEvent(processInstanceRecordValue) && (AI_START_STATES.contains(intent) || AI_FINISH_STATES.contains(intent));
+    return !isProcessEvent(processInstanceRecordValue) && (AI_START_STATES.contains(
+        intent) || AI_FINISH_STATES.contains(intent) || ELEMENT_MIGRATED.name().equals(intent));
   }
 
   private FlowNodeInstanceEntity updateFlowNodeInstance(Record<ProcessInstanceRecordValue> record, FlowNodeInstanceEntity entity) {
