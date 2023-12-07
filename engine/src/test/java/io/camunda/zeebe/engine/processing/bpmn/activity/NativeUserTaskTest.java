@@ -17,6 +17,7 @@ import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -577,5 +578,44 @@ public final class NativeUserTaskTest {
             .getFirst();
 
     Assertions.assertThat(userTask.getValue()).hasFollowUpDate("");
+  }
+
+  @Test
+  public void shouldResolveIncidentsWhenTerminating() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            process(
+                t ->
+                    t.zeebeInputExpression(
+                        "assert(nonexisting_variable, nonexisting_variable != null)", "target")))
+        .deploy();
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("foo", 10).create();
+    assertThat(
+            RecordingExporter.incidentRecords().withProcessInstanceKey(processInstanceKey).limit(1))
+        .extracting(Record::getIntent)
+        .containsExactly(IncidentIntent.CREATED);
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
+
+    assertThat(
+            RecordingExporter.incidentRecords().withProcessInstanceKey(processInstanceKey).limit(2))
+        .extracting(Record::getIntent)
+        .containsExactly(IncidentIntent.CREATED, IncidentIntent.RESOLVED);
   }
 }

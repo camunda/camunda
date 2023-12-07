@@ -173,4 +173,5 @@ public enum ZbColumnFamilies {
   SIGNAL_SUBSCRIPTION_BY_KEY_AND_NAME,
 
   USER_TASKS,
+  USER_TASK_STATES,
 }

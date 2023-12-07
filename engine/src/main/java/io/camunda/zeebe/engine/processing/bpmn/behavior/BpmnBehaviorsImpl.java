@@ -38,7 +38,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnProcessResultSenderBehavior processResultSenderBehavior;
   private final BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior;
   private final BpmnJobBehavior jobBehavior;
-
   private final MultiInstanceOutputCollectionBehavior multiInstanceOutputCollectionBehavior;
   private final CatchEventBehavior catchEventBehavior;
   private final EventTriggerBehavior eventTriggerBehavior;
@@ -46,7 +45,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final ElementActivationBehavior elementActivationBehavior;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final BpmnSignalBehavior signalBehavior;
-
   private final BpmnUserTaskBehavior userTaskBehavior;
 
   public BpmnBehaviorsImpl(
@@ -156,7 +154,9 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getKeyGenerator(),
             writers,
             expressionBehavior,
-            processingState.getFormState());
+            stateBehavior,
+            processingState.getFormState(),
+            processingState.getUserTaskState());
 
     jobBehavior =
         new BpmnJobBehavior(
