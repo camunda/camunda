@@ -17,8 +17,8 @@ import java.util.Objects;
 
 public class ObjectValue extends BaseValue {
   private final List<BaseProperty<? extends BaseValue>> declaredProperties;
-  private final List<UndeclaredProperty> undeclaredProperties = new ArrayList<>();
-  private final List<UndeclaredProperty> recycledProperties = new ArrayList<>();
+  private final List<UndeclaredProperty> undeclaredProperties = new ArrayList<>(0);
+  private final List<UndeclaredProperty> recycledProperties = new ArrayList<>(0);
 
   private final StringValue decodedKey = new StringValue();
 
