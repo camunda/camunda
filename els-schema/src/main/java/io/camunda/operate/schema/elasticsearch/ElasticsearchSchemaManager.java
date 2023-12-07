@@ -100,6 +100,11 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   }
 
   @Override
+  public Set<String> getAliasesNames(String indexPattern) {
+    return retryElasticsearchClient.getAliasesNames(indexPattern);
+  }
+
+  @Override
   public long getNumberOfDocumentsFor(String... indexPatterns) {
     return retryElasticsearchClient.getNumberOfDocumentsFor(indexPatterns);
   }
@@ -207,7 +212,10 @@ public class ElasticsearchSchemaManager implements SchemaManager {
         .indexTemplate(composableTemplate));
     // This is necessary, otherwise operate won't find indexes at startup
     String indexName = templateDescriptor.getFullQualifiedName();
-    createIndex(new CreateIndexRequest(indexName), indexName);
+    createIndex(
+        new CreateIndexRequest(indexName)
+            .aliases(Set.of(new Alias(templateDescriptor.getAlias()).writeIndex(false))),
+        indexName);
   }
 
   private Template getTemplateFrom(final TemplateDescriptor templateDescriptor) {

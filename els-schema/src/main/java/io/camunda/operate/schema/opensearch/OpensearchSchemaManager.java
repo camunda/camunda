@@ -118,6 +118,11 @@ public class OpensearchSchemaManager implements SchemaManager {
   }
 
   @Override
+  public Set<String> getAliasesNames(String indexPattern) {
+    return richOpenSearchClient.index().getAliasesNamesWithRetries(indexPattern);
+  }
+
+  @Override
   public long getNumberOfDocumentsFor(String... indexPatterns) {
     return richOpenSearchClient.index().getNumberOfDocumentsWithRetries(indexPatterns);
   }

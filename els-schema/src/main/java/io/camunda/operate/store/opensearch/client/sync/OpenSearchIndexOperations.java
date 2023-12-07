@@ -6,17 +6,22 @@
  */
 package io.camunda.operate.store.opensearch.client.sync;
 
+import org.elasticsearch.rest.RestStatus;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.core.ReindexRequest;
 import org.opensearch.client.opensearch.indices.*;
+import org.opensearch.client.opensearch.indices.update_aliases.Action;
+import org.opensearch.client.opensearch.indices.update_aliases.AddAction;
 import org.opensearch.client.opensearch.tasks.GetTasksResponse;
 import org.slf4j.Logger;
+import org.springframework.http.HttpStatus;
 
 import java.io.IOException;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
   public static final String NUMBERS_OF_REPLICA = "index.number_of_replicas";
@@ -40,7 +45,24 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
           final GetIndexResponse response = openSearchClient.indices().get(i -> i.index(namePattern));
           return response.result().keySet();
         } catch (OpenSearchException e) {
-          if (e.status() == 404) {
+          if (e.status() == RestStatus.NOT_FOUND.getStatus()) {
+            return Set.of();
+          }
+          throw e;
+        }
+      });
+  }
+  public Set<String> getAliasesNamesWithRetries(String namePattern) {
+    return executeWithRetries(
+      "Get aliases for " + namePattern,
+      () -> {
+        try {
+          GetAliasResponse response = openSearchClient.indices().getAlias(i -> i.index(namePattern));
+          return response.result().values().stream().map(a -> a.aliases()).map(a -> a.keySet()).flatMap(Set::stream)
+              .collect(Collectors.toSet());
+        } catch (OpenSearchException e) {
+          //NOT_FOUND response means that no aliases were found
+          if (e.status() == RestStatus.NOT_FOUND.getStatus()) {
             return Set.of();
           }
           throw e;
@@ -55,8 +77,23 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
         if (!indicesExist(createIndexRequest.index())) {
           return openSearchClient.indices().create(createIndexRequest).acknowledged();
         }
+        if (createIndexRequest.aliases() != null && !createIndexRequest.aliases().isEmpty()) {
+          String aliasName = createIndexRequest.aliases().keySet().iterator().next();
+          if (!aliasExists(aliasName)){
+            Action action = new Action.Builder().add(
+                new AddAction.Builder().alias(aliasName).index(createIndexRequest.index()).isWriteIndex(false).build()).build();
+            UpdateAliasesRequest request = new UpdateAliasesRequest.Builder().actions(List.of(action)).build();
+            openSearchClient.indices().updateAliases(request);
+            logger.info("Alias is created. Index: {}, alias: {} ", createIndexRequest.index(), aliasName);
+          }
+        }
         return true;
       });
+  }
+
+  private boolean aliasExists(String aliasName) throws IOException {
+    ExistsAliasRequest aliasExistsReq = new ExistsAliasRequest.Builder().name(List.of(aliasName)).build();
+    return openSearchClient.indices().existsAlias(aliasExistsReq).value();
   }
 
   private boolean indicesExist(final String indexPattern) throws IOException {

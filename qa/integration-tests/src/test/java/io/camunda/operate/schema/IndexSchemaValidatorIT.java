@@ -75,6 +75,7 @@ public class IndexSchemaValidatorIT {
   private String operatePrefix;
 
   private List<String> allIndexNames;
+  private List<String> allIndexAliases;
 
   private Set<String> newerVersions;
 
@@ -84,6 +85,7 @@ public class IndexSchemaValidatorIT {
   public void setUp() {
     operatePrefix = operateProperties.getElasticsearch().getIndexPrefix();
     allIndexNames = indexDescriptors.stream().map(IndexDescriptor::getFullQualifiedName).collect(Collectors.toList());
+    allIndexAliases = indexDescriptors.stream().map(IndexDescriptor::getAlias).collect(Collectors.toList());
     newerVersions = Set.of("100.1.1", "100.1.2", "100.0.1", "100.2.3");
     olderVersions = Set.of("0.2.5" , "0.1.2");
   }
@@ -106,8 +108,14 @@ public class IndexSchemaValidatorIT {
     // Only 2 operate indices
     whenELSClientReturnsIndexNames(List.of(allIndexNames.get(0), allIndexNames.get(1)));
     assertThat(indexSchemaValidator.schemaExists()).isFalse();
-    // All operate indices
+    //All indices, but no aliases
     whenELSClientReturnsIndexNames(allIndexNames);
+    assertThat(indexSchemaValidator.schemaExists()).isFalse();
+    //All indices, but only two aliases
+    whenELSClientReturnsIndexNames(allIndexNames, List.of(allIndexAliases.get(0), allIndexAliases.get(1)));
+    assertThat(indexSchemaValidator.schemaExists()).isFalse();
+    // All operate indices
+    whenELSClientReturnsIndexNames(allIndexNames, allIndexAliases);
     assertThat(indexSchemaValidator.schemaExists()).isTrue();
   }
 
@@ -183,11 +191,23 @@ public class IndexSchemaValidatorIT {
   }
 
   private void whenELSClientReturnsIndexNames(List<String> givenIndexNames) {
-    Set<String> returnValues = new HashSet<>(givenIndexNames);
-    when(retryElasticsearchClient.getIndexNames(anyString())).thenReturn(returnValues);
+    whenELSClientReturnsIndexNames(givenIndexNames, null);
+  }
+
+  private void whenELSClientReturnsIndexNames(List<String> givenIndexNames, List<String> givenAliasesNames) {
+    Set<String> returnValuesIndices = new HashSet<>(givenIndexNames);
+    when(retryElasticsearchClient.getIndexNames(anyString())).thenReturn(returnValuesIndices);
+    Set<String> returnValuesAliases = new HashSet<>();
+    if (givenAliasesNames != null) {
+      returnValuesAliases.addAll(givenAliasesNames);
+      when(retryElasticsearchClient.getAliasesNames(anyString())).thenReturn(returnValuesAliases);
+    }
 
     OpenSearchIndexOperations indexMock = mock(OpenSearchIndexOperations.class);
-    when(indexMock.getIndexNamesWithRetries(anyString())).thenReturn(returnValues);
+    when(indexMock.getIndexNamesWithRetries(anyString())).thenReturn(returnValuesIndices);
+    if (givenAliasesNames != null) {
+      when(indexMock.getAliasesNamesWithRetries(anyString())).thenReturn(returnValuesAliases);
+    }
     when(richOpenSearchClient.index()).thenReturn(indexMock);
   }
 

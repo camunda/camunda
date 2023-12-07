@@ -35,6 +35,8 @@ public interface SchemaManager {
 
   Set<String> getIndexNames(final String indexPattern);
 
+  Set<String> getAliasesNames(final String indexPattern);
+
   long getNumberOfDocumentsFor(final String... indexPatterns);
 
   boolean deleteIndicesFor(final String indexPattern);

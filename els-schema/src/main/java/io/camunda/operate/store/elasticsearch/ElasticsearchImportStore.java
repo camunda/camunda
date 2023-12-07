@@ -159,14 +159,13 @@ public class ElasticsearchImportStore implements ImportStore {
   private Either<Exception, UpdateRequest> preparePostImportUpdateRequest(final ImportPositionEntity position) {
     try {
       final var index = importPositionType.getFullQualifiedName();
+      final var source = objectMapper.writeValueAsString(position);
       final var updateFields = new HashMap<String, Object>();
 
       updateFields.put(ImportPositionIndex.POST_IMPORTER_POSITION, position.getPostImporterPosition());
 
-      final UpdateRequest updateRequest = new UpdateRequest()
-          .index(index)
-          .id(position.getId())
-          .doc(updateFields);
+      final UpdateRequest updateRequest = new UpdateRequest().index(index).id(position.getId())
+          .upsert(source, XContentType.JSON).doc(updateFields);
 
       return Either.right(updateRequest);
 

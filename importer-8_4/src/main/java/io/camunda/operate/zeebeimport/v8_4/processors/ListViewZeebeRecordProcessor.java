@@ -348,22 +348,20 @@ public class ListViewZeebeRecordProcessor {
     if (parentTreePath == null) {
       parentTreePath = listViewStore.findProcessInstanceTreePathFor(recordValue.getParentProcessInstanceKey());
     }
-    //still not found - smth is wrong
-    if (parentTreePath == null) {
-      throw new OperateRuntimeException(
-          "Unable to find parent tree path for parent instance id " + recordValue.getParentProcessInstanceKey());
+    if (parentTreePath != null) {
+      final String flowNodeInstanceId = ConversionUtils.toStringOrNull(recordValue.getParentElementInstanceKey());
+      final String callActivityId = getCallActivityId(flowNodeInstanceId);
+      String treePath = new TreePath(parentTreePath).appendEntries(callActivityId, flowNodeInstanceId,
+          ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey())).toString();
+      getTreePathCache().put(ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()), treePath);
+      return treePath;
+    } else {
+      logger.warn("Unable to find parent tree path for parent instance id " + recordValue.getParentProcessInstanceKey());
+      String treePath = new TreePath().startTreePath(ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey())).toString();
+      getTreePathCache().put(ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()), treePath);
+      return treePath;
     }
-    final String flowNodeInstanceId = ConversionUtils
-        .toStringOrNull(recordValue.getParentElementInstanceKey());
-    final String callActivityId = getCallActivityId(flowNodeInstanceId);
-    String treePath = new TreePath(parentTreePath).appendEntries(
-        callActivityId,
-        flowNodeInstanceId,
-        ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey())).toString();
 
-    getTreePathCache().put(ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()), treePath);
-
-    return treePath;
   }
 
   private String getCallActivityId(String flowNodeInstanceId) {

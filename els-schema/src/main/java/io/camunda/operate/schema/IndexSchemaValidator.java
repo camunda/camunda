@@ -114,7 +114,11 @@ public class IndexSchemaValidator {
     try {
       final Set<String> indices = schemaManager.getIndexNames(schemaManager.getIndexPrefix() + "*");
       List<String> allIndexNames = map(indexDescriptors, IndexDescriptor::getFullQualifiedName);
-      return indices.containsAll(allIndexNames);
+
+      final Set<String> aliases = schemaManager.getAliasesNames(schemaManager.getIndexPrefix() + "*");
+      final List<String> allAliasesNames = map(indexDescriptors, IndexDescriptor::getAlias);
+
+      return indices.containsAll(allIndexNames) && aliases.containsAll(allAliasesNames);
     } catch (Exception e) {
       logger.error("Check for existing schema failed", e);
       return false;

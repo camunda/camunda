@@ -35,6 +35,8 @@ public class ImportProperties {
   //is here for testing purposes
   private boolean postImportEnabled = true;
 
+  private boolean postImporterIgnoreMissingData = false;
+
   private int readerThreadsCount = DEFAULT_READER_THREADS_COUNT;
 
   private int queueSize = DEFAULT_IMPORT_QUEUE_SIZE;
@@ -103,6 +105,15 @@ public class ImportProperties {
 
   public ImportProperties setPostImportEnabled(boolean postImportEnabled) {
     this.postImportEnabled = postImportEnabled;
+    return this;
+  }
+
+  public boolean isPostImporterIgnoreMissingData() {
+    return postImporterIgnoreMissingData;
+  }
+
+  public ImportProperties setPostImporterIgnoreMissingData(boolean postImporterIgnoreMissingData) {
+    this.postImporterIgnoreMissingData = postImporterIgnoreMissingData;
     return this;
   }
 

@@ -206,10 +206,11 @@ public class FlowNodeInstanceZeebeRecordProcessor {
       if (parentTreePath == null) {
         parentTreePath = flowNodeStore.findParentTreePathFor(recordValue.getFlowScopeKey());
       }
-      //still not found - smth is wrong
+
       if (parentTreePath == null) {
-        throw new OperateRuntimeException(
+        logger.warn(
             "Unable to find parent tree path for flow node instance id [" + record.getKey() + "], parent flow node instance id [" + recordValue.getFlowScopeKey() + "]");
+        parentTreePath = ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey());
       }
     }
     treePathCache.put(ConversionUtils.toStringOrNull(record.getKey()),

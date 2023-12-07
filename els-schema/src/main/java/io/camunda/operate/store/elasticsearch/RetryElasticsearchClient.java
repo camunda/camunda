@@ -21,12 +21,16 @@ import java.util.stream.Collectors;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.store.elasticsearch.dao.response.TaskResponse;
+import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.RetryOperation;
 
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
+import org.elasticsearch.action.admin.indices.alias.Alias;
+import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest;
+import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
@@ -45,6 +49,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.support.IndicesOptions;
+import org.elasticsearch.client.GetAliasesResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.CountRequest;
@@ -57,9 +62,11 @@ import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.client.indices.PutComponentTemplateRequest;
 import org.elasticsearch.client.indices.PutComposableIndexTemplateRequest;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
+import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.util.CollectionUtils;
 import org.elasticsearch.xcontent.XContentType;
 import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.reindex.ReindexRequest;
@@ -170,13 +177,55 @@ public class RetryElasticsearchClient {
     });
   }
 
+  public Set<String> getAliasesNames(String namePattern) {
+    return executeWithRetries("Get aliases for " + namePattern, () -> {
+      try {
+        final GetAliasesRequest request = new GetAliasesRequest(namePattern);
+        final GetAliasesResponse response = esClient.indices().getAlias(request, requestOptions);
+
+        final Set<String> returnAliases = new HashSet<>();
+        final Map<String, Set<AliasMetadata>> mapAliases = response.getAliases();
+        for (Map.Entry<String, Set<AliasMetadata>> a : mapAliases.entrySet()) {
+          returnAliases.addAll(a.getValue().stream().map(m -> m.getAlias()).collect(Collectors.toSet()));
+        }
+        return returnAliases;
+      } catch (ElasticsearchException e) {
+        //NOT_FOUND response means that aliases are not found
+        if (e.status().equals(RestStatus.NOT_FOUND)) {
+          return Set.of();
+        }
+        throw e;
+      }
+    });
+  }
+
   public boolean createIndex(CreateIndexRequest createIndexRequest) {
     return executeWithRetries("CreateIndex " + createIndexRequest.index(), () -> {
       if (!indicesExist(createIndexRequest.index())) {
         return esClient.indices().create(createIndexRequest, requestOptions).isAcknowledged();
       }
+      //in case index already existed, we still want to check that alias exists
+      if (CollectionUtil.isNotEmpty(createIndexRequest.aliases()) && !aliasExists(
+          createIndexRequest.aliases().iterator().next(), createIndexRequest.index())) {
+        IndicesAliasesRequest request = new IndicesAliasesRequest();
+        IndicesAliasesRequest.AliasActions aliasAction = new IndicesAliasesRequest.AliasActions(
+            IndicesAliasesRequest.AliasActions.Type.ADD).index(createIndexRequest.index())
+            .alias(createIndexRequest.aliases().iterator().next().name()).writeIndex(false);
+        request.addAliasAction(aliasAction);
+
+        esClient.indices().updateAliases(request, RequestOptions.DEFAULT);
+        logger.info("Alias is created. Index: {}, alias: {} ", createIndexRequest.index(),
+            createIndexRequest.aliases().iterator().next().name());
+
+        return true;
+      }
       return true;
     });
+  }
+
+  private boolean aliasExists(Alias alias, String index) throws IOException {
+    GetAliasesRequest aliasExistsReq = new GetAliasesRequest(alias.name()).indices(index);
+    return esClient.indices().existsAlias(aliasExistsReq, RequestOptions.DEFAULT);
   }
 
   public boolean createOrUpdateDocument(String name, String id, Map source) {
