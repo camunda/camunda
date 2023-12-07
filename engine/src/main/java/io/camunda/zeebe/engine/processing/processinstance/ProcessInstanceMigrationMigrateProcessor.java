@@ -178,7 +178,7 @@ public class ProcessInstanceMigrationMigrateProcessor
       responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }
-    if (error instanceof final IncorrectMappingException e) {
+    if (error instanceof final ElementTypeChangedException e) {
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, e.getMessage());
       responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
       return ProcessingError.EXPECTED_ERROR;
@@ -253,7 +253,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     final BpmnElementType targetElementType =
         processDefinition.getProcess().getElementById(targetElementId).getElementType();
     if (elementInstanceRecord.getBpmnElementType() != targetElementType) {
-      throw new IncorrectMappingException(
+      throw new ElementTypeChangedException(
           elementInstanceRecord.getProcessInstanceKey(),
           elementInstanceRecord.getElementId(),
           elementInstanceRecord.getBpmnElementType(),
@@ -367,8 +367,8 @@ public class ProcessInstanceMigrationMigrateProcessor
    * mapping instructions of the command refer to a source and a target element with different
    * element type, or different event type.
    */
-  private static final class IncorrectMappingException extends RuntimeException {
-    IncorrectMappingException(
+  private static final class ElementTypeChangedException extends RuntimeException {
+    ElementTypeChangedException(
         final long processInstanceKey,
         final String elementId,
         final BpmnElementType bpmnElementType,
@@ -380,7 +380,7 @@ public class ProcessInstanceMigrationMigrateProcessor
               Expected to migrate process instance '%s' \
               but active element with id '%s' and type '%s' is mapped to \
               an element with id '%s' and different type '%s'. \
-              Active elements must be mapped to the same type.""",
+              Elements must be mapped to elements of the same type.""",
               processInstanceKey,
               elementId,
               bpmnElementType,
