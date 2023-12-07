@@ -169,7 +169,7 @@ export default class Filter extends Component {
             <span className="dropdownLabel">{t('common.filter.dropdownLabel.instance')}</span>
             <div className="explanation">
               <Tooltip label={t('common.filter.tooltip.instance')}>
-                <button>
+                <button className="tooltipTriggerBtn">
                   <Information />
                 </button>
               </Tooltip>
@@ -184,8 +184,8 @@ export default class Filter extends Component {
           <div className="filterHeader">
             <span className="dropdownLabel">{t('common.filter.dropdownLabel.view')}</span>
             <div className="explanation">
-              <Tooltip label={t('common.filter.tooltip.view')}>
-                <button>
+              <Tooltip className="flowNodeFilterTooltip" label={t('common.filter.tooltip.view')}>
+                <button className="tooltipTriggerBtn">
                   <Information />
                 </button>
               </Tooltip>
