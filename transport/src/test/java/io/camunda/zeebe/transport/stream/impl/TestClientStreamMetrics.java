@@ -8,12 +8,16 @@
 package io.camunda.zeebe.transport.stream.impl;
 
 import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
+import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 final class TestClientStreamMetrics implements ClientStreamMetrics {
 
   private final List<Integer> aggregatedClientCountObservations = new ArrayList<>();
+  private final Map<ErrorCode, Integer> failedPushTries = new EnumMap<>(ErrorCode.class);
 
   private int serverCount;
   private int clientCount;
@@ -51,6 +55,11 @@ final class TestClientStreamMetrics implements ClientStreamMetrics {
     pushFailed++;
   }
 
+  @Override
+  public void pushTryFailed(final ErrorCode code) {
+    failedPushTries.compute(code, (ignored, value) -> value == null ? 1 : value + 1);
+  }
+
   public int getServerCount() {
     return serverCount;
   }
@@ -73,5 +82,9 @@ final class TestClientStreamMetrics implements ClientStreamMetrics {
 
   public int getPushFailed() {
     return pushFailed;
+  }
+
+  public int getFailedPushTry(final ErrorCode code) {
+    return failedPushTries.getOrDefault(code, 0);
   }
 }

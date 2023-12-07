@@ -10,8 +10,10 @@ package io.camunda.zeebe.transport.stream.impl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamBlockedException;
+import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
 import io.camunda.zeebe.transport.stream.api.NoSuchStreamException;
 import io.camunda.zeebe.transport.stream.api.StreamExhaustedException;
+import io.camunda.zeebe.transport.stream.impl.messages.ErrorResponse;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -32,6 +34,12 @@ final class ClientStreamPusher {
   private static final Logger LOGGER = LoggerFactory.getLogger(ClientStreamPusher.class);
   private static final Logger PUSH_ERROR_LOGGER =
       new ThrottledLogger(LOGGER, Duration.ofSeconds(1));
+
+  private final ClientStreamMetrics metrics;
+
+  ClientStreamPusher(final ClientStreamMetrics metrics) {
+    this.metrics = metrics;
+  }
 
   /**
    * Pushes the given payload downstream to any of the stream's clients. On success, will complete
@@ -91,6 +99,7 @@ final class ClientStreamPusher {
 
               errors.add(pushFailed);
               logFailedPush(pushFailed, clientStream);
+              metrics.pushTryFailed(ErrorResponse.mapErrorToCode(pushFailed));
               tryPush(streamId, targets, buffer, future, errors);
             });
   }

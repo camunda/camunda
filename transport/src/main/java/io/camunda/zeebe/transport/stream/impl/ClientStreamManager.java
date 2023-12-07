@@ -23,11 +23,11 @@ import org.slf4j.LoggerFactory;
 
 final class ClientStreamManager<M extends BufferWriter> {
   private static final Logger LOG = LoggerFactory.getLogger(ClientStreamManager.class);
+  private final Set<MemberId> servers = new HashSet<>();
   private final ClientStreamRegistry<M> registry;
   private final ClientStreamRequestManager<M> requestManager;
   private final ClientStreamMetrics metrics;
-  private final Set<MemberId> servers = new HashSet<>();
-  private final ClientStreamPusher streamPusher = new ClientStreamPusher();
+  private final ClientStreamPusher streamPusher;
 
   ClientStreamManager(
       final ClientStreamRegistry<M> registry,
@@ -36,6 +36,7 @@ final class ClientStreamManager<M extends BufferWriter> {
     this.registry = registry;
     this.requestManager = requestManager;
     this.metrics = metrics;
+    streamPusher = new ClientStreamPusher(metrics);
   }
 
   /**

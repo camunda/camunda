@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.transport.stream.impl.messages;
 
+import io.camunda.zeebe.transport.stream.api.ClientStreamBlockedException;
+import io.camunda.zeebe.transport.stream.api.NoSuchStreamException;
+import io.camunda.zeebe.transport.stream.api.StreamExhaustedException;
 import io.camunda.zeebe.transport.stream.api.StreamResponseException;
 import io.camunda.zeebe.transport.stream.api.StreamResponseException.ErrorDetail;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorResponseDecoder.DetailsDecoder;
@@ -153,6 +156,15 @@ public final class ErrorResponse implements StreamResponse {
 
   public StreamResponseException asException() {
     return new StacklessException(this);
+  }
+
+  public static ErrorCode mapErrorToCode(final Throwable error) {
+    return switch (error) {
+      case final ClientStreamBlockedException ignored -> ErrorCode.BLOCKED;
+      case final NoSuchStreamException ignored -> ErrorCode.NOT_FOUND;
+      case final StreamExhaustedException ignored -> ErrorCode.EXHAUSTED;
+      default -> ErrorCode.INTERNAL;
+    };
   }
 
   private record ErrorDetailImpl(ErrorCode code, DirectBuffer messageBuffer)
