@@ -29,6 +29,7 @@ public final class EventScopeInstance extends UnpackedObject implements DbValue 
       new ArrayProperty<>("boundaryElementIds", StringValue::new);
 
   public EventScopeInstance() {
+    super(4);
     declareProperty(acceptingProp)
         .declareProperty(interruptingElementIdsProp)
         .declareProperty(boundaryElementIdsProp)

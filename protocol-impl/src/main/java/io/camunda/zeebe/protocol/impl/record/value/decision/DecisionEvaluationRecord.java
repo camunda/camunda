@@ -62,6 +62,7 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public DecisionEvaluationRecord() {
+    super(17);
     declareProperty(decisionKeyProp)
         .declareProperty(decisionIdProp)
         .declareProperty(decisionNameProp)

@@ -37,6 +37,7 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public MessageStartEventSubscriptionRecord() {
+    super(9);
     declareProperty(processDefinitionKeyProp)
         .declareProperty(messageNameProp)
         .declareProperty(startEventIdProp)

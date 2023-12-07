@@ -23,6 +23,7 @@ public final class ProcessInstanceModificationTerminateInstruction extends Objec
   private final LongProperty elementInstanceKeyProperty = new LongProperty("elementInstanceKey");
 
   public ProcessInstanceModificationTerminateInstruction() {
+    super(1);
     declareProperty(elementInstanceKeyProperty);
   }
 

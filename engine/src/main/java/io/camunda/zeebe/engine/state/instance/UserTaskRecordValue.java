@@ -18,6 +18,7 @@ public class UserTaskRecordValue extends UnpackedObject implements DbValue {
       new ObjectProperty<>("userTaskRecord", new UserTaskRecord());
 
   public UserTaskRecordValue() {
+    super(1);
     declareProperty(recordProp);
   }
 

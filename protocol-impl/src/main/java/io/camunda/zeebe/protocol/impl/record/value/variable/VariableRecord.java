@@ -32,6 +32,7 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public VariableRecord() {
+    super(7);
     declareProperty(nameProp)
         .declareProperty(valueProp)
         .declareProperty(scopeKeyProp)

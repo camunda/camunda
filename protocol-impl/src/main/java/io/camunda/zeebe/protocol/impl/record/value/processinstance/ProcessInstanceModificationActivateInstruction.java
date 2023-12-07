@@ -41,6 +41,7 @@ public final class ProcessInstanceModificationActivateInstruction extends Object
       new ArrayProperty<>("ancestorScopeKeys", LongValue::new);
 
   public ProcessInstanceModificationActivateInstruction() {
+    super(4);
     declareProperty(elementIdProperty)
         .declareProperty(ancestorScopeKeyProperty)
         .declareProperty(variableInstructionsProperty)

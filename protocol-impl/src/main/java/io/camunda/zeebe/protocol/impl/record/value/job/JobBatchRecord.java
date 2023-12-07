@@ -43,6 +43,7 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   private final BooleanProperty truncatedProp = new BooleanProperty("truncated", false);
 
   public JobBatchRecord() {
+    super(9);
     declareProperty(typeProp)
         .declareProperty(workerProp)
         .declareProperty(timeoutProp)

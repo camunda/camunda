@@ -17,6 +17,7 @@ public final class CheckpointInfo extends UnpackedObject implements DbValue {
   private final LongProperty positionProperty = new LongProperty("position");
 
   public CheckpointInfo() {
+    super(2);
     declareProperty(idProperty).declareProperty(positionProperty);
   }
 

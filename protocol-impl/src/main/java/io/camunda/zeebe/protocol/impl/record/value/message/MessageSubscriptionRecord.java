@@ -37,6 +37,7 @@ public final class MessageSubscriptionRecord extends UnifiedRecordValue
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public MessageSubscriptionRecord() {
+    super(9);
     declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(messageKeyProp)

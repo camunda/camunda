@@ -35,6 +35,7 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
       new LongProperty("processInstanceKey", -1);
 
   public ProcessInstanceResultRecord() {
+    super(6);
     declareProperty(bpmnProcessIdProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)

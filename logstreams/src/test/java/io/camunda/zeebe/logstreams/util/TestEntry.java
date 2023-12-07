@@ -53,7 +53,7 @@ public record TestEntry(
       }
 
       final var loggedMetadata = new RecordMetadata();
-      final var loggedValue = new UnifiedRecordValue();
+      final var loggedValue = new UnifiedRecordValue(10);
       loggedEvent.readValue(loggedValue);
       loggedEvent.readMetadata(loggedMetadata);
 
@@ -77,7 +77,7 @@ public record TestEntry(
   public static class TestLogAppendEntryBuilder {
     private long key = -1L;
     private int sourceIndex = -1;
-    private UnifiedRecordValue recordValue = new UnifiedRecordValue();
+    private UnifiedRecordValue recordValue = new UnifiedRecordValue(10);
     private RecordMetadata recordMetadata = new RecordMetadata().intent(Intent.UNKNOWN);
 
     public TestLogAppendEntryBuilder withKey(final long key) {

@@ -41,6 +41,7 @@ public final class ProcessMetadata extends UnifiedRecordValue implements Process
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public ProcessMetadata() {
+    super(7);
     declareProperty(bpmnProcessIdProp)
         .declareProperty(versionProp)
         .declareProperty(keyProp)

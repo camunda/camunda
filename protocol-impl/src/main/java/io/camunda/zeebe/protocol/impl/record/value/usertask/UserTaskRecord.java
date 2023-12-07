@@ -53,6 +53,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public UserTaskRecord() {
+    super(15);
     declareProperty(userTaskKeyProp)
         .declareProperty(assigneeProp)
         .declareProperty(candidateGroupsProp)

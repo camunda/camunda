@@ -35,6 +35,7 @@ public final class AllTypesDefaultValuesPOJO extends UnpackedObject {
       final DirectBuffer packedDefault,
       final DirectBuffer binaryDefault,
       final POJONested objectDefault) {
+    super(7);
     enumProp = new EnumProperty<>("enumProp", POJOEnum.class, enumDefault);
     longProp = new LongProperty("longProp", longDefault);
     intProp = new IntegerProperty("intProp", intDefault);
@@ -42,7 +43,6 @@ public final class AllTypesDefaultValuesPOJO extends UnpackedObject {
     packedProp = new PackedProperty("packedProp", packedDefault);
     binaryProp = new BinaryProperty("binaryProp", binaryDefault);
     objectProp = new ObjectProperty<>("objectProp", objectDefault);
-
     declareProperty(enumProp)
         .declareProperty(longProp)
         .declareProperty(intProp)
