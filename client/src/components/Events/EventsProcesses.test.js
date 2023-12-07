@@ -43,7 +43,7 @@ const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
-it('should load event based processes', () => {
+it('should load event-based processes', () => {
   shallow(<EventsProcesses {...props} />);
 
   expect(loadProcesses).toHaveBeenCalled();

@@ -190,7 +190,7 @@ public class ProcessOverviewService {
     definitionService.getProcessDefinitionWithTenants(processDefKey)
       .ifPresentOrElse(definition -> {
         if (definition.getIsEventProcess() == Boolean.TRUE) {
-          throw new BadRequestException("Event based processes cannot have owners nor digests configured");
+          throw new BadRequestException("Event-based processes cannot have owners nor digests configured");
         } else if (!definitionAuthorizationService.isAuthorizedToAccessDefinition(
           userId, PROCESS, definition.getKey(), definition.getTenantIds())) {
           throw new ForbiddenException("User is not authorized to access the process definition with key " + processDefKey);

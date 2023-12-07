@@ -55,7 +55,7 @@ public class EventBasedProcessQueryPerformanceTest extends AbstractQueryPerforma
         final String mappingId = IdGenerator.getNextId();
         return EsEventProcessMappingDto.builder()
           .id(mappingId)
-          .name("event based process name")
+          .name("event-based process name")
           .xml("some xml")
           .mappings(Collections.emptyList())
           .eventSources(Collections.emptyList())

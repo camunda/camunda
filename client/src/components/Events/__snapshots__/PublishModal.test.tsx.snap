@@ -28,7 +28,7 @@ exports[`should show different text depending on the republish prop 1`] = `
   </ForwardRef(ModalHeader)>
   <ForwardRef>
     <p>
-      Published Event Based Processes will be available to use in Reports by selected users.
+      Published event-based processes will be available to use in reports by selected users.
     </p>
     <div
       className="permission"
@@ -83,7 +83,7 @@ exports[`should show different text depending on the republish prop 2`] = `
   </ForwardRef(ModalHeader)>
   <ForwardRef>
     <p>
-      Re-Publishing will update data in all associated Reports.
+      Re-Publishing will update data in all associated reports.
     </p>
     <div
       className="permission"
@@ -125,7 +125,7 @@ exports[`should show different text depending on the republish prop 2`] = `
 </Modal>
 `;
 
-exports[`should show that access is granted if there are more than one user 1`] = `
+exports[`should show that access is granted if there are more than one user`] = `
 <div
   className="permission"
 >

@@ -69,7 +69,7 @@ const props = {
   history: {push: jest.fn()},
 };
 
-it('should check if the event based process feature is enabled', async () => {
+it('should check if the event-based process feature is enabled', async () => {
   isEventBasedProcessEnabled.mockClear();
   shallow(<Header {...props} />);
 
@@ -78,7 +78,7 @@ it('should check if the event based process feature is enabled', async () => {
   expect(isEventBasedProcessEnabled).toHaveBeenCalled();
 });
 
-it('should show and hide the event based process nav item depending on authorization', async () => {
+it('should show and hide the event-based process nav item depending on authorization', async () => {
   isEventBasedProcessEnabled.mockReturnValueOnce(true);
   const enabled = shallow(<Header {...props} />);
 
@@ -96,7 +96,7 @@ it('should show and hide the event based process nav item depending on authoriza
   expect(getNavItem(disabled, 'events')).not.toBeDefined();
 });
 
-it('should hide event based process nav item in cloud environment', async () => {
+it('should hide event-based process nav item in cloud environment', async () => {
   isEventBasedProcessEnabled.mockReturnValueOnce(true);
   getOptimizeProfile.mockReturnValueOnce('cloud');
   const node = shallow(<Header {...props} />);

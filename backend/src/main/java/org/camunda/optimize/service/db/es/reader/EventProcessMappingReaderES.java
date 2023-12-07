@@ -49,14 +49,14 @@ public class EventProcessMappingReaderES implements EventProcessMappingReader {
 
   @Override
   public Optional<EventProcessMappingDto> getEventProcessMapping(final String eventProcessMappingId) {
-    log.debug("Fetching event based process with id [{}].", eventProcessMappingId);
+    log.debug("Fetching event-based process with id [{}].", eventProcessMappingId);
     final GetRequest getRequest = new GetRequest(EVENT_PROCESS_MAPPING_INDEX_NAME).id(eventProcessMappingId);
 
     final GetResponse getResponse;
     try {
       getResponse = esClient.get(getRequest);
     } catch (IOException e) {
-      final String reason = String.format("Could not fetch event based process with id [%s].", eventProcessMappingId);
+      final String reason = String.format("Could not fetch event0based process with id [%s].", eventProcessMappingId);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
@@ -67,9 +67,9 @@ public class EventProcessMappingReaderES implements EventProcessMappingReader {
         result = objectMapper.readValue(getResponse.getSourceAsString(), EsEventProcessMappingDto.class)
           .toEventProcessMappingDto();
       } catch (IOException e) {
-        String reason = "Could not deserialize information for event based process with ID: " + eventProcessMappingId;
+        String reason = "Could not deserialize information for event-based process with ID: " + eventProcessMappingId;
         log.error(
-          "Was not able to retrieve event based process with id [{}] from Elasticsearch. Reason: {}",
+          "Was not able to retrieve event-based process with id [{}] from Elasticsearch. Reason: {}",
           eventProcessMappingId,
           reason
         );
@@ -82,7 +82,7 @@ public class EventProcessMappingReaderES implements EventProcessMappingReader {
 
   @Override
   public List<EventProcessMappingDto> getAllEventProcessMappingsOmitXml() {
-    log.debug("Fetching all available event based processes.");
+    log.debug("Fetching all available event-based processes.");
     String[] fieldsToExclude = new String[]{EsEventProcessMappingDto.Fields.xml};
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(matchAllQuery())
@@ -96,8 +96,8 @@ public class EventProcessMappingReaderES implements EventProcessMappingReader {
     try {
       scrollResp = esClient.search(searchRequest);
     } catch (IOException e) {
-      log.error("Was not able to retrieve event based processes!", e);
-      throw new OptimizeRuntimeException("Was not able to retrieve event based processes!", e);
+      log.error("Was not able to retrieve event-based processes!", e);
+      throw new OptimizeRuntimeException("Was not able to retrieve event-based processes!", e);
     }
 
     return ElasticsearchReaderUtil.retrieveAllScrollResults(
@@ -121,7 +121,7 @@ public class EventProcessMappingReaderES implements EventProcessMappingReader {
       getResponse = esClient.get(getRequest);
     } catch (IOException e) {
       final String reason = String.format(
-        "Could not fetch roles for event based process with id [%s].",
+        "Could not fetch roles for event-based process with id [%s].",
         eventProcessMappingId
       );
       log.error(reason, e);
@@ -135,9 +135,9 @@ public class EventProcessMappingReaderES implements EventProcessMappingReader {
           .getRoles();
       } catch (IOException e) {
         final String reason =
-          "Could not deserialize information for event based process with id: " + eventProcessMappingId;
+          "Could not deserialize information for event-based process with id: " + eventProcessMappingId;
         log.error(
-          "Was not able to retrieve roles for event based process with id [{}] from Elasticsearch. Reason: {}",
+          "Was not able to retrieve roles for event-based process with id [{}] from Elasticsearch. Reason: {}",
           eventProcessMappingId,
           reason
         );

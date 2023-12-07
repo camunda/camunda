@@ -56,7 +56,7 @@ public class EventProcessMappingWriterES implements EventProcessMappingWriter {
     String id = IdGenerator.getNextId();
     eventProcessMappingDto.setId(id);
     eventProcessMappingDto.setLastModified(LocalDateUtil.getCurrentDateTime());
-    log.debug("Writing event based process [{}] to elasticsearch", id);
+    log.debug("Writing event-based process [{}] to Elasticsearch", id);
     IndexResponse indexResponse;
     try {
       final IndexRequest request = new IndexRequest(EVENT_PROCESS_MAPPING_INDEX_NAME)
@@ -70,13 +70,13 @@ public class EventProcessMappingWriterES implements EventProcessMappingWriter {
         .setRefreshPolicy(IMMEDIATE);
       indexResponse = esClient.index(request);
     } catch (IOException e) {
-      final String errorMessage = String.format("There was a problem while writing the event based process [%s].", id);
+      final String errorMessage = String.format("There was a problem while writing the event-based process [%s].", id);
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
 
     if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
-      final String errorMessage = String.format("Could not write event based process [%s].", id);
+      final String errorMessage = String.format("Could not write event-based process [%s].", id);
       throw new OptimizeRuntimeException(errorMessage);
     }
     return new IdResponseDto(id);
@@ -98,7 +98,7 @@ public class EventProcessMappingWriterES implements EventProcessMappingWriter {
 
   @Override
   public boolean deleteEventProcessMapping(final String eventProcessMappingId) {
-    log.debug("Deleting event based process with id [{}].", eventProcessMappingId);
+    log.debug("Deleting event-based process with id [{}].", eventProcessMappingId);
     final DeleteRequest request = new DeleteRequest(EVENT_PROCESS_MAPPING_INDEX_NAME)
       .id(eventProcessMappingId)
       .setRefreshPolicy(IMMEDIATE);
@@ -107,7 +107,7 @@ public class EventProcessMappingWriterES implements EventProcessMappingWriter {
     try {
       deleteResponse = esClient.delete(request);
     } catch (IOException e) {
-      String errorMessage = String.format("Could not delete event based process with id [%s]. ", eventProcessMappingId);
+      String errorMessage = String.format("Could not delete event-based process with id [%s]. ", eventProcessMappingId);
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
@@ -138,7 +138,7 @@ public class EventProcessMappingWriterES implements EventProcessMappingWriter {
   private void updateOfEventProcessMappingWithScript(final EventProcessMappingDto eventProcessMappingDto,
                                                      final HashSet<String> fieldsToUpdate) {
     final String id = eventProcessMappingDto.getId();
-    log.debug("Updating event based process [{}] in elasticsearch.", id);
+    log.debug("Updating event-based process [{}] in Elasticsearch.", id);
     eventProcessMappingDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     try {
       final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
@@ -155,17 +155,17 @@ public class EventProcessMappingWriterES implements EventProcessMappingWriter {
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
       final UpdateResponse updateResponse = esClient.update(request);
       if (!updateResponse.getResult().equals(IndexResponse.Result.UPDATED)) {
-        String errorMessage = String.format("Could not update event based process [%s] to Elasticsearch.", id);
+        String errorMessage = String.format("Could not update event-based process [%s] to Elasticsearch.", id);
         log.error(errorMessage);
         throw new OptimizeRuntimeException(errorMessage);
       }
     } catch (IOException e) {
-      final String errorMessage = String.format("There was a problem updating the event based process [%s].", id);
+      final String errorMessage = String.format("There was a problem updating the event-based process [%s].", id);
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     } catch (ElasticsearchStatusException e) {
       String errorMessage = String.format(
-        "Was not able to update event based process with id [%s]. Event based process does not exist!", id);
+        "Was not able to update event-based process with id [%s]. Event-based process does not exist!", id);
       log.error(errorMessage, e);
       throw new NotFoundException(errorMessage, e);
     }
