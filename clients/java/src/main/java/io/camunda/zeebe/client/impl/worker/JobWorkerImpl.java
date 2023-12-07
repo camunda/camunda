@@ -23,6 +23,7 @@ import io.camunda.zeebe.client.impl.Loggers;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -66,7 +67,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   private final AtomicInteger remainingJobs;
 
   // job execution facilities
-  private final BlockingExecutor executor;
+  private final Executor executor;
   private final JobRunnableFactory jobHandlerFactory;
   private final long initialPollInterval;
   private final JobStreamer jobStreamer;
@@ -83,19 +84,19 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
 
   public JobWorkerImpl(
       final int maxJobsActive,
-      final Duration jobActivationTimeout,
       final ScheduledExecutorService executor,
       final Duration pollInterval,
       final JobRunnableFactory jobHandlerFactory,
       final JobPoller jobPoller,
       final JobStreamer jobStreamer,
       final BackoffSupplier backoffSupplier,
-      final JobWorkerMetrics metrics) {
+      final JobWorkerMetrics metrics,
+      final Executor jobExecutor) {
     this.maxJobsActive = maxJobsActive;
     activationThreshold = Math.round(maxJobsActive * 0.3f);
     remainingJobs = new AtomicInteger(0);
 
-    this.executor = new BlockingExecutor(executor, maxJobsActive, jobActivationTimeout);
+    this.executor = jobExecutor;
     scheduledExecutorService = executor;
     this.jobHandlerFactory = jobHandlerFactory;
     this.jobStreamer = jobStreamer;
