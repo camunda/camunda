@@ -28,6 +28,7 @@ public class WorkerCfg {
   private boolean completeJobsAsync;
   private String payloadPath;
   private boolean isStreamEnabled;
+  private Duration timeout;
 
   public String getJobType() {
     return jobType;
@@ -99,5 +100,13 @@ public class WorkerCfg {
 
   public void setStreamEnabled(final boolean isStreamEnabled) {
     this.isStreamEnabled = isStreamEnabled;
+  }
+
+  public Duration getTimeout() {
+    return timeout;
+  }
+
+  public void setTimeout(final Duration timeout) {
+    this.timeout = timeout;
   }
 }

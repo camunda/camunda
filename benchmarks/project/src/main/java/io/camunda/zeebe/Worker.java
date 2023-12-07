@@ -105,12 +105,16 @@ public class Worker extends App {
 
   private ZeebeClient createZeebeClient() {
     final WorkerCfg workerCfg = appCfg.getWorker();
+    final var timeout =
+        appCfg.getWorker().getTimeout() != Duration.ZERO
+            ? appCfg.getWorker().getTimeout()
+            : workerCfg.getCompletionDelay().multipliedBy(6);
     final ZeebeClientBuilder builder =
         ZeebeClient.newClientBuilder()
             .gatewayAddress(appCfg.getBrokerUrl())
             .numJobWorkerExecutionThreads(workerCfg.getThreads())
             .defaultJobWorkerName(workerCfg.getWorkerName())
-            .defaultJobTimeout(workerCfg.getCompletionDelay().multipliedBy(6))
+            .defaultJobTimeout(timeout)
             .defaultJobWorkerMaxJobsActive(workerCfg.getCapacity())
             .defaultJobPollInterval(workerCfg.getPollingDelay())
             .withProperties(System.getProperties())
