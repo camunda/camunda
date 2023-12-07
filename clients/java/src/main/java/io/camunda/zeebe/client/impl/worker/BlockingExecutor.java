@@ -21,8 +21,8 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-class BlockingExecutor {
-  public static final TimeUnit TIMEOUT_UNIT = TimeUnit.MILLISECONDS;
+final class BlockingExecutor implements Executor {
+  private static final TimeUnit TIMEOUT_UNIT = TimeUnit.MILLISECONDS;
 
   private final Executor wrappedExecutor;
   private final Semaphore semaphore;
@@ -35,6 +35,7 @@ class BlockingExecutor {
     timeoutMillis = jobActivationTimeout.toMillis();
   }
 
+  @Override
   public void execute(final Runnable command) throws RejectedExecutionException {
     try {
       if (!semaphore.tryAcquire(timeoutMillis, TIMEOUT_UNIT)) {
