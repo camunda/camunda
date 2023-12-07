@@ -21,7 +21,6 @@ public final class StringValue extends BaseValue {
 
   private final MutableDirectBuffer bytes = new UnsafeBuffer(0, 0);
   private int length;
-  private int hashCode;
 
   public StringValue() {
     this(EMPTY_STRING);
@@ -43,13 +42,11 @@ public final class StringValue extends BaseValue {
   public void reset() {
     bytes.wrap(0, 0);
     length = 0;
-    hashCode = 0;
   }
 
   public void wrap(final byte[] bytes) {
     this.bytes.wrap(bytes);
     length = bytes.length;
-    hashCode = 0;
   }
 
   public void wrap(final DirectBuffer buff) {
@@ -63,7 +60,6 @@ public final class StringValue extends BaseValue {
       bytes.wrap(buff, offset, length);
     }
     this.length = length;
-    hashCode = 0;
   }
 
   public void wrap(final StringValue anotherString) {
