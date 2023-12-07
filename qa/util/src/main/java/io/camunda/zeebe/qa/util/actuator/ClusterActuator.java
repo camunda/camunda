@@ -19,7 +19,7 @@ import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
-import io.camunda.zeebe.management.cluster.PostOperationResponse;
+import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.zeebe.containers.ZeebeNode;
@@ -81,7 +81,7 @@ public interface ClusterActuator {
   @RequestLine("POST /brokers/{brokerId}/partitions/{partitionId}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   @Body("%7B\"priority\": \"{priority}\"%7D")
-  PostOperationResponse joinPartition(
+  PlannedOperationsResponse joinPartition(
       @Param final int brokerId, @Param final int partitionId, @Param final int priority);
 
   /**
@@ -91,7 +91,7 @@ public interface ClusterActuator {
    */
   @RequestLine("DELETE /brokers/{brokerId}/partitions/{partitionId}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
-  PostOperationResponse leavePartition(@Param final int brokerId, @Param final int partitionId);
+  PlannedOperationsResponse leavePartition(@Param final int brokerId, @Param final int partitionId);
 
   /**
    * Queries the current cluster topology
@@ -110,7 +110,7 @@ public interface ClusterActuator {
    */
   @RequestLine("POST /brokers")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
-  PostOperationResponse scaleBrokers(@RequestBody List<Integer> ids);
+  PlannedOperationsResponse scaleBrokers(@RequestBody List<Integer> ids);
 
   /**
    * Scales the given brokers up or down and reassigns partitions to the new brokers.
@@ -120,7 +120,7 @@ public interface ClusterActuator {
    */
   @RequestLine("POST /brokers?dryRun={dryRun}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
-  PostOperationResponse scaleBrokers(@RequestBody List<Integer> ids, @Param boolean dryRun);
+  PlannedOperationsResponse scaleBrokers(@RequestBody List<Integer> ids, @Param boolean dryRun);
 
   /**
    * Request that the broker is added to the cluster.
@@ -129,7 +129,7 @@ public interface ClusterActuator {
    */
   @RequestLine("POST /brokers/{brokerId}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
-  PostOperationResponse addBroker(@Param final int brokerId);
+  PlannedOperationsResponse addBroker(@Param final int brokerId);
 
   /**
    * Request that the broker is removed from the cluster
@@ -138,7 +138,7 @@ public interface ClusterActuator {
    */
   @RequestLine("DELETE /brokers/{brokerId}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
-  PostOperationResponse removeBroker(@Param final int brokerId);
+  PlannedOperationsResponse removeBroker(@Param final int brokerId);
 
   @RequestLine("DELETE /changes/{changeId}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
@@ -147,7 +147,7 @@ public interface ClusterActuator {
   // invalid parameter types
   @RequestLine("POST /brokers")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
-  PostOperationResponse scaleBrokersInvalidType(@RequestBody List<String> ids);
+  PlannedOperationsResponse scaleBrokersInvalidType(@RequestBody List<String> ids);
 
   /**
    * Request that the broker is added to the cluster.
@@ -156,5 +156,5 @@ public interface ClusterActuator {
    */
   @RequestLine("POST /brokers/{brokerId}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
-  PostOperationResponse addBrokerInvalidType(@Param final String brokerId);
+  PlannedOperationsResponse addBrokerInvalidType(@Param final String brokerId);
 }

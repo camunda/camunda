@@ -21,12 +21,15 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
@@ -42,6 +45,14 @@ public final class CancelProcessInstanceTest {
       Bpmn.createExecutableProcess("PROCESS")
           .startEvent()
           .serviceTask("task", t -> t.zeebeJobType("test").zeebeJobRetries("5"))
+          .endEvent()
+          .done();
+
+  private static final BpmnModelInstance PROCESS_USER_TASK =
+      Bpmn.createExecutableProcess("PROCESS_USER_TASK")
+          .startEvent()
+          .userTask("task")
+          .zeebeUserTask()
           .endEvent()
           .done();
   private static final BpmnModelInstance SUB_PROCESS_PROCESS =
@@ -79,6 +90,7 @@ public final class CancelProcessInstanceTest {
     ENGINE.deployment().withXmlResource(PROCESS).deploy();
     ENGINE.deployment().withXmlResource(SUB_PROCESS_PROCESS).deploy();
     ENGINE.deployment().withXmlResource(FORK_PROCESS).deploy();
+    ENGINE.deployment().withXmlResource(PROCESS_USER_TASK).deploy();
   }
 
   @Test
@@ -336,6 +348,44 @@ public final class CancelProcessInstanceTest {
         .hasElementId("task")
         .hasProcessDefinitionVersion(1)
         .hasBpmnProcessId("PROCESS");
+  }
+
+  @Test
+  public void shouldCancelUserTaskForActivity() {
+    // given
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("PROCESS_USER_TASK").create();
+    final Record<UserTaskRecordValue> userTaskCreatedEvent =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.TERMINATE_ELEMENT)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("task")
+        .getFirst();
+
+    assertThat(RecordingExporter.userTaskRecords().withProcessInstanceKey(processInstanceKey))
+        .extracting(Record::getValueType, Record::getIntent)
+        .containsSubsequence(
+            tuple(ValueType.USER_TASK, UserTaskIntent.CANCELING),
+            tuple(ValueType.USER_TASK, UserTaskIntent.CANCELED));
+
+    final Record<UserTaskRecordValue> userTaskCanceledEvent =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CANCELED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTaskCanceledEvent.getValue())
+        .hasUserTaskKey(userTaskCreatedEvent.getKey())
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasElementId("task")
+        .hasProcessDefinitionVersion(1)
+        .hasBpmnProcessId("PROCESS_USER_TASK");
   }
 
   @Test

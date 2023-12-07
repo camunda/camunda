@@ -11,7 +11,27 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import java.util.Map;
 
 public interface UserTaskState {
+
+  LifecycleState getLifecycleState(final long userTaskKey);
+
   UserTaskRecord getUserTask(final long userTaskKey);
 
   UserTaskRecord getUserTask(final long userTaskKey, final Map<String, Object> authorizations);
+
+  enum LifecycleState {
+    NOT_FOUND((byte) 0),
+    CREATING((byte) 1),
+    CREATED((byte) 2),
+
+    COMPLETING((byte) 3),
+    COMPLETED((byte) 4),
+
+    CANCELING((byte) 5);
+
+    final byte value;
+
+    LifecycleState(final byte value) {
+      this.value = value;
+    }
+  }
 }

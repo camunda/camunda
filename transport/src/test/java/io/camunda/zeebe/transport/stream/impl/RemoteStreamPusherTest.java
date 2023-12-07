@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import org.agrona.MutableDirectBuffer;
+import org.assertj.core.condition.VerboseCondition;
 import org.junit.jupiter.api.Test;
 
 final class RemoteStreamPusherTest {
@@ -95,9 +96,17 @@ final class RemoteStreamPusherTest {
     // given
     final var errorHandler = new TestErrorHandler();
 
-    // when - then
-    assertThatCode(() -> pusher.pushAsync(null, errorHandler, streamId))
-        .isInstanceOf(NullPointerException.class);
+    // when
+    pusher.pushAsync(null, errorHandler, streamId);
+
+    // then
+    assertThat(errorHandler.errors())
+        .haveExactly(
+            1,
+            VerboseCondition.verboseCondition(
+                e -> (e.error instanceof NullPointerException),
+                "a null pointer exception",
+                e -> " but it has an error of type '%s'".formatted(e.error.getClass())));
   }
 
   @Test

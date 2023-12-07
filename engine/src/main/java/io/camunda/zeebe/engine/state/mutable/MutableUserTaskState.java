@@ -9,12 +9,17 @@ package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import java.util.function.Consumer;
 
 public interface MutableUserTaskState extends UserTaskState {
 
   void create(final UserTaskRecord userTask);
 
   void update(final UserTaskRecord userTask);
+
+  void update(final long userTaskKey, final Consumer<UserTaskRecord> modifier);
+
+  void updateUserTaskLifecycleState(final long userTaskKey, final LifecycleState newLifecycleState);
 
   void delete(final long userTaskKey);
 }

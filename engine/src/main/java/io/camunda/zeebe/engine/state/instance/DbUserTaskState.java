@@ -11,6 +11,7 @@ import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 public class DbUserTaskState implements UserTaskState, MutableUserTaskState {
 
@@ -31,12 +33,24 @@ public class DbUserTaskState implements UserTaskState, MutableUserTaskState {
 
   private final ColumnFamily<DbLong, UserTaskRecordValue> userTasksColumnFamily;
 
+  // key => job state
+  private final DbForeignKey<DbLong> fkUserTask;
+  private final UserTaskLifecycleStateValue userTaskState = new UserTaskLifecycleStateValue();
+  private final ColumnFamily<DbForeignKey<DbLong>, UserTaskLifecycleStateValue>
+      statesUserTaskColumnFamily;
+
   public DbUserTaskState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     userTaskKey = new DbLong();
+    fkUserTask = new DbForeignKey<>(userTaskKey, ZbColumnFamilies.USER_TASKS);
+
     userTasksColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.USER_TASKS, transactionContext, userTaskKey, userTaskRecordToRead);
+
+    statesUserTaskColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.USER_TASK_STATES, transactionContext, fkUserTask, userTaskState);
   }
 
   @Override
@@ -45,6 +59,9 @@ public class DbUserTaskState implements UserTaskState, MutableUserTaskState {
     // do not persist variables in user task state
     userTaskRecordToWrite.setRecordWithoutVariables(userTask);
     userTasksColumnFamily.insert(userTaskKey, userTaskRecordToWrite);
+    // initialize state
+    userTaskState.setLifecycleState(LifecycleState.CREATING);
+    statesUserTaskColumnFamily.insert(fkUserTask, userTaskState);
   }
 
   @Override
@@ -56,9 +73,35 @@ public class DbUserTaskState implements UserTaskState, MutableUserTaskState {
   }
 
   @Override
-  public void delete(final long userTaskKey) {
-    this.userTaskKey.wrapLong(userTaskKey);
-    userTasksColumnFamily.deleteExisting(this.userTaskKey);
+  public void update(final long key, final Consumer<UserTaskRecord> modifier) {
+    final UserTaskRecord userTask = getUserTask(key);
+    modifier.accept(userTask);
+    update(userTask);
+  }
+
+  @Override
+  public void updateUserTaskLifecycleState(final long key, final LifecycleState newLifecycleState) {
+    userTaskKey.wrapLong(key);
+    userTaskState.setLifecycleState(newLifecycleState);
+    statesUserTaskColumnFamily.update(fkUserTask, userTaskState);
+  }
+
+  @Override
+  public void delete(final long key) {
+    userTaskKey.wrapLong(key);
+    userTasksColumnFamily.deleteExisting(userTaskKey);
+    statesUserTaskColumnFamily.deleteExisting(fkUserTask);
+  }
+
+  @Override
+  public LifecycleState getLifecycleState(final long key) {
+    userTaskKey.wrapLong(key);
+    final UserTaskLifecycleStateValue storedLifecycleState =
+        statesUserTaskColumnFamily.get(fkUserTask);
+    if (storedLifecycleState == null) {
+      return LifecycleState.NOT_FOUND;
+    }
+    return storedLifecycleState.getLifecycleState();
   }
 
   @Override

@@ -12,11 +12,10 @@ import static org.assertj.core.api.Assertions.*;
 import feign.FeignException;
 import io.camunda.zeebe.management.cluster.Operation;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
-import io.camunda.zeebe.management.cluster.TopologyChange.StatusEnum;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import java.util.List;
-import java.util.function.Predicate;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
@@ -46,9 +45,8 @@ final class ClusterEndpointIT {
                   assertThat(b.getPartitions())
                       .describedAs("All brokers have two partitions each")
                       .hasSize(PARTITION_COUNT));
-      assertThat(response.getChange().getId())
-          .describedAs("Initial topology has no completed or pending changes")
-          .isNull();
+      assertThat(response.getLastChange()).isNull();
+      assertThat(response.getPendingChange()).isNull();
     }
   }
 
@@ -173,16 +171,13 @@ final class ClusterEndpointIT {
   }
 
   private static void movePartition(final ClusterActuator actuator) {
-    actuator.joinPartition(0, 2, 1);
+    final var plannedJoin = actuator.joinPartition(0, 2, 1);
     Awaitility.await()
-        .until(
-            () -> actuator.getTopology().getChange().getStatus(),
-            Predicate.isEqual(StatusEnum.COMPLETED));
-    actuator.leavePartition(1, 2);
+        .untilAsserted(
+            () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(plannedJoin));
+    final var leave = actuator.leavePartition(1, 2);
     Awaitility.await()
-        .until(
-            () -> actuator.getTopology().getChange().getStatus(),
-            Predicate.isEqual(StatusEnum.COMPLETED));
+        .untilAsserted(() -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(leave));
   }
 
   private static TestCluster createCluster(final int replicationFactor) {

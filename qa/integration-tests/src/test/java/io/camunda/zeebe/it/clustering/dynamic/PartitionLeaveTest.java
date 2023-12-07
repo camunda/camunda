@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.clustering.dynamic;
 
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.assertChangeIsPlanned;
 
-import io.camunda.zeebe.management.cluster.PostOperationResponse;
+import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
@@ -63,12 +63,12 @@ final class PartitionLeaveTest {
     }
   }
 
-  PostOperationResponse runOperation(final TestCluster cluster, final Operation operation) {
+  PlannedOperationsResponse runOperation(final TestCluster cluster, final Operation operation) {
     final var actuator = ClusterActuator.of(cluster.availableGateway());
     return actuator.leavePartition(operation.brokerId(), operation.partitionId());
   }
 
-  private PostOperationResponse revertOperation(
+  private PlannedOperationsResponse revertOperation(
       final TestCluster cluster, final Operation operation) {
     final var actuator = ClusterActuator.of(cluster.availableGateway());
     return actuator.joinPartition(operation.brokerId(), operation.partitionId(), 1);

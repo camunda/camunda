@@ -8,9 +8,9 @@
 package io.camunda.zeebe.qa.util.topology;
 
 import io.camunda.zeebe.management.cluster.BrokerStateCode;
+import io.camunda.zeebe.management.cluster.CompletedChange;
 import io.camunda.zeebe.management.cluster.PartitionStateCode;
-import io.camunda.zeebe.management.cluster.PostOperationResponse;
-import io.camunda.zeebe.management.cluster.TopologyChange.StatusEnum;
+import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import java.time.OffsetDateTime;
@@ -40,7 +40,7 @@ public final class ClusterActuatorAssert
     return this;
   }
 
-  public ClusterActuatorAssert hasAppliedChanges(final PostOperationResponse response) {
+  public ClusterActuatorAssert hasAppliedChanges(final PlannedOperationsResponse response) {
     final var expectedTopology = response.getExpectedTopology();
     final var currentTopology = actual.getTopology().getBrokers();
     Assertions.assertThat(currentTopology)
@@ -50,11 +50,12 @@ public final class ClusterActuatorAssert
     return this;
   }
 
-  public ClusterActuatorAssert hasCompletedChanges(final PostOperationResponse response) {
-    final var currentChange = actual.getTopology().getChange();
+  public ClusterActuatorAssert hasCompletedChanges(final PlannedOperationsResponse response) {
+    final var currentChange = actual.getTopology().getLastChange();
     Assertions.assertThat(currentChange).isNotNull();
     Assertions.assertThat(currentChange.getId()).isEqualTo(response.getChangeId());
-    Assertions.assertThat(currentChange.getStatus()).isEqualTo(StatusEnum.COMPLETED);
+    Assertions.assertThat(currentChange.getStatus())
+        .isEqualTo(CompletedChange.StatusEnum.COMPLETED);
     return this;
   }
 
@@ -90,9 +91,8 @@ public final class ClusterActuatorAssert
   }
 
   public ClusterActuatorAssert doesNotHavePendingChanges() {
-    final var currentChange = actual.getTopology().getChange();
-    Assertions.assertThat(currentChange).isNotNull();
-    Assertions.assertThat(currentChange.getStatus()).isEqualTo(StatusEnum.COMPLETED);
+    final var currentChange = actual.getTopology().getPendingChange();
+    Assertions.assertThat(currentChange).isNull();
     return this;
   }
 

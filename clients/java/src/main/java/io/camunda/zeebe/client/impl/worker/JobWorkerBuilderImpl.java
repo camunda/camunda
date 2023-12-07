@@ -34,6 +34,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
 public final class JobWorkerBuilderImpl
@@ -184,6 +185,7 @@ public final class JobWorkerBuilderImpl
             getTenantIds(),
             maxJobsActive);
 
+    final Executor jobExecutor;
     if (enableStreaming) {
       if (streamingTimeout != null) {
         ensurePositive("streamingTimeout", streamingTimeout);
@@ -200,21 +202,23 @@ public final class JobWorkerBuilderImpl
               streamingTimeout,
               backoffSupplier,
               executorService);
+      jobExecutor = new BlockingExecutor(executorService, maxJobsActive, timeout);
     } else {
       jobStreamer = JobStreamer.noop();
+      jobExecutor = executorService;
     }
 
     final JobWorkerImpl jobWorker =
         new JobWorkerImpl(
             maxJobsActive,
-            timeout,
             executorService,
             pollInterval,
             jobRunnableFactory,
             jobPoller,
             jobStreamer,
             backoffSupplier,
-            metrics);
+            metrics,
+            jobExecutor);
     closeables.add(jobWorker);
     return jobWorker;
   }

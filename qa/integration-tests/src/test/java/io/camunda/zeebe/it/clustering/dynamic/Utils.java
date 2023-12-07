@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.management.cluster.PostOperationResponse;
+import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
@@ -39,7 +39,7 @@ final class Utils {
         .untilAsserted(() -> ClusterActuatorAssert.assertThat(cluster).hasAppliedChanges(response));
   }
 
-  static PostOperationResponse scale(final TestCluster cluster, final int newClusterSize) {
+  static PlannedOperationsResponse scale(final TestCluster cluster, final int newClusterSize) {
     final var actuator = ClusterActuator.of(cluster.anyGateway());
     final var newBrokerSet = IntStream.range(0, newClusterSize).boxed().toList();
 
@@ -49,7 +49,7 @@ final class Utils {
     return response;
   }
 
-  static void assertChangeIsPlanned(final PostOperationResponse response) {
+  static void assertChangeIsPlanned(final PlannedOperationsResponse response) {
     assertThat(response.getPlannedChanges()).isNotEmpty();
     assertThat(response.getExpectedTopology())
         .usingRecursiveComparison()

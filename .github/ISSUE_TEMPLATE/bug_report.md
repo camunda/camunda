@@ -1,6 +1,3 @@
-<!-- For existing Camunda Customers,
-please also use our [Support Channels](https://camunda.com/services/support/) to get priority assistance -->
-
 ---
 
 name: Bug report
@@ -13,7 +10,10 @@ assignees: ''
 
 **Describe the bug**
 
-<!-- A clear and concise description of what the bug is. -->
+<!-- A clear and concise description of what the bug is.
+For existing Camunda Customers,
+please also use our [Support Channels](https://camunda.com/services/support/) to
+get priority assistance -->
 
 **To Reproduce**
 

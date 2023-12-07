@@ -58,14 +58,14 @@ final class JobWorkerMetricsTest {
       final JobWorkerMetrics metrics) {
     return new JobWorkerImpl(
         32,
-        Duration.ofSeconds(1),
         executor,
         Duration.ofSeconds(30),
         new TestJobRunnableFactory(autoCompleteCount),
         poller,
         streamer,
         delay -> delay,
-        metrics);
+        metrics,
+        executor);
   }
 
   private JobPoller createNoopJobPoller() {

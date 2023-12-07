@@ -19,6 +19,9 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.engine.state.immutable.FormState;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -26,26 +29,36 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.time.ZonedDateTime;
+import java.util.EnumSet;
 import java.util.Optional;
+import java.util.Set;
 
 public final class BpmnUserTaskBehavior {
 
+  private static final Set<LifecycleState> CANCELABLE_LIFECYCLE_STATES =
+      EnumSet.of(LifecycleState.CREATING, LifecycleState.CREATED);
   private final UserTaskRecord userTaskRecord =
       new UserTaskRecord().setVariables(DocumentValue.EMPTY_DOCUMENT);
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final ExpressionProcessor expressionBehavior;
+  private final BpmnStateBehavior stateBehavior;
   private final FormState formState;
+  private final MutableUserTaskState userTaskState;
 
   public BpmnUserTaskBehavior(
       final KeyGenerator keyGenerator,
       final Writers writers,
       final ExpressionProcessor expressionBehavior,
-      final FormState formState) {
+      final BpmnStateBehavior stateBehavior,
+      final FormState formState,
+      final MutableUserTaskState userTaskState) {
     this.keyGenerator = keyGenerator;
-    this.expressionBehavior = expressionBehavior;
     stateWriter = writers.state();
+    this.expressionBehavior = expressionBehavior;
+    this.stateBehavior = stateBehavior;
     this.formState = formState;
+    this.userTaskState = userTaskState;
   }
 
   public Either<Failure, UserTaskProperties> evaluateUserTaskExpressions(
@@ -157,6 +170,23 @@ public final class BpmnUserTaskBehavior {
                                   ErrorType.FORM_NOT_FOUND,
                                   scopeKey)));
             });
+  }
+
+  public void cancelUserTask(final BpmnElementContext context) {
+    final var elementInstance = stateBehavior.getElementInstance(context);
+    cancelUserTask(elementInstance);
+  }
+
+  public void cancelUserTask(final ElementInstance elementInstance) {
+    final long userTaskKey = elementInstance.getUserTaskKey();
+    if (userTaskKey > 0) {
+      final LifecycleState lifecycleState = userTaskState.getLifecycleState(userTaskKey);
+      if (CANCELABLE_LIFECYCLE_STATES.contains(lifecycleState)) {
+        final UserTaskRecord userTask = userTaskState.getUserTask(userTaskKey);
+        stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELING, userTask);
+        stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELED, userTask);
+      }
+    }
   }
 
   private void writeUserTaskEvent(
