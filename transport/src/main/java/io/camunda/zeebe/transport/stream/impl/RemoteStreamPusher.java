@@ -52,11 +52,15 @@ final class RemoteStreamPusher<P extends BufferWriter> {
 
   public void pushAsync(
       final P payload, final RemoteStreamErrorHandler<P> errorHandler, final StreamId streamId) {
-    Objects.requireNonNull(payload, "must specify a payload");
     Objects.requireNonNull(errorHandler, "must specify a error handler");
 
-    executor.execute(
-        () -> push(payload, instrumentingErrorHandler(errorHandler, streamId), streamId));
+    try {
+      Objects.requireNonNull(payload, "must specify a payload");
+      executor.execute(
+          () -> push(payload, instrumentingErrorHandler(errorHandler, streamId), streamId));
+    } catch (final Exception e) {
+      errorHandler.handleError(e, payload);
+    }
   }
 
   private RemoteStreamErrorHandler<P> instrumentingErrorHandler(
