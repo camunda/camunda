@@ -1,0 +1,91 @@
+package io.camunda.zeebe.exporter.operate.handlers;
+
+import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
+import io.camunda.operate.exceptions.PersistenceException;
+import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.store.BatchRequest;
+import io.camunda.operate.util.ConversionUtils;
+import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+
+public class ListViewFromJobHandler implements ExportHandler<FlowNodeInstanceForListViewEntity, JobRecordValue> {
+
+  // TODO: has the same problem like other handlers in that it updates an entity actually created by another handler
+  
+  private static final Logger logger = LoggerFactory.getLogger(ListViewFromJobHandler.class);
+  
+  private final static Set<String> FAILED_JOB_EVENTS = new HashSet<>();
+
+  private ListViewTemplate listViewTemplate = new ListViewTemplate();
+  
+  static {
+    FAILED_JOB_EVENTS.add(JobIntent.FAIL.name());
+    FAILED_JOB_EVENTS.add(JobIntent.FAILED.name());
+  }
+  
+  @Override
+  public ValueType handlesValueType() {
+    return ValueType.JOB;
+  }
+
+  @Override
+  public boolean handlesRecord(Record<JobRecordValue> record) {
+    return true;
+  }
+
+  @Override
+  public String generateId(Record<JobRecordValue> record) {
+    return ConversionUtils.toStringOrNull(record.getValue().getElementInstanceKey());
+  }
+
+  @Override
+  public FlowNodeInstanceForListViewEntity createNewEntity(String id) {
+    return new FlowNodeInstanceForListViewEntity().setId(id);
+  }
+
+  @Override
+  public void updateEntity(Record<JobRecordValue> record,
+      FlowNodeInstanceForListViewEntity entity) {
+    
+    final var recordValue = record.getValue();
+    final var intentStr = record.getIntent().name();
+
+    entity.setKey(record.getValue().getElementInstanceKey());
+    entity.setPartitionId(record.getPartitionId());
+    entity.setActivityId(recordValue.getElementId());
+    entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
+    entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
+    entity.getJoinRelation().setParent(recordValue.getProcessInstanceKey());
+
+    if (FAILED_JOB_EVENTS.contains(intentStr) && recordValue.getRetries() > 0) {
+      entity.setJobFailedWithRetriesLeft(true);
+    } else {
+      entity.setJobFailedWithRetriesLeft(false);
+    }
+  }
+
+  @Override
+  public void flush(FlowNodeInstanceForListViewEntity entity, BatchRequest batchRequest)
+      throws PersistenceException {
+    
+    logger.debug("Update job state for flow node instance: id {} JobFailedWithRetriesLeft {}", entity.getId(), entity.isJobFailedWithRetriesLeft());
+    Map<String, Object> updateFields = new HashMap<>();
+    updateFields.put(ListViewTemplate.ID, entity.getId());
+    updateFields.put(ListViewTemplate.JOB_FAILED_WITH_RETRIES_LEFT, entity.isJobFailedWithRetriesLeft());
+
+    batchRequest.upsertWithRouting(listViewTemplate.getFullQualifiedName(), entity.getId(), entity, updateFields,
+        String.valueOf(entity.getProcessInstanceKey()));
+    
+  }
+
+}

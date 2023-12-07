@@ -46,6 +46,9 @@ public class ExportBatchWriter {
 
   public void flush() {
     // TODO: flush here to an ES bulk request
+    // TODO: consider that some handlers modify the same entity (e.g. list view flow node instances are
+    //   updated from process instance and incident records); either change this 
+    //   (i.e. let one handler react to more than one record type), or otherwise resolve this duplication
   }
 
   public static class Builder {
