@@ -67,7 +67,7 @@ services:
     depends_on:
       - keycloak
     container_name: identity
-    image: camunda/identity:8.4.0-alpha1
+    image: camunda/identity:8.4.0-alpha2
     ports:
       - "8080:8080"
     volumes:
@@ -110,7 +110,7 @@ services:
       start_period: 30s
   zeebe:
     container_name: zeebe
-    image: camunda/zeebe:8.4.0-alpha1
+    image: camunda/zeebe:8.4.0-alpha2
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}

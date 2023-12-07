@@ -73,7 +73,7 @@ camunda-platform:
     fullnameOverride: zeebe
     # Defines the version of Zeebe to use
     image:
-      tag: 8.4.0-alpha1
+      tag: 8.4.0-alpha2
     podSecurityContext:
       fsGroup: 1000
     partitionCount: 1
@@ -95,7 +95,7 @@ camunda-platform:
   zeebe-gateway:
     # Defines the version of Zeebe to use
     image:
-      tag: 8.4.0-alpha1
+      tag: 8.4.0-alpha2
     fullnameOverride: zeebe-gateway
     replicas: 1
     nodeSelector:
