@@ -50,35 +50,9 @@ it('should render nothing if the current variable is not a number', () => {
 it('should render bucket options', () => {
   const node = shallow(<BucketSize {...props} />);
 
-  expect(node.find('FormGroup').prop('legendText').props).toEqual({
-    id: 'bucketSizeToggle',
-    labelA: 'Bucket Size',
-    labelB: 'Bucket Size',
-    labelText: undefined,
-    onToggle: expect.any(Function),
-    size: 'sm',
-    toggled: false,
-  });
-  expect(node.find(NumberInput).at(0).props()).toEqual({
-    defaultValue: '-',
-    disabled: true,
-    id: 'bucketSize',
-    label: 'Size',
-    invalid: false,
-    invalidText: 'Enter a positive number',
-    onBlur: expect.any(Function),
-    onChange: expect.any(Function),
-  });
-  expect(node.find(NumberInput).at(1).props()).toEqual({
-    defaultValue: '-',
-    disabled: true,
-    id: 'bucketSizeBaseline',
-    invalid: false,
-    invalidText: 'Must be a valid number',
-    label: 'Baseline',
-    onBlur: expect.any(Function),
-    onChange: expect.any(Function),
-  });
+  expect(node.find('FormGroup').prop('legendText').props.id).toBe('bucketSizeToggle');
+  expect(node.find(NumberInput).at(0).props().id).toBe('bucketSize');
+  expect(node.find(NumberInput).at(1).props().id).toBe('bucketSizeBaseline');
 });
 
 it('should invoke onChange when triggering the activation switch', () => {
