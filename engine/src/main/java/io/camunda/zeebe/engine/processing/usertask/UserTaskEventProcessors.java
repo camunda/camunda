@@ -37,6 +37,6 @@ public final class UserTaskEventProcessors {
     typedRecordProcessors.onCommand(
         ValueType.USER_TASK,
         UserTaskIntent.COMPLETE,
-        new UserTaskCompleteProcessor(processingState, eventHandle));
+        new UserTaskCompleteProcessor(processingState, eventHandle, writers));
   }
 }
