@@ -36,6 +36,7 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
       new ArrayProperty<>("decisionRequirementsMetadata", new DecisionRequirementsMetadataRecord());
 
   public DeploymentRecord() {
+    super(4);
     declareProperty(resourcesProp)
         .declareProperty(processesMetadataProp)
         .declareProperty(decisionRequirementsMetadataProp)

@@ -37,6 +37,7 @@ public final class ProcessMetadata extends UnifiedRecordValue implements Process
   private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
 
   public ProcessMetadata() {
+    super(6);
     declareProperty(bpmnProcessIdProp)
         .declareProperty(versionProp)
         .declareProperty(keyProp)

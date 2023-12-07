@@ -37,6 +37,7 @@ public final class DecisionRequirementsRecord extends UnifiedRecordValue
   private final BinaryProperty resourceProp = new BinaryProperty("resource");
 
   public DecisionRequirementsRecord() {
+    super(8);
     declareProperty(decisionRequirementsIdProp)
         .declareProperty(decisionRequirementsNameProp)
         .declareProperty(decisionRequirementsVersionProp)
@@ -87,48 +88,49 @@ public final class DecisionRequirementsRecord extends UnifiedRecordValue
     return false;
   }
 
+  public DecisionRequirementsRecord setChecksum(final DirectBuffer checksum) {
+    checksumProp.setValue(checksum);
+    return this;
+  }
+
+  public DecisionRequirementsRecord setResourceName(final String resourceName) {
+    resourceNameProp.setValue(resourceName);
+    return this;
+  }
+
+  public DecisionRequirementsRecord setNamespace(final String namespace) {
+    namespaceProp.setValue(namespace);
+    return this;
+  }
+
+  public DecisionRequirementsRecord setDecisionRequirementsKey(final long decisionRequirementsKey) {
+    decisionRequirementsKeyProp.setValue(decisionRequirementsKey);
+    return this;
+  }
+
+  public DecisionRequirementsRecord setDecisionRequirementsVersion(
+      final int decisionRequirementsVersion) {
+    decisionRequirementsVersionProp.setValue(decisionRequirementsVersion);
+    return this;
+  }
+
+  public DecisionRequirementsRecord setDecisionRequirementsName(
+      final String decisionRequirementsName) {
+    decisionRequirementsNameProp.setValue(decisionRequirementsName);
+    return this;
+  }
+
+  public DecisionRequirementsRecord setDecisionRequirementsId(final String decisionRequirementsId) {
+    decisionRequirementsIdProp.setValue(decisionRequirementsId);
+    return this;
+  }
+
   @Override
   public byte[] getResource() {
     return bufferAsArray(resourceProp.getValue());
   }
 
-  public DecisionRequirementsRecord setDecisionRequirementsId(String decisionRequirementsId) {
-    decisionRequirementsIdProp.setValue(decisionRequirementsId);
-    return this;
-  }
-
-  public DecisionRequirementsRecord setDecisionRequirementsName(String decisionRequirementsName) {
-    decisionRequirementsNameProp.setValue(decisionRequirementsName);
-    return this;
-  }
-
-  public DecisionRequirementsRecord setDecisionRequirementsVersion(
-      int decisionRequirementsVersion) {
-    decisionRequirementsVersionProp.setValue(decisionRequirementsVersion);
-    return this;
-  }
-
-  public DecisionRequirementsRecord setDecisionRequirementsKey(long decisionRequirementsKey) {
-    decisionRequirementsKeyProp.setValue(decisionRequirementsKey);
-    return this;
-  }
-
-  public DecisionRequirementsRecord setNamespace(String namespace) {
-    namespaceProp.setValue(namespace);
-    return this;
-  }
-
-  public DecisionRequirementsRecord setResourceName(String resourceName) {
-    resourceNameProp.setValue(resourceName);
-    return this;
-  }
-
-  public DecisionRequirementsRecord setChecksum(DirectBuffer checksum) {
-    checksumProp.setValue(checksum);
-    return this;
-  }
-
-  public DecisionRequirementsRecord setResource(DirectBuffer resource) {
+  public DecisionRequirementsRecord setResource(final DirectBuffer resource) {
     resourceProp.setValue(resource);
     return this;
   }

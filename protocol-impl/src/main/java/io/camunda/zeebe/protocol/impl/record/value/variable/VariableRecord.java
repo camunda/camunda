@@ -27,6 +27,7 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
 
   public VariableRecord() {
+    super(6);
     declareProperty(nameProp)
         .declareProperty(valueProp)
         .declareProperty(scopeKeyProp)

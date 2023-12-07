@@ -18,6 +18,7 @@ public class JobStateValue extends UnpackedObject implements DbValue {
       new EnumProperty<>("jobState", JobState.State.class);
 
   public JobStateValue() {
+    super(1);
     declareProperty(stateProp);
   }
 

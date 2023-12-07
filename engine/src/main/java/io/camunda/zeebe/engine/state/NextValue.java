@@ -15,6 +15,7 @@ public class NextValue extends UnpackedObject implements DbValue {
   private final LongProperty nextValueProp = new LongProperty("nextValue", -1L);
 
   public NextValue() {
+    super(1);
     declareProperty(nextValueProp);
   }
 
