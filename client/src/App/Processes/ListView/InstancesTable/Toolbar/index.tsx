@@ -13,7 +13,6 @@ import useOperationApply from './useOperationApply';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {RetryFailed, Error} from '@carbon/react/icons';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {IS_INSTANCE_MIGRATION_ENABLED} from 'modules/feature-flags';
 import {MigrateAction} from './MigrateAction';
 
 type Props = {
@@ -83,7 +82,7 @@ const Toolbar: React.FC<Props> = ({selectedInstancesCount}) => {
             }
           }}
         >
-          {IS_INSTANCE_MIGRATION_ENABLED && <MigrateAction />}
+          <MigrateAction />
           <TableBatchAction
             renderIcon={Error}
             onClick={() => setModalMode('CANCEL_PROCESS_INSTANCE')}
