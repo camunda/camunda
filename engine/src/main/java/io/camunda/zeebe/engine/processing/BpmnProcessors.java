@@ -236,7 +236,8 @@ public final class BpmnProcessors {
             processingState.getElementInstanceState(),
             processingState.getProcessState(),
             processingState.getJobState(),
-            processingState.getVariableState()));
+            processingState.getVariableState(),
+            processingState.getIncidentState()));
   }
 
   private static void addProcessInstanceBatchStreamProcessors(

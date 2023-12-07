@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCIDENT;
+
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -14,6 +16,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
@@ -61,13 +64,15 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final ProcessState processState;
   private final JobState jobState;
   private final VariableState variableState;
+  private final IncidentState incidentState;
 
   public ProcessInstanceMigrationMigrateProcessor(
       final Writers writers,
       final ElementInstanceState elementInstanceState,
       final ProcessState processState,
       final JobState jobState,
-      final VariableState variableState) {
+      final VariableState variableState,
+      final IncidentState incidentState) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -75,6 +80,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     this.processState = processState;
     this.jobState = jobState;
     this.variableState = variableState;
+    this.incidentState = incidentState;
   }
 
   @Override
@@ -136,6 +142,11 @@ public class ProcessInstanceMigrationMigrateProcessor
       responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }
+    if (error instanceof final ElementWithIncidentException e) {
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, e.getMessage());
+      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
+      return ProcessingError.EXPECTED_ERROR;
+    }
 
     return ProcessingError.UNEXPECTED_ERROR;
   }
@@ -174,6 +185,16 @@ public class ProcessInstanceMigrationMigrateProcessor
         sourceElementIdToTargetElementId.get(elementInstanceRecord.getElementId());
     if (targetElementId == null) {
       throw new UnmappedActiveElementException(
+          elementInstanceRecord.getProcessInstanceKey(), elementInstanceRecord.getElementId());
+    }
+
+    final boolean hasProcessIncident =
+        incidentState.getProcessInstanceIncidentKey(elementInstance.getKey()) != MISSING_INCIDENT;
+    final boolean hasJobIncident =
+        incidentState.getJobIncidentKey(elementInstance.getJobKey()) != MISSING_INCIDENT;
+
+    if (hasProcessIncident || hasJobIncident) {
+      throw new ElementWithIncidentException(
           elementInstanceRecord.getProcessInstanceKey(), elementInstanceRecord.getElementId());
     }
 
@@ -246,6 +267,23 @@ public class ProcessInstanceMigrationMigrateProcessor
               Expected to migrate process instance '%s' \
               but no mapping instruction defined for active element with id '%s'. \
               Elements cannot be migrated without a mapping.""",
+              processInstanceKey, elementId));
+    }
+  }
+
+  /**
+   * Exception that can be thrown during the migration of a process instance, in case the engine
+   * attempts to migrate an element that has an incident.
+   */
+  private static final class ElementWithIncidentException extends RuntimeException {
+    ElementWithIncidentException(final long processInstanceKey, final String elementId) {
+      super(
+          String.format(
+              """
+              Expected to migrate process instance '%s' \
+              but active element with id '%s' has an incident. \
+              Elements cannot be migrated with an incident. \
+              Please retry migration after resolving the incident.""",
               processInstanceKey, elementId));
     }
   }
