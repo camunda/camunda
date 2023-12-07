@@ -19,9 +19,11 @@ public class JobBackoffRestoreMigration implements MigrationTask {
 
   @Override
   public boolean needsToRun(final ProcessingState processingState) {
-    // The migration should run only if there are failed jobs in the state, but the backoff column
-    // family is empty or there are more failed jobs then record inside the backoff column family
-    return processingState.getJobState().isJobBackoffToRestore();
+    // The migration should run everytime, as there is no fast way to detect if a failed job need to
+    // be migrated.
+    // The only way to do it is retrieve the failed job twice, but this is too time-consuming
+    // The migration should restore only the missing failed jobs
+    return true;
   }
 
   @Override

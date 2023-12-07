@@ -257,7 +257,7 @@ public final class DbJobState implements JobState, MutableJobState {
   public void restoreBackoff() {
     final var failedKeys = getFailedJobKeys();
 
-    failedKeys.removeAll(getBackoffJobKey());
+    failedKeys.removeAll(getBackoffJobKeys());
     failedKeys.forEach(
         key -> {
           jobKey.wrapLong(key);
@@ -396,11 +396,6 @@ public final class DbJobState implements JobState, MutableJobState {
     return nextBackOffDueDate;
   }
 
-  @Override
-  public boolean isJobBackoffToRestore() {
-    return getFailedJobKeys().size() > getBackoffJobKey().size();
-  }
-
   boolean visitJob(final long jobKey, final BiPredicate<Long, JobRecord> callback) {
     final JobRecord job = getJob(jobKey);
     if (job == null) {
@@ -503,7 +498,7 @@ public final class DbJobState implements JobState, MutableJobState {
     return failedJobKeys;
   }
 
-  private Set<Long> getBackoffJobKey() {
+  private Set<Long> getBackoffJobKeys() {
     final Set<Long> backoffJobKeys = new HashSet<>();
     backoffColumnFamily.forEach(
         (key, value) -> backoffJobKeys.add(key.second().inner().getValue()));

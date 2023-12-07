@@ -113,33 +113,26 @@ public class JobBackoffRestoreMigrationTest {
 
   // regression test of https://github.com/camunda/zeebe/issues/14329
   @Test
-  public void shouldNotRestoreWhenNoFailedJobsArePresent() {
+  public void shouldDoNothingIfFailedJobsAreTheSameAsBackoff() {
     // given
     final MutableJobState jobState = processingState.getJobState();
     final JobRecord record = createJobRecord(1000);
     jobState.create(jobKey.getValue(), record);
     jobState.fail(jobKey.getValue(), record);
 
-    // when
-    jobsColumnFamily.deleteExisting(jobKey);
-
-    // then
-    assertThat(jobBackoffRestoreMigration.needsToRun(processingState)).isFalse();
-  }
-
-  // regression test of https://github.com/camunda/zeebe/issues/14329
-  @Test
-  public void shouldNotRestoreWhenFailedJobsAreTheSameOfBackoffJobs() {
-    // given
-    final MutableJobState jobState = processingState.getJobState();
-    final JobRecord record = createJobRecord(1000);
-    jobState.create(jobKey.getValue(), record);
+    jobKey.wrapLong(2);
+    final JobRecord backoffRecord = createJobRecord(2000);
+    jobState.create(jobKey.getValue(), backoffRecord);
+    jobState.fail(jobKey.getValue(), backoffRecord);
+    assertThat(backoffColumnFamily.count()).isEqualTo(2);
 
     // when
-    jobState.fail(jobKey.getValue(), record);
+    assertThat(jobBackoffRestoreMigration.needsToRun(processingState)).isTrue();
+    jobBackoffRestoreMigration.runMigration(processingState);
 
     // then
-    assertThat(jobBackoffRestoreMigration.needsToRun(processingState)).isFalse();
+    assertThat(backoffColumnFamily.isEmpty()).isFalse();
+    assertThat(backoffColumnFamily.count()).isEqualTo(2);
   }
 
   private static JobRecord createJobRecord(final long retryBackoff) {
