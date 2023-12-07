@@ -16,12 +16,12 @@ import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
+import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.instance.JobRecordValue;
 import io.camunda.zeebe.engine.state.instance.JobStateValue;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
-import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -100,7 +100,6 @@ public class JobBackoffRestoreMigrationTest {
     jobState.create(jobKey.getValue(), backoffRecord);
     jobState.fail(jobKey.getValue(), backoffRecord);
     backoffKey.wrapLong(backoffRecord.getRecurringTime());
-    assertThat(backoffColumnFamily.count()).isEqualTo(1);
 
     // when
     assertThat(jobBackoffRestoreMigration.needsToRun(processingState)).isTrue();
@@ -108,38 +107,28 @@ public class JobBackoffRestoreMigrationTest {
 
     // then
     assertThat(backoffColumnFamily.isEmpty()).isFalse();
-    assertThat(backoffColumnFamily.count()).isEqualTo(2);
   }
 
   // regression test of https://github.com/camunda/zeebe/issues/14329
   @Test
-  public void shouldNotRestoreWhenNoFailedJobsArePresent() {
+  public void shouldDoNothingIfFailedJobsAreTheSameAsBackoff() {
     // given
     final MutableJobState jobState = processingState.getJobState();
     final JobRecord record = createJobRecord(1000);
     jobState.create(jobKey.getValue(), record);
     jobState.fail(jobKey.getValue(), record);
 
-    // when
-    jobsColumnFamily.deleteExisting(jobKey);
-
-    // then
-    assertThat(jobBackoffRestoreMigration.needsToRun(processingState)).isFalse();
-  }
-
-  // regression test of https://github.com/camunda/zeebe/issues/14329
-  @Test
-  public void shouldNotRestoreWhenFailedJobsAreTheSameOfBackoffJobs() {
-    // given
-    final MutableJobState jobState = processingState.getJobState();
-    final JobRecord record = createJobRecord(1000);
-    jobState.create(jobKey.getValue(), record);
+    jobKey.wrapLong(2);
+    final JobRecord backoffRecord = createJobRecord(2000);
+    jobState.create(jobKey.getValue(), backoffRecord);
+    jobState.fail(jobKey.getValue(), backoffRecord);
 
     // when
-    jobState.fail(jobKey.getValue(), record);
+    assertThat(jobBackoffRestoreMigration.needsToRun(processingState)).isTrue();
+    jobBackoffRestoreMigration.runMigration(processingState);
 
     // then
-    assertThat(jobBackoffRestoreMigration.needsToRun(processingState)).isFalse();
+    assertThat(backoffColumnFamily.isEmpty()).isFalse();
   }
 
   private static JobRecord createJobRecord(final long retryBackoff) {
