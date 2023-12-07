@@ -23,6 +23,7 @@ public final class MessageBatchRecord extends UnifiedRecordValue
       new ArrayProperty<>("messageKeys", LongValue::new);
 
   public MessageBatchRecord() {
+    super(1);
     declareProperty(messageKeysProp);
   }
 

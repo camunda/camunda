@@ -30,6 +30,7 @@ public final class ProcessInstanceModificationVariableInstruction extends Object
   private final StringProperty elementIdProp = new StringProperty("elementId", "");
 
   public ProcessInstanceModificationVariableInstruction() {
+    super(2);
     declareProperty(variablesProp).declareProperty(elementIdProp);
   }
 

@@ -64,6 +64,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public JobRecord() {
+    super(17);
     declareProperty(deadlineProp)
         .declareProperty(workerProp)
         .declareProperty(retriesProp)

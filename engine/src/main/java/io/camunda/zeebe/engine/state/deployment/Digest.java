@@ -16,6 +16,7 @@ public class Digest extends UnpackedObject implements DbValue {
   private final BinaryProperty digestProp = new BinaryProperty("digest");
 
   public Digest() {
+    super(1);
     declareProperty(digestProp);
   }
 

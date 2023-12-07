@@ -31,6 +31,7 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
   private final DocumentProperty variablesProperty = new DocumentProperty("variables");
 
   public VariableDocumentRecord() {
+    super(3);
     declareProperty(scopeKeyProperty)
         .declareProperty(updateSemanticsProperty)
         .declareProperty(variablesProperty);

@@ -34,6 +34,7 @@ public final class ProcessEventRecord extends UnifiedRecordValue
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public ProcessEventRecord() {
+    super(6);
     declareProperty(scopeKeyProperty)
         .declareProperty(targetElementIdProperty)
         .declareProperty(variablesProperty)

@@ -225,6 +225,7 @@ public final class DocumentPropertyTest {
     private final DocumentProperty documentProperty = new DocumentProperty("documentProp");
 
     Document() {
+      super(1);
       declareProperty(documentProperty);
     }
 

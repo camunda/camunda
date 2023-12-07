@@ -37,6 +37,7 @@ public final class PersistedDecisionRequirements extends UnpackedObject implemen
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public PersistedDecisionRequirements() {
+    super(8);
     declareProperty(decisionRequirementsIdProp)
         .declareProperty(decisionRequirementsNameProp)
         .declareProperty(decisionRequirementsVersionProp)

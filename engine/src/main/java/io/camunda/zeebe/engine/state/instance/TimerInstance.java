@@ -34,6 +34,7 @@ public final class TimerInstance extends UnpackedObject implements DbValue, Tena
   private final IntegerProperty repetitionsProp = new IntegerProperty("repetitions", 0);
 
   public TimerInstance() {
+    super(8);
     declareProperty(handlerNodeIdProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(keyProp)

@@ -25,6 +25,7 @@ public final class SignalRecord extends UnifiedRecordValue implements SignalReco
   private final DocumentProperty variablesProp = new DocumentProperty("variables");
 
   public SignalRecord() {
+    super(2);
     declareProperty(signalNameProp).declareProperty(variablesProp);
   }
 

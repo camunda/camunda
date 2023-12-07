@@ -48,11 +48,12 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
       new EnumProperty<>("valueType", ValueType.class, ValueType.NULL_VAL);
   private final IntegerProperty intentProperty = new IntegerProperty("intent", Intent.NULL_VAL);
   private final ObjectProperty<UnifiedRecordValue> commandValueProperty =
-      new ObjectProperty<>("commandValue", new UnifiedRecordValue());
+      new ObjectProperty<>("commandValue", new UnifiedRecordValue(10));
   private final MsgPackWriter commandValueWriter = new MsgPackWriter();
   private final MsgPackReader commandValueReader = new MsgPackReader();
 
   public CommandDistributionRecord() {
+    super(4);
     declareProperty(partitionIdProperty)
         .declareProperty(valueTypeProperty)
         .declareProperty(intentProperty)
