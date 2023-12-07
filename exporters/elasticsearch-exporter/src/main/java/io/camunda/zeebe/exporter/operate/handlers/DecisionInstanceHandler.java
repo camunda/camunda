@@ -1,51 +1,120 @@
 package io.camunda.zeebe.exporter.operate.handlers;
 
+import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
+import io.camunda.operate.entities.dmn.DecisionInstanceInputEntity;
+import io.camunda.operate.entities.dmn.DecisionInstanceOutputEntity;
+import io.camunda.operate.entities.dmn.DecisionInstanceState;
+import io.camunda.operate.entities.dmn.DecisionType;
 import io.camunda.operate.exceptions.PersistenceException;
+import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.store.BatchRequest;
+import io.camunda.operate.util.DateUtil;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
+import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
+import io.camunda.zeebe.protocol.record.value.EvaluatedInputValue;
+import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
 
-public class DecisionInstanceHandler
-    implements ExportHandler<DecisionInstanceEntity, DecisionEvaluationRecordValue> {
+// TODO: currently not implemented as an ExportHandler, because it produces multiple Operate Entities from one record
+public class DecisionInstanceHandler {
 
-  @Override
+
+  private DecisionInstanceTemplate decisionInstanceTemplate = new DecisionInstanceTemplate();
+  
   public ValueType handlesValueType() {
     return ValueType.DECISION_EVALUATION;
   }
 
-  @Override
-  public boolean handlesRecord(Record<DecisionEvaluationRecordValue> record) {
-    // TODO Auto-generated method stub
-    return false;
+  public List<DecisionInstanceEntity> createEntities(Record<DecisionEvaluationRecordValue> record) {
+    DecisionEvaluationRecordValue decisionEvaluation = record.getValue();
+    
+    List<DecisionInstanceEntity> entities = new ArrayList<>();
+    for (int i = 1; i <= decisionEvaluation.getEvaluatedDecisions().size(); i++) {
+      final EvaluatedDecisionValue decision = decisionEvaluation
+          .getEvaluatedDecisions().get(i - 1);
+      OffsetDateTime timestamp = DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
+      final DecisionInstanceState state = getState(record, decisionEvaluation, i);
+
+      final DecisionInstanceEntity entity = new DecisionInstanceEntity()
+          .setId(record.getKey(), i)
+          .setKey(record.getKey())
+          .setExecutionIndex(i)
+          .setPosition(record.getPosition())
+          .setPartitionId(record.getPartitionId())
+          .setEvaluationDate(timestamp)
+          .setProcessInstanceKey(decisionEvaluation.getProcessInstanceKey())
+          .setProcessDefinitionKey(decisionEvaluation.getProcessDefinitionKey())
+          .setBpmnProcessId(decisionEvaluation.getBpmnProcessId())
+          .setElementInstanceKey(decisionEvaluation.getElementInstanceKey())
+          .setElementId(decisionEvaluation.getElementId())
+          .setDecisionRequirementsKey(decisionEvaluation.getDecisionRequirementsKey())
+          .setDecisionRequirementsId(decisionEvaluation.getDecisionRequirementsId())
+          .setRootDecisionId(decisionEvaluation.getDecisionId())
+          .setRootDecisionName(decisionEvaluation.getDecisionName())
+          .setRootDecisionDefinitionId(String.valueOf(decisionEvaluation.getDecisionKey()))
+          .setDecisionId(decision.getDecisionId())
+          .setDecisionDefinitionId(String.valueOf(decision.getDecisionKey()))
+          .setDecisionType(DecisionType.fromZeebeDecisionType(decision.getDecisionType()))
+          .setDecisionName(decision.getDecisionName())
+          .setDecisionVersion((int)decision.getDecisionVersion())
+          .setState(state)
+          .setResult(decision.getDecisionOutput())
+          .setEvaluatedOutputs(createEvaluationOutputs(decision.getMatchedRules()))
+          .setEvaluatedInputs(createEvaluationInputs(decision.getEvaluatedInputs()))
+          .setTenantId(tenantOrDefault(decisionEvaluation.getTenantId()));
+      if (state.equals(DecisionInstanceState.FAILED)) {
+        entity.setEvaluationFailure(decisionEvaluation.getEvaluationFailureMessage());
+      }
+      entities.add(entity);
+    }
+    return entities;
+  }
+  
+  private DecisionInstanceState getState(final Record record,
+      final DecisionEvaluationRecordValue decisionEvaluation, final int i) {
+    if (record.getIntent().name().equals(DecisionEvaluationIntent.FAILED.name()) && i == decisionEvaluation
+        .getEvaluatedDecisions().size()) {
+      return DecisionInstanceState.FAILED;
+    } else {
+      return DecisionInstanceState.EVALUATED;
+    }
+  }
+  
+  private List<DecisionInstanceInputEntity> createEvaluationInputs(
+      final List<EvaluatedInputValue> evaluatedInputs) {
+    return evaluatedInputs.stream().map(input -> new DecisionInstanceInputEntity()
+        .setId(input.getInputId())
+        .setName(input.getInputName())
+        .setValue(input.getInputValue())).collect(Collectors.toList());
   }
 
-  @Override
-  public String generateId(Record<DecisionEvaluationRecordValue> record) {
-    // TODO Auto-generated method stub
-    return null;
+  private List<DecisionInstanceOutputEntity> createEvaluationOutputs(
+      final List<MatchedRuleValue> matchedRules) {
+    List<DecisionInstanceOutputEntity> outputs = new ArrayList<>();
+    matchedRules.stream().forEach(rule ->
+        outputs.addAll(rule.getEvaluatedOutputs().stream().map(output ->
+            new DecisionInstanceOutputEntity()
+                .setRuleId(rule.getRuleId())
+                .setRuleIndex(rule.getRuleIndex())
+                .setId(output.getOutputId())
+                .setName(output.getOutputName())
+                .setValue(output.getOutputValue()))
+            .collect(Collectors.toList())));
+    return outputs;
   }
 
-  @Override
-  public DecisionInstanceEntity createNewEntity(String id) {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public void updateEntity(Record<DecisionEvaluationRecordValue> record,
-      DecisionInstanceEntity entity) {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
   public void flush(DecisionInstanceEntity entity, BatchRequest batchRequest)
       throws PersistenceException {
-    // TODO Auto-generated method stub
-
+    batchRequest.add(decisionInstanceTemplate.getFullQualifiedName(), entity);
   }
 
 }
