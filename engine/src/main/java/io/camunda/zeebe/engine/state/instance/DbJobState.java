@@ -426,11 +426,6 @@ public final class DbJobState implements JobState, MutableJobState {
     return nextBackOffDueDate;
   }
 
-  @Override
-  public boolean isJobBackoffToRestore() {
-    return getFailedJobKeys().size() > getBackoffJobKey().size();
-  }
-
   boolean visitJob(final long jobKey, final BiPredicate<Long, JobRecord> callback) {
     final JobRecord job = getJob(jobKey);
     if (job == null) {

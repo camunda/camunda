@@ -37,8 +37,6 @@ public interface JobState {
 
   long findBackedOffJobs(final long timestamp, final BiPredicate<Long, JobRecord> callback);
 
-  boolean isJobBackoffToRestore();
-
   enum State {
     ACTIVATABLE((byte) 0),
     ACTIVATED((byte) 1),
