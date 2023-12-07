@@ -289,7 +289,7 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>2.15.0</version>
+      <version>${commons.io.version}</version>
     </dependency>
 
     <!-- Micrometer Prometheus registry  -->
