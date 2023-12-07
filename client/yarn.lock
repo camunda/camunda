@@ -6067,6 +6067,11 @@ diagram-js@^7.8.2:
     path-intersection "^2.2.1"
     tiny-svg "^2.2.2"
 
+didi@^10.0.0:
+  version "10.0.1"
+  resolved "https://registry.yarnpkg.com/didi/-/didi-10.0.1.tgz#b995c7cd2d42232be081688512ecc4e67663e344"
+  integrity sha512-rddmyUjpIh8pIu9OVtqQjGkZB4jNOaaRMz9AClSH3WUEOoJctxpFmqjTButmI5na5sSIDpfjABe34wEvEhrjcg==
+
 didi@^5.2.1:
   version "5.2.1"
   resolved "https://registry.yarnpkg.com/didi/-/didi-5.2.1.tgz#1a0b1336be8baa0b068a72036eedd9fb94135bff"
@@ -14373,6 +14378,17 @@ table-js@^8.0.2:
   integrity sha512-R8KyK2O7Hgz6LXnRZNbwA/Bs3jmDTN92qZkQv8/pr2oMzPzsWYBuX/igeG8LMhPMHEydVwx3WGM749gV/5ABhQ==
   dependencies:
     didi "^9.0.0"
+    ids "^1.0.0"
+    min-dash "^4.0.0"
+    min-dom "^4.0.3"
+    selection-ranges "^3.0.3"
+
+table-js@^9.0.0:
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/table-js/-/table-js-9.0.0.tgz#82556d2560650805570a451535bf50b42a4e40f7"
+  integrity sha512-CBRMuPUdHRQNtOsD6ommWCHd6TJbxLWbNbLIfs6lU1XqD0dlSMH9xBqD7asFra5XDVTrLSHzx2PBD83pWVqDDg==
+  dependencies:
+    didi "^10.0.0"
     ids "^1.0.0"
     min-dash "^4.0.0"
     min-dom "^4.0.3"
