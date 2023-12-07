@@ -24,6 +24,7 @@ public final class MessageSubscription extends UnpackedObject implements DbValue
   private final BooleanProperty correlatingProp = new BooleanProperty("correlating", false);
 
   public MessageSubscription() {
+    super(3);
     declareProperty(recordProp).declareProperty(keyProp).declareProperty(correlatingProp);
   }
 

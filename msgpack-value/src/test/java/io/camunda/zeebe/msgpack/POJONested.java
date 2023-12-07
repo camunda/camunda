@@ -13,6 +13,7 @@ public final class POJONested extends UnpackedObject {
   private final LongProperty longProp = new LongProperty("foo", -1L);
 
   public POJONested() {
+    super(1);
     declareProperty(longProp);
   }
 

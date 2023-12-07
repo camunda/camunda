@@ -22,6 +22,7 @@ public class EscalationRecord extends UnifiedRecordValue implements EscalationRe
   private final StringProperty catchElementIdProp = new StringProperty("catchElementId", "");
 
   public EscalationRecord() {
+    super(4);
     declareProperty(processInstanceKeyProp)
         .declareProperty(escalationCodeProp)
         .declareProperty(throwElementIdProp)

@@ -34,6 +34,7 @@ public final class ProcessInstanceBatchRecord extends UnifiedRecordValue
   private final LongProperty indexProperty = new LongProperty("index", -1L);
 
   public ProcessInstanceBatchRecord() {
+    super(3);
     declareProperty(processInstanceKeyProperty)
         .declareProperty(batchElementInstanceKeyProperty)
         .declareProperty(indexProperty);

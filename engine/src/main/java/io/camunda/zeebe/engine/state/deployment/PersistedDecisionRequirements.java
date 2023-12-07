@@ -32,6 +32,7 @@ public final class PersistedDecisionRequirements extends UnpackedObject implemen
   private final BinaryProperty resourceProp = new BinaryProperty("resource");
 
   public PersistedDecisionRequirements() {
+    super(7);
     declareProperty(decisionRequirementsIdProp)
         .declareProperty(decisionRequirementsNameProp)
         .declareProperty(decisionRequirementsVersionProp)

@@ -24,6 +24,7 @@ public final class LegacyProcessMessageSubscription extends UnpackedObject imple
   private final LongProperty keyProp = new LongProperty("key");
 
   public LegacyProcessMessageSubscription() {
+    super(4);
     declareProperty(recordProp)
         .declareProperty(commandSentTimeProp)
         .declareProperty(stateProp)

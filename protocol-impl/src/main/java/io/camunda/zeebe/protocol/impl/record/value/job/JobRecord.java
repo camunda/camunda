@@ -61,6 +61,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
 
   public JobRecord() {
+    super(16);
     declareProperty(deadlineProp)
         .declareProperty(workerProp)
         .declareProperty(retriesProp)

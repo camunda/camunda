@@ -59,6 +59,7 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
   private final StringProperty failedDecisionIdProp = new StringProperty("failedDecisionId", "");
 
   public DecisionEvaluationRecord() {
+    super(16);
     declareProperty(decisionKeyProp)
         .declareProperty(decisionIdProp)
         .declareProperty(decisionNameProp)

@@ -30,6 +30,7 @@ public final class ProcessEventRecord extends UnifiedRecordValue
       new LongProperty("processInstanceKey", -1);
 
   public ProcessEventRecord() {
+    super(5);
     declareProperty(scopeKeyProperty)
         .declareProperty(targetElementIdProperty)
         .declareProperty(variablesProperty)

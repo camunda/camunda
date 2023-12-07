@@ -229,6 +229,10 @@ public final class BanInstanceTest {
 
   private final class Value extends UnifiedRecordValue implements ProcessInstanceRelated {
 
+    public Value() {
+      super(10);
+    }
+
     @Override
     public long getProcessInstanceKey() {
       return processInstanceKey;

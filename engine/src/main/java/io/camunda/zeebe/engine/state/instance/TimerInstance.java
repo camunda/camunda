@@ -29,6 +29,7 @@ public final class TimerInstance extends UnpackedObject implements DbValue {
   private final IntegerProperty repetitionsProp = new IntegerProperty("repetitions", 0);
 
   public TimerInstance() {
+    super(7);
     declareProperty(handlerNodeIdProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(keyProp)
@@ -95,7 +96,7 @@ public final class TimerInstance extends UnpackedObject implements DbValue {
   }
 
   @Override
-  public void wrap(final DirectBuffer buffer, int offset, final int length) {
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     final byte[] bytes = new byte[length];
     final UnsafeBuffer mutableBuffer = new UnsafeBuffer(bytes);
     buffer.getBytes(offset, bytes, 0, length);

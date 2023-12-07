@@ -23,6 +23,7 @@ public final class LegacyMessageSubscription extends UnpackedObject implements D
   private final LongProperty commandSentTimeProp = new LongProperty("commandSentTime", 0);
 
   public LegacyMessageSubscription() {
+    super(3);
     declareProperty(recordProp).declareProperty(keyProp).declareProperty(commandSentTimeProp);
   }
 

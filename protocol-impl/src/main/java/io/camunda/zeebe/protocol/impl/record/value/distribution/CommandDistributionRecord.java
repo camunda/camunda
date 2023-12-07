@@ -44,11 +44,12 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   private final EnumProperty<ValueType> valueTypeProperty =
       new EnumProperty<>("valueType", ValueType.class);
   private final ObjectProperty<UnifiedRecordValue> commandValueProperty =
-      new ObjectProperty<>("commandValue", new UnifiedRecordValue());
+      new ObjectProperty<>("commandValue", new UnifiedRecordValue(10));
   private final MsgPackWriter recordValueWriter = new MsgPackWriter();
   private final MsgPackReader recordValueReader = new MsgPackReader();
 
   public CommandDistributionRecord() {
+    super(3);
     declareProperty(partitionIdProperty)
         .declareProperty(valueTypeProperty)
         .declareProperty(commandValueProperty);

@@ -28,6 +28,7 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
       new LongProperty("catchEventInstanceKey", -1L);
 
   public SignalSubscriptionRecord() {
+    super(5);
     declareProperty(processDefinitionKeyProp)
         .declareProperty(signalNameProp)
         .declareProperty(catchEventIdProp)

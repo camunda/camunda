@@ -15,6 +15,7 @@ public final class LastProcessedPosition extends UnpackedObject implements DbVal
   private final LongProperty positionProp = new LongProperty("lastProcessPosition");
 
   public LastProcessedPosition() {
+    super(1);
     declareProperty(positionProp);
   }
 

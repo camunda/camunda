@@ -25,9 +25,10 @@ public class CommandValueAndValueTypeWrapper extends UnpackedObject implements D
   private final EnumProperty<ValueType> valueTypeProperty =
       new EnumProperty<>("valueType", ValueType.class);
   private final ObjectProperty<UnifiedRecordValue> commandValueProperty =
-      new ObjectProperty<>("commandValue", new UnifiedRecordValue());
+      new ObjectProperty<>("commandValue", new UnifiedRecordValue(10));
 
   public CommandValueAndValueTypeWrapper() {
+    super(2);
     declareProperty(valueTypeProperty).declareProperty(commandValueProperty);
   }
 
