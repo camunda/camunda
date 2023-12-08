@@ -29,7 +29,7 @@ public class IdentityConfigurer {
   }
 
   @Bean
-  @ConditionalOnProperty("camunda.identity.baseUrl")
+  @Profile(OperateProfileService.SSO_AUTH_PROFILE + " || " + OperateProfileService.IDENTITY_AUTH_PROFILE)
   public PermissionsService getPermissionsService(OperateProperties operateProperties) {
     return new PermissionsService(operateProperties);
   }
