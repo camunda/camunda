@@ -2,6 +2,9 @@
 name: Static Code Analysis
 on:
   pull_request:
+  push:
+    branches:
+      - master
 
 # Will limit the workflow to 1 concurrent run per ref (branch / PR)
 # If a new commits occurs, the current run will be canceled
