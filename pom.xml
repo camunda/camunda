@@ -4,7 +4,7 @@
 
   <groupId>org.camunda.optimize</groupId>
   <artifactId>parent</artifactId>
-  <version>3.12.0-alpha2-rc2</version>
+  <version>3.12.0-alpha2-SNAPSHOT</version>
   <packaging>pom</packaging>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -620,7 +620,7 @@
     <developerConnection>
       scm:git:https://${env.GITHUB_APP}:${env.GITHUB_ACCESS_TOKEN}@github.com/camunda/camunda-optimize.git
     </developerConnection>
-    <tag>3.12.0-alpha2-rc2</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <issueManagement>
