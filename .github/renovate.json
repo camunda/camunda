@@ -56,7 +56,7 @@
       "matchManagers": [
         "maven"
       ],
-      "groupName" : "Exclude SNAPSHOT versions, renovate may suggest them for pre-release values.",
+      "description" : "Exclude SNAPSHOT versions, renovate may suggest them for pre-release values.",
       "matchPackagePatterns": [".*"],
       "allowedVersions": "!/-SNAPSHOT$/"
     }
