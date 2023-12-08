@@ -20,7 +20,6 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
-import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -118,29 +117,6 @@ public final class NativeUserTaskTest {
             .getFirst();
 
     Assertions.assertThat(userTask.getValue()).hasTenantId(tenantId);
-  }
-
-  @Test
-  public void shouldNotCreateJob() {
-    // given
-    ENGINE.deployment().withXmlResource(process()).deploy();
-
-    // when
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    // then
-    assertThat(
-            RecordingExporter.processInstanceRecords().withProcessInstanceKey(processInstanceKey))
-        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
-        .containsSequence(
-            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATING),
-            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED));
-
-    assertThat(
-            RecordingExporter.jobRecords(JobIntent.CREATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .count())
-        .isEqualTo(0L);
   }
 
   @Test
@@ -297,7 +273,7 @@ public final class NativeUserTaskTest {
   }
 
   @Test
-  public void shouldCreateJobWithCandidateGroups() {
+  public void shouldCreateUserTaskWithCandidateGroups() {
     // given
     ENGINE.deployment().withXmlResource(process(t -> t.zeebeCandidateGroups("alice,bob"))).deploy();
 
@@ -314,7 +290,7 @@ public final class NativeUserTaskTest {
   }
 
   @Test
-  public void shouldCreateJobWithEvaluatedCandidateGroupsExpression() {
+  public void shouldCreateUserTaskWithEvaluatedCandidateGroupsExpression() {
     // given
     ENGINE
         .deployment()
@@ -339,7 +315,7 @@ public final class NativeUserTaskTest {
   }
 
   @Test
-  public void shouldCreateJobWithCandidateUsers() {
+  public void shouldCreateUserTaskWithCandidateUsers() {
     // given
     ENGINE.deployment().withXmlResource(process(t -> t.zeebeCandidateUsers("jack,rose"))).deploy();
 
@@ -356,7 +332,7 @@ public final class NativeUserTaskTest {
   }
 
   @Test
-  public void shouldCreateJobWithEvaluatedCandidateUsersExpression() {
+  public void shouldCreateUserTaskWithEvaluatedCandidateUsersExpression() {
     // given
     ENGINE
         .deployment()
@@ -381,7 +357,7 @@ public final class NativeUserTaskTest {
   }
 
   @Test
-  public void shouldCreateJobWithDueDate() {
+  public void shouldCreateUserTaskWithDueDate() {
     // given
     ENGINE.deployment().withXmlResource(process(t -> t.zeebeDueDate(DUE_DATE))).deploy();
 
@@ -398,7 +374,7 @@ public final class NativeUserTaskTest {
   }
 
   @Test
-  public void shouldCreateJobWithEvaluatedDueDateExpression() {
+  public void shouldCreateUserTaskWithEvaluatedDueDateExpression() {
     // given
     ENGINE.deployment().withXmlResource(process(t -> t.zeebeDueDateExpression("dueDate"))).deploy();
 
@@ -420,7 +396,7 @@ public final class NativeUserTaskTest {
   }
 
   @Test
-  public void shouldCreateJobAndIgnoreEmptyDueDate() {
+  public void shouldCreateUserTaskAndIgnoreEmptyDueDate() {
     // given
     ENGINE.deployment().withXmlResource(process(t -> t.zeebeDueDate(""))).deploy();
 
@@ -437,7 +413,7 @@ public final class NativeUserTaskTest {
   }
 
   @Test
-  public void shouldCreateJobAndIgnoreEmptyEvaluatedDueDateExpression() {
+  public void shouldCreateUserTaskAndIgnoreEmptyEvaluatedDueDateExpression() {
     // given
     ENGINE
         .deployment()
@@ -462,7 +438,7 @@ public final class NativeUserTaskTest {
   }
 
   @Test
-  public void shouldCreateJobAndIgnoreNullEvaluatedDueDateExpression() {
+  public void shouldCreateUserTaskAndIgnoreNullEvaluatedDueDateExpression() {
     // given
     ENGINE.deployment().withXmlResource(process(t -> t.zeebeDueDateExpression("=null"))).deploy();
 
@@ -479,7 +455,7 @@ public final class NativeUserTaskTest {
   }
 
   @Test
-  public void shouldCreateJobWithFollowUpDate() {
+  public void shouldCreateUserTaskWithFollowUpDate() {
     // given
     ENGINE.deployment().withXmlResource(process(t -> t.zeebeFollowUpDate(FOLLOW_UP_DATE))).deploy();
 
@@ -496,7 +472,7 @@ public final class NativeUserTaskTest {
   }
 
   @Test
-  public void shouldCreateJobWithEvaluatedFollowUpDateExpression() {
+  public void shouldCreateUserTaskWithEvaluatedFollowUpDateExpression() {
     // given
     ENGINE
         .deployment()
@@ -521,7 +497,7 @@ public final class NativeUserTaskTest {
   }
 
   @Test
-  public void shouldCreateJobAndIgnoreEmptyFollowUpDate() {
+  public void shouldCreateUserTaskAndIgnoreEmptyFollowUpDate() {
     // given
     ENGINE.deployment().withXmlResource(process(t -> t.zeebeFollowUpDate(""))).deploy();
 
@@ -538,7 +514,7 @@ public final class NativeUserTaskTest {
   }
 
   @Test
-  public void shouldCreateJobAndIgnoreEmptyEvaluatedFollowUpDateExpression() {
+  public void shouldCreateUserTaskAndIgnoreEmptyEvaluatedFollowUpDateExpression() {
     // given
     ENGINE
         .deployment()
@@ -563,7 +539,7 @@ public final class NativeUserTaskTest {
   }
 
   @Test
-  public void shouldCreateJobAndIgnoreNullEvaluatedFollowUpDateExpression() {
+  public void shouldCreateUserTaskAndIgnoreNullEvaluatedFollowUpDateExpression() {
     // given
     ENGINE
         .deployment()
