@@ -7,20 +7,20 @@
  */
 package io.camunda.zeebe.broker.jobstream;
 
-import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class YieldingJobStreamErrorHandler implements JobStreamErrorHandler {
+public final class YieldingJobStreamErrorHandler implements JobStreamErrorHandler {
 
-  private static final Logger LOG = Loggers.JOB_STREAM;
+  private static final Logger LOG = LoggerFactory.getLogger(YieldingJobStreamErrorHandler.class);
 
   @Override
   public void handleError(
       final ActivatedJob job, final Throwable error, final TaskResultBuilder resultBuilder) {
-    LOG.warn("Failed to push job {}. Yielding...", job.jobKey(), error);
+    LOG.trace("Failed to push job {}. Yielding...", job.jobKey(), error);
     resultBuilder.appendCommandRecord(job.jobKey(), JobIntent.YIELD, job.jobRecord());
   }
 }

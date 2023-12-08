@@ -7,42 +7,26 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
-import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
+import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
-import java.util.ArrayList;
 import java.util.EnumMap;
-import java.util.List;
 import java.util.Map;
 
-final class TestClientStreamMetrics implements ClientStreamMetrics {
+final class TestRemoteStreamMetrics implements RemoteStreamMetrics {
 
-  private final List<Integer> aggregatedClientCountObservations = new ArrayList<>();
-  private final Map<ErrorCode, Integer> failedPushTries = new EnumMap<>(ErrorCode.class);
-
-  private int serverCount;
-  private int clientCount;
-  private int aggregatedStreamCount;
+  private int streamCount;
   private int pushSucceeded;
   private int pushFailed;
+  private final Map<ErrorCode, Integer> failedPushTries = new EnumMap<>(ErrorCode.class);
 
   @Override
-  public void serverCount(final int count) {
-    serverCount = count;
+  public void addStream() {
+    streamCount++;
   }
 
   @Override
-  public void clientCount(final int count) {
-    clientCount = count;
-  }
-
-  @Override
-  public void aggregatedStreamCount(final int count) {
-    aggregatedStreamCount = count;
-  }
-
-  @Override
-  public void observeAggregatedClientCount(final int count) {
-    aggregatedClientCountObservations.add(count);
+  public void removeStream() {
+    streamCount--;
   }
 
   @Override
@@ -60,20 +44,8 @@ final class TestClientStreamMetrics implements ClientStreamMetrics {
     failedPushTries.compute(code, (ignored, value) -> value == null ? 1 : value + 1);
   }
 
-  public int getServerCount() {
-    return serverCount;
-  }
-
-  public int getClientCount() {
-    return clientCount;
-  }
-
-  public int getAggregatedStreamCount() {
-    return aggregatedStreamCount;
-  }
-
-  public List<Integer> getAggregatedClientCountObservations() {
-    return aggregatedClientCountObservations;
+  public int getStreamCount() {
+    return streamCount;
   }
 
   public int getPushSucceeded() {

@@ -7,9 +7,17 @@
  */
 package io.camunda.zeebe.transport.stream.impl.messages;
 
+import io.camunda.zeebe.transport.stream.api.ClientStreamBlockedException;
+import io.camunda.zeebe.transport.stream.api.NoSuchStreamException;
+import io.camunda.zeebe.transport.stream.api.StreamExhaustedException;
 import io.camunda.zeebe.transport.stream.api.StreamResponseException;
+import io.camunda.zeebe.transport.stream.api.StreamResponseException.ErrorDetail;
+import io.camunda.zeebe.transport.stream.impl.messages.ErrorResponseDecoder.DetailsDecoder;
+import io.camunda.zeebe.transport.stream.impl.messages.ErrorResponseEncoder.DetailsEncoder;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -22,6 +30,7 @@ public final class ErrorResponse implements StreamResponse {
   private final ErrorResponseEncoder messageEncoder = new ErrorResponseEncoder();
   private final ErrorResponseDecoder messageDecoder = new ErrorResponseDecoder();
 
+  private final List<ErrorDetailImpl> details = new ArrayList<>();
   private final DirectBuffer message = new UnsafeBuffer();
   private ErrorCode code;
 
@@ -30,12 +39,31 @@ public final class ErrorResponse implements StreamResponse {
     messageDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
     code = messageDecoder.code();
     messageDecoder.wrapMessage(message);
+
+    details.clear();
+    for (final DetailsDecoder decoder : messageDecoder.details()) {
+      final var messageBuffer = new UnsafeBuffer();
+      final var detail = new ErrorDetailImpl(decoder.code(), messageBuffer);
+      decoder.wrapMessage(messageBuffer);
+      details.add(detail);
+    }
   }
 
   @Override
   public int getLength() {
+    final var detailsLength =
+        details.stream()
+            .mapToInt(
+                e ->
+                    DetailsEncoder.sbeBlockLength()
+                        + DetailsEncoder.messageHeaderLength()
+                        + e.messageBuffer.capacity())
+            .sum();
+
     return headerEncoder.encodedLength()
         + messageEncoder.sbeBlockLength()
+        + DetailsEncoder.sbeHeaderSize()
+        + detailsLength
         + ErrorResponseEncoder.messageHeaderLength()
         + message.capacity();
   }
@@ -46,6 +74,13 @@ public final class ErrorResponse implements StreamResponse {
         .wrapAndApplyHeader(buffer, offset, headerEncoder)
         .code(code)
         .putMessage(message, 0, message.capacity());
+    final var detailsEncoder = messageEncoder.detailsCount(details.size());
+    details.forEach(
+        detail ->
+            detailsEncoder
+                .next()
+                .code(detail.code())
+                .putMessage(detail.messageBuffer(), 0, detail.messageBuffer().capacity()));
   }
 
   @Override
@@ -78,6 +113,16 @@ public final class ErrorResponse implements StreamResponse {
     return message.capacity() > 0 ? BufferUtil.bufferAsString(message) : "";
   }
 
+  public ErrorResponse addDetail(final ErrorCode code, final String message) {
+    details.add(
+        new ErrorDetailImpl(code, new UnsafeBuffer(message.getBytes(StandardCharsets.UTF_8))));
+    return this;
+  }
+
+  public List<? extends ErrorDetail> details() {
+    return details;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(message, code);
@@ -99,16 +144,47 @@ public final class ErrorResponse implements StreamResponse {
 
   @Override
   public String toString() {
-    return "ErrorResponse{" + "message=" + message() + ", code=" + code + '}';
+    return "ErrorResponse{"
+        + "message="
+        + message()
+        + ", code="
+        + code
+        + ", details="
+        + details
+        + '}';
   }
 
   public StreamResponseException asException() {
     return new StacklessException(this);
   }
 
+  public static ErrorCode mapErrorToCode(final Throwable error) {
+    return switch (error) {
+      case final ClientStreamBlockedException ignored -> ErrorCode.BLOCKED;
+      case final NoSuchStreamException ignored -> ErrorCode.NOT_FOUND;
+      case final StreamExhaustedException ignored -> ErrorCode.EXHAUSTED;
+      default -> ErrorCode.INTERNAL;
+    };
+  }
+
+  private record ErrorDetailImpl(ErrorCode code, DirectBuffer messageBuffer)
+      implements ErrorDetail {
+
+    @Override
+    public String message() {
+      final var length = messageBuffer.capacity();
+      return length == 0 ? "" : messageBuffer.getStringWithoutLengthUtf8(0, length);
+    }
+
+    @Override
+    public String toString() {
+      return "ErrorDetailImpl{" + "code=" + code + ", message=" + message() + "}";
+    }
+  }
+
   private static final class StacklessException extends StreamResponseException {
 
-    public StacklessException(final ErrorResponse response) {
+    private StacklessException(final ErrorResponse response) {
       super(response);
     }
 

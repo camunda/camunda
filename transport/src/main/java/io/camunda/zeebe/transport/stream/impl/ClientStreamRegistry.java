@@ -79,7 +79,7 @@ final class ClientStreamRegistry<M extends BufferWriter> {
       metrics.clientCount(clientStreams.size());
 
       if (serverStream.isEmpty()) {
-        serverStreams.remove(serverStream.getStreamId());
+        serverStreams.remove(serverStream.streamId());
         serverStreamIds.remove(serverStream.logicalId());
         metrics.aggregatedStreamCount(serverStreams.size());
 

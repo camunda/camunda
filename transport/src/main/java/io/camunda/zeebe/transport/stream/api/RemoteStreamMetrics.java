@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.transport.stream.api;
 
+import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
+
 public interface RemoteStreamMetrics {
 
   /** Invoked after a stream is successfully added to the registry */
@@ -20,6 +22,13 @@ public interface RemoteStreamMetrics {
 
   /** Invoked if pushing a payload to a stream failed */
   default void pushFailed() {}
+
+  /**
+   * Invoked when a push failed, once per remote attempt
+   *
+   * @param code the error code for the given attempt
+   */
+  default void pushTryFailed(final ErrorCode code) {}
 
   static RemoteStreamMetrics noop() {
     return new RemoteStreamMetrics() {};
