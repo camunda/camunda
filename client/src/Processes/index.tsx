@@ -199,7 +199,7 @@ const Processes: React.FC = observer(() => {
                 Contact your process administrator to publish processes or learn
                 how to publish processes{' '}
                 <Link
-                  href="https://docs.camunda.io/"
+                  href="https://docs.camunda.io/docs/components/modeler/web-modeler/run-or-publish-your-process/#publishing-a-process"
                   target="_blank"
                   rel="noopener noreferrer"
                   inline
