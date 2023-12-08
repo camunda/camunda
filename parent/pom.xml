@@ -74,7 +74,7 @@
     <version.netty>4.1.101.Final</version.netty>
     <version.objenesis>3.3</version.objenesis>
     <version.opensearch>2.5.0</version.opensearch>
-    <version.opensearch.testcontainers>2.0.0</version.opensearch.testcontainers>
+    <version.opensearch.testcontainers>2.0.1</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.25.1</version.protobuf>
     <version.protobuf-common>2.29.0</version.protobuf-common>
