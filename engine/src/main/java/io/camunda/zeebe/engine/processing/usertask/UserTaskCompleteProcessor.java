@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -32,6 +33,7 @@ public final class UserTaskCompleteProcessor implements TypedRecordProcessor<Use
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final TypedResponseWriter responseWriter;
   private final UserTaskCommandPreconditionChecker preconditionChecker;
 
   public UserTaskCompleteProcessor(
@@ -42,6 +44,7 @@ public final class UserTaskCompleteProcessor implements TypedRecordProcessor<Use
     stateWriter = writers.state();
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
+    responseWriter = writers.response();
     preconditionChecker =
         new UserTaskCommandPreconditionChecker(
             List.of(LifecycleState.CREATED), "complete", userTaskState);
@@ -52,22 +55,27 @@ public final class UserTaskCompleteProcessor implements TypedRecordProcessor<Use
     preconditionChecker
         .check(userTaskRecord)
         .ifRightOrLeft(
-            ok -> {
-              final long userTaskKey = userTaskRecord.getKey();
-              final UserTaskRecord persistedUserTask =
-                  userTaskState.getUserTask(userTaskKey, userTaskRecord.getAuthorizations());
+            ok -> completeUserTask(userTaskRecord),
+            violation -> {
+              rejectionWriter.appendRejection(
+                  userTaskRecord, violation.getLeft(), violation.getRight());
+              responseWriter.writeRejectionOnCommand(
+                  userTaskRecord, violation.getLeft(), violation.getRight());
+            });
+  }
 
-              persistedUserTask.setVariables(userTaskRecord.getValue().getVariablesBuffer());
+  private void completeUserTask(final TypedRecord<UserTaskRecord> userTaskRecord) {
+    final long userTaskKey = userTaskRecord.getKey();
+    final UserTaskRecord persistedUserTask =
+        userTaskState.getUserTask(userTaskKey, userTaskRecord.getAuthorizations());
 
-              stateWriter.appendFollowUpEvent(
-                  userTaskKey, UserTaskIntent.COMPLETING, persistedUserTask);
-              stateWriter.appendFollowUpEvent(
-                  userTaskKey, UserTaskIntent.COMPLETED, persistedUserTask);
-              completeElementInstance(persistedUserTask);
-            },
-            violation ->
-                rejectionWriter.appendRejection(
-                    userTaskRecord, violation.getLeft(), violation.getRight()));
+    persistedUserTask.setVariables(userTaskRecord.getValue().getVariablesBuffer());
+
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETING, persistedUserTask);
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETED, persistedUserTask);
+    completeElementInstance(persistedUserTask);
+    responseWriter.writeEventOnCommand(
+        userTaskKey, UserTaskIntent.COMPLETED, persistedUserTask, userTaskRecord);
   }
 
   private void completeElementInstance(final UserTaskRecord userTaskRecord) {
