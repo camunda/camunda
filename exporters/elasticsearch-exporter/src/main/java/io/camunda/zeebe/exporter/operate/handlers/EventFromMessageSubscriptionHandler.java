@@ -42,10 +42,15 @@ public class EventFromMessageSubscriptionHandler implements ExportHandler<EventE
   }
 
   @Override
-  public ValueType handlesValueType() {
+  public ValueType getHandledValueType() {
     return ValueType.MESSAGE_SUBSCRIPTION;
   }
 
+  @Override
+  public Class<EventEntity> getEntityType() {
+    return EventEntity.class;
+  }
+  
   @Override
   public boolean handlesRecord(Record<ProcessMessageSubscriptionRecordValue> record) {
     return PROCESS_MESSAGE_SUBSCRIPTION_STATES.contains(record.getIntent());

@@ -30,8 +30,13 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
   }
 
   @Override
-  public ValueType handlesValueType() {
+  public ValueType getHandledValueType() {
     return ValueType.VARIABLE;
+  }
+  
+  @Override
+  public Class<VariableEntity> getEntityType() {
+    return VariableEntity.class;
   }
 
   @Override

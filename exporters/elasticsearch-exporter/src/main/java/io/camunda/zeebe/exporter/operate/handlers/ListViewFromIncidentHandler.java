@@ -28,8 +28,13 @@ public class ListViewFromIncidentHandler implements ExportHandler<FlowNodeInstan
   }
 
   @Override
-  public ValueType handlesValueType() {
+  public ValueType getHandledValueType() {
     return ValueType.INCIDENT;
+  }
+  
+  @Override
+  public Class<FlowNodeInstanceForListViewEntity> getEntityType() {
+    return FlowNodeInstanceForListViewEntity.class;
   }
 
   @Override

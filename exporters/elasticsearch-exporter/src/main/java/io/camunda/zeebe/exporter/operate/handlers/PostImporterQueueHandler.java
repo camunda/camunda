@@ -20,8 +20,13 @@ public class PostImporterQueueHandler implements ExportHandler<PostImporterQueue
   }
 
   @Override
-  public ValueType handlesValueType() {
+  public ValueType getHandledValueType() {
     return ValueType.INCIDENT;
+  }
+  
+  @Override
+  public Class<PostImporterQueueEntity> getEntityType() {
+    return PostImporterQueueEntity.class;
   }
 
   @Override

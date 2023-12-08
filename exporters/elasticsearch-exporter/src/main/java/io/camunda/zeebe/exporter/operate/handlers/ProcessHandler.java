@@ -40,8 +40,13 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
   }
 
   @Override
-  public ValueType handlesValueType() {
+  public ValueType getHandledValueType() {
     return ValueType.PROCESS;
+  }
+  
+  @Override
+  public Class<ProcessEntity> getEntityType() {
+    return ProcessEntity.class;
   }
 
   @Override

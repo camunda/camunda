@@ -6,13 +6,12 @@ import io.camunda.operate.store.BatchRequest;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import java.util.Set;
 
 public interface ExportHandler<T extends OperateEntity<T>, R extends RecordValue> {
 
-  ValueType handlesValueType();
+  ValueType getHandledValueType();
+  
+  Class<T> getEntityType();
 
   boolean handlesRecord(Record<R> record);
 

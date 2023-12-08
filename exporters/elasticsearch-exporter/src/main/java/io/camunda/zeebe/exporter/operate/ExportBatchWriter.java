@@ -27,10 +27,10 @@ public class ExportBatchWriter {
 
   // dynamic
   // TODO: we should preserve the order during the flush (i.e. flush entities in the order they were created)
-  private Map<String, Tuple<OperateEntity<?>, ExportHandler<?, ?>>> cachedEntities = new HashMap<>();
+  private Map<Tuple<String, Class<?>>, Tuple<OperateEntity<?>, ExportHandler<?, ?>>> cachedEntities = new HashMap<>();
   private Map<String, DecisionInstanceEntity> cachedDecisionInstanceEntities = new HashMap<>();
   
-  private List<String> idFlushOrder = new ArrayList<>();
+  private List<Tuple<String, Class<?>>> idFlushOrder = new ArrayList<>();
 
   private BatchRequest request;
   
@@ -48,7 +48,9 @@ public class ExportBatchWriter {
 
       // reorganize the entities for flushing them in order of creation
       entities.forEach(e -> cachedDecisionInstanceEntities.put(e.getId(), e));
-      idFlushOrder.addAll(entities.stream().map(DecisionInstanceEntity::getId).collect(Collectors.toList()));
+      idFlushOrder.addAll(
+          entities.stream().map(e -> (Tuple) new Tuple<>(e.getId(), DecisionInstanceEntity.class))
+          .collect(Collectors.toList()));
     }
 
     handlers
@@ -61,22 +63,23 @@ public class ExportBatchWriter {
               if (handler.handlesRecord((Record) record)) {
 
                 String entityId = handler.generateId((Record) record);
+                Tuple<String, Class<?>> cacheKey = new Tuple<>(entityId, handler.getEntityType());
 
                 OperateEntity<?> cachedEntity;
-                if (cachedEntities.containsKey(entityId)) {
-                  cachedEntity = cachedEntities.get(entityId).getLeft();
+                if (cachedEntities.containsKey(cacheKey)) {
+                  cachedEntity = cachedEntities.get(cacheKey).getLeft();
                 } else {
                   cachedEntity = handler.createNewEntity(entityId);
                 }
 
                 handler2.updateEntity((Record) record, (OperateEntity) cachedEntity);
-               
+
                 // always store the latest handler in the tuple, because that is the one taking care of flushing
-                cachedEntities.put(entityId, new Tuple<>(cachedEntity, handler));
+                cachedEntities.put(cacheKey, new Tuple<>(cachedEntity, handler));
                 
                 // append the id to the end of the flush order (not particularly efficient, but should be fine for prototyping)
-                idFlushOrder.remove(entityId);
-                idFlushOrder.add(entityId);
+                idFlushOrder.remove(cacheKey);
+                idFlushOrder.add(cacheKey);
               }
             });
 
@@ -91,16 +94,16 @@ public class ExportBatchWriter {
     // TODO: maybe we can solve this by always letting the handler that created the entity also flush it;
     // alternatively the handler that modified it last
     
-    for (String id : idFlushOrder) {
-      if (cachedEntities.containsKey(id)) {
-        Tuple<OperateEntity<?>, ExportHandler<?, ?>> entityAndHandler = cachedEntities.get(id);
+    for (Tuple<String, Class<?>> cacheKey : idFlushOrder) {
+      if (cachedEntities.containsKey(cacheKey)) {
+        Tuple<OperateEntity<?>, ExportHandler<?, ?>> entityAndHandler = cachedEntities.get(cacheKey);
         OperateEntity entity = entityAndHandler.getLeft();
         ExportHandler handler = entityAndHandler.getRight();
         
         handler.flush(entity, request);
         
       } else {
-        DecisionInstanceEntity entity = cachedDecisionInstanceEntities.get(id);
+        DecisionInstanceEntity entity = cachedDecisionInstanceEntities.get(cacheKey.getLeft());
         decisionInstanceHandler.flush(entity, request);
       }
     }
@@ -117,7 +120,7 @@ public class ExportBatchWriter {
     
     public <T extends OperateEntity<T>> Builder withHandler(ExportHandler<?, ?> handler) {
 
-      CollectionUtil.addToMap(writer.handlers, handler.handlesValueType(), (ExportHandler) handler);
+      CollectionUtil.addToMap(writer.handlers, handler.getHandledValueType(), (ExportHandler) handler);
       
       return this;
     }

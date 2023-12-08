@@ -45,8 +45,13 @@ public class ListViewFromActivityInstanceHandler
   }
 
   @Override
-  public ValueType handlesValueType() {
+  public ValueType getHandledValueType() {
     return ValueType.PROCESS_INSTANCE;
+  }
+  
+  @Override
+  public Class<FlowNodeInstanceForListViewEntity> getEntityType() {
+    return FlowNodeInstanceForListViewEntity.class;
   }
 
   @Override

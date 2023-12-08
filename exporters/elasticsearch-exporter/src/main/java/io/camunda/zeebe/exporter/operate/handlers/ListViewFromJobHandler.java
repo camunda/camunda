@@ -38,8 +38,13 @@ public class ListViewFromJobHandler implements ExportHandler<FlowNodeInstanceFor
   }
 
   @Override
-  public ValueType handlesValueType() {
+  public ValueType getHandledValueType() {
     return ValueType.JOB;
+  }
+  
+  @Override
+  public Class<FlowNodeInstanceForListViewEntity> getEntityType() {
+    return FlowNodeInstanceForListViewEntity.class;
   }
 
   @Override

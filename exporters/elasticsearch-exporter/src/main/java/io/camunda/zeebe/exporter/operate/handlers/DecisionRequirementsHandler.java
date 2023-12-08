@@ -39,8 +39,13 @@ public class DecisionRequirementsHandler implements ExportHandler<DecisionRequir
   }
   
   @Override
-  public ValueType handlesValueType() {
+  public ValueType getHandledValueType() {
     return ValueType.DECISION_REQUIREMENTS;
+  }
+  
+  @Override
+  public Class<DecisionRequirementsEntity> getEntityType() {
+    return DecisionRequirementsEntity.class;
   }
 
   @Override

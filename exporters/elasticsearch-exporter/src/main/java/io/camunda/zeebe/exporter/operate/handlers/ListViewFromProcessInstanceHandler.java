@@ -46,8 +46,13 @@ public class ListViewFromProcessInstanceHandler
   }
 
   @Override
-  public ValueType handlesValueType() {
+  public ValueType getHandledValueType() {
     return ValueType.PROCESS_INSTANCE;
+  }
+  
+  @Override
+  public Class<ProcessInstanceForListViewEntity> getEntityType() {
+    return ProcessInstanceForListViewEntity.class;
   }
 
   @Override

@@ -34,8 +34,13 @@ public class DecisionDefinitionHandler implements ExportHandler<DecisionDefiniti
   }
   
   @Override
-  public ValueType handlesValueType() {
+  public ValueType getHandledValueType() {
     return ValueType.DECISION;
+  }
+  
+  @Override
+  public Class<DecisionDefinitionEntity> getEntityType() {
+    return DecisionDefinitionEntity.class;
   }
 
   @Override

@@ -32,10 +32,15 @@ public class EventFromJobHandler implements ExportHandler<EventEntity, JobRecord
   }
 
   @Override
-  public ValueType handlesValueType() {
+  public ValueType getHandledValueType() {
     return ValueType.JOB;
   }
 
+  @Override
+  public Class<EventEntity> getEntityType() {
+    return EventEntity.class;
+  }
+  
   @Override
   public boolean handlesRecord(Record<JobRecordValue> record) {
     return true;

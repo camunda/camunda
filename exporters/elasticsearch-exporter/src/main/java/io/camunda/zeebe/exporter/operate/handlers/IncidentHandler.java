@@ -35,8 +35,13 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
   }
   
   @Override
-  public ValueType handlesValueType() {
+  public ValueType getHandledValueType() {
     return ValueType.INCIDENT;
+  }
+  
+  @Override
+  public Class<IncidentEntity> getEntityType() {
+    return IncidentEntity.class;
   }
 
   @Override

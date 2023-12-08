@@ -43,8 +43,13 @@ public class FlowNodeInstanceHandler
   }
 
   @Override
-  public ValueType handlesValueType() {
+  public ValueType getHandledValueType() {
     return ValueType.PROCESS_INSTANCE;
+  }
+  
+  @Override
+  public Class<FlowNodeInstanceEntity> getEntityType() {
+    return FlowNodeInstanceEntity.class;
   }
 
   @Override

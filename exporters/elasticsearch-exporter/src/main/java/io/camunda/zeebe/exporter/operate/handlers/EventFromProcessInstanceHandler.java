@@ -33,10 +33,15 @@ public class EventFromProcessInstanceHandler
   }
 
   @Override
-  public ValueType handlesValueType() {
+  public ValueType getHandledValueType() {
     return ValueType.PROCESS_INSTANCE;
   }
 
+  @Override
+  public Class<EventEntity> getEntityType() {
+    return EventEntity.class;
+  }
+  
   @Override
   public boolean handlesRecord(Record<ProcessInstanceRecordValue> record) {
 

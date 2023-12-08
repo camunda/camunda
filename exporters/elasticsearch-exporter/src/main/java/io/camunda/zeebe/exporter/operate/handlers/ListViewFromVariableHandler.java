@@ -26,8 +26,13 @@ public class ListViewFromVariableHandler implements ExportHandler<VariableForLis
   }
 
   @Override
-  public ValueType handlesValueType() {
+  public ValueType getHandledValueType() {
     return ValueType.VARIABLE;
+  }
+  
+  @Override
+  public Class<VariableForListViewEntity> getEntityType() {
+    return VariableForListViewEntity.class;
   }
 
   @Override

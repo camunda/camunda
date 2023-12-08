@@ -31,10 +31,15 @@ public class FlowNodeInstanceFromIncidentHandler implements ExportHandler<FlowNo
   }
 
   @Override
-  public ValueType handlesValueType() {
+  public ValueType getHandledValueType() {
     return ValueType.INCIDENT;
   }
 
+  @Override
+  public Class<FlowNodeInstanceEntity> getEntityType() {
+    return FlowNodeInstanceEntity.class;
+  }
+  
   @Override
   public boolean handlesRecord(Record<IncidentRecordValue> record) {
     return true;
@@ -84,4 +89,5 @@ public class FlowNodeInstanceFromIncidentHandler implements ExportHandler<FlowNo
     batchRequest.upsert(flowNodeInstanceTemplate.getFullQualifiedName(), entity.getId(), entity, updateFields);    
     
   }
+
 }

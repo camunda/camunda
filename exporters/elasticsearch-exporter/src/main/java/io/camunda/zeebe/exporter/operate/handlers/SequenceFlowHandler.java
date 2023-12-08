@@ -25,8 +25,13 @@ public class SequenceFlowHandler implements ExportHandler<SequenceFlowEntity, Pr
   }
 
   @Override
-  public ValueType handlesValueType() {
+  public ValueType getHandledValueType() {
     return ValueType.PROCESS_INSTANCE;
+  }
+  
+  @Override
+  public Class<SequenceFlowEntity> getEntityType() {
+    return SequenceFlowEntity.class;
   }
 
   @Override
