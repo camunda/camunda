@@ -77,7 +77,16 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   @Override
   protected void onCompleteInternal(
       final ExecutableUserTask element, final BpmnElementContext context) {
-    // TODO will be added with increment 3 of https://github.com/camunda/zeebe/issues/14938
+    variableMappingBehavior
+        .applyOutputMappings(context, element)
+        .flatMap(
+            ok -> {
+              eventSubscriptionBehavior.unsubscribeFromEvents(context);
+              return stateTransitionBehavior.transitionToCompleted(element, context);
+            })
+        .ifRightOrLeft(
+            completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
+            failure -> incidentBehavior.createIncident(failure, context));
   }
 
   @Override
