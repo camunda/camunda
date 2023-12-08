@@ -34,7 +34,7 @@ public class NonDefaultContainerSetupTest {
     return Stream.of(
         /* Tests running with the default unprivileged user. */
         Arguments.arguments(
-            Named.of("user[zeebe]", (Consumer<CreateContainerCmd>) cmd -> cmd.withUser("zeebe"))),
+            Named.of("user[1001]", (Consumer<CreateContainerCmd>) cmd -> cmd.withUser("1001"))),
         /*
          * Runs with a random uid and guid of 0 as common for Openshift.
          * While this cannot guarantee OpenShift compatibility, it's a common compatibility issue.
