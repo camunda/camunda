@@ -107,7 +107,7 @@ describe('Processes', () => {
     );
     expect(screen.getByRole('link', {name: 'here'})).toHaveAttribute(
       'href',
-      'https://docs.camunda.io/docs/components/modeler/web-modeler/run-or-publish-your-process/#publishing-a-process',
+      'https://docs.camunda.io/',
     );
   });
 
