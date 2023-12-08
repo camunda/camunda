@@ -32,7 +32,7 @@ import org.elasticsearch.client.RestClient;
  * A thin client to verify properties from Elastic. Wraps both the low and high level clients from
  * Elastic in a closeable resource.
  */
-final class TestClient implements CloseableSilently {
+public final class TestClient implements CloseableSilently {
   private static final ObjectMapper MAPPER =
       new ObjectMapper().registerModule(new ZeebeProtocolModule());
 
@@ -41,7 +41,7 @@ final class TestClient implements CloseableSilently {
   private final ElasticsearchClient esClient;
   private final RecordIndexRouter indexRouter;
 
-  TestClient(final ElasticsearchExporterConfiguration config, final RecordIndexRouter indexRouter) {
+  public TestClient(final ElasticsearchExporterConfiguration config, final RecordIndexRouter indexRouter) {
     this.config = config;
     this.indexRouter = indexRouter;
 
@@ -52,7 +52,7 @@ final class TestClient implements CloseableSilently {
   }
 
   @SuppressWarnings("rawtypes")
-  GetResponse<Record> getExportedDocumentFor(final Record<?> record) {
+  public GetResponse<Record> getExportedDocumentFor(final Record<?> record) {
     final var indexName = indexRouter.indexFor(record);
 
     try {
@@ -63,7 +63,7 @@ final class TestClient implements CloseableSilently {
     }
   }
 
-  Optional<IndexTemplateWrapper> getIndexTemplate(final ValueType valueType) {
+  public Optional<IndexTemplateWrapper> getIndexTemplate(final ValueType valueType) {
     try {
       final var request =
           new Request("GET", "/_index_template/" + indexRouter.indexPrefixForValueType(valueType));
@@ -76,7 +76,7 @@ final class TestClient implements CloseableSilently {
     }
   }
 
-  Optional<ComponentTemplateWrapper> getComponentTemplate() {
+  public Optional<ComponentTemplateWrapper> getComponentTemplate() {
     try {
       final var request = new Request("GET", "/_component_template/" + config.index.prefix);
       final var response = restClient.performRequest(request);
@@ -88,7 +88,7 @@ final class TestClient implements CloseableSilently {
     }
   }
 
-  ElasticsearchClient getEsClient() {
+  public ElasticsearchClient getEsClient() {
     return esClient;
   }
 

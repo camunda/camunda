@@ -19,7 +19,7 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.utility.DockerImageName;
 
 /** Collection of utilities for unit and integration tests. */
-final class TestSupport {
+public final class TestSupport {
   private static final DockerImageName ELASTIC_IMAGE =
       DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
           .withTag(RestClient.class.getPackage().getImplementationVersion());
@@ -35,7 +35,7 @@ final class TestSupport {
    * <p>Additionally, security is explicitly disabled to avoid having tons of warning printed out.
    */
   @SuppressWarnings("resource")
-  static ElasticsearchContainer createDefaultContainer() {
+  public static ElasticsearchContainer createDefaultContainer() {
     return new ElasticsearchContainer(ELASTIC_IMAGE)
         // use JVM option files to avoid overwriting default options set by the ES container class
         .withClasspathResourceMapping(

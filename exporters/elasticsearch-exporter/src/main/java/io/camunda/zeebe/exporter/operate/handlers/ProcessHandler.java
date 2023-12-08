@@ -10,11 +10,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.zeebeimport.util.XMLUtil;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.schema.indices.ProcessIndex;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -31,10 +31,14 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
     STATES.add(ProcessIntent.CREATED);
   }
   
-  private ProcessIndex processIndex = new ProcessIndex();
+  private ProcessIndex processIndex;
 
   private XMLUtil xmlUtil = new XMLUtil();
   
+  public ProcessHandler(ProcessIndex processIndex) {
+    this.processIndex = processIndex;
+  }
+
   @Override
   public ValueType handlesValueType() {
     return ValueType.PROCESS;

@@ -7,10 +7,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.schema.indices.DecisionIndex;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
@@ -27,7 +27,11 @@ public class DecisionDefinitionHandler implements ExportHandler<DecisionDefiniti
     STATES.add(DecisionIntent.CREATED);
   }
 
-  private DecisionIndex decisionIndex = new DecisionIndex();
+  private DecisionIndex decisionIndex;
+  
+  public DecisionDefinitionHandler(DecisionIndex decisionIndex) {
+    this.decisionIndex = decisionIndex;
+  }
   
   @Override
   public ValueType handlesValueType() {

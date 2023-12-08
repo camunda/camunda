@@ -7,10 +7,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.schema.templates.ListViewTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -21,8 +21,12 @@ public class ListViewFromIncidentHandler implements ExportHandler<FlowNodeInstan
 
   private static final Logger logger = LoggerFactory.getLogger(ListViewFromIncidentHandler.class);
 
-  private ListViewTemplate listViewTemplate = new ListViewTemplate();
+  private ListViewTemplate listViewTemplate;
   
+  public ListViewFromIncidentHandler(ListViewTemplate listViewTemplate) {
+    this.listViewTemplate = listViewTemplate;
+  }
+
   @Override
   public ValueType handlesValueType() {
     return ValueType.INCIDENT;

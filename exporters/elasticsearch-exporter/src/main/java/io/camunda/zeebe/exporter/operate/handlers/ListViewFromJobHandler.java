@@ -9,10 +9,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.schema.templates.ListViewTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -25,14 +25,18 @@ public class ListViewFromJobHandler implements ExportHandler<FlowNodeInstanceFor
   private static final Logger logger = LoggerFactory.getLogger(ListViewFromJobHandler.class);
   
   private final static Set<String> FAILED_JOB_EVENTS = new HashSet<>();
-
-  private ListViewTemplate listViewTemplate = new ListViewTemplate();
   
   static {
     FAILED_JOB_EVENTS.add(JobIntent.FAIL.name());
     FAILED_JOB_EVENTS.add(JobIntent.FAILED.name());
   }
-  
+
+  private ListViewTemplate listViewTemplate;
+
+  public ListViewFromJobHandler(ListViewTemplate listViewTemplate) {
+    this.listViewTemplate = listViewTemplate;
+  }
+
   @Override
   public ValueType handlesValueType() {
     return ValueType.JOB;

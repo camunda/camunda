@@ -1,7 +1,7 @@
 package io.camunda.zeebe.exporter.operate.handlers;
 
-import static io.camunda.operate.schema.templates.EventTemplate.METADATA;
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
+import static io.camunda.zeebe.exporter.operate.schema.templates.EventTemplate.METADATA;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -12,10 +12,10 @@ import io.camunda.operate.entities.EventMetadataEntity;
 import io.camunda.operate.entities.EventSourceType;
 import io.camunda.operate.entities.EventType;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.schema.templates.EventTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -25,8 +25,12 @@ public class EventFromJobHandler implements ExportHandler<EventEntity, JobRecord
   private static final Logger logger = LoggerFactory.getLogger(EventFromJobHandler.class);
   private static final String ID_PATTERN = "%s_%s";
 
-  private EventTemplate eventTemplate = new EventTemplate();
+  private EventTemplate eventTemplate;
   
+  public EventFromJobHandler(EventTemplate eventTemplate) {
+    this.eventTemplate = eventTemplate;
+  }
+
   @Override
   public ValueType handlesValueType() {
     return ValueType.JOB;

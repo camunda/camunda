@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.ElasticsearchProperties;
@@ -27,8 +28,7 @@ public class NoSpringElasticsearchBatchRequest implements BatchRequest {
 
   private final BulkRequest bulkRequest = new BulkRequest();
 
-  // TODO: does operate have any particular configuration that is important?
-  private ObjectMapper objectMapper = new ObjectMapper();
+  private ObjectMapper objectMapper = NoSpringJacksonConfig.buildObjectMapper();
 
   private RestHighLevelClient esClient;
 

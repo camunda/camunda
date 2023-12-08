@@ -7,10 +7,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -24,8 +24,12 @@ public class FlowNodeInstanceFromIncidentHandler implements ExportHandler<FlowNo
   
   private static final Logger logger = LoggerFactory.getLogger(FlowNodeInstanceFromIncidentHandler.class);
 
-  private FlowNodeInstanceTemplate flowNodeInstanceTemplate = new FlowNodeInstanceTemplate();
+  private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
   
+  public FlowNodeInstanceFromIncidentHandler(FlowNodeInstanceTemplate flowNodeInstanceTemplate) {
+    this.flowNodeInstanceTemplate = flowNodeInstanceTemplate;
+  }
+
   @Override
   public ValueType handlesValueType() {
     return ValueType.INCIDENT;

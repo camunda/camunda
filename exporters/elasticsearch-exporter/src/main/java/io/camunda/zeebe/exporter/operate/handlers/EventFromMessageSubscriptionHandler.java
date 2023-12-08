@@ -1,7 +1,7 @@
 package io.camunda.zeebe.exporter.operate.handlers;
 
-import static io.camunda.operate.schema.templates.EventTemplate.METADATA;
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
+import static io.camunda.zeebe.exporter.operate.schema.templates.EventTemplate.METADATA;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -14,10 +14,10 @@ import io.camunda.operate.entities.EventMetadataEntity;
 import io.camunda.operate.entities.EventSourceType;
 import io.camunda.operate.entities.EventType;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.schema.templates.EventTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -30,13 +30,17 @@ public class EventFromMessageSubscriptionHandler implements ExportHandler<EventE
 
   private static final String ID_PATTERN = "%s_%s";
   private static final Set<Intent> PROCESS_MESSAGE_SUBSCRIPTION_STATES = new HashSet<>();
+
+  private EventTemplate eventTemplate;
   
   static {
     PROCESS_MESSAGE_SUBSCRIPTION_STATES.add(ProcessMessageSubscriptionIntent.CREATED);
   }
 
-  private EventTemplate eventTemplate = new EventTemplate();
-  
+  public EventFromMessageSubscriptionHandler(EventTemplate eventTemplate) {
+    this.eventTemplate = eventTemplate;
+  }
+
   @Override
   public ValueType handlesValueType() {
     return ValueType.MESSAGE_SUBSCRIPTION;

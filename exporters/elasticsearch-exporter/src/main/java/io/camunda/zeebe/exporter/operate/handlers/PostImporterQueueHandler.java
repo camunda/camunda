@@ -4,17 +4,21 @@ import java.time.OffsetDateTime;
 import io.camunda.operate.entities.post.PostImporterActionType;
 import io.camunda.operate.entities.post.PostImporterQueueEntity;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.templates.PostImporterQueueTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.schema.templates.PostImporterQueueTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 
 public class PostImporterQueueHandler implements ExportHandler<PostImporterQueueEntity, IncidentRecordValue> {
 
-  private PostImporterQueueTemplate postImporterQueueTemplate = new PostImporterQueueTemplate();
+  private PostImporterQueueTemplate postImporterQueueTemplate;
   
+  public PostImporterQueueHandler(PostImporterQueueTemplate postImporterQueueTemplate) {
+    this.postImporterQueueTemplate = postImporterQueueTemplate;
+  }
+
   @Override
   public ValueType handlesValueType() {
     return ValueType.INCIDENT;

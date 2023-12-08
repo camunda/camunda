@@ -12,10 +12,9 @@ import io.camunda.operate.entities.dmn.DecisionInstanceOutputEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceState;
 import io.camunda.operate.entities.dmn.DecisionType;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.DateUtil;
-import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
@@ -27,9 +26,12 @@ import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
 // TODO: currently not implemented as an ExportHandler, because it produces multiple Operate Entities from one record
 public class DecisionInstanceHandler {
 
-
-  private DecisionInstanceTemplate decisionInstanceTemplate = new DecisionInstanceTemplate();
+  private DecisionInstanceTemplate decisionInstanceTemplate;
   
+  public DecisionInstanceHandler(DecisionInstanceTemplate decisionInstanceTemplate) {
+    this.decisionInstanceTemplate = decisionInstanceTemplate;
+  }
+
   public ValueType handlesValueType() {
     return ValueType.DECISION_EVALUATION;
   }

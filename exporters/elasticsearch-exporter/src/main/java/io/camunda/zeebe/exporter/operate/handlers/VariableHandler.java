@@ -9,9 +9,9 @@ import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.ImportProperties;
-import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.schema.templates.VariableTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
@@ -23,8 +23,12 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
   // TODO: in the original code this was configurable through the operate properties
   private static final int VARIABLE_SIZE_LIMIT = ImportProperties.DEFAULT_VARIABLE_SIZE_THRESHOLD;
 
-  private VariableTemplate variableTemplate = new VariableTemplate();
+  private VariableTemplate variableTemplate;
   
+  public VariableHandler(VariableTemplate variableTemplate) {
+    this.variableTemplate = variableTemplate;
+  }
+
   @Override
   public ValueType handlesValueType() {
     return ValueType.VARIABLE;

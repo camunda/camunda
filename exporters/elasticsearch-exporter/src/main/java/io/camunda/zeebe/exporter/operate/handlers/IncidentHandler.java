@@ -10,11 +10,11 @@ import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.schema.templates.IncidentTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -25,10 +25,14 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
 
   private static final Logger logger = LoggerFactory.getLogger(IncidentHandler.class);
 
-  private IncidentTemplate incidentTemplate = new IncidentTemplate();
+  private IncidentTemplate incidentTemplate;
 
   
   // TODO: Did not port over the webhook call that notifies users of a new incident
+  
+  public IncidentHandler(IncidentTemplate incidentTemplate) {
+    this.incidentTemplate = incidentTemplate;
+  }
   
   @Override
   public ValueType handlesValueType() {

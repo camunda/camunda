@@ -13,7 +13,6 @@ import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
-import io.camunda.zeebe.exporter.operate.OperateExporter;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -97,9 +96,6 @@ public class ElasticsearchExporter implements Exporter {
 
     final var recordSequence = recordCounters.getNextRecordSequence(record);
 
-    // TODO: put somewhere else
-    OperateExporter exporter = new OperateExporter();
-    exporter.exportRecord(record);
     //    client.index(record, recordSequence);
     lastPosition = record.getPosition();
 

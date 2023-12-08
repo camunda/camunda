@@ -5,9 +5,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.camunda.operate.entities.SequenceFlowEntity;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -18,8 +18,12 @@ public class SequenceFlowHandler implements ExportHandler<SequenceFlowEntity, Pr
   private static final String ID_PATTERN = "%s_%s";
   private static final Logger logger = LoggerFactory.getLogger(SequenceFlowHandler.class);
 
-  private SequenceFlowTemplate sequenceFlowTemplate = new SequenceFlowTemplate();
+  private SequenceFlowTemplate sequenceFlowTemplate;
   
+  public SequenceFlowHandler(SequenceFlowTemplate sequenceFlowTemplate) {
+    this.sequenceFlowTemplate = sequenceFlowTemplate;
+  }
+
   @Override
   public ValueType handlesValueType() {
     return ValueType.PROCESS_INSTANCE;

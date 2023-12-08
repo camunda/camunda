@@ -15,13 +15,15 @@ import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 
 public class FlowNodeInstanceHandler
@@ -29,21 +31,41 @@ public class FlowNodeInstanceHandler
 
   private static final Logger logger = LoggerFactory.getLogger(FlowNodeInstanceHandler.class);
 
-  private static final Set<String> AI_FINISH_STATES =
-      Set.of(ELEMENT_COMPLETED.name(), ELEMENT_TERMINATED.name());
-  private static final Set<String> AI_START_STATES = Set.of(ELEMENT_ACTIVATING.name());
+  private static final Set<Intent> AI_FINISH_STATES =
+      Set.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
+  private static final Set<Intent> AI_START_STATES = Set.of(ELEMENT_ACTIVATING);
 
   // TODO: fix spring-wired property access
-  private FlowNodeInstanceTemplate flowNodeInstanceTemplate = new FlowNodeInstanceTemplate();
+  private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+
+  public FlowNodeInstanceHandler(FlowNodeInstanceTemplate flowNodeInstanceTemplate) {
+    this.flowNodeInstanceTemplate = flowNodeInstanceTemplate;
+  }
 
   @Override
   public ValueType handlesValueType() {
     return ValueType.PROCESS_INSTANCE;
   }
-  
+
   @Override
   public boolean handlesRecord(Record<ProcessInstanceRecordValue> record) {
-    throw new RuntimeException("implement intent filtering");
+    final ProcessInstanceRecordValue processInstanceRecordValue = record.getValue();
+    final Intent intent = record.getIntent();
+    return !isProcessEvent(processInstanceRecordValue)
+        && (AI_START_STATES.contains(intent) || AI_FINISH_STATES.contains(intent));
+
+  }
+  
+  private boolean isProcessEvent(ProcessInstanceRecordValue recordValue) {
+    return isOfType(recordValue, BpmnElementType.PROCESS);
+  }
+
+  private boolean isOfType(ProcessInstanceRecordValue recordValue, BpmnElementType type) {
+    final BpmnElementType bpmnElementType = recordValue.getBpmnElementType();
+    if (bpmnElementType == null) {
+      return false;
+    }
+    return bpmnElementType.equals(type);
   }
 
   @Override
@@ -62,11 +84,11 @@ public class FlowNodeInstanceHandler
   }
 
   @Override
-  public void updateEntity(
-      Record<ProcessInstanceRecordValue> record, FlowNodeInstanceEntity entity) {
+  public void updateEntity(Record<ProcessInstanceRecordValue> record,
+      FlowNodeInstanceEntity entity) {
 
     final var recordValue = record.getValue();
-    final var intentStr = record.getIntent().name();
+    final Intent intent = record.getIntent();
 
     entity.setKey(record.getKey());
     entity.setId(ConversionUtils.toStringOrNull(record.getKey()));
@@ -78,16 +100,16 @@ public class FlowNodeInstanceHandler
     entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
     // TODO: restore tree path logic
-    //    if (entity.getTreePath() == null) {
+    // if (entity.getTreePath() == null) {
     //
-    //      String parentTreePath = getParentTreePath(record, recordValue);
-    //      entity.setTreePath(
-    //          String.join("/", parentTreePath, ConversionUtils.toStringOrNull(record.getKey())));
-    //      entity.setLevel(parentTreePath.split("/").length);
-    //    }
+    // String parentTreePath = getParentTreePath(record, recordValue);
+    // entity.setTreePath(
+    // String.join("/", parentTreePath, ConversionUtils.toStringOrNull(record.getKey())));
+    // entity.setLevel(parentTreePath.split("/").length);
+    // }
 
-    if (AI_FINISH_STATES.contains(intentStr)) {
-      if (intentStr.equals(ELEMENT_TERMINATED.name())) {
+    if (AI_FINISH_STATES.contains(intent)) {
+      if (intent.equals(ELEMENT_TERMINATED)) {
         entity.setState(FlowNodeState.TERMINATED);
       } else {
         entity.setState(FlowNodeState.COMPLETED);
@@ -95,17 +117,14 @@ public class FlowNodeInstanceHandler
       entity.setEndDate(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
     } else {
       entity.setState(FlowNodeState.ACTIVE);
-      if (AI_START_STATES.contains(intentStr)) {
+      if (AI_START_STATES.contains(intent)) {
         entity.setStartDate(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
         entity.setPosition(record.getPosition());
       }
     }
 
-    entity.setType(
-        FlowNodeType.fromZeebeBpmnElementType(
-            recordValue.getBpmnElementType() == null
-                ? null
-                : recordValue.getBpmnElementType().name()));
+    entity.setType(FlowNodeType.fromZeebeBpmnElementType(
+        recordValue.getBpmnElementType() == null ? null : recordValue.getBpmnElementType().name()));
   }
 
   @Override
@@ -122,8 +141,8 @@ public class FlowNodeInstanceHandler
       updateFields.put(FlowNodeInstanceTemplate.STATE, fniEntity.getState());
       updateFields.put(FlowNodeInstanceTemplate.TREE_PATH, fniEntity.getTreePath());
       updateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, fniEntity.getFlowNodeId());
-      updateFields.put(
-          FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, fniEntity.getProcessDefinitionKey());
+      updateFields.put(FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY,
+          fniEntity.getProcessDefinitionKey());
       updateFields.put(FlowNodeInstanceTemplate.LEVEL, fniEntity.getLevel());
       if (fniEntity.getStartDate() != null) {
         updateFields.put(FlowNodeInstanceTemplate.START_DATE, fniEntity.getStartDate());
@@ -134,11 +153,8 @@ public class FlowNodeInstanceHandler
       if (fniEntity.getPosition() != null) {
         updateFields.put(FlowNodeInstanceTemplate.POSITION, fniEntity.getPosition());
       }
-      batchRequest.upsert(
-          flowNodeInstanceTemplate.getFullQualifiedName(),
-          fniEntity.getId(),
-          fniEntity,
-          updateFields);
+      batchRequest.upsert(flowNodeInstanceTemplate.getFullQualifiedName(), fniEntity.getId(),
+          fniEntity, updateFields);
     }
   }
 
@@ -154,11 +170,11 @@ public class FlowNodeInstanceHandler
       // by submitting an IndexRequest instead of a UpdateRequest.
       // In such case, the following is assumed:
       // * When the duration between start and end time is lower than
-      //   (or equal to) 2 seconds, then it can "safely" be assumed
-      //   that there was no incident in between.
+      // (or equal to) 2 seconds, then it can "safely" be assumed
+      // that there was no incident in between.
       // * The 2s duration is chosen arbitrarily. However, it should
-      //   not be too short but not too long to avoid any negative
-      //   side effects with incidents.
+      // not be too short but not too long to avoid any negative
+      // side effects with incidents.
       final var duration = Duration.between(startDate, endDate);
       return duration.getSeconds() <= 2L;
     }

@@ -16,10 +16,10 @@ import org.slf4j.LoggerFactory;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.schema.templates.ListViewTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -33,14 +33,18 @@ public class ListViewFromProcessInstanceHandler
   private static final Set<String> PI_AND_AI_FINISH_STATES = new HashSet<>();
   protected static final int EMPTY_PARENT_PROCESS_INSTANCE_ID = -1;
 
-  private ListViewTemplate listViewTemplate = new ListViewTemplate();
-  
   static {
     PI_AND_AI_START_STATES.add(ELEMENT_ACTIVATING.name());
     PI_AND_AI_FINISH_STATES.add(ELEMENT_COMPLETED.name());
     PI_AND_AI_FINISH_STATES.add(ELEMENT_TERMINATED.name());
   }
+
+  private ListViewTemplate listViewTemplate;
   
+  public ListViewFromProcessInstanceHandler(ListViewTemplate listViewTemplate) {
+    this.listViewTemplate = listViewTemplate;
+  }
+
   @Override
   public ValueType handlesValueType() {
     return ValueType.PROCESS_INSTANCE;
