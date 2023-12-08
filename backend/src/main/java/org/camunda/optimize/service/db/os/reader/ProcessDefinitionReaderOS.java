@@ -13,6 +13,8 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -26,7 +28,7 @@ public class ProcessDefinitionReaderOS implements ProcessDefinitionReader {
   @Override
   public List<ProcessDefinitionOptimizeDto> getAllProcessDefinitions() {
     //todo will be handled in the OPT-7230
-    return null;
+    return new ArrayList<>();
   }
 
   @Override
@@ -38,13 +40,13 @@ public class ProcessDefinitionReaderOS implements ProcessDefinitionReader {
   @Override
   public Set<String> getAllNonOnboardedProcessDefinitionKeys() {
     //todo will be handled in the OPT-7230
-    return null;
+    return new HashSet<>();
   }
 
   @Override
   public String getLatestVersionToKey(final String key) {
     //todo will be handled in the OPT-7230
-    return null;
+    return "";
   }
 
 }

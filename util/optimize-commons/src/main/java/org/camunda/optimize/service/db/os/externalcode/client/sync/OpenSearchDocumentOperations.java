@@ -11,6 +11,7 @@ import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.Result;
+import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
@@ -20,6 +21,8 @@ import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.UpdateByQueryRequest;
+import org.opensearch.client.opensearch.core.UpdateByQueryResponse;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.UpdateResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -44,6 +47,7 @@ import static org.camunda.optimize.service.db.os.externalcode.client.dsl.Request
 import static org.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.getRequest;
 import static org.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.scrollRequest;
 import static org.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.time;
+import static org.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.updateByQueryRequestBuilder;
 
 @Slf4j
 public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
@@ -276,7 +280,8 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
       10,
       format("Exists document from %s with id %s", name, id),
       () -> openSearchClient.exists(e -> e.index(name).id(id)).value(),
-      null);
+      null
+    );
   }
 
   public <R> Optional<R> getWithRetries(String index, String id, Class<R> entityClass) {
@@ -303,18 +308,29 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   public boolean deleteWithRetries(String index, Query query) {
     return executeWithRetries(
       () -> {
-        final DeleteByQueryRequest request = applyIndexPrefix(deleteByQueryRequestBuilder(index)).query(query).build();
+        final DeleteByQueryRequest request = deleteByQueryRequestBuilder(applyIndexPrefix(index)).query(query).build();
         final DeleteByQueryResponse response = openSearchClient.deleteByQuery(request);
         return response.failures().isEmpty() && response.deleted() > 0;
       });
   }
 
-  public long deleteByQuery(String index, Query query) {
+  public long deleteByQuery(Query query, String ... index) {
     return executeWithRetries(
       () -> {
-        final DeleteByQueryRequest request = applyIndexPrefix(deleteByQueryRequestBuilder(index)).query(query).build();
+        final DeleteByQueryRequest request = deleteByQueryRequestBuilder(applyIndexPrefix(index)).query(query).build();
         final DeleteByQueryResponse response = openSearchClient.deleteByQuery(request);
         return response.deleted();
+      });
+  }
+
+  public long updateByQuery(String index, Query query, Script script) {
+    return executeWithRetries(
+      () -> {
+        final UpdateByQueryRequest request = applyIndexPrefix(updateByQueryRequestBuilder(List.of(index))).query(query)
+          .script(script)
+          .build();
+        final UpdateByQueryResponse response = openSearchClient.updateByQuery(request);
+        return response.updated();
       });
   }
 
@@ -330,10 +346,12 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     );
   }
 
-  public <A> UpdateResponse<Void> update(UpdateRequest.Builder<Void, A> requestBuilder, Function<Exception, String> errorMessageSupplier) {
+  public <A> UpdateResponse<Void> update(UpdateRequest.Builder<Void, A> requestBuilder,
+                                         Function<Exception, String> errorMessageSupplier) {
     return safe(
       () -> openSearchClient.update(applyIndexPrefix(requestBuilder).build(), Void.class),
       errorMessageSupplier
     );
   }
+
 }

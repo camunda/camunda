@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.db.os;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,14 +25,16 @@ import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.ssl.TrustStrategy;
-import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
+import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
+import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import org.elasticsearch.client.RequestOptions;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -53,8 +56,11 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.service.util.DatabaseVersionChecker.checkOSVersionSupport;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -87,7 +93,14 @@ public class OptimizeOpenSearchClientFactory {
         return requestConfigBuilder;
       });
 
-    final JacksonJsonpMapper jsonpMapper = new JacksonJsonpMapper(new ObjectMapper());
+    ObjectMapper objectMapper = new ObjectMapper();
+
+    DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
+    JavaTimeModule javaTimeModule = new JavaTimeModule();
+    javaTimeModule.addSerializer(OffsetDateTime.class, new CustomOffsetDateTimeSerializer(dateTimeFormatter));
+    javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomOffsetDateTimeDeserializer(dateTimeFormatter));
+    objectMapper.registerModule(javaTimeModule);
+    final JacksonJsonpMapper jsonpMapper = new JacksonJsonpMapper(objectMapper);
     builder.setMapper(jsonpMapper);
 
     final OpenSearchTransport transport = builder.build();

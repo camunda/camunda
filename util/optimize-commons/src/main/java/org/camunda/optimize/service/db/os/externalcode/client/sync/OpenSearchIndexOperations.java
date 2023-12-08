@@ -9,7 +9,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch.core.ReindexRequest;
+import org.opensearch.client.opensearch.core.ReindexResponse;
 import org.opensearch.client.opensearch.indices.AnalyzeRequest;
 import org.opensearch.client.opensearch.indices.AnalyzeResponse;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
@@ -30,7 +32,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-
 @Slf4j
 public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
   public static final String NUMBERS_OF_REPLICA = "index.number_of_replicas";
@@ -48,11 +49,12 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
   }
 
   public Set<String> getIndexNamesWithRetries(String namePattern) {
+    String prefixedNamePattern = applyIndexPrefix(namePattern).get(0);
     return executeWithRetries(
-      "Get indices for " + namePattern,
+      "Get indices for " + prefixedNamePattern,
       () -> {
         try {
-          final GetIndexResponse response = openSearchClient.indices().get(i -> i.index(namePattern));
+          final GetIndexResponse response = openSearchClient.indices().get(i -> i.index(prefixedNamePattern));
           return response.result().keySet();
         } catch (OpenSearchException e) {
           if (e.status() == 404) {
@@ -60,7 +62,8 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
           }
           throw e;
         }
-      });
+      }
+    );
   }
 
   public boolean createIndexWithRetries(CreateIndexRequest createIndexRequest) {
@@ -71,7 +74,8 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
           return openSearchClient.indices().create(createIndexRequest).acknowledged();
         }
         return true;
-      });
+      }
+    );
   }
 
   private boolean indicesExist(final String indexPattern) throws IOException {
@@ -81,34 +85,41 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
       .value();
   }
 
-  public long getNumberOfDocumentsWithRetries(String... indexPatterns) {
+  public long getNumberOfDocumentsWithRetries(String... unprefixedIndexPatterns) {
+    List<String> indexPatterns = applyIndexPrefix(unprefixedIndexPatterns);
     return executeWithRetries(
-      "Count number of documents in " + Arrays.asList(indexPatterns),
-      () -> openSearchClient.count(c -> c.index(List.of(indexPatterns))).count());
+      "Count number of documents in " + List.of(indexPatterns),
+      () -> openSearchClient.count(c -> c.index(indexPatterns)).count()
+    );
   }
 
-  public boolean indexExists(String index) {
-    return safe(() -> openSearchClient.indices().exists(r -> r.index(getIndexAliasFor(index))).value(),
-                e -> defaultIndexErrorMessage(index));
+  public boolean indexExists(String unprefixedIndex) {
+    String index = applyIndexPrefix(unprefixedIndex).get(0);
+    return safe(
+      () -> openSearchClient.indices().exists(r -> r.index(getIndexAliasFor(index))).value(),
+      e -> defaultIndexErrorMessage(index)
+    );
   }
 
-  public void refresh(String indexPattern) {
-    final var refreshRequest = new RefreshRequest.Builder().index(List.of(indexPattern)).build();
+  public void refresh(String unprefixedIndexPatterns) {
+    List<String> indexPatterns = applyIndexPrefix(unprefixedIndexPatterns);
+    final RefreshRequest refreshRequest = new RefreshRequest.Builder().index(indexPatterns).build();
     try {
       final RefreshResponse refresh = openSearchClient.indices().refresh(refreshRequest);
-      if (refresh.shards().failures().size() > 0) {
-        log.warn("Unable to refresh indices: {}", indexPattern);
+      if (refresh.shards().failures().isEmpty()) {
+        log.warn("Unable to refresh indices: {}", indexPatterns);
       }
     } catch (Exception ex) {
-      log.warn(String.format("Unable to refresh indices: %s", indexPattern), ex);
+      log.warn(String.format("Unable to refresh indices: %s", indexPatterns), ex);
     }
   }
 
-  public void refresh(String ... indexPatterns) {
-    final var refreshRequest = new RefreshRequest.Builder().index(List.of(indexPatterns)).build();
+  public void refresh(String... unprefixedIndexPatterns) {
+    List<String> indexPatterns = applyIndexPrefix(unprefixedIndexPatterns);
+    final RefreshRequest refreshRequest = new RefreshRequest.Builder().index(indexPatterns).build();
     try {
       final RefreshResponse refresh = openSearchClient.indices().refresh(refreshRequest);
-      if (refresh.shards().failures().size() > 0) {
+      if (refresh.shards().failures().isEmpty()) {
         log.warn("Unable to refresh indices: {}", List.of(indexPatterns));
       }
     } catch (Exception ex) {
@@ -116,48 +127,54 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
     }
   }
 
-  public void refreshWithRetries(final String indexPattern) {
+  public void refreshWithRetries(final String unprefixedIndexPattern) {
+    String indexPattern = applyIndexPrefix(unprefixedIndexPattern).get(0);
     executeWithRetries(
       "Refresh " + indexPattern,
       () -> {
         try {
-          for (var index : getFilteredIndices(indexPattern)) {
+          for (String index : getFilteredIndices(indexPattern)) {
             openSearchClient.indices().refresh(r -> r.index(List.of(index)));
           }
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
         return true;
-      });
+      }
+    );
   }
 
   private Set<String> getFilteredIndices(final String indexPattern) throws IOException {
     return openSearchClient.indices().get(i -> i.index(List.of(indexPattern))).result().keySet();
   }
 
-  public boolean deleteIndicesWithRetries(final String indexPattern) {
+  public boolean deleteIndicesWithRetries(final String unprefixedIndexPattern) {
+    String indexPattern = applyIndexPrefix(unprefixedIndexPattern).get(0);
     return executeWithRetries(
       "DeleteIndices " + indexPattern,
       () -> {
-        for (var index : getFilteredIndices(indexPattern)) {
-          openSearchClient.indices().delete(d -> d.index(List.of(indexPattern)));
+        for (String index : getFilteredIndices(indexPattern)) {
+          openSearchClient.indices().delete(d -> d.index(List.of(index)));
         }
         return true;
-      });
+      }
+    );
   }
 
-  public IndexSettings getIndexSettingsWithRetries(String indexName) {
+  public IndexSettings getIndexSettingsWithRetries(String unprefixedIndexPattern) {
+    String indexName = applyIndexPrefix(unprefixedIndexPattern).get(0);
     return executeWithRetries(
       "GetIndexSettings " + indexName,
       () -> {
         final GetIndicesSettingsResponse response = openSearchClient.indices().getSettings(s -> s.index(List.of(indexName)));
         return response.result().get(indexName).settings();
-      });
+      }
+    );
   }
 
   public String getOrDefaultRefreshInterval(String indexName, String defaultValue) {
-    var refreshIntervalTime = getIndexSettingsWithRetries(indexName).refreshInterval();
-    String refreshInterval = refreshIntervalTime==null?defaultValue:refreshIntervalTime.time();
+    Time refreshIntervalTime = getIndexSettingsWithRetries(indexName).refreshInterval();
+    String refreshInterval = refreshIntervalTime == null ? defaultValue : refreshIntervalTime.time();
     if (refreshInterval.trim().equals(NO_REFRESH)) {
       refreshInterval = defaultValue;
     }
@@ -166,7 +183,7 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
 
   public String getOrDefaultNumbersOfReplica(String indexName, String defaultValue) {
     String numberOfReplicasOriginal = getIndexSettingsWithRetries(indexName).numberOfReplicas();
-    String numbersOfReplica = numberOfReplicasOriginal==null?defaultValue:numberOfReplicasOriginal;
+    String numbersOfReplica = numberOfReplicasOriginal == null ? defaultValue : numberOfReplicasOriginal;
     if (numbersOfReplica.trim().equals(NO_REPLICA)) {
       numbersOfReplica = defaultValue;
     }
@@ -178,7 +195,7 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
   }
 
   public PutIndicesSettingsResponse setIndexLifeCycle(String index, String value) throws IOException {
-    var request = PutIndicesSettingsRequest.of(b -> b.index(index).settings(s -> s.lifecycleName(value)));
+    PutIndicesSettingsRequest request = PutIndicesSettingsRequest.of(b -> b.index(index).settings(s -> s.lifecycleName(value)));
     return putSettings(request);
   }
 
@@ -189,7 +206,8 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
         openSearchClient
           .indices()
           .putSettings(s -> s.index(indexPattern).settings(settings))
-          .acknowledged());
+          .acknowledged()
+    );
   }
 
   public AnalyzeResponse analyze(AnalyzeRequest analyzeRequest) throws IOException {
@@ -219,10 +237,10 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
             return true;
           }
         }
-        var response = openSearchClient.reindex(reindexRequest);
+        ReindexResponse response = openSearchClient.reindex(reindexRequest);
 
-        if(response.total().equals(srcCount)) {
-          var taskId = response.task() != null ? response.task() : "task:unavailable";
+        if (response.total().equals(srcCount)) {
+          String taskId = response.task() != null ? response.task() : "task:unavailable";
           logProgress(taskId, srcCount, srcCount);
           return true;
         }
@@ -230,7 +248,8 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
         TimeUnit.of(ChronoUnit.MILLIS).sleep(2_000);
         return waitUntilTaskIsCompleted(response.task(), srcCount);
       },
-      done -> !done);
+      done -> !done
+    );
   }
 
   // Returns if task is completed under this conditions:
@@ -255,12 +274,12 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
   }
 
   private void logProgress(String taskId, long processed, long srcCount) {
-    var progress = processed * 100.00 / srcCount;
+    double progress = processed * 100.00 / srcCount;
     log.info("TaskId: {}, Progress: {}%", taskId, String.format("%.2f", progress));
   }
 
   public GetIndexResponse get(GetIndexRequest.Builder requestBuilder) {
-    GetIndexRequest request = requestBuilder.build();
+    GetIndexRequest request = applyIndexPrefix(requestBuilder).build();
     return safe(() -> openSearchClient.indices().get(request), e -> "Failed to get index " + request.index());
   }
 

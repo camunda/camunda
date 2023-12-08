@@ -17,6 +17,7 @@ import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.ReindexRequest;
 import org.opensearch.client.opensearch.core.ScrollRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.UpdateByQueryRequest;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.reindex.Destination;
 import org.opensearch.client.opensearch.core.reindex.Source;
@@ -60,8 +61,12 @@ public interface RequestDSL {
     return new DeleteRequest.Builder().index(index).id(id);
   }
 
-  static DeleteByQueryRequest.Builder deleteByQueryRequestBuilder(String index) {
-    return new DeleteByQueryRequest.Builder().index(index);
+  static DeleteByQueryRequest.Builder deleteByQueryRequestBuilder(List<String> indexes) {
+    return new DeleteByQueryRequest.Builder().index(indexes);
+  }
+
+  static UpdateByQueryRequest.Builder updateByQueryRequestBuilder(List<String> indexes) {
+    return new UpdateByQueryRequest.Builder().index(indexes);
   }
 
   static DeleteSnapshotRequest.Builder deleteSnapshotRequestBuilder(String repositoryName, String snapshotName) {
@@ -140,4 +145,5 @@ public interface RequestDSL {
   static Time time(String value) {
     return Time.of(b -> b.time(value));
   }
+
 }

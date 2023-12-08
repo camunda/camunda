@@ -16,6 +16,7 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -31,7 +32,7 @@ public class ProcessVariableUpdateWriterOS extends AbstractProcessInstanceDataWr
   @Override
   public List<ImportRequestDto> generateVariableUpdateImports(final List<ProcessVariableDto> variables) {
     //todo will be handled in the OPT-7376
-    return null;
+    return new ArrayList<>();
   }
 
   @Override
