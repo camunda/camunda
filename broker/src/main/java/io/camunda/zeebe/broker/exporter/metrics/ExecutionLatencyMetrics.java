@@ -37,12 +37,12 @@ public class ExecutionLatencyMetrics {
           .labelNames("partition")
           .buckets(0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 10.0, 15.0, 30.0)
           .register();
-  private static final Gauge CURRENT_ACTIVE_INSTANCE =
+  private static final Gauge CURRENT_CACHED_INSTANCE =
       Gauge.build()
           .namespace("zeebe")
-          .name("estimated_current_active_instances")
+          .name("execution_latency_current_cached_instances")
           .help(
-              "A current estimation of active instances (jobs or process instances). This can only be an estimation, since long lived instances are excluded from this.")
+              "The current cached instances for counting their execution latency. If only short-lived instances are handled this can be seen or observed as the current active instance count.")
           .labelNames("partition", "type")
           .register();
 
@@ -68,11 +68,11 @@ public class ExecutionLatencyMetrics {
   }
 
   public void setCurrentJobsCount(final int partitionId, final int count) {
-    CURRENT_ACTIVE_INSTANCE.labels(Integer.toString(partitionId), "jobs").set(count);
+    CURRENT_CACHED_INSTANCE.labels(Integer.toString(partitionId), "jobs").set(count);
   }
 
   public void setCurrentProcessInstanceCount(final int partitionId, final int count) {
-    CURRENT_ACTIVE_INSTANCE.labels(Integer.toString(partitionId), "processInstances").set(count);
+    CURRENT_CACHED_INSTANCE.labels(Integer.toString(partitionId), "processInstances").set(count);
   }
 
   public Histogram getJobLifeTime() {
