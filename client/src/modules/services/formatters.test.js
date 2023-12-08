@@ -358,7 +358,7 @@ describe('formatTenants', () => {
   });
 
   it('should correctly format unauthorized tenants', () => {
-    expect(formatTenants(['__unauthorizedTenantId__'], tenantInfo)).toBe('(Unauthorized Tenant)');
+    expect(formatTenants(['__unauthorizedTenantId__'], tenantInfo)).toBe('(Unauthorized tenant)');
   });
 
   it('should correctly format special "null" tenant', () => {

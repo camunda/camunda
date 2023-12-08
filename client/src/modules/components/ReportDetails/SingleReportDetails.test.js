@@ -70,7 +70,7 @@ it('should show relevant information', () => {
   expect(node).toIncludeText('aName');
   expect(node).toIncludeText('2, 1');
   expect(node).toIncludeText('Sales, Consulting');
-  expect(node).toIncludeText('Process Instance Count by Start Date');
+  expect(node).toIncludeText('Process instance Count by Start date');
   expect(node).not.toIncludeText('Report Name');
 });
 

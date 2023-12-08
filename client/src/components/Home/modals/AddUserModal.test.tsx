@@ -27,7 +27,7 @@ it('should render the modal properly', () => {
 
   const radioButtons = node.find('RadioButton');
 
-  expect(node.find('UserTypeahead').prop('titleText')).toEqual('Users and User Groups');
+  expect(node.find('UserTypeahead').prop('titleText')).toEqual('Users and user groups');
 
   expect(radioButtons.at(0).dive().find('span').at(1).text()).toBe('Viewer');
   expect(radioButtons.at(1).dive().find('span').at(1).text()).toBe('Editor');

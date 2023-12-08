@@ -20,7 +20,7 @@ Object {
     ],
   ],
   "head": Array [
-    "Process Instance Start Date",
+    "Process instance Start date",
     Object {
       "id": "Count",
       "label": "Count",

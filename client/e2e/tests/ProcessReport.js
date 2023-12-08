@@ -30,15 +30,15 @@ test('create a report from a template', async (t) => {
   await t.click(Common.templateModalProcessField);
   await t.click(Common.carbonOption('Invoice Receipt with alternative correlation variable'));
 
-  await t.click(e.templateOption('Analyze shares as Pie Chart'));
+  await t.click(e.templateOption('Analyze shares as pie chart'));
 
   await t.takeScreenshot('img/reportTemplate.png', {fullPage: true});
   await t.maximizeWindow();
 
   await t.click(Common.modalConfirmButton);
 
-  await t.expect(Common.nameEditField.value).eql('Analyze shares as Pie Chart');
-  await t.expect(e.groupbyDropdownButton.textContent).contains('Start Date : Year');
+  await t.expect(Common.nameEditField.value).eql('Analyze shares as pie chart');
+  await t.expect(e.groupbyDropdownButton.textContent).contains('Start date : Year');
   await t.expect(e.reportChart.visible).ok();
 });
 
@@ -50,7 +50,7 @@ test('create and name a report', async (t) => {
   await u.addEditEntityDescription(t, 'This is a description of the dashboard.');
 
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
-  await u.selectView(t, 'Flow Node', 'Count');
+  await u.selectView(t, 'Flow node', 'Count');
 
   await t.resizeWindow(1350, 750);
 
@@ -70,7 +70,7 @@ test('sharing', async (t) => {
   await t.typeText(Common.nameEditField, 'Invoice Pipeline', {replace: true});
 
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
-  await u.selectView(t, 'Flow Node', 'Count');
+  await u.selectView(t, 'Flow node', 'Count');
 
   await t.resizeWindow(1000, 650);
 
@@ -131,7 +131,7 @@ test('version selection', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
 
-  await u.selectView(t, 'Process Instance', 'Count');
+  await u.selectView(t, 'Process instance', 'Count');
 
   await t.click(e.definitionEditor);
   await t.click(e.versionPopover);
@@ -169,7 +169,7 @@ test('version selection', async (t) => {
 test('raw data table pagination', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
-  await u.selectView(t, 'Raw Data');
+  await u.selectView(t, 'Raw data');
   await t.click(e.nextPageButton);
   await t.click(e.rowsPerPageButton);
   await t.click(e.rowsPerPageOption('100'));
@@ -179,7 +179,7 @@ test('raw data table pagination', async (t) => {
 test('sort table columns', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
-  await u.selectView(t, 'Raw Data');
+  await u.selectView(t, 'Raw data');
   await t.resizeWindow(1600, 750);
 
   await t.click(e.configurationButton);
@@ -190,7 +190,7 @@ test('sort table columns', async (t) => {
   await t.typeText(Common.nameEditField, 'Table Report', {replace: true});
 
   await t.expect(e.reportRenderer.textContent).contains('invoice');
-  await t.expect(e.reportRenderer.textContent).contains('Start Date');
+  await t.expect(e.reportRenderer.textContent).contains('Start date');
 
   await t.click(e.tableHeader(9));
 
@@ -221,7 +221,7 @@ test('sort table columns', async (t) => {
 test('drag raw data table columns', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
-  await u.selectView(t, 'Raw Data');
+  await u.selectView(t, 'Raw data');
 
   const originalPositionText = await e.tableHeader(3).textContent;
   await t.drag(e.tableHeader(3), 350, 0);
@@ -232,7 +232,7 @@ test('drag raw data table columns', async (t) => {
 test('view a variable object in rawdata table', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
-  await u.selectView(t, 'Raw Data');
+  await u.selectView(t, 'Raw data');
   await t.resizeWindow(1600, 750);
 
   await t.click(e.configurationButton);
@@ -251,8 +251,8 @@ test('view a variable object in rawdata table', async (t) => {
 test('drag distributed table columns', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
-  await u.selectView(t, 'User Task', 'Count');
-  await u.selectGroupby(t, 'Candidate Group');
+  await u.selectView(t, 'User task', 'Count');
+  await u.selectGroupby(t, 'Candidate group');
   await u.selectVisualization(t, 'Table');
 
   const originalPositionText = await e.tableGroup(1).textContent;
@@ -264,17 +264,17 @@ test('drag distributed table columns', async (t) => {
 test('exclude raw data columns', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
-  await u.selectView(t, 'Raw Data');
+  await u.selectView(t, 'Raw data');
 
   await t.resizeWindow(1600, 750);
 
   await t.click(e.configurationButton);
 
-  await t.click(Common.toggleElement('Start Date'));
+  await t.click(Common.toggleElement('Start date'));
   await t.click(e.instanceCountSwitch);
-  await t.click(Common.toggleElement('Process Definition Key'));
-  await t.click(Common.toggleElement('Business Key'));
-  await t.click(Common.toggleElement('End Date'));
+  await t.click(Common.toggleElement('Process definition key'));
+  await t.click(Common.toggleElement('Business key'));
+  await t.click(Common.toggleElement('End date'));
 
   await t.click(e.selectSectionWithLabel('VARIABLES'));
 
@@ -282,7 +282,7 @@ test('exclude raw data columns', async (t) => {
 
   await t.takeScreenshot('process-analysis/report-analysis/img/rawdata.png').maximizeWindow();
 
-  await t.expect(e.reportRenderer.textContent).notContains('Start Date');
+  await t.expect(e.reportRenderer.textContent).notContains('Start date');
 });
 
 test('cancel changes', async (t) => {
@@ -300,21 +300,21 @@ test('cancel changes', async (t) => {
 test('should only enable valid combinations for process instance count grouped by none', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
-  await u.selectView(t, 'Process Instance', 'Count');
+  await u.selectView(t, 'Process instance', 'Count');
 
   await t.click(e.groupbyDropdown);
 
-  await t.expect(Common.menuOption('Start Date').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Start date').hasAttribute('aria-disabled')).notOk();
   await t.expect(Common.menuOption('Variable').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Flow Nodes').hasAttribute('aria-disabled')).ok();
+  await t.expect(Common.menuOption('Flow nodes').hasAttribute('aria-disabled')).ok();
 
   await t.click(e.visualizationDropdown);
 
   await t.expect(Common.menuOption('Number').hasAttribute('aria-disabled')).notOk();
   await t.expect(Common.menuOption('Table').hasAttribute('aria-disabled')).ok();
-  await t.expect(Common.menuOption('Bar Chart').hasAttribute('aria-disabled')).ok();
+  await t.expect(Common.menuOption('Bar chart').hasAttribute('aria-disabled')).ok();
   await t.expect(Common.menuOption('Heatmap').hasAttribute('aria-disabled')).ok();
-  await t.expect(Common.menuOption('Bar/Line Chart').hasAttribute('aria-disabled')).ok();
+  await t.expect(Common.menuOption('Bar/line chart').hasAttribute('aria-disabled')).ok();
 
   await t.expect(e.reportNumber.visible).ok();
 });
@@ -325,7 +325,7 @@ test('Limit the precision in number report', async (t) => {
 
   await t.typeText(Common.nameEditField, 'Number Report', {replace: true});
 
-  await u.selectView(t, 'Process Instance', 'Duration');
+  await u.selectView(t, 'Process instance', 'Duration');
 
   await t.click(e.configurationButton);
   await t.click(e.limitPrecisionSwitch);
@@ -347,8 +347,8 @@ test('Limit the precision in chart type reports', async (t) => {
 
   await t.typeText(Common.nameEditField, 'Chart Report', {replace: true});
 
-  await u.selectView(t, 'Flow Node', 'Duration');
-  await u.selectVisualization(t, 'Bar Chart');
+  await u.selectView(t, 'Flow node', 'Duration');
+  await u.selectVisualization(t, 'Bar chart');
 
   await t.click(e.configurationButton);
   await t.click(e.limitPrecisionSwitch);
@@ -366,15 +366,15 @@ test('Disable absolute and relative values for table reports', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
 
-  await u.selectView(t, 'Process Instance', 'Count');
-  await u.selectGroupby(t, 'Start Date', 'Month');
+  await u.selectView(t, 'Process instance', 'Count');
+  await u.selectGroupby(t, 'Start date', 'Month');
 
   await u.selectVisualization(t, 'Table');
   await t.click(e.configurationButton);
-  await t.click(Common.toggleElement('Show Absolute Value'));
-  await t.click(Common.toggleElement('Show Relative Value'));
+  await t.click(Common.toggleElement('Show absolute value'));
+  await t.click(Common.toggleElement('Show relative value'));
 
-  await t.expect(e.reportTable.textContent).contains('Start Date');
+  await t.expect(e.reportTable.textContent).contains('Start date');
   await t.expect(e.reportTable.textContent).notContains('Process Instance: Count');
   await t.expect(e.reportTable.textContent).notContains('Relative Frequency');
 });
@@ -382,19 +382,19 @@ test('Disable absolute and relative values for table reports', async (t) => {
 test('select process instance count grouped by end date', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Embedded Subprocess');
-  await u.selectView(t, 'Process Instance', 'Count');
+  await u.selectView(t, 'Process instance', 'Count');
 
-  await u.selectGroupby(t, 'End Date', 'Automatic');
+  await u.selectGroupby(t, 'End date', 'Automatic');
 
   await t.click(e.visualizationDropdown);
 
   await t.expect(Common.menuOption('Number').hasAttribute('aria-disabled')).ok();
   await t.expect(Common.menuOption('Table').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Bar Chart').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Line Chart').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Pie Chart').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Bar chart').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Line chart').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Pie chart').hasAttribute('aria-disabled')).notOk();
   await t.expect(Common.menuOption('Heatmap').hasAttribute('aria-disabled')).ok();
-  await t.expect(Common.menuOption('Bar/Line Chart').hasAttribute('aria-disabled')).ok();
+  await t.expect(Common.menuOption('Bar/line chart').hasAttribute('aria-disabled')).ok();
 
   await t.click(e.visualizationDropdown);
 
@@ -406,7 +406,7 @@ test('select process instance count grouped by variable', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
 
-  await u.selectView(t, 'Process Instance', 'Count');
+  await u.selectView(t, 'Process instance', 'Count');
 
   await u.selectGroupby(t, 'Variable', 'amount');
 
@@ -414,16 +414,16 @@ test('select process instance count grouped by variable', async (t) => {
 
   await t.expect(Common.menuOption('Number').hasAttribute('aria-disabled')).ok();
   await t.expect(Common.menuOption('Table').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Bar Chart').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Line Chart').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Pie Chart').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Bar chart').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Line chart').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Pie chart').hasAttribute('aria-disabled')).notOk();
   await t.expect(Common.menuOption('Heatmap').hasAttribute('aria-disabled')).ok();
-  await t.expect(Common.menuOption('Bar/Line Chart').hasAttribute('aria-disabled')).ok();
+  await t.expect(Common.menuOption('Bar/line chart').hasAttribute('aria-disabled')).ok();
 
   await t.click(e.visualizationDropdown);
 
   await u.selectVisualization(t, 'Table');
-  await t.expect(e.reportTable.textContent).contains('Process Instance Var: amount');
+  await t.expect(e.reportTable.textContent).contains('Process instance Var: amount');
 });
 
 test('variable report', async (t) => {
@@ -445,25 +445,25 @@ test('should only enable valid combinations for Flow Node Count', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
 
-  await u.selectView(t, 'Flow Node', 'Count');
+  await u.selectView(t, 'Flow node', 'Count');
 
   await t.click(e.visualizationDropdown);
 
   await t.expect(Common.menuOption('Number').hasAttribute('aria-disabled')).ok();
   await t.expect(Common.menuOption('Table').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Bar Chart').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Bar chart').hasAttribute('aria-disabled')).notOk();
   await t.expect(Common.menuOption('Heatmap').hasAttribute('aria-disabled')).notOk();
 });
 
 test('bar chart and line chart configuration', async (t) => {
   await u.createNewReport(t);
-  await t.typeText(Common.nameEditField, 'Bar Chart Report', {replace: true});
+  await t.typeText(Common.nameEditField, 'Bar chart Report', {replace: true});
 
   await u.selectReportDefinition(t, 'Multi-Instance Subprocess');
 
-  await u.selectView(t, 'Process Instance', 'Count');
-  await u.selectGroupby(t, 'Start Date', 'Automatic');
-  await u.selectVisualization(t, 'Bar Chart');
+  await u.selectView(t, 'Process instance', 'Count');
+  await u.selectGroupby(t, 'Start date', 'Automatic');
+  await u.selectVisualization(t, 'Bar chart');
 
   await t.resizeWindow(1600, 800);
 
@@ -474,7 +474,7 @@ test('bar chart and line chart configuration', async (t) => {
     fullPage: true,
   });
 
-  await t.click(Common.toggleElement('Set Target'));
+  await t.click(Common.toggleElement('Set target'));
 
   await t.typeText(e.goalTargetInput, '4.5', {replace: true});
   await t.expect(e.goalTargetInput.hasAttribute('disabled')).notOk();
@@ -483,7 +483,7 @@ test('bar chart and line chart configuration', async (t) => {
 
   await t.takeScreenshot('process-analysis/report-analysis/img/targetValue.png', {fullPage: true});
 
-  await u.selectVisualization(t, 'Line Chart');
+  await u.selectVisualization(t, 'Line chart');
 
   await t.takeElementScreenshot(
     e.reportRenderer,
@@ -494,12 +494,12 @@ test('bar chart and line chart configuration', async (t) => {
 
   await t.click(e.configurationButton);
 
-  await t.click(Common.toggleElement('Logarithmic Scale'));
+  await t.click(Common.toggleElement('Logarithmic scale'));
 
-  await t.typeText(e.axisInputs('X Axis Label'), 'x axis label', {replace: true});
-  await t.typeText(e.axisInputs('Y Axis Label'), 'y axis label', {replace: true});
+  await t.typeText(e.axisInputs('X-axis label'), 'x axis label', {replace: true});
+  await t.typeText(e.axisInputs('Y-axis label'), 'y axis label', {replace: true});
 
-  await t.click(Common.toggleElement('Logarithmic Scale'));
+  await t.click(Common.toggleElement('Logarithmic scale'));
 
   await t.expect(e.reportChart.visible).ok();
 
@@ -508,7 +508,7 @@ test('bar chart and line chart configuration', async (t) => {
   await t.click(e.distributedBySelect);
   await t.hover(Common.menuOption('Variable'));
   await t.click(Common.submenuOption('boolVar'));
-  await u.selectVisualization(t, 'Bar Chart');
+  await u.selectVisualization(t, 'Bar chart');
 
   await t.click(e.configurationButton);
 
@@ -522,7 +522,7 @@ test('bar chart and line chart configuration', async (t) => {
 
   await t.click(e.addMeasureButton);
   await t.click(Common.menuOption('Duration'));
-  await u.selectVisualization(t, 'Bar/Line Chart');
+  await u.selectVisualization(t, 'Bar/line chart');
 
   await t.click(e.configurationButton);
 
@@ -538,8 +538,8 @@ test('bar chart and line chart configuration', async (t) => {
 test('horizontal bar chart', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Lead Qualification');
-  await u.selectView(t, 'User Task', 'Duration');
-  await u.selectVisualization(t, 'Bar Chart');
+  await u.selectView(t, 'User task', 'Duration');
+  await u.selectVisualization(t, 'Bar chart');
 
   await t.resizeWindow(1600, 800);
 
@@ -557,12 +557,12 @@ test('horizontal bar chart', async (t) => {
 test('different visualizations', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Lead Qualification');
-  await u.selectView(t, 'Flow Node', 'Duration');
+  await u.selectView(t, 'Flow node', 'Duration');
   await u.selectVisualization(t, 'Table');
 
   await t.expect(e.reportTable.visible).ok();
 
-  await u.selectVisualization(t, 'Bar Chart');
+  await u.selectVisualization(t, 'Bar chart');
 
   await t.expect(e.reportTable.exists).notOk();
   await t.expect(e.reportChart.visible).ok();
@@ -572,7 +572,7 @@ test('different visualizations', async (t) => {
   await t.expect(e.reportChart.exists).notOk();
   await t.expect(e.reportDiagram.visible).ok();
 
-  await u.selectView(t, 'Process Instance', 'Duration');
+  await u.selectView(t, 'Process instance', 'Duration');
 
   await t.expect(e.reportDiagram.exists).notOk();
   await t.expect(e.reportNumber.visible).ok();
@@ -581,11 +581,11 @@ test('different visualizations', async (t) => {
 test('aggregators', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Embedded Subprocess');
-  await u.selectView(t, 'Process Instance', 'Duration');
+  await u.selectView(t, 'Process instance', 'Duration');
 
   await t.click(e.sectionToggle('Filters'));
   await t.click(e.filterButton);
-  await t.click(Common.menuOption('Instance State'));
+  await t.click(Common.menuOption('Instance state'));
   await t.click(e.modalOption('Completed'));
   await t.click(Common.modalConfirmButton);
 
@@ -636,11 +636,11 @@ test('progress bar and reset to default', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Lead Qualification');
 
-  await u.selectView(t, 'Process Instance', 'Count');
+  await u.selectView(t, 'Process instance', 'Count');
 
   await t.click(e.configurationButton);
 
-  await t.click(Common.toggleElement('Set Target'));
+  await t.click(Common.toggleElement('Set target'));
   await t.typeText(e.goalTargetInput, '400', {replace: true});
 
   await t.click(e.configurationButton);
@@ -681,7 +681,7 @@ test('heatmap target values', async (t) => {
   await t.typeText(Common.nameEditField, 'Invoice Pipeline', {replace: true});
 
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
-  await u.selectView(t, 'Flow Node', 'Duration');
+  await u.selectView(t, 'Flow node', 'Duration');
 
   await t.resizeWindow(1650, 850);
 
@@ -734,7 +734,7 @@ test('heatmap target values', async (t) => {
 test('always show tooltips', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
-  await u.selectView(t, 'Flow Node', 'Count');
+  await u.selectView(t, 'Flow node', 'Count');
 
   await t.resizeWindow(1650, 850);
 
@@ -743,8 +743,8 @@ test('always show tooltips', async (t) => {
   await t.expect(e.tooltip.exists).notOk();
 
   await t.click(e.configurationButton);
-  await t.click(Common.toggleElement('Show Absolute Value'));
-  await t.click(Common.toggleElement('Show Relative Value'));
+  await t.click(Common.toggleElement('Show absolute value'));
+  await t.click(Common.toggleElement('Show relative value'));
 
   await t
     .takeScreenshot('process-analysis/report-analysis/img/heatmap.png', {fullPage: true})
@@ -757,23 +757,23 @@ test('should only enable valid combinations for user task', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
 
-  await u.selectView(t, 'User Task', 'Count');
+  await u.selectView(t, 'User task', 'Count');
 
   await t.click(e.groupbyDropdown);
 
-  await t.expect(Common.menuOption('Flow Nodes').hasAttribute('aria-disabled')).ok();
-  await t.expect(Common.menuOption('User Task').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Flow nodes').hasAttribute('aria-disabled')).ok();
+  await t.expect(Common.menuOption('User task').hasAttribute('aria-disabled')).notOk();
   await t.expect(Common.menuOption('Assignee').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Candidate Group').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Start Date').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Candidate group').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Start date').hasAttribute('aria-disabled')).notOk();
 
-  await t.click(Common.menuOption('User Tasks'));
+  await t.click(Common.menuOption('User tasks'));
 
   await t.click(e.visualizationDropdown);
 
   await t.expect(Common.menuOption('Number').hasAttribute('aria-disabled')).ok();
   await t.expect(Common.menuOption('Table').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Bar Chart').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Bar chart').hasAttribute('aria-disabled')).notOk();
   await t.expect(Common.menuOption('Heatmap').hasAttribute('aria-disabled')).notOk();
 
   await u.selectGroupby(t, 'Assignee');
@@ -790,17 +790,17 @@ test('should only enable valid combinations for user task', async (t) => {
 test('should be able to distribute candidate group by user task', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Lead Qualification');
-  await u.selectView(t, 'User Task', 'Count');
+  await u.selectView(t, 'User task', 'Count');
 
-  await u.selectGroupby(t, 'Candidate Group');
+  await u.selectGroupby(t, 'Candidate group');
 
-  await u.selectVisualization(t, 'Pie Chart');
+  await u.selectVisualization(t, 'Pie chart');
 
   await t.click(e.distributedBySelect);
 
-  await t.click(Common.menuOption('User Task'));
+  await t.click(Common.menuOption('User task'));
 
-  await t.expect(e.visualizationDropdown.textContent).contains('Bar Chart');
+  await t.expect(e.visualizationDropdown.textContent).contains('Bar chart');
 
   await t.takeElementScreenshot(
     e.reportRenderer,
@@ -810,10 +810,10 @@ test('should be able to distribute candidate group by user task', async (t) => {
   await t.click(e.visualizationDropdown);
 
   await t.expect(Common.menuOption('Table').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Bar Chart').hasAttribute('aria-disabled')).notOk();
-  await t.expect(Common.menuOption('Line Chart').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Bar chart').hasAttribute('aria-disabled')).notOk();
+  await t.expect(Common.menuOption('Line chart').hasAttribute('aria-disabled')).notOk();
   await t.expect(Common.menuOption('Number').hasAttribute('aria-disabled')).ok();
-  await t.expect(Common.menuOption('Pie Chart').hasAttribute('aria-disabled')).ok();
+  await t.expect(Common.menuOption('Pie chart').hasAttribute('aria-disabled')).ok();
 
   await t.click(Common.menuOption('Table'));
   await t.expect(e.reportTable.visible).ok();
@@ -822,8 +822,8 @@ test('should be able to distribute candidate group by user task', async (t) => {
 test('should be able to select how the time of the user task is calculated', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
-  await u.selectView(t, 'User Task', 'Duration');
-  await u.selectGroupby(t, 'Candidate Group');
+  await u.selectView(t, 'User task', 'Duration');
+  await u.selectGroupby(t, 'Candidate group');
   await u.selectVisualization(t, 'Table');
 
   await t.click(e.aggregationTypeSelect);
@@ -841,20 +841,20 @@ test('should be able to select how the time of the user task is calculated', asy
 test('show process instance count', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
-  await u.selectView(t, 'Raw Data');
+  await u.selectView(t, 'Raw data');
 
   await t.click(e.configurationButton);
   await t.click(e.instanceCountSwitch);
 
   await t.expect(e.instanceCount.visible).ok();
-  await t.expect(e.instanceCount.textContent).contains('Total Instance Count:');
+  await t.expect(e.instanceCount.textContent).contains('Total instance count:');
 });
 
 test('process parts', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
 
-  await u.selectView(t, 'Process Instance', 'Duration');
+  await u.selectView(t, 'Process instance', 'Duration');
 
   const withoutPart = await e.reportNumber.textContent;
 
@@ -890,25 +890,25 @@ test('deleting', async (t) => {
 test('show raw data and process model', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
-  await u.selectView(t, 'Process Instance', 'Duration');
+  await u.selectView(t, 'Process instance', 'Duration');
   await u.save(t);
 
   await t.click(e.detailsPopoverButton);
-  await t.click(e.modalButton('View Raw data'));
+  await t.click(e.modalButton('View raw data'));
   await t.expect(e.rawDataTable.visible).ok();
   await t.click(e.rawDataModalCloseButton);
 
   await t.click(e.detailsPopoverButton);
-  await t.click(e.modalButton('View Process Model'));
+  await t.click(e.modalButton('View process model'));
   await t.expect(e.modalDiagram.visible).ok();
 });
 
 test('group by duration', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
-  await u.selectView(t, 'Process Instance', 'Count');
+  await u.selectView(t, 'Process instance', 'Count');
   await u.selectGroupby(t, 'Duration');
-  await u.selectVisualization(t, 'Bar Chart');
+  await u.selectVisualization(t, 'Bar chart');
 
   await t.expect(e.reportChart.visible).ok();
 
@@ -920,28 +920,28 @@ test('group by duration', async (t) => {
 
   await t.expect(e.reportChart.visible).ok();
 
-  await u.selectView(t, 'Flow Node', 'Count');
+  await u.selectView(t, 'Flow node', 'Count');
 
   await t.expect(e.reportChart.visible).ok();
 
   await t.click(e.distributedBySelect);
-  await t.click(Common.menuOption('Flow Node'));
+  await t.click(Common.menuOption('Flow node'));
   await u.selectVisualization(t, 'Table');
 
   await t.expect(e.reportRenderer.textContent).contains('Invoice\nprocessed');
 
-  await u.selectView(t, 'User Task', 'Count');
+  await u.selectView(t, 'User task', 'Count');
 
   await t.expect(e.reportRenderer.textContent).notContains('Invoice processed');
-  await t.expect(e.reportRenderer.textContent).contains('User Task: Count');
+  await t.expect(e.reportRenderer.textContent).contains('User task: Count');
 });
 
 test('distribute by variable', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
-  await u.selectView(t, 'Process Instance', 'Count');
-  await u.selectGroupby(t, 'Start Date', 'Automatic');
-  await u.selectVisualization(t, 'Bar Chart');
+  await u.selectView(t, 'Process instance', 'Count');
+  await u.selectGroupby(t, 'Start date', 'Automatic');
+  await u.selectVisualization(t, 'Bar chart');
 
   await t.click(e.distributedBySelect);
   await t.click(Common.menuOption('Variable'));
@@ -961,7 +961,7 @@ test('distribute by variable', async (t) => {
 
   await t.expect(e.reportRenderer.textContent).contains('Misc');
 
-  await u.selectView(t, 'Flow Node', 'Count');
+  await u.selectView(t, 'Flow node', 'Count');
 
   await t.expect(e.reportRenderer.textContent).notContains('Misc');
 });
@@ -969,14 +969,14 @@ test('distribute by variable', async (t) => {
 test('distribute by start/end date', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
-  await u.selectView(t, 'Process Instance', 'Count');
+  await u.selectView(t, 'Process instance', 'Count');
   await u.selectGroupby(t, 'Variable', 'invoiceCategory');
-  await u.selectVisualization(t, 'Bar Chart');
+  await u.selectVisualization(t, 'Bar chart');
   await t.click(e.distributedBySelect);
-  await t.click(Common.menuOption('Start Date'));
+  await t.click(Common.menuOption('Start date'));
   await t.click(Common.submenuOption('Month'));
   await t.click(e.distributedBySelect);
-  await t.click(Common.menuOption('End Date'));
+  await t.click(Common.menuOption('End date'));
   await t.click(Common.submenuOption('Automatic'));
   await u.selectGroupby(t, 'Variable', 'boolVar');
 
@@ -991,29 +991,29 @@ test('incident reports', async (t) => {
 
   await t.expect(e.reportNumber.visible).ok();
 
-  await u.selectView(t, 'Incident', 'Resolution Duration');
+  await u.selectView(t, 'Incident', 'Resolution duration');
 
   await t.expect(e.reportNumber.visible).ok();
 
-  await u.selectGroupby(t, 'Flow Nodes');
-  await u.selectVisualization(t, 'Bar Chart');
+  await u.selectGroupby(t, 'Flow nodes');
+  await u.selectVisualization(t, 'Bar chart');
 
   await t.expect(e.reportChart.visible).ok();
 
   await u.selectVisualization(t, 'Table');
 
-  await t.expect(e.reportRenderer.textContent).contains('Resolution Duration');
+  await t.expect(e.reportRenderer.textContent).contains('Resolution duration');
 });
 
 test('multi-measure reports', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Hiring Demo 5 Tenants');
-  await u.selectView(t, 'Process Instance', 'Count');
+  await u.selectView(t, 'Process instance', 'Count');
 
   await t.click(e.addMeasureButton);
   await t.click(Common.menuOption('Percentage'));
   await t.expect(e.reportNumber.visible).ok();
-  await t.expect(e.reportRenderer.textContent).contains('Process Instance Count');
+  await t.expect(e.reportRenderer.textContent).contains('Process instance Count');
   await t.expect(e.reportRenderer.textContent).contains('% of total instances');
   await t.click(e.removeMeasureButton);
 
@@ -1021,24 +1021,24 @@ test('multi-measure reports', async (t) => {
   await t.click(Common.menuOption('Duration'));
 
   await t.expect(e.reportNumber.visible).ok();
-  await t.expect(e.reportRenderer.textContent).contains('Process Instance Count');
-  await t.expect(e.reportRenderer.textContent).contains('Process Instance Duration');
+  await t.expect(e.reportRenderer.textContent).contains('Process instance Count');
+  await t.expect(e.reportRenderer.textContent).contains('Process instance Duration');
 
-  await u.selectGroupby(t, 'Start Date', 'Automatic');
+  await u.selectGroupby(t, 'Start date', 'Automatic');
   await u.selectVisualization(t, 'Table');
 
   await t.expect(e.reportRenderer.textContent).contains('Count');
   await t.expect(e.reportRenderer.textContent).contains('Duration');
 
-  await u.selectVisualization(t, 'Bar Chart');
+  await u.selectVisualization(t, 'Bar chart');
   await t.expect(e.reportChart.visible).ok();
-  await u.selectVisualization(t, 'Line Chart');
+  await u.selectVisualization(t, 'Line chart');
   await t.expect(e.reportChart.visible).ok();
-  await u.selectVisualization(t, 'Pie Chart');
+  await u.selectVisualization(t, 'Pie chart');
   await t.expect(e.reportChart.visible).ok();
 
-  await u.selectView(t, 'Flow Node');
-  await u.selectGroupby(t, 'Flow Nodes');
+  await u.selectView(t, 'Flow node');
+  await u.selectGroupby(t, 'Flow nodes');
   await u.selectVisualization(t, 'Heatmap');
 
   await t.expect(e.reportDiagram.visible).ok();
@@ -1052,7 +1052,7 @@ test('multi-measure reports', async (t) => {
 test('multi-aggregation reports', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Hiring Demo 5 Tenants');
-  await u.selectView(t, 'Process Instance', 'Duration');
+  await u.selectView(t, 'Process instance', 'Duration');
 
   await t.click(e.aggregationTypeSelect);
   await t.click(e.aggregationOption('Maximum'));
@@ -1061,7 +1061,7 @@ test('multi-aggregation reports', async (t) => {
   await t.expect(e.reportRenderer.textContent).contains('Avg');
   await t.expect(e.reportRenderer.textContent).contains('Max');
 
-  await u.selectView(t, 'User Task', 'Duration');
+  await u.selectView(t, 'User task', 'Duration');
   await t.click(e.aggregationTypeSelect);
   await t.click(e.aggregationOption('Work'));
   await u.selectVisualization(t, 'Table');
@@ -1071,11 +1071,11 @@ test('multi-aggregation reports', async (t) => {
   await t.expect(e.reportRenderer.textContent).contains('Work Duration - Avg');
   await t.expect(e.reportRenderer.textContent).contains('Work Duration - Max');
 
-  await u.selectVisualization(t, 'Bar Chart');
+  await u.selectVisualization(t, 'Bar chart');
   await t.expect(e.reportChart.visible).ok();
-  await u.selectVisualization(t, 'Line Chart');
+  await u.selectVisualization(t, 'Line chart');
   await t.expect(e.reportChart.visible).ok();
-  await u.selectVisualization(t, 'Pie Chart');
+  await u.selectVisualization(t, 'Pie chart');
   await t.expect(e.reportChart.visible).ok();
   await u.selectVisualization(t, 'Heatmap');
   await t.expect(e.reportDiagram.visible).ok();
@@ -1091,9 +1091,9 @@ test('distributed multi-measure reports', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
 
-  await u.selectView(t, 'Process Instance', 'Duration');
-  await u.selectGroupby(t, 'Start Date', 'Automatic');
-  await u.selectVisualization(t, 'Bar Chart');
+  await u.selectView(t, 'Process instance', 'Duration');
+  await u.selectGroupby(t, 'Start date', 'Automatic');
+  await u.selectVisualization(t, 'Bar chart');
 
   await t.click(e.distributedBySelect);
   await t.click(Common.menuOption('Variable'));
@@ -1115,7 +1115,7 @@ test('multi-definition report', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
 
-  await u.selectView(t, 'Process Instance', 'Count');
+  await u.selectView(t, 'Process instance', 'Count');
 
   const singleDefinitionInstances = +(await e.reportNumber.textContent);
 
@@ -1144,7 +1144,7 @@ test('group by process', async (t) => {
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectReportDefinition(t, 'Hiring Demo 5 Tenants');
 
-  await u.selectView(t, 'Process Instance', 'Count');
+  await u.selectView(t, 'Process instance', 'Count');
   await u.selectGroupby(t, 'Process');
 
   await t.expect(e.reportChart.visible).ok();
@@ -1152,11 +1152,11 @@ test('group by process', async (t) => {
   await t.click(e.addMeasureButton);
   await t.expect(e.reportChart.visible).ok();
 
-  await u.selectView(t, 'Flow Node');
+  await u.selectView(t, 'Flow node');
   await t.expect(e.distributedBySelect.textContent).contains('Process');
   await t.expect(e.reportChart.visible).ok();
 
-  await u.selectView(t, 'User Task');
+  await u.selectView(t, 'User task');
   await t.expect(e.distributedBySelect.textContent).contains('Process');
   await t.expect(e.reportChart.visible).ok();
 });
@@ -1221,11 +1221,11 @@ test('create report with two versions of the same process', async (t) => {
   await t.expect(e.definitionElement('Version: 5').exists).ok();
   await t.expect(e.definitionElement('Version: 4').exists).ok();
 
-  await u.selectView(t, 'Process Instance', 'Duration');
+  await u.selectView(t, 'Process instance', 'Duration');
   await u.selectGroupby(t, 'Process');
 
   await t.click(e.configurationButton);
-  await t.click(Common.toggleElement('Show Absolute Value'));
+  await t.click(Common.toggleElement('Show absolute value'));
   await t.click(e.configurationButton);
 
   await t
@@ -1241,12 +1241,12 @@ test('Display precision properly', async (t) => {
 
   await t.typeText(Common.nameEditField, 'Precision Report', {replace: true});
 
-  await u.selectView(t, 'Flow Node', 'Duration');
+  await u.selectView(t, 'Flow node', 'Duration');
   await t.click(e.addMeasureButton);
   await t.click(Common.menuOption('Count'));
   await u.selectVisualization(t, 'Table');
 
-  await u.selectGroupby(t, 'Start Date', 'Automatic');
+  await u.selectGroupby(t, 'Start date', 'Automatic');
 
   let a = e.tableCell(19, 1);
   let b = e.tableCell(19, 2);

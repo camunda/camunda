@@ -13,13 +13,13 @@ exports[`should match snapshot 1`] = `
     />
     <ForwardRef(LabeledInput)
       checked={false}
-      label="Start and End Flownode Events"
+      label="Start and end flow node events"
       onChange={[Function]}
       type="checkbox"
     />
     <ForwardRef(LabeledInput)
       checked={false}
-      label="All Flownode Events"
+      label="All flow node events"
       onChange={[Function]}
       type="checkbox"
     />

@@ -10,7 +10,7 @@ import {Selector} from 'testcafe';
 export const navItem = Selector('header a[href="#/events/processes/"]');
 export const createDropdown = Selector('.Events .Dropdown');
 export const invoiceEventProcess = Selector('.ListItem').withText('Event Invoice process');
-export const editAccess = (element) => element.find('.DropdownOption').withText('Edit Access');
+export const editAccess = (element) => element.find('.DropdownOption').withText('Edit access');
 export const fileInput = Selector('input').withAttribute('type', 'file');
 export const entity = (title) => Selector('.name .entity').withText(title);
 export const firstEl = Selector('.djs-hit');

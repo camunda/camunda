@@ -25,7 +25,7 @@ exports[`should contain a change warning and not contain event scope selection 1
 >
   <FormGroup>
     <h4>
-      Trace ID Location
+      Trace ID location
     </h4>
     <ForwardRef(LabeledInput)
       checked={true}
@@ -45,7 +45,7 @@ exports[`should contain a change warning and not contain event scope selection 1
     />
     <ForwardRef(LabeledInput)
       checked={false}
-      label="Business Key"
+      label="Business key"
       onChange={[Function]}
       type="radio"
     />

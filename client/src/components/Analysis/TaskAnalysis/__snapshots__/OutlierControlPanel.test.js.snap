@@ -31,7 +31,7 @@ exports[`show display a definition selection and an info message 1`] = `
       <Tooltip
         align="bottom"
         className="zScoreTooltip"
-        description="Outliers are calculated based on Z-score. Z-score is a statistical measurement that describes a value's relationship to the mean of a group of values. Z-score is measured in terms of standard deviations from the mean."
+        description="Outliers are calculated based on z-score. Z-score is a statistical measurement that describes a value's relationship to the mean of a group of values. Z-score is measured in terms of standard deviations from the mean."
       >
         <button>
           <ForwardRef(Information) />

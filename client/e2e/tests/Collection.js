@@ -109,7 +109,7 @@ test('user permissions', async (t) => {
   await t.click(Common.modalConfirmButton);
 
   await t.expect(e.groupItem.visible).ok();
-  await t.expect(e.groupItem.textContent).contains('User Group');
+  await t.expect(e.groupItem.textContent).contains('User group');
   await t.expect(e.groupItem.textContent).contains('Sales');
   await t.expect(e.groupItem.textContent).contains('Viewer');
 

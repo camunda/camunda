@@ -47,9 +47,9 @@ it('should show an invalid configuration message if min or max props are invalid
   const node2 = shallow(<ProgressBar min="five" max={100} value={100} formatter={() => {}} />);
   const node3 = shallow(<ProgressBar min="0" max="1 Thousand" value={100} formatter={() => {}} />);
 
-  expect(node1).toIncludeText('Invalid Configuration');
-  expect(node2).toIncludeText('Invalid Configuration');
-  expect(node3).toIncludeText('Invalid Configuration');
+  expect(node1).toIncludeText('Invalid configuration');
+  expect(node2).toIncludeText('Invalid configuration');
+  expect(node3).toIncludeText('Invalid configuration');
 });
 
 it('should add a "warning" class if isBelow flag is set and value above the max', () => {

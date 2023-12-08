@@ -35,7 +35,7 @@ test('create a dashboard and reports from a template', async (t) => {
   await t.click(Common.menuOption('Dashboard'));
 
   await t.click(Common.templateModalProcessField);
-  await t.click(Common.carbonOption('Invoice receipt with alternative correlation variable'));
+  await t.click(Common.carbonOption('Invoice Receipt with alternative correlation variable'));
   await t.click(e.templateOption('Improve productivity'));
 
   await t.takeScreenshot('img/dashboardTemplate.png', {fullPage: true});
@@ -98,7 +98,7 @@ test('create a dashboard and reports from a template', async (t) => {
 test('create a report and add it to the Dashboard', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
-  await u.selectView(t, 'Raw Data');
+  await u.selectView(t, 'Raw data');
   await u.save(t);
   await u.gotoOverview(t);
   await u.createNewDashboard(t);
@@ -108,7 +108,7 @@ test('create a report and add it to the Dashboard', async (t) => {
 
   await t.expect(Report.reportRenderer.visible).ok();
   await t.expect(Report.reportRenderer.textContent).contains('invoice');
-  await t.expect(Report.reportRenderer.textContent).contains('Start Date');
+  await t.expect(Report.reportRenderer.textContent).contains('Start date');
 });
 
 test('renaming a dashboard', async (t) => {
@@ -208,14 +208,14 @@ test('sharing header parameters', async (t) => {
 test('sharing with filters', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
-  await u.selectView(t, 'Raw Data');
+  await u.selectView(t, 'Raw data');
   await u.save(t);
   await u.gotoOverview(t);
   await u.createNewDashboard(t);
   await u.addReportToDashboard(t, 'Blank report');
 
   await t.click(e.addFilterButton);
-  await t.click(Common.menuOption('Instance State'));
+  await t.click(Common.menuOption('Instance state'));
 
   await u.save(t);
 
@@ -239,7 +239,7 @@ test('sharing with filters', async (t) => {
 test('remove a report from a dashboard', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
-  await u.selectView(t, 'Raw Data');
+  await u.selectView(t, 'Raw data');
   await u.save(t);
   await u.gotoOverview(t);
   await u.createNewDashboard(t);
@@ -326,7 +326,7 @@ test('deleting', async (t) => {
 test('filters', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
-  await u.selectView(t, 'Raw Data');
+  await u.selectView(t, 'Raw data');
   await u.save(t);
   await u.gotoOverview(t);
 
@@ -337,9 +337,9 @@ test('filters', async (t) => {
   await t.click(Common.editButton);
 
   await t.click(e.addFilterButton);
-  await t.click(Common.menuOption('Instance State'));
+  await t.click(Common.menuOption('Instance state'));
   await t.click(e.addFilterButton);
-  await t.click(Common.menuOption('Start Date'));
+  await t.click(Common.menuOption('Instance start date'));
   await t.click(e.addFilterButton);
   await t.click(Common.menuOption('Variable'));
 
@@ -412,7 +412,7 @@ test('version selection', async (t) => {
 
   await u.createNewReport(t);
   await t.typeText(Common.nameEditField, 'Number report', {replace: true});
-  await u.selectReportDefinition(t, 'Invoice receipt with alternative correlation variable');
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
   await u.selectView(t, 'Process instance', 'Count');
   await u.save(t);
 
@@ -481,7 +481,7 @@ test('add a report from the dashboard', async (t) => {
   await u.save(t);
 
   await t.expect(e.reportTile.nth(0).textContent).contains('Blank report');
-  await t.expect(e.reportTile.nth(1).textContent).contains('Locate bottlenecks on a Heatmap');
+  await t.expect(e.reportTile.nth(1).textContent).contains('Locate bottlenecks on a heatmap');
 });
 
 test('add, edit and remove dashboards description', async (t) => {
@@ -558,7 +558,7 @@ test('copy instant preview dashboard', async (t) => {
 
   await t.click(Common.collectionItem);
   await t.expect(Common.dashboardItem.count).eql(1);
-  await t.expect(Common.dashboardItem.textContent).contains('Process Dashboard');
+  await t.expect(Common.dashboardItem.textContent).contains('Process dashboard');
 
   // Create another copy to check if only one collection is created
   await t.click(e.dashboardsLink);
@@ -573,7 +573,7 @@ test('copy instant preview dashboard', async (t) => {
   await t.click(Common.collectionItem);
   await t.expect(Common.dashboardItem.count).eql(2);
   await t.expect(Common.dashboardItem.nth(0).textContent).contains('New Name');
-  await t.expect(Common.dashboardItem.nth(1).textContent).contains('Process Dashboard');
+  await t.expect(Common.dashboardItem.nth(1).textContent).contains('Process dashboard');
 
   // Create a new collection if the first one was renamed
   await t.click(Collection.collectionContextMenu);

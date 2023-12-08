@@ -69,18 +69,18 @@ exports[`should match snapshot 1`] = `
             "Manager",
           ],
           "name": "sales",
-          "type": "User Group",
+          "type": "User group",
         },
       ]
     }
     empty="No results found"
     isLoading={false}
-    name="Users and User Groups"
+    name="Users and user groups"
     onChange={[Function]}
   />
   <DeleterErrorHandler
     deleteEntity={[Function]}
-    descriptionText="The '' null will be removed from the Collection."
+    descriptionText="The '' null will be removed from the collection."
     onClose={[Function]}
     onDelete={[Function]}
   />

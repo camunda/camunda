@@ -230,8 +230,8 @@ it('should display excluded flow nodes for view level flow node selection filter
   let node = shallow(<FilterList {...props} data={data} />);
   node = shallow(node.find(FlowNodeResolver).prop('render')({flowNode: 'flow node name'}));
 
-  expect(node.find('.parameterName')).toIncludeText('Flow Node Selection');
-  expect(node.find('.filterText')).toIncludeText('2 excluded Flow Nodes');
+  expect(node.find('.parameterName')).toIncludeText('Flow node selection');
+  expect(node.find('.filterText')).toIncludeText('2 excluded flow nodes');
 });
 
 it('should disable editing and pass a warning to the filter item if at least one flow node does not exist', async () => {
@@ -249,7 +249,7 @@ it('should disable editing and pass a warning to the filter item if at least one
   let node = shallow(<FilterList {...props} data={data} />);
   node = shallow(node.find(FlowNodeResolver).prop('render')({}));
 
-  expect(node.find(ActionItem).prop('warning')).toBe('Flow Node(s) does not exist');
+  expect(node.find(ActionItem).prop('warning')).toBe('Flow node(s) does not exist');
 });
 
 it('should display a flow node filter with executing nodes', () => {
@@ -289,7 +289,7 @@ it('should display a duration filter', () => {
   const node = shallow(<FilterList {...props} data={data} />);
   const actionItem = node.find('ActionItem').dive();
 
-  expect(actionItem).toIncludeText('Duration is less than');
+  expect(actionItem).toIncludeText('duration is less than');
   expect(actionItem.find('b').prop('children').join('')).toBe('18 hours');
 });
 
@@ -307,7 +307,7 @@ it('should display a flow node duration filter', () => {
   let node = shallow(<FilterList {...props} data={data} />);
   node = shallow(node.find(FlowNodeResolver).prop('render')({a: 'flow node name'}));
 
-  expect(node.find(ActionItem).dive()).toIncludeText('Flow Node Duration');
+  expect(node.find(ActionItem).dive()).toIncludeText('Flow node duration');
 });
 
 it('should show flow node duration filter in expanded state if specified', () => {
@@ -341,7 +341,7 @@ it('should disable editing and pass a warning to the filter item if at least one
   let node = shallow(<FilterList {...props} data={data} />);
   node = shallow(node.find(FlowNodeResolver).prop('render')({}));
 
-  expect(node.find(ActionItem).prop('warning')).toBe('Flow Node(s) does not exist');
+  expect(node.find(ActionItem).prop('warning')).toBe('Flow node(s) does not exist');
 });
 
 it('should display a running instances only filter', () => {

@@ -13,7 +13,7 @@ exports[`should render sub navigation 1`] = `
         ]
       }
       linksTo="/analysis/taskAnalysis"
-      name="Task Analysis"
+      name="Task analysis"
     />
     <SubNavItem
       active={

@@ -70,7 +70,7 @@ it('should render a Combobox element with the available reports as options', asy
   await flushPromises();
 
   expect(node.find(ComboBox).prop('items')).toEqual([
-    {id: 'newReport', name: '+ New Report from a template'},
+    {id: 'newReport', name: '+ New report from a template'},
     ...reports,
   ]);
 });
@@ -111,7 +111,7 @@ it('should show a loading skeleton while loading available reports', () => {
 it('should contain an External Website field', () => {
   const node = shallow(<CreateTileModal {...props} />);
 
-  expect(node.find(Tabs.Tab).at(1).prop('title')).toBe('External Website');
+  expect(node.find(Tabs.Tab).at(1).prop('title')).toBe('External website');
 });
 
 it('should hide the typeahead when external mode is enabled', () => {

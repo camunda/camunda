@@ -80,7 +80,7 @@ test('complex Homepage actions', async (t) => {
   await t.click(Common.firstOption);
   await t.click(Common.modalConfirmButton);
 
-  await t.typeText(Common.nameEditField, 'Invoice evaluation count', {replace: true});
+  await t.typeText(Common.nameEditField, 'Invoice Evaluation count', {replace: true});
   await save(t);
   await t.click(e.homepageLink);
 
@@ -102,7 +102,7 @@ test('complex Homepage actions', async (t) => {
   await t.typeText(Common.nameEditField, 'Sales Dashboard', {replace: true});
 
   await addReportToDashboard(t, 'Monthly Sales From Marketing');
-  await addReportToDashboard(t, 'Invoice Evaluation Count');
+  await addReportToDashboard(t, 'Invoice Evaluation count');
   await addReportToDashboard(t, 'Monthly Sales From Marketing');
 
   await save(t);
@@ -217,7 +217,7 @@ test('complex Homepage actions', async (t) => {
   await t.expect(Common.dashboardItem.textContent).contains('Sales Dashboard (copy)');
 
   await t.expect(Common.reportItem.visible).ok();
-  await t.expect(Common.reportItem.textContent).contains('Invoice Evaluation Count – Copy');
+  await t.expect(Common.reportItem.textContent).contains('Invoice Evaluation count – Copy');
 
   // bulk deleting home entities
   await bulkDeleteAllItems(t);

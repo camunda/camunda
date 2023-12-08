@@ -43,13 +43,13 @@ test('show end event statistics on hover', async (t) => {
   await t.hover(Analysis.flowNode('EndEvent_0kcx8gn'));
 
   await t.expect(Analysis.endEventOverlay.visible).ok();
-  await t.expect(Analysis.endEventOverlay.textContent).contains('Process Instances Total');
+  await t.expect(Analysis.endEventOverlay.textContent).contains('Process instances total');
   await t
     .expect(Analysis.endEventOverlay.textContent)
-    .contains('Process Instances reached this state');
+    .contains('Process instances reached this state');
   await t
     .expect(Analysis.endEventOverlay.textContent)
-    .contains('of Process Instances reached this state');
+    .contains('of process instances reached this state');
 
   await addAnnotation(Analysis.endEventOverlay, 'End Event Information', {x: 50, y: 0});
 
@@ -71,11 +71,11 @@ test('should deselect elements by clicking on the node or on the control panel',
 
   await t.click(Analysis.flowNode('msLeadIsOpp'));
 
-  await t.expect(Analysis.endEventInput.textContent).contains('Select End Event');
+  await t.expect(Analysis.endEventInput.textContent).contains('Select end event');
 
   await t.click(Analysis.gatewayCancelButton);
 
-  await t.expect(Analysis.gatewayInput.textContent).contains('Select Gateway');
+  await t.expect(Analysis.gatewayInput.textContent).contains('Select gateway');
 });
 
 test('should show outliers heatmap when selecting a process definition', async (t) => {

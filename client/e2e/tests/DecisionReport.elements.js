@@ -13,6 +13,6 @@ export const decisionTableCell = (row, column) =>
   Selector('.DecisionTable tbody tr').nth(row).find('td').nth(column);
 export const filterButton = Selector('.Filter__dropdown .activateButton');
 export const filterOption = (text) => Selector('.Filter .DropdownOption').withText(text);
-export const gradientBarsSwitch = Common.toggleElement('Show Gradient Bars');
+export const gradientBarsSwitch = Common.toggleElement('Show gradient bars');
 export const report = Selector('.Report');
 export const modalDecisionTable = Selector('.DiagramModal .DMNDiagram');

@@ -5,7 +5,7 @@ Array [
   Object {
     "checked": false,
     "id": "beverages",
-    "label": "Beverages (Decision Table)",
+    "label": "Beverages (Decision table)",
   },
   Object {
     "checked": true,
@@ -31,7 +31,7 @@ Array [
     "checked": true,
     "disabled": true,
     "id": 2,
-    "label": "(Unauthorized Tenant)",
+    "label": "(Unauthorized tenant)",
   },
 ]
 `;

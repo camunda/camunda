@@ -18,7 +18,7 @@ const props = {
 it('should render properly', () => {
   const node = shallow(<CopyModal {...props} />);
 
-  expect(node.find('TextInput').prop('labelText')).toBe('Name of Copy');
+  expect(node.find('TextInput').prop('labelText')).toBe('Name of copy');
   expect(node.find('MoveCopy')).toExist();
 });
 

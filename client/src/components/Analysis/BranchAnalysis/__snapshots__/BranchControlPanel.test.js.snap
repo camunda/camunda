@@ -31,7 +31,7 @@ exports[`should display a sentence to describe what the user can do on this page
           highlighted={false}
           onClick={[Function]}
         >
-          Select Gateway
+          Select gateway
         </SelectionPreview>
       </div>
       affect the probability that an instance reached
@@ -46,7 +46,7 @@ exports[`should display a sentence to describe what the user can do on this page
           highlighted={false}
           onClick={[Function]}
         >
-          Select End Event
+          Select end event
         </SelectionPreview>
       </div>
     </li>

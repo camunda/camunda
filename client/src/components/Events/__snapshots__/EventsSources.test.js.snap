@@ -20,17 +20,17 @@ exports[`should match snapshot 1`] = `
       <ForwardRef(DropdownOption)
         onClick={[Function]}
       >
-        Edit Event Source
+        Edit event source
       </ForwardRef(DropdownOption)>
       <ForwardRef(DropdownOption)
         onClick={[Function]}
       >
-        Edit Event List
+        Edit event list
       </ForwardRef(DropdownOption)>
       <ForwardRef(DropdownOption)
         onClick={[Function]}
       >
-        Remove Source
+        Remove source
       </ForwardRef(DropdownOption)>
     </Dropdown>
     <Dropdown
@@ -46,7 +46,7 @@ exports[`should match snapshot 1`] = `
       <ForwardRef(DropdownOption)
         onClick={[Function]}
       >
-        Remove Source
+        Remove source
       </ForwardRef(DropdownOption)>
     </Dropdown>
   </div>
@@ -58,11 +58,11 @@ exports[`should match snapshot 1`] = `
       size="14"
       type="plus"
     />
-    Add Event Source
+    Add event source
   </ForwardRef(Button)>
   <DeleterErrorHandler
     deleteEntity={[Function]}
-    deleteText="Remove process events"
+    deleteText="Remove Process events"
     descriptionText="Removing the events from this event source will delete any mapping that had been created."
     entity={null}
     onClose={[Function]}

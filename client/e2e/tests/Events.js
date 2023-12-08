@@ -24,7 +24,7 @@ test('create a process from scratch', async (t) => {
   await t.click(e.navItem);
   await t.click(e.createDropdown);
   await t.click(Common.option('Model a process'));
-  await t.typeText(Common.nameEditField, 'Invoice process', {replace: true});
+  await t.typeText(Common.nameEditField, 'Invoice Process', {replace: true});
   await t.click(e.firstEl);
   await t.click(e.activityTask);
   await t.click(e.saveButton);

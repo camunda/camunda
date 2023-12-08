@@ -28,7 +28,7 @@ it('should have a switch for the precision setting', () => {
   expect(legend.find('Toggle')).toExist();
   expect(node.find('.precision')).toExist();
 
-  legend.find({labelA: 'Custom Precision'}).simulate('toggle', true);
+  legend.find({labelA: 'Custom precision'}).simulate('toggle', true);
 
   expect(spy).toHaveBeenCalledWith({precision: {$set: 1}});
 });

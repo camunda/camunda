@@ -3,7 +3,7 @@
 exports[`should show a success notification 1`] = `
 Array [
   Object {
-    "text": "Publishing Process. This may take some time.",
+    "text": "Publishing process. This may take some time.",
     "type": "hint",
   },
 ]
@@ -24,7 +24,7 @@ exports[`should show different text depending on the republish prop 1`] = `
   <ForwardRef(ModalHeader)
     iconDescription="Close"
   >
-    Publishing Process
+    Publishing process
   </ForwardRef(ModalHeader)>
   <ForwardRef>
     <p>
@@ -79,11 +79,11 @@ exports[`should show different text depending on the republish prop 2`] = `
   <ForwardRef(ModalHeader)
     iconDescription="Close"
   >
-    Re-Publishing Process
+    Re-publishing process
   </ForwardRef(ModalHeader)>
   <ForwardRef>
     <p>
-      Re-Publishing will update data in all associated reports.
+      Re-publishing will update data in all associated reports.
     </p>
     <div
       className="permission"
@@ -125,7 +125,7 @@ exports[`should show different text depending on the republish prop 2`] = `
 </Modal>
 `;
 
-exports[`should show that access is granted if there are more than one user`] = `
+exports[`should show that access is granted if there are more than one user 1`] = `
 <div
   className="permission"
 >

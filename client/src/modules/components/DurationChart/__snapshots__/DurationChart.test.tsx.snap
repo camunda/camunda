@@ -36,7 +36,7 @@ Object {
         "font": Object {
           "weight": "bold",
         },
-        "text": "Instance Count",
+        "text": "Instance count",
       },
     },
   },

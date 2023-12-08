@@ -186,7 +186,7 @@ it('should contain buttons to switch between executed and not executed mode', ()
   const buttonGroup = node.find('ButtonGroup');
 
   expect(buttonGroup.find(Button).at(0).text()).toBe('Running');
-  expect(buttonGroup.find(Button).at(1).text()).toBe('Running, Canceled or Completed');
+  expect(buttonGroup.find(Button).at(1).text()).toBe('Running, canceled, or completed');
   expect(buttonGroup.find(Button).at(2).text()).toBe('Not executed');
   expect(buttonGroup.find(Button).at(3).text()).toBe('Canceled');
 });

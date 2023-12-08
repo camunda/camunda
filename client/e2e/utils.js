@@ -57,7 +57,7 @@ export async function createNewReport(t) {
 export async function createNewDecisionReport(t) {
   await t.click(Common.createNewButton);
   await t.hover(Common.newReportOption);
-  await t.click(Common.submenuOption('Decision Report'));
+  await t.click(Common.submenuOption('Decision report'));
   await toggleReportAutoPreviewUpdate(t);
 }
 
@@ -142,7 +142,7 @@ const selectControlPanelOption = (type) => async (t, name, subname) => {
 };
 
 export const selectView = selectControlPanelOption('View');
-export const selectGroupby = selectControlPanelOption('Group By');
+export const selectGroupby = selectControlPanelOption('Group by');
 export const selectVisualization = selectControlPanelOption('Visualization');
 
 export async function save(t) {
@@ -171,7 +171,7 @@ export async function addReportToDashboard(t, name) {
     .click('.AddButton')
     .click('.CreateTileModal #addReportSelector')
     .click(Common.carbonOption(name))
-    .click(Selector('.CreateTileModal button').withText('Add Tile'))
+    .click(Selector('.CreateTileModal button').withText('Add tile'))
     .click('.DashboardRenderer');
 }
 

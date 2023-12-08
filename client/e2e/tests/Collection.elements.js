@@ -31,7 +31,7 @@ export const typeaheadInput = Selector('.Typeahead input');
 export const checkbox = (text) => Selector('.Checklist tr').withText(text);
 export const managerName = Selector('.ListItem').withText('Manager').find('.name .entity');
 export const userItem = (text) => Selector('.ListItem').withText('User').withText(text);
-export const groupItem = Selector('.ListItem').withText('User Group');
+export const groupItem = Selector('.ListItem').withText('User group');
 export const processItem = Selector('.ListItem').withText('Process');
 export const decisionItem = Selector('.ListItem').withText('Decision');
 export const roleOption = (text) =>
@@ -41,7 +41,7 @@ export const carbonRoleOption = (text) =>
 export const userList = Selector('.UserList');
 export const addUserModal = Selector('.AddUserModal');
 export const logoutButton = Selector('header button').withText('Logout');
-export const usernameDropdown = Selector('header button').withAttribute('aria-label', 'Open user');
+export const usernameDropdown = Selector('header button').withAttribute('aria-label', 'Open User');
 export const searchField = Selector('.cds--search-input');
 export const selectAllCheckbox = Selector('.Table thead .cds--table-column-checkbox label');
 export const itemCheckbox = (idx) =>

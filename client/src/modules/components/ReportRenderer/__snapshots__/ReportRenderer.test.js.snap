@@ -20,7 +20,7 @@ exports[`SetupNotice should instruct to add a process definition key if not avai
     <b
       key="1"
     >
-      Process Definition
+      process definition
     </b>
     .
   </p>
@@ -34,7 +34,7 @@ exports[`SetupNotice should instruct to add a process definition version if not 
     <b
       key="1"
     >
-      Process Definition
+      process definition
     </b>
     .
   </p>
@@ -48,7 +48,7 @@ exports[`SetupNotice should instruct to add group by option if not available 1`]
     <b
       key="1"
     >
-      Group By
+      Group by
     </b>
     .
   </p>

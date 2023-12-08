@@ -66,7 +66,7 @@ it('should change the switches labels to space case instead of camelCase for non
     />
   );
 
-  expect(node.find('ColumnSwitch').at(0).prop('label')).toContain('Process Definition Key');
+  expect(node.find('ColumnSwitch').at(0).prop('label')).toContain('Process definition key');
   expect(node.find('ColumnSwitch').at(1).prop('label')).toContain('testVariable');
 });
 
@@ -120,13 +120,13 @@ it('should provide a sane interface for decision tables', () => {
   const columns = node.find('ColumnSwitch');
   const sections = node.find('CollapsibleSection');
 
-  expect(columns.at(0).prop('label')).toBe('Decision Definition Id');
-  expect(columns.at(1).prop('label')).toBe('Decision Definition Key');
+  expect(columns.at(0).prop('label')).toBe('Decision definition Id');
+  expect(columns.at(1).prop('label')).toBe('Decision definition key');
   expect(columns.at(2).prop('label')).toBe('Cool Name');
   expect(columns.at(3).prop('label')).toBe('Klaus Seven');
 
-  expect(sections.at(0).prop('sectionTitle')).toBe('Input Variables:');
-  expect(sections.at(1).prop('sectionTitle')).toBe('Output Variables:');
+  expect(sections.at(0).prop('sectionTitle')).toBe('Input variables:');
+  expect(sections.at(1).prop('sectionTitle')).toBe('Output variables:');
 });
 
 it('should update configuration when changing include variables checkbox', () => {
@@ -234,7 +234,7 @@ it('should disable the switch and set the tooltip message when disabled', () => 
   );
 
   expect(node.find('FormGroup').childAt(0).text()).toContain(
-    'This function only works with automatic preview update turned on'
+    'This function only works with automatic preview updates turned on.'
   );
   expect(node.find('AllColumnsButtons')).not.toExist();
 });

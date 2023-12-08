@@ -87,7 +87,7 @@ exports[`should match snapshot 1`] = `
         },
         Object {
           "id": "eventName",
-          "label": "Event Name",
+          "label": "Event name",
         },
         Object {
           "id": "group",
@@ -106,7 +106,7 @@ exports[`should match snapshot 1`] = `
     noData={
       <React.Fragment>
         
-        No Events available.
+        No events available.
       </React.Fragment>
     }
     noHighlight={true}
@@ -123,11 +123,11 @@ exports[`should match snapshot 1`] = `
       >
         <TableToolbarContent>
           <b>
-            Events List
+            Events list
           </b>
           <Switch
             checked={true}
-            label="Show suggested Events"
+            label="Show suggested events"
             onChange={[Function]}
           />
           <EventSources

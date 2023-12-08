@@ -17,7 +17,7 @@ export const definitionCopyButton = (definition) => definition.find('.actionBtn'
 export const definitionEditButton = (definition) =>
   definition.find('.Popover .buttonWrapper button');
 export const checkbox = (name) => Selector('.label').withText(name);
-export const groupbyDropdown = checkbox('Group By').nextSibling();
+export const groupbyDropdown = checkbox('Group by').nextSibling();
 export const viewDropdown = checkbox('View').nextSibling();
 export const distributedBySelect = checkbox('and').nextSibling();
 export const groupbyDropdownButton = groupbyDropdown.find('button');
@@ -34,7 +34,7 @@ export const reportProgressBar = reportRenderer.find('.ProgressBar');
 export const configurationButton = Selector('.configurationPopover .buttonWrapper button');
 export const resetButton = Selector('.resetButton');
 export const goalTargetInput = Selector('.configurationPopover fieldset')
-  .withText('Set Target')
+  .withText('Set target')
   .find('input[type="number"]');
 export const dropdownOption = (text) =>
   Selector('.Dropdown.is-open .DropdownOption').withText(text);
@@ -48,7 +48,7 @@ export const nodeFilterOperator = (name) =>
   Selector('.Modal tbody tr').withText(name).find('.Dropdown:first-child');
 export const warning = Selector('.Message--warning');
 export const processPartButton = Selector('.ReportControlPanel button').withText(
-  'Process Instance Part'
+  'Process instance part'
 );
 export const modalFlowNode = (id) => Selector(`.ProcessPartModal [data-element-id="${id}"]`);
 export const selectSectionWithLabel = (label) => Selector('section .sectionTitle').withText(label);
@@ -69,7 +69,7 @@ export const collectionsDropdown = Selector(`.CollectionsDropdown`);
 export const collectionOption = (text) =>
   Selector('.CollectionsDropdown.is-open .DropdownOption').withText(text);
 export const limitPrecisionSwitch = Selector('.PrecisionConfig .cds--toggle').withText(
-  'Custom Precision'
+  'Custom precision'
 );
 export const limitPrecisionInput = Selector('.precision input');
 export const flowNodeStatusSelect = Selector('.NodeStatus .Select');
@@ -108,14 +108,14 @@ export const removeMeasureButton = Selector('.Measure').nth(1).find('.SelectionP
 export const heatDropdown = Selector('.Heatmap .Select');
 export const sectionToggle = (sectionName) =>
   Selector('button.cds--accordion__heading').withText(sectionName);
-export const deselectAllButton = Selector('.Button').withText('Deselect All');
+export const deselectAllButton = Selector('.Button').withText('Deselect all');
 export const addDefinitionButton = Selector('.AddDefinition');
 export const definitionEntry = (name) => Selector('.Checklist tr').withText(name);
 export const lineButton = Selector('.cds--radio-button-wrapper').withText('Line');
 export const tableScrollableContainer = reportTable.find('table');
 export const objectViewBtn = reportTable.find('.ObjectViewBtn').nth(0);
 export const objectVariableModal = Selector('.ObjectVariableModal');
-export const renameVariablesBtn = Selector('button').withText('Rename Variables');
+export const renameVariablesBtn = Selector('button').withText('Rename variables');
 export const newNameInput = (name) =>
   Selector('.RenameVariablesModal tbody tr').withText(name).find('.Input');
 export const numberReportInfo = reportRenderer.find('.Number .label');

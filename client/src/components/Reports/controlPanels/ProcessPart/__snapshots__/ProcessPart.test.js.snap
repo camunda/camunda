@@ -9,7 +9,7 @@ exports[`should show a preview of the process part 1`] = `
     size="sm"
     type="blue"
   >
-    Process Instance Part
+    Process instance part
   </Tag>
   <div>
     <b>

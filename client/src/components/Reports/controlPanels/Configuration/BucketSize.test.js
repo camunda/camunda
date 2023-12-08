@@ -122,7 +122,7 @@ it('should disable the switch and set the tooltip message when disabled', () => 
   const node = shallow(<BucketSize {...props} disabled />);
 
   expect(node.find('FormGroup').prop('legendText').props.labelText).toBe(
-    'This function only works with automatic preview update turned on'
+    'This function only works with automatic preview updates turned on.'
   );
   expect(node.find('FormGroup').prop('legendText').props.disabled).toBe(true);
 });

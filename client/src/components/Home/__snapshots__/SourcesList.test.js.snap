@@ -17,7 +17,7 @@ Object {
     false,
   ],
   "name": "decision report",
-  "type": "Decision Table",
+  "type": "Decision table",
 }
 `;
 
@@ -31,7 +31,7 @@ exports[`should match snapshot 1`] = `
       Array [
         <BulkDeleterErrorHandler
           checkConflicts={[Function]}
-          conflictMessage="Removing Data sources deletes all associated Reports and their Alerts."
+          conflictMessage="Removing data sources deletes all associated reports and their alerts."
           deleteEntities={[Function]}
           type="remove"
         />,
@@ -39,7 +39,7 @@ exports[`should match snapshot 1`] = `
     }
     columns={
       Array [
-        "Definition Name",
+        "Definition name",
         "Tenants",
       ]
     }
@@ -58,7 +58,7 @@ exports[`should match snapshot 1`] = `
           "icon": "data-source",
           "id": "process:defKey",
           "meta": Array [
-            "Not defined, Sales, (Unauthorized Tenant)",
+            "Not defined, Sales, (Unauthorized tenant)",
           ],
           "name": "definition name",
           "type": "Process",
@@ -84,7 +84,7 @@ exports[`should match snapshot 1`] = `
             "Not defined, Marketing",
           ],
           "name": "decision report",
-          "type": "Decision Table",
+          "type": "Decision table",
         },
       ]
     }
@@ -100,8 +100,8 @@ exports[`should match snapshot 1`] = `
   <DeleterErrorHandler
     checkConflicts={[Function]}
     deleteEntity={[Function]}
-    deleteText="Remove Data Source"
-    descriptionText="The '' Data Source will be removed from the Collection."
+    deleteText="Remove Data source"
+    descriptionText="The '' data source will be removed from the collection."
     entity={null}
     getName={[Function]}
     onClose={[Function]}
@@ -116,7 +116,7 @@ exports[`should match snapshot 1`] = `
     <ForwardRef(ModalHeader)
       iconDescription="Close"
     >
-      Destructive Changes
+      Destructive changes
     </ForwardRef(ModalHeader)>
     <ForwardRef />
     <ForwardRef(ModalFooter)
@@ -130,14 +130,14 @@ exports[`should match snapshot 1`] = `
         kind="secondary"
         onClick={[Function]}
       >
-        Don't Save
+        Don't save
       </Button>
       <Button
         className="confirm"
         disabled={false}
         onClick={[Function]}
       >
-        Save Changes
+        Save changes
       </Button>
     </ForwardRef(ModalFooter)>
   </Modal>
