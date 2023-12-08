@@ -64,7 +64,7 @@ public class OpensearchImportStore implements ImportStore {
 
       ImportPositionEntity importPositionEntity = new ImportPositionEntity();
       if(!response.hits().hits().isEmpty()) {
-        importPositionEntity = response.hits().hits().get(response.hits().hits().size()).source();
+        importPositionEntity = response.hits().hits().get(0).source();
       }
       logger.debug("Latest loaded position for alias [{}] and partitionId [{}]: {}", alias, partitionId, importPositionEntity);
 
@@ -112,9 +112,16 @@ public class OpensearchImportStore implements ImportStore {
     }
   }
 
-  record ImportPositionUpdate(long position, String indexName, long sequence) {
+  record ImportPositionUpdate(String id,String aliasName,String indexName,int partitionId,long position,Long postImporterPosition,long sequence) {
     public static ImportPositionUpdate fromImportPositionEntity(final ImportPositionEntity position) {
-      return new ImportPositionUpdate(position.getPosition(), position.getIndexName(), position.getSequence());
+      return new ImportPositionUpdate(
+        position.getId(),
+        position.getAliasName(),
+        position.getIndexName(),
+        position.getPartitionId(),
+        position.getPosition(),
+        position.getPostImporterPosition(),
+        position.getSequence());
     }
   }
 
