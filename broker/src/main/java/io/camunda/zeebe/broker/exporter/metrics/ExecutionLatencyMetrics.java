@@ -34,7 +34,7 @@ public class ExecutionLatencyMetrics {
           .name("job_activation_time")
           .help("The time until an job was activated")
           .labelNames("partition")
-          .buckets(0.10f, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4, 12.8, 25.6, 51.2)
+          .buckets(0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 10.0, 15.0, 30.0)
           .register();
   private static final Gauge CURRENT_ACTIVE_INSTANCE =
       Gauge.build()
