@@ -390,6 +390,6 @@ type remoteJobStreamMetadata struct {
 }
 
 type remoteJobStreamConsumer struct {
-	Id       string `json:"id"`
+	ID       string `json:"id"`
 	Receiver string `json:"receiver"`
 }
