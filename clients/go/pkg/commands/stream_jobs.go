@@ -25,7 +25,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-type StreamJobsConsumer chan<- *entities.Job
+type StreamJobsConsumer chan<- entities.Job
 
 type DispatchStreamJobsCommand interface {
 	RequestTimeout(time.Duration) DispatchStreamJobsCommand
@@ -122,7 +122,7 @@ func (cmd *StreamJobsCommand) Send(ctx context.Context) error {
 			return err
 		}
 
-		cmd.consumer <- &entities.Job{ActivatedJob: job}
+		cmd.consumer <- entities.Job{ActivatedJob: job}
 	}
 
 	return nil

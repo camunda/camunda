@@ -68,7 +68,7 @@ func TestStreamJobsCommand(t *testing.T) {
 		Variables:     "{}",
 	}
 
-	expectedJobs := []*entities.Job{{ActivatedJob: &job1}, {ActivatedJob: &job2}}
+	expectedJobs := []entities.Job{{ActivatedJob: &job1}, {ActivatedJob: &job2}}
 
 	gomock.InOrder(
 		stream.EXPECT().Recv().Return(&job1, nil),
@@ -86,7 +86,7 @@ func TestStreamJobsCommand(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()
 
-	jobsChan := make(chan *entities.Job, 2)
+	jobsChan := make(chan entities.Job, 2)
 	defer close(jobsChan)
 	err := NewStreamJobsCommand(client, func(context.Context, error) bool {
 		return false
@@ -95,7 +95,7 @@ func TestStreamJobsCommand(t *testing.T) {
 	assert.NoError(t, err)
 
 	// simulate job receive
-	jobs := []*entities.Job{<-jobsChan, <-jobsChan}
+	jobs := []entities.Job{<-jobsChan, <-jobsChan}
 
 	if len(jobs) != len(expectedJobs) {
 		t.Error("Failed to receive all jobs: ", jobs, expectedJobs)
@@ -136,7 +136,7 @@ func TestConsumerClosedOnStreamClose(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()
 
-	jobsChan := make(chan *entities.Job, 2)
+	jobsChan := make(chan entities.Job, 2)
 	err := NewStreamJobsCommand(client, func(context.Context, error) bool {
 		return false
 	}).JobType("foo").Consumer(jobsChan).Send(ctx)
@@ -171,7 +171,7 @@ func TestStreamJobsCommandWithTimeout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()
 
-	jobsChan := make(chan *entities.Job, 5)
+	jobsChan := make(chan entities.Job, 5)
 	defer close(jobsChan)
 	err := NewStreamJobsCommand(client, func(context.Context, error) bool {
 		return false
@@ -203,7 +203,7 @@ func TestStreamJobsCommandWithWorkerName(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()
 
-	jobsChan := make(chan *entities.Job, 5)
+	jobsChan := make(chan entities.Job, 5)
 	defer close(jobsChan)
 	err := NewStreamJobsCommand(client, func(context.Context, error) bool {
 		return false
@@ -235,7 +235,7 @@ func TestStreamJobsCommandWithTenantIds(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()
 
-	jobsChan := make(chan *entities.Job, 5)
+	jobsChan := make(chan entities.Job, 5)
 	defer close(jobsChan)
 	err := NewStreamJobsCommand(client, func(context.Context, error) bool {
 		return false

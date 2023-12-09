@@ -271,7 +271,7 @@ func (s *integrationTestSuite) TestStreamJobs() {
 	// the stream will be closed by the deferred context cancellation
 	ctx, cancel = context.WithCancel(context.Background())
 	defer cancel()
-	jobsChan := make(chan *entities.Job)
+	jobsChan := make(chan entities.Job)
 	go s.client.NewStreamJobsCommand().JobType("task").Consumer(jobsChan).Timeout(time.Minute * 5).
 		WorkerName("worker").RequestTimeout(time.Duration(1) * time.Minute).Send(ctx)
 
@@ -310,7 +310,7 @@ func (s *integrationTestSuite) TestStreamJobs() {
 	s.NoError(err)
 
 	// then - expect two jobs
-	jobs := make([]*entities.Job, 0)
+	jobs := make([]entities.Job, 0)
 	for i := 0; i < 2; i++ {
 		job, ok := <-jobsChan
 		if ok {
