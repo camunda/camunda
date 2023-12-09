@@ -281,20 +281,20 @@ func (s *integrationTestSuite) TestStreamJobs() {
 	for start := time.Now(); !streamExists && time.Since(start) < 5*time.Second; {
 		response, err := http.Get(fmt.Sprintf("http://%s/actuator/jobstreams/remote", s.MonitoringAddress))
 		if err != nil {
-			time.Sleep(1)
+			time.Sleep(time.Second)
 			continue
 		}
 
 		remoteStreams := make([]remoteJobStream, 1)
 		responseData, err := io.ReadAll(response.Body)
 		if err != nil {
-			time.Sleep(1)
+			time.Sleep(time.Second)
 			continue
 		}
 
 		err = json.Unmarshal(responseData, &remoteStreams)
 		if err != nil {
-			time.Sleep(1)
+			time.Sleep(time.Second)
 			continue
 		}
 
@@ -312,11 +312,10 @@ func (s *integrationTestSuite) TestStreamJobs() {
 	// then - expect two jobs
 	jobs := make([]*entities.Job, 0)
 	for i := 0; i < 2; i++ {
-		select {
-		case job, ok := <-jobsChan:
-			if ok {
-				jobs = append(jobs, job)
-			}
+		job, ok := <-jobsChan
+		if ok {
+			jobs = append(jobs, job)
+		} else {
 			break
 		}
 	}
