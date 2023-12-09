@@ -272,6 +272,7 @@ func (s *integrationTestSuite) TestStreamJobs() {
 	ctx, cancel = context.WithCancel(context.Background())
 	defer cancel()
 	jobsChan := make(chan entities.Job)
+	defer close(jobsChan)
 	go s.client.NewStreamJobsCommand().JobType("task").Consumer(jobsChan).Timeout(time.Minute * 5).
 		WorkerName("worker").RequestTimeout(time.Duration(1) * time.Minute).Send(ctx)
 

@@ -27,7 +27,6 @@ import (
 	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc"
 )
 
 func TestStreamJobsCommand(t *testing.T) {
@@ -76,12 +75,7 @@ func TestStreamJobsCommand(t *testing.T) {
 		stream.EXPECT().Recv().Return(nil, io.EOF),
 	)
 
-	client.EXPECT().StreamActivatedJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}, gomock.Any()).Return(stream, nil)
-	// var finishCallback func(error)
-	// client.EXPECT().StreamActivatedJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}, gomock.AssignableToTypeOf(&grpc.OnFinishCallOption{})).DoAndReturn(func(onFinish grpc.OnFinishCallOption) (interface{}, error) {
-	// 	finishCallback = onFinish.OnFinish
-	// 	return stream, nil
-	// })
+	client.EXPECT().StreamActivatedJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stream, nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()
@@ -109,49 +103,6 @@ func TestStreamJobsCommand(t *testing.T) {
 
 }
 
-func TestConsumerClosedOnStreamClose(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	client := mock_pb.NewMockGatewayClient(ctrl)
-	stream := mock_pb.NewMockGateway_StreamActivatedJobsClient(ctrl)
-
-	request := &pb.StreamActivatedJobsRequest{
-		Type:    "foo",
-		Timeout: DefaultJobTimeoutInMs,
-		Worker:  DefaultJobWorkerName,
-	}
-
-	gomock.InOrder(
-		stream.EXPECT().Recv().Return(nil, io.EOF),
-	)
-
-	var finishCallback func(error)
-	client.EXPECT().StreamActivatedJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}, gomock.AssignableToTypeOf(grpc.OnFinishCallOption{})).
-		DoAndReturn(func(ctx context.Context, request *pb.StreamActivatedJobsRequest, onFinish grpc.OnFinishCallOption) (interface{}, error) {
-			finishCallback = onFinish.OnFinish
-			return stream, nil
-		})
-
-	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
-	defer cancel()
-
-	jobsChan := make(chan entities.Job, 2)
-	err := NewStreamJobsCommand(client, func(context.Context, error) bool {
-		return false
-	}).JobType("foo").Consumer(jobsChan).Send(ctx)
-
-	assert.NoError(t, err)
-	assert.NotNil(t, finishCallback)
-
-	finishCallback(nil)
-	select {
-	case <-jobsChan:
-	default:
-		assert.Fail(t, "Channel is not closed since we can still receive on it")
-	}
-}
-
 func TestStreamJobsCommandWithTimeout(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -166,7 +117,7 @@ func TestStreamJobsCommandWithTimeout(t *testing.T) {
 	}
 
 	stream.EXPECT().Recv().Return(nil, io.EOF)
-	client.EXPECT().StreamActivatedJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}, gomock.Any()).Return(stream, nil)
+	client.EXPECT().StreamActivatedJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stream, nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()
@@ -198,7 +149,7 @@ func TestStreamJobsCommandWithWorkerName(t *testing.T) {
 	}
 
 	stream.EXPECT().Recv().Return(nil, io.EOF)
-	client.EXPECT().StreamActivatedJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}, gomock.Any()).Return(stream, nil)
+	client.EXPECT().StreamActivatedJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stream, nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()
@@ -230,7 +181,7 @@ func TestStreamJobsCommandWithTenantIds(t *testing.T) {
 	}
 
 	stream.EXPECT().Recv().Return(nil, io.EOF)
-	client.EXPECT().StreamActivatedJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}, gomock.Any()).Return(stream, nil)
+	client.EXPECT().StreamActivatedJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stream, nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()

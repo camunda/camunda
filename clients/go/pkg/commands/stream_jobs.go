@@ -22,7 +22,6 @@ import (
 
 	"github.com/camunda/zeebe/clients/go/v8/pkg/entities"
 	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
-	"google.golang.org/grpc"
 )
 
 type StreamJobsConsumer chan<- entities.Job
@@ -129,10 +128,7 @@ func (cmd *StreamJobsCommand) Send(ctx context.Context) error {
 }
 
 func (cmd *StreamJobsCommand) openStream(ctx context.Context) (pb.Gateway_StreamActivatedJobsClient, error) {
-	onFinish := grpc.OnFinishCallOption{OnFinish: func(err error) {
-		close(cmd.consumer)
-	}}
-	stream, err := cmd.gateway.StreamActivatedJobs(ctx, &cmd.request, onFinish)
+	stream, err := cmd.gateway.StreamActivatedJobs(ctx, &cmd.request)
 
 	if err != nil {
 		if cmd.shouldRetry(ctx, err) {
