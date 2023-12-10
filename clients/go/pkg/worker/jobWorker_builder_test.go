@@ -16,13 +16,14 @@
 package worker
 
 import (
+	"testing"
+	"time"
+
 	"github.com/camunda/zeebe/clients/go/v8/internal/mock_pb"
 	"github.com/camunda/zeebe/clients/go/v8/pkg/entities"
 	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 const testDuration = 12 * time.Minute
@@ -102,4 +103,17 @@ func TestJobWorkerBuilder_Metrics(t *testing.T) {
 	builder.Metrics(workerMetrics)
 
 	assert.Equal(t, workerMetrics, builder.metrics)
+}
+
+func TestJobWorkerBuilder_StreamEnabled(t *testing.T) {
+	builder := JobWorkerBuilder{request: &pb.ActivateJobsRequest{}}
+	builder.StreamEnabled(true)
+	assert.True(t, builder.streamEnabled)
+}
+
+func TestJobWorkerBuilder_StreamRequestTimeout(t *testing.T) {
+	builder := JobWorkerBuilder{request: &pb.ActivateJobsRequest{}}
+	requestTimeout := time.Second
+	builder.StreamRequestTimeout(requestTimeout)
+	assert.Equal(t, requestTimeout, builder.streamRequestTimeout)
 }
