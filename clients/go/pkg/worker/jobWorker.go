@@ -16,7 +16,6 @@
 package worker
 
 import (
-	"log"
 	"sync"
 
 	"github.com/camunda/zeebe/clients/go/v8/pkg/commands"
@@ -46,11 +45,8 @@ type jobWorkerController struct {
 }
 
 func (controller jobWorkerController) Close() {
-	log.Printf("Closing poller")
 	close(controller.closePoller)
-	log.Printf("Closing streamer")
 	close(controller.closeStreamer)
-	log.Printf("Closing dispatcher")
 	close(controller.closeDispatcher)
 	controller.AwaitClose()
 }
