@@ -174,7 +174,7 @@ runs:
         restore-keys: |
           ${{ steps.runner-env.outputs.result }}-${{ runner.os }}-mvn-${{ inputs.maven-cache-key-modifier }}
     - if: ${{ inputs.go == 'true' }}
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         go-version-file: 'clients/go/go.mod'
         cache: true
