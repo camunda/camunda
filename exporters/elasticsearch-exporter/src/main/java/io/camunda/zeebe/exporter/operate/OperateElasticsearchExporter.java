@@ -66,7 +66,7 @@ import io.camunda.zeebe.protocol.record.Record;
 
 public class OperateElasticsearchExporter implements Exporter {
 
-  private static final Logger logger = LoggerFactory.getLogger(OperateElasticsearchExporter.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OperateElasticsearchExporter.class);
 
   private OperateElasticsearchExporterConfiguration configuration;
   private RestHighLevelClient esClient;
@@ -83,7 +83,7 @@ public class OperateElasticsearchExporter implements Exporter {
 
     configuration =
         context.getConfiguration().instantiate(OperateElasticsearchExporterConfiguration.class);
-    logger.debug("Exporter configured with {}", configuration);
+    LOGGER.debug("Exporter configured with {}", configuration);
 
     // TODO: filter here to only handle events (and potentially also only certain event types)
     // context.setFilter(new ElasticsearchRecordFilter(configuration));
@@ -109,7 +109,7 @@ public class OperateElasticsearchExporter implements Exporter {
    * "batch" in zeebe, e.g. what is contained in the current Zeebe file buffer) => effect would be
    * to reduce latency by knowing that a small batch indicates that there is not more new data and
    * we can flush a smaller batch to Elasticsearch
-   * 
+   *
    * TODO: consider adding metrics that allows debugging the behavior of the exporter sufficiently
    */
   @Override
@@ -131,7 +131,7 @@ public class OperateElasticsearchExporter implements Exporter {
       }
     }
   }
-  
+
   public ExportBatchWriter getWriter() {
     return writer;
   }
@@ -146,7 +146,7 @@ public class OperateElasticsearchExporter implements Exporter {
       flush();
       updateLastExportedPosition();
     } catch (final Exception e) {
-      logger.warn("Unexpected exception occurred on periodically flushing bulk, will retry later.",
+      LOGGER.warn("Unexpected exception occurred on periodically flushing bulk, will retry later.",
           e);
     }
     scheduleDelayedFlush();
@@ -181,7 +181,7 @@ public class OperateElasticsearchExporter implements Exporter {
   }
 
   public RestHighLevelClient createEsClient() {
-    logger.debug("Creating Elasticsearch connection...");
+    LOGGER.debug("Creating Elasticsearch connection...");
     final RestClientBuilder restClientBuilder =
         RestClient.builder(parseUrlConfig(configuration.getUrl()))
             .setRequestConfigCallback(b -> b.setConnectTimeout(configuration.getRequestTimeoutMs())

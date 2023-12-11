@@ -17,7 +17,7 @@ public class SequenceFlowHandler
     implements ExportHandler<SequenceFlowEntity, ProcessInstanceRecordValue> {
 
   private static final String ID_PATTERN = "%s_%s";
-  private static final Logger logger = LoggerFactory.getLogger(SequenceFlowHandler.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(SequenceFlowHandler.class);
 
   private SequenceFlowTemplate sequenceFlowTemplate;
 
@@ -43,7 +43,7 @@ public class SequenceFlowHandler
 
   @Override
   public String generateId(Record<ProcessInstanceRecordValue> record) {
-    ProcessInstanceRecordValue recordValue = record.getValue();
+    final ProcessInstanceRecordValue recordValue = record.getValue();
     return String.format(ID_PATTERN, recordValue.getProcessInstanceKey(),
         recordValue.getElementId());
   }
@@ -55,7 +55,7 @@ public class SequenceFlowHandler
 
   @Override
   public void updateEntity(Record<ProcessInstanceRecordValue> record, SequenceFlowEntity entity) {
-    ProcessInstanceRecordValue recordValue = record.getValue();
+    final ProcessInstanceRecordValue recordValue = record.getValue();
 
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey())
         .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
@@ -67,11 +67,11 @@ public class SequenceFlowHandler
   public void flush(SequenceFlowEntity entity, BatchRequest batchRequest)
       throws PersistenceException {
 
-    logger.debug("Index sequence flow: id {}", entity.getId());
+    LOGGER.debug("Index sequence flow: id {}", entity.getId());
     batchRequest.add(sequenceFlowTemplate.getFullQualifiedName(), entity);
 
   }
-  
+
   @Override
   public String getIndexName() {
     return sequenceFlowTemplate.getFullQualifiedName();

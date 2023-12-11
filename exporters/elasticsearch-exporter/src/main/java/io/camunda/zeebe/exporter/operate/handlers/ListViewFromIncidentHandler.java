@@ -20,7 +20,7 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 public class ListViewFromIncidentHandler
     implements ExportHandler<FlowNodeInstanceForListViewEntity, IncidentRecordValue> {
 
-  private static final Logger logger = LoggerFactory.getLogger(ListViewFromIncidentHandler.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ListViewFromIncidentHandler.class);
 
   private ListViewTemplate listViewTemplate;
 
@@ -57,7 +57,7 @@ public class ListViewFromIncidentHandler
   public void updateEntity(Record<IncidentRecordValue> record,
       FlowNodeInstanceForListViewEntity entity) {
     final Intent intent = record.getIntent();
-    IncidentRecordValue recordValue = record.getValue();
+    final IncidentRecordValue recordValue = record.getValue();
 
     // update activity instance
     entity.setKey(recordValue.getElementInstanceKey());
@@ -73,7 +73,7 @@ public class ListViewFromIncidentHandler
     }
 
     // set parent
-    Long processInstanceKey = recordValue.getProcessInstanceKey();
+    final Long processInstanceKey = recordValue.getProcessInstanceKey();
     entity.getJoinRelation().setParent(processInstanceKey);
 
 
@@ -83,8 +83,8 @@ public class ListViewFromIncidentHandler
   @Override
   public void flush(FlowNodeInstanceForListViewEntity entity, BatchRequest batchRequest)
       throws PersistenceException {
-    logger.debug("Activity instance for list view: id {}", entity.getId());
-    var updateFields = new HashMap<String, Object>();
+    LOGGER.debug("Activity instance for list view: id {}", entity.getId());
+    final var updateFields = new HashMap<String, Object>();
     updateFields.put(ListViewTemplate.ERROR_MSG, entity.getErrorMessage());
     batchRequest.upsertWithRouting(listViewTemplate.getFullQualifiedName(), entity.getId(), entity,
         updateFields, entity.getProcessInstanceKey().toString());

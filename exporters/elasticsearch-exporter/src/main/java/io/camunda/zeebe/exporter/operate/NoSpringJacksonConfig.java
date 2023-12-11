@@ -21,7 +21,7 @@ public class NoSpringJacksonConfig {
 
   public static ObjectMapper buildObjectMapper() {
 
-    JavaTimeModule javaTimeModule = new JavaTimeModule();
+    final JavaTimeModule javaTimeModule = new JavaTimeModule();
     javaTimeModule.addSerializer(OffsetDateTime.class,
         new CustomOffsetDateTimeSerializer(dateTimeFormatter()));
     javaTimeModule.addDeserializer(OffsetDateTime.class,

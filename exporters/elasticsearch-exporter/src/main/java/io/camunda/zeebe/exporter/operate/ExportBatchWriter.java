@@ -37,10 +37,10 @@ public class ExportBatchWriter {
   public void addRecord(Record<?> record) {
     // TODO: need to filter to only handle events
 
-    ValueType valueType = record.getValueType();
+    final ValueType valueType = record.getValueType();
 
     if (valueType == decisionInstanceHandler.handlesValueType()) {
-      List<DecisionInstanceEntity> entities =
+      final List<DecisionInstanceEntity> entities =
           decisionInstanceHandler.createEntities((Record) record);
 
       // reorganize the entities for flushing them in order of creation
@@ -52,14 +52,14 @@ public class ExportBatchWriter {
 
     handlers.getOrDefault(valueType, Collections.emptyList()).forEach(handler -> {
       // TODO: lol ugly
-      ExportHandler handler2 = (ExportHandler) handler;
+      final ExportHandler handler2 = (ExportHandler) handler;
 
       if (handler.handlesRecord((Record) record)) {
 
-        String entityId = handler.generateId((Record) record);
-        Tuple<String, Class<?>> cacheKey = new Tuple<>(entityId, handler.getEntityType());
+        final String entityId = handler.generateId((Record) record);
+        final Tuple<String, Class<?>> cacheKey = new Tuple<>(entityId, handler.getEntityType());
 
-        OperateEntity<?> cachedEntity;
+        final OperateEntity<?> cachedEntity;
         if (cachedEntities.containsKey(cacheKey)) {
           cachedEntity = cachedEntities.get(cacheKey).getLeft();
         } else {
@@ -95,19 +95,19 @@ public class ExportBatchWriter {
 
     for (Tuple<String, Class<?>> cacheKey : idFlushOrder) {
       if (cachedEntities.containsKey(cacheKey)) {
-        Tuple<OperateEntity<?>, ExportHandler<?, ?>> entityAndHandler =
+        final Tuple<OperateEntity<?>, ExportHandler<?, ?>> entityAndHandler =
             cachedEntities.get(cacheKey);
-        OperateEntity entity = entityAndHandler.getLeft();
-        ExportHandler handler = entityAndHandler.getRight();
+        final OperateEntity entity = entityAndHandler.getLeft();
+        final ExportHandler handler = entityAndHandler.getRight();
 
         handler.flush(entity, request);
 
       } else {
-        DecisionInstanceEntity entity = cachedDecisionInstanceEntities.get(cacheKey.getLeft());
+        final DecisionInstanceEntity entity = cachedDecisionInstanceEntities.get(cacheKey.getLeft());
         decisionInstanceHandler.flush(entity, request);
       }
     }
-    
+
     reset();
   }
 
@@ -116,16 +116,20 @@ public class ExportBatchWriter {
     cachedDecisionInstanceEntities.clear();
     idFlushOrder.clear();
   }
-  
+
   public List<ExportHandler<?, ?>> getHandlersForValueType(ValueType type) {
     return handlers.get(type);
+  }
+
+  public boolean hasAtLeastEntities(int size) {
+    return cachedEntities.size() + cachedDecisionInstanceEntities.size() >= size;
   }
 
   public static class Builder {
     private ExportBatchWriter writer;
 
     public static Builder begin() {
-      Builder builder = new Builder();
+      final Builder builder = new Builder();
       builder.writer = new ExportBatchWriter();
       return builder;
     }
@@ -146,9 +150,5 @@ public class ExportBatchWriter {
     public ExportBatchWriter build() {
       return writer;
     }
-  }
-
-  public boolean hasAtLeastEntities(int size) {
-    return cachedEntities.size() + cachedDecisionInstanceEntities.size() >= size;
   }
 }

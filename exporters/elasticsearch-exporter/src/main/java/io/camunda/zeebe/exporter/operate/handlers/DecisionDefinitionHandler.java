@@ -20,9 +20,9 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 public class DecisionDefinitionHandler
     implements ExportHandler<DecisionDefinitionEntity, DecisionRecordValue> {
 
-  private static final Logger logger = LoggerFactory.getLogger(DecisionDefinitionHandler.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(DecisionDefinitionHandler.class);
 
-  private final static Set<Intent> STATES = new HashSet<>();
+  private static final Set<Intent> STATES = new HashSet<>();
   static {
     STATES.add(DecisionIntent.CREATED);
   }
@@ -60,7 +60,7 @@ public class DecisionDefinitionHandler
 
   @Override
   public void updateEntity(Record<DecisionRecordValue> record, DecisionDefinitionEntity entity) {
-    DecisionRecordValue decision = record.getValue();
+    final DecisionRecordValue decision = record.getValue();
 
     entity.setKey(decision.getDecisionKey()).setName(decision.getDecisionName())
         .setVersion(decision.getVersion()).setDecisionId(decision.getDecisionId())
@@ -73,7 +73,7 @@ public class DecisionDefinitionHandler
   @Override
   public void flush(DecisionDefinitionEntity entity, BatchRequest batchRequest)
       throws PersistenceException {
-    logger.debug("Decision: key {}, decisionId {}", entity.getKey(), entity.getDecisionId());
+    LOGGER.debug("Decision: key {}, decisionId {}", entity.getKey(), entity.getDecisionId());
     batchRequest.addWithId(decisionIndex.getFullQualifiedName(),
         ConversionUtils.toStringOrNull(entity.getKey()), entity);
 

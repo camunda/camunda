@@ -23,10 +23,10 @@ import io.camunda.zeebe.protocol.record.value.deployment.Process;
 
 public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
 
-  private static final Logger logger = LoggerFactory.getLogger(ProcessHandler.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ProcessHandler.class);
 
   private static final Charset CHARSET = StandardCharsets.UTF_8;
-  private final static Set<Intent> STATES = new HashSet<>();
+  private static final Set<Intent> STATES = new HashSet<>();
   static {
     STATES.add(ProcessIntent.CREATED);
   }
@@ -66,17 +66,17 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
 
   @Override
   public void updateEntity(Record<Process> record, ProcessEntity entity) {
-    Process process = record.getValue();
+    final Process process = record.getValue();
 
     entity.setKey(process.getProcessDefinitionKey()).setBpmnProcessId(process.getBpmnProcessId())
         .setVersion(process.getVersion()).setTenantId(tenantOrDefault(process.getTenantId()));
 
-    byte[] byteArray = process.getResource();
+    final byte[] byteArray = process.getResource();
 
-    String bpmn = new String(byteArray, CHARSET);
+    final String bpmn = new String(byteArray, CHARSET);
     entity.setBpmnXml(bpmn);
 
-    String resourceName = process.getResourceName();
+    final String resourceName = process.getResourceName();
     entity.setResourceName(resourceName);
 
     final Optional<ProcessEntity> diagramData = xmlUtil.extractDiagramData(byteArray);
@@ -88,7 +88,7 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
   @Override
   public void flush(ProcessEntity processEntity, BatchRequest batchRequest)
       throws PersistenceException {
-    logger.debug("Process: key {}, bpmnProcessId {}", processEntity.getKey(),
+    LOGGER.debug("Process: key {}, bpmnProcessId {}", processEntity.getKey(),
         processEntity.getBpmnProcessId());
 
     // TODO: afaik this code updates the version in process instance records, if they have been
@@ -109,7 +109,7 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
         ConversionUtils.toStringOrNull(processEntity.getKey()), processEntity);
 
   }
-  
+
   @Override
   public String getIndexName() {
     return processIndex.getFullQualifiedName();

@@ -24,7 +24,7 @@ public class EventFromProcessInstanceHandler
     implements ExportHandler<EventEntity, ProcessInstanceRecordValue> {
 
   private static final String ID_PATTERN = "%s_%s";
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(EventFromProcessInstanceHandler.class);
 
   private EventTemplate eventTemplate;
@@ -76,10 +76,10 @@ public class EventFromProcessInstanceHandler
   @Override
   public void updateEntity(Record<ProcessInstanceRecordValue> record, EventEntity entity) {
 
-    ProcessInstanceRecordValue recordValue = record.getValue();
+    final ProcessInstanceRecordValue recordValue = record.getValue();
 
     if (!isProcessEvent(recordValue)) { // we do not need to store process level events
-      EventEntity eventEntity = new EventEntity()
+      final EventEntity eventEntity = new EventEntity()
           .setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), record.getKey()));
 
       loadEventGeneralData(record, eventEntity);
@@ -117,16 +117,16 @@ public class EventFromProcessInstanceHandler
 
   private void persistEvent(EventEntity entity, BatchRequest batchRequest)
       throws PersistenceException {
-    logger.debug("Event: id {}, eventSourceType {}, eventType {}, processInstanceKey {}",
+    LOGGER.debug("Event: id {}, eventSourceType {}, eventType {}, processInstanceKey {}",
         entity.getId(), entity.getEventSourceType(), entity.getEventType(),
         entity.getProcessInstanceKey());
-    Map<String, Object> jsonMap = new HashMap<>();
+    final Map<String, Object> jsonMap = new HashMap<>();
     jsonMap.put(EventTemplate.KEY, entity.getKey());
     jsonMap.put(EventTemplate.EVENT_SOURCE_TYPE, entity.getEventSourceType());
     jsonMap.put(EventTemplate.EVENT_TYPE, entity.getEventType());
     jsonMap.put(EventTemplate.DATE_TIME, entity.getDateTime());
     if (entity.getMetadata() != null) {
-      Map<String, Object> metadataMap = new HashMap<>();
+      final Map<String, Object> metadataMap = new HashMap<>();
       if (entity.getMetadata().getIncidentErrorMessage() != null) {
         metadataMap.put(EventTemplate.INCIDENT_ERROR_MSG,
             entity.getMetadata().getIncidentErrorMessage());
@@ -155,7 +155,7 @@ public class EventFromProcessInstanceHandler
     // write event
     batchRequest.upsert(eventTemplate.getFullQualifiedName(), entity.getId(), entity, jsonMap);
   }
-  
+
   @Override
   public String getIndexName() {
     return eventTemplate.getFullQualifiedName();

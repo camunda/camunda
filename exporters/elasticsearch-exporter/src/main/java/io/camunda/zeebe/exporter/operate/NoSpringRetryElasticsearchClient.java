@@ -66,12 +66,13 @@ public class NoSpringRetryElasticsearchClient {
   public static final String NO_REFRESH = "-1";
   public static final String NUMBERS_OF_REPLICA = "index.number_of_replicas";
   public static final String NO_REPLICA = "0";
-  private static final Logger logger =
-      LoggerFactory.getLogger(NoSpringRetryElasticsearchClient.class);
   public static final int SCROLL_KEEP_ALIVE_MS = 60_000;
   public static final int DEFAULT_NUMBER_OF_RETRIES = 30 * 10; // 30*10 with 2 seconds = 10 minutes
-                                                               // retry loop
+
   public static final int DEFAULT_DELAY_INTERVAL_IN_SECONDS = 2;
+
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(NoSpringRetryElasticsearchClient.class);
 
   private RestHighLevelClient esClient;
 
@@ -95,7 +96,7 @@ public class NoSpringRetryElasticsearchClient {
       final ClusterHealthStatus status = response.getStatus();
       return !response.isTimedOut() && !status.equals(ClusterHealthStatus.RED);
     } catch (IOException e) {
-      logger.error(
+      LOGGER.error(
           String.format("Couldn't connect to Elasticsearch due to %s. Return unhealthy state. ",
               e.getMessage()),
           e);
@@ -152,7 +153,7 @@ public class NoSpringRetryElasticsearchClient {
   public Set<String> getIndexNames(String namePattern) {
     return executeWithRetries("Get indices for " + namePattern, () -> {
       try {
-        GetIndexResponse response =
+        final GetIndexResponse response =
             esClient.indices().get(new GetIndexRequest(namePattern), RequestOptions.DEFAULT);
         return Set.of(response.getIndices());
       } catch (ElasticsearchException e) {
@@ -177,7 +178,7 @@ public class NoSpringRetryElasticsearchClient {
     return executeWithRetries("RetryElasticsearchClient#createOrUpdateDocument", () -> {
       final IndexResponse response = esClient
           .index(new IndexRequest(name).id(id).source(source, XContentType.JSON), requestOptions);
-      DocWriteResponse.Result result = response.getResult();
+      final DocWriteResponse.Result result = response.getResult();
       return result.equals(DocWriteResponse.Result.CREATED)
           || result.equals(DocWriteResponse.Result.UPDATED);
     });
@@ -187,7 +188,7 @@ public class NoSpringRetryElasticsearchClient {
     return executeWithRetries("RetryElasticsearchClient#createOrUpdateDocument", () -> {
       final IndexResponse response = esClient
           .index(new IndexRequest(name).id(id).source(source, XContentType.JSON), requestOptions);
-      DocWriteResponse.Result result = response.getResult();
+      final DocWriteResponse.Result result = response.getResult();
       return result.equals(DocWriteResponse.Result.CREATED)
           || result.equals(DocWriteResponse.Result.UPDATED);
     });
@@ -217,7 +218,7 @@ public class NoSpringRetryElasticsearchClient {
     return executeWithRetries("RetryElasticsearchClient#deleteDocument", () -> {
       final DeleteResponse response =
           esClient.delete(new DeleteRequest(name).id(id), requestOptions);
-      DocWriteResponse.Result result = response.getResult();
+      final DocWriteResponse.Result result = response.getResult();
       return result.equals(DocWriteResponse.Result.DELETED);
     });
   }
@@ -279,8 +280,8 @@ public class NoSpringRetryElasticsearchClient {
 
   public Map<String, String> getIndexSettingsFor(String indexName, String... fields) {
     return executeWithRetries("GetIndexSettings " + indexName, () -> {
-      Map<String, String> settings = new HashMap<>();
-      GetSettingsResponse response = esClient.indices()
+      final Map<String, String> settings = new HashMap<>();
+      final GetSettingsResponse response = esClient.indices()
           .getSettings(new GetSettingsRequest().indices(indexName), requestOptions);
       for (String field : fields) {
         settings.put(field, response.getSetting(indexName, field));
@@ -290,7 +291,7 @@ public class NoSpringRetryElasticsearchClient {
   }
 
   public String getOrDefaultRefreshInterval(String indexName, String defaultValue) {
-    Map<String, String> settings = getIndexSettingsFor(indexName, REFRESH_INTERVAL);
+    final Map<String, String> settings = getIndexSettingsFor(indexName, REFRESH_INTERVAL);
     String refreshInterval = getOrDefaultForNullValue(settings, REFRESH_INTERVAL, defaultValue);
     if (refreshInterval.trim().equals(NO_REFRESH)) {
       refreshInterval = defaultValue;
@@ -299,7 +300,7 @@ public class NoSpringRetryElasticsearchClient {
   }
 
   public String getOrDefaultNumbersOfReplica(String indexName, String defaultValue) {
-    Map<String, String> settings = getIndexSettingsFor(indexName, NUMBERS_OF_REPLICA);
+    final Map<String, String> settings = getIndexSettingsFor(indexName, NUMBERS_OF_REPLICA);
     String numbersOfReplica = getOrDefaultForNullValue(settings, NUMBERS_OF_REPLICA, defaultValue);
     if (numbersOfReplica.trim().equals(NO_REPLICA)) {
       numbersOfReplica = defaultValue;
@@ -340,12 +341,12 @@ public class NoSpringRetryElasticsearchClient {
         doneOnSearchHits += response.getHits().getHits().length;
 
         scrollId = response.getScrollId();
-        SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId)
+        final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId)
             .scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
         response = esClient.scroll(scrollRequest, requestOptions);
       }
       if (scrollId != null) {
-        ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
+        final ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
         clearScrollRequest.addScrollId(scrollId);
         esClient.clearScroll(clearScrollRequest, requestOptions);
       }
@@ -355,7 +356,7 @@ public class NoSpringRetryElasticsearchClient {
 
   public <T> List<T> searchWithScroll(SearchRequest searchRequest, Class<T> resultClass,
       ObjectMapper objectMapper) {
-    long totalHits = executeWithRetries("Count search results",
+    final long totalHits = executeWithRetries("Count search results",
         () -> esClient.search(searchRequest, requestOptions).getHits().getTotalHits().value);
     return executeWithRetries("Search with scroll",
         () -> scroll(searchRequest, resultClass, objectMapper),
@@ -364,7 +365,7 @@ public class NoSpringRetryElasticsearchClient {
 
   private <T> List<T> scroll(SearchRequest searchRequest, Class<T> clazz, ObjectMapper objectMapper)
       throws IOException {
-    List<T> results = new ArrayList<>();
+    final List<T> results = new ArrayList<>();
     searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
     SearchResponse response = esClient.search(searchRequest, requestOptions);
 
@@ -374,12 +375,12 @@ public class NoSpringRetryElasticsearchClient {
           searchHit -> searchHitToObject(searchHit, clazz, objectMapper)));
 
       scrollId = response.getScrollId();
-      SearchScrollRequest scrollRequest =
+      final SearchScrollRequest scrollRequest =
           new SearchScrollRequest(scrollId).scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
       response = esClient.scroll(scrollRequest, requestOptions);
     }
     if (scrollId != null) {
-      ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
+      final ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
       clearScrollRequest.addScrollId(scrollId);
       esClient.clearScroll(clearScrollRequest, requestOptions);
     }

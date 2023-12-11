@@ -23,7 +23,7 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 
 public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRecordValue> {
 
-  private static final Logger logger = LoggerFactory.getLogger(IncidentHandler.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(IncidentHandler.class);
 
   private IncidentTemplate incidentTemplate;
 
@@ -62,9 +62,9 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
   @Override
   public void updateEntity(Record<IncidentRecordValue> record, IncidentEntity incident) {
 
-    Intent intent = record.getIntent();
-    Long incidentKey = record.getKey();
-    IncidentRecordValue recordValue = record.getValue();
+    final Intent intent = record.getIntent();
+    final Long incidentKey = record.getKey();
+    final IncidentRecordValue recordValue = record.getValue();
 
     if (intent == IncidentIntent.RESOLVED) {
 
@@ -85,7 +85,7 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
         incident.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
       }
       incident.setBpmnProcessId(recordValue.getBpmnProcessId());
-      String errorMessage = StringUtils.trimWhitespace(recordValue.getErrorMessage());
+      final String errorMessage = StringUtils.trimWhitespace(recordValue.getErrorMessage());
       incident.setErrorMessage(errorMessage)
           .setErrorType(ErrorType.fromZeebeErrorType(
               recordValue.getErrorType() == null ? null : recordValue.getErrorType().name()))
@@ -104,12 +104,12 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
   public void flush(IncidentEntity incident, BatchRequest batchRequest)
       throws PersistenceException {
 
-    logger.debug("Index incident: id {}", incident.getId());
+    LOGGER.debug("Index incident: id {}", incident.getId());
     // we only insert incidents but never update -> update will be performed in post importer
     batchRequest.upsert(incidentTemplate.getFullQualifiedName(), String.valueOf(incident.getKey()),
         incident, Map.of());
   }
-  
+
   @Override
   public String getIndexName() {
     return incidentTemplate.getFullQualifiedName();

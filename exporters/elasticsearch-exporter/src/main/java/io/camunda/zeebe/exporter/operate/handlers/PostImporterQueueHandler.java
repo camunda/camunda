@@ -47,7 +47,7 @@ public class PostImporterQueueHandler
 
   @Override
   public void updateEntity(Record<IncidentRecordValue> record, PostImporterQueueEntity entity) {
-    String intent = record.getIntent().name();
+    final String intent = record.getIntent().name();
     entity.setActionType(PostImporterActionType.INCIDENT).setIntent(intent).setKey(record.getKey())
         .setPosition(record.getPosition()).setCreationTime(OffsetDateTime.now())
         .setPartitionId(record.getPartitionId())
@@ -60,7 +60,7 @@ public class PostImporterQueueHandler
       throws PersistenceException {
     batchRequest.add(postImporterQueueTemplate.getFullQualifiedName(), entity);
   }
-  
+
   @Override
   public String getIndexName() {
     return postImporterQueueTemplate.getFullQualifiedName();

@@ -18,7 +18,7 @@ import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 
 public class VariableHandler implements ExportHandler<VariableEntity, VariableRecordValue> {
 
-  private static final Logger logger = LoggerFactory.getLogger(VariableHandler.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(VariableHandler.class);
 
   // TODO: in the original code this was configurable through the operate properties
   private static final int VARIABLE_SIZE_LIMIT = ImportProperties.DEFAULT_VARIABLE_SIZE_THRESHOLD;
@@ -46,7 +46,7 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
 
   @Override
   public String generateId(Record<VariableRecordValue> record) {
-    VariableRecordValue recordValue = record.getValue();
+    final VariableRecordValue recordValue = record.getValue();
     return VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName());
   }
 
@@ -85,12 +85,12 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
     // TODO: restore the distinction between insert and upsert
     // final var initialIntent = cachedVariable.getLeft();
 
-    logger.debug("Variable instance: id {}", variableEntity.getId());
+    LOGGER.debug("Variable instance: id {}", variableEntity.getId());
 
     // if (initialIntent == VariableIntent.CREATED) {
     // batchRequest.add(variableTemplate.getFullQualifiedName(), variableEntity);
     // } else {
-    Map<String, Object> updateFields = new HashMap<>();
+    final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(VariableTemplate.VALUE, variableEntity.getValue());
     updateFields.put(VariableTemplate.FULL_VALUE, variableEntity.getFullValue());
     updateFields.put(VariableTemplate.IS_PREVIEW, variableEntity.getIsPreview());
@@ -99,7 +99,7 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
     // }
 
   }
-  
+
   @Override
   public String getIndexName() {
     return variableTemplate.getFullQualifiedName();

@@ -24,9 +24,9 @@ public class ListViewFromJobHandler
   // TODO: has the same problem like other handlers in that it updates an entity actually created by
   // another handler
 
-  private static final Logger logger = LoggerFactory.getLogger(ListViewFromJobHandler.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ListViewFromJobHandler.class);
 
-  private final static Set<String> FAILED_JOB_EVENTS = new HashSet<>();
+  private static final Set<String> FAILED_JOB_EVENTS = new HashSet<>();
 
   static {
     FAILED_JOB_EVENTS.add(JobIntent.FAIL.name());
@@ -89,9 +89,9 @@ public class ListViewFromJobHandler
   public void flush(FlowNodeInstanceForListViewEntity entity, BatchRequest batchRequest)
       throws PersistenceException {
 
-    logger.debug("Update job state for flow node instance: id {} JobFailedWithRetriesLeft {}",
+    LOGGER.debug("Update job state for flow node instance: id {} JobFailedWithRetriesLeft {}",
         entity.getId(), entity.isJobFailedWithRetriesLeft());
-    Map<String, Object> updateFields = new HashMap<>();
+    final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(ListViewTemplate.ID, entity.getId());
     updateFields.put(ListViewTemplate.JOB_FAILED_WITH_RETRIES_LEFT,
         entity.isJobFailedWithRetriesLeft());

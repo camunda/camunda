@@ -28,11 +28,11 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 public class ListViewFromProcessInstanceHandler
     implements ExportHandler<ProcessInstanceForListViewEntity, ProcessInstanceRecordValue> {
 
-  private static final Logger logger =
+  protected static final int EMPTY_PARENT_PROCESS_INSTANCE_ID = -1;
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(ListViewFromProcessInstanceHandler.class);
   private static final Set<String> PI_AND_AI_START_STATES = new HashSet<>();
   private static final Set<String> PI_AND_AI_FINISH_STATES = new HashSet<>();
-  protected static final int EMPTY_PARENT_PROCESS_INSTANCE_ID = -1;
 
   static {
     PI_AND_AI_START_STATES.add(ELEMENT_ACTIVATING.name());
@@ -92,13 +92,12 @@ public class ListViewFromProcessInstanceHandler
         .setPartitionId(record.getPartitionId())
         .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
         .setBpmnProcessId(recordValue.getBpmnProcessId())
-        .setProcessVersion(recordValue.getVersion())
+        .setProcessVersion(recordValue.getVersion());
     // TODO: restore process name resolving
     // .setProcessName(processCache.getProcessNameOrDefaultValue(piEntity.getProcessDefinitionKey(),
     // recordValue.getBpmnProcessId()))
-    ;
 
-    OffsetDateTime timestamp =
+    final OffsetDateTime timestamp =
         DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
     final boolean isRootProcessInstance =
         recordValue.getParentProcessInstanceKey() == EMPTY_PARENT_PROCESS_INSTANCE_ID;
@@ -170,12 +169,12 @@ public class ListViewFromProcessInstanceHandler
   public void flush(ProcessInstanceForListViewEntity piEntity, BatchRequest batchRequest)
       throws PersistenceException {
 
-    logger.debug("Process instance for list view: id {}", piEntity.getId());
+    LOGGER.debug("Process instance for list view: id {}", piEntity.getId());
 
     if (canOptimizeProcessInstanceIndexing(piEntity)) {
       batchRequest.add(listViewTemplate.getFullQualifiedName(), piEntity);
     } else {
-      Map<String, Object> updateFields = new HashMap<>();
+      final Map<String, Object> updateFields = new HashMap<>();
       if (piEntity.getStartDate() != null) {
         updateFields.put(ListViewTemplate.START_DATE, piEntity.getStartDate());
       }
@@ -218,7 +217,7 @@ public class ListViewFromProcessInstanceHandler
 
     return false;
   }
-  
+
   @Override
   public String getIndexName() {
     return listViewTemplate.getFullQualifiedName();

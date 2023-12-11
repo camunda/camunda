@@ -28,7 +28,7 @@ public class ListViewFromActivityInstanceHandler
 
   // TODO: unify with ListViewFromProcessInstanceHandler and get rid of code duplication
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(ListViewFromActivityInstanceHandler.class);
   private static final Set<String> PI_AND_AI_START_STATES = new HashSet<>();
   private static final Set<String> PI_AND_AI_FINISH_STATES = new HashSet<>();
@@ -125,7 +125,7 @@ public class ListViewFromActivityInstanceHandler
     // }
 
     // set parent
-    Long processInstanceKey = recordValue.getProcessInstanceKey();
+    final Long processInstanceKey = recordValue.getProcessInstanceKey();
     entity.getJoinRelation().setParent(processInstanceKey);
 
 
@@ -136,14 +136,14 @@ public class ListViewFromActivityInstanceHandler
   public void flush(FlowNodeInstanceForListViewEntity actEntity, BatchRequest batchRequest)
       throws PersistenceException {
 
-    Long processInstanceKey = actEntity.getProcessInstanceKey();
+    final Long processInstanceKey = actEntity.getProcessInstanceKey();
 
-    logger.debug("Flow node instance for list view: id {}", actEntity.getId());
+    LOGGER.debug("Flow node instance for list view: id {}", actEntity.getId());
     if (canOptimizeFlowNodeInstanceIndexing(actEntity)) {
       batchRequest.addWithRouting(listViewTemplate.getFullQualifiedName(), actEntity,
           processInstanceKey.toString());
     } else {
-      Map<String, Object> updateFields = new HashMap<>();
+      final Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(ListViewTemplate.ID, actEntity.getId());
       updateFields.put(ListViewTemplate.PARTITION_ID, actEntity.getPartitionId());
       updateFields.put(ListViewTemplate.ACTIVITY_TYPE, actEntity.getActivityType());
@@ -176,7 +176,7 @@ public class ListViewFromActivityInstanceHandler
 
     return false;
   }
-  
+
   @Override
   public String getIndexName() {
     return listViewTemplate.getFullQualifiedName();

@@ -27,7 +27,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordVa
 public class EventFromMessageSubscriptionHandler
     implements ExportHandler<EventEntity, ProcessMessageSubscriptionRecordValue> {
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(EventFromMessageSubscriptionHandler.class);
 
   private static final String ID_PATTERN = "%s_%s";
@@ -60,7 +60,7 @@ public class EventFromMessageSubscriptionHandler
 
   @Override
   public String generateId(Record<ProcessMessageSubscriptionRecordValue> record) {
-    ProcessMessageSubscriptionRecordValue recordValue = record.getValue();
+    final ProcessMessageSubscriptionRecordValue recordValue = record.getValue();
     return String.format(ID_PATTERN, recordValue.getProcessInstanceKey(),
         recordValue.getElementInstanceKey());
   }
@@ -74,7 +74,7 @@ public class EventFromMessageSubscriptionHandler
   public void updateEntity(Record<ProcessMessageSubscriptionRecordValue> record,
       EventEntity eventEntity) {
 
-    ProcessMessageSubscriptionRecordValue recordValue = record.getValue();
+    final ProcessMessageSubscriptionRecordValue recordValue = record.getValue();
 
     eventEntity.setKey(record.getKey());
     eventEntity.setPartitionId(record.getPartitionId());
@@ -97,7 +97,7 @@ public class EventFromMessageSubscriptionHandler
       eventEntity.setFlowNodeInstanceKey(activityInstanceKey);
     }
 
-    EventMetadataEntity eventMetadata = new EventMetadataEntity();
+    final EventMetadataEntity eventMetadata = new EventMetadataEntity();
     eventMetadata.setMessageName(recordValue.getMessageName());
     eventMetadata.setCorrelationKey(recordValue.getCorrelationKey());
 
@@ -107,16 +107,16 @@ public class EventFromMessageSubscriptionHandler
 
   @Override
   public void flush(EventEntity entity, BatchRequest batchRequest) throws PersistenceException {
-    logger.debug("Event: id {}, eventSourceType {}, eventType {}, processInstanceKey {}",
+    LOGGER.debug("Event: id {}, eventSourceType {}, eventType {}, processInstanceKey {}",
         entity.getId(), entity.getEventSourceType(), entity.getEventType(),
         entity.getProcessInstanceKey());
-    Map<String, Object> jsonMap = new HashMap<>();
+    final Map<String, Object> jsonMap = new HashMap<>();
     jsonMap.put(EventTemplate.KEY, entity.getKey());
     jsonMap.put(EventTemplate.EVENT_SOURCE_TYPE, entity.getEventSourceType());
     jsonMap.put(EventTemplate.EVENT_TYPE, entity.getEventType());
     jsonMap.put(EventTemplate.DATE_TIME, entity.getDateTime());
     if (entity.getMetadata() != null) {
-      Map<String, Object> metadataMap = new HashMap<>();
+      final Map<String, Object> metadataMap = new HashMap<>();
       if (entity.getMetadata().getIncidentErrorMessage() != null) {
         metadataMap.put(EventTemplate.INCIDENT_ERROR_MSG,
             entity.getMetadata().getIncidentErrorMessage());
@@ -146,7 +146,7 @@ public class EventFromMessageSubscriptionHandler
     batchRequest.upsert(eventTemplate.getFullQualifiedName(), entity.getId(), entity, jsonMap);
 
   }
-  
+
   @Override
   public String getIndexName() {
     return eventTemplate.getFullQualifiedName();

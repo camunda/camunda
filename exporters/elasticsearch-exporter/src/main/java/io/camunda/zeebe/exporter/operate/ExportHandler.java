@@ -8,7 +8,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 
 public interface ExportHandler<T extends OperateEntity<T>, R extends RecordValue> {
-  
+
   ValueType getHandledValueType();
 
   Class<T> getEntityType();
@@ -22,8 +22,8 @@ public interface ExportHandler<T extends OperateEntity<T>, R extends RecordValue
   void updateEntity(Record<R> record, T entity);
 
   void flush(T entity, BatchRequest batchRequest) throws PersistenceException;
-  
+
   // for testing
-  
+
   String getIndexName();
 }

@@ -57,6 +57,37 @@ import io.camunda.zeebe.util.collection.Tuple;
 @TestInstance(Lifecycle.PER_CLASS)
 public class OperateElasticsearchExporterIT {
 
+
+  private static final Map<ValueType, List<? extends Intent>> INTENTS_PER_VALUE_TYPE =
+      new HashMap<>();
+
+  static {
+    INTENTS_PER_VALUE_TYPE.put(ValueType.DECISION, Arrays.asList(DecisionIntent.CREATED));
+    INTENTS_PER_VALUE_TYPE.put(ValueType.DECISION_REQUIREMENTS,
+        Arrays.asList(DecisionRequirementsIntent.CREATED));
+    INTENTS_PER_VALUE_TYPE.put(ValueType.DECISION_EVALUATION,
+        Arrays.asList(DecisionEvaluationIntent.FAILED, DecisionEvaluationIntent.EVALUATED));
+    INTENTS_PER_VALUE_TYPE.put(ValueType.JOB,
+        Arrays.asList(JobIntent.CREATED, JobIntent.COMPLETED, JobIntent.CANCELED,
+            JobIntent.TIMED_OUT, JobIntent.FAILED, JobIntent.RETRIES_UPDATED,
+            JobIntent.ERROR_THROWN, JobIntent.RECURRED_AFTER_BACKOFF, JobIntent.YIELDED,
+            JobIntent.TIMEOUT_UPDATED, JobIntent.MIGRATED));
+    INTENTS_PER_VALUE_TYPE.put(ValueType.INCIDENT,
+        Arrays.asList(IncidentIntent.CREATED, IncidentIntent.RESOLVED));
+    INTENTS_PER_VALUE_TYPE.put(ValueType.PROCESS, Arrays.asList(ProcessIntent.CREATED));
+    INTENTS_PER_VALUE_TYPE.put(ValueType.PROCESS_INSTANCE,
+        Arrays.asList(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN,
+            ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED,
+            ProcessInstanceIntent.ELEMENT_COMPLETING, ProcessInstanceIntent.ELEMENT_COMPLETED,
+            ProcessInstanceIntent.ELEMENT_TERMINATING, ProcessInstanceIntent.ELEMENT_TERMINATED,
+            ProcessInstanceIntent.ELEMENT_MIGRATED));
+    INTENTS_PER_VALUE_TYPE.put(ValueType.VARIABLE,
+        Arrays.asList(VariableIntent.CREATED, VariableIntent.UPDATED));
+    INTENTS_PER_VALUE_TYPE.put(ValueType.VARIABLE_DOCUMENT, Arrays.asList());
+    INTENTS_PER_VALUE_TYPE.put(ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+        Arrays.asList(ProcessMessageSubscriptionIntent.CREATED));
+  }
+
   @Container
   private static final ElasticsearchContainer CONTAINER = TestSupport.createDefaultContainer();
 
@@ -116,13 +147,13 @@ public class OperateElasticsearchExporterIT {
   public void shouldExportRecord(Tuple<ValueType, Intent> parameter) {
 
     // given
-    ValueType valueType = parameter.getLeft();
-    Intent intent = parameter.getRight();
+    final ValueType valueType = parameter.getLeft();
+    final Intent intent = parameter.getRight();
 
     final Record<RecordValue> record = factory.generateRecord(valueType,
         b -> b.withIntent(intent).withRecordType(RecordType.EVENT));
 
-    List<ExportHandler<?, ?>> handlersForRecord =
+    final List<ExportHandler<?, ?>> handlersForRecord =
         writer.getHandlersForValueType(record.getValueType());
 
     // when
@@ -133,10 +164,10 @@ public class OperateElasticsearchExporterIT {
 
     for (ExportHandler<?, ?> handler : handlersForRecord) {
 
-      String expectedId = handler.generateId((Record) record);
-      String indexName = handler.getIndexName();
+      final String expectedId = handler.generateId((Record) record);
+      final String indexName = handler.getIndexName();
 
-      Map<String, Object> document =
+      final Map<String, Object> document =
           findElasticsearchDocument(indexName, expectedId, handler.getClass().getSimpleName());
       assertThat(document).isNotNull();
       System.out.println(String.format("Returned document %s", document));
@@ -165,35 +196,6 @@ public class OperateElasticsearchExporterIT {
     }
   }
 
-  private static final Map<ValueType, List<? extends Intent>> INTENTS_PER_VALUE_TYPE =
-      new HashMap<>();
-
-  static {
-    INTENTS_PER_VALUE_TYPE.put(ValueType.DECISION, Arrays.asList(DecisionIntent.CREATED));
-    INTENTS_PER_VALUE_TYPE.put(ValueType.DECISION_REQUIREMENTS,
-        Arrays.asList(DecisionRequirementsIntent.CREATED));
-    INTENTS_PER_VALUE_TYPE.put(ValueType.DECISION_EVALUATION,
-        Arrays.asList(DecisionEvaluationIntent.FAILED, DecisionEvaluationIntent.EVALUATED));
-    INTENTS_PER_VALUE_TYPE.put(ValueType.JOB,
-        Arrays.asList(JobIntent.CREATED, JobIntent.COMPLETED, JobIntent.CANCELED,
-            JobIntent.TIMED_OUT, JobIntent.FAILED, JobIntent.RETRIES_UPDATED,
-            JobIntent.ERROR_THROWN, JobIntent.RECURRED_AFTER_BACKOFF, JobIntent.YIELDED,
-            JobIntent.TIMEOUT_UPDATED, JobIntent.MIGRATED));
-    INTENTS_PER_VALUE_TYPE.put(ValueType.INCIDENT,
-        Arrays.asList(IncidentIntent.CREATED, IncidentIntent.RESOLVED));
-    INTENTS_PER_VALUE_TYPE.put(ValueType.PROCESS, Arrays.asList(ProcessIntent.CREATED));
-    INTENTS_PER_VALUE_TYPE.put(ValueType.PROCESS_INSTANCE,
-        Arrays.asList(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN,
-            ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED,
-            ProcessInstanceIntent.ELEMENT_COMPLETING, ProcessInstanceIntent.ELEMENT_COMPLETED,
-            ProcessInstanceIntent.ELEMENT_TERMINATING, ProcessInstanceIntent.ELEMENT_TERMINATED,
-            ProcessInstanceIntent.ELEMENT_MIGRATED));
-    INTENTS_PER_VALUE_TYPE.put(ValueType.VARIABLE,
-        Arrays.asList(VariableIntent.CREATED, VariableIntent.UPDATED));
-    INTENTS_PER_VALUE_TYPE.put(ValueType.VARIABLE_DOCUMENT, Arrays.asList());
-    INTENTS_PER_VALUE_TYPE.put(ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
-        Arrays.asList(ProcessMessageSubscriptionIntent.CREATED));
-  }
 
   public static Stream<Tuple<ValueType, Intent>> getValueTypeIntentCombinations() {
     return INTENTS_PER_VALUE_TYPE.entrySet().stream().flatMap(

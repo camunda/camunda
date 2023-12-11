@@ -38,12 +38,12 @@ public class DecisionInstanceHandler {
   }
 
   public List<DecisionInstanceEntity> createEntities(Record<DecisionEvaluationRecordValue> record) {
-    DecisionEvaluationRecordValue decisionEvaluation = record.getValue();
+    final DecisionEvaluationRecordValue decisionEvaluation = record.getValue();
 
-    List<DecisionInstanceEntity> entities = new ArrayList<>();
+    final List<DecisionInstanceEntity> entities = new ArrayList<>();
     for (int i = 1; i <= decisionEvaluation.getEvaluatedDecisions().size(); i++) {
       final EvaluatedDecisionValue decision = decisionEvaluation.getEvaluatedDecisions().get(i - 1);
-      OffsetDateTime timestamp =
+      final OffsetDateTime timestamp =
           DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
       final DecisionInstanceState state = getState(record, decisionEvaluation, i);
 
@@ -97,7 +97,7 @@ public class DecisionInstanceHandler {
 
   private List<DecisionInstanceOutputEntity> createEvaluationOutputs(
       final List<MatchedRuleValue> matchedRules) {
-    List<DecisionInstanceOutputEntity> outputs = new ArrayList<>();
+    final List<DecisionInstanceOutputEntity> outputs = new ArrayList<>();
     matchedRules.stream()
         .forEach(rule -> outputs.addAll(rule.getEvaluatedOutputs().stream()
             .map(output -> new DecisionInstanceOutputEntity().setRuleId(rule.getRuleId())
@@ -111,7 +111,7 @@ public class DecisionInstanceHandler {
       throws PersistenceException {
     batchRequest.add(decisionInstanceTemplate.getFullQualifiedName(), entity);
   }
-  
+
   public String getIndexName() {
     return decisionInstanceTemplate.getFullQualifiedName();
   }

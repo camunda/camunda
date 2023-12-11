@@ -1,7 +1,5 @@
 package io.camunda.zeebe.exporter.operate;
 
-import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.BulkConfiguration;
-
 public class OperateElasticsearchExporterConfiguration {
 
   private static final String DEFAULT_URL = "http://localhost:9200";

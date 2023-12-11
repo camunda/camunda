@@ -57,7 +57,7 @@ import io.camunda.zeebe.exporter.operate.schema.templates.VariableTemplate;
 
 public class OperateElasticsearchManager implements SchemaManager {
 
-  private static final Logger logger = LoggerFactory.getLogger(OperateElasticsearchManager.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OperateElasticsearchManager.class);
 
   private static final String NUMBER_OF_SHARDS = "index.number_of_shards";
   private static final String NUMBER_OF_REPLICAS = "index.number_of_replicas";
@@ -71,7 +71,7 @@ public class OperateElasticsearchManager implements SchemaManager {
     this.retryElasticsearchClient = new NoSpringRetryElasticsearchClient(client);
     this.operateProperties = new OperateProperties(); // trying with the default properties for nwo
 
-    String indexPrefix = operateProperties.getElasticsearch().getIndexPrefix();
+    final String indexPrefix = operateProperties.getElasticsearch().getIndexPrefix();
 
     indexDescriptors =
         Arrays.asList(new DecisionIndex(indexPrefix), new DecisionRequirementsIndex(indexPrefix),
@@ -182,10 +182,10 @@ public class OperateElasticsearchManager implements SchemaManager {
   private void createDefaults() {
     final OperateElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
     final String settingsTemplate = settingsTemplateName();
-    logger.info("Create default settings from '{}' with {} shards and {} replicas per index.",
+    LOGGER.info("Create default settings from '{}' with {} shards and {} replicas per index.",
         settingsTemplate, elsConfig.getNumberOfShards(), elsConfig.getNumberOfReplicas());
 
-    Settings settings = getIndexSettings();
+    final Settings settings = getIndexSettings();
 
     final Template template = new Template(settings, null, null);
     final ComponentTemplate componentTemplate = new ComponentTemplate(template, null, null);
@@ -198,15 +198,15 @@ public class OperateElasticsearchManager implements SchemaManager {
     final TimeValue timeValue = TimeValue.parseTimeValue(
         operateProperties.getArchiver().getIlmMinAgeForDeleteArchivedIndices(),
         "IndexLifeCycle " + INDEX_LIFECYCLE_NAME);
-    logger.info("Create Index Lifecycle {} for min age of {} ", OPERATE_DELETE_ARCHIVED_INDICES,
+    LOGGER.info("Create Index Lifecycle {} for min age of {} ", OPERATE_DELETE_ARCHIVED_INDICES,
         timeValue.getStringRep());
-    Map<String, Phase> phases = new HashMap<>();
-    Map<String, LifecycleAction> deleteActions =
+    final Map<String, Phase> phases = new HashMap<>();
+    final Map<String, LifecycleAction> deleteActions =
         Collections.singletonMap(DeleteAction.NAME, new DeleteAction());
     phases.put(DELETE_PHASE, new Phase(DELETE_PHASE, timeValue, deleteActions));
 
-    LifecyclePolicy policy = new LifecyclePolicy(OPERATE_DELETE_ARCHIVED_INDICES, phases);
-    PutLifecyclePolicyRequest request = new PutLifecyclePolicyRequest(policy);
+    final LifecyclePolicy policy = new LifecyclePolicy(OPERATE_DELETE_ARCHIVED_INDICES, phases);
+    final PutLifecyclePolicyRequest request = new PutLifecyclePolicyRequest(policy);
     retryElasticsearchClient.putLifeCyclePolicy(request);
   }
 
@@ -230,14 +230,14 @@ public class OperateElasticsearchManager implements SchemaManager {
   }
 
   private void createTemplate(final TemplateDescriptor templateDescriptor) {
-    Template template = getTemplateFrom(templateDescriptor);
-    ComposableIndexTemplate composableTemplate = new ComposableIndexTemplate.Builder()
+    final Template template = getTemplateFrom(templateDescriptor);
+    final ComposableIndexTemplate composableTemplate = new ComposableIndexTemplate.Builder()
         .indexPatterns(List.of(templateDescriptor.getIndexPattern())).template(template)
         .componentTemplates(List.of(settingsTemplateName())).build();
     putIndexTemplate(new PutComposableIndexTemplateRequest()
         .name(templateDescriptor.getTemplateName()).indexTemplate(composableTemplate));
     // This is necessary, otherwise operate won't find indexes at startup
-    String indexName = templateDescriptor.getFullQualifiedName();
+    final String indexName = templateDescriptor.getFullQualifiedName();
     createIndex(new CreateIndexRequest(indexName), indexName);
   }
 
@@ -246,7 +246,7 @@ public class OperateElasticsearchManager implements SchemaManager {
         String.format("/schema/create/template/operate-%s.json", templateDescriptor.getIndexName());
     // Easiest way to create Template from json file: create 'old' request ang retrieve needed info
     final Map<String, Object> templateConfig = readJSONFileToMap(templateFilename);
-    PutIndexTemplateRequest ptr =
+    final PutIndexTemplateRequest ptr =
         new PutIndexTemplateRequest(templateDescriptor.getTemplateName()).source(templateConfig);
     try {
       final Map<String, AliasMetadata> aliases = Map.of(templateDescriptor.getAlias(),
@@ -275,20 +275,20 @@ public class OperateElasticsearchManager implements SchemaManager {
   }
 
   private void createIndex(final CreateIndexRequest createIndexRequest, String indexName) {
-    boolean created = retryElasticsearchClient.createIndex(createIndexRequest);
+    final boolean created = retryElasticsearchClient.createIndex(createIndexRequest);
     if (created) {
-      logger.debug("Index [{}] was successfully created", indexName);
+      LOGGER.debug("Index [{}] was successfully created", indexName);
     } else {
-      logger.debug("Index [{}] was NOT created", indexName);
+      LOGGER.debug("Index [{}] was NOT created", indexName);
     }
   }
 
   private void putIndexTemplate(final PutComposableIndexTemplateRequest request) {
-    boolean created = retryElasticsearchClient.createTemplate(request);
+    final boolean created = retryElasticsearchClient.createTemplate(request);
     if (created) {
-      logger.debug("Template [{}] was successfully created", request.name());
+      LOGGER.debug("Template [{}] was successfully created", request.name());
     } else {
-      logger.debug("Template [{}] was NOT created", request.name());
+      LOGGER.debug("Template [{}] was NOT created", request.name());
     }
   }
 

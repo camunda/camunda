@@ -29,7 +29,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 public class FlowNodeInstanceHandler
     implements ExportHandler<FlowNodeInstanceEntity, ProcessInstanceRecordValue> {
 
-  private static final Logger logger = LoggerFactory.getLogger(FlowNodeInstanceHandler.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(FlowNodeInstanceHandler.class);
 
   private static final Set<Intent> AI_FINISH_STATES = Set.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
   private static final Set<Intent> AI_START_STATES = Set.of(ELEMENT_ACTIVATING);
@@ -79,7 +79,7 @@ public class FlowNodeInstanceHandler
 
   @Override
   public FlowNodeInstanceEntity createNewEntity(String id) {
-    FlowNodeInstanceEntity entity = new FlowNodeInstanceEntity();
+    final FlowNodeInstanceEntity entity = new FlowNodeInstanceEntity();
 
     entity.setId(id);
     // TODO: key and partition?
@@ -134,11 +134,11 @@ public class FlowNodeInstanceHandler
   @Override
   public void flush(FlowNodeInstanceEntity fniEntity, BatchRequest batchRequest)
       throws PersistenceException {
-    logger.debug("Flow node instance: id {}", fniEntity.getId());
+    LOGGER.debug("Flow node instance: id {}", fniEntity.getId());
     if (canOptimizeFlowNodeInstanceIndexing(fniEntity)) {
       batchRequest.add(flowNodeInstanceTemplate.getFullQualifiedName(), fniEntity);
     } else {
-      Map<String, Object> updateFields = new HashMap<>();
+      final Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(FlowNodeInstanceTemplate.ID, fniEntity.getId());
       updateFields.put(FlowNodeInstanceTemplate.PARTITION_ID, fniEntity.getPartitionId());
       updateFields.put(FlowNodeInstanceTemplate.TYPE, fniEntity.getType());
@@ -185,7 +185,7 @@ public class FlowNodeInstanceHandler
 
     return false;
   }
-  
+
   @Override
   public String getIndexName() {
     return flowNodeInstanceTemplate.getFullQualifiedName();

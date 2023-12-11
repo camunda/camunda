@@ -23,11 +23,11 @@ public class DecisionRequirementsHandler
     implements ExportHandler<DecisionRequirementsEntity, DecisionRequirementsRecordValue> {
 
 
-  private static final Logger logger = LoggerFactory.getLogger(DecisionRequirementsHandler.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(DecisionRequirementsHandler.class);
 
   private static final Charset CHARSET = StandardCharsets.UTF_8;
 
-  private final static Set<Intent> STATES = new HashSet<>();
+  private static final Set<Intent> STATES = new HashSet<>();
   static {
     STATES.add(DecisionRequirementsIntent.CREATED);
   }
@@ -66,10 +66,10 @@ public class DecisionRequirementsHandler
   @Override
   public void updateEntity(Record<DecisionRequirementsRecordValue> record,
       DecisionRequirementsEntity entity) {
-    DecisionRequirementsRecordValue decisionRequirements = record.getValue();
+    final DecisionRequirementsRecordValue decisionRequirements = record.getValue();
 
-    byte[] byteArray = decisionRequirements.getResource();
-    String dmn = new String(byteArray, CHARSET);
+    final byte[] byteArray = decisionRequirements.getResource();
+    final String dmn = new String(byteArray, CHARSET);
     entity.setKey(decisionRequirements.getDecisionRequirementsKey())
         .setName(decisionRequirements.getDecisionRequirementsName())
         .setDecisionRequirementsId(decisionRequirements.getDecisionRequirementsId())
@@ -81,14 +81,14 @@ public class DecisionRequirementsHandler
   @Override
   public void flush(DecisionRequirementsEntity entity, BatchRequest batchRequest)
       throws PersistenceException {
-    logger.debug("Process: key {}, decisionRequirementsId {}", entity.getKey(),
+    LOGGER.debug("Process: key {}, decisionRequirementsId {}", entity.getKey(),
         entity.getDecisionRequirementsId());
 
     batchRequest.addWithId(decisionRequirementsIndex.getFullQualifiedName(),
         ConversionUtils.toStringOrNull(entity.getKey()), entity);
 
   }
-  
+
   @Override
   public String getIndexName() {
     return decisionRequirementsIndex.getFullQualifiedName();

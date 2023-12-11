@@ -24,7 +24,7 @@ public class FlowNodeInstanceFromIncidentHandler
   // handler manages
 
 
-  private static final Logger logger =
+  private static final Logger LOGGER =
       LoggerFactory.getLogger(FlowNodeInstanceFromIncidentHandler.class);
 
   private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
@@ -61,7 +61,7 @@ public class FlowNodeInstanceFromIncidentHandler
   @Override
   public void updateEntity(Record<IncidentRecordValue> record, FlowNodeInstanceEntity entity) {
     final Intent intent = record.getIntent();
-    IncidentRecordValue recordValue = (IncidentRecordValue) record.getValue();
+    final IncidentRecordValue recordValue = (IncidentRecordValue) record.getValue();
 
     // update activity instance
     entity.setKey(recordValue.getElementInstanceKey()).setPartitionId(record.getPartitionId())
@@ -83,8 +83,8 @@ public class FlowNodeInstanceFromIncidentHandler
   public void flush(FlowNodeInstanceEntity entity, BatchRequest batchRequest)
       throws PersistenceException {
 
-    logger.debug("Flow node instance: id {}", entity.getId());
-    Map<String, Object> updateFields = new HashMap<>();
+    LOGGER.debug("Flow node instance: id {}", entity.getId());
+    final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(FlowNodeInstanceTemplate.INCIDENT_KEY, entity.getIncidentKey());
     batchRequest.upsert(flowNodeInstanceTemplate.getFullQualifiedName(), entity.getId(), entity,
         updateFields);
@@ -95,5 +95,4 @@ public class FlowNodeInstanceFromIncidentHandler
   public String getIndexName() {
     return flowNodeInstanceTemplate.getFullQualifiedName();
   }
-  
 }
