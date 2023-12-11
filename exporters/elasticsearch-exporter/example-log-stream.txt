@@ -1,0 +1,144 @@
+			Position: 1 Key: -1
+				RecordMetadata{recordType=COMMAND, valueType=DEPLOYMENT, intent=CREATE, authorization=JWT.eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJ6ZWViZS1nYXRld2F5IiwiYXVkIjoiemVlYmUtYnJva2VyIiwic3ViIjoiemVlYmUtY2xpZW50IiwiYXV0aG9yaXplZF90ZW5hbnRzIjpbIjxkZWZhdWx0PiJdfQ.}
+				Value:
+{"resources":[{"resourceName":"process.bpmn","resource":"PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+DQo8ZGVmaW5pdGlvbnMgeG1sbnM6YnBtbmRpPSJodHRwOi8vd3d3Lm9tZy5vcmcvc3BlYy9CUE1OLzIwMTAwNTI0L0RJIiB4bWxuczpkYz0iaHR0cDovL3d3dy5vbWcub3JnL3NwZWMvREQvMjAxMDA1MjQvREMiIHhtbG5zOmRpPSJodHRwOi8vd3d3Lm9tZy5vcmcvc3BlYy9ERC8yMDEwMDUyNC9ESSIgeG1sbnM6bnMwPSJodHRwOi8vY2FtdW5kYS5vcmcvc2NoZW1hL3plZWJlLzEuMCIgZXhwb3J0ZXI9IlplZWJlIEJQTU4gTW9kZWwiIGV4cG9ydGVyVmVyc2lvbj0iOC40LjAtU05BUFNIT1QiIGlkPSJkZWZpbml0aW9uc185NTQ5YjZmNS00YWI2LTRmM2MtOTk0NS1jNzIxNTU0N2E5YTIiIHhtbG5zOm1vZGVsZXI9Imh0dHA6Ly9jYW11bmRhLm9yZy9zY2hlbWEvbW9kZWxlci8xLjAiIG1vZGVsZXI6ZXhlY3V0aW9uUGxhdGZvcm09IkNhbXVuZGEgQ2xvdWQiIG1vZGVsZXI6ZXhlY3V0aW9uUGxhdGZvcm1WZXJzaW9uPSI4LjQuMC1TTkFQU0hPVCIgdGFyZ2V0TmFtZXNwYWNlPSJodHRwOi8vd3d3Lm9tZy5vcmcvc3BlYy9CUE1OLzIwMTAwNTI0L01PREVMIiB4bWxucz0iaHR0cDovL3d3dy5vbWcub3JnL3NwZWMvQlBNTi8yMDEwMDUyNC9NT0RFTCI+DQogIDxwcm9jZXNzIGlkPSJwcm9jZXNzIiBpc0V4ZWN1dGFibGU9InRydWUiPg0KICAgIDxzdGFydEV2ZW50IGlkPSJzdGFydCIgbmFtZT0ic3RhcnQiPg0KICAgICAgPG91dGdvaW5nPnNlcXVlbmNlRmxvd19kZTgzYWYyMi02NTg4LTRhZjktYWMxNC0xMTc2NzhkOTFkZWI8L291dGdvaW5nPg0KICAgIDwvc3RhcnRFdmVudD4NCiAgICA8c2VydmljZVRhc2sgaWQ9InRhc2siIG5hbWU9InRhc2siPg0KICAgICAgPGV4dGVuc2lvbkVsZW1lbnRzPg0KICAgICAgICA8bnMwOnRhc2tEZWZpbml0aW9uIHR5cGU9ImlkLTMyZThjZjIxLTdiZWItNGY5Yi05OWQ3LWNlOTRmNjBjYWY3NiIvPg0KICAgICAgPC9leHRlbnNpb25FbGVtZW50cz4NCiAgICAgIDxpbmNvbWluZz5zZXF1ZW5jZUZsb3dfZGU4M2FmMjItNjU4OC00YWY5LWFjMTQtMTE3Njc4ZDkxZGViPC9pbmNvbWluZz4NCiAgICAgIDxvdXRnb2luZz5zZXF1ZW5jZUZsb3dfZjEzYjgyZTctOWU2Ni00YmUyLWJmYjMtZGE4MzBmZWYyOTA1PC9vdXRnb2luZz4NCiAgICA8L3NlcnZpY2VUYXNrPg0KICAgIDxzZXF1ZW5jZUZsb3cgaWQ9InNlcXVlbmNlRmxvd19kZTgzYWYyMi02NTg4LTRhZjktYWMxNC0xMTc2NzhkOTFkZWIiIHNvdXJjZVJlZj0ic3RhcnQiIHRhcmdldFJlZj0idGFzayIvPg0KICAgIDxlbmRFdmVudCBpZD0iZW5kIiBuYW1lPSJlbmQiPg0KICAgICAgPGluY29taW5nPnNlcXVlbmNlRmxvd19mMTNiODJlNy05ZTY2LTRiZTItYmZiMy1kYTgzMGZlZjI5MDU8L2luY29taW5nPg0KICAgIDwvZW5kRXZlbnQ+DQogICAgPHNlcXVlbmNlRmxvdyBpZD0ic2VxdWVuY2VGbG93X2YxM2I4MmU3LTllNjYtNGJlMi1iZmIzLWRhODMwZmVmMjkwNSIgc291cmNlUmVmPSJ0YXNrIiB0YXJnZXRSZWY9ImVuZCIvPg0KICA8L3Byb2Nlc3M+DQogIDxicG1uZGk6QlBNTkRpYWdyYW0gaWQ9IkJQTU5EaWFncmFtXzgyN2QzZjU2LTU5NDUtNDk1OS1hMGE5LWJkMGEwOGE0YjQzMiI+DQogICAgPGJwbW5kaTpCUE1OUGxhbmUgYnBtbkVsZW1lbnQ9InByb2Nlc3MiIGlkPSJCUE1OUGxhbmVfYThiNDk1ZGEtNDQxNS00YTViLWE3MGYtYjZlMjM3OTcyM2U0Ij4NCiAgICAgIDxicG1uZGk6QlBNTlNoYXBlIGJwbW5FbGVtZW50PSJzdGFydCIgaWQ9IkJQTU5TaGFwZV83ODJmZmMwZC1hZGYzLTQ3ZGYtYThlNS03ZWE3YzdhZmQ1NzgiPg0KICAgICAgICA8ZGM6Qm91bmRzIGhlaWdodD0iMzYuMCIgd2lkdGg9IjM2LjAiIHg9IjEwMC4wIiB5PSIxMDAuMCIvPg0KICAgICAgPC9icG1uZGk6QlBNTlNoYXBlPg0KICAgICAgPGJwbW5kaTpCUE1OU2hhcGUgYnBtbkVsZW1lbnQ9InRhc2siIGlkPSJCUE1OU2hhcGVfZGNmOGFiYjYtMWMxMy00OTM2LThmODctMzI0ZDZkNjZjZGI4Ij4NCiAgICAgICAgPGRjOkJvdW5kcyBoZWlnaHQ9IjgwLjAiIHdpZHRoPSIxMDAuMCIgeD0iMTg2LjAiIHk9Ijc4LjAiLz4NCiAgICAgIDwvYnBtbmRpOkJQTU5TaGFwZT4NCiAgICAgIDxicG1uZGk6QlBNTkVkZ2UgYnBtbkVsZW1lbnQ9InNlcXVlbmNlRmxvd19kZTgzYWYyMi02NTg4LTRhZjktYWMxNC0xMTc2NzhkOTFkZWIiIGlkPSJCUE1ORWRnZV84MmQyN2E1ZS03MThiLTQ3NmYtOTFmOC0wYjVmODJiMzBiYmMiPg0KICAgICAgICA8ZGk6d2F5cG9pbnQgeD0iMTM2LjAiIHk9IjExOC4wIi8+DQogICAgICAgIDxkaTp3YXlwb2ludCB4PSIxODYuMCIgeT0iMTE4LjAiLz4NCiAgICAgIDwvYnBtbmRpOkJQTU5FZGdlPg0KICAgICAgPGJwbW5kaTpCUE1OU2hhcGUgYnBtbkVsZW1lbnQ9ImVuZCIgaWQ9IkJQTU5TaGFwZV8xNGQ1NDQwMS0xYTAxLTRlOGUtYTFmOC04NTk0YmUyZjQ0YTYiPg0KICAgICAgICA8ZGM6Qm91bmRzIGhlaWdodD0iMzYuMCIgd2lkdGg9IjM2LjAiIHg9IjMzNi4wIiB5PSIxMDAuMCIvPg0KICAgICAgPC9icG1uZGk6QlBNTlNoYXBlPg0KICAgICAgPGJwbW5kaTpCUE1ORWRnZSBicG1uRWxlbWVudD0ic2VxdWVuY2VGbG93X2YxM2I4MmU3LTllNjYtNGJlMi1iZmIzLWRhODMwZmVmMjkwNSIgaWQ9IkJQTU5FZGdlX2UzZWI3MGJlLTZhOWQtNDE5Yy04MTc5LTExYzg5ZWI3OWFmMCI+DQogICAgICAgIDxkaTp3YXlwb2ludCB4PSIyODYuMCIgeT0iMTE4LjAiLz4NCiAgICAgICAgPGRpOndheXBvaW50IHg9IjMzNi4wIiB5PSIxMTguMCIvPg0KICAgICAgPC9icG1uZGk6QlBNTkVkZ2U+DQogICAgPC9icG1uZGk6QlBNTlBsYW5lPg0KICA8L2JwbW5kaTpCUE1ORGlhZ3JhbT4NCjwvZGVmaW5pdGlvbnM+DQo="}],"processesMetadata":[],"decisionRequirementsMetadata":[],"decisionsMetadata":[],"formMetadata":[],"tenantId":"<default>"}
+			Position: 2 Key: 2251799813685249
+				RecordMetadata{recordType=EVENT, valueType=PROCESS, intent=CREATED, authorization=UNKNOWN}
+				Value:
+{"bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"resourceName":"process.bpmn","checksum":"qwwG5HzIAslOCcIyoWoKVA==","resource":"PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+DQo8ZGVmaW5pdGlvbnMgeG1sbnM6YnBtbmRpPSJodHRwOi8vd3d3Lm9tZy5vcmcvc3BlYy9CUE1OLzIwMTAwNTI0L0RJIiB4bWxuczpkYz0iaHR0cDovL3d3dy5vbWcub3JnL3NwZWMvREQvMjAxMDA1MjQvREMiIHhtbG5zOmRpPSJodHRwOi8vd3d3Lm9tZy5vcmcvc3BlYy9ERC8yMDEwMDUyNC9ESSIgeG1sbnM6bnMwPSJodHRwOi8vY2FtdW5kYS5vcmcvc2NoZW1hL3plZWJlLzEuMCIgZXhwb3J0ZXI9IlplZWJlIEJQTU4gTW9kZWwiIGV4cG9ydGVyVmVyc2lvbj0iOC40LjAtU05BUFNIT1QiIGlkPSJkZWZpbml0aW9uc185NTQ5YjZmNS00YWI2LTRmM2MtOTk0NS1jNzIxNTU0N2E5YTIiIHhtbG5zOm1vZGVsZXI9Imh0dHA6Ly9jYW11bmRhLm9yZy9zY2hlbWEvbW9kZWxlci8xLjAiIG1vZGVsZXI6ZXhlY3V0aW9uUGxhdGZvcm09IkNhbXVuZGEgQ2xvdWQiIG1vZGVsZXI6ZXhlY3V0aW9uUGxhdGZvcm1WZXJzaW9uPSI4LjQuMC1TTkFQU0hPVCIgdGFyZ2V0TmFtZXNwYWNlPSJodHRwOi8vd3d3Lm9tZy5vcmcvc3BlYy9CUE1OLzIwMTAwNTI0L01PREVMIiB4bWxucz0iaHR0cDovL3d3dy5vbWcub3JnL3NwZWMvQlBNTi8yMDEwMDUyNC9NT0RFTCI+DQogIDxwcm9jZXNzIGlkPSJwcm9jZXNzIiBpc0V4ZWN1dGFibGU9InRydWUiPg0KICAgIDxzdGFydEV2ZW50IGlkPSJzdGFydCIgbmFtZT0ic3RhcnQiPg0KICAgICAgPG91dGdvaW5nPnNlcXVlbmNlRmxvd19kZTgzYWYyMi02NTg4LTRhZjktYWMxNC0xMTc2NzhkOTFkZWI8L291dGdvaW5nPg0KICAgIDwvc3RhcnRFdmVudD4NCiAgICA8c2VydmljZVRhc2sgaWQ9InRhc2siIG5hbWU9InRhc2siPg0KICAgICAgPGV4dGVuc2lvbkVsZW1lbnRzPg0KICAgICAgICA8bnMwOnRhc2tEZWZpbml0aW9uIHR5cGU9ImlkLTMyZThjZjIxLTdiZWItNGY5Yi05OWQ3LWNlOTRmNjBjYWY3NiIvPg0KICAgICAgPC9leHRlbnNpb25FbGVtZW50cz4NCiAgICAgIDxpbmNvbWluZz5zZXF1ZW5jZUZsb3dfZGU4M2FmMjItNjU4OC00YWY5LWFjMTQtMTE3Njc4ZDkxZGViPC9pbmNvbWluZz4NCiAgICAgIDxvdXRnb2luZz5zZXF1ZW5jZUZsb3dfZjEzYjgyZTctOWU2Ni00YmUyLWJmYjMtZGE4MzBmZWYyOTA1PC9vdXRnb2luZz4NCiAgICA8L3NlcnZpY2VUYXNrPg0KICAgIDxzZXF1ZW5jZUZsb3cgaWQ9InNlcXVlbmNlRmxvd19kZTgzYWYyMi02NTg4LTRhZjktYWMxNC0xMTc2NzhkOTFkZWIiIHNvdXJjZVJlZj0ic3RhcnQiIHRhcmdldFJlZj0idGFzayIvPg0KICAgIDxlbmRFdmVudCBpZD0iZW5kIiBuYW1lPSJlbmQiPg0KICAgICAgPGluY29taW5nPnNlcXVlbmNlRmxvd19mMTNiODJlNy05ZTY2LTRiZTItYmZiMy1kYTgzMGZlZjI5MDU8L2luY29taW5nPg0KICAgIDwvZW5kRXZlbnQ+DQogICAgPHNlcXVlbmNlRmxvdyBpZD0ic2VxdWVuY2VGbG93X2YxM2I4MmU3LTllNjYtNGJlMi1iZmIzLWRhODMwZmVmMjkwNSIgc291cmNlUmVmPSJ0YXNrIiB0YXJnZXRSZWY9ImVuZCIvPg0KICA8L3Byb2Nlc3M+DQogIDxicG1uZGk6QlBNTkRpYWdyYW0gaWQ9IkJQTU5EaWFncmFtXzgyN2QzZjU2LTU5NDUtNDk1OS1hMGE5LWJkMGEwOGE0YjQzMiI+DQogICAgPGJwbW5kaTpCUE1OUGxhbmUgYnBtbkVsZW1lbnQ9InByb2Nlc3MiIGlkPSJCUE1OUGxhbmVfYThiNDk1ZGEtNDQxNS00YTViLWE3MGYtYjZlMjM3OTcyM2U0Ij4NCiAgICAgIDxicG1uZGk6QlBNTlNoYXBlIGJwbW5FbGVtZW50PSJzdGFydCIgaWQ9IkJQTU5TaGFwZV83ODJmZmMwZC1hZGYzLTQ3ZGYtYThlNS03ZWE3YzdhZmQ1NzgiPg0KICAgICAgICA8ZGM6Qm91bmRzIGhlaWdodD0iMzYuMCIgd2lkdGg9IjM2LjAiIHg9IjEwMC4wIiB5PSIxMDAuMCIvPg0KICAgICAgPC9icG1uZGk6QlBNTlNoYXBlPg0KICAgICAgPGJwbW5kaTpCUE1OU2hhcGUgYnBtbkVsZW1lbnQ9InRhc2siIGlkPSJCUE1OU2hhcGVfZGNmOGFiYjYtMWMxMy00OTM2LThmODctMzI0ZDZkNjZjZGI4Ij4NCiAgICAgICAgPGRjOkJvdW5kcyBoZWlnaHQ9IjgwLjAiIHdpZHRoPSIxMDAuMCIgeD0iMTg2LjAiIHk9Ijc4LjAiLz4NCiAgICAgIDwvYnBtbmRpOkJQTU5TaGFwZT4NCiAgICAgIDxicG1uZGk6QlBNTkVkZ2UgYnBtbkVsZW1lbnQ9InNlcXVlbmNlRmxvd19kZTgzYWYyMi02NTg4LTRhZjktYWMxNC0xMTc2NzhkOTFkZWIiIGlkPSJCUE1ORWRnZV84MmQyN2E1ZS03MThiLTQ3NmYtOTFmOC0wYjVmODJiMzBiYmMiPg0KICAgICAgICA8ZGk6d2F5cG9pbnQgeD0iMTM2LjAiIHk9IjExOC4wIi8+DQogICAgICAgIDxkaTp3YXlwb2ludCB4PSIxODYuMCIgeT0iMTE4LjAiLz4NCiAgICAgIDwvYnBtbmRpOkJQTU5FZGdlPg0KICAgICAgPGJwbW5kaTpCUE1OU2hhcGUgYnBtbkVsZW1lbnQ9ImVuZCIgaWQ9IkJQTU5TaGFwZV8xNGQ1NDQwMS0xYTAxLTRlOGUtYTFmOC04NTk0YmUyZjQ0YTYiPg0KICAgICAgICA8ZGM6Qm91bmRzIGhlaWdodD0iMzYuMCIgd2lkdGg9IjM2LjAiIHg9IjMzNi4wIiB5PSIxMDAuMCIvPg0KICAgICAgPC9icG1uZGk6QlBNTlNoYXBlPg0KICAgICAgPGJwbW5kaTpCUE1ORWRnZSBicG1uRWxlbWVudD0ic2VxdWVuY2VGbG93X2YxM2I4MmU3LTllNjYtNGJlMi1iZmIzLWRhODMwZmVmMjkwNSIgaWQ9IkJQTU5FZGdlX2UzZWI3MGJlLTZhOWQtNDE5Yy04MTc5LTExYzg5ZWI3OWFmMCI+DQogICAgICAgIDxkaTp3YXlwb2ludCB4PSIyODYuMCIgeT0iMTE4LjAiLz4NCiAgICAgICAgPGRpOndheXBvaW50IHg9IjMzNi4wIiB5PSIxMTguMCIvPg0KICAgICAgPC9icG1uZGk6QlBNTkVkZ2U+DQogICAgPC9icG1uZGk6QlBNTlBsYW5lPg0KICA8L2JwbW5kaTpCUE1ORGlhZ3JhbT4NCjwvZGVmaW5pdGlvbnM+DQo=","tenantId":"<default>"}
+			Position: 3 Key: 2251799813685250
+				RecordMetadata{recordType=EVENT, valueType=DEPLOYMENT, intent=CREATED, authorization=UNKNOWN}
+				Value:
+{"resources":[],"processesMetadata":[{"bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"resourceName":"process.bpmn","checksum":"qwwG5HzIAslOCcIyoWoKVA==","isDuplicate":false,"tenantId":"<default>"}],"decisionRequirementsMetadata":[],"decisionsMetadata":[],"formMetadata":[],"tenantId":"<default>"}
+			Position: 4 Key: -1
+				RecordMetadata{recordType=COMMAND, valueType=PROCESS_INSTANCE_CREATION, intent=CREATE, authorization=JWT.eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJ6ZWViZS1nYXRld2F5IiwiYXVkIjoiemVlYmUtYnJva2VyIiwic3ViIjoiemVlYmUtY2xpZW50IiwiYXV0aG9yaXplZF90ZW5hbnRzIjpbIjxkZWZhdWx0PiJdfQ.}
+				Value:
+{"bpmnProcessId":"process","processDefinitionKey":-1,"processInstanceKey":-1,"version":-1,"variables":"gA==","fetchVariables":[],"startInstructions":[],"tenantId":"<default>"}
+			Position: 5 Key: 2251799813685251
+				RecordMetadata{recordType=COMMAND, valueType=PROCESS_INSTANCE, intent=ACTIVATE_ELEMENT, authorization=UNKNOWN}
+				Value:
+{"bpmnElementType":"PROCESS","elementId":"process","bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"flowScopeKey":-1,"bpmnEventType":"UNSPECIFIED","parentProcessInstanceKey":-1,"parentElementInstanceKey":-1,"tenantId":"<default>"}
+			Position: 6 Key: 2251799813685252
+				RecordMetadata{recordType=EVENT, valueType=PROCESS_INSTANCE_CREATION, intent=CREATED, authorization=UNKNOWN}
+				Value:
+{"bpmnProcessId":"process","processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"version":1,"variables":"gA==","fetchVariables":[],"startInstructions":[],"tenantId":"<default>"}
+			Position: 7 Key: 2251799813685251
+				RecordMetadata{recordType=EVENT, valueType=PROCESS_INSTANCE, intent=ELEMENT_ACTIVATING, authorization=UNKNOWN}
+				Value:
+{"bpmnElementType":"PROCESS","elementId":"process","bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"flowScopeKey":-1,"bpmnEventType":"UNSPECIFIED","parentProcessInstanceKey":-1,"parentElementInstanceKey":-1,"tenantId":"<default>"}
+			Position: 8 Key: 2251799813685251
+				RecordMetadata{recordType=EVENT, valueType=PROCESS_INSTANCE, intent=ELEMENT_ACTIVATED, authorization=UNKNOWN}
+				Value:
+{"bpmnElementType":"PROCESS","elementId":"process","bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"flowScopeKey":-1,"bpmnEventType":"UNSPECIFIED","parentProcessInstanceKey":-1,"parentElementInstanceKey":-1,"tenantId":"<default>"}
+			Position: 9 Key: -1
+				RecordMetadata{recordType=COMMAND, valueType=PROCESS_INSTANCE, intent=ACTIVATE_ELEMENT, authorization=UNKNOWN}
+				Value:
+{"bpmnElementType":"START_EVENT","elementId":"start","bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"flowScopeKey":2251799813685251,"bpmnEventType":"NONE","parentProcessInstanceKey":-1,"parentElementInstanceKey":-1,"tenantId":"<default>"}
+			Position: 10 Key: 2251799813685253
+				RecordMetadata{recordType=EVENT, valueType=PROCESS_INSTANCE, intent=ELEMENT_ACTIVATING, authorization=UNKNOWN}
+				Value:
+{"bpmnElementType":"START_EVENT","elementId":"start","bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"flowScopeKey":2251799813685251,"bpmnEventType":"NONE","parentProcessInstanceKey":-1,"parentElementInstanceKey":-1,"tenantId":"<default>"}
+			Position: 11 Key: 2251799813685253
+				RecordMetadata{recordType=EVENT, valueType=PROCESS_INSTANCE, intent=ELEMENT_ACTIVATED, authorization=UNKNOWN}
+				Value:
+{"bpmnElementType":"START_EVENT","elementId":"start","bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"flowScopeKey":2251799813685251,"bpmnEventType":"NONE","parentProcessInstanceKey":-1,"parentElementInstanceKey":-1,"tenantId":"<default>"}
+			Position: 12 Key: 2251799813685253
+				RecordMetadata{recordType=COMMAND, valueType=PROCESS_INSTANCE, intent=COMPLETE_ELEMENT, authorization=UNKNOWN}
+				Value:
+{"bpmnElementType":"START_EVENT","elementId":"start","bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"flowScopeKey":2251799813685251,"bpmnEventType":"NONE","parentProcessInstanceKey":-1,"parentElementInstanceKey":-1,"tenantId":"<default>"}
+			Position: 13 Key: 2251799813685253
+				RecordMetadata{recordType=EVENT, valueType=PROCESS_INSTANCE, intent=ELEMENT_COMPLETING, authorization=UNKNOWN}
+				Value:
+{"bpmnElementType":"START_EVENT","elementId":"start","bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"flowScopeKey":2251799813685251,"bpmnEventType":"NONE","parentProcessInstanceKey":-1,"parentElementInstanceKey":-1,"tenantId":"<default>"}
+			Position: 14 Key: 2251799813685253
+				RecordMetadata{recordType=EVENT, valueType=PROCESS_INSTANCE, intent=ELEMENT_COMPLETED, authorization=UNKNOWN}
+				Value:
+{"bpmnElementType":"START_EVENT","elementId":"start","bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"flowScopeKey":2251799813685251,"bpmnEventType":"NONE","parentProcessInstanceKey":-1,"parentElementInstanceKey":-1,"tenantId":"<default>"}
+			Position: 15 Key: 2251799813685254
+				RecordMetadata{recordType=EVENT, valueType=PROCESS_INSTANCE, intent=SEQUENCE_FLOW_TAKEN, authorization=UNKNOWN}
+				Value:
+{"bpmnElementType":"SEQUENCE_FLOW","elementId":"sequenceFlow_de83af22-6588-4af9-ac14-117678d91deb","bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"flowScopeKey":2251799813685251,"bpmnEventType":"UNSPECIFIED","parentProcessInstanceKey":-1,"parentElementInstanceKey":-1,"tenantId":"<default>"}
+			Position: 16 Key: 2251799813685255
+				RecordMetadata{recordType=COMMAND, valueType=PROCESS_INSTANCE, intent=ACTIVATE_ELEMENT, authorization=UNKNOWN}
+				Value:
+{"bpmnElementType":"SERVICE_TASK","elementId":"task","bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"flowScopeKey":2251799813685251,"bpmnEventType":"UNSPECIFIED","parentProcessInstanceKey":-1,"parentElementInstanceKey":-1,"tenantId":"<default>"}
+			Position: 17 Key: 2251799813685255
+				RecordMetadata{recordType=EVENT, valueType=PROCESS_INSTANCE, intent=ELEMENT_ACTIVATING, authorization=UNKNOWN}
+				Value:
+{"bpmnElementType":"SERVICE_TASK","elementId":"task","bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"flowScopeKey":2251799813685251,"bpmnEventType":"UNSPECIFIED","parentProcessInstanceKey":-1,"parentElementInstanceKey":-1,"tenantId":"<default>"}
+			Position: 18 Key: 2251799813685256
+				RecordMetadata{recordType=EVENT, valueType=JOB, intent=CREATED, authorization=UNKNOWN}
+				Value:
+{"deadline":-1,"timeout":-1,"worker":"","retries":3,"retryBackoff":0,"recurringTime":-1,"type":"id-32e8cf21-7beb-4f9b-99d7-ce94f60caf76","customHeaders":[packed value (length=1)],"variables":"gA==","errorMessage":"","errorCode":"","bpmnProcessId":"process","processDefinitionVersion":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"elementId":"task","elementInstanceKey":2251799813685255,"tenantId":"<default>"}
+			Position: 19 Key: 2251799813685255
+				RecordMetadata{recordType=EVENT, valueType=PROCESS_INSTANCE, intent=ELEMENT_ACTIVATED, authorization=UNKNOWN}
+				Value:
+{"bpmnElementType":"SERVICE_TASK","elementId":"task","bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"flowScopeKey":2251799813685251,"bpmnEventType":"UNSPECIFIED","parentProcessInstanceKey":-1,"parentElementInstanceKey":-1,"tenantId":"<default>"}
+			Position: 20 Key: -1
+				RecordMetadata{recordType=COMMAND, valueType=JOB_BATCH, intent=ACTIVATE, authorization=JWT.eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJ6ZWViZS1nYXRld2F5IiwiYXVkIjoiemVlYmUtYnJva2VyIiwic3ViIjoiemVlYmUtY2xpZW50IiwiYXV0aG9yaXplZF90ZW5hbnRzIjpbIjxkZWZhdWx0PiJdfQ.}
+				Value:
+{"type":"id-32e8cf21-7beb-4f9b-99d7-ce94f60caf76","worker":"","timeout":10000,"maxJobsToActivate":10,"jobKeys":[],"jobs":[],"variables":[],"truncated":false,"tenantIds":["<default>"]}
+			Position: 21 Key: 2251799813685257
+				RecordMetadata{recordType=EVENT, valueType=JOB_BATCH, intent=ACTIVATED, authorization=UNKNOWN}
+				Value:
+{"type":"id-32e8cf21-7beb-4f9b-99d7-ce94f60caf76","worker":"","timeout":10000,"maxJobsToActivate":10,"jobKeys":[2251799813685256],"jobs":[{"deadline":1702311675189,"timeout":-1,"worker":"","retries":3,"retryBackoff":0,"recurringTime":-1,"type":"id-32e8cf21-7beb-4f9b-99d7-ce94f60caf76","customHeaders":[packed value (length=1)],"variables":"3wAAAAA=","errorMessage":"","errorCode":"","bpmnProcessId":"process","processDefinitionVersion":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"elementId":"task","elementInstanceKey":2251799813685255,"tenantId":"<default>"}],"variables":[],"truncated":false,"tenantIds":["<default>"]}
+			Position: 22 Key: 2251799813685256
+				RecordMetadata{recordType=COMMAND, valueType=JOB, intent=COMPLETE, authorization=JWT.eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJ6ZWViZS1nYXRld2F5IiwiYXVkIjoiemVlYmUtYnJva2VyIiwic3ViIjoiemVlYmUtY2xpZW50IiwiYXV0aG9yaXplZF90ZW5hbnRzIjpbIjxkZWZhdWx0PiJdfQ.}
+				Value:
+{"deadline":-1,"timeout":-1,"worker":"","retries":-1,"retryBackoff":0,"recurringTime":-1,"type":"","customHeaders":[packed value (length=1)],"variables":"gA==","errorMessage":"","errorCode":"","bpmnProcessId":"","processDefinitionVersion":-1,"processDefinitionKey":-1,"processInstanceKey":-1,"elementId":"","elementInstanceKey":-1,"tenantId":"<default>"}
+			Position: 23 Key: 2251799813685256
+				RecordMetadata{recordType=EVENT, valueType=JOB, intent=COMPLETED, authorization=UNKNOWN}
+				Value:
+{"deadline":1702311675189,"timeout":-1,"worker":"","retries":3,"retryBackoff":0,"recurringTime":-1,"type":"id-32e8cf21-7beb-4f9b-99d7-ce94f60caf76","customHeaders":[packed value (length=1)],"variables":"gA==","errorMessage":"","errorCode":"","bpmnProcessId":"process","processDefinitionVersion":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"elementId":"task","elementInstanceKey":2251799813685255,"tenantId":"<default>"}
+			Position: 24 Key: 2251799813685258
+				RecordMetadata{recordType=EVENT, valueType=PROCESS_EVENT, intent=TRIGGERING, authorization=UNKNOWN}
+				Value:
+{"scopeKey":2251799813685255,"targetElementId":"task","variables":"gA==","processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"tenantId":"<default>"}
+			Position: 25 Key: 2251799813685255
+				RecordMetadata{recordType=COMMAND, valueType=PROCESS_INSTANCE, intent=COMPLETE_ELEMENT, authorization=UNKNOWN}
+				Value:
+{"bpmnElementType":"SERVICE_TASK","elementId":"task","bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"flowScopeKey":2251799813685251,"bpmnEventType":"UNSPECIFIED","parentProcessInstanceKey":-1,"parentElementInstanceKey":-1,"tenantId":"<default>"}
+			Position: 26 Key: 2251799813685255
+				RecordMetadata{recordType=EVENT, valueType=PROCESS_INSTANCE, intent=ELEMENT_COMPLETING, authorization=UNKNOWN}
+				Value:
+{"bpmnElementType":"SERVICE_TASK","elementId":"task","bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"flowScopeKey":2251799813685251,"bpmnEventType":"UNSPECIFIED","parentProcessInstanceKey":-1,"parentElementInstanceKey":-1,"tenantId":"<default>"}
+			Position: 27 Key: 2251799813685255
+				RecordMetadata{recordType=EVENT, valueType=PROCESS_INSTANCE, intent=ELEMENT_COMPLETED, authorization=UNKNOWN}
+				Value:
+{"bpmnElementType":"SERVICE_TASK","elementId":"task","bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"flowScopeKey":2251799813685251,"bpmnEventType":"UNSPECIFIED","parentProcessInstanceKey":-1,"parentElementInstanceKey":-1,"tenantId":"<default>"}
+			Position: 28 Key: 2251799813685259
+				RecordMetadata{recordType=EVENT, valueType=PROCESS_INSTANCE, intent=SEQUENCE_FLOW_TAKEN, authorization=UNKNOWN}
+				Value:
+{"bpmnElementType":"SEQUENCE_FLOW","elementId":"sequenceFlow_f13b82e7-9e66-4be2-bfb3-da830fef2905","bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"flowScopeKey":2251799813685251,"bpmnEventType":"UNSPECIFIED","parentProcessInstanceKey":-1,"parentElementInstanceKey":-1,"tenantId":"<default>"}
+			Position: 29 Key: 2251799813685260
+				RecordMetadata{recordType=COMMAND, valueType=PROCESS_INSTANCE, intent=ACTIVATE_ELEMENT, authorization=UNKNOWN}
+				Value:
+{"bpmnElementType":"END_EVENT","elementId":"end","bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"flowScopeKey":2251799813685251,"bpmnEventType":"NONE","parentProcessInstanceKey":-1,"parentElementInstanceKey":-1,"tenantId":"<default>"}
+			Position: 30 Key: 2251799813685260
+				RecordMetadata{recordType=EVENT, valueType=PROCESS_INSTANCE, intent=ELEMENT_ACTIVATING, authorization=UNKNOWN}
+				Value:
+{"bpmnElementType":"END_EVENT","elementId":"end","bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"flowScopeKey":2251799813685251,"bpmnEventType":"NONE","parentProcessInstanceKey":-1,"parentElementInstanceKey":-1,"tenantId":"<default>"}
+			Position: 31 Key: 2251799813685260
+				RecordMetadata{recordType=EVENT, valueType=PROCESS_INSTANCE, intent=ELEMENT_ACTIVATED, authorization=UNKNOWN}
+				Value:
+{"bpmnElementType":"END_EVENT","elementId":"end","bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"flowScopeKey":2251799813685251,"bpmnEventType":"NONE","parentProcessInstanceKey":-1,"parentElementInstanceKey":-1,"tenantId":"<default>"}
+			Position: 32 Key: 2251799813685260
+				RecordMetadata{recordType=EVENT, valueType=PROCESS_INSTANCE, intent=ELEMENT_COMPLETING, authorization=UNKNOWN}
+				Value:
+{"bpmnElementType":"END_EVENT","elementId":"end","bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"flowScopeKey":2251799813685251,"bpmnEventType":"NONE","parentProcessInstanceKey":-1,"parentElementInstanceKey":-1,"tenantId":"<default>"}
+			Position: 33 Key: 2251799813685260
+				RecordMetadata{recordType=EVENT, valueType=PROCESS_INSTANCE, intent=ELEMENT_COMPLETED, authorization=UNKNOWN}
+				Value:
+{"bpmnElementType":"END_EVENT","elementId":"end","bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"flowScopeKey":2251799813685251,"bpmnEventType":"NONE","parentProcessInstanceKey":-1,"parentElementInstanceKey":-1,"tenantId":"<default>"}
+			Position: 34 Key: 2251799813685251
+				RecordMetadata{recordType=COMMAND, valueType=PROCESS_INSTANCE, intent=COMPLETE_ELEMENT, authorization=UNKNOWN}
+				Value:
+{"bpmnElementType":"PROCESS","elementId":"process","bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"flowScopeKey":-1,"bpmnEventType":"UNSPECIFIED","parentProcessInstanceKey":-1,"parentElementInstanceKey":-1,"tenantId":"<default>"}
+			Position: 35 Key: 2251799813685251
+				RecordMetadata{recordType=EVENT, valueType=PROCESS_INSTANCE, intent=ELEMENT_COMPLETING, authorization=UNKNOWN}
+				Value:
+{"bpmnElementType":"PROCESS","elementId":"process","bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"flowScopeKey":-1,"bpmnEventType":"UNSPECIFIED","parentProcessInstanceKey":-1,"parentElementInstanceKey":-1,"tenantId":"<default>"}
+			Position: 36 Key: 2251799813685251
+				RecordMetadata{recordType=EVENT, valueType=PROCESS_INSTANCE, intent=ELEMENT_COMPLETED, authorization=UNKNOWN}
+				Value:
+{"bpmnElementType":"PROCESS","elementId":"process","bpmnProcessId":"process","version":1,"processDefinitionKey":2251799813685249,"processInstanceKey":2251799813685251,"flowScopeKey":-1,"bpmnEventType":"UNSPECIFIED","parentProcessInstanceKey":-1,"parentElementInstanceKey":-1,"tenantId":"<default>"}
