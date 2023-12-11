@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -21,6 +22,7 @@ import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
+import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
@@ -39,6 +41,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.support.IndicesOptions;
+import org.elasticsearch.client.GetAliasesResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.core.CountRequest;
@@ -51,6 +54,7 @@ import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.client.indices.PutComponentTemplateRequest;
 import org.elasticsearch.client.indices.PutComposableIndexTemplateRequest;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
+import org.elasticsearch.cluster.metadata.AliasMetadata;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.settings.Settings;
@@ -174,6 +178,28 @@ public class NoSpringRetryElasticsearchClient {
             throw e;
           }
         });
+  }
+
+  public Set<String> getAliasesNames(String namePattern) {
+    return executeWithRetries("Get aliases for " + namePattern, () -> {
+      try {
+        final GetAliasesRequest request = new GetAliasesRequest(namePattern);
+        final GetAliasesResponse response = esClient.indices().getAlias(request, requestOptions);
+
+        final Set<String> returnAliases = new HashSet<>();
+        final Map<String, Set<AliasMetadata>> mapAliases = response.getAliases();
+        for (Map.Entry<String, Set<AliasMetadata>> a : mapAliases.entrySet()) {
+          returnAliases.addAll(a.getValue().stream().map(m -> m.getAlias()).collect(Collectors.toSet()));
+        }
+        return returnAliases;
+      } catch (ElasticsearchException e) {
+        //NOT_FOUND response means that aliases are not found
+        if (e.status().equals(RestStatus.NOT_FOUND)) {
+          return Set.of();
+        }
+        throw e;
+      }
+    });
   }
 
   public boolean createIndex(CreateIndexRequest createIndexRequest) {

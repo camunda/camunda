@@ -51,7 +51,7 @@ public class ListViewFromVariableHandler
 
   @Override
   public VariableForListViewEntity createNewEntity(String id) {
-    return new VariableForListViewEntity().setId(id);
+    return (VariableForListViewEntity)new VariableForListViewEntity().setId(id);
   }
 
   @Override

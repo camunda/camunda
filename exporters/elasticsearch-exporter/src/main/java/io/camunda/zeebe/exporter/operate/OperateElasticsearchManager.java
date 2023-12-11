@@ -157,6 +157,11 @@ public class OperateElasticsearchManager implements SchemaManager {
   }
 
   @Override
+  public Set<String> getAliasesNames(final String indexPattern) {
+    return retryElasticsearchClient.getAliasesNames(indexPattern);
+  }
+
+  @Override
   public long getNumberOfDocumentsFor(String... indexPatterns) {
     return retryElasticsearchClient.getNumberOfDocumentsFor(indexPatterns);
   }

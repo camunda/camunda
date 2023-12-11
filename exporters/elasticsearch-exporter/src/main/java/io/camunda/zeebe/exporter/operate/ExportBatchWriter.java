@@ -44,7 +44,7 @@ public class ExportBatchWriter {
       entities.forEach(e -> cachedDecisionInstanceEntities.put(e.getId(), e));
       idFlushOrder.addAll(
           entities.stream()
-              .map(e -> (Tuple) new Tuple<>(e.getId(), DecisionInstanceEntity.class))
+              .map(e -> new Tuple<String, Class<?>>(e.getId(), DecisionInstanceEntity.class))
               .collect(Collectors.toList()));
     }
 

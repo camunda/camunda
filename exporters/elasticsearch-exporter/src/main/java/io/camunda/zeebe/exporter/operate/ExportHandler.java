@@ -7,7 +7,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 
-public interface ExportHandler<T extends OperateEntity<T>, R extends RecordValue> {
+public interface ExportHandler<T extends OperateEntity, R extends RecordValue> {
 
   ValueType getHandledValueType();
 
