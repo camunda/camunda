@@ -1,5 +1,29 @@
 package io.camunda.zeebe.exporter.operate;
 
+import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.property.OperateElasticsearchProperties;
+import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.SchemaManager;
+import io.camunda.zeebe.exporter.operate.schema.indices.DecisionIndex;
+import io.camunda.zeebe.exporter.operate.schema.indices.DecisionRequirementsIndex;
+import io.camunda.zeebe.exporter.operate.schema.indices.ImportPositionIndex;
+import io.camunda.zeebe.exporter.operate.schema.indices.IndexDescriptor;
+import io.camunda.zeebe.exporter.operate.schema.indices.MetricIndex;
+import io.camunda.zeebe.exporter.operate.schema.indices.MigrationRepositoryIndex;
+import io.camunda.zeebe.exporter.operate.schema.indices.OperateWebSessionIndex;
+import io.camunda.zeebe.exporter.operate.schema.indices.ProcessIndex;
+import io.camunda.zeebe.exporter.operate.schema.indices.UserIndex;
+import io.camunda.zeebe.exporter.operate.schema.templates.BatchOperationTemplate;
+import io.camunda.zeebe.exporter.operate.schema.templates.DecisionInstanceTemplate;
+import io.camunda.zeebe.exporter.operate.schema.templates.EventTemplate;
+import io.camunda.zeebe.exporter.operate.schema.templates.FlowNodeInstanceTemplate;
+import io.camunda.zeebe.exporter.operate.schema.templates.IncidentTemplate;
+import io.camunda.zeebe.exporter.operate.schema.templates.ListViewTemplate;
+import io.camunda.zeebe.exporter.operate.schema.templates.OperationTemplate;
+import io.camunda.zeebe.exporter.operate.schema.templates.PostImporterQueueTemplate;
+import io.camunda.zeebe.exporter.operate.schema.templates.SequenceFlowTemplate;
+import io.camunda.zeebe.exporter.operate.schema.templates.TemplateDescriptor;
+import io.camunda.zeebe.exporter.operate.schema.templates.VariableTemplate;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
@@ -30,30 +54,6 @@ import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.property.OperateElasticsearchProperties;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.SchemaManager;
-import io.camunda.zeebe.exporter.operate.schema.indices.DecisionIndex;
-import io.camunda.zeebe.exporter.operate.schema.indices.DecisionRequirementsIndex;
-import io.camunda.zeebe.exporter.operate.schema.indices.ImportPositionIndex;
-import io.camunda.zeebe.exporter.operate.schema.indices.IndexDescriptor;
-import io.camunda.zeebe.exporter.operate.schema.indices.MetricIndex;
-import io.camunda.zeebe.exporter.operate.schema.indices.MigrationRepositoryIndex;
-import io.camunda.zeebe.exporter.operate.schema.indices.OperateWebSessionIndex;
-import io.camunda.zeebe.exporter.operate.schema.indices.ProcessIndex;
-import io.camunda.zeebe.exporter.operate.schema.indices.UserIndex;
-import io.camunda.zeebe.exporter.operate.schema.templates.BatchOperationTemplate;
-import io.camunda.zeebe.exporter.operate.schema.templates.DecisionInstanceTemplate;
-import io.camunda.zeebe.exporter.operate.schema.templates.EventTemplate;
-import io.camunda.zeebe.exporter.operate.schema.templates.FlowNodeInstanceTemplate;
-import io.camunda.zeebe.exporter.operate.schema.templates.IncidentTemplate;
-import io.camunda.zeebe.exporter.operate.schema.templates.ListViewTemplate;
-import io.camunda.zeebe.exporter.operate.schema.templates.OperationTemplate;
-import io.camunda.zeebe.exporter.operate.schema.templates.PostImporterQueueTemplate;
-import io.camunda.zeebe.exporter.operate.schema.templates.SequenceFlowTemplate;
-import io.camunda.zeebe.exporter.operate.schema.templates.TemplateDescriptor;
-import io.camunda.zeebe.exporter.operate.schema.templates.VariableTemplate;
 
 public class OperateElasticsearchManager implements SchemaManager {
 
@@ -74,27 +74,45 @@ public class OperateElasticsearchManager implements SchemaManager {
     final String indexPrefix = operateProperties.getElasticsearch().getIndexPrefix();
 
     indexDescriptors =
-        Arrays.asList(new DecisionIndex(indexPrefix), new DecisionRequirementsIndex(indexPrefix),
-            new ImportPositionIndex(indexPrefix), new MetricIndex(indexPrefix),
-            new MigrationRepositoryIndex(indexPrefix), new OperateWebSessionIndex(indexPrefix),
-            new ProcessIndex(indexPrefix), new UserIndex(indexPrefix));
-    templateDescriptors = Arrays.asList(new BatchOperationTemplate(indexPrefix),
-        new DecisionInstanceTemplate(indexPrefix), new EventTemplate(indexPrefix),
-        new FlowNodeInstanceTemplate(indexPrefix), new IncidentTemplate(indexPrefix),
-        new ListViewTemplate(indexPrefix), new OperationTemplate(indexPrefix),
-        new PostImporterQueueTemplate(indexPrefix), new SequenceFlowTemplate(indexPrefix),
-        new VariableTemplate(indexPrefix));
+        Arrays.asList(
+            new DecisionIndex(indexPrefix),
+            new DecisionRequirementsIndex(indexPrefix),
+            new ImportPositionIndex(indexPrefix),
+            new MetricIndex(indexPrefix),
+            new MigrationRepositoryIndex(indexPrefix),
+            new OperateWebSessionIndex(indexPrefix),
+            new ProcessIndex(indexPrefix),
+            new UserIndex(indexPrefix));
+    templateDescriptors =
+        Arrays.asList(
+            new BatchOperationTemplate(indexPrefix),
+            new DecisionInstanceTemplate(indexPrefix),
+            new EventTemplate(indexPrefix),
+            new FlowNodeInstanceTemplate(indexPrefix),
+            new IncidentTemplate(indexPrefix),
+            new ListViewTemplate(indexPrefix),
+            new OperationTemplate(indexPrefix),
+            new PostImporterQueueTemplate(indexPrefix),
+            new SequenceFlowTemplate(indexPrefix),
+            new VariableTemplate(indexPrefix));
   }
 
   public <T extends IndexDescriptor> T getIndexDescriptor(Class<T> clazz) {
-    return (T) indexDescriptors.stream().filter(i -> i.getClass() == clazz).findFirst().orElseThrow(
-        () -> new RuntimeException("Could not find template descriptor of class " + clazz));
+    return (T)
+        indexDescriptors.stream()
+            .filter(i -> i.getClass() == clazz)
+            .findFirst()
+            .orElseThrow(
+                () -> new RuntimeException("Could not find template descriptor of class " + clazz));
   }
 
   public <T extends TemplateDescriptor> T getTemplateDescriptor(Class<T> clazz) {
-    return (T) templateDescriptors.stream().filter(i -> i.getClass() == clazz).findFirst()
-        .orElseThrow(
-            () -> new RuntimeException("Could not find template descriptor of class " + clazz));
+    return (T)
+        templateDescriptors.stream()
+            .filter(i -> i.getClass() == clazz)
+            .findFirst()
+            .orElseThrow(
+                () -> new RuntimeException("Could not find template descriptor of class " + clazz));
   }
 
   @Override
@@ -109,8 +127,8 @@ public class OperateElasticsearchManager implements SchemaManager {
 
   @Override
   public boolean setIndexSettingsFor(Map<String, ?> settings, String indexPattern) {
-    return retryElasticsearchClient
-        .setIndexSettingsFor(Settings.builder().loadFromMap(settings).build(), indexPattern);
+    return retryElasticsearchClient.setIndexSettingsFor(
+        Settings.builder().loadFromMap(settings).build(), indexPattern);
   }
 
   @Override
@@ -175,30 +193,40 @@ public class OperateElasticsearchManager implements SchemaManager {
 
   private Settings getIndexSettings() {
     final OperateElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
-    return Settings.builder().put(NUMBER_OF_SHARDS, elsConfig.getNumberOfShards())
-        .put(NUMBER_OF_REPLICAS, elsConfig.getNumberOfReplicas()).build();
+    return Settings.builder()
+        .put(NUMBER_OF_SHARDS, elsConfig.getNumberOfShards())
+        .put(NUMBER_OF_REPLICAS, elsConfig.getNumberOfReplicas())
+        .build();
   }
 
   private void createDefaults() {
     final OperateElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
     final String settingsTemplate = settingsTemplateName();
-    LOGGER.info("Create default settings from '{}' with {} shards and {} replicas per index.",
-        settingsTemplate, elsConfig.getNumberOfShards(), elsConfig.getNumberOfReplicas());
+    LOGGER.info(
+        "Create default settings from '{}' with {} shards and {} replicas per index.",
+        settingsTemplate,
+        elsConfig.getNumberOfShards(),
+        elsConfig.getNumberOfReplicas());
 
     final Settings settings = getIndexSettings();
 
     final Template template = new Template(settings, null, null);
     final ComponentTemplate componentTemplate = new ComponentTemplate(template, null, null);
-    final PutComponentTemplateRequest request = new PutComponentTemplateRequest()
-        .name(settingsTemplate).componentTemplate(componentTemplate);
+    final PutComponentTemplateRequest request =
+        new PutComponentTemplateRequest()
+            .name(settingsTemplate)
+            .componentTemplate(componentTemplate);
     retryElasticsearchClient.createComponentTemplate(request);
   }
 
   private void createIndexLifeCycles() {
-    final TimeValue timeValue = TimeValue.parseTimeValue(
-        operateProperties.getArchiver().getIlmMinAgeForDeleteArchivedIndices(),
-        "IndexLifeCycle " + INDEX_LIFECYCLE_NAME);
-    LOGGER.info("Create Index Lifecycle {} for min age of {} ", OPERATE_DELETE_ARCHIVED_INDICES,
+    final TimeValue timeValue =
+        TimeValue.parseTimeValue(
+            operateProperties.getArchiver().getIlmMinAgeForDeleteArchivedIndices(),
+            "IndexLifeCycle " + INDEX_LIFECYCLE_NAME);
+    LOGGER.info(
+        "Create Index Lifecycle {} for min age of {} ",
+        OPERATE_DELETE_ARCHIVED_INDICES,
         timeValue.getStringRep());
     final Map<String, Phase> phases = new HashMap<>();
     final Map<String, LifecycleAction> deleteActions =
@@ -223,7 +251,8 @@ public class OperateElasticsearchManager implements SchemaManager {
         String.format("/schema/create/index/operate-%s.json", indexDescriptor.getIndexName());
     final Map<String, Object> indexDescription = readJSONFileToMap(indexFilename);
     createIndex(
-        new CreateIndexRequest(indexDescriptor.getFullQualifiedName()).source(indexDescription)
+        new CreateIndexRequest(indexDescriptor.getFullQualifiedName())
+            .source(indexDescription)
             .aliases(Set.of(new Alias(indexDescriptor.getAlias()).writeIndex(false)))
             .settings(getIndexSettings()),
         indexDescriptor.getFullQualifiedName());
@@ -231,11 +260,16 @@ public class OperateElasticsearchManager implements SchemaManager {
 
   private void createTemplate(final TemplateDescriptor templateDescriptor) {
     final Template template = getTemplateFrom(templateDescriptor);
-    final ComposableIndexTemplate composableTemplate = new ComposableIndexTemplate.Builder()
-        .indexPatterns(List.of(templateDescriptor.getIndexPattern())).template(template)
-        .componentTemplates(List.of(settingsTemplateName())).build();
-    putIndexTemplate(new PutComposableIndexTemplateRequest()
-        .name(templateDescriptor.getTemplateName()).indexTemplate(composableTemplate));
+    final ComposableIndexTemplate composableTemplate =
+        new ComposableIndexTemplate.Builder()
+            .indexPatterns(List.of(templateDescriptor.getIndexPattern()))
+            .template(template)
+            .componentTemplates(List.of(settingsTemplateName()))
+            .build();
+    putIndexTemplate(
+        new PutComposableIndexTemplateRequest()
+            .name(templateDescriptor.getTemplateName())
+            .indexTemplate(composableTemplate));
     // This is necessary, otherwise operate won't find indexes at startup
     final String indexName = templateDescriptor.getFullQualifiedName();
     createIndex(new CreateIndexRequest(indexName), indexName);
@@ -249,8 +283,10 @@ public class OperateElasticsearchManager implements SchemaManager {
     final PutIndexTemplateRequest ptr =
         new PutIndexTemplateRequest(templateDescriptor.getTemplateName()).source(templateConfig);
     try {
-      final Map<String, AliasMetadata> aliases = Map.of(templateDescriptor.getAlias(),
-          AliasMetadata.builder(templateDescriptor.getAlias()).build());
+      final Map<String, AliasMetadata> aliases =
+          Map.of(
+              templateDescriptor.getAlias(),
+              AliasMetadata.builder(templateDescriptor.getAlias()).build());
       return new Template(ptr.settings(), new CompressedXContent(ptr.mappings()), aliases);
     } catch (IOException e) {
       throw new OperateRuntimeException(
@@ -261,8 +297,8 @@ public class OperateElasticsearchManager implements SchemaManager {
 
   private Map<String, Object> readJSONFileToMap(final String filename) {
     final Map<String, Object> result;
-    try (
-        InputStream inputStream = OperateElasticsearchManager.class.getResourceAsStream(filename)) {
+    try (InputStream inputStream =
+        OperateElasticsearchManager.class.getResourceAsStream(filename)) {
       if (inputStream != null) {
         result = XContentHelper.convertToMap(XContentType.JSON.xContent(), inputStream, true);
       } else {

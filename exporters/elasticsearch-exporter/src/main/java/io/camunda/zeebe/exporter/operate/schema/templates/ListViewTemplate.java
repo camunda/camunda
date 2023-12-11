@@ -44,7 +44,7 @@ public class ListViewTemplate extends AbstractTemplateDescriptor implements Prio
   public static final String JOIN_RELATION = "joinRelation";
   public static final String PROCESS_INSTANCE_JOIN_RELATION = "processInstance";
   public static final String ACTIVITIES_JOIN_RELATION = "activity"; // now we call it flow node
-                                                                    // instance
+  // instance
   public static final String VARIABLES_JOIN_RELATION = "variable";
 
   public ListViewTemplate(String indexPrefix) {
@@ -60,5 +60,4 @@ public class ListViewTemplate extends AbstractTemplateDescriptor implements Prio
   public String getVersion() {
     return "8.3.0";
   }
-
 }

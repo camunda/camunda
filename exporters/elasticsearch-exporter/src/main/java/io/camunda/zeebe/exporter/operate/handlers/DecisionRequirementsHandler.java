@@ -1,12 +1,7 @@
 package io.camunda.zeebe.exporter.operate.handlers;
 
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import io.camunda.operate.entities.dmn.definition.DecisionRequirementsEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
@@ -18,16 +13,22 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DecisionRequirementsHandler
     implements ExportHandler<DecisionRequirementsEntity, DecisionRequirementsRecordValue> {
-
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DecisionRequirementsHandler.class);
 
   private static final Charset CHARSET = StandardCharsets.UTF_8;
 
   private static final Set<Intent> STATES = new HashSet<>();
+
   static {
     STATES.add(DecisionRequirementsIntent.CREATED);
   }
@@ -64,34 +65,38 @@ public class DecisionRequirementsHandler
   }
 
   @Override
-  public void updateEntity(Record<DecisionRequirementsRecordValue> record,
-      DecisionRequirementsEntity entity) {
+  public void updateEntity(
+      Record<DecisionRequirementsRecordValue> record, DecisionRequirementsEntity entity) {
     final DecisionRequirementsRecordValue decisionRequirements = record.getValue();
 
     final byte[] byteArray = decisionRequirements.getResource();
     final String dmn = new String(byteArray, CHARSET);
-    entity.setKey(decisionRequirements.getDecisionRequirementsKey())
+    entity
+        .setKey(decisionRequirements.getDecisionRequirementsKey())
         .setName(decisionRequirements.getDecisionRequirementsName())
         .setDecisionRequirementsId(decisionRequirements.getDecisionRequirementsId())
         .setVersion(decisionRequirements.getDecisionRequirementsVersion())
-        .setResourceName(decisionRequirements.getResourceName()).setXml(dmn)
+        .setResourceName(decisionRequirements.getResourceName())
+        .setXml(dmn)
         .setTenantId(tenantOrDefault(decisionRequirements.getTenantId()));
   }
 
   @Override
   public void flush(DecisionRequirementsEntity entity, BatchRequest batchRequest)
       throws PersistenceException {
-    LOGGER.debug("Process: key {}, decisionRequirementsId {}", entity.getKey(),
+    LOGGER.debug(
+        "Process: key {}, decisionRequirementsId {}",
+        entity.getKey(),
         entity.getDecisionRequirementsId());
 
-    batchRequest.addWithId(decisionRequirementsIndex.getFullQualifiedName(),
-        ConversionUtils.toStringOrNull(entity.getKey()), entity);
-
+    batchRequest.addWithId(
+        decisionRequirementsIndex.getFullQualifiedName(),
+        ConversionUtils.toStringOrNull(entity.getKey()),
+        entity);
   }
 
   @Override
   public String getIndexName() {
     return decisionRequirementsIndex.getFullQualifiedName();
   }
-
 }

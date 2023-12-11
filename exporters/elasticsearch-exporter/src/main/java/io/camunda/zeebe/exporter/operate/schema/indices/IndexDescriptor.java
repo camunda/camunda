@@ -24,5 +24,4 @@ public interface IndexDescriptor extends Versionable {
   default String getAlias() {
     return getFullQualifiedName() + "alias";
   }
-
 }

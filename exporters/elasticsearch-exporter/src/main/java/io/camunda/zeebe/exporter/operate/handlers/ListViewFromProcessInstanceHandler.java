@@ -4,15 +4,7 @@ import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.exceptions.PersistenceException;
@@ -24,6 +16,15 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ListViewFromProcessInstanceHandler
     implements ExportHandler<ProcessInstanceForListViewEntity, ProcessInstanceRecordValue> {
@@ -72,8 +73,8 @@ public class ListViewFromProcessInstanceHandler
   }
 
   @Override
-  public void updateEntity(Record<ProcessInstanceRecordValue> record,
-      ProcessInstanceForListViewEntity piEntity) {
+  public void updateEntity(
+      Record<ProcessInstanceRecordValue> record, ProcessInstanceForListViewEntity piEntity) {
 
     if (isProcessInstanceTerminated(record)) {
       // resolve corresponding operation
@@ -86,7 +87,8 @@ public class ListViewFromProcessInstanceHandler
     final var recordValue = record.getValue();
     final var intentStr = record.getIntent().name();
 
-    piEntity.setProcessInstanceKey(recordValue.getProcessInstanceKey())
+    piEntity
+        .setProcessInstanceKey(recordValue.getProcessInstanceKey())
         .setKey(recordValue.getProcessInstanceKey())
         .setTenantId(tenantOrDefault(recordValue.getTenantId()))
         .setPartitionId(record.getPartitionId())
@@ -122,7 +124,8 @@ public class ListViewFromProcessInstanceHandler
     }
     // call activity related fields
     if (!isRootProcessInstance) {
-      piEntity.setParentProcessInstanceKey(recordValue.getParentProcessInstanceKey())
+      piEntity
+          .setParentProcessInstanceKey(recordValue.getParentProcessInstanceKey())
           .setParentFlowNodeInstanceKey(recordValue.getParentElementInstanceKey());
       // TODO: restore tree path logic
       // if (piEntity.getTreePath() == null) {
@@ -160,7 +163,6 @@ public class ListViewFromProcessInstanceHandler
     return bpmnElementType.equals(type);
   }
 
-
   private boolean isProcessInstanceTerminated(final Record<ProcessInstanceRecordValue> record) {
     return record.getIntent() == ELEMENT_TERMINATED;
   }
@@ -187,10 +189,9 @@ public class ListViewFromProcessInstanceHandler
         updateFields.put(ListViewTemplate.STATE, piEntity.getState());
       }
 
-      batchRequest.upsert(listViewTemplate.getFullQualifiedName(), piEntity.getId(), piEntity,
-          updateFields);
+      batchRequest.upsert(
+          listViewTemplate.getFullQualifiedName(), piEntity.getId(), piEntity, updateFields);
     }
-
   }
 
   // TODO: put this logic in a single place
@@ -222,5 +223,4 @@ public class ListViewFromProcessInstanceHandler
   public String getIndexName() {
     return listViewTemplate.getFullQualifiedName();
   }
-
 }

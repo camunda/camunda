@@ -10,7 +10,6 @@ import io.camunda.operate.schema.backup.Prio4Backup;
 
 public class MigrationRepositoryIndex extends AbstractIndexDescriptor implements Prio4Backup {
 
-
   public static final String INDEX_NAME = "migration-steps-repository";
 
   public MigrationRepositoryIndex(String indexPrefix) {

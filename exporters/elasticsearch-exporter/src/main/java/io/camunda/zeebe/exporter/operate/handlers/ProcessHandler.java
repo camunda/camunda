@@ -1,13 +1,7 @@
 package io.camunda.zeebe.exporter.operate.handlers;
 
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
@@ -20,6 +14,13 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
 
@@ -27,6 +28,7 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
 
   private static final Charset CHARSET = StandardCharsets.UTF_8;
   private static final Set<Intent> STATES = new HashSet<>();
+
   static {
     STATES.add(ProcessIntent.CREATED);
   }
@@ -68,8 +70,11 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
   public void updateEntity(Record<Process> record, ProcessEntity entity) {
     final Process process = record.getValue();
 
-    entity.setKey(process.getProcessDefinitionKey()).setBpmnProcessId(process.getBpmnProcessId())
-        .setVersion(process.getVersion()).setTenantId(tenantOrDefault(process.getTenantId()));
+    entity
+        .setKey(process.getProcessDefinitionKey())
+        .setBpmnProcessId(process.getBpmnProcessId())
+        .setVersion(process.getVersion())
+        .setTenantId(tenantOrDefault(process.getTenantId()));
 
     final byte[] byteArray = process.getResource();
 
@@ -88,7 +93,9 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
   @Override
   public void flush(ProcessEntity processEntity, BatchRequest batchRequest)
       throws PersistenceException {
-    LOGGER.debug("Process: key {}, bpmnProcessId {}", processEntity.getKey(),
+    LOGGER.debug(
+        "Process: key {}, bpmnProcessId {}",
+        processEntity.getKey(),
         processEntity.getBpmnProcessId());
 
     // TODO: afaik this code updates the version in process instance records, if they have been
@@ -105,14 +112,14 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
     // updateFields);
     // }
 
-    batchRequest.addWithId(processIndex.getFullQualifiedName(),
-        ConversionUtils.toStringOrNull(processEntity.getKey()), processEntity);
-
+    batchRequest.addWithId(
+        processIndex.getFullQualifiedName(),
+        ConversionUtils.toStringOrNull(processEntity.getKey()),
+        processEntity);
   }
 
   @Override
   public String getIndexName() {
     return processIndex.getFullQualifiedName();
   }
-
 }

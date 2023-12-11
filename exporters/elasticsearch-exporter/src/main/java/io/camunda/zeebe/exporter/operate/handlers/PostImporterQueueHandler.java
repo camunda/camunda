@@ -1,6 +1,5 @@
 package io.camunda.zeebe.exporter.operate.handlers;
 
-import java.time.OffsetDateTime;
 import io.camunda.operate.entities.post.PostImporterActionType;
 import io.camunda.operate.entities.post.PostImporterQueueEntity;
 import io.camunda.operate.exceptions.PersistenceException;
@@ -10,6 +9,7 @@ import io.camunda.zeebe.exporter.operate.schema.templates.PostImporterQueueTempl
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import java.time.OffsetDateTime;
 
 public class PostImporterQueueHandler
     implements ExportHandler<PostImporterQueueEntity, IncidentRecordValue> {
@@ -48,11 +48,14 @@ public class PostImporterQueueHandler
   @Override
   public void updateEntity(Record<IncidentRecordValue> record, PostImporterQueueEntity entity) {
     final String intent = record.getIntent().name();
-    entity.setActionType(PostImporterActionType.INCIDENT).setIntent(intent).setKey(record.getKey())
-        .setPosition(record.getPosition()).setCreationTime(OffsetDateTime.now())
+    entity
+        .setActionType(PostImporterActionType.INCIDENT)
+        .setIntent(intent)
+        .setKey(record.getKey())
+        .setPosition(record.getPosition())
+        .setCreationTime(OffsetDateTime.now())
         .setPartitionId(record.getPartitionId())
         .setProcessInstanceKey(record.getValue().getProcessInstanceKey());
-
   }
 
   @Override

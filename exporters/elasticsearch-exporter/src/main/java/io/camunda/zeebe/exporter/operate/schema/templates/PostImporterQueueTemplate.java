@@ -12,7 +12,6 @@ import io.camunda.operate.schema.templates.ProcessInstanceDependant;
 public class PostImporterQueueTemplate extends AbstractTemplateDescriptor
     implements ProcessInstanceDependant, Prio3Backup {
 
-
   public static final String INDEX_NAME = "post-importer-queue";
 
   public static final String ID = "id";
@@ -37,5 +36,4 @@ public class PostImporterQueueTemplate extends AbstractTemplateDescriptor
   public String getVersion() {
     return "8.3.0";
   }
-
 }

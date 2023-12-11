@@ -1,6 +1,14 @@
 package io.camunda.zeebe.exporter.operate;
 
 import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.entities.OperateEntity;
+import io.camunda.operate.exceptions.PersistenceException;
+import io.camunda.operate.property.ElasticsearchProperties;
+import io.camunda.operate.store.BatchRequest;
+import io.camunda.operate.util.ElasticsearchUtil;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,13 +21,6 @@ import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.OperateEntity;
-import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.property.ElasticsearchProperties;
-import io.camunda.operate.store.BatchRequest;
-import io.camunda.operate.util.ElasticsearchUtil;
 
 public class NoSpringElasticsearchBatchRequest implements BatchRequest {
 
@@ -46,11 +47,14 @@ public class NoSpringElasticsearchBatchRequest implements BatchRequest {
       throws PersistenceException {
     LOGGER.debug("Add index request for index {} id {} and entity {} ", index, id, entity);
     try {
-      bulkRequest.add(new IndexRequest(index).id(id).source(objectMapper.writeValueAsString(entity),
-          XContentType.JSON));
+      bulkRequest.add(
+          new IndexRequest(index)
+              .id(id)
+              .source(objectMapper.writeValueAsString(entity), XContentType.JSON));
     } catch (JsonProcessingException e) {
       throw new PersistenceException(
-          String.format("Error preparing the query to index [%s] of entity type [%s] ",
+          String.format(
+              "Error preparing the query to index [%s] of entity type [%s] ",
               entity.getClass().getName(), entity),
           e);
     }
@@ -60,14 +64,19 @@ public class NoSpringElasticsearchBatchRequest implements BatchRequest {
   @Override
   public BatchRequest addWithRouting(String index, OperateEntity entity, String routing)
       throws PersistenceException {
-    LOGGER.debug("Add index request with routing {} for index {} and entity {} ", routing, index,
-        entity);
+    LOGGER.debug(
+        "Add index request with routing {} for index {} and entity {} ", routing, index, entity);
     try {
-      bulkRequest.add(new IndexRequest(index).id(entity.getId())
-          .source(objectMapper.writeValueAsString(entity), XContentType.JSON)).routing(routing);
+      bulkRequest
+          .add(
+              new IndexRequest(index)
+                  .id(entity.getId())
+                  .source(objectMapper.writeValueAsString(entity), XContentType.JSON))
+          .routing(routing);
     } catch (JsonProcessingException e) {
       throw new PersistenceException(
-          String.format("Error preparing the query to index [%s] of entity type [%s] with routing",
+          String.format(
+              "Error preparing the query to index [%s] of entity type [%s] with routing",
               entity.getClass().getName(), entity),
           e);
     }
@@ -75,17 +84,28 @@ public class NoSpringElasticsearchBatchRequest implements BatchRequest {
   }
 
   @Override
-  public BatchRequest upsert(String index, String id, OperateEntity entity,
-      Map<String, Object> updateFields) throws PersistenceException {
-    LOGGER.debug("Add upsert request for index {} id {} entity {} and update fields {}", index, id,
-        entity, updateFields);
+  public BatchRequest upsert(
+      String index, String id, OperateEntity entity, Map<String, Object> updateFields)
+      throws PersistenceException {
+    LOGGER.debug(
+        "Add upsert request for index {} id {} entity {} and update fields {}",
+        index,
+        id,
+        entity,
+        updateFields);
     try {
-      bulkRequest.add(new UpdateRequest().index(index).id(id)
-          .doc(objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class)) // empty
-          .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON));
+      bulkRequest.add(
+          new UpdateRequest()
+              .index(index)
+              .id(id)
+              .doc(
+                  objectMapper.readValue(
+                      objectMapper.writeValueAsString(updateFields), HashMap.class)) // empty
+              .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON));
     } catch (JsonProcessingException e) {
       throw new PersistenceException(
-          String.format("Error preparing the query to upsert [%s] of entity type [%s]",
+          String.format(
+              "Error preparing the query to upsert [%s] of entity type [%s]",
               entity.getClass().getName(), entity),
           e);
     }
@@ -93,19 +113,35 @@ public class NoSpringElasticsearchBatchRequest implements BatchRequest {
   }
 
   @Override
-  public BatchRequest upsertWithRouting(String index, String id, OperateEntity entity,
-      Map<String, Object> updateFields, String routing) throws PersistenceException {
+  public BatchRequest upsertWithRouting(
+      String index,
+      String id,
+      OperateEntity entity,
+      Map<String, Object> updateFields,
+      String routing)
+      throws PersistenceException {
     LOGGER.debug(
         "Add upsert request with routing {} for index {} id {} entity {} and update fields ",
-        routing, index, id, entity, updateFields);
+        routing,
+        index,
+        id,
+        entity,
+        updateFields);
     try {
-      bulkRequest.add(new UpdateRequest().index(index).id(id)
-          .doc(objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class))
-          .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON).routing(routing)
-          .retryOnConflict(UPDATE_RETRY_COUNT));
+      bulkRequest.add(
+          new UpdateRequest()
+              .index(index)
+              .id(id)
+              .doc(
+                  objectMapper.readValue(
+                      objectMapper.writeValueAsString(updateFields), HashMap.class))
+              .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
+              .routing(routing)
+              .retryOnConflict(UPDATE_RETRY_COUNT));
     } catch (JsonProcessingException e) {
       throw new PersistenceException(
-          String.format("Error preparing the query to upsert [%s] of entity type [%s] with routing",
+          String.format(
+              "Error preparing the query to upsert [%s] of entity type [%s] with routing",
               entity.getClass().getName(), entity),
           e);
     }
@@ -115,15 +151,22 @@ public class NoSpringElasticsearchBatchRequest implements BatchRequest {
   @Override
   public BatchRequest update(String index, String id, Map<String, Object> updateFields)
       throws PersistenceException {
-    LOGGER.debug("Add update request for index {} id {} and update fields {}", index, id,
-        updateFields);
+    LOGGER.debug(
+        "Add update request for index {} id {} and update fields {}", index, id, updateFields);
     try {
-      bulkRequest.add(new UpdateRequest().index(index).id(id)
-          .doc(objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class))
-          .retryOnConflict(UPDATE_RETRY_COUNT));
+      bulkRequest.add(
+          new UpdateRequest()
+              .index(index)
+              .id(id)
+              .doc(
+                  objectMapper.readValue(
+                      objectMapper.writeValueAsString(updateFields), HashMap.class))
+              .retryOnConflict(UPDATE_RETRY_COUNT));
     } catch (JsonProcessingException e) {
-      throw new PersistenceException(String.format(
-          "Error preparing the query to update index [%s] document with id [%s]", index, id), e);
+      throw new PersistenceException(
+          String.format(
+              "Error preparing the query to update index [%s] document with id [%s]", index, id),
+          e);
     }
     return this;
   }
@@ -132,7 +175,9 @@ public class NoSpringElasticsearchBatchRequest implements BatchRequest {
   public BatchRequest update(String index, String id, OperateEntity entity)
       throws PersistenceException {
     try {
-      return update(index, id,
+      return update(
+          index,
+          id,
           objectMapper.readValue(objectMapper.writeValueAsString(entity), HashMap.class));
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
@@ -140,11 +185,16 @@ public class NoSpringElasticsearchBatchRequest implements BatchRequest {
   }
 
   @Override
-  public BatchRequest updateWithScript(String index, String id, String script,
-      Map<String, Object> parameters) throws PersistenceException {
+  public BatchRequest updateWithScript(
+      String index, String id, String script, Map<String, Object> parameters)
+      throws PersistenceException {
     LOGGER.debug("Add update with script request for index {} id {} ", index, id);
-    final UpdateRequest updateRequest = new UpdateRequest().index(index).id(id)
-        .script(getScriptWithParameters(script, parameters)).retryOnConflict(UPDATE_RETRY_COUNT);
+    final UpdateRequest updateRequest =
+        new UpdateRequest()
+            .index(index)
+            .id(id)
+            .script(getScriptWithParameters(script, parameters))
+            .retryOnConflict(UPDATE_RETRY_COUNT);
     bulkRequest.add(updateRequest);
     return this;
   }
@@ -152,7 +202,10 @@ public class NoSpringElasticsearchBatchRequest implements BatchRequest {
   private Script getScriptWithParameters(String script, Map<String, Object> parameters)
       throws PersistenceException {
     try {
-      return new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script,
+      return new Script(
+          ScriptType.INLINE,
+          Script.DEFAULT_SCRIPT_LANG,
+          script,
           objectMapper.readValue(objectMapper.writeValueAsString(parameters), HashMap.class));
     } catch (IOException e) {
       throw new PersistenceException(e);
@@ -162,17 +215,18 @@ public class NoSpringElasticsearchBatchRequest implements BatchRequest {
   @Override
   public void execute() throws PersistenceException {
     LOGGER.debug("Execute batchRequest with {} requests", bulkRequest.requests().size());
-    ElasticsearchUtil.processBulkRequest(esClient, bulkRequest,
-        ElasticsearchProperties.BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT);
+    ElasticsearchUtil.processBulkRequest(
+        esClient, bulkRequest, ElasticsearchProperties.BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT);
   }
 
   @Override
   public void executeWithRefresh() throws PersistenceException {
-    LOGGER.debug("Execute batchRequest with {} requests and refresh",
-        bulkRequest.requests().size());
-    ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, true,
+    LOGGER.debug(
+        "Execute batchRequest with {} requests and refresh", bulkRequest.requests().size());
+    ElasticsearchUtil.processBulkRequest(
+        esClient,
+        bulkRequest,
+        true,
         ElasticsearchProperties.BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT);
   }
-
 }
-

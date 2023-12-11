@@ -41,7 +41,8 @@ public final class TestClient implements CloseableSilently {
   private final ElasticsearchClient esClient;
   private final RecordIndexRouter indexRouter;
 
-  public TestClient(final ElasticsearchExporterConfiguration config, final RecordIndexRouter indexRouter) {
+  public TestClient(
+      final ElasticsearchExporterConfiguration config, final RecordIndexRouter indexRouter) {
     this.config = config;
     this.indexRouter = indexRouter;
 

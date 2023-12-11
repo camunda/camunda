@@ -1,10 +1,7 @@
 package io.camunda.zeebe.exporter.operate.handlers;
 
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
-import java.util.HashMap;
-import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
 import io.camunda.operate.exceptions.PersistenceException;
@@ -15,6 +12,10 @@ import io.camunda.zeebe.exporter.operate.schema.templates.VariableTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import java.util.HashMap;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class VariableHandler implements ExportHandler<VariableEntity, VariableRecordValue> {
 
@@ -60,11 +61,14 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
     // TODO Auto-generated method stub
     final var recordValue = record.getValue();
 
-    entity.setKey(record.getKey()).setPartitionId(record.getPartitionId())
+    entity
+        .setKey(record.getKey())
+        .setPartitionId(record.getPartitionId())
         .setScopeKey(recordValue.getScopeKey())
         .setProcessInstanceKey(recordValue.getProcessInstanceKey())
         .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
-        .setBpmnProcessId(recordValue.getBpmnProcessId()).setName(recordValue.getName())
+        .setBpmnProcessId(recordValue.getBpmnProcessId())
+        .setName(recordValue.getName())
         .setTenantId(tenantOrDefault(recordValue.getTenantId()));
     if (recordValue.getValue().length() > VARIABLE_SIZE_LIMIT) {
       // store preview
@@ -94,8 +98,11 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
     updateFields.put(VariableTemplate.VALUE, variableEntity.getValue());
     updateFields.put(VariableTemplate.FULL_VALUE, variableEntity.getFullValue());
     updateFields.put(VariableTemplate.IS_PREVIEW, variableEntity.getIsPreview());
-    batchRequest.upsert(variableTemplate.getFullQualifiedName(), variableEntity.getId(),
-        variableEntity, updateFields);
+    batchRequest.upsert(
+        variableTemplate.getFullQualifiedName(),
+        variableEntity.getId(),
+        variableEntity,
+        updateFields);
     // }
 
   }
@@ -104,5 +111,4 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
   public String getIndexName() {
     return variableTemplate.getFullQualifiedName();
   }
-
 }

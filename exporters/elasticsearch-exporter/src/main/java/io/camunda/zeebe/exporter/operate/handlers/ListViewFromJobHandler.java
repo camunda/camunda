@@ -1,12 +1,7 @@
 package io.camunda.zeebe.exporter.operate.handlers;
 
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
@@ -17,6 +12,12 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ListViewFromJobHandler
     implements ExportHandler<FlowNodeInstanceForListViewEntity, JobRecordValue> {
@@ -65,8 +66,8 @@ public class ListViewFromJobHandler
   }
 
   @Override
-  public void updateEntity(Record<JobRecordValue> record,
-      FlowNodeInstanceForListViewEntity entity) {
+  public void updateEntity(
+      Record<JobRecordValue> record, FlowNodeInstanceForListViewEntity entity) {
 
     final var recordValue = record.getValue();
     final var intentStr = record.getIntent().name();
@@ -89,16 +90,21 @@ public class ListViewFromJobHandler
   public void flush(FlowNodeInstanceForListViewEntity entity, BatchRequest batchRequest)
       throws PersistenceException {
 
-    LOGGER.debug("Update job state for flow node instance: id {} JobFailedWithRetriesLeft {}",
-        entity.getId(), entity.isJobFailedWithRetriesLeft());
+    LOGGER.debug(
+        "Update job state for flow node instance: id {} JobFailedWithRetriesLeft {}",
+        entity.getId(),
+        entity.isJobFailedWithRetriesLeft());
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(ListViewTemplate.ID, entity.getId());
-    updateFields.put(ListViewTemplate.JOB_FAILED_WITH_RETRIES_LEFT,
-        entity.isJobFailedWithRetriesLeft());
+    updateFields.put(
+        ListViewTemplate.JOB_FAILED_WITH_RETRIES_LEFT, entity.isJobFailedWithRetriesLeft());
 
-    batchRequest.upsertWithRouting(listViewTemplate.getFullQualifiedName(), entity.getId(), entity,
-        updateFields, String.valueOf(entity.getProcessInstanceKey()));
-
+    batchRequest.upsertWithRouting(
+        listViewTemplate.getFullQualifiedName(),
+        entity.getId(),
+        entity,
+        updateFields,
+        String.valueOf(entity.getProcessInstanceKey()));
   }
 
   @Override

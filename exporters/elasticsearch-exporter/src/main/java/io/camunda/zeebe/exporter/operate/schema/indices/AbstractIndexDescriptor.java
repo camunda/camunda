@@ -23,5 +23,4 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
     // getIndexName(), getVersion());
     // }
   }
-
 }

@@ -4,12 +4,7 @@ import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
@@ -22,6 +17,12 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ListViewFromActivityInstanceHandler
     implements ExportHandler<FlowNodeInstanceForListViewEntity, ProcessInstanceRecordValue> {
@@ -89,8 +90,8 @@ public class ListViewFromActivityInstanceHandler
   }
 
   @Override
-  public void updateEntity(Record<ProcessInstanceRecordValue> record,
-      FlowNodeInstanceForListViewEntity entity) {
+  public void updateEntity(
+      Record<ProcessInstanceRecordValue> record, FlowNodeInstanceForListViewEntity entity) {
 
     final var recordValue = record.getValue();
     final var intentStr = record.getIntent().name();
@@ -116,8 +117,11 @@ public class ListViewFromActivityInstanceHandler
       }
     }
 
-    entity.setActivityType(FlowNodeType.fromZeebeBpmnElementType(
-        recordValue.getBpmnElementType() == null ? null : recordValue.getBpmnElementType().name()));
+    entity.setActivityType(
+        FlowNodeType.fromZeebeBpmnElementType(
+            recordValue.getBpmnElementType() == null
+                ? null
+                : recordValue.getBpmnElementType().name()));
 
     // TODO: restore call activity id cache if needed
     // if (FlowNodeType.CALL_ACTIVITY.equals(entity.getActivityType())) {
@@ -127,9 +131,6 @@ public class ListViewFromActivityInstanceHandler
     // set parent
     final Long processInstanceKey = recordValue.getProcessInstanceKey();
     entity.getJoinRelation().setParent(processInstanceKey);
-
-
-
   }
 
   @Override
@@ -140,8 +141,8 @@ public class ListViewFromActivityInstanceHandler
 
     LOGGER.debug("Flow node instance for list view: id {}", actEntity.getId());
     if (canOptimizeFlowNodeInstanceIndexing(actEntity)) {
-      batchRequest.addWithRouting(listViewTemplate.getFullQualifiedName(), actEntity,
-          processInstanceKey.toString());
+      batchRequest.addWithRouting(
+          listViewTemplate.getFullQualifiedName(), actEntity, processInstanceKey.toString());
     } else {
       final Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(ListViewTemplate.ID, actEntity.getId());
@@ -149,8 +150,12 @@ public class ListViewFromActivityInstanceHandler
       updateFields.put(ListViewTemplate.ACTIVITY_TYPE, actEntity.getActivityType());
       updateFields.put(ListViewTemplate.ACTIVITY_STATE, actEntity.getActivityState());
 
-      batchRequest.upsertWithRouting(listViewTemplate.getFullQualifiedName(), actEntity.getId(),
-          actEntity, updateFields, processInstanceKey.toString());
+      batchRequest.upsertWithRouting(
+          listViewTemplate.getFullQualifiedName(),
+          actEntity.getId(),
+          actEntity,
+          updateFields,
+          processInstanceKey.toString());
     }
   }
 
@@ -181,5 +186,4 @@ public class ListViewFromActivityInstanceHandler
   public String getIndexName() {
     return listViewTemplate.getFullQualifiedName();
   }
-
 }

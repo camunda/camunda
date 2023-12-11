@@ -82,9 +82,14 @@ public class OperateElasticsearchExporterConfiguration {
 
     @Override
     public String toString() {
-      return "BulkConfiguration{" + "delay=" + delay + ", size=" + size + ", memoryLimit="
-          + memoryLimit + '}';
+      return "BulkConfiguration{"
+          + "delay="
+          + delay
+          + ", size="
+          + size
+          + ", memoryLimit="
+          + memoryLimit
+          + '}';
     }
   }
-
 }

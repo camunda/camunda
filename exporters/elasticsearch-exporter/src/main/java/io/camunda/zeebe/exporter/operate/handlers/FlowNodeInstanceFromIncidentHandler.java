@@ -1,10 +1,7 @@
 package io.camunda.zeebe.exporter.operate.handlers;
 
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
-import java.util.HashMap;
-import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
@@ -16,13 +13,16 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import java.util.HashMap;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FlowNodeInstanceFromIncidentHandler
     implements ExportHandler<FlowNodeInstanceEntity, IncidentRecordValue> {
 
   // TODO: same problem as in ListViewFromIncidentHandler: this updates the same entity that another
   // handler manages
-
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(FlowNodeInstanceFromIncidentHandler.class);
@@ -64,7 +64,9 @@ public class FlowNodeInstanceFromIncidentHandler
     final IncidentRecordValue recordValue = (IncidentRecordValue) record.getValue();
 
     // update activity instance
-    entity.setKey(recordValue.getElementInstanceKey()).setPartitionId(record.getPartitionId())
+    entity
+        .setKey(recordValue.getElementInstanceKey())
+        .setPartitionId(record.getPartitionId())
         .setFlowNodeId(recordValue.getElementId())
         .setProcessInstanceKey(recordValue.getProcessInstanceKey())
         .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
@@ -76,7 +78,6 @@ public class FlowNodeInstanceFromIncidentHandler
     } else if (intent == IncidentIntent.RESOLVED) {
       entity.setIncidentKey(null);
     }
-
   }
 
   @Override
@@ -86,9 +87,8 @@ public class FlowNodeInstanceFromIncidentHandler
     LOGGER.debug("Flow node instance: id {}", entity.getId());
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(FlowNodeInstanceTemplate.INCIDENT_KEY, entity.getIncidentKey());
-    batchRequest.upsert(flowNodeInstanceTemplate.getFullQualifiedName(), entity.getId(), entity,
-        updateFields);
-
+    batchRequest.upsert(
+        flowNodeInstanceTemplate.getFullQualifiedName(), entity.getId(), entity, updateFields);
   }
 
   @Override

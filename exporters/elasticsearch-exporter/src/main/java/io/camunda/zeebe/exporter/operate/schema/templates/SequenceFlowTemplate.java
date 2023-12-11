@@ -12,7 +12,6 @@ import io.camunda.operate.schema.templates.ProcessInstanceDependant;
 public class SequenceFlowTemplate extends AbstractTemplateDescriptor
     implements ProcessInstanceDependant, Prio3Backup {
 
-
   public static final String INDEX_NAME = "sequence-flow";
 
   public static final String ID = "id";

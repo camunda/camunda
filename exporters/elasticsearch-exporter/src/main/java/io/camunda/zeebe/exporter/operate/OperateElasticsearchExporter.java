@@ -1,34 +1,6 @@
 package io.camunda.zeebe.exporter.operate;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
-import org.apache.http.impl.nio.reactor.IOReactorConfig;
-import org.elasticsearch.ElasticsearchException;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.RestHighLevelClientBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import io.camunda.operate.connect.ElasticsearchConnector;
-import io.camunda.operate.entities.dmn.DecisionInstanceInputEntity;
-import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.property.ElasticsearchProperties;
-import io.camunda.operate.util.RetryOperation;
-import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -63,6 +35,21 @@ import io.camunda.zeebe.exporter.operate.schema.templates.PostImporterQueueTempl
 import io.camunda.zeebe.exporter.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.zeebe.exporter.operate.schema.templates.VariableTemplate;
 import io.camunda.zeebe.protocol.record.Record;
+import java.io.IOException;
+import java.time.Duration;
+import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.impl.nio.reactor.IOReactorConfig;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.RestHighLevelClientBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class OperateElasticsearchExporter implements Exporter {
 
@@ -126,8 +113,10 @@ public class OperateElasticsearchExporter implements Exporter {
         // TODO: in this case we would send an entity with the same ID twice, not sure what happens
         // then
         // risk is acceptable for a prototype
-        throw new RuntimeException("Could not flush during regular export. "
-            + "This indicates a bug because this exporter is not retryable", e);
+        throw new RuntimeException(
+            "Could not flush during regular export. "
+                + "This indicates a bug because this exporter is not retryable",
+            e);
       }
     }
   }
@@ -137,8 +126,8 @@ public class OperateElasticsearchExporter implements Exporter {
   }
 
   private void scheduleDelayedFlush() {
-    controller.scheduleCancellableTask(Duration.ofSeconds(configuration.getBulk().delay),
-        this::flushAndReschedule);
+    controller.scheduleCancellableTask(
+        Duration.ofSeconds(configuration.getBulk().delay), this::flushAndReschedule);
   }
 
   private void flushAndReschedule() {
@@ -146,8 +135,8 @@ public class OperateElasticsearchExporter implements Exporter {
       flush();
       updateLastExportedPosition();
     } catch (final Exception e) {
-      LOGGER.warn("Unexpected exception occurred on periodically flushing bulk, will retry later.",
-          e);
+      LOGGER.warn(
+          "Unexpected exception occurred on periodically flushing bulk, will retry later.", e);
     }
     scheduleDelayedFlush();
   }
@@ -184,12 +173,16 @@ public class OperateElasticsearchExporter implements Exporter {
     LOGGER.debug("Creating Elasticsearch connection...");
     final RestClientBuilder restClientBuilder =
         RestClient.builder(parseUrlConfig(configuration.getUrl()))
-            .setRequestConfigCallback(b -> b.setConnectTimeout(configuration.getRequestTimeoutMs())
-                .setSocketTimeout(configuration.getRequestTimeoutMs()))
+            .setRequestConfigCallback(
+                b ->
+                    b.setConnectTimeout(configuration.getRequestTimeoutMs())
+                        .setSocketTimeout(configuration.getRequestTimeoutMs()))
             .setHttpClientConfigCallback(b -> configureHttpClient(b));
 
-    final RestHighLevelClient esClient = new RestHighLevelClientBuilder(restClientBuilder.build())
-        .setApiCompatibilityMode(true).build();
+    final RestHighLevelClient esClient =
+        new RestHighLevelClientBuilder(restClientBuilder.build())
+            .setApiCompatibilityMode(true)
+            .build();
     return esClient;
   }
 
@@ -217,8 +210,10 @@ public class OperateElasticsearchExporter implements Exporter {
 
   private void setupBasicAuthentication(final HttpAsyncClientBuilder builder) {
     final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-    credentialsProvider.setCredentials(AuthScope.ANY,
-        new UsernamePasswordCredentials(configuration.getAuthentication().getUsername(),
+    credentialsProvider.setCredentials(
+        AuthScope.ANY,
+        new UsernamePasswordCredentials(
+            configuration.getAuthentication().getUsername(),
             configuration.getAuthentication().getPassword()));
 
     builder.setDefaultCredentialsProvider(credentialsProvider);
@@ -232,57 +227,66 @@ public class OperateElasticsearchExporter implements Exporter {
         .withHandler(
             new DecisionDefinitionHandler(schemaManager.getIndexDescriptor(DecisionIndex.class)))
         // #processDecisionRequirementsRecord
-        .withHandler(new DecisionRequirementsHandler(
-            schemaManager.getIndexDescriptor(DecisionRequirementsIndex.class)))
+        .withHandler(
+            new DecisionRequirementsHandler(
+                schemaManager.getIndexDescriptor(DecisionRequirementsIndex.class)))
         // #processDecisionEvaluationRecords
         // TODO: can covert this to a proper handler some day in the future, if we can handle
         // transforming one record
         // to multiple entities
-        .withDecisionInstanceHandler(new DecisionInstanceHandler(
-            schemaManager.getTemplateDescriptor(DecisionInstanceTemplate.class)))
+        .withDecisionInstanceHandler(
+            new DecisionInstanceHandler(
+                schemaManager.getTemplateDescriptor(DecisionInstanceTemplate.class)))
         // #processProcessInstanceRecords
         // FlowNodeInstanceZeebeRecordProcessor#processProcessInstanceRecord
-        .withHandler(new FlowNodeInstanceHandler(
-            schemaManager.getTemplateDescriptor(FlowNodeInstanceTemplate.class)))
+        .withHandler(
+            new FlowNodeInstanceHandler(
+                schemaManager.getTemplateDescriptor(FlowNodeInstanceTemplate.class)))
         // eventZeebeRecordProcessor.processProcessInstanceRecords
-        .withHandler(new EventFromProcessInstanceHandler(
-            schemaManager.getTemplateDescriptor(EventTemplate.class)))
+        .withHandler(
+            new EventFromProcessInstanceHandler(
+                schemaManager.getTemplateDescriptor(EventTemplate.class)))
         // sequenceFlowZeebeRecordProcessor.processSequenceFlowRecord
-        .withHandler(new SequenceFlowHandler(
-            schemaManager.getTemplateDescriptor(SequenceFlowTemplate.class)))
+        .withHandler(
+            new SequenceFlowHandler(
+                schemaManager.getTemplateDescriptor(SequenceFlowTemplate.class)))
         // listViewZeebeRecordProcessor.processProcessInstanceRecord
-        .withHandler(new ListViewFromProcessInstanceHandler(
-            schemaManager.getTemplateDescriptor(ListViewTemplate.class)))
+        .withHandler(
+            new ListViewFromProcessInstanceHandler(
+                schemaManager.getTemplateDescriptor(ListViewTemplate.class)))
         // TODO: need to choose between upsert and insert (see optimization in
         // FlowNodeInstanceZeebeRecordProcessor#canOptimizeFlowNodeInstanceIndexing)
-        .withHandler(new ListViewFromActivityInstanceHandler(
-            schemaManager.getTemplateDescriptor(ListViewTemplate.class)))
+        .withHandler(
+            new ListViewFromActivityInstanceHandler(
+                schemaManager.getTemplateDescriptor(ListViewTemplate.class)))
         // #processIncidentRecords
         // incidentZeebeRecordProcessor.processIncidentRecord
         .withHandler(
             new IncidentHandler(schemaManager.getTemplateDescriptor(IncidentTemplate.class)))
-        .withHandler(new PostImporterQueueHandler(
-            schemaManager.getTemplateDescriptor(PostImporterQueueTemplate.class)))
-
+        .withHandler(
+            new PostImporterQueueHandler(
+                schemaManager.getTemplateDescriptor(PostImporterQueueTemplate.class)))
 
         // TODO: These two are in conflict: they create entities with the same id in different
         // indexes
 
         // listViewZeebeRecordProcessor.processIncidentRecord
-        .withHandler(new ListViewFromIncidentHandler(
-            schemaManager.getTemplateDescriptor(ListViewTemplate.class)))
+        .withHandler(
+            new ListViewFromIncidentHandler(
+                schemaManager.getTemplateDescriptor(ListViewTemplate.class)))
         // flowNodeInstanceZeebeRecordProcessor.processIncidentRecord
-        .withHandler(new FlowNodeInstanceFromIncidentHandler(
-            schemaManager.getTemplateDescriptor(FlowNodeInstanceTemplate.class)))
-
+        .withHandler(
+            new FlowNodeInstanceFromIncidentHandler(
+                schemaManager.getTemplateDescriptor(FlowNodeInstanceTemplate.class)))
 
         // eventZeebeRecordProcessor.processIncidentRecords
         .withHandler(
             new EventFromIncidentHandler(schemaManager.getTemplateDescriptor(EventTemplate.class)))
         // #processVariableRecords
         // listViewZeebeRecordProcessor.processVariableRecords
-        .withHandler(new ListViewFromVariableHandler(
-            schemaManager.getTemplateDescriptor(ListViewTemplate.class)))
+        .withHandler(
+            new ListViewFromVariableHandler(
+                schemaManager.getTemplateDescriptor(ListViewTemplate.class)))
         // variableZeebeRecordProcessor.processVariableRecords
         .withHandler(
             new VariableHandler(schemaManager.getTemplateDescriptor(VariableTemplate.class)))
@@ -301,8 +305,9 @@ public class OperateElasticsearchExporter implements Exporter {
             new EventFromJobHandler(schemaManager.getTemplateDescriptor(EventTemplate.class)))
         // #processProcessMessageSubscription
         // eventZeebeRecordProcessor.processProcessMessageSubscription
-        .withHandler(new EventFromMessageSubscriptionHandler(
-            schemaManager.getTemplateDescriptor(EventTemplate.class)))
+        .withHandler(
+            new EventFromMessageSubscriptionHandler(
+                schemaManager.getTemplateDescriptor(EventTemplate.class)))
         .build();
   }
 }

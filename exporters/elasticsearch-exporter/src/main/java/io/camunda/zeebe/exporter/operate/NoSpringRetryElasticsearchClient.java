@@ -2,6 +2,11 @@ package io.camunda.zeebe.exporter.operate;
 
 import static io.camunda.operate.util.CollectionUtil.getOrDefaultForNullValue;
 import static io.camunda.operate.util.CollectionUtil.map;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.util.RetryOperation;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -55,10 +60,6 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.util.RetryOperation;
 
 public class NoSpringRetryElasticsearchClient {
 
@@ -90,14 +91,18 @@ public class NoSpringRetryElasticsearchClient {
 
   public boolean isHealthy() {
     try {
-      final ClusterHealthResponse response = esClient.cluster().health(
-          new ClusterHealthRequest().timeout(TimeValue.timeValueMillis(500)),
-          RequestOptions.DEFAULT);
+      final ClusterHealthResponse response =
+          esClient
+              .cluster()
+              .health(
+                  new ClusterHealthRequest().timeout(TimeValue.timeValueMillis(500)),
+                  RequestOptions.DEFAULT);
       final ClusterHealthStatus status = response.getStatus();
       return !response.isTimedOut() && !status.equals(ClusterHealthStatus.RED);
     } catch (IOException e) {
       LOGGER.error(
-          String.format("Couldn't connect to Elasticsearch due to %s. Return unhealthy state. ",
+          String.format(
+              "Couldn't connect to Elasticsearch due to %s. Return unhealthy state. ",
               e.getMessage()),
           e);
       return false;
@@ -124,85 +129,104 @@ public class NoSpringRetryElasticsearchClient {
   }
 
   public void refresh(final String indexPattern) {
-    executeWithRetries("Refresh " + indexPattern, () -> {
-      try {
-        for (var index : getFilteredIndices(indexPattern)) {
-          esClient.indices().refresh(new RefreshRequest(index), requestOptions);
-        }
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-      return true;
-    });
+    executeWithRetries(
+        "Refresh " + indexPattern,
+        () -> {
+          try {
+            for (var index : getFilteredIndices(indexPattern)) {
+              esClient.indices().refresh(new RefreshRequest(index), requestOptions);
+            }
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+          return true;
+        });
   }
 
   private void refreshAndRetryOnShardFailures(final String indexPattern) {
-    executeWithRetries("Refresh " + indexPattern,
+    executeWithRetries(
+        "Refresh " + indexPattern,
         () -> esClient.indices().refresh(new RefreshRequest(indexPattern), requestOptions),
         (r) -> r.getFailedShards() > 0);
   }
 
   public long getNumberOfDocumentsFor(String... indexPatterns) {
     final var response =
-        executeWithRetries("Count number of documents in " + Arrays.asList(indexPatterns),
+        executeWithRetries(
+            "Count number of documents in " + Arrays.asList(indexPatterns),
             () -> esClient.count(new CountRequest(indexPatterns), requestOptions),
             (c) -> c.getFailedShards() > 0);
     return response.getCount();
   }
 
   public Set<String> getIndexNames(String namePattern) {
-    return executeWithRetries("Get indices for " + namePattern, () -> {
-      try {
-        final GetIndexResponse response =
-            esClient.indices().get(new GetIndexRequest(namePattern), RequestOptions.DEFAULT);
-        return Set.of(response.getIndices());
-      } catch (ElasticsearchException e) {
-        if (e.status().equals(RestStatus.NOT_FOUND)) {
-          return Set.of();
-        }
-        throw e;
-      }
-    });
+    return executeWithRetries(
+        "Get indices for " + namePattern,
+        () -> {
+          try {
+            final GetIndexResponse response =
+                esClient.indices().get(new GetIndexRequest(namePattern), RequestOptions.DEFAULT);
+            return Set.of(response.getIndices());
+          } catch (ElasticsearchException e) {
+            if (e.status().equals(RestStatus.NOT_FOUND)) {
+              return Set.of();
+            }
+            throw e;
+          }
+        });
   }
 
   public boolean createIndex(CreateIndexRequest createIndexRequest) {
-    return executeWithRetries("CreateIndex " + createIndexRequest.index(), () -> {
-      if (!indicesExist(createIndexRequest.index())) {
-        return esClient.indices().create(createIndexRequest, requestOptions).isAcknowledged();
-      }
-      return true;
-    });
+    return executeWithRetries(
+        "CreateIndex " + createIndexRequest.index(),
+        () -> {
+          if (!indicesExist(createIndexRequest.index())) {
+            return esClient.indices().create(createIndexRequest, requestOptions).isAcknowledged();
+          }
+          return true;
+        });
   }
 
   public boolean createOrUpdateDocument(String name, String id, Map source) {
-    return executeWithRetries("RetryElasticsearchClient#createOrUpdateDocument", () -> {
-      final IndexResponse response = esClient
-          .index(new IndexRequest(name).id(id).source(source, XContentType.JSON), requestOptions);
-      final DocWriteResponse.Result result = response.getResult();
-      return result.equals(DocWriteResponse.Result.CREATED)
-          || result.equals(DocWriteResponse.Result.UPDATED);
-    });
+    return executeWithRetries(
+        "RetryElasticsearchClient#createOrUpdateDocument",
+        () -> {
+          final IndexResponse response =
+              esClient.index(
+                  new IndexRequest(name).id(id).source(source, XContentType.JSON), requestOptions);
+          final DocWriteResponse.Result result = response.getResult();
+          return result.equals(DocWriteResponse.Result.CREATED)
+              || result.equals(DocWriteResponse.Result.UPDATED);
+        });
   }
 
   public boolean createOrUpdateDocument(String name, String id, String source) {
-    return executeWithRetries("RetryElasticsearchClient#createOrUpdateDocument", () -> {
-      final IndexResponse response = esClient
-          .index(new IndexRequest(name).id(id).source(source, XContentType.JSON), requestOptions);
-      final DocWriteResponse.Result result = response.getResult();
-      return result.equals(DocWriteResponse.Result.CREATED)
-          || result.equals(DocWriteResponse.Result.UPDATED);
-    });
+    return executeWithRetries(
+        "RetryElasticsearchClient#createOrUpdateDocument",
+        () -> {
+          final IndexResponse response =
+              esClient.index(
+                  new IndexRequest(name).id(id).source(source, XContentType.JSON), requestOptions);
+          final DocWriteResponse.Result result = response.getResult();
+          return result.equals(DocWriteResponse.Result.CREATED)
+              || result.equals(DocWriteResponse.Result.UPDATED);
+        });
   }
 
   public boolean documentExists(String name, String id) {
-    return executeWithGivenRetries(10,
-        String.format("Exists document from %s with id %s", name, id), () -> {
+    return executeWithGivenRetries(
+        10,
+        String.format("Exists document from %s with id %s", name, id),
+        () -> {
           return esClient.exists(new GetRequest(name).id(id), requestOptions);
-        }, null);
+        },
+        null);
   }
 
   public Map<String, Object> getDocument(String name, String id) {
-    return executeWithGivenRetries(10, String.format("Get document from %s with id %s", name, id),
+    return executeWithGivenRetries(
+        10,
+        String.format("Get document from %s with id %s", name, id),
         () -> {
           final GetRequest request = new GetRequest(name).id(id);
           final GetResponse response = esClient.get(request, requestOptions);
@@ -211,83 +235,112 @@ public class NoSpringRetryElasticsearchClient {
           } else {
             return null;
           }
-        }, null);
+        },
+        null);
   }
 
   public boolean deleteDocument(String name, String id) {
-    return executeWithRetries("RetryElasticsearchClient#deleteDocument", () -> {
-      final DeleteResponse response =
-          esClient.delete(new DeleteRequest(name).id(id), requestOptions);
-      final DocWriteResponse.Result result = response.getResult();
-      return result.equals(DocWriteResponse.Result.DELETED);
-    });
+    return executeWithRetries(
+        "RetryElasticsearchClient#deleteDocument",
+        () -> {
+          final DeleteResponse response =
+              esClient.delete(new DeleteRequest(name).id(id), requestOptions);
+          final DocWriteResponse.Result result = response.getResult();
+          return result.equals(DocWriteResponse.Result.DELETED);
+        });
   }
 
   private boolean templatesExist(final String templatePattern) throws IOException {
-    return esClient.indices().existsIndexTemplate(
-        new ComposableIndexTemplateExistRequest(templatePattern), requestOptions);
+    return esClient
+        .indices()
+        .existsIndexTemplate(
+            new ComposableIndexTemplateExistRequest(templatePattern), requestOptions);
   }
 
   public boolean createComponentTemplate(PutComponentTemplateRequest request) {
-    return executeWithRetries("CreateComponentTemplate " + request.name(), () -> {
-      if (!templatesExist(request.name())) {
-        return esClient.cluster().putComponentTemplate(request, requestOptions).isAcknowledged();
-      }
-      return true;
-    });
+    return executeWithRetries(
+        "CreateComponentTemplate " + request.name(),
+        () -> {
+          if (!templatesExist(request.name())) {
+            return esClient
+                .cluster()
+                .putComponentTemplate(request, requestOptions)
+                .isAcknowledged();
+          }
+          return true;
+        });
   }
 
   public boolean createTemplate(PutComposableIndexTemplateRequest request) {
-    return executeWithRetries("CreateTemplate " + request.name(), () -> {
-      if (!templatesExist(request.name())) {
-        return esClient.indices().putIndexTemplate(request, requestOptions).isAcknowledged();
-      }
-      return true;
-    });
+    return executeWithRetries(
+        "CreateTemplate " + request.name(),
+        () -> {
+          if (!templatesExist(request.name())) {
+            return esClient.indices().putIndexTemplate(request, requestOptions).isAcknowledged();
+          }
+          return true;
+        });
   }
 
   public boolean deleteTemplatesFor(final String templateNamePattern) {
-    return executeWithRetries("DeleteTemplate " + templateNamePattern, () -> {
-      if (templatesExist(templateNamePattern)) {
-        return esClient.indices()
-            .deleteIndexTemplate(new DeleteComposableIndexTemplateRequest(templateNamePattern),
-                requestOptions)
-            .isAcknowledged();
-      }
-      return true;
-    });
+    return executeWithRetries(
+        "DeleteTemplate " + templateNamePattern,
+        () -> {
+          if (templatesExist(templateNamePattern)) {
+            return esClient
+                .indices()
+                .deleteIndexTemplate(
+                    new DeleteComposableIndexTemplateRequest(templateNamePattern), requestOptions)
+                .isAcknowledged();
+          }
+          return true;
+        });
   }
 
   private boolean indicesExist(final String indexPattern) throws IOException {
-    return esClient.indices().exists(new GetIndexRequest(indexPattern)
-        .indicesOptions(IndicesOptions.fromOptions(true, false, true, false)), requestOptions);
+    return esClient
+        .indices()
+        .exists(
+            new GetIndexRequest(indexPattern)
+                .indicesOptions(IndicesOptions.fromOptions(true, false, true, false)),
+            requestOptions);
   }
 
   private Set<String> getFilteredIndices(final String indexPattern) throws IOException {
-    return Arrays.stream(esClient.indices()
-        .get(new GetIndexRequest(indexPattern), RequestOptions.DEFAULT).getIndices()).sequential()
+    return Arrays.stream(
+            esClient
+                .indices()
+                .get(new GetIndexRequest(indexPattern), RequestOptions.DEFAULT)
+                .getIndices())
+        .sequential()
         .collect(Collectors.toSet());
   }
 
   public boolean deleteIndicesFor(final String indexPattern) {
-    return executeWithRetries("DeleteIndices " + indexPattern, () -> {
-      for (var index : getFilteredIndices(indexPattern)) {
-        esClient.indices().delete(new DeleteIndexRequest(index), RequestOptions.DEFAULT);
-      }
-      return true;
-    });
+    return executeWithRetries(
+        "DeleteIndices " + indexPattern,
+        () -> {
+          for (var index : getFilteredIndices(indexPattern)) {
+            esClient.indices().delete(new DeleteIndexRequest(index), RequestOptions.DEFAULT);
+          }
+          return true;
+        });
   }
 
   public Map<String, String> getIndexSettingsFor(String indexName, String... fields) {
-    return executeWithRetries("GetIndexSettings " + indexName, () -> {
-      final Map<String, String> settings = new HashMap<>();
-      final GetSettingsResponse response = esClient.indices()
-          .getSettings(new GetSettingsRequest().indices(indexName), requestOptions);
-      for (String field : fields) {
-        settings.put(field, response.getSetting(indexName, field));
-      }
-      return settings;
-    });
+    return executeWithRetries(
+        "GetIndexSettings " + indexName,
+        () -> {
+          final Map<String, String> settings = new HashMap<>();
+          final GetSettingsResponse response =
+              esClient
+                  .indices()
+                  .getSettings(new GetSettingsRequest().indices(indexName), requestOptions);
+          for (String field : fields) {
+            settings.put(field, response.getSetting(indexName, field));
+          }
+          return settings;
+        });
   }
 
   public String getOrDefaultRefreshInterval(String indexName, String defaultValue) {
@@ -309,56 +362,75 @@ public class NoSpringRetryElasticsearchClient {
   }
 
   public boolean setIndexSettingsFor(Settings settings, String indexPattern) {
-    return executeWithRetries("SetIndexSettings " + indexPattern,
-        () -> esClient.indices()
-            .putSettings(new UpdateSettingsRequest(indexPattern).settings(settings), requestOptions)
-            .isAcknowledged());
+    return executeWithRetries(
+        "SetIndexSettings " + indexPattern,
+        () ->
+            esClient
+                .indices()
+                .putSettings(
+                    new UpdateSettingsRequest(indexPattern).settings(settings), requestOptions)
+                .isAcknowledged());
   }
 
   public boolean addPipeline(String name, String definition) {
     final BytesReference content = new BytesArray(definition.getBytes());
-    return executeWithRetries("AddPipeline " + name,
-        () -> esClient.ingest()
-            .putPipeline(new PutPipelineRequest(name, content, XContentType.JSON), requestOptions)
-            .isAcknowledged());
+    return executeWithRetries(
+        "AddPipeline " + name,
+        () ->
+            esClient
+                .ingest()
+                .putPipeline(
+                    new PutPipelineRequest(name, content, XContentType.JSON), requestOptions)
+                .isAcknowledged());
   }
 
   public boolean removePipeline(String name) {
-    return executeWithRetries("RemovePipeline " + name, () -> esClient.ingest()
-        .deletePipeline(new DeletePipelineRequest(name), requestOptions).isAcknowledged());
+    return executeWithRetries(
+        "RemovePipeline " + name,
+        () ->
+            esClient
+                .ingest()
+                .deletePipeline(new DeletePipelineRequest(name), requestOptions)
+                .isAcknowledged());
   }
 
-  public int doWithEachSearchResult(SearchRequest searchRequest,
-      Consumer<SearchHit> searchHitConsumer) {
-    return executeWithRetries("RetryElasticsearchClient#doWithEachSearchResult", () -> {
-      int doneOnSearchHits = 0;
-      searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
-      SearchResponse response = esClient.search(searchRequest, requestOptions);
+  public int doWithEachSearchResult(
+      SearchRequest searchRequest, Consumer<SearchHit> searchHitConsumer) {
+    return executeWithRetries(
+        "RetryElasticsearchClient#doWithEachSearchResult",
+        () -> {
+          int doneOnSearchHits = 0;
+          searchRequest.scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+          SearchResponse response = esClient.search(searchRequest, requestOptions);
 
-      String scrollId = null;
-      while (response.getHits().getHits().length > 0) {
-        Arrays.stream(response.getHits().getHits()).sequential().forEach(searchHitConsumer);
-        doneOnSearchHits += response.getHits().getHits().length;
+          String scrollId = null;
+          while (response.getHits().getHits().length > 0) {
+            Arrays.stream(response.getHits().getHits()).sequential().forEach(searchHitConsumer);
+            doneOnSearchHits += response.getHits().getHits().length;
 
-        scrollId = response.getScrollId();
-        final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId)
-            .scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
-        response = esClient.scroll(scrollRequest, requestOptions);
-      }
-      if (scrollId != null) {
-        final ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
-        clearScrollRequest.addScrollId(scrollId);
-        esClient.clearScroll(clearScrollRequest, requestOptions);
-      }
-      return doneOnSearchHits;
-    });
+            scrollId = response.getScrollId();
+            final SearchScrollRequest scrollRequest =
+                new SearchScrollRequest(scrollId)
+                    .scroll(TimeValue.timeValueMillis(SCROLL_KEEP_ALIVE_MS));
+            response = esClient.scroll(scrollRequest, requestOptions);
+          }
+          if (scrollId != null) {
+            final ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
+            clearScrollRequest.addScrollId(scrollId);
+            esClient.clearScroll(clearScrollRequest, requestOptions);
+          }
+          return doneOnSearchHits;
+        });
   }
 
-  public <T> List<T> searchWithScroll(SearchRequest searchRequest, Class<T> resultClass,
-      ObjectMapper objectMapper) {
-    final long totalHits = executeWithRetries("Count search results",
-        () -> esClient.search(searchRequest, requestOptions).getHits().getTotalHits().value);
-    return executeWithRetries("Search with scroll",
+  public <T> List<T> searchWithScroll(
+      SearchRequest searchRequest, Class<T> resultClass, ObjectMapper objectMapper) {
+    final long totalHits =
+        executeWithRetries(
+            "Count search results",
+            () -> esClient.search(searchRequest, requestOptions).getHits().getTotalHits().value);
+    return executeWithRetries(
+        "Search with scroll",
         () -> scroll(searchRequest, resultClass, objectMapper),
         resultList -> resultList.size() != totalHits);
   }
@@ -371,8 +443,10 @@ public class NoSpringRetryElasticsearchClient {
 
     String scrollId = null;
     while (response.getHits().getHits().length > 0) {
-      results.addAll(map(response.getHits().getHits(),
-          searchHit -> searchHitToObject(searchHit, clazz, objectMapper)));
+      results.addAll(
+          map(
+              response.getHits().getHits(),
+              searchHit -> searchHitToObject(searchHit, clazz, objectMapper)));
 
       scrollId = response.getScrollId();
       final SearchScrollRequest scrollRequest =
@@ -391,37 +465,52 @@ public class NoSpringRetryElasticsearchClient {
     try {
       return objectMapper.readValue(searchHit.getSourceAsString(), clazz);
     } catch (JsonProcessingException e) {
-      throw new OperateRuntimeException(String
-          .format("Error while reading entity of type %s from Elasticsearch!", clazz.getName()), e);
+      throw new OperateRuntimeException(
+          String.format(
+              "Error while reading entity of type %s from Elasticsearch!", clazz.getName()),
+          e);
     }
   }
 
   // ------------------- Retry part ------------------
 
-  private <T> T executeWithRetries(String operationName,
-      RetryOperation.RetryConsumer<T> retryConsumer) {
+  private <T> T executeWithRetries(
+      String operationName, RetryOperation.RetryConsumer<T> retryConsumer) {
     return executeWithRetries(operationName, retryConsumer, null);
   }
 
-  private <T> T executeWithRetries(String operationName,
+  private <T> T executeWithRetries(
+      String operationName,
       RetryOperation.RetryConsumer<T> retryConsumer,
       RetryOperation.RetryPredicate<T> retryPredicate) {
     return executeWithGivenRetries(numberOfRetries, operationName, retryConsumer, retryPredicate);
   }
 
-  private <T> T executeWithGivenRetries(int retries, String operationName,
+  private <T> T executeWithGivenRetries(
+      int retries,
+      String operationName,
       RetryOperation.RetryConsumer<T> retryConsumer,
       RetryOperation.RetryPredicate<T> retryPredicate) {
     try {
-      return RetryOperation.<T>newBuilder().retryConsumer(retryConsumer)
-          .retryPredicate(retryPredicate).noOfRetry(retries)
+      return RetryOperation.<T>newBuilder()
+          .retryConsumer(retryConsumer)
+          .retryPredicate(retryPredicate)
+          .noOfRetry(retries)
           .delayInterval(delayIntervalInSeconds, TimeUnit.SECONDS)
-          .retryOn(IOException.class, ElasticsearchException.class).retryPredicate(retryPredicate)
-          .message(operationName).build().retry();
+          .retryOn(IOException.class, ElasticsearchException.class)
+          .retryPredicate(retryPredicate)
+          .message(operationName)
+          .build()
+          .retry();
     } catch (Exception e) {
       throw new OperateRuntimeException(
-          "Couldn't execute operation " + operationName + " on elasticsearch for " + numberOfRetries
-              + " attempts with " + delayIntervalInSeconds + " seconds waiting.",
+          "Couldn't execute operation "
+              + operationName
+              + " on elasticsearch for "
+              + numberOfRetries
+              + " attempts with "
+              + delayIntervalInSeconds
+              + " seconds waiting.",
           e);
     }
   }
@@ -430,13 +519,14 @@ public class NoSpringRetryElasticsearchClient {
     return esClient;
   }
 
-
   public boolean putLifeCyclePolicy(final PutLifecyclePolicyRequest putLifecyclePolicyRequest) {
     return executeWithRetries(
         String.format("Put LifeCyclePolicy %s ", putLifecyclePolicyRequest.getName()),
-        () -> esClient.indexLifecycle()
-            .putLifecyclePolicy(putLifecyclePolicyRequest, requestOptions).isAcknowledged(),
+        () ->
+            esClient
+                .indexLifecycle()
+                .putLifecyclePolicy(putLifecyclePolicyRequest, requestOptions)
+                .isAcknowledged(),
         null);
   }
 }
-

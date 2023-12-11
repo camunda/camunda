@@ -1,8 +1,7 @@
 package io.camunda.zeebe.exporter.operate.handlers;
 
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import io.camunda.operate.entities.SequenceFlowEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
@@ -12,6 +11,8 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SequenceFlowHandler
     implements ExportHandler<SequenceFlowEntity, ProcessInstanceRecordValue> {
@@ -44,8 +45,8 @@ public class SequenceFlowHandler
   @Override
   public String generateId(Record<ProcessInstanceRecordValue> record) {
     final ProcessInstanceRecordValue recordValue = record.getValue();
-    return String.format(ID_PATTERN, recordValue.getProcessInstanceKey(),
-        recordValue.getElementId());
+    return String.format(
+        ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementId());
   }
 
   @Override
@@ -57,9 +58,11 @@ public class SequenceFlowHandler
   public void updateEntity(Record<ProcessInstanceRecordValue> record, SequenceFlowEntity entity) {
     final ProcessInstanceRecordValue recordValue = record.getValue();
 
-    entity.setProcessInstanceKey(recordValue.getProcessInstanceKey())
+    entity
+        .setProcessInstanceKey(recordValue.getProcessInstanceKey())
         .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
-        .setBpmnProcessId(recordValue.getBpmnProcessId()).setActivityId(recordValue.getElementId())
+        .setBpmnProcessId(recordValue.getBpmnProcessId())
+        .setActivityId(recordValue.getElementId())
         .setTenantId(tenantOrDefault(recordValue.getTenantId()));
   }
 
@@ -69,12 +72,10 @@ public class SequenceFlowHandler
 
     LOGGER.debug("Index sequence flow: id {}", entity.getId());
     batchRequest.add(sequenceFlowTemplate.getFullQualifiedName(), entity);
-
   }
 
   @Override
   public String getIndexName() {
     return sequenceFlowTemplate.getFullQualifiedName();
   }
-
 }

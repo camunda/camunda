@@ -1,10 +1,7 @@
 package io.camunda.zeebe.exporter.operate.handlers;
 
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
-import java.util.HashSet;
-import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
@@ -16,6 +13,10 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
+import java.util.HashSet;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DecisionDefinitionHandler
     implements ExportHandler<DecisionDefinitionEntity, DecisionRecordValue> {
@@ -23,6 +24,7 @@ public class DecisionDefinitionHandler
   private static final Logger LOGGER = LoggerFactory.getLogger(DecisionDefinitionHandler.class);
 
   private static final Set<Intent> STATES = new HashSet<>();
+
   static {
     STATES.add(DecisionIntent.CREATED);
   }
@@ -62,26 +64,28 @@ public class DecisionDefinitionHandler
   public void updateEntity(Record<DecisionRecordValue> record, DecisionDefinitionEntity entity) {
     final DecisionRecordValue decision = record.getValue();
 
-    entity.setKey(decision.getDecisionKey()).setName(decision.getDecisionName())
-        .setVersion(decision.getVersion()).setDecisionId(decision.getDecisionId())
+    entity
+        .setKey(decision.getDecisionKey())
+        .setName(decision.getDecisionName())
+        .setVersion(decision.getVersion())
+        .setDecisionId(decision.getDecisionId())
         .setDecisionRequirementsId(decision.getDecisionRequirementsId())
         .setDecisionRequirementsKey(decision.getDecisionRequirementsKey())
         .setTenantId(tenantOrDefault(decision.getTenantId()));
-
   }
 
   @Override
   public void flush(DecisionDefinitionEntity entity, BatchRequest batchRequest)
       throws PersistenceException {
     LOGGER.debug("Decision: key {}, decisionId {}", entity.getKey(), entity.getDecisionId());
-    batchRequest.addWithId(decisionIndex.getFullQualifiedName(),
-        ConversionUtils.toStringOrNull(entity.getKey()), entity);
-
+    batchRequest.addWithId(
+        decisionIndex.getFullQualifiedName(),
+        ConversionUtils.toStringOrNull(entity.getKey()),
+        entity);
   }
 
   @Override
   public String getIndexName() {
     return decisionIndex.getFullQualifiedName();
   }
-
 }

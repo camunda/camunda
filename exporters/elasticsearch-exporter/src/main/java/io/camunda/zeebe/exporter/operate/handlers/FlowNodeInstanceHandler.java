@@ -4,13 +4,7 @@ import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
@@ -25,6 +19,13 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FlowNodeInstanceHandler
     implements ExportHandler<FlowNodeInstanceEntity, ProcessInstanceRecordValue> {
@@ -57,7 +58,6 @@ public class FlowNodeInstanceHandler
     final Intent intent = record.getIntent();
     return !isProcessEvent(processInstanceRecordValue)
         && (AI_START_STATES.contains(intent) || AI_FINISH_STATES.contains(intent));
-
   }
 
   private boolean isProcessEvent(ProcessInstanceRecordValue recordValue) {
@@ -88,8 +88,8 @@ public class FlowNodeInstanceHandler
   }
 
   @Override
-  public void updateEntity(Record<ProcessInstanceRecordValue> record,
-      FlowNodeInstanceEntity entity) {
+  public void updateEntity(
+      Record<ProcessInstanceRecordValue> record, FlowNodeInstanceEntity entity) {
 
     final var recordValue = record.getValue();
     final Intent intent = record.getIntent();
@@ -127,8 +127,11 @@ public class FlowNodeInstanceHandler
       }
     }
 
-    entity.setType(FlowNodeType.fromZeebeBpmnElementType(
-        recordValue.getBpmnElementType() == null ? null : recordValue.getBpmnElementType().name()));
+    entity.setType(
+        FlowNodeType.fromZeebeBpmnElementType(
+            recordValue.getBpmnElementType() == null
+                ? null
+                : recordValue.getBpmnElementType().name()));
   }
 
   @Override
@@ -145,8 +148,8 @@ public class FlowNodeInstanceHandler
       updateFields.put(FlowNodeInstanceTemplate.STATE, fniEntity.getState());
       updateFields.put(FlowNodeInstanceTemplate.TREE_PATH, fniEntity.getTreePath());
       updateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, fniEntity.getFlowNodeId());
-      updateFields.put(FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY,
-          fniEntity.getProcessDefinitionKey());
+      updateFields.put(
+          FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, fniEntity.getProcessDefinitionKey());
       updateFields.put(FlowNodeInstanceTemplate.LEVEL, fniEntity.getLevel());
       if (fniEntity.getStartDate() != null) {
         updateFields.put(FlowNodeInstanceTemplate.START_DATE, fniEntity.getStartDate());
@@ -157,8 +160,11 @@ public class FlowNodeInstanceHandler
       if (fniEntity.getPosition() != null) {
         updateFields.put(FlowNodeInstanceTemplate.POSITION, fniEntity.getPosition());
       }
-      batchRequest.upsert(flowNodeInstanceTemplate.getFullQualifiedName(), fniEntity.getId(),
-          fniEntity, updateFields);
+      batchRequest.upsert(
+          flowNodeInstanceTemplate.getFullQualifiedName(),
+          fniEntity.getId(),
+          fniEntity,
+          updateFields);
     }
   }
 

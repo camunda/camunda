@@ -12,7 +12,6 @@ import io.camunda.operate.schema.templates.ProcessInstanceDependant;
 public class EventTemplate extends AbstractTemplateDescriptor
     implements ProcessInstanceDependant, Prio3Backup {
 
-
   public static final String INDEX_NAME = "event";
 
   public static final String ID = "id";

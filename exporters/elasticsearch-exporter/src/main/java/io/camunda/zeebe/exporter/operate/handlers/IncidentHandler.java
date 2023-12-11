@@ -1,11 +1,7 @@
 package io.camunda.zeebe.exporter.operate.handlers;
 
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
-import java.time.Instant;
-import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.util.StringUtils;
+
 import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.IncidentState;
@@ -20,13 +16,17 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import java.time.Instant;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 
 public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRecordValue> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentHandler.class);
 
   private IncidentTemplate incidentTemplate;
-
 
   // TODO: Did not port over the webhook call that notifies users of a new incident
 
@@ -86,17 +86,19 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
       }
       incident.setBpmnProcessId(recordValue.getBpmnProcessId());
       final String errorMessage = StringUtils.trimWhitespace(recordValue.getErrorMessage());
-      incident.setErrorMessage(errorMessage)
-          .setErrorType(ErrorType.fromZeebeErrorType(
-              recordValue.getErrorType() == null ? null : recordValue.getErrorType().name()))
+      incident
+          .setErrorMessage(errorMessage)
+          .setErrorType(
+              ErrorType.fromZeebeErrorType(
+                  recordValue.getErrorType() == null ? null : recordValue.getErrorType().name()))
           .setFlowNodeId(recordValue.getElementId());
       if (recordValue.getElementInstanceKey() > 0) {
         incident.setFlowNodeInstanceKey(recordValue.getElementInstanceKey());
       }
-      incident.setState(IncidentState.PENDING)
+      incident
+          .setState(IncidentState.PENDING)
           .setCreationTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
           .setTenantId(tenantOrDefault(recordValue.getTenantId()));
-
     }
   }
 
@@ -106,8 +108,11 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
 
     LOGGER.debug("Index incident: id {}", incident.getId());
     // we only insert incidents but never update -> update will be performed in post importer
-    batchRequest.upsert(incidentTemplate.getFullQualifiedName(), String.valueOf(incident.getKey()),
-        incident, Map.of());
+    batchRequest.upsert(
+        incidentTemplate.getFullQualifiedName(),
+        String.valueOf(incident.getKey()),
+        incident,
+        Map.of());
   }
 
   @Override

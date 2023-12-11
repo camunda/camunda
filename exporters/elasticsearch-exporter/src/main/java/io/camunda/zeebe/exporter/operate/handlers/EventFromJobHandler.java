@@ -2,11 +2,7 @@ package io.camunda.zeebe.exporter.operate.handlers;
 
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 import static io.camunda.zeebe.exporter.operate.schema.templates.EventTemplate.METADATA;
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import io.camunda.operate.entities.EventEntity;
 import io.camunda.operate.entities.EventMetadataEntity;
 import io.camunda.operate.entities.EventSourceType;
@@ -19,6 +15,11 @@ import io.camunda.zeebe.exporter.operate.schema.templates.EventTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class EventFromJobHandler implements ExportHandler<EventEntity, JobRecordValue> {
 
@@ -49,8 +50,8 @@ public class EventFromJobHandler implements ExportHandler<EventEntity, JobRecord
   @Override
   public String generateId(Record<JobRecordValue> record) {
     final JobRecordValue recordValue = record.getValue();
-    return String.format(ID_PATTERN, recordValue.getProcessInstanceKey(),
-        recordValue.getElementInstanceKey());
+    return String.format(
+        ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementInstanceKey());
   }
 
   @Override
@@ -65,8 +66,9 @@ public class EventFromJobHandler implements ExportHandler<EventEntity, JobRecord
 
     eventEntity.setKey(record.getKey());
     eventEntity.setPartitionId(record.getPartitionId());
-    eventEntity.setEventSourceType(EventSourceType
-        .fromZeebeValueType(record.getValueType() == null ? null : record.getValueType().name()));
+    eventEntity.setEventSourceType(
+        EventSourceType.fromZeebeValueType(
+            record.getValueType() == null ? null : record.getValueType().name()));
     eventEntity.setDateTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
     eventEntity.setEventType(EventType.fromZeebeIntent(record.getIntent().name()));
 
@@ -80,7 +82,8 @@ public class EventFromJobHandler implements ExportHandler<EventEntity, JobRecord
       eventEntity.setProcessInstanceKey(processInstanceKey);
     }
 
-    eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId())
+    eventEntity
+        .setBpmnProcessId(recordValue.getBpmnProcessId())
         .setFlowNodeId(recordValue.getElementId())
         .setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
@@ -109,8 +112,11 @@ public class EventFromJobHandler implements ExportHandler<EventEntity, JobRecord
 
   @Override
   public void flush(EventEntity entity, BatchRequest batchRequest) throws PersistenceException {
-    LOGGER.debug("Event: id {}, eventSourceType {}, eventType {}, processInstanceKey {}",
-        entity.getId(), entity.getEventSourceType(), entity.getEventType(),
+    LOGGER.debug(
+        "Event: id {}, eventSourceType {}, eventType {}, processInstanceKey {}",
+        entity.getId(),
+        entity.getEventSourceType(),
+        entity.getEventType(),
         entity.getProcessInstanceKey());
     final Map<String, Object> jsonMap = new HashMap<>();
     jsonMap.put(EventTemplate.KEY, entity.getKey());
@@ -120,10 +126,10 @@ public class EventFromJobHandler implements ExportHandler<EventEntity, JobRecord
     if (entity.getMetadata() != null) {
       final Map<String, Object> metadataMap = new HashMap<>();
       if (entity.getMetadata().getIncidentErrorMessage() != null) {
-        metadataMap.put(EventTemplate.INCIDENT_ERROR_MSG,
-            entity.getMetadata().getIncidentErrorMessage());
-        metadataMap.put(EventTemplate.INCIDENT_ERROR_TYPE,
-            entity.getMetadata().getIncidentErrorType());
+        metadataMap.put(
+            EventTemplate.INCIDENT_ERROR_MSG, entity.getMetadata().getIncidentErrorMessage());
+        metadataMap.put(
+            EventTemplate.INCIDENT_ERROR_TYPE, entity.getMetadata().getIncidentErrorType());
       }
       if (entity.getMetadata().getJobKey() != null) {
         metadataMap.put(EventTemplate.JOB_KEY, entity.getMetadata().getJobKey());
@@ -133,8 +139,8 @@ public class EventFromJobHandler implements ExportHandler<EventEntity, JobRecord
         metadataMap.put(EventTemplate.JOB_RETRIES, entity.getMetadata().getJobRetries());
         metadataMap.put(EventTemplate.JOB_WORKER, entity.getMetadata().getJobWorker());
         metadataMap.put(EventTemplate.JOB_KEY, entity.getMetadata().getJobKey());
-        metadataMap.put(EventTemplate.JOB_CUSTOM_HEADERS,
-            entity.getMetadata().getJobCustomHeaders());
+        metadataMap.put(
+            EventTemplate.JOB_CUSTOM_HEADERS, entity.getMetadata().getJobCustomHeaders());
       }
       if (entity.getMetadata().getMessageName() != null) {
         metadataMap.put(EventTemplate.MESSAGE_NAME, entity.getMetadata().getMessageName());
@@ -146,12 +152,10 @@ public class EventFromJobHandler implements ExportHandler<EventEntity, JobRecord
     }
     // write event
     batchRequest.upsert(eventTemplate.getFullQualifiedName(), entity.getId(), entity, jsonMap);
-
   }
 
   @Override
   public String getIndexName() {
     return eventTemplate.getFullQualifiedName();
   }
-
 }

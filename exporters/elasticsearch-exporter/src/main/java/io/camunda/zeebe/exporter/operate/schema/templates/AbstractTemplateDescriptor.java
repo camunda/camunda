@@ -21,5 +21,4 @@ public abstract class AbstractTemplateDescriptor implements TemplateDescriptor {
     // operateProperties.getElasticsearch().getIndexPrefix();
     return String.format("%s-%s-%s_", indexPrefix, getIndexName(), getVersion());
   }
-
 }

@@ -1,11 +1,7 @@
 package io.camunda.zeebe.exporter.operate.handlers;
 
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
+
 import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceInputEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceOutputEntity;
@@ -22,6 +18,11 @@ import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedInputValue;
 import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 // TODO: currently not implemented as an ExportHandler, because it produces multiple Operate
 // Entities from one record
@@ -47,28 +48,34 @@ public class DecisionInstanceHandler {
           DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
       final DecisionInstanceState state = getState(record, decisionEvaluation, i);
 
-      final DecisionInstanceEntity entity = new DecisionInstanceEntity().setId(record.getKey(), i)
-          .setKey(record.getKey()).setExecutionIndex(i).setPosition(record.getPosition())
-          .setPartitionId(record.getPartitionId()).setEvaluationDate(timestamp)
-          .setProcessInstanceKey(decisionEvaluation.getProcessInstanceKey())
-          .setProcessDefinitionKey(decisionEvaluation.getProcessDefinitionKey())
-          .setBpmnProcessId(decisionEvaluation.getBpmnProcessId())
-          .setElementInstanceKey(decisionEvaluation.getElementInstanceKey())
-          .setElementId(decisionEvaluation.getElementId())
-          .setDecisionRequirementsKey(decisionEvaluation.getDecisionRequirementsKey())
-          .setDecisionRequirementsId(decisionEvaluation.getDecisionRequirementsId())
-          .setRootDecisionId(decisionEvaluation.getDecisionId())
-          .setRootDecisionName(decisionEvaluation.getDecisionName())
-          .setRootDecisionDefinitionId(String.valueOf(decisionEvaluation.getDecisionKey()))
-          .setDecisionId(decision.getDecisionId())
-          .setDecisionDefinitionId(String.valueOf(decision.getDecisionKey()))
-          .setDecisionType(DecisionType.fromZeebeDecisionType(decision.getDecisionType()))
-          .setDecisionName(decision.getDecisionName())
-          .setDecisionVersion((int) decision.getDecisionVersion()).setState(state)
-          .setResult(decision.getDecisionOutput())
-          .setEvaluatedOutputs(createEvaluationOutputs(decision.getMatchedRules()))
-          .setEvaluatedInputs(createEvaluationInputs(decision.getEvaluatedInputs()))
-          .setTenantId(tenantOrDefault(decisionEvaluation.getTenantId()));
+      final DecisionInstanceEntity entity =
+          new DecisionInstanceEntity()
+              .setId(record.getKey(), i)
+              .setKey(record.getKey())
+              .setExecutionIndex(i)
+              .setPosition(record.getPosition())
+              .setPartitionId(record.getPartitionId())
+              .setEvaluationDate(timestamp)
+              .setProcessInstanceKey(decisionEvaluation.getProcessInstanceKey())
+              .setProcessDefinitionKey(decisionEvaluation.getProcessDefinitionKey())
+              .setBpmnProcessId(decisionEvaluation.getBpmnProcessId())
+              .setElementInstanceKey(decisionEvaluation.getElementInstanceKey())
+              .setElementId(decisionEvaluation.getElementId())
+              .setDecisionRequirementsKey(decisionEvaluation.getDecisionRequirementsKey())
+              .setDecisionRequirementsId(decisionEvaluation.getDecisionRequirementsId())
+              .setRootDecisionId(decisionEvaluation.getDecisionId())
+              .setRootDecisionName(decisionEvaluation.getDecisionName())
+              .setRootDecisionDefinitionId(String.valueOf(decisionEvaluation.getDecisionKey()))
+              .setDecisionId(decision.getDecisionId())
+              .setDecisionDefinitionId(String.valueOf(decision.getDecisionKey()))
+              .setDecisionType(DecisionType.fromZeebeDecisionType(decision.getDecisionType()))
+              .setDecisionName(decision.getDecisionName())
+              .setDecisionVersion((int) decision.getDecisionVersion())
+              .setState(state)
+              .setResult(decision.getDecisionOutput())
+              .setEvaluatedOutputs(createEvaluationOutputs(decision.getMatchedRules()))
+              .setEvaluatedInputs(createEvaluationInputs(decision.getEvaluatedInputs()))
+              .setTenantId(tenantOrDefault(decisionEvaluation.getTenantId()));
       if (state.equals(DecisionInstanceState.FAILED)) {
         entity.setEvaluationFailure(decisionEvaluation.getEvaluationFailureMessage());
       }
@@ -77,8 +84,8 @@ public class DecisionInstanceHandler {
     return entities;
   }
 
-  private DecisionInstanceState getState(final Record record,
-      final DecisionEvaluationRecordValue decisionEvaluation, final int i) {
+  private DecisionInstanceState getState(
+      final Record record, final DecisionEvaluationRecordValue decisionEvaluation, final int i) {
     if (record.getIntent().name().equals(DecisionEvaluationIntent.FAILED.name())
         && i == decisionEvaluation.getEvaluatedDecisions().size()) {
       return DecisionInstanceState.FAILED;
@@ -90,8 +97,12 @@ public class DecisionInstanceHandler {
   private List<DecisionInstanceInputEntity> createEvaluationInputs(
       final List<EvaluatedInputValue> evaluatedInputs) {
     return evaluatedInputs.stream()
-        .map(input -> new DecisionInstanceInputEntity().setId(input.getInputId())
-            .setName(input.getInputName()).setValue(input.getInputValue()))
+        .map(
+            input ->
+                new DecisionInstanceInputEntity()
+                    .setId(input.getInputId())
+                    .setName(input.getInputName())
+                    .setValue(input.getInputValue()))
         .collect(Collectors.toList());
   }
 
@@ -99,11 +110,19 @@ public class DecisionInstanceHandler {
       final List<MatchedRuleValue> matchedRules) {
     final List<DecisionInstanceOutputEntity> outputs = new ArrayList<>();
     matchedRules.stream()
-        .forEach(rule -> outputs.addAll(rule.getEvaluatedOutputs().stream()
-            .map(output -> new DecisionInstanceOutputEntity().setRuleId(rule.getRuleId())
-                .setRuleIndex(rule.getRuleIndex()).setId(output.getOutputId())
-                .setName(output.getOutputName()).setValue(output.getOutputValue()))
-            .collect(Collectors.toList())));
+        .forEach(
+            rule ->
+                outputs.addAll(
+                    rule.getEvaluatedOutputs().stream()
+                        .map(
+                            output ->
+                                new DecisionInstanceOutputEntity()
+                                    .setRuleId(rule.getRuleId())
+                                    .setRuleIndex(rule.getRuleIndex())
+                                    .setId(output.getOutputId())
+                                    .setName(output.getOutputName())
+                                    .setValue(output.getOutputValue()))
+                        .collect(Collectors.toList())));
     return outputs;
   }
 
@@ -115,5 +134,4 @@ public class DecisionInstanceHandler {
   public String getIndexName() {
     return decisionInstanceTemplate.getFullQualifiedName();
   }
-
 }

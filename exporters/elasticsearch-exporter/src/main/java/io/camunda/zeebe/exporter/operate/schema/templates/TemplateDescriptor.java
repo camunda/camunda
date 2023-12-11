@@ -19,5 +19,4 @@ public interface TemplateDescriptor extends IndexDescriptor {
   default String getIndexPattern() {
     return getFullQualifiedName() + "*";
   }
-
 }

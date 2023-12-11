@@ -1,10 +1,7 @@
 package io.camunda.zeebe.exporter.operate.handlers;
 
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
-import java.util.HashMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.util.StringUtils;
+
 import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
@@ -16,6 +13,10 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import java.util.HashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 
 public class ListViewFromIncidentHandler
     implements ExportHandler<FlowNodeInstanceForListViewEntity, IncidentRecordValue> {
@@ -54,8 +55,8 @@ public class ListViewFromIncidentHandler
   }
 
   @Override
-  public void updateEntity(Record<IncidentRecordValue> record,
-      FlowNodeInstanceForListViewEntity entity) {
+  public void updateEntity(
+      Record<IncidentRecordValue> record, FlowNodeInstanceForListViewEntity entity) {
     final Intent intent = record.getIntent();
     final IncidentRecordValue recordValue = record.getValue();
 
@@ -75,9 +76,6 @@ public class ListViewFromIncidentHandler
     // set parent
     final Long processInstanceKey = recordValue.getProcessInstanceKey();
     entity.getJoinRelation().setParent(processInstanceKey);
-
-
-
   }
 
   @Override
@@ -86,8 +84,12 @@ public class ListViewFromIncidentHandler
     LOGGER.debug("Activity instance for list view: id {}", entity.getId());
     final var updateFields = new HashMap<String, Object>();
     updateFields.put(ListViewTemplate.ERROR_MSG, entity.getErrorMessage());
-    batchRequest.upsertWithRouting(listViewTemplate.getFullQualifiedName(), entity.getId(), entity,
-        updateFields, entity.getProcessInstanceKey().toString());
+    batchRequest.upsertWithRouting(
+        listViewTemplate.getFullQualifiedName(),
+        entity.getId(),
+        entity,
+        updateFields,
+        entity.getProcessInstanceKey().toString());
   }
 
   @Override

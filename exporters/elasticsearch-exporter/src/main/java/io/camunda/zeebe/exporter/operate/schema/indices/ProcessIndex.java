@@ -10,7 +10,6 @@ import io.camunda.operate.schema.backup.Prio4Backup;
 
 public class ProcessIndex extends AbstractIndexDescriptor implements Prio4Backup {
 
-
   public static final String INDEX_NAME = "process";
   public static final String ID = "id";
   public static final String KEY = "key";
