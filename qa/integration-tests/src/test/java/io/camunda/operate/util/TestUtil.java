@@ -6,12 +6,6 @@
  */
 package io.camunda.operate.util;
 
-import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
-import static io.camunda.operate.property.OperationExecutorProperties.LOCK_TIMEOUT_DEFAULT;
-import static io.camunda.operate.schema.SchemaManager.OPERATE_DELETE_ARCHIVED_INDICES;
-import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
-import static io.camunda.operate.util.OperateAbstractIT.DEFAULT_USER;
-
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
@@ -23,14 +17,28 @@ import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
+import io.camunda.operate.entities.dmn.DecisionInstanceInputEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceOutputEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceState;
 import io.camunda.operate.entities.dmn.DecisionType;
-import io.camunda.operate.entities.dmn.DecisionInstanceInputEntity;
 import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
+import io.camunda.operate.store.opensearch.client.sync.OpenSearchIndexOperations;
+import io.camunda.operate.store.opensearch.client.sync.OpenSearchTemplateOperations;
+import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import org.elasticsearch.ElasticsearchStatusException;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indexlifecycle.DeleteLifecyclePolicyRequest;
+import org.elasticsearch.client.indices.DeleteComposableIndexTemplateRequest;
+import org.elasticsearch.client.indices.GetComposableIndexTemplateRequest;
+import org.elasticsearch.client.indices.GetIndexRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -40,18 +48,11 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
-import io.camunda.operate.store.opensearch.client.sync.OpenSearchIndexOperations;
-import io.camunda.operate.store.opensearch.client.sync.OpenSearchTemplateOperations;
-import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
-import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indexlifecycle.DeleteLifecyclePolicyRequest;
-import org.elasticsearch.client.indices.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.util.StringUtils;
+import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
+import static io.camunda.operate.property.OperationExecutorProperties.LOCK_TIMEOUT_DEFAULT;
+import static io.camunda.operate.schema.SchemaManager.OPERATE_DELETE_ARCHIVED_INDICES;
+import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+import static io.camunda.operate.util.OperateAbstractIT.DEFAULT_USER;
 
 public abstract class TestUtil {
 
@@ -384,8 +385,12 @@ public abstract class TestUtil {
   }
 
   public static void removeIlmPolicy(RichOpenSearchClient richOpenSearchClient) {
+    try {
       logger.info("Removing ILM policy " + OPERATE_DELETE_ARCHIVED_INDICES);
       richOpenSearchClient.ism().deletePolicy(OPERATE_DELETE_ARCHIVED_INDICES);
+    } catch (Exception ex) {
+      logger.error(ex.getMessage(), ex);
+    }
   }
 
   public static OperationEntity createOperationEntity(Long processInstanceKey, Long incidentKey, String varName, String username) {
