@@ -12,6 +12,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.state.compensation.DbCompensationSubscriptionState;
 import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
 import io.camunda.zeebe.engine.state.deployment.DbDeploymentState;
 import io.camunda.zeebe.engine.state.deployment.DbFormState;
@@ -32,6 +33,7 @@ import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.migration.DbMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableBannedInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableCompensationSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
 import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.camunda.zeebe.engine.state.mutable.MutableDistributionState;
@@ -85,6 +87,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableSignalSubscriptionState signalSubscriptionState;
   private final MutableDistributionState distributionState;
   private final MutableUserTaskState userTaskState;
+  private final MutableCompensationSubscriptionState compensationSubscriptionState;
   private final int partitionId;
 
   public ProcessingDbState(
@@ -122,10 +125,10 @@ public class ProcessingDbState implements MutableProcessingState {
     formState = new DbFormState(zeebeDb, transactionContext);
     signalSubscriptionState = new DbSignalSubscriptionState(zeebeDb, transactionContext);
     distributionState = new DbDistributionState(zeebeDb, transactionContext);
-
     mutableMigrationState = new DbMigrationState(zeebeDb, transactionContext);
-
     userTaskState = new DbUserTaskState(zeebeDb, transactionContext);
+    compensationSubscriptionState =
+        new DbCompensationSubscriptionState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -229,6 +232,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableUserTaskState getUserTaskState() {
     return userTaskState;
+  }
+
+  @Override
+  public MutableCompensationSubscriptionState getCompensationSubscriptionState() {
+    return compensationSubscriptionState;
   }
 
   @Override

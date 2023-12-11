@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.compensation;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
@@ -49,6 +50,17 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(throwEventIdProperty)
         .declareProperty(throwEventInstanceKeyProperty)
         .declareProperty(variablesProperty);
+  }
+
+  public void wrap(final CompensationSubscriptionRecord record) {
+    tenantIdProperty.setValue(record.getTenantId());
+    processInstanceKeyProperty.setValue(record.getProcessInstanceKey());
+    processDefinitionKeyProperty.setValue(record.getProcessDefinitionKey());
+    compensableActivityIdProperty.setValue(record.getCompensableActivityId());
+    compensableActivityScopeIdProperty.setValue(record.getCompensableActivityScopeId());
+    throwEventIdProperty.setValue(record.getThrowEventId());
+    throwEventInstanceKeyProperty.setValue(record.getThrowEventInstanceKey());
+    variablesProperty.setValue(record.getVariablesBuffer());
   }
 
   @Override
@@ -131,5 +143,10 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
       final String compensableActivityId) {
     compensableActivityIdProperty.setValue(compensableActivityId);
     return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getVariablesBuffer() {
+    return variablesProperty.getValue();
   }
 }

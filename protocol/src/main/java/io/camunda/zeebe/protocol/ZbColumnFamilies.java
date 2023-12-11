@@ -174,4 +174,5 @@ public enum ZbColumnFamilies {
 
   USER_TASKS,
   USER_TASK_STATES,
+  COMPENSATION_SUBSCRIPTION
 }
