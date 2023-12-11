@@ -115,7 +115,7 @@ const ProcessTile: React.FC<Props> = ({
               kind: 'info',
               title: "We couldn't find a task for the started process.",
               subtitle:
-                'Your process might have not reached a user task yet or the process might have an incident.',
+                'Your process might have not reached a user task yet, your user might not have rights to the task or the process might have an incident.',
             });
 
             return;
