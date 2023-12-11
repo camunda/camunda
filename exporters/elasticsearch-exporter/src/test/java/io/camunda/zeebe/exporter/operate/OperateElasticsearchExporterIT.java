@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.exporter.TestClient;
 import io.camunda.zeebe.exporter.TestSupport;
+import io.camunda.zeebe.exporter.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -21,6 +22,8 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
+import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
@@ -128,25 +131,44 @@ public class OperateElasticsearchExporterIT {
                   .withIntent(intent).withRecordType(RecordType.EVENT)
                   .withTimestamp(System.currentTimeMillis()));
     }
-    final List<ExportHandler<?, ?>> handlersForRecord =
-        writer.getHandlersForValueType(record.getValueType());
 
     // when
     exporter.export(record);
 
     // then
-    assertThat(handlersForRecord).isNotEmpty();
+    if (valueType.equals(ValueType.DECISION_EVALUATION)) {
+      final List<EvaluatedDecisionValue> evaluatedDecisions = ((DecisionEvaluationRecordValue) record.getValue()).getEvaluatedDecisions();
+      for (int i = 1; i <= evaluatedDecisions.size(); i++) {
+        String expectedId = String.format("%d-%d", record.getKey(), i);
+        String indexName = schemaManager.getTemplateDescriptor(DecisionInstanceTemplate.class)
+            .getFullQualifiedName();
+        assertDocument(expectedId, indexName, "DecisionInstanceHandler");
+      }
+    } else {
+      final List<ExportHandler<?, ?>> handlersForRecord =
+          writer.getHandlersForValueType(record.getValueType());
 
-    for (ExportHandler<?, ?> handler : handlersForRecord) {
+      assertThat(handlersForRecord).isNotEmpty();
 
-      final String expectedId = handler.generateId((Record) record);
-      final String indexName = handler.getIndexName();
+      for (ExportHandler<?, ?> handler : handlersForRecord) {
 
-      final Map<String, Object> document =
-          findElasticsearchDocument(indexName, expectedId, handler.getClass().getSimpleName());
-      assertThat(document).isNotNull();
-      System.out.println(String.format("Returned document %s", document));
+        if (handler.handlesRecord((Record) record)) {
+
+          final String expectedId = handler.generateId((Record) record);
+          final String indexName = handler.getIndexName();
+
+          assertDocument(expectedId, indexName, handler.getClass().getSimpleName());
+
+        }
+      }
     }
+  }
+
+  private void assertDocument(final String expectedId, final String indexName, String handlerName) {
+    final Map<String, Object> document =
+        findElasticsearchDocument(indexName, expectedId, handlerName);
+    assertThat(document).isNotNull();
+    System.out.println(String.format("Returned document %s", document));
   }
 
   private Map<String, Object> findElasticsearchDocument(
@@ -161,7 +183,7 @@ public class OperateElasticsearchExporterIT {
       } else {
         throw new RuntimeException(
             String.format(
-                "Could not find document with id %s in index %s (based on handler %s)",
+                "Could not find document with id %s in index %s",
                 id, index, handlerName));
       }
 
