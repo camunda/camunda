@@ -32,8 +32,8 @@ final class TestSupport {
    *
    * <p>Additionally, security is explicitly disabled to avoid having tons of warning printed out.
    */
-  static OpensearchContainer createDefaultContainer() {
-    return new OpensearchContainer(OPENSEARCH_IMAGE)
+  static OpensearchContainer<?> createDefaultContainer() {
+    return new OpensearchContainer<>(OPENSEARCH_IMAGE)
         .withEnv("ES_JAVA_OPTS", "-Xms256m -Xmx512m -XX:MaxDirectMemorySize=536870912")
         .withEnv("action.auto_create_index", "true");
   }
