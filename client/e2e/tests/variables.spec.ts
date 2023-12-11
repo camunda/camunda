@@ -68,7 +68,7 @@ test.describe('variables page', () => {
 
     await expect(taskDetailsPage.assignToMeButton).toBeVisible();
     await expect(taskDetailsPage.completeButton).toBeDisabled();
-    await taskDetailsPage.clickAssignToMeButton();
+    await taskDetailsPage.assignToMeButton.click();
 
     await expect(taskDetailsPage.unassignButton).toBeVisible();
     await expect(taskDetailsPage.completeButton).toBeEnabled();
@@ -80,7 +80,7 @@ test.describe('variables page', () => {
       name: 'testData value',
       value: '"updatedValue"',
     });
-    await taskDetailsPage.clickCompleteTaskButton();
+    await taskDetailsPage.completeButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await expect(taskDetailsPage.pickATaskHeader).toBeVisible();
@@ -107,7 +107,7 @@ test.describe('variables page', () => {
 
     await expect(taskDetailsPage.assignToMeButton).toBeVisible();
     await expect(taskDetailsPage.completeButton).toBeDisabled();
-    await taskDetailsPage.clickAssignToMeButton();
+    await taskDetailsPage.assignToMeButton.click();
 
     await expect(taskDetailsPage.unassignButton).toBeVisible();
     await expect(taskDetailsPage.completeButton).toBeEnabled();
@@ -142,7 +142,7 @@ test.describe('variables page', () => {
 
     await expect(taskDetailsPage.addVariableButton).not.toBeVisible();
     await expect(taskDetailsPage.assignToMeButton).toBeVisible();
-    await taskDetailsPage.clickAssignToMeButton();
+    await taskDetailsPage.assignToMeButton.click();
 
     await taskDetailsPage.addVariable({
       name: 'newVariableName',
@@ -170,7 +170,7 @@ test.describe('variables page', () => {
     await expect(taskDetailsPage.addVariableButton).not.toBeVisible();
     await expect(taskDetailsPage.assignToMeButton).toBeVisible();
     await expect(taskDetailsPage.completeButton).toBeDisabled();
-    await taskDetailsPage.clickAssignToMeButton();
+    await taskDetailsPage.assignToMeButton.click();
 
     await expect(taskDetailsPage.unassignButton).toBeVisible();
     await expect(taskDetailsPage.completeButton).toBeEnabled();
@@ -181,7 +181,7 @@ test.describe('variables page', () => {
       value: '"newVariableValue"',
     });
 
-    await taskDetailsPage.clickCompleteTaskButton();
+    await taskDetailsPage.completeButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
     await expect(taskDetailsPage.pickATaskHeader).toBeVisible();
 

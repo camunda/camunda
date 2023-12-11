@@ -112,13 +112,13 @@ test.describe('task details page', () => {
 
     await expect(taskDetailsPage.assignToMeButton).toBeVisible();
     await expect(taskDetailsPage.completeButton).toBeDisabled();
-    await taskDetailsPage.clickAssignToMeButton();
+    await taskDetailsPage.assignToMeButton.click();
 
     await expect(taskDetailsPage.unassignButton).toBeVisible();
     await expect(taskDetailsPage.completeButton).toBeEnabled();
     await expect(taskDetailsPage.assignee).toHaveText('Assigned to me');
 
-    await taskDetailsPage.clickUnassignButton();
+    await taskDetailsPage.unassignButton.click();
     await expect(taskDetailsPage.assignToMeButton).toBeVisible();
     await expect(taskDetailsPage.completeButton).toBeDisabled();
     await expect(taskDetailsPage.assignee).toHaveText('Unassigned');
@@ -133,8 +133,8 @@ test.describe('task details page', () => {
 
     await expect(taskDetailsPage.pendingTaskDescription).toBeVisible();
     const taskUrl = page.url();
-    await taskDetailsPage.clickAssignToMeButton();
-    await taskDetailsPage.clickCompleteTaskButton();
+    await taskDetailsPage.assignToMeButton.click();
+    await taskDetailsPage.completeTaskButton.click();
     await expect(taskDetailsPage.pickATaskHeader).toBeVisible();
 
     await page.goto(taskUrl);
@@ -153,13 +153,13 @@ test.describe('task details page', () => {
     await taskPanelPage.openTask('User registration');
 
     await expect(taskDetailsPage.nameInput).toBeVisible();
-    await taskDetailsPage.clickAssignToMeButton();
+    await taskDetailsPage.assignToMeButton.click();
     await expect(taskDetailsPage.unassignButton).toBeVisible();
 
     await taskDetailsPage.nameInput.fill('Jon');
     await taskDetailsPage.addressInput.fill('Earth');
     await taskDetailsPage.ageInput.fill('21');
-    await taskDetailsPage.clickCompleteTaskButton();
+    await taskDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
@@ -178,7 +178,7 @@ test.describe('task details page', () => {
     await taskPanelPage.openTask('User registration');
 
     await expect(taskDetailsPage.nameInput).toBeVisible();
-    await taskDetailsPage.clickAssignToMeButton();
+    await taskDetailsPage.assignToMeButton.click();
     await expect(taskDetailsPage.completeButton).toBeEnabled();
 
     await taskPanelPage.filterBy('Assigned to me');
@@ -188,7 +188,7 @@ test.describe('task details page', () => {
     await taskDetailsPage.nameInput.fill('Gaius Julius Caesar');
     await taskDetailsPage.addressInput.fill('Rome');
     await taskDetailsPage.ageInput.fill('55');
-    await taskDetailsPage.clickCompleteTaskButton();
+    await taskDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
@@ -206,7 +206,7 @@ test.describe('task details page', () => {
   }) => {
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('User registration with vars');
-    await taskDetailsPage.clickAssignToMeButton();
+    await taskDetailsPage.assignToMeButton.click();
 
     await expect(taskDetailsPage.nameInput).toHaveValue('Jane');
     await expect(taskDetailsPage.addressInput).toHaveValue('');
@@ -215,7 +215,7 @@ test.describe('task details page', () => {
     await taskDetailsPage.nameInput.fill('Jon');
     await taskDetailsPage.addressInput.fill('Earth');
     await taskDetailsPage.ageInput.fill('21');
-    await taskDetailsPage.clickCompleteTaskButton();
+    await taskDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
@@ -244,10 +244,10 @@ test.describe('task details page', () => {
   }) => {
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('UserTask_Number');
-    await taskDetailsPage.clickAssignToMeButton();
+    await taskDetailsPage.assignToMeButton.click();
 
-    await taskDetailsPage.fillNumber('4');
-    await taskDetailsPage.clickCompleteTaskButton();
+    await taskDetailsPage.numberInput.fill('4');
+    await taskDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
@@ -263,15 +263,15 @@ test.describe('task details page', () => {
   }) => {
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('UserTask_Number');
-    await taskDetailsPage.clickAssignToMeButton();
+    await taskDetailsPage.assignToMeButton.click();
 
-    await taskDetailsPage.clickIncrementButton();
+    await taskDetailsPage.incrementButton.click();
     await expect(taskDetailsPage.numberInput).toHaveValue('1');
-    await taskDetailsPage.clickIncrementButton();
+    await taskDetailsPage.incrementButton.click();
     await expect(taskDetailsPage.numberInput).toHaveValue('2');
-    await taskDetailsPage.clickDecrementButton();
+    await taskDetailsPage.decrementButton.click();
     await expect(taskDetailsPage.numberInput).toHaveValue('1');
-    await taskDetailsPage.clickCompleteTaskButton();
+    await taskDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
@@ -286,11 +286,11 @@ test.describe('task details page', () => {
   }) => {
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('Date and Time Task');
-    await taskDetailsPage.clickAssignToMeButton();
+    await taskDetailsPage.assignToMeButton.click();
 
     await taskDetailsPage.fillDate('1/1/3000');
     await taskDetailsPage.enterTime('12:00 PM');
-    await taskDetailsPage.clickCompleteTaskButton();
+    await taskDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
@@ -307,16 +307,16 @@ test.describe('task details page', () => {
   }) => {
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('Checkbox Task');
-    await taskDetailsPage.clickAssignToMeButton();
+    await taskDetailsPage.assignToMeButton.click();
 
-    await taskDetailsPage.checkCheckbox();
-    await taskDetailsPage.clickCompleteTaskButton();
+    await taskDetailsPage.checkbox.check();
+    await taskDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.openTask('Checkbox Task');
 
-    expect(await taskDetailsPage.checkbox.isChecked()).toBe(true);
+    await expect(taskDetailsPage.checkbox).toBeChecked();
   });
 
   test('task completion with select form', async ({
@@ -326,11 +326,11 @@ test.describe('task details page', () => {
   }) => {
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('Select User Task');
-    await taskDetailsPage.clickAssignToMeButton();
+    await taskDetailsPage.assignToMeButton.click();
 
     await expect(taskDetailsPage.unassignButton).toBeVisible();
     await taskDetailsPage.selectDropdownValue('Value');
-    await taskDetailsPage.clickCompleteTaskButton();
+    await taskDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
@@ -346,16 +346,16 @@ test.describe('task details page', () => {
   }) => {
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('Radio Button Task');
-    await taskDetailsPage.clickAssignToMeButton();
+    await taskDetailsPage.assignToMeButton.click();
 
-    await taskDetailsPage.clickRadioButton('Value');
-    await taskDetailsPage.clickCompleteTaskButton();
+    await page.getByText('Value').check();
+    await taskDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.openTask('Radio Button Task');
 
-    expect(await page.getByText('Value').isChecked()).toBe(true);
+    await expect(page.getByText('Value')).toBeChecked();
   });
 
   test('task completion with checklist form', async ({
@@ -365,18 +365,18 @@ test.describe('task details page', () => {
   }) => {
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('Checklist User Task');
-    await taskDetailsPage.clickAssignToMeButton();
+    await taskDetailsPage.assignToMeButton.click();
 
-    await taskDetailsPage.checkChecklistBox('Value1');
-    await taskDetailsPage.checkChecklistBox('Value2');
-    await taskDetailsPage.clickCompleteTaskButton();
+    await page.getByRole('checkbox', {name: 'Value1'}).check();
+    await page.getByRole('checkbox', {name: 'Value2'}).check();
+    await taskDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.openTask('Checklist User Task');
 
-    expect(await page.getByLabel('Value1').isChecked()).toBe(true);
-    expect(await page.getByLabel('Value2').isChecked()).toBe(true);
+    await expect(page.getByLabel('Value1')).toBeChecked();
+    await expect(page.getByLabel('Value2')).toBeChecked();
   });
 
   // TODO issue #3719
@@ -388,10 +388,10 @@ test.describe('task details page', () => {
     test.slow();
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('Tag list Task');
-    await taskDetailsPage.clickAssignToMeButton();
+    await taskDetailsPage.assignToMeButton.click();
 
-    await taskDetailsPage.enterTwoValuesInTagList('Value 2', 'Value');
-    await taskDetailsPage.clickCompleteTaskButton();
+    await taskDetailsPage.selectTaglistValues(['Value 2', 'Value']);
+    await taskDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
@@ -412,11 +412,11 @@ test.describe('task details page', () => {
     test.slow();
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('Text_Templating_Form_Task');
-    await taskDetailsPage.clickAssignToMeButton();
+    await taskDetailsPage.assignToMeButton.click();
 
     await expect(taskDetailsPage.form).toContainText('Hello Jane');
     await expect(taskDetailsPage.form).toContainText('You are 50 years old');
-    await taskDetailsPage.clickCompleteTaskButton();
+    await taskDetailsPage.completeTaskButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');

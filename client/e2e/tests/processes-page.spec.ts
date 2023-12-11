@@ -96,8 +96,8 @@ test.describe('process page', () => {
       timeout: 10000,
     });
 
-    await taskDetailsPage.clickAssignToMeButton();
-    await taskDetailsPage.clickCompleteTaskButton();
+    await taskDetailsPage.assignToMeButton.click();
+    await taskDetailsPage.completeButton.click();
     await expect(page.getByText('Task completed')).toBeVisible();
   });
 });

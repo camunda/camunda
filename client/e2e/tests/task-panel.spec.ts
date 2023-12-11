@@ -82,7 +82,7 @@ test.describe('task panel page', () => {
     await taskPanelPage.openTask('usertask_to_be_assigned');
 
     await expect(taskDetailsPage.emptyTaskMessage).toBeVisible();
-    await taskDetailsPage.clickAssignToMeButton();
+    await taskDetailsPage.assignToMeButton.click();
     await expect(taskDetailsPage.unassignButton).toBeVisible();
     await page.reload();
 
@@ -95,7 +95,7 @@ test.describe('task panel page', () => {
     await taskPanelPage.openTask('usertask_to_be_assigned');
 
     await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
-    await taskDetailsPage.clickCompleteTaskButton();
+    await taskDetailsPage.completeButton.click();
     await page.reload();
 
     await expect(

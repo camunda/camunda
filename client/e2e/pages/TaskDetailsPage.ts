@@ -95,22 +95,6 @@ class TaskDetailsPage {
     this.tagList = page.getByPlaceholder('Search');
   }
 
-  async clickAssignToMeButton() {
-    await this.assignToMeButton.click();
-  }
-
-  async clickUnassignButton() {
-    await this.unassignButton.click();
-  }
-
-  async clickCompleteTaskButton() {
-    await this.completeTaskButton.click();
-  }
-
-  async clickAddVariableButton() {
-    await this.addVariableButton.click();
-  }
-
   async replaceExistingVariableValue(values: {name: string; value: string}) {
     const {name, value} = values;
     await this.page.getByTitle(name).clear();
@@ -132,21 +116,9 @@ class TaskDetailsPage {
   async addVariable(payload: {name: string; value: string}) {
     const {name, value} = payload;
 
-    this.clickAddVariableButton();
+    this.addVariableButton.click();
     await this.getNthVariableNameInput(1).fill(name);
     await this.getNthVariableValueInput(1).fill(value);
-  }
-
-  async fillNumber(number: string) {
-    await this.numberInput.fill(number);
-  }
-
-  async clickIncrementButton() {
-    await this.incrementButton.click();
-  }
-
-  async clickDecrementButton() {
-    await this.decrementButton.click();
   }
 
   async fillDate(date: string) {
@@ -160,27 +132,17 @@ class TaskDetailsPage {
     await this.page.getByText(time).click();
   }
 
-  async checkCheckbox() {
-    await this.checkbox.check();
-  }
-
   async selectDropdownValue(value: string) {
     await this.selectDropdown.click();
     await this.page.getByText(value).click();
   }
 
-  async clickRadioButton(radioBtnLabel: string) {
-    await this.page.getByText(radioBtnLabel).click();
-  }
-
-  async checkChecklistBox(label: string) {
-    await this.page.getByLabel(label).check();
-  }
-
-  async enterTwoValuesInTagList(value1: string, value2: string) {
+  async selectTaglistValues(values: string[]) {
     await this.tagList.click();
-    await this.page.getByText(value1).click();
-    await this.page.getByText(value2, {exact: true}).click();
+
+    for (const value of values) {
+      await this.page.getByText(value, {exact: true}).click();
+    }
   }
 }
 export {TaskDetailsPage};
