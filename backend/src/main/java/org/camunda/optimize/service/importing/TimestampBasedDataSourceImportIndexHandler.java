@@ -34,14 +34,14 @@ public abstract class TimestampBasedDataSourceImportIndexHandler<T extends DataS
     indexToStore.setLastImportExecutionTimestamp(lastImportExecutionTimestamp);
     indexToStore.setTimestampOfLastEntity(persistedTimestampOfLastEntity);
     indexToStore.setDataSource(getDataSource());
-    indexToStore.setEsTypeIndexRefersTo(getElasticsearchDocID());
+    indexToStore.setEsTypeIndexRefersTo(getDatabaseDocID());
     return indexToStore;
   }
 
   @PostConstruct
   protected void init() {
     final Optional<TimestampBasedImportIndexDto> dto =
-      importIndexReader.getImportIndex(getElasticsearchDocID(), getDataSource());
+      importIndexReader.getImportIndex(getDatabaseDocID(), getDataSource());
     if (dto.isPresent()) {
       TimestampBasedImportIndexDto loadedImportIndex = dto.get();
       updateLastPersistedEntityTimestamp(loadedImportIndex.getTimestampOfLastEntity());
@@ -50,7 +50,7 @@ public abstract class TimestampBasedDataSourceImportIndexHandler<T extends DataS
     }
   }
 
-  protected abstract String getElasticsearchDocID();
+  protected abstract String getDatabaseDocID();
 
   protected abstract T getDataSource();
 

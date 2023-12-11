@@ -7,8 +7,8 @@ package org.camunda.optimize.upgrade;
 
 import io.github.netmikey.logunit.api.LogCapturer;
 import org.camunda.optimize.service.db.schema.index.MetadataIndex;
-import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
-import org.camunda.optimize.service.es.schema.index.MetadataIndexES;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
+import org.camunda.optimize.service.db.es.schema.index.MetadataIndexES;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.factories.CurrentVersionNoOperationUpgradePlanFactory;
@@ -25,7 +25,7 @@ import static org.mockserver.model.HttpRequest.request;
 public class UpdateMissingMetadataIT extends AbstractUpgradeIT {
   @RegisterExtension
   protected final LogCapturer logCapturer =
-    LogCapturer.create().captureForType(UpgradeProcedure.class).captureForType(ElasticsearchMetadataService.class);
+    LogCapturer.create().captureForType(UpgradeProcedure.class).captureForType(ElasticSearchMetadataService.class);
 
   @Test
   public void updateIsSkippedIfNoMetadataIndexExists() {
@@ -72,9 +72,9 @@ public class UpdateMissingMetadataIT extends AbstractUpgradeIT {
 
     // when
     assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan))
-      .hasMessageContaining("Failed retrieving the Optimize metadata document from elasticsearch!")
+      .hasMessageContaining("Failed retrieving the Optimize metadata document from database!")
       .hasCauseInstanceOf(ElasticsearchStatusException.class);
 
-    logCapturer.assertContains("Failed retrieving the Optimize metadata document from elasticsearch!");
+    logCapturer.assertContains("Failed retrieving the Optimize metadata document from database!");
   }
 }

@@ -5,24 +5,8 @@
  */
 package org.camunda.optimize.rest;
 
-import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
-import org.camunda.optimize.dto.optimize.query.analysis.DurationChartEntryDto;
-import org.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
-import org.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
-import org.camunda.optimize.dto.optimize.rest.analysis.FlowNodeOutlierParametersRequestDto;
-import org.camunda.optimize.dto.optimize.rest.analysis.FlowNodeOutlierVariableParametersRequestDto;
-import org.camunda.optimize.dto.optimize.rest.analysis.ProcessDefinitionParametersRequestDto;
-import org.camunda.optimize.service.BranchAnalysisService;
-import org.camunda.optimize.service.OutlierAnalysisService;
-import org.camunda.optimize.service.export.CSVUtils;
-import org.camunda.optimize.service.security.SessionService;
-import org.springframework.stereotype.Component;
-
-import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -31,6 +15,24 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import lombok.RequiredArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
+import org.camunda.optimize.dto.optimize.query.analysis.DurationChartEntryDto;
+import org.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
+import org.camunda.optimize.dto.optimize.query.analysis.FlowNodeOutlierParametersDto;
+import org.camunda.optimize.dto.optimize.query.analysis.FlowNodeOutlierVariableParametersDto;
+import org.camunda.optimize.dto.optimize.query.analysis.OutlierAnalysisServiceParameters;
+import org.camunda.optimize.dto.optimize.query.analysis.ProcessDefinitionParametersDto;
+import org.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.service.BranchAnalysisService;
+import org.camunda.optimize.service.OutlierAnalysisService;
+import org.camunda.optimize.service.export.CSVUtils;
+import org.camunda.optimize.service.security.SessionService;
+import org.springframework.stereotype.Component;
+
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
@@ -46,67 +48,79 @@ public class AnalysisRestService {
   private final OutlierAnalysisService outlierAnalysisService;
   private final SessionService sessionService;
 
-  /**
-   * Get the branch analysis from the given query information.
-   *
-   * @return All information concerning the branch analysis.
-   */
   @POST
   @Path("/correlation")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public BranchAnalysisResponseDto getBranchAnalysis(@Context ContainerRequestContext requestContext,
                                                      BranchAnalysisRequestDto branchAnalysisDto) {
-
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final ZoneId timezone = extractTimezone(requestContext);
     return branchAnalysisService.branchAnalysis(userId, branchAnalysisDto, timezone);
   }
 
-  @GET
+  @POST
   @Path("/flowNodeOutliers")
   @Produces(MediaType.APPLICATION_JSON)
   public Map<String, FindingsDto> getFlowNodeOutlierMap(@Context ContainerRequestContext requestContext,
-                                                        @BeanParam ProcessDefinitionParametersRequestDto parameters) {
+                                                        ProcessDefinitionParametersDto parameters) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return outlierAnalysisService.getFlowNodeOutlierMap(parameters, userId);
+    validateProvidedFilters(parameters.getFilters());
+    final OutlierAnalysisServiceParameters<ProcessDefinitionParametersDto> outlierAnalysisParams =
+      new OutlierAnalysisServiceParameters<>(parameters, extractTimezone(requestContext), userId);
+    return outlierAnalysisService.getFlowNodeOutlierMap(outlierAnalysisParams);
   }
 
-  @GET
+  @POST
   @Path("/durationChart")
   @Produces(MediaType.APPLICATION_JSON)
   public List<DurationChartEntryDto> getCountByDurationChart(@Context ContainerRequestContext requestContext,
-                                                             @BeanParam FlowNodeOutlierParametersRequestDto parameters) {
+                                                             FlowNodeOutlierParametersDto parameters) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return outlierAnalysisService.getCountByDurationChart(parameters, userId);
+    validateProvidedFilters(parameters.getFilters());
+    final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierAnalysisParams =
+      new OutlierAnalysisServiceParameters<>(parameters, extractTimezone(requestContext), userId);
+    return outlierAnalysisService.getCountByDurationChart(outlierAnalysisParams);
   }
 
-  @GET
+  @POST
   @Path("/significantOutlierVariableTerms")
   @Produces(MediaType.APPLICATION_JSON)
   public List<VariableTermDto> getSignificantOutlierVariableTerms(@Context ContainerRequestContext requestContext,
-                                                                  @BeanParam FlowNodeOutlierParametersRequestDto parameters) {
+                                                                  FlowNodeOutlierParametersDto parameters) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return outlierAnalysisService.getSignificantOutlierVariableTerms(parameters, userId);
+    validateProvidedFilters(parameters.getFilters());
+    final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierAnalysisParams =
+      new OutlierAnalysisServiceParameters<>(parameters, extractTimezone(requestContext), userId);
+    return outlierAnalysisService.getSignificantOutlierVariableTerms(outlierAnalysisParams);
   }
 
-  @GET
+  @POST
   @Path("/significantOutlierVariableTerms/processInstanceIdsExport")
   // octet stream on success, json on potential error
   @Produces(value = {MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_JSON})
   public Response getSignificantOutlierVariableTermsInstanceIds(@Context ContainerRequestContext requestContext,
                                                                 @PathParam("fileName") String fileName,
-                                                                @BeanParam FlowNodeOutlierVariableParametersRequestDto parameters) {
+                                                                FlowNodeOutlierVariableParametersDto parameters) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    validateProvidedFilters(parameters.getFilters());
     final String resultFileName = fileName == null ? System.currentTimeMillis() + ".csv" : fileName;
+    final OutlierAnalysisServiceParameters<FlowNodeOutlierVariableParametersDto> outlierAnalysisParams =
+      new OutlierAnalysisServiceParameters<>(parameters, extractTimezone(requestContext), userId);
     final List<String[]> processInstanceIdsCsv = CSVUtils.mapIdList(
-      outlierAnalysisService.getSignificantOutlierVariableTermsInstanceIds(parameters, userId)
+      outlierAnalysisService.getSignificantOutlierVariableTermsInstanceIds(outlierAnalysisParams)
     );
 
     return Response
-        .ok(CSVUtils.mapCsvLinesToCsvBytes(processInstanceIdsCsv, ','), MediaType.APPLICATION_OCTET_STREAM)
-        .header("Content-Disposition", "attachment; filename=" + resultFileName)
-        .build();
+      .ok(CSVUtils.mapCsvLinesToCsvBytes(processInstanceIdsCsv, ','), MediaType.APPLICATION_OCTET_STREAM)
+      .header("Content-Disposition", "attachment; filename=" + resultFileName)
+      .build();
+  }
+
+  private void validateProvidedFilters(final List<ProcessFilterDto<?>> filters) {
+    if (filters.stream().anyMatch(filter -> FilterApplicationLevel.VIEW == filter.getFilterLevel())) {
+      throw new BadRequestException("View level filters cannot be applied during analysis");
+    }
   }
 
 }

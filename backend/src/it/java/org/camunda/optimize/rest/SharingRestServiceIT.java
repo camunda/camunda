@@ -466,8 +466,8 @@ public class SharingRestServiceIT extends AbstractSharingIT {
         Collections.emptyMap()
       ))
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-    elasticSearchIntegrationTestExtension.getOptimizeElasticClient().update(update);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.getOptimizeElasticsearchClient().update(update);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     return reportId;
   }
 
@@ -484,8 +484,8 @@ public class SharingRestServiceIT extends AbstractSharingIT {
         Collections.emptyMap()
       ))
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-    elasticSearchIntegrationTestExtension.getOptimizeElasticClient().update(update);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.getOptimizeElasticsearchClient().update(update);
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     return dashboardId;
   }
 

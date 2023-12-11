@@ -6,7 +6,7 @@
 package org.camunda.optimize.upgrade;
 
 import lombok.SneakyThrows;
-import org.camunda.optimize.service.es.schema.IndexMappingCreator;
+import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;

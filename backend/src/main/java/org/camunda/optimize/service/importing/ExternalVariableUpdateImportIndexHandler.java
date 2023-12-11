@@ -27,7 +27,7 @@ public class ExternalVariableUpdateImportIndexHandler
   }
 
   @Override
-  protected String getElasticsearchDocID() {
+  protected String getDatabaseDocID() {
     return EXTERNAL_VARIABLE_UPDATE_IMPORT_INDEX_DOC_ID;
   }
 

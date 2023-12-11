@@ -9,6 +9,7 @@
   bottom: 0;
   z-index: var(--z-login);
   padding-top: 200px;
+  background: var(--cds-background, #ffffff);
 
   button[type='submit'] {
     width: 100%;

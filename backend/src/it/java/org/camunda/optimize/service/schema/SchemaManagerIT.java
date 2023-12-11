@@ -9,15 +9,15 @@ import org.apache.http.client.methods.HttpGet;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.schema.IndexMappingCreator;
-import org.camunda.optimize.service.es.schema.IndexSettingsBuilderES;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndexES;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.db.schema.IndexMappingCreator;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchIndexSettingsBuilder;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.db.es.schema.index.ProcessDefinitionIndexES;
 
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
-import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndexES;
+import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
+import org.camunda.optimize.service.db.es.schema.index.report.SingleDecisionReportIndexES;
 import org.camunda.optimize.service.schema.type.MyUpdatedEventIndex;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.db.DatabaseConstants;
@@ -50,8 +50,8 @@ import static jakarta.ws.rs.HttpMethod.HEAD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager.INDEX_EXIST_BATCH_SIZE;
-import static org.camunda.optimize.service.es.schema.IndexSettingsBuilderES.DYNAMIC_SETTING_MAX_NGRAM_DIFF;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_NGRAM_DIFF;
+import static org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager.INDEX_EXIST_BATCH_SIZE;
 import static org.camunda.optimize.service.db.DatabaseConstants.MAPPING_NESTED_OBJECTS_LIMIT;
 import static org.camunda.optimize.service.db.DatabaseConstants.METADATA_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_REPLICAS_SETTING;
@@ -68,7 +68,7 @@ public class SchemaManagerIT extends AbstractPlatformIT {
   @BeforeEach
   public void setUp() {
     // given
-    elasticSearchIntegrationTestExtension.cleanAndVerify();
+    databaseIntegrationTestExtension.cleanAndVerify();
     prefixAwareRestHighLevelClient = embeddedOptimizeExtension.getOptimizeElasticClient();
     indexNameService = prefixAwareRestHighLevelClient.getIndexNameService();
   }
@@ -180,14 +180,14 @@ public class SchemaManagerIT extends AbstractPlatformIT {
 
   @Test
   public void dynamicSettingsAreAppliedToStaticIndices() throws IOException {
-    final String oldRefreshInterval = embeddedOptimizeExtension.getConfigurationService().getEsRefreshInterval();
-    final int oldReplicaCount = embeddedOptimizeExtension.getConfigurationService().getEsNumberOfReplicas();
-    final int oldNestedDocumentLimit = embeddedOptimizeExtension.getConfigurationService().getEsNestedDocumentsLimit();
+    final String oldRefreshInterval = embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().getRefreshInterval();
+    final int oldReplicaCount = embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().getNumberOfReplicas();
+    final int oldNestedDocumentLimit = embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().getNestedDocumentsLimit();
 
     // given schema exists
-    embeddedOptimizeExtension.getConfigurationService().setEsRefreshInterval("100s");
-    embeddedOptimizeExtension.getConfigurationService().setEsNumberOfReplicas(2);
-    embeddedOptimizeExtension.getConfigurationService().setEsNestedDocumentsLimit(10);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setRefreshInterval("100s");
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setNumberOfReplicas(2);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setNestedDocumentsLimit(10);
 
     // when
     initializeSchema();
@@ -203,26 +203,26 @@ public class SchemaManagerIT extends AbstractPlatformIT {
     assertThat(settings.getAsInt("index." + MAPPING_NESTED_OBJECTS_LIMIT, 111)).isEqualTo(10);
 
     // cleanup
-    embeddedOptimizeExtension.getConfigurationService().setEsRefreshInterval(oldRefreshInterval);
-    embeddedOptimizeExtension.getConfigurationService().setEsNumberOfReplicas(oldReplicaCount);
-    embeddedOptimizeExtension.getConfigurationService().setEsNestedDocumentsLimit(oldNestedDocumentLimit);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setRefreshInterval(oldRefreshInterval);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setNumberOfReplicas(oldReplicaCount);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setNestedDocumentsLimit(oldNestedDocumentLimit);
     initializeSchema();
   }
 
   @Test
   public void dynamicSettingsAreAppliedToExistingDynamicIndices() throws IOException {
-    final String oldRefreshInterval = embeddedOptimizeExtension.getConfigurationService().getEsRefreshInterval();
-    final int oldReplicaCount = embeddedOptimizeExtension.getConfigurationService().getEsNumberOfReplicas();
-    final int oldNestedDocumentLimit = embeddedOptimizeExtension.getConfigurationService().getEsNestedDocumentsLimit();
+    final String oldRefreshInterval = embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().getRefreshInterval();
+    final int oldReplicaCount = embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().getNumberOfReplicas();
+    final int oldNestedDocumentLimit = embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().getNestedDocumentsLimit();
 
     // given a dynamic index is created by the import of process instance data
     final ProcessInstanceEngineDto processInstanceEngineDto = engineIntegrationExtension.deployAndStartProcess(
       BpmnModels.getSimpleBpmnDiagram());
     importAllEngineEntitiesFromScratch();
     // then the dynamic index settings are changed
-    embeddedOptimizeExtension.getConfigurationService().setEsRefreshInterval("100s");
-    embeddedOptimizeExtension.getConfigurationService().setEsNumberOfReplicas(2);
-    embeddedOptimizeExtension.getConfigurationService().setEsNestedDocumentsLimit(10);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setRefreshInterval("100s");
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setNumberOfReplicas(2);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setNestedDocumentsLimit(10);
 
     // when
     initializeSchema();
@@ -239,9 +239,9 @@ public class SchemaManagerIT extends AbstractPlatformIT {
     assertThat(settings.getAsInt("index." + MAPPING_NESTED_OBJECTS_LIMIT, 111)).isEqualTo(10);
 
     // cleanup
-    embeddedOptimizeExtension.getConfigurationService().setEsRefreshInterval(oldRefreshInterval);
-    embeddedOptimizeExtension.getConfigurationService().setEsNumberOfReplicas(oldReplicaCount);
-    embeddedOptimizeExtension.getConfigurationService().setEsNestedDocumentsLimit(oldNestedDocumentLimit);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setRefreshInterval(oldRefreshInterval);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setNumberOfReplicas(oldReplicaCount);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setNestedDocumentsLimit(oldNestedDocumentLimit);
     initializeSchema();
   }
 
@@ -273,7 +273,7 @@ public class SchemaManagerIT extends AbstractPlatformIT {
 
     // then an exception is thrown when we add an event with an undefined type in schema
     ExtendedFlowNodeEventDto extendedEventDto = new ExtendedFlowNodeEventDto();
-    assertThatThrownBy(() -> elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    assertThatThrownBy(() -> databaseIntegrationTestExtension.addEntryToDatabase(
       DatabaseConstants.METADATA_INDEX_NAME,
       "12312412",
       extendedEventDto
@@ -287,7 +287,7 @@ public class SchemaManagerIT extends AbstractPlatformIT {
   private void assertMappingSettings(final List<IndexMappingCreator<?>> mappings,
                                      final GetSettingsResponse getSettingsResponse) throws IOException {
     for (IndexMappingCreator<?> mapping : mappings) {
-      Settings dynamicSettings = IndexSettingsBuilderES.buildDynamicSettings(
+      Settings dynamicSettings = ElasticSearchIndexSettingsBuilder.buildDynamicSettings(
         embeddedOptimizeExtension.getConfigurationService());
       dynamicSettings.names().forEach(
         settingName -> {
@@ -332,7 +332,7 @@ public class SchemaManagerIT extends AbstractPlatformIT {
     for (IndexMappingCreator mapping : mappings) {
       final String indexName = indexNameService.getOptimizeIndexNameWithVersion(mapping);
       final UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest(indexName);
-      updateSettingsRequest.settings(Settings.builder().put(DYNAMIC_SETTING_MAX_NGRAM_DIFF, "10").build());
+      updateSettingsRequest.settings(Settings.builder().put(MAX_NGRAM_DIFF, "10").build());
       prefixAwareRestHighLevelClient.getHighLevelClient()
         .indices().putSettings(updateSettingsRequest, prefixAwareRestHighLevelClient.requestOptions());
     }
@@ -354,7 +354,7 @@ public class SchemaManagerIT extends AbstractPlatformIT {
   }
 
   private void assertIndexExists(String indexName) throws IOException {
-    OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
+    OptimizeElasticsearchClient esClient = databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
     GetIndexRequest request = new GetIndexRequest(indexName);
     final boolean indexExists = esClient.exists(request);
 

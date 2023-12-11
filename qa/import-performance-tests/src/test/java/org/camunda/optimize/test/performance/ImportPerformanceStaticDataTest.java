@@ -61,7 +61,7 @@ public class ImportPerformanceStaticDataTest extends AbstractImportTest {
     }
     progressReporterExecutorService.shutdown();
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
 }

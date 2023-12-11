@@ -5,65 +5,59 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {useState} from 'react';
+import {Button} from '@carbon/react';
+import {Edit, View, ViewOff} from '@carbon/icons-react';
 
-import {Button, Icon} from 'components';
 import {t} from 'translation';
 
 import {DurationHeatmapModal} from './DurationHeatmap';
 
 import './TargetValueComparison.scss';
 
-export default class TargetValueComparison extends React.Component {
-  constructor(props) {
-    super(props);
+export default function TargetValueComparison({report, onChange}) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const {active} = getConfig();
 
-    this.state = {
-      modalOpen: false,
-    };
+  function getConfig() {
+    return report.data.configuration.heatmapTargetValue;
   }
 
-  getConfig = () => this.props.report.data.configuration.heatmapTargetValue;
-
-  hasValues = () => {
-    const {values} = this.getConfig();
+  function hasValues() {
+    const {values} = getConfig();
     return values && Object.keys(values).length > 0;
-  };
+  }
 
-  toggleMode = () => {
-    if (this.getConfig().active) {
-      this.setActive(false);
-    } else if (!this.hasValues()) {
-      this.openModal();
+  function toggleMode() {
+    if (getConfig().active) {
+      setActive(false);
+    } else if (!hasValues()) {
+      openModal();
     } else {
-      this.setActive(true);
+      setActive(true);
     }
-  };
+  }
 
-  setActive = (active) => {
-    this.props.onChange({
+  function setActive(active) {
+    onChange({
       configuration: {
         heatmapTargetValue: {
           active: {$set: active},
         },
       },
     });
-  };
+  }
 
-  openModal = async () => {
-    this.setState({
-      modalOpen: true,
-    });
-  };
+  async function openModal() {
+    setIsModalOpen(true);
+  }
 
-  closeModal = () => {
-    this.setState({
-      modalOpen: false,
-    });
-  };
+  function closeModal() {
+    setIsModalOpen(false);
+  }
 
-  confirmModal = (values) => {
-    this.props.onChange({
+  function confirmModal(values) {
+    onChange({
       configuration: {
         heatmapTargetValue: {
           $set: {
@@ -73,32 +67,51 @@ export default class TargetValueComparison extends React.Component {
         },
       },
     });
-    this.closeModal();
-  };
-
-  isResultAvailable = () => typeof this.props.report.result !== 'undefined';
-
-  render() {
-    const {active} = this.getConfig();
-
-    return (
-      <div className="TargetValueComparison">
-        <Button className="toggleButton" active={active} onClick={this.toggleMode}>
-          {this.hasValues() ? t('report.config.goal.target') : t('common.add')}
-          <Icon type={active ? 'show' : 'hide'} />
-        </Button>
-        <Button className="editButton" onClick={this.openModal}>
-          <Icon type="edit" />
-        </Button>
-        {this.isResultAvailable() && (
-          <DurationHeatmapModal
-            open={this.state.modalOpen}
-            onClose={this.closeModal}
-            onConfirm={this.confirmModal}
-            report={this.props.report}
-          />
-        )}
-      </div>
-    );
+    closeModal();
   }
+
+  function isResultAvailable() {
+    return typeof report.result !== 'undefined';
+  }
+
+  function getButtonIcon() {
+    if (!hasValues()) {
+      return undefined;
+    }
+    if (active) {
+      return View;
+    }
+    return ViewOff;
+  }
+
+  return (
+    <div className="TargetValueComparison">
+      <Button
+        size="sm"
+        kind={hasValues() ? 'tertiary' : 'ghost'}
+        className="toggleButton"
+        onClick={toggleMode}
+        renderIcon={getButtonIcon()}
+      >
+        {hasValues() ? t('report.config.goal.markTargets') : t('common.add')}
+      </Button>
+      <Button
+        size="sm"
+        kind="ghost"
+        className="targetEditButton"
+        onClick={openModal}
+        renderIcon={Edit}
+        hasIconOnly
+        iconDescription={t('common.edit')}
+      />
+      {isResultAvailable() && (
+        <DurationHeatmapModal
+          open={isModalOpen}
+          onClose={closeModal}
+          onConfirm={confirmModal}
+          report={report}
+        />
+      )}
+    </div>
+  );
 }

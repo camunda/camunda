@@ -29,7 +29,7 @@ public class DecisionDefinitionImportIndexHandler extends TimestampBasedEngineIm
   }
 
   @Override
-  protected String getElasticsearchDocID() {
+  protected String getDatabaseDocID() {
     return DECISION_DEFINITION_IMPORT_INDEX_DOC_ID;
   }
 }

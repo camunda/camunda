@@ -475,7 +475,7 @@
         "value": "Actual Value",
         "target": "Target Value"
       },
-      "invalidValue": "All fields should have a numeric value",
+      "invalidValue": "All fields should have a positive numeric value",
       "targetDuration": "Target duration",
       "actualDuration": "<b>{duration}</b><br/>{percentage}% of the target value",
       "duration": {
@@ -642,7 +642,6 @@
       "axisSettings": {
         "legend": "Axis Settings",
         "logScale": "Logarithmic Scale (base 10)",
-        "label": "Axis Label",
         "xAxis": "X Axis Label",
         "yAxis": "Y Axis Label"
       },
@@ -651,6 +650,7 @@
         "goalValue": "Goal value",
         "baseline": "Baseline",
         "target": "Target",
+        "markTargets": "Mark targets",
         "invalidInput": "Enter a positive number",
         "lessThanTargetError": "Target must be greater than baseline",
         "setKpi": "Display as a process KPI",
@@ -679,6 +679,7 @@
       "bucket": {
         "buckets": "Buckets",
         "bucketSize": "Bucket Size",
+        "size": "Size",
         "baseline": "Baseline",
         "invalidNumber": "Must be a valid number"
       },
@@ -839,9 +840,9 @@
       "processDashboard": "Process Dashboard",
       "processDashboard-description": "This dashboard provides a competitive overview of metrics and use cases that can be covered with Optimize.",
       "portfolioPerformance": "Portfolio performance overview",
-      "portfolioPerformance_subTitle": "View a summary of up to 10 processes",
+      "portfolioPerformance-description": "View a summary of up to 10 processes",
       "operationsMonitoring": "Operations monitoring",
-      "operationsMonitoring_subTitle": "Monitor active processes and incidents",
+      "operationsMonitoring-description": "Monitor active processes and incidents",
       "completedProcesses": "Processes Completed",
       "activeIncidents": "Active Incidents",
       "runningProcesses": "Which processes are running?",
@@ -959,6 +960,8 @@
     "branchAnalysis": "Branch Analysis",
     "task": {
       "label": "Task Analysis",
+      "totalTaskInstances": "Total task instances: {count}",
+      "result": "Result: {count} Process instances do match these criteria",
       "totalInstances": "Total Instances",
       "tooltip": {
         "outlier": {
@@ -968,17 +971,23 @@
         "tookDuration": {
           "singular": "took a duration of",
           "plural": "took a duration of"
-        }
+        },
+        "zScore": "Outliers are calculated based on Z-score. Z-score is a statistical measurement that describes a value's relationship to the mean of a group of values. Z-score is measured in terms of standard deviations from the mean."
       },
       "notFound": "No outliers found for the selected process",
-      "onlyCompletedHint": "Note: The outlier analysis is performed on completed flow nodes only",
+      "onlyCompletedHint": "Note: The task analysis is performed on completed flow nodes only",
       "info": "Heatmap displays the incidence of higher outliers based on duration. Calculated by z-score.",
       "tooltipText": {
         "singular": "{count} instance took {percentage}% longer than average.",
         "plural": "{count} instances took {percentage}% longer than average."
       },
+      "table": {
+        "heading": "Outlying tasks",
+        "taskName": "Task Name",
+        "outliers": "Outliers"
+      },
       "detailsModal": {
-        "title": "Outliers of {name} Flow Node",
+        "title": "Results for task \"{name}\"",
         "durationChart": "Duration Distribution chart",
         "variablesTable": "Common Significant Variables Table",
         "axisLabels": {
@@ -1050,6 +1059,7 @@
     "disabled": "disabled",
     "and": "and",
     "or": "or",
+    "on": "On",
     "off": "Off",
     "none": "None",
     "all": "All",
@@ -1426,10 +1436,6 @@
         "instance": "Filter Process Instances",
         "view": "Filter Flow Nodes",
         "decision": "Filter Decision Evaluations"
-      },
-      "dropdownInfo": {
-        "instance": "Return Instances filtered by...",
-        "view": "Return Flow Node Data filtered by..."
       },
       "allVisible": {
         "instance": "All instances visible",

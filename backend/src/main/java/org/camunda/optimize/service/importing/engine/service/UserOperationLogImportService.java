@@ -11,9 +11,9 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.UserOperationLogEntryDto;
 import org.camunda.optimize.dto.optimize.importing.UserOperationType;
 import org.camunda.optimize.service.db.writer.RunningProcessInstanceWriter;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
-import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.job.importing.UserOperationLogElasticsearchImportJob;
+import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
+import org.camunda.optimize.service.importing.DatabaseImportJob;
+import org.camunda.optimize.service.importing.job.UserOperationLogDatabaseImportJob;
 import org.camunda.optimize.service.importing.engine.handler.RunningProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -27,8 +27,9 @@ import static org.camunda.optimize.dto.optimize.importing.UserOperationType.isSu
 
 @Slf4j
 public class UserOperationLogImportService implements ImportService<HistoricUserOperationLogDto> {
+
   private final RunningProcessInstanceWriter runningProcessInstanceWriter;
-  private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final RunningProcessInstanceImportIndexHandler runningProcessInstanceImportIndexHandler;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final ProcessInstanceResolverService processInstanceResolverService;
@@ -38,7 +39,7 @@ public class UserOperationLogImportService implements ImportService<HistoricUser
                                        final RunningProcessInstanceImportIndexHandler runningProcessInstanceImportIndexHandler,
                                        final ProcessDefinitionResolverService processDefinitionResolverService,
                                        final ProcessInstanceResolverService processInstanceResolverService) {
-    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+    this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.runningProcessInstanceWriter = runningProcessInstanceWriter;
@@ -67,22 +68,22 @@ public class UserOperationLogImportService implements ImportService<HistoricUser
         runningProcessInstanceImportIndexHandler.resetImportIndex();
         importCompleteCallback.run();
       } else {
-        final ElasticsearchImportJob<UserOperationLogEntryDto> elasticsearchImportJob =
-          createElasticsearchImportJob(newOptimizeEntities, importCompleteCallback);
-        addElasticsearchImportJobToQueue(elasticsearchImportJob);
+        final DatabaseImportJob<UserOperationLogEntryDto> databaseImportJob =
+          createDatabaseImportJob(newOptimizeEntities, importCompleteCallback);
+        addDatabaseImportJobToQueue(databaseImportJob);
       }
     }
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
-    return elasticsearchImportJobExecutor;
+  public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
+    return databaseImportJobExecutor;
   }
 
-  private ElasticsearchImportJob<UserOperationLogEntryDto> createElasticsearchImportJob(
+  private DatabaseImportJob<UserOperationLogEntryDto> createDatabaseImportJob(
     final List<UserOperationLogEntryDto> userOperationLogs,
     Runnable callback) {
-    final UserOperationLogElasticsearchImportJob importJob = new UserOperationLogElasticsearchImportJob(
+    final UserOperationLogDatabaseImportJob importJob = new UserOperationLogDatabaseImportJob(
       runningProcessInstanceWriter,
       callback
     );
@@ -90,8 +91,8 @@ public class UserOperationLogImportService implements ImportService<HistoricUser
     return importJob;
   }
 
-  private void addElasticsearchImportJobToQueue(final ElasticsearchImportJob elasticsearchImportJob) {
-    elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
+  private void addDatabaseImportJobToQueue(final DatabaseImportJob databaseImportJob) {
+    databaseImportJobExecutor.executeImportJob(databaseImportJob);
   }
 
   private List<UserOperationLogEntryDto> filterSuspensionOperationsAndMapToOptimizeEntities(

@@ -29,7 +29,7 @@ public class CompletedUserTaskInstanceImportIndexHandler extends TimestampBasedE
   }
 
   @Override
-  protected String getElasticsearchDocID() {
+  protected String getDatabaseDocID() {
     return COMPLETED_USER_TASK_INSTANCE_IMPORT_INDEX_DOC_ID;
   }
 

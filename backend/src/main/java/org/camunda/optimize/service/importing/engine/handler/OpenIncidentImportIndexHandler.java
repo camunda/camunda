@@ -29,7 +29,7 @@ public class OpenIncidentImportIndexHandler extends TimestampBasedEngineImportIn
   }
 
   @Override
-  protected String getElasticsearchDocID() {
+  protected String getDatabaseDocID() {
     return OPEN_INCIDENT_IMPORT_INDEX_DOC_ID;
   }
 

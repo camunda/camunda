@@ -7,6 +7,7 @@
 package com.camunda.optimize.test.upgrade
 
 import com.fasterxml.jackson.databind.JsonNode
+import jakarta.ws.rs.core.Response
 import lombok.SneakyThrows
 import org.camunda.optimize.OptimizeRequestExecutor
 import org.camunda.optimize.dto.optimize.ReportConstants
@@ -21,18 +22,19 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedSingleReportEvaluationResponseDto
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService
-import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndexES
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService
+import org.camunda.optimize.service.db.es.schema.index.events.EventProcessInstanceIndexES
 import org.camunda.optimize.service.exceptions.evaluation.TooManyBucketsException
+import org.camunda.optimize.service.util.ProcessReportDataType
+import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder
+import org.camunda.optimize.service.util.configuration.DatabaseProfile
 import org.camunda.optimize.test.optimize.AlertClient
 import org.camunda.optimize.test.optimize.CollectionClient
 import org.camunda.optimize.test.optimize.EntitiesClient
 import org.camunda.optimize.test.optimize.EventProcessClient
 import org.camunda.optimize.test.optimize.ReportClient
-import org.camunda.optimize.service.util.ProcessReportDataType
-import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest
 import org.elasticsearch.action.search.SearchRequest
@@ -43,7 +45,6 @@ import org.junit.jupiter.api.Test
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import jakarta.ws.rs.core.Response
 import java.util.function.Consumer
 import java.util.function.Function
 import java.util.stream.Collectors
@@ -51,9 +52,9 @@ import java.util.stream.Collectors
 import static org.assertj.core.api.Assertions.assertThat
 import static org.assertj.core.api.Assertions.fail
 import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_PROFILE
 
 class PostMigrationTest {
+
   private static final String DEFAULT_USER = "demo";
   private static final Logger log = LoggerFactory.getLogger(PostMigrationTest.class);
 
@@ -67,11 +68,11 @@ class PostMigrationTest {
 
   @BeforeAll
   static void init() {
-    requestExecutor = new OptimizeRequestExecutor(DEFAULT_USER, DEFAULT_USER, "http://localhost:8090/api/");
     def configurationService = ConfigurationServiceBuilder.createDefaultConfiguration()
+    requestExecutor = new OptimizeRequestExecutor(DEFAULT_USER, DEFAULT_USER, "http://localhost:8090/api/");
     elasticsearchClient = new OptimizeElasticsearchClient(
       ElasticsearchHighLevelRestClientBuilder.build(configurationService),
-      new OptimizeIndexNameService(configurationService, ELASTICSEARCH_PROFILE)
+      new OptimizeIndexNameService(configurationService, DatabaseProfile.ELASTICSEARCH)
     );
 
     alertClient = new AlertClient(() -> requestExecutor);

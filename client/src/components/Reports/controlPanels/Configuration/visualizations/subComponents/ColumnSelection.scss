@@ -3,15 +3,4 @@
 .ColumnSelection {
   max-width: 280px;
   min-width: 0;
-
-  .includeNew {
-    font-size: 12px;
-    color: var(--grey-lighten-50);
-    margin-bottom: 20px;
-
-    .Labeled .label {
-      align-self: center;
-      margin-bottom: 0;
-    }
-  }
 }

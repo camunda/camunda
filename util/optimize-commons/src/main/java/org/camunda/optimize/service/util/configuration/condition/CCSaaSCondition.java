@@ -5,21 +5,15 @@
  */
 package org.camunda.optimize.service.util.configuration.condition;
 
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.OptimizeProfile;
 import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
-import java.util.Arrays;
-import java.util.List;
-
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CLOUD_PROFILE;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.optimizeModeProfiles;
-
 public class CCSaaSCondition implements Condition {
   @Override
   public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
-    final List<String> optimizeProfilesFound = Arrays.stream(context.getEnvironment().getActiveProfiles())
-      .filter(optimizeModeProfiles::contains).toList();
-    return optimizeProfilesFound.size() == 1 && optimizeProfilesFound.contains(CLOUD_PROFILE);
+    return ConfigurationService.getOptimizeProfile(context.getEnvironment()).equals(OptimizeProfile.CLOUD);
   }
 }

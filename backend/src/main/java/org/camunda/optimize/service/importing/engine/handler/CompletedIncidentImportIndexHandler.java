@@ -29,7 +29,8 @@ public class CompletedIncidentImportIndexHandler extends TimestampBasedEngineImp
   }
 
   @Override
-  protected String getElasticsearchDocID() {
+  protected String getDatabaseDocID() {
     return COMPLETED_INCIDENT_IMPORT_INDEX_DOC_ID;
   }
+
 }

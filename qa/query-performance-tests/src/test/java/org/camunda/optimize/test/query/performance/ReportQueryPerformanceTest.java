@@ -23,7 +23,7 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequ
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.service.exceptions.evaluation.TooManyBucketsException;
 import org.camunda.optimize.service.util.IdGenerator;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
+import org.camunda.optimize.test.it.extension.DatabaseIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
@@ -56,8 +56,8 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
 
   @RegisterExtension
   @Order(1)
-  public static ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension =
-    new ElasticSearchIntegrationTestExtension();
+  public static DatabaseIntegrationTestExtension databaseIntegrationTestExtension =
+    new DatabaseIntegrationTestExtension();
 
   @RegisterExtension
   @Order(2)
@@ -67,7 +67,7 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
   public static void init() throws TimeoutException, InterruptedException {
     // given
     importEngineData();
-    elasticSearchIntegrationTestExtension.disableCleanup();
+    databaseIntegrationTestExtension.disableCleanup();
     // We set a higher token limit to avoid a time out because the extension is initialized in beforeAll mode and the
     // engine import takes a long time
     embeddedOptimizeExtension.getConfigurationService().getAuthConfiguration().setTokenLifeTime(1440);

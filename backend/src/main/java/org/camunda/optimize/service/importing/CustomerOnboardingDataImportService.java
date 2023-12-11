@@ -12,14 +12,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.db.writer.CompletedProcessInstanceWriter;
+import org.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.db.writer.RunningProcessInstanceWriter;
-import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
+import org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.OptimizeProfile;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -44,6 +46,8 @@ public class CustomerOnboardingDataImportService {
   private final ConfigurationService configurationService;
   private final CompletedProcessInstanceWriter completedProcessInstanceWriter;
   private final RunningProcessInstanceWriter runningProcessInstanceWriter;
+  private final Environment environment;
+
   private static final String CUSTOMER_ONBOARDING_DEFINITION = "customer_onboarding_definition.json";
   private static final String PROCESSED_INSTANCES = "customer_onboarding_process_instances.json";
   private static final int BATCH_SIZE = 2000;
@@ -55,7 +59,14 @@ public class CustomerOnboardingDataImportService {
 
   public void importData(final String processInstances, final String processDefinition, final int batchSize) {
     if (configurationService.getCustomerOnboardingImport()) {
-      importCustomerOnboardingDefinition(processDefinition, processInstances, batchSize);
+      if (ConfigurationService.getOptimizeProfile(environment).equals(OptimizeProfile.PLATFORM)) {
+        log.warn("C8 Customer onboarding data enabled but running in Platform mode. Skipping customer onboarding data import");
+      } else {
+        log.info("C8 Customer onboarding data enabled, importing customer onboarding data");
+        importCustomerOnboardingDefinition(processDefinition, processInstances, batchSize);
+      }
+    } else {
+      log.info("C8 Customer onboarding data disabled, will not perform data import");
     }
   }
 
@@ -92,7 +103,7 @@ public class CustomerOnboardingDataImportService {
         log.error("Process definition file cannot be null.");
       }
     } catch (IOException e) {
-      log.error("Unable to add a process definition to elasticsearch", e);
+      log.error("Unable to add a process definition to database", e);
     }
   }
 
@@ -116,11 +127,11 @@ public class CustomerOnboardingDataImportService {
               log.error("Process instance not loaded correctly. Please check your json file.");
             }
           }
-          loadProcessInstancesToElasticSearch(processInstanceDtos, batchSize);
+          loadProcessInstancesToDatabase(processInstanceDtos, batchSize);
         } else {
           log.error(
-            "Could not load Camunda Customer Onboarding Demo process instances to input stream. Please validate the process instance json " +
-              "file.");
+            "Could not load Camunda Customer Onboarding Demo process instances to input stream. Please validate the process " +
+              "instance json file.");
         }
       }
     } catch (IOException e) {
@@ -128,7 +139,7 @@ public class CustomerOnboardingDataImportService {
     }
   }
 
-  private void loadProcessInstancesToElasticSearch(List<ProcessInstanceDto> rawProcessInstanceDtos, int batchSize) {
+  private void loadProcessInstancesToDatabase(List<ProcessInstanceDto> rawProcessInstanceDtos, int batchSize) {
     List<ProcessInstanceDto> processInstanceDtos = new ArrayList<>();
     Optional<OffsetDateTime> maxOfEndAndStartDate = rawProcessInstanceDtos.stream()
       .flatMap(instance -> Stream.of(instance.getStartDate(), instance.getEndDate()))
@@ -139,17 +150,17 @@ public class CustomerOnboardingDataImportService {
         ProcessInstanceDto processInstanceDto = modifyProcessInstanceDates(rawProcessInstance, maxOfEndAndStartDate.get());
         processInstanceDtos.add(processInstanceDto);
         if (processInstanceDtos.size() % batchSize == 0) {
-          insertProcessInstancesToElasticSearch(processInstanceDtos);
+          insertProcessInstancesToDatabase(processInstanceDtos);
           processInstanceDtos.clear();
         }
       }
     }
     if (!processInstanceDtos.isEmpty()) {
-      insertProcessInstancesToElasticSearch(processInstanceDtos);
+      insertProcessInstancesToDatabase(processInstanceDtos);
     }
   }
 
-  private void insertProcessInstancesToElasticSearch(List<ProcessInstanceDto> processInstanceDtos) {
+  private void insertProcessInstancesToDatabase(List<ProcessInstanceDto> processInstanceDtos) {
     List<ProcessInstanceDto> completedProcessInstances = processInstanceDtos.stream()
       .filter(processInstanceDto -> processInstanceDto.getEndDate() != null)
       .collect(
@@ -159,6 +170,7 @@ public class CustomerOnboardingDataImportService {
       .collect(Collectors.toList());
     List<ImportRequestDto> completedProcessInstanceImports =
       completedProcessInstanceWriter.generateProcessInstanceImports(completedProcessInstances);
+    //todo handle that in the OPT-7228
     ElasticsearchWriterUtil.executeImportRequestsAsBulk(
       "Completed process instances",
       completedProcessInstanceImports,
@@ -167,6 +179,7 @@ public class CustomerOnboardingDataImportService {
     List<ImportRequestDto> runningProcessInstanceImports =
       runningProcessInstanceWriter.generateProcessInstanceImports(runningProcessInstances);
     if (!runningProcessInstanceImports.isEmpty()) {
+      //todo handle that in the OPT-7228
       ElasticsearchWriterUtil.executeImportRequestsAsBulk(
         "Running process instances",
         runningProcessInstanceImports,

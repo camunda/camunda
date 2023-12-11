@@ -38,7 +38,7 @@ async function createReport(
   if (completed) {
     await t.click(Report.sectionToggle('Filters'));
     await t.click(Report.filterButton);
-    await t.click(Report.filterOption('Instance State'));
+    await t.click(Common.menuOption('Instance State'));
     await t.click(Report.modalOption('Completed'));
     await t.click(Common.modalConfirmButton);
   }
@@ -151,13 +151,13 @@ test('open the configuration popover and add a goal line', async (t) => {
 
   await t.resizeWindow(1150, 700);
 
-  await t.click(Combined.configurationButton);
-  await t.click(Combined.goalSwitch);
-  await t.typeText(Combined.goalInput, '300', {replace: true});
+  await t.click(Report.configurationButton);
+  await t.click(Common.toggleElement('Set Target'));
+  await t.typeText(Report.goalTargetInput, '300', {replace: true});
 
   await t.takeScreenshot('img/combined-config.png', {fullPage: true}).maximizeWindow();
 
-  await t.click(Combined.configurationButton);
+  await t.click(Report.configurationButton);
 
   await t.expect(Report.reportChart.visible).ok();
 });

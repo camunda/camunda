@@ -18,6 +18,7 @@ import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.metadata.OptimizeVersionService;
 import org.camunda.optimize.service.tenant.TenantService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.OptimizeProfile;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
@@ -28,10 +29,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CCSM_PROFILE;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CLOUD_PROFILE;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.optimizeModeProfiles;
+import static org.camunda.optimize.service.util.configuration.OptimizeProfile.CCSM;
+import static org.camunda.optimize.service.util.configuration.OptimizeProfile.CLOUD;
+import static org.camunda.optimize.service.util.configuration.OptimizeProfile.PLATFORM;
 
 @Component
 @Slf4j
@@ -54,9 +54,10 @@ public class UIConfigurationService {
     uiConfigurationDto.setTenantsAvailable(tenantService.isMultiTenantEnvironment());
     uiConfigurationDto.setOptimizeVersion(versionService.getRawVersion());
     uiConfigurationDto.setOptimizeDocsVersion(versionService.getDocsVersion());
-    final String optimizeProfile = determineOptimizeProfile();
+    final OptimizeProfile optimizeProfile = ConfigurationService.getOptimizeProfile(environment);
     uiConfigurationDto.setEnterpriseMode(isEnterpriseMode(optimizeProfile));
-    uiConfigurationDto.setOptimizeProfile(optimizeProfile);
+    uiConfigurationDto.setUserSearchAvailable(isUserSearchAvailable(optimizeProfile)); // TODO to be made dependent on identity flag with OPT-7412
+    uiConfigurationDto.setOptimizeProfile(optimizeProfile.getId());
     uiConfigurationDto.setWebappsEndpoints(getCamundaWebappsEndpoints());
     uiConfigurationDto.setWebhooks(getConfiguredWebhooks());
     uiConfigurationDto.setExportCsvLimit(configurationService.getCsvConfiguration().getExportCsvLimit());
@@ -89,25 +90,13 @@ public class UIConfigurationService {
     return uiConfigurationDto;
   }
 
-  private boolean isEnterpriseMode(final String optimizeProfile) {
-    if (Arrays.asList(CLOUD_PROFILE, PLATFORM_PROFILE).contains(optimizeProfile)) {
+  private boolean isEnterpriseMode(final OptimizeProfile optimizeProfile) {
+    if (Arrays.asList(CLOUD, PLATFORM).contains(optimizeProfile)) {
       return true;
-    } else if (optimizeProfile.equals(CCSM_PROFILE)) {
+    } else if (optimizeProfile.equals(CCSM)) {
       return configurationService.getSecurityConfiguration().getLicense().isEnterprise();
     }
     throw new OptimizeConfigurationException("Could not determine whether Optimize is running in enterprise mode");
-  }
-
-  private String determineOptimizeProfile() {
-    final List<String> optimizeProfilesFound = Arrays.stream(environment.getActiveProfiles())
-      .filter(optimizeModeProfiles::contains).toList();
-    if (optimizeProfilesFound.isEmpty()) {
-      return PLATFORM_PROFILE;
-    }
-    if (optimizeProfilesFound.size() > 1) {
-      throw new OptimizeConfigurationException("Cannot configure more than one profile for Optimize");
-    }
-    return optimizeProfilesFound.get(0);
   }
 
   private Map<String, WebappsEndpointDto> getCamundaWebappsEndpoints() {
@@ -130,6 +119,10 @@ public class UIConfigurationService {
     List<String> sortedWebhooksList = Lists.newArrayList(configurationService.getConfiguredWebhooks().keySet());
     sortedWebhooksList.sort(String.CASE_INSENSITIVE_ORDER);
     return sortedWebhooksList;
+  }
+
+  private boolean isUserSearchAvailable(final OptimizeProfile optimizeProfile) {
+    return !CCSM.equals(optimizeProfile);
   }
 
 }

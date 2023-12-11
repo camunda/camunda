@@ -7,7 +7,7 @@ package org.camunda.optimize.dto.optimize;
 
 import lombok.Builder;
 import lombok.Data;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.elasticsearch.action.DocWriteRequest;
 
 @Data
@@ -15,6 +15,7 @@ import org.elasticsearch.action.DocWriteRequest;
 public class ImportRequestDto {
 
   private String importName;
+  //todo handle it in the OPT-7228
   private OptimizeElasticsearchClient client;
   private DocWriteRequest<?> request;
 

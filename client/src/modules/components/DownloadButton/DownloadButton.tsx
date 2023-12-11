@@ -9,11 +9,10 @@ import {useState, useEffect, ComponentPropsWithoutRef} from 'react';
 import {Button} from '@carbon/react';
 
 import {Modal, Button as LegacyButton} from 'components';
-import {withDocs, WithDocsProps} from 'HOC';
 import {get} from 'request';
 import {showError} from 'notifications';
 import {getExportCsvLimit} from 'config';
-import {useErrorHandling, useUser} from 'hooks';
+import {useErrorHandling, useUser, useDocs} from 'hooks';
 
 import {t} from 'translation';
 
@@ -24,7 +23,7 @@ type RetrieverProps = {
   href?: never;
 };
 
-interface CommonProps extends WithDocsProps, ComponentPropsWithoutRef<typeof Button> {
+interface CommonProps extends ComponentPropsWithoutRef<typeof Button> {
   totalCount: number;
 }
 
@@ -35,13 +34,13 @@ export function DownloadButton({
   fileName,
   retriever,
   totalCount,
-  docsLink,
   ...props
 }: DownloadButtonProps) {
   const [exportLimit, setExportLimit] = useState(1000);
   const [modalOpen, setModalOpen] = useState(false);
   const {user} = useUser();
   const {mightFail} = useErrorHandling();
+  const {generateDocsLink} = useDocs();
 
   useEffect(() => {
     (async () => {
@@ -99,7 +98,7 @@ export function DownloadButton({
           <p>{t('common.csvLimit.info', {exportLimit, totalCount})}</p>
           <p>
             {t('common.csvLimit.exportApi', {
-              docsLink: docsLink + 'apis-clients/optimize-api/report/get-data-export/',
+              docsLink: generateDocsLink('apis-clients/optimize-api/report/get-data-export/'),
             })}
           </p>
         </Modal.Content>
@@ -119,4 +118,4 @@ async function getData(url: string) {
   return await response.blob();
 }
 
-export default withDocs(DownloadButton);
+export default DownloadButton;

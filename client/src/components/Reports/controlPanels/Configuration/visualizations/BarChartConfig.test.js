@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 import BarChartConfig from './BarChartConfig';
 
@@ -94,7 +93,7 @@ it('should not show target value, color picker or y axis label for multi-measure
 it('should show stacked bar option for distributed bar chart reports', () => {
   const node = shallow(<BarChartConfig report={barReport} />);
 
-  expect(node.find({label: 'Stacked bars'})).not.toExist();
+  expect(node.find({labelA: 'Stacked bars'})).not.toExist();
 
   node.setProps({
     report: {
@@ -106,7 +105,7 @@ it('should show stacked bar option for distributed bar chart reports', () => {
     },
   });
 
-  expect(node.find({label: 'Stacked bars'})).toExist();
+  expect(node.find({labelA: 'Stacked bars'})).toExist();
 });
 
 it('should show goal line option and not show stacking option if current visualization cannot be stacked ', () => {
@@ -149,11 +148,7 @@ it('should set logScale to true when enabling logarithmic scale switch', () => {
   const spy = jest.fn();
   const node = shallow(<BarChartConfig report={barReport} onChange={spy} />);
 
-  node
-    .find('fieldset')
-    .at(3)
-    .find('Switch')
-    .simulate('change', {target: {checked: true}});
+  node.find('FormGroup').at(3).find('Toggle').simulate('toggle', true);
 
   expect(spy).toHaveBeenCalledWith({logScale: {$set: true}});
 });
@@ -161,7 +156,7 @@ it('should set logScale to true when enabling logarithmic scale switch', () => {
 it('should show horizontalBar option for non combined bar chart reports', () => {
   const node = shallow(<BarChartConfig report={barReport} />);
 
-  expect(node.find({label: 'Horizontal bars'})).toExist();
+  expect(node.find({labelA: 'Horizontal bars'})).toExist();
 
   node.setProps({
     report: {
@@ -173,5 +168,5 @@ it('should show horizontalBar option for non combined bar chart reports', () => 
     },
   });
 
-  expect(node.find({label: 'Horizontal bars'})).not.toExist();
+  expect(node.find({labelA: 'Horizontal bars'})).not.toExist();
 });

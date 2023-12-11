@@ -8,6 +8,7 @@ package org.camunda.optimize.service.importing.eventprocess;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
+import org.camunda.optimize.service.db.EventProcessInstanceIndexManager;
 import org.camunda.optimize.service.importing.BackoffImportMediator;
 import org.camunda.optimize.service.importing.eventprocess.mediator.EventProcessInstanceImportMediator;
 import org.camunda.optimize.service.importing.eventprocess.mediator.EventProcessInstanceImportMediatorFactory;
@@ -19,7 +20,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @Component
@@ -32,7 +32,7 @@ public class EventProcessInstanceImportMediatorManager implements ConfigurationR
     new ConcurrentHashMap<>();
 
   public Collection<EventProcessInstanceImportMediator<EventProcessEventDto>> getActiveMediators() {
-    return importMediators.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
+    return importMediators.values().stream().flatMap(Collection::stream).toList();
   }
 
   public synchronized void refreshMediators() {
@@ -41,7 +41,7 @@ public class EventProcessInstanceImportMediatorManager implements ConfigurationR
 
     final List<String> removedPublishedIds = importMediators.keySet().stream()
       .filter(publishedStateId -> !availableInstanceIndices.containsKey(publishedStateId))
-      .collect(Collectors.toList());
+      .toList();
     removedPublishedIds.forEach(publishedStateId -> {
       final List<EventProcessInstanceImportMediator<EventProcessEventDto>> eventProcessInstanceImportMediators =
         importMediators.get(publishedStateId);
@@ -64,4 +64,5 @@ public class EventProcessInstanceImportMediatorManager implements ConfigurationR
     importMediators.values().stream().flatMap(Collection::stream).forEach(BackoffImportMediator::shutdown);
     importMediators.clear();
   }
+
 }

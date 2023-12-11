@@ -11,9 +11,9 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventRequestDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndexES;
-import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndexES;
-import org.camunda.optimize.service.es.schema.index.events.EventIndexES;
+import org.camunda.optimize.service.db.es.schema.index.VariableUpdateInstanceIndexES;
+import org.camunda.optimize.service.db.es.schema.index.events.CamundaActivityEventIndexES;
+import org.camunda.optimize.service.db.es.schema.index.events.EventIndexES;
 import org.camunda.optimize.service.events.rollover.EventIndexRolloverService;
 import org.camunda.optimize.service.util.configuration.IndexRolloverConfiguration;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
@@ -52,8 +52,8 @@ public class EventIndexRolloverIT extends AbstractPlatformIT {
   @BeforeEach
   @AfterEach
   public void cleanUpEventIndices() {
-    elasticSearchIntegrationTestExtension.deleteAllExternalEventIndices();
-    elasticSearchIntegrationTestExtension.deleteAllVariableUpdateInstanceIndices();
+    databaseIntegrationTestExtension.deleteAllExternalEventIndices();
+    databaseIntegrationTestExtension.deleteAllVariableUpdateInstanceIndices();
     embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
       embeddedOptimizeExtension.getOptimizeElasticClient(),
       new EventIndexES()
@@ -290,15 +290,15 @@ public class EventIndexRolloverIT extends AbstractPlatformIT {
   }
 
   private List<EventDto> getAllStoredExternalEvents() {
-    return elasticSearchIntegrationTestExtension.getAllStoredExternalEvents();
+    return databaseIntegrationTestExtension.getAllStoredExternalEvents();
   }
 
   private List<CamundaActivityEventDto> getAllStoredCamundaActivityEventsForDefinitionKey(final String indexName) {
-    return elasticSearchIntegrationTestExtension.getAllStoredCamundaActivityEventsForDefinition(indexName);
+    return databaseIntegrationTestExtension.getAllStoredCamundaActivityEventsForDefinition(indexName);
   }
 
   private List<VariableUpdateInstanceDto> getAllStoredVariableUpdateInstanceDtos() {
-    return elasticSearchIntegrationTestExtension.getAllStoredVariableUpdateInstanceDtos();
+    return databaseIntegrationTestExtension.getAllStoredVariableUpdateInstanceDtos();
   }
 
   private void ingestExternalEvents() {
@@ -307,7 +307,7 @@ public class EventIndexRolloverIT extends AbstractPlatformIT {
       .toList();
 
     ingestionClient.ingestEventBatch(eventDtos);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private void importNextCamundaEventsForProcessInstance(final ProcessInstanceEngineDto processInstanceEngineDto) {
@@ -318,13 +318,13 @@ public class EventIndexRolloverIT extends AbstractPlatformIT {
   private void importVariableUpdateInstances(final int count) {
     IntStream.range(0, count)
       .mapToObj(operand -> createSimpleVariableUpdateInstanceDto(String.valueOf(operand)))
-      .forEach(variableUpdateInstanceDto -> elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      .forEach(variableUpdateInstanceDto -> databaseIntegrationTestExtension.addEntryToDatabase(
         VARIABLE_UPDATE_INSTANCE_INDEX_NAME,
         variableUpdateInstanceDto.getInstanceId(),
         variableUpdateInstanceDto
       ));
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private VariableUpdateInstanceDto createSimpleVariableUpdateInstanceDto(final String instanceId) {

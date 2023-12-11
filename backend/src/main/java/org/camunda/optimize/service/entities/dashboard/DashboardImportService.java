@@ -16,11 +16,11 @@ import org.camunda.optimize.dto.optimize.rest.export.dashboard.DashboardDefiniti
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.db.schema.index.DashboardIndex;
 import org.camunda.optimize.service.db.writer.DashboardWriter;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.exceptions.OptimizeImportFileInvalidException;
 import org.camunda.optimize.service.exceptions.OptimizeImportIncorrectIndexVersionException;
+import org.camunda.optimize.service.util.DataUtil;
 import org.camunda.optimize.service.util.IdGenerator;
-import org.elasticsearch.common.util.set.Sets;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
@@ -116,7 +116,7 @@ public class DashboardImportService {
     if (targetIndexVersion != sourceIndexVersion) {
       throw new OptimizeImportIncorrectIndexVersionException(
         "Could not import because source and target index versions do not match",
-        Sets.newHashSet(
+        DataUtil.newHashSet(
           ImportIndexMismatchDto.builder()
             .indexName(OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion(
               optimizeIndexNameService.getOptimizeIndexAliasForIndex(DASHBOARD_INDEX_NAME),

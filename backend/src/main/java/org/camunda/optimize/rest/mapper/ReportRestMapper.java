@@ -47,9 +47,7 @@ public class ReportRestMapper {
     final AuthorizedReportEvaluationResult reportEvaluationResult,
     final String locale) {
     resolveOwnerAndModifierNames(reportEvaluationResult.getEvaluationResult().getReportDefinition());
-    if (reportEvaluationResult.getEvaluationResult() instanceof CombinedReportEvaluationResult) {
-      final CombinedReportEvaluationResult combinedReportEvaluationResult =
-        (CombinedReportEvaluationResult) reportEvaluationResult.getEvaluationResult();
+    if (reportEvaluationResult.getEvaluationResult() instanceof final CombinedReportEvaluationResult combinedReportEvaluationResult) {
       final Map<String, AuthorizedProcessReportEvaluationResponseDto<T>> reportResults =
         combinedReportEvaluationResult
           .getReportEvaluationResults()
@@ -77,12 +75,14 @@ public class ReportRestMapper {
     }
   }
 
-  public void prepareRestResponse(final AuthorizedReportDefinitionResponseDto authorizedReportDefinitionDto) {
+  public void prepareLocalizedRestResponse(final AuthorizedReportDefinitionResponseDto authorizedReportDefinitionDto,
+                                           final String locale) {
     resolveOwnerAndModifierNames(authorizedReportDefinitionDto.getDefinitionDto());
+    localizeReportData(authorizedReportDefinitionDto.getDefinitionDto(), locale);
   }
 
-  public static void localizeReportNames(final ReportDefinitionDto<?> reportDefinitionDto, final String locale,
-                                         LocalizationService localizationService) {
+  public static void localizeReportData(final ReportDefinitionDto<?> reportDefinitionDto, final String locale,
+                                        LocalizationService localizationService) {
     if (isManagementOrInstantPreviewReport(reportDefinitionDto)) {
       final String validLocale = localizationService.validateAndReturnValidLocale(locale);
       if (((SingleProcessReportDefinitionRequestDto) reportDefinitionDto).getData().isManagementReport()) {
@@ -125,7 +125,7 @@ public class ReportRestMapper {
       (ReportResultResponseDto<T>) mapToReportResultResponseDto(evaluationResult),
       (R) evaluationResult.getReportDefinition()
     );
-    localizeReportNames(mappedResult.getReportDefinition(), locale, localizationService);
+    localizeReportData(mappedResult.getReportDefinition(), locale);
     return mappedResult;
   }
 
@@ -163,5 +163,9 @@ public class ReportRestMapper {
     return reportDefinitionDto instanceof SingleProcessReportDefinitionRequestDto
       && (((SingleProcessReportDefinitionRequestDto) reportDefinitionDto).getData().isManagementReport()
       || ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto).getData().isInstantPreviewReport());
+  }
+
+  private void localizeReportData(final ReportDefinitionDto<?> reportDefinitionDto, final String locale) {
+    localizeReportData(reportDefinitionDto, locale, localizationService);
   }
 }

@@ -11,13 +11,14 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.plugin.ElasticsearchCustomHeaderProvider;
 import org.camunda.optimize.plugin.PluginJarFileLoader;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.RequestOptionsProvider;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
+import org.camunda.optimize.service.util.configuration.DatabaseProfile;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
@@ -25,8 +26,6 @@ import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_PROFILE;
 
 /**
  * Bunch of utility methods that might be required during upgrade
@@ -58,16 +57,15 @@ public class UpgradeUtil {
       new OptimizeDateTimeFormatterFactory().getObject(),
       ConfigurationServiceBuilder.createDefaultConfiguration()
     ).createOptimizeMapper();
-    OptimizeIndexNameService indexNameService = new OptimizeIndexNameService(configurationService, ELASTICSEARCH_PROFILE);
+    OptimizeIndexNameService indexNameService = new OptimizeIndexNameService(configurationService, DatabaseProfile.ELASTICSEARCH);
     ElasticsearchCustomHeaderProvider customHeaderProvider = new ElasticsearchCustomHeaderProvider(
       configurationService, new PluginJarFileLoader(configurationService));
     customHeaderProvider.initPlugins();
     OptimizeElasticsearchClient esClient = new OptimizeElasticsearchClient(
       ElasticsearchHighLevelRestClientBuilder.build(configurationService),
-      indexNameService,
-      new RequestOptionsProvider(customHeaderProvider.getPlugins(), configurationService)
+      indexNameService, new RequestOptionsProvider(customHeaderProvider.getPlugins(), configurationService)
     );
-    ElasticsearchMetadataService metadataService = new ElasticsearchMetadataService(objectMapper);
+    ElasticSearchMetadataService metadataService = new ElasticSearchMetadataService(objectMapper);
     return new UpgradeExecutionDependencies(
       configurationService,
       indexNameService,

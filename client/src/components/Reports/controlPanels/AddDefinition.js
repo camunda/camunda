@@ -12,11 +12,11 @@ import {Add} from '@carbon/icons-react';
 
 import {Modal, MessageBox, Checklist} from 'components';
 import {withErrorHandling} from 'HOC';
-import {getCollection, getRandomId} from 'services';
+import {getCollection, getRandomId, loadDefinitions} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
 
-import {loadDefinitions, loadTenants} from './service';
+import {loadTenants} from './service';
 
 import './AddDefinition.scss';
 

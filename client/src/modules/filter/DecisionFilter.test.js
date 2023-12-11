@@ -5,11 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {MenuItem} from '@carbon/react';
+import {MenuDropdown} from '@camunda/camunda-optimize-composite-components';
 
 import DecisionFilter from './DecisionFilter';
 import FilterList from './FilterList';
-import {Dropdown} from 'components';
 import {DateFilter, VariableFilter} from './modals';
 
 import {shallow} from 'enzyme';
@@ -23,7 +23,7 @@ it('should contain a list of Filters', () => {
 it('should contain a dropdown', () => {
   const node = shallow(<DecisionFilter data={[]} />);
 
-  expect(node.find(Dropdown)).toExist();
+  expect(node.find(MenuDropdown)).toExist();
 });
 
 it('should not contain any filter modal when no newFilter is selected', () => {
@@ -136,10 +136,10 @@ it('should remove a filter from the list of filters', () => {
 it('should disable variable filters if no decision definition is available', () => {
   const node = shallow(<DecisionFilter data={[]} />);
 
-  const buttons = node.find(Dropdown.Option);
-  expect(buttons.find('[children="Evaluation Date Time"]').prop('disabled')).toBeFalsy();
-  expect(buttons.find('[children="Input Variable"]').prop('disabled')).toBeTruthy();
-  expect(buttons.find('[children="Output Variable"]').prop('disabled')).toBeTruthy();
+  const buttons = node.find(MenuItem);
+  expect(buttons.find({label: 'Evaluation Date Time'}).prop('disabled')).toBeFalsy();
+  expect(buttons.find({label: 'Input Variable'}).prop('disabled')).toBeTruthy();
+  expect(buttons.find({label: 'Output Variable'}).prop('disabled')).toBeTruthy();
 });
 
 it('should remove any previous evaluationDateTime filters when adding a new date filter', () => {

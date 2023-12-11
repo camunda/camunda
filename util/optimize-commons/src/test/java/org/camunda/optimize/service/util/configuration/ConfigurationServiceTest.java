@@ -100,7 +100,7 @@ public class ConfigurationServiceTest {
   public void certificateAuthorizationCanBeAList() {
     String[] locations = {defaultConfigFile(), "config-samples/certificate-authorities/ca-auth-as-list.yaml"};
     ConfigurationService underTest = createConfiguration(locations);
-    assertThat(underTest.getElasticsearchSecuritySSLCertificateAuthorities()).hasSize(2);
+    assertThat(underTest.getElasticSearchConfiguration().getSecuritySSLCertificateAuthorities()).hasSize(2);
   }
 
   @Test
@@ -108,7 +108,7 @@ public class ConfigurationServiceTest {
     String[] locations = {defaultConfigFile(),
       "config-samples/certificate-authorities/ca-auth-as-string-is-converted.yaml"};
     ConfigurationService underTest = createConfiguration(locations);
-    assertThat(underTest.getElasticsearchSecuritySSLCertificateAuthorities()).hasSize(1);
+    assertThat(underTest.getElasticSearchConfiguration().getSecuritySSLCertificateAuthorities()).hasSize(1);
   }
 
   @Test
@@ -116,7 +116,8 @@ public class ConfigurationServiceTest {
     String[] locations = {defaultConfigFile(),
       "config-samples/certificate-authorities/wrong-ca-auth-format-throws-error.yaml"};
     ConfigurationService underTest = createConfiguration(locations);
-    assertThatThrownBy(underTest::getElasticsearchSecuritySSLCertificateAuthorities).isInstanceOf(MappingException.class);
+    assertThatThrownBy(() -> underTest.getElasticSearchConfiguration().getSecuritySSLCertificateAuthorities()).isInstanceOf(
+      MappingException.class);
   }
 
   @Test
@@ -124,7 +125,8 @@ public class ConfigurationServiceTest {
     String[] locations = {defaultConfigFile(),
       "config-samples/certificate-authorities/wrong-ca-auth-list-format-throws-error.yaml"};
     ConfigurationService underTest = createConfiguration(locations);
-    assertThatThrownBy(underTest::getElasticsearchSecuritySSLCertificateAuthorities).isInstanceOf(MappingException.class);
+    assertThatThrownBy(() -> underTest.getElasticSearchConfiguration()
+      .getSecuritySSLCertificateAuthorities()).isInstanceOf(MappingException.class);
   }
 
   @Test
@@ -156,7 +158,8 @@ public class ConfigurationServiceTest {
   public void invalidElasticsearchProxyConfigThrowsError() {
     String[] locations = {defaultConfigFile(), "config-samples/config-invalid-elasticsearch-proxy-config.yaml"};
     ConfigurationService underTest = createConfiguration(locations);
-    assertThatThrownBy(underTest::getElasticsearchProxyConfig).isInstanceOf(OptimizeConfigurationException.class);
+    assertThatThrownBy(() -> underTest.getElasticSearchConfiguration().getProxyConfig()).isInstanceOf(
+      OptimizeConfigurationException.class);
   }
 
   @Test
@@ -509,7 +512,9 @@ public class ConfigurationServiceTest {
   }
 
   private ConfigurationService createConfiguration(final String[] locations) {
-    return ConfigurationServiceBuilder.createConfiguration().loadConfigurationFrom(locations).build();
+    return ConfigurationServiceBuilder.createConfiguration()
+      .loadConfigurationFrom(locations)
+      .build();
   }
 
   private String defaultConfigFile() {
@@ -522,13 +527,13 @@ public class ConfigurationServiceTest {
       underTest.getConfiguredEngines().values().stream().map(EngineConfiguration::isImportEnabled).collect(toList()))
       .contains(DEFAULT_FIRST_ENGINE_IMPORT_ENABLED, DEFAULT_SECOND_ENGINE_IMPORT_ENABLED);
     assertThat(
-      underTest.getElasticsearchConnectionNodes()
+      underTest.getElasticSearchConfiguration().getConnectionNodes()
         .stream()
         .map(DatabaseConnectionNodeConfiguration::getHost)
         .collect(toList()))
       .contains(DEFAULT_FIRST_ES_HOST, DEFAULT_SECOND_ES_HOST);
     assertThat(
-      underTest.getElasticsearchConnectionNodes()
+      underTest.getElasticSearchConfiguration().getConnectionNodes()
         .stream()
         .map(DatabaseConnectionNodeConfiguration::getHttpPort)
         .collect(toList()))
@@ -548,11 +553,11 @@ public class ConfigurationServiceTest {
     assertThat(underTest.getConfiguredZeebe().getName()).isEqualTo("zeebe-record");
     assertThat(underTest.getConfiguredZeebe().getPartitionCount()).isEqualTo(1);
     assertThat(underTest.getConfiguredZeebe().getMaxImportPageSize()).isEqualTo(200);
-    assertThat(underTest.getElasticsearchSecurityUsername()).isNull();
-    assertThat(underTest.getElasticsearchSecurityPassword()).isNull();
-    assertThat(underTest.getElasticsearchSecuritySSLCertificate()).isNull();
-    assertThat(underTest.getElasticsearchSecuritySSLCertificateAuthorities()).isEmpty();
-    assertThat(underTest.getElasticsearchSecuritySSLEnabled()).isFalse();
+    assertThat(underTest.getElasticSearchConfiguration().getSecurityUsername()).isNull();
+    assertThat(underTest.getElasticSearchConfiguration().getSecurityPassword()).isNull();
+    assertThat(underTest.getElasticSearchConfiguration().getSecuritySSLCertificate()).isNull();
+    assertThat(underTest.getElasticSearchConfiguration().getSecuritySSLCertificateAuthorities()).isEmpty();
+    assertThat(underTest.getElasticSearchConfiguration().getSecuritySSLEnabled()).isFalse();
     assertThat(underTest.getSharingEnabled()).isTrue();
     assertThat(underTest.getUiConfiguration().isLogoutHidden()).isFalse();
     assertThat(underTest.getCleanupServiceConfiguration().getCronTrigger())
@@ -573,13 +578,13 @@ public class ConfigurationServiceTest {
       underTest.getConfiguredEngines().values().stream().map(EngineConfiguration::isImportEnabled).collect(toList()))
       .contains(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED, CUSTOM_SECOND_ENGINE_IMPORT_ENABLED);
     assertThat(
-      underTest.getElasticsearchConnectionNodes()
+      underTest.getElasticSearchConfiguration().getConnectionNodes()
         .stream()
         .map(DatabaseConnectionNodeConfiguration::getHost)
         .collect(toList()))
       .contains(CUSTOM_FIRST_ES_HOST, CUSTOM_SECOND_ES_HOST);
     assertThat(
-      underTest.getElasticsearchConnectionNodes()
+      underTest.getElasticSearchConfiguration().getConnectionNodes()
         .stream()
         .map(DatabaseConnectionNodeConfiguration::getHttpPort)
         .collect(toList()))
@@ -605,9 +610,9 @@ public class ConfigurationServiceTest {
     assertThat(underTest.getConfiguredZeebe().getName()).isEqualTo(CUSTOM_ZEEBE_RECORD_PREFIX);
     assertThat(underTest.getConfiguredZeebe().getPartitionCount()).isEqualTo(CUSTOM_ZEEBE_PARTITION_COUNT);
     assertThat(underTest.getConfiguredZeebe().getMaxImportPageSize()).isEqualTo(CUSTOM_ZEEBE_IMPORT_PAGE_SIZE);
-    assertThat(underTest.getElasticsearchSecurityUsername()).isEqualTo(CUSTOM_ES_USERNAME);
-    assertThat(underTest.getElasticsearchSecurityPassword()).isEqualTo(CUSTOM_ES_PASSWORD);
-    assertThat(underTest.getElasticsearchSecuritySSLEnabled()).isEqualTo(CUSTOM_ES_SSL_ENABLED);
+    assertThat(underTest.getElasticSearchConfiguration().getSecurityUsername()).isEqualTo(CUSTOM_ES_USERNAME);
+    assertThat(underTest.getElasticSearchConfiguration().getSecurityPassword()).isEqualTo(CUSTOM_ES_PASSWORD);
+    assertThat(underTest.getElasticSearchConfiguration().getSecuritySSLEnabled()).isEqualTo(CUSTOM_ES_SSL_ENABLED);
     assertThat(underTest.getSharingEnabled()).isEqualTo(CUSTOM_SHARING_ENABLED);
     assertThat(underTest.getUiConfiguration().isLogoutHidden()).isEqualTo(CUSTOM_UI_LOGOUT_HIDDEN);
     assertThat(underTest.getDataArchiveConfiguration().isEnabled()).isFalse();

@@ -29,7 +29,8 @@ public class UserOperationLogImportIndexHandler extends TimestampBasedEngineImpo
   }
 
   @Override
-  protected String getElasticsearchDocID() {
+  protected String getDatabaseDocID() {
     return USER_OPERATION_LOG_IMPORT_INDEX_DOC_ID;
   }
+
 }

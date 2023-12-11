@@ -11,7 +11,7 @@ import {Button} from '@carbon/react';
 import {Icon, Labeled, MessageBox, Modal, Switch, Tooltip, UserTypeahead} from 'components';
 import {t} from 'translation';
 import {getOptimizeProfile, isEmailEnabled} from 'config';
-import {withDocs} from 'HOC';
+import {useDocs} from 'hooks';
 
 import './ConfigureProcessModal.scss';
 
@@ -22,7 +22,6 @@ export function ConfigureProcessModal({
   },
   onClose,
   onConfirm,
-  docsLink,
 }) {
   const [selectedUser, setSelectedUser] = useState(
     owner?.id ? {id: 'USER:' + owner.id, identity: {...owner, type: 'user'}} : null
@@ -30,6 +29,7 @@ export function ConfigureProcessModal({
   const [digestEnabled, setDigestEnabled] = useState(enabled);
   const [optimizeProfile, setOptimizeProfile] = useState();
   const [emailEnabled, setEmailEnabled] = useState();
+  const {generateDocsLink} = useDocs();
 
   const noChangesHappened =
     digestEnabled === enabled &&
@@ -49,9 +49,9 @@ export function ConfigureProcessModal({
         {!emailEnabled && (
           <MessageBox type="warning">
             {t('alert.emailWarning', {
-              docsLink:
-                docsLink +
-                'self-managed/optimize-deployment/configuration/system-configuration/#email',
+              docsLink: generateDocsLink(
+                'self-managed/optimize-deployment/configuration/system-configuration/#email'
+              ),
             })}
           </MessageBox>
         )}
@@ -126,4 +126,4 @@ export function ConfigureProcessModal({
   );
 }
 
-export default withDocs(ConfigureProcessModal);
+export default ConfigureProcessModal;

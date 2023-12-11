@@ -3,6 +3,13 @@
   flex-direction: column;
   flex-grow: 1;
   height: 100%;
+  padding-bottom: 1rem;
+  overflow: hidden;
+
+  h2,
+  .TaskAnalysis__diagram {
+    margin-bottom: 1rem;
+  }
 
   .noOutliers {
     position: absolute;
@@ -11,8 +18,8 @@
     transform: translate(-50%, 50%);
     border-radius: 10px;
     background-color: var(--silver-darken-94);
-    font-size: 1.4em;
-    padding: 1em;
+    font-size: 1.4rem;
+    padding: 1rem;
     color: var(--grey-lighten-50);
   }
 
@@ -24,9 +31,9 @@
       opacity: 0.2;
       pointer-events: none;
     }
+  }
 
-    .clickable * {
-      cursor: pointer;
-    }
+  .OutlierDetailsTable {
+    max-height: 30%;
   }
 }

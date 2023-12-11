@@ -17,7 +17,6 @@ import {
   getOnboardingConfig,
   getNotificationsUrl,
 } from 'config';
-import {withDocs, withErrorHandling, withUser} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
 import {track} from 'tracking';
@@ -28,10 +27,11 @@ import {TelemetrySettings} from './TelemetrySettings';
 import useUserMenu from './useUserMenu';
 
 import './Header.scss';
+import {useDocs, useErrorHandling, useUser} from 'hooks';
 
 const orderedApps = ['console', 'modeler', 'tasklist', 'operate', 'optimize'];
 
-export function Header({user, mightFail, docsLink, noActions}) {
+export function Header({noActions}) {
   const [showEventBased, setShowEventBased] = useState(false);
   const [enterpriseMode, setEnterpiseMode] = useState(true);
   const [webappLinks, setwebappLinks] = useState(null);
@@ -42,6 +42,9 @@ export function Header({user, mightFail, docsLink, noActions}) {
   const [optimizeProfile, setOptimizeProfile] = useState();
   const [userToken, setUserToken] = useState(null);
   const [notificationsUrl, setNotificationsUrl] = useState();
+  const {user} = useUser();
+  const {mightFail} = useErrorHandling();
+  const {generateDocsLink} = useDocs();
   const userSideBar = useUserMenu({user, mightFail, setTelemetrySettingsOpen});
 
   useEffect(() => {
@@ -84,7 +87,7 @@ export function Header({user, mightFail, docsLink, noActions}) {
 
   if (!noActions) {
     props.navbar = createNavBarProps(showEventBased, enterpriseMode);
-    props.infoSideBar = createInfoSideBarProps(setWhatsNewOpen, docsLink, enterpriseMode);
+    props.infoSideBar = createInfoSideBarProps(setWhatsNewOpen, generateDocsLink, enterpriseMode);
     props.userSideBar = userSideBar;
   }
 
@@ -243,7 +246,7 @@ function createNavBarProps(showEventBased, enterpriseMode) {
   };
 }
 
-function createInfoSideBarProps(setWhatsNewOpen, docsLink, enterpriseMode) {
+function createInfoSideBarProps(setWhatsNewOpen, generateDocsLink, enterpriseMode) {
   return {
     type: 'info',
     ariaLabel: 'Info',
@@ -259,7 +262,11 @@ function createInfoSideBarProps(setWhatsNewOpen, docsLink, enterpriseMode) {
         key: 'userguide',
         label: t('navigation.userGuide'),
         onClick: () => {
-          window.open(docsLink + 'components/what-is-optimize/', '_blank', 'noopener,noreferrer');
+          window.open(
+            generateDocsLink('components/what-is-optimize/'),
+            '_blank',
+            'noopener,noreferrer'
+          );
         },
       },
       {
@@ -291,7 +298,7 @@ function createInfoSideBarProps(setWhatsNewOpen, docsLink, enterpriseMode) {
   };
 }
 
-export default withUser(withDocs(withErrorHandling(Header)));
+export default Header;
 
 function NavbarWrapper({isCloud, userToken, notificationsUrl, organizationId, children}) {
   return isCloud && userToken && notificationsUrl ? (

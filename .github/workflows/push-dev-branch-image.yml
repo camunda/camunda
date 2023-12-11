@@ -40,7 +40,7 @@ jobs:
       # Configure the registry where we can push the GH IMAGE
       - name: Configure Google tools
         id: auth
-        uses: camunda-cloud/action-setup-gcloud@9f58c1c41af48d1a9fd6bbb994f1dc7e42cdbf30 # v3
+        uses: camunda-cloud/action-setup-gcloud@25ea90806ec8371c0309e56e5f0b1667ee714eeb # v3
         with:
           account-alias: registry
 
@@ -80,7 +80,7 @@ jobs:
       # --build-arg VERSION=3.11.0-SNAPSHOT --build-arg DATE=2022-12-08T15:25:30.165965Z
       # --build-arg REVISION=cb723f69397c60c7f513ca58c99473e5c8431a27 --platform linux/amd64,linux/arm64 --push .
       - name: Build and Push
-        uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 # v5
+        uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56 # v5
         with:
           context: .
           push: true

@@ -13,8 +13,8 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.job.importing.VariableUpdateElasticsearchImportJob;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
+import org.camunda.optimize.service.importing.job.VariableUpdateDatabaseImportJob;
+import org.camunda.optimize.test.it.extension.DatabaseIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
@@ -74,8 +74,8 @@ public abstract class AbstractImportEndpointFailureIT {
   // static extension setup with disabled cleanup to reduce initialization/cleanup overhead
   @RegisterExtension
   @Order(1)
-  protected static ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension
-    = new ElasticSearchIntegrationTestExtension(false);
+  protected static DatabaseIntegrationTestExtension databaseIntegrationTestExtension
+    = new DatabaseIntegrationTestExtension(false);
   @RegisterExtension
   @Order(2)
   protected static EngineIntegrationExtension engineIntegrationExtension = new EngineIntegrationExtension(false);
@@ -86,17 +86,17 @@ public abstract class AbstractImportEndpointFailureIT {
   @RegisterExtension
   @Order(4)
   protected final LogCapturer logCapturer =
-    LogCapturer.create().captureForType(VariableUpdateElasticsearchImportJob.class);
+    LogCapturer.create().captureForType(VariableUpdateDatabaseImportJob.class);
 
   @BeforeAll
   public void beforeAll() {
     engineIntegrationExtension.cleanEngine();
     // Due to a possible race condition with data from the previous tests not being yet in the indices, we need to
     // refresh the indices before deleting the existing data
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    elasticSearchIntegrationTestExtension.deleteAllOptimizeData();
-    elasticSearchIntegrationTestExtension.deleteAllProcessInstanceIndices();
-    elasticSearchIntegrationTestExtension.deleteAllDecisionInstanceIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.deleteAllProcessInstanceIndices();
+    databaseIntegrationTestExtension.deleteAllDecisionInstanceIndices();
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
     // given "one of everything"
     engineIntegrationExtension.createTenant("someTenantId", "someTenantName");
@@ -116,7 +116,7 @@ public abstract class AbstractImportEndpointFailureIT {
     // given
     embeddedOptimizeExtension.resetImportStartIndexes();
     embeddedOptimizeExtension.reloadConfiguration();
-    elasticSearchIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
 
     // when fetching endpoint temporarily fails
     final HttpRequest importFetcherEndpointMatcher = request()
@@ -139,14 +139,14 @@ public abstract class AbstractImportEndpointFailureIT {
     Awaitility.given().ignoreExceptions()
       .timeout(10, TimeUnit.SECONDS)
       .untilAsserted(() -> {
-        elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+        databaseIntegrationTestExtension.refreshAllOptimizeIndices();
         assertDocumentCountInES(DECISION_DEFINITION_INDEX_NAME, 1L);
         assertDocumentCountInES(PROCESS_DEFINITION_INDEX_NAME, 1L);
         assertDocumentCountInES(TENANT_INDEX_NAME, 1L);
         assertDocumentCountInES(PROCESS_INSTANCE_MULTI_ALIAS, 1L);
 
         final List<ProcessInstanceDto> storedProcessInstances =
-          elasticSearchIntegrationTestExtension.getAllProcessInstances();
+          databaseIntegrationTestExtension.getAllProcessInstances();
         assertThat(storedProcessInstances)
           .isNotEmpty()
           .allSatisfy(processInstanceDto -> {
@@ -184,7 +184,7 @@ public abstract class AbstractImportEndpointFailureIT {
 
   private static void assertDocumentCountInES(final String elasticsearchIndex,
                                               final long count) {
-    final Integer docCount = elasticSearchIntegrationTestExtension.getDocumentCountOf(elasticsearchIndex);
+    final Integer docCount = databaseIntegrationTestExtension.getDocumentCountOf(elasticsearchIndex);
     assertThat(docCount.longValue()).isEqualTo(count);
   }
 

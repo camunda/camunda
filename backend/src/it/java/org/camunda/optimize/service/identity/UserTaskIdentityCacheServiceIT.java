@@ -17,7 +17,7 @@ import org.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.exceptions.MaxEntryLimitHitException;
-import org.camunda.optimize.service.es.job.importing.IdentityLinkLogImportJob;
+import org.camunda.optimize.service.importing.job.IdentityLinkLogImportJob;
 import org.camunda.optimize.service.util.configuration.engine.UserTaskIdentityCacheConfiguration;
 import org.camunda.optimize.util.BpmnModels;
 import org.camunda.optimize.util.SuppressionConstants;
@@ -127,7 +127,7 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
     assertThat(getUserTaskIdentityCacheService().getUserIdentityById(ASSIGNEE_ID_JOHN)).isPresent();
     assertThat(getUserTaskIdentityCacheService().getUserIdentityById(ASSIGNEE_ID_JEAN)).isNotPresent();
 
-    final List<ProcessInstanceDto> processInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    final List<ProcessInstanceDto> processInstances = databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(processInstances)
       .hasSize(2)
       .flatExtracting(ProcessInstanceDto::getUserTasks)
@@ -186,7 +186,6 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
 
     // then
     final IdentitySearchResultResponseDto allEntries = getUserTaskIdentityCacheService().searchIdentities("", 10);
-    assertThat(allEntries.getTotal()).isEqualTo(2);
     assertThat(allEntries.getResult())
       .extracting(IdentityWithMetadataResponseDto::toIdentityDto)
       .extracting(IdentityDto::getId)
@@ -341,7 +340,6 @@ public class UserTaskIdentityCacheServiceIT extends AbstractPlatformIT {
 
     // then
     final IdentitySearchResultResponseDto allEntries = getUserTaskIdentityCacheService().searchIdentities("", 10);
-    assertThat(allEntries.getTotal()).isEqualTo(2);
     assertThat(allEntries.getResult())
       .extracting(IdentityWithMetadataResponseDto::toIdentityDto)
       .extracting(IdentityDto::getId)

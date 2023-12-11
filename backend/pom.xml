@@ -13,7 +13,7 @@
   <properties>
     <jetty.version>11.0.18</jetty.version>
     <jersey.version>3.1.3</jersey.version>
-    <spring.security.version>6.1.5</spring.security.version>
+    <spring.security.version>6.2.0</spring.security.version>
     <it.test.excludedGroups />
     <it.test.includedGroups />
     <test.forkCount />
@@ -91,7 +91,7 @@
     <!-- IDENTITY-->
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>identity-sdk</artifactId>
+      <artifactId>identity-spring-boot-starter</artifactId>
       <version>${identity.version}</version>
     </dependency>
 
@@ -267,7 +267,7 @@
     <dependency>
       <groupId>com.opencsv</groupId>
       <artifactId>opencsv</artifactId>
-      <version>5.8</version>
+      <version>5.9</version>
     </dependency>
 
     <!-- Utilities -->
@@ -289,14 +289,14 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>2.15.0</version>
+      <version>${commons.io.version}</version>
     </dependency>
 
     <!-- Micrometer Prometheus registry  -->
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-registry-prometheus</artifactId>
-      <version>1.11.5</version>
+      <version>1.12.0</version>
     </dependency>
 
     <!--Test dependencies-->

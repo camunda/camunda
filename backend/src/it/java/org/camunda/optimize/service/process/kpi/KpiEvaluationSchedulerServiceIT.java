@@ -111,7 +111,7 @@ public class KpiEvaluationSchedulerServiceIT extends AbstractPlatformIT {
     // setting the owner in order to create a document in process overview index
     processOverviewClient.updateProcess(firstDef.getKey(), DEFAULT_USERNAME, new ProcessDigestRequestDto());
     processOverviewClient.updateProcess(secondDef.getKey(), DEFAULT_USERNAME, new ProcessDigestRequestDto());
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     String reportId1 = createKpiReport(PROCESS_DEFINITION_KEY);
     String reportId2 = createKpiReport(PROCESS_DEFINITION_KEY);
     String reportId3 = createKpiReport(anotherDefinitionKey);
@@ -298,13 +298,13 @@ public class KpiEvaluationSchedulerServiceIT extends AbstractPlatformIT {
 
   @SneakyThrows
   protected void executeImportCycle() {
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     embeddedOptimizeExtension.getEventBasedProcessesInstanceImportScheduler()
       .runImportRound(true)
       .get(10, TimeUnit.SECONDS);
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private ProcessDefinitionEngineDto deploySimpleProcessDefinition(String processDefinitionKey) {
@@ -408,7 +408,7 @@ public class KpiEvaluationSchedulerServiceIT extends AbstractPlatformIT {
   }
 
   private List<ProcessOverviewDto> getAllDocumentsOfProcessOverviewIndex() {
-    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       PROCESS_OVERVIEW_INDEX_NAME,
       ProcessOverviewDto.class
     );
@@ -416,7 +416,7 @@ public class KpiEvaluationSchedulerServiceIT extends AbstractPlatformIT {
 
   private void runKpiSchedulerAndRefreshIndices() {
     getKpiScheduler().runKpiImportTask();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private static String createTwoEventAndOneTaskActivitiesProcessDefinitionXml() {

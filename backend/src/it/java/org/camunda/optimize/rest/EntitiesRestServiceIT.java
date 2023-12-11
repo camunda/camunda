@@ -96,7 +96,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     importAllEngineEntitiesFromScratch();
     final Optional<InstantDashboardDataDto> instantPreviewDashboard =
       instantPreviewDashboardService.createInstantPreviewDashboard(processDefKey, dashboardJsonTemplateFilename);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<EntityResponseDto> privateEntities = entitiesClient.getAllEntities();
@@ -143,7 +143,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
 
     addSingleReportToOptimize("My Report", ReportType.PROCESS);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<EntityResponseDto> privateEntities = embeddedOptimizeExtension
@@ -170,7 +170,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     addSingleReportToOptimize("A Report", ReportType.DECISION);
     addCombinedReport("D Combined");
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when (default user)
     final List<EntityResponseDto> defaultUserEntities = entitiesClient.getAllEntities();
@@ -220,7 +220,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     addDashboardToOptimize("A Dashboard");
     addDashboardToOptimize("B Dashboard");
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<EntityResponseDto> privateEntities = entitiesClient.getAllEntities();
@@ -237,7 +237,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     addDashboardToOptimize("A Dashboard");
     addDashboardToOptimize("B Dashboard", null, "kermit");
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when (default user)
     final List<EntityResponseDto> defaultUserEntities = entitiesClient.getAllEntities();
@@ -264,7 +264,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     collectionClient.createNewCollection();
     collectionClient.createNewCollection();
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<EntityResponseDto> privateEntities = entitiesClient.getAllEntities();
@@ -283,7 +283,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     addDashboardToOptimize("C Dashboard", collectionId, DEFAULT_USERNAME);
     addCombinedReport("D Combined");
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<EntityResponseDto> defaultUserEntities = entitiesClient.getAllEntities();
@@ -305,7 +305,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     addDashboardToOptimize("B Dashboard");
     addDashboardToOptimize("A Dashboard");
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<EntityResponseDto> entities = entitiesClient.getAllEntities();
@@ -338,7 +338,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
       .setAuthorizedUserType(AuthorizedUserType.NONE);
     embeddedOptimizeExtension.reloadConfiguration();
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<EntityResponseDto> entities = entitiesClient.getAllEntities();
@@ -364,7 +364,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     // given
     collectionClient.createNewCollection();
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<EntityResponseDto> defaultUserEntities = entitiesClient.getAllEntities();
@@ -391,7 +391,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     addDashboardToOptimize("C Dashboard", collectionId, DEFAULT_USERNAME);
     addCombinedReport("D Combined", collectionId);
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<EntityResponseDto> defaultUserEntities = entitiesClient.getAllEntities();
@@ -413,7 +413,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     // given
     collectionClient.createNewCollection();
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<EntityResponseDto> defaultUserEntities = entitiesClient.getAllEntities();
@@ -447,7 +447,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     authorizationClient.createGroupAndGrantOptimizeAccess(groupC, groupC);
     addRoleToCollection(collectionId, groupC, IdentityType.GROUP);
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<EntityResponseDto> defaultUserEntities = entitiesClient.getAllEntities();
@@ -502,7 +502,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     addSingleReportToOptimize("C Report", ReportType.DECISION);
     addDashboardToOptimize("B Dashboard");
     addDashboardToOptimize("A Dashboard");
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     EntitySorter sorter = new EntitySorter(sortBy, sortOrder);
 
@@ -524,7 +524,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     addSingleReportToOptimize("An Entity", ReportType.DECISION);
     addDashboardToOptimize("An Entity");
     addDashboardToOptimize("An Entity");
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     EntitySorter sorter = new EntitySorter(name, SortOrder.ASC);
     final Comparator<EntityResponseDto> expectedComparator = Comparator.comparing(EntityResponseDto::getName)
@@ -549,7 +549,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     addSingleReportToOptimize("D Entity", ReportType.DECISION);
     addDashboardToOptimize("E Entity");
     addDashboardToOptimize("F Entity");
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     EntitySorter sorter = new EntitySorter(name, null);
     final Comparator<EntityResponseDto> expectedComparator = Comparator.comparing(EntityResponseDto::getName);
@@ -871,7 +871,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     // then
     esMockServer.verify(requestMatcher, VerificationTimes.atLeast(1));
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(
+    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(
       COLLECTION_INDEX_NAME
     )).isEqualTo(1);
     assertThat(collectionClient.getCollectionById(collectionId1)).isNotNull();
@@ -903,7 +903,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     // then
     esMockServer.verify(requestMatcher, VerificationTimes.atLeast(1));
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(
+    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(
       DASHBOARD_INDEX_NAME
     )).isEqualTo(1);
     assertThat(dashboardClient.getDashboard(dashboardId1)).isNotNull();
@@ -929,14 +929,14 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
   }
 
   private List<CollectionDefinitionDto> getAllCollections() {
-    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       COLLECTION_INDEX_NAME,
       CollectionDefinitionDto.class
     );
   }
 
   private List<DashboardDefinitionRestDto> getAllDashboards() {
-    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       DASHBOARD_INDEX_NAME,
       DashboardDefinitionRestDto.class
     );

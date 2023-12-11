@@ -45,7 +45,7 @@ public class CCSaaSIdentityService extends AbstractIdentityService {
   }
 
   @Override
-  public Optional<UserDto> getUserById(final String userId, final ContainerRequestContext requestContext) {
+  public Optional<UserDto> getCurrentUserById(final String userId, final ContainerRequestContext requestContext) {
     return getUserById(userId);
   }
 
@@ -78,10 +78,10 @@ public class CCSaaSIdentityService extends AbstractIdentityService {
         .limit(maxResults)
         .map(this::mapToUserDto)
         .collect(Collectors.toList());
-      return new IdentitySearchResultResponseDto(0, users);
+      return new IdentitySearchResultResponseDto(users);
     } catch (OptimizeRuntimeException e) {
       log.warn("Failed retrieving users.", e);
-      return new IdentitySearchResultResponseDto(0, Collections.emptyList());
+      return new IdentitySearchResultResponseDto(Collections.emptyList());
     }
   }
 

@@ -36,8 +36,8 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
-import static org.camunda.optimize.service.importing.CustomerOnboadingDataImportIT.CUSTOMER_ONBOARDING_DEFINITION_FILE_NAME;
-import static org.camunda.optimize.service.importing.CustomerOnboadingDataImportIT.CUSTOMER_ONBOARDING_PROCESS_INSTANCES;
+import static org.camunda.optimize.service.importing.CustomerOnboardingDataImportIT.CUSTOMER_ONBOARDING_DEFINITION_FILE_NAME;
+import static org.camunda.optimize.service.importing.CustomerOnboardingDataImportIT.CUSTOMER_ONBOARDING_PROCESS_INSTANCES;
 import static org.camunda.optimize.service.onboarding.OnboardingEmailNotificationService.EMAIL_SUBJECT;
 import static org.camunda.optimize.service.onboarding.OnboardingEmailNotificationService.MAGIC_LINK_TEMPLATE;
 import static org.camunda.optimize.service.util.configuration.EmailSecurityProtocol.NONE;
@@ -49,11 +49,11 @@ public class OnboardingSchedulerServiceIT extends AbstractPlatformIT {
   private GreenMail greenMail;
 
   @RegisterExtension
-  private final LogCapturer notificationServiceLogs = LogCapturer.create()
+  public final LogCapturer notificationServiceLogs = LogCapturer.create()
     .captureForType(OnboardingEmailNotificationService.class);
 
   @RegisterExtension
-  private final LogCapturer schedulerServiceLogs = LogCapturer.create()
+  public final LogCapturer schedulerServiceLogs = LogCapturer.create()
     .captureForType(OnboardingSchedulerService.class);
 
   @BeforeEach
@@ -520,7 +520,7 @@ public class OnboardingSchedulerServiceIT extends AbstractPlatformIT {
     CustomerOnboardingDataImportService customerOnboardingDataImportService =
       embeddedOptimizeExtension.getBean(CustomerOnboardingDataImportService.class);
     customerOnboardingDataImportService.importData(processInstanceFile, processDefinitionFile, 1);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private EngineUserDto createKermitUserDtoWithEmail(final String email) {
@@ -532,13 +532,13 @@ public class OnboardingSchedulerServiceIT extends AbstractPlatformIT {
   }
 
   private static void assertDefinitionHasOnboardedState(final boolean onboardedState) {
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions())
+    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
       .singleElement()
       .satisfies(definition -> assertThat(definition.isOnboarded()).isEqualTo(onboardedState));
   }
 
   private static void assertDefinitionHasOnboardedStateForDefinition(final boolean onboardedState, final String defKey) {
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions())
+    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
       .filteredOn(definition -> definition.getKey().equals(defKey))
       .singleElement()
       .satisfies(definition -> assertThat(definition.isOnboarded()).isEqualTo(onboardedState));

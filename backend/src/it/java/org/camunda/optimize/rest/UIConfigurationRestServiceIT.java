@@ -300,6 +300,6 @@ public class UIConfigurationRestServiceIT extends AbstractPlatformIT {
 
   protected void createTenant(final String tenantId) {
     final TenantDto tenantDto = new TenantDto(tenantId, tenantId, DEFAULT_ENGINE_ALIAS);
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(TENANT_INDEX_NAME, tenantId, tenantDto);
+    databaseIntegrationTestExtension.addEntryToDatabase(TENANT_INDEX_NAME, tenantId, tenantDto);
   }
 }

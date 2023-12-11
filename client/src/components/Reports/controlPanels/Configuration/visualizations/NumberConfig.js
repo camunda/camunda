@@ -5,14 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {Checkbox, FormGroup, Stack, Toggle} from '@carbon/react';
 
-import {Switch, LabeledInput} from 'components';
+import {t} from 'translation';
+import {track} from 'tracking';
 
 import CountTargetInput from './subComponents/CountTargetInput';
 import DurationTargetInput from './subComponents/DurationTargetInput';
-import {t} from 'translation';
-import {track} from 'tracking';
 
 export default function NumberConfig({report, onChange}) {
   const {configuration, view, definitions} = report.data;
@@ -24,66 +23,70 @@ export default function NumberConfig({report, onChange}) {
   const isMultiMeasure = report.result?.measures.length > 1;
   const isSingleProcessReport = definitions.length === 1;
 
+  if (isMultiMeasure) {
+    return null;
+  }
+
   return (
-    <div className="NumberConfig">
-      {!isMultiMeasure && (
-        <fieldset>
-          <legend>
-            <Switch
-              checked={targetValue.active}
-              onChange={(evt) => {
-                const isActive = evt.target.checked;
-                onChange({
-                  targetValue: {
-                    active: {$set: isActive},
-                    isKpi: {$set: isActive && isSingleProcessReport},
-                  },
-                });
+    <FormGroup
+      className="NumberConfig"
+      legendText={
+        <Toggle
+          id="setTargetToggle"
+          size="sm"
+          toggled={targetValue.active}
+          onToggle={(isActive) => {
+            onChange({
+              targetValue: {
+                active: {$set: isActive},
+                isKpi: {$set: isActive && isSingleProcessReport},
+              },
+            });
+          }}
+          labelA={t('report.config.goal.legend')}
+          labelB={t('report.config.goal.legend')}
+        />
+      }
+    >
+      <Stack gap={4}>
+        {countOperation ? (
+          <CountTargetInput
+            baseline={targetValue.countProgress.baseline}
+            target={targetValue.countProgress.target}
+            isBelow={targetValue.countProgress.isBelow}
+            disabled={!targetValue.active}
+            isPercentageReport={isPercentageReport}
+            onChange={(type, value) =>
+              onChange({targetValue: {countProgress: {[type]: {$set: value}}}})
+            }
+          />
+        ) : (
+          <DurationTargetInput
+            baseline={targetValue.durationProgress.baseline}
+            target={targetValue.durationProgress.target}
+            disabled={!targetValue.active}
+            onChange={(type, subType, value) =>
+              onChange({targetValue: {durationProgress: {[type]: {[subType]: {$set: value}}}}})
+            }
+          />
+        )}
+        {view.entity !== 'variable' &&
+          report.reportType !== 'decision' &&
+          isSingleProcessReport && (
+            <Checkbox
+              id="setKpiCheckbox"
+              labelText={t('report.config.goal.setKpi')}
+              disabled={!targetValue.active}
+              checked={!targetValue.active || targetValue.isKpi}
+              onChange={(evt, {checked}) => {
+                onChange({targetValue: {isKpi: {$set: checked}}});
+                trackKpiState(checked, report.id);
               }}
-              label={t('report.config.goal.legend')}
-            />
-          </legend>
-          {countOperation ? (
-            <CountTargetInput
-              baseline={targetValue.countProgress.baseline}
-              target={targetValue.countProgress.target}
-              isBelow={targetValue.countProgress.isBelow}
-              disabled={!targetValue.active}
-              isPercentageReport={isPercentageReport}
-              onChange={(type, value) =>
-                onChange({targetValue: {countProgress: {[type]: {$set: value}}}})
-              }
-            />
-          ) : (
-            <DurationTargetInput
-              baseline={targetValue.durationProgress.baseline}
-              target={targetValue.durationProgress.target}
-              disabled={!targetValue.active}
-              onChange={(type, subType, value) =>
-                onChange({targetValue: {durationProgress: {[type]: {[subType]: {$set: value}}}}})
-              }
+              helperText={t('report.config.goal.kpiDescription')}
             />
           )}
-          {view.entity !== 'variable' &&
-            report.reportType !== 'decision' &&
-            isSingleProcessReport && (
-              <>
-                <LabeledInput
-                  disabled={!targetValue.active}
-                  type="checkbox"
-                  checked={!targetValue.active || targetValue.isKpi}
-                  onChange={(evt) => {
-                    onChange({targetValue: {isKpi: {$set: evt.target.checked}}});
-                    trackKpiState(evt.target.checked, report.id);
-                  }}
-                  label={t('report.config.goal.setKpi')}
-                />
-                <p>{t('report.config.goal.kpiDescription')}</p>
-              </>
-            )}
-        </fieldset>
-      )}
-    </div>
+      </Stack>
+    </FormGroup>
   );
 }
 

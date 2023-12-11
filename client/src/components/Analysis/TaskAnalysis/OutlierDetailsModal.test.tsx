@@ -10,8 +10,14 @@ import {shallow} from 'enzyme';
 import {AnalysisDurationChartEntry} from 'types';
 
 import VariablesTable from './VariablesTable';
-import {OutlierDetailsModal} from './OutlierDetailsModal';
+import OutlierDetailsModal from './OutlierDetailsModal';
 import {SelectedNode, AnalysisProcessDefinitionParameters} from './service';
+
+jest.mock('hooks', () => ({
+  useUser: jest.fn().mockImplementation(() => ({
+    user: null,
+  })),
+}));
 
 const selectedNode = {
   name: 'test',
@@ -23,14 +29,13 @@ const selectedNode = {
     {key: 1, value: 1, outlier: false},
     {key: 2, value: 2, outlier: true},
   ] as AnalysisDurationChartEntry[],
+  totalCount: 123,
 } as SelectedNode;
 
 const props = {
   selectedNode,
   onClose: jest.fn(),
   config: {} as AnalysisProcessDefinitionParameters,
-  getUser: jest.fn(),
-  refreshUser: jest.fn(),
 };
 
 it('should pass outlier data to DurationChart and VariablesTable', () => {

@@ -32,7 +32,7 @@ public class DecisionDefinitionImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME))
+    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME))
       .isEqualTo(definitionsToDeploy);
   }
 
@@ -57,7 +57,7 @@ public class DecisionDefinitionImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllDecisionDefinitions())
+    assertThat(databaseIntegrationTestExtension.getAllDecisionDefinitions())
       .singleElement()
       .satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
   }

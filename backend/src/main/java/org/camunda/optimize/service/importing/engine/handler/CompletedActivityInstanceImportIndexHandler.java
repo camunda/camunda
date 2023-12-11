@@ -29,7 +29,8 @@ public class CompletedActivityInstanceImportIndexHandler extends TimestampBasedE
   }
 
   @Override
-  protected String getElasticsearchDocID() {
+  protected String getDatabaseDocID() {
     return ACTIVITY_IMPORT_INDEX_DOC_ID;
   }
+
 }

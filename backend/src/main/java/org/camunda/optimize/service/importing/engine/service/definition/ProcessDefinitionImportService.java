@@ -11,9 +11,9 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
-import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.job.importing.ProcessDefinitionElasticsearchImportJob;
+import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
+import org.camunda.optimize.service.importing.DatabaseImportJob;
+import org.camunda.optimize.service.importing.job.ProcessDefinitionDatabaseImportJob;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
@@ -27,7 +27,7 @@ import static java.util.stream.Collectors.groupingBy;
 @Slf4j
 public class ProcessDefinitionImportService implements ImportService<ProcessDefinitionEngineDto> {
 
-  private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final EngineContext engineContext;
   private final ProcessDefinitionWriter processDefinitionWriter;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
@@ -36,7 +36,7 @@ public class ProcessDefinitionImportService implements ImportService<ProcessDefi
                                         final EngineContext engineContext,
                                         final ProcessDefinitionWriter processDefinitionWriter,
                                         final ProcessDefinitionResolverService processDefinitionResolverService) {
-    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+    this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.engineContext = engineContext;
@@ -54,9 +54,9 @@ public class ProcessDefinitionImportService implements ImportService<ProcessDefi
       final List<ProcessDefinitionOptimizeDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities
         (pageOfEngineEntities);
       markSavedDefinitionsAsDeleted(newOptimizeEntities);
-      final ElasticsearchImportJob<ProcessDefinitionOptimizeDto> elasticsearchImportJob =
-        createElasticsearchImportJob(newOptimizeEntities, importCompleteCallback);
-      addElasticsearchImportJobToQueue(elasticsearchImportJob);
+      final DatabaseImportJob<ProcessDefinitionOptimizeDto> databaseImportJob =
+        createDatabaseImportJob(newOptimizeEntities, importCompleteCallback);
+      addDatabaseImportJobToQueue(databaseImportJob);
     }
   }
 
@@ -69,12 +69,12 @@ public class ProcessDefinitionImportService implements ImportService<ProcessDefi
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
-    return elasticsearchImportJobExecutor;
+  public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
+    return databaseImportJobExecutor;
   }
 
-  private void addElasticsearchImportJobToQueue(ElasticsearchImportJob elasticsearchImportJob) {
-    elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
+  private void addDatabaseImportJobToQueue(DatabaseImportJob databaseImportJob) {
+    databaseImportJobExecutor.executeImportJob(databaseImportJob);
   }
 
   private List<ProcessDefinitionOptimizeDto> mapEngineEntitiesToOptimizeEntities(
@@ -100,10 +100,10 @@ public class ProcessDefinitionImportService implements ImportService<ProcessDefi
       .collect(Collectors.toList());
   }
 
-  private ElasticsearchImportJob<ProcessDefinitionOptimizeDto> createElasticsearchImportJob(
+  private DatabaseImportJob<ProcessDefinitionOptimizeDto> createDatabaseImportJob(
     final List<ProcessDefinitionOptimizeDto> processDefinitions,
     final Runnable importCompleteCallback) {
-    ProcessDefinitionElasticsearchImportJob procDefImportJob = new ProcessDefinitionElasticsearchImportJob(
+    ProcessDefinitionDatabaseImportJob procDefImportJob = new ProcessDefinitionDatabaseImportJob(
       processDefinitionWriter, importCompleteCallback
     );
     procDefImportJob.setEntitiesToImport(processDefinitions);

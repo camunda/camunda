@@ -9,7 +9,7 @@ import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.Main;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.db.schema.index.MetadataIndex;
-import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpResponse;
@@ -48,18 +48,18 @@ public class ElasticMetadataVersionIT extends AbstractPlatformIT {
 
   @Test
   public void verifyNotStartingIfVersionDoesNotMatch() {
-    elasticSearchIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
 
     MetadataDto meta = new MetadataDto(SCHEMA_VERSION, INSTALLATION_ID);
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(METADATA_INDEX_NAME, MetadataIndex.ID, meta);
+    databaseIntegrationTestExtension.addEntryToDatabase(METADATA_INDEX_NAME, MetadataIndex.ID, meta);
     assertThatThrownBy(() -> {
       ConfigurableApplicationContext context = SpringApplication.run(Main.class);
       context.close();
     })
       .cause().cause()
-      .hasMessageContaining("The Elasticsearch Optimize schema version [" + SCHEMA_VERSION + "]");
+      .hasMessageContaining("The database Optimize schema version [" + SCHEMA_VERSION + "]");
 
-    elasticSearchIntegrationTestExtension.deleteAllOptimizeData();
+    databaseIntegrationTestExtension.deleteAllOptimizeData();
   }
 
   @Test
@@ -71,11 +71,11 @@ public class ElasticMetadataVersionIT extends AbstractPlatformIT {
       .respond(HttpResponse.response().withStatusCode(HttpStatusCode.INTERNAL_SERVER_ERROR_500.code()));
 
     assertThatThrownBy(this::getMetadataDto)
-      .hasMessage("Failed retrieving the Optimize metadata document from elasticsearch!");
+      .hasMessage("Failed retrieving the Optimize metadata document from database!");
   }
 
   private Optional<MetadataDto> getMetadataDto() {
-    return embeddedOptimizeExtension.getBean(ElasticsearchMetadataService.class)
+    return embeddedOptimizeExtension.getBean(ElasticSearchMetadataService.class)
       .readMetadata(embeddedOptimizeExtension.getOptimizeElasticClient());
   }
 }

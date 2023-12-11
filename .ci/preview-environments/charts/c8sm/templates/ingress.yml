@@ -5,12 +5,18 @@ metadata:
   name: optimize
   labels: {{ include "commonLabels" $ | nindent 4 }}
   annotations: {{ include "commonAnnotations" $ | nindent 4 }}{{ include "infrapreviewenvironmentsingress.annotations" $ | nindent 4 }}
+    # Increase the proxy buffer size to support larger response headers, otherwise the Ingress produces errors such as:
+    # > upstream sent too big header while reading response header from upstream
+    nginx.ingress.kubernetes.io/proxy-buffer-size: 16k
 spec:
   ingressClassName: nginx
   tls:
   - hosts:
     - {{ include "ingress.domain" $ | quote }}
+    - {{ include "ingress.domain" $ | printf "identity-%s" | quote }}
     - {{ include "ingress.domain" $ | printf "keycloak-%s" | quote }}
+    - {{ include "ingress.domain" $ | printf "operate-%s" | quote }}
+    - {{ include "ingress.domain" $ | printf "tasklist-%s" | quote }}
     secretName: optimize-tls
   rules:
   - host: {{ include "ingress.domain" $ | quote }}
@@ -23,6 +29,16 @@ spec:
             name: optimize
             port:
               number: 8090
+  - host: {{ include "ingress.domain" $ | printf "identity-%s" | quote }}
+    http:
+      paths:
+      - path: /
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: identity
+            port:
+              number: 80
   - host: {{ include "ingress.domain" $ | printf "keycloak-%s" | quote }}
     http:
       paths:
@@ -31,5 +47,25 @@ spec:
         backend:
           service:
             name: {{ .Release.Name }}-keycloak
+            port:
+              number: 80
+  - host: {{ include "ingress.domain" $ | printf "operate-%s" | quote }}
+    http:
+      paths:
+      - path: /
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: operate
+            port:
+              number: 80
+  - host: {{ include "ingress.domain" $ | printf "tasklist-%s" | quote }}
+    http:
+      paths:
+      - path: /
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: tasklist
             port:
               number: 80

@@ -8,11 +8,6 @@
 import {Tenant} from 'types';
 import {get, post} from 'request';
 
-export type Definition = {
-  key: string;
-  name: string | null;
-};
-
 export type Version = {
   version: string;
   versionTag: string | null;
@@ -25,24 +20,6 @@ type DefintionWithTenants = {
 };
 
 type DefintionWithVersions = {key: string; versions: string[]};
-
-export async function loadDefinitions(
-  type: string,
-  collectionId: string | null,
-  camundaEventImportedOnly = false
-): Promise<Definition[]> {
-  const params: {camundaEventImportedOnly: boolean; filterByCollectionScope?: string} = {
-    camundaEventImportedOnly,
-  };
-
-  if (collectionId) {
-    params.filterByCollectionScope = collectionId;
-  }
-
-  const response = await get(`api/definition/${type}/keys`, params);
-
-  return response.json();
-}
 
 export async function loadVersions(
   type: string,

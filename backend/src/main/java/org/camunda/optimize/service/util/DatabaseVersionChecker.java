@@ -24,7 +24,7 @@ import static org.camunda.optimize.service.metadata.Version.getMajorVersionFrom;
 import static org.camunda.optimize.service.metadata.Version.getMinorVersionFrom;
 import static org.camunda.optimize.service.metadata.Version.getPatchVersionFrom;
 import static org.camunda.optimize.service.metadata.Version.stripToPlainVersion;
-import static org.camunda.optimize.service.os.OptimizeOpensearchClientFactory.getCurrentOSVersion;
+import static org.camunda.optimize.service.db.os.OptimizeOpenSearchClientFactory.getCurrentOSVersion;
 import static org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder.getCurrentESVersion;
 
 @Slf4j
@@ -37,7 +37,7 @@ public abstract class DatabaseVersionChecker {
   static {
     databaseSupportedVersionsMap.put(
       Database.ELASTICSEARCH,
-      List.of("7.10.0", "7.11.0", "7.12.0", "7.13.0", "7.14.0", "7.15.0", "7.16.2", "7.17.0", "8.8.0")
+      List.of("7.10.0", "7.11.0", "7.12.0", "7.13.0", "7.14.0", "7.15.0", "7.16.2", "7.17.0", "8.8.0", "8.9.0")
     );
     databaseSupportedVersionsMap.put(
       Database.OPENSEARCH, List.of("2.5.0", "2.6.0", "2.7.0", "2.8.0", "2.9.0")
@@ -90,7 +90,7 @@ public abstract class DatabaseVersionChecker {
     return isCurrentVersionSupported(currentVersion, databaseSupportedVersionsMap.get(Database.ELASTICSEARCH));
   }
 
-  public static boolean isCurrentOpensearchVersionSupported(String currentVersion) {
+  public static boolean isCurrentOpenSearchVersionSupported(String currentVersion) {
     return isCurrentVersionSupported(currentVersion, databaseSupportedVersionsMap.get(Database.OPENSEARCH));
   }
 

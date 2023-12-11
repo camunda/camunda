@@ -40,7 +40,7 @@ test('create a dmn js table report', async (t) => {
   await u.selectView(t, 'Evaluation Count');
   await u.selectGroupby(t, 'Rules');
 
-  await t.click(Report.configurationButton);
+  await t.click(ProcessReport.configurationButton);
   await t.click(Report.gradientBarsSwitch);
 
   await t.expect(Report.decisionTable.visible).ok();
@@ -63,9 +63,9 @@ test('create raw data report', async (t) => {
 
   await t.click(ProcessReport.configurationButton);
   await t.click(ProcessReport.selectSectionWithLabel('INPUT VARIABLES'));
-  await t.click(ProcessReport.selectSwitchLabel('Invoice Amount'));
+  await t.click(Common.toggleElement('Invoice Amount'));
   await t.click(ProcessReport.selectSectionWithLabel('OUTPUT VARIABLES'));
-  await t.click(ProcessReport.selectSwitchLabel('Classification'));
+  await t.click(Common.toggleElement('Classification'));
   await t.click(ProcessReport.configurationButton);
 
   await t.expect(ProcessReport.reportTable.textContent).contains('Decision Definition Key');
@@ -107,7 +107,7 @@ test('create a single number report', async (t) => {
   await t.typeText(Common.nameEditField, 'Progress of Expected Evaluation Count', {replace: true});
 
   await t.click(ProcessReport.configurationButton);
-  await t.click(ProcessReport.goalSwitch);
+  await t.click(Common.toggleElement('Set Target'));
   await t.typeText(ProcessReport.goalTargetInput, '1000', {replace: true});
   await t.click(ProcessReport.configurationButton);
 
@@ -124,7 +124,7 @@ test('create a report grouped by evaluation date', async (t) => {
   await u.selectView(t, 'Evaluation Count');
   await u.selectGroupby(t, 'Evaluation Date', 'Automatic');
 
-  await t.click(Report.visualizationDropdown);
+  await t.click(ProcessReport.visualizationDropdown);
 
   await checkVisualizations(t);
 
@@ -149,7 +149,7 @@ test('create a report grouped by Input variable', async (t) => {
   await u.selectView(t, 'Evaluation Count');
   await u.selectGroupby(t, 'Input Variable', 'Invoice Amount');
 
-  await t.click(Report.visualizationDropdown);
+  await t.click(ProcessReport.visualizationDropdown);
 
   await checkVisualizations(t);
 
@@ -179,8 +179,8 @@ test('filters', async (t) => {
 
   await t
     .resizeWindow(1400, 700)
-    .click(Report.filterButton)
-    .hover(Report.filterOption('Output Variable'))
+    .click(ProcessReport.filterButton)
+    .hover(Common.menuOption('Output Variable'))
     .takeElementScreenshot(
       Common.controlPanel,
       'decision-analysis/img/report-with-filterlist-open.png'

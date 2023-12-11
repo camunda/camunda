@@ -9,12 +9,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
-import org.camunda.optimize.service.es.schema.IndexMappingCreator;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
+import org.camunda.optimize.service.db.schema.IndexMappingCreator;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -50,22 +50,22 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
-import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
-import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
-import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.getTaskResponse;
-import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.validateTaskResponse;
+import static org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScript;
+import static org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
+import static org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.getTaskResponse;
+import static org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.validateTaskResponse;
 import static org.camunda.optimize.service.db.DatabaseConstants.INDEX_ALREADY_EXISTS_EXCEPTION_TYPE;
 
 @Slf4j
 public class SchemaUpgradeClient {
   private final ElasticSearchSchemaManager schemaManager;
-  private final ElasticsearchMetadataService metadataService;
+  private final ElasticSearchMetadataService metadataService;
   private final OptimizeElasticsearchClient elasticsearchClient;
   @Getter
   private final ObjectMapper objectMapper;
 
   public SchemaUpgradeClient(final ElasticSearchSchemaManager schemaManager,
-                             final ElasticsearchMetadataService metadataService,
+                             final ElasticSearchMetadataService metadataService,
                              final OptimizeElasticsearchClient elasticsearchClient,
                              final ObjectMapper objectMapper) {
     this.schemaManager = schemaManager;

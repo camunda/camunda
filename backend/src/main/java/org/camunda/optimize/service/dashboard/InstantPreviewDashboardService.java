@@ -176,7 +176,7 @@ public class InstantPreviewDashboardService {
               singleReport.getData().setInstantPreviewReport(true);
               singleReport.getData().setDefinitions(
                 List.of(new ReportDataDefinitionDto(
-                  processDefinitionKey, List.of(ALL_VERSIONS), processDefinition.getTenantIds()
+                  processDefinitionKey, processDefinition.getName(), List.of(ALL_VERSIONS), processDefinition.getTenantIds()
                 )));
             }),
         () -> log.warn("Could not retrieve process definition data for {}", processDefinitionKey)

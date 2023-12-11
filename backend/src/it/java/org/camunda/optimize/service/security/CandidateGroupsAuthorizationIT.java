@@ -53,7 +53,6 @@ public class CandidateGroupsAuthorizationIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isZero();
     assertThat(searchResponse.getResult()).isEmpty();
   }
 
@@ -81,7 +80,6 @@ public class CandidateGroupsAuthorizationIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isZero();
     assertThat(searchResponse.getResult()).isEmpty();
   }
 
@@ -130,7 +128,6 @@ public class CandidateGroupsAuthorizationIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(1);
     assertThat(searchResponse.getResult())
       .singleElement()
       .isEqualTo(

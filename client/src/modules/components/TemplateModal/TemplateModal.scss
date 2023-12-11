@@ -119,19 +119,19 @@
           border: 2px solid var(--blue-base-65);
 
           .name,
-          .subTitle {
+          .description {
             background-color: var(--blue-lighten-93);
           }
         }
 
-        &.hasSubtitle {
+        &.hasDescription {
           .name {
             padding-top: 8px;
             padding-bottom: 0;
             min-height: 26px;
           }
 
-          .subTitle {
+          .description {
             color: var(--grey-base-40);
             font-size: 12px;
             line-height: 1.5;

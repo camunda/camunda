@@ -7,7 +7,7 @@
 
 import {useEffect, useState} from 'react';
 import classnames from 'classnames';
-import {Button, ComboBox, InlineNotification, Stack} from '@carbon/react';
+import {Button, ComboBox, InlineNotification, Stack, TextInputSkeleton} from '@carbon/react';
 
 import {Modal} from 'components';
 import {t} from 'translation';
@@ -33,7 +33,7 @@ export default function VariableFilter({
 }) {
   const [valid, setValid] = useState(false);
   const [filter, setFilter] = useState({});
-  const [variables, setVariables] = useState([]);
+  const [variables, setVariables] = useState(null);
   const [selectedVariable, setSelectedVariable] = useState(null);
   const [applyTo, setApplyTo] = useState(null);
 
@@ -153,30 +153,36 @@ export default function VariableFilter({
             />
           )}
           {getPretext?.(selectedVariable)}
-          {!variables.length && (
-            <InlineNotification
-              kind="warning"
-              hideCloseButton
-              subtitle={t('common.filter.variableModal.noVariables')}
-            />
+          {variables ? (
+            <>
+              {!variables.length && (
+                <InlineNotification
+                  kind="warning"
+                  hideCloseButton
+                  subtitle={t('common.filter.variableModal.noVariables')}
+                />
+              )}
+              <ComboBox
+                id="variableSelection"
+                titleText={t('common.filter.variableModal.inputLabel')}
+                placeholder={t('common.filter.variableModal.inputPlaceholder')}
+                disabled={!variables.length}
+                items={variables}
+                itemToString={getVariableName}
+                selectedItem={selectedVariable}
+                onChange={selectVariable}
+              />
+              <ValueInput
+                config={config}
+                variable={selectedVariable}
+                changeFilter={changeFilter}
+                filter={filter}
+                definition={applyTo}
+              />
+            </>
+          ) : (
+            <TextInputSkeleton />
           )}
-          <ComboBox
-            id="variableSelection"
-            titleText={t('common.filter.variableModal.inputLabel')}
-            placeholder={t('common.filter.variableModal.inputPlaceholder')}
-            disabled={!variables.length}
-            items={variables}
-            itemToString={getVariableName}
-            selectedItem={selectedVariable}
-            onChange={selectVariable}
-          />
-          <ValueInput
-            config={config}
-            variable={selectedVariable}
-            changeFilter={changeFilter}
-            filter={filter}
-            definition={applyTo}
-          />
           {getPosttext?.(selectedVariable)}
         </Stack>
       </Modal.Content>

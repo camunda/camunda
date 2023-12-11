@@ -42,7 +42,7 @@ jobs:
     - name: Setup yarn cache
       uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65 # v4
       with:
-        node-version: "16"
+        node-version: ${{ steps.pom-info.outputs.x_version_node }}
         cache: "yarn"
         cache-dependency-path: client/yarn.lock    
     - name: Install node dependencies

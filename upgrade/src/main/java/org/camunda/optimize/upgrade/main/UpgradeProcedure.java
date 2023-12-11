@@ -7,7 +7,7 @@ package org.camunda.optimize.upgrade.main;
 
 import com.vdurmont.semver4j.Semver;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;

@@ -35,14 +35,14 @@ public class DecisionCleanupPerformanceStaticDataTest extends AbstractDataCleanu
     // and run the cleanup
     runCleanupAndAssertFinishedWithinTimeout();
     // and refresh es
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then no decision instances should be left
     assertThat(getDecisionInstanceCount()).isZero();
   }
 
   private Integer getDecisionInstanceCount() {
-    return elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_INSTANCE_MULTI_ALIAS);
+    return databaseIntegrationTestExtension.getDocumentCountOf(DECISION_INSTANCE_MULTI_ALIAS);
   }
 
 }

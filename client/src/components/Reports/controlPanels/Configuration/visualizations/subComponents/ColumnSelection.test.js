@@ -8,7 +8,6 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {LabeledInput} from 'components';
 import {getVariableLabel} from 'variables';
 
 import ColumnSelection from './ColumnSelection';
@@ -142,7 +141,7 @@ it('should update configuration when changing include variables checkbox', () =>
     />
   );
 
-  node.find(LabeledInput).simulate('change', {target: {checked: false}});
+  node.find('Checkbox').simulate('change', {target: {checked: false}});
 
   expect(spy).toHaveBeenCalledWith({tableColumns: {includeNewVariables: {$set: false}}});
 });
@@ -234,6 +233,8 @@ it('should disable the switch and set the tooltip message when disabled', () => 
     />
   );
 
-  expect(node.text()).toContain('This function only works with automatic preview update turned on');
+  expect(node.find('FormGroup').childAt(0).text()).toContain(
+    'This function only works with automatic preview update turned on'
+  );
   expect(node.find('AllColumnsButtons')).not.toExist();
 });

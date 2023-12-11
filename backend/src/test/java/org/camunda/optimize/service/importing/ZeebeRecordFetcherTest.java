@@ -8,11 +8,12 @@ package org.camunda.optimize.service.importing;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.page.PositionBasedImportPage;
-import org.camunda.optimize.service.importing.zeebe.fetcher.ZeebeProcessInstanceFetcher;
+import org.camunda.optimize.service.importing.zeebe.db.ZeebeProcessInstanceFetcher;
+import org.camunda.optimize.service.importing.zeebe.fetcher.es.ZeebeProcessInstanceFetcherES;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.junit.jupiter.api.Test;
@@ -220,7 +221,7 @@ public class ZeebeRecordFetcherTest {
   }
 
   private void initalizeClassUnderTest() {
-    this.underTest = new ZeebeProcessInstanceFetcher(
+    this.underTest = new ZeebeProcessInstanceFetcherES(
       1,
       optimizeElasticsearchClient,
       objectMapper,

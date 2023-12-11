@@ -211,7 +211,6 @@ public class AssigneeRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(3);
     assertThat(searchResponse.getResult())
       .hasSize(3)
       .containsExactlyInAnyOrder(
@@ -242,7 +241,6 @@ public class AssigneeRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(3);
     assertThat(searchResponse.getResult())
       .hasSize(3)
       .containsExactlyInAnyOrder(
@@ -276,7 +274,6 @@ public class AssigneeRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(2);
     assertThat(searchResponse.getResult())
       .hasSize(2)
       .containsExactlyInAnyOrder(
@@ -308,14 +305,12 @@ public class AssigneeRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(1);
     assertThat(searchResponse.getResult())
       .singleElement()
       .isEqualTo(
         new UserDto(ASSIGNEE_ID_JOHN, JOHN_FIRST_NAME, JOHN_LAST_NAME, ASSIGNEE_ID_JOHN + DEFAULT_EMAIL_DOMAIN)
       );
 
-    assertThat(otherDefinitionSearchResponse.getTotal()).isEqualTo(1);
     assertThat(otherDefinitionSearchResponse.getResult())
       .singleElement()
       .isEqualTo(
@@ -349,14 +344,12 @@ public class AssigneeRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(1);
     assertThat(searchResponse.getResult())
       .singleElement()
       .isEqualTo(
         new UserDto(ASSIGNEE_ID_JOHN, JOHN_FIRST_NAME, JOHN_LAST_NAME, ASSIGNEE_ID_JOHN + DEFAULT_EMAIL_DOMAIN)
       );
 
-    assertThat(otherReportSearchResponse.getTotal()).isEqualTo(1);
     assertThat(otherReportSearchResponse.getResult())
       .singleElement()
       .isEqualTo(
@@ -391,14 +384,12 @@ public class AssigneeRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(noTenantSearchResponse.getTotal()).isEqualTo(1);
     assertThat(noTenantSearchResponse.getResult())
       .singleElement()
       .isEqualTo(
         new UserDto(ASSIGNEE_ID_JOHN, JOHN_FIRST_NAME, JOHN_LAST_NAME, ASSIGNEE_ID_JOHN + DEFAULT_EMAIL_DOMAIN)
       );
 
-    assertThat(tenant1SearchResponse.getTotal()).isEqualTo(1);
     assertThat(tenant1SearchResponse.getResult())
       .singleElement()
       .isEqualTo(
@@ -440,14 +431,12 @@ public class AssigneeRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(noTenantSearchResponse.getTotal()).isEqualTo(1);
     assertThat(noTenantSearchResponse.getResult())
       .singleElement()
       .isEqualTo(
         new UserDto(ASSIGNEE_ID_JOHN, JOHN_FIRST_NAME, JOHN_LAST_NAME, ASSIGNEE_ID_JOHN + DEFAULT_EMAIL_DOMAIN)
       );
 
-    assertThat(tenant1SearchResponse.getTotal()).isEqualTo(1);
     assertThat(tenant1SearchResponse.getResult())
       .singleElement()
       .isEqualTo(
@@ -485,7 +474,6 @@ public class AssigneeRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(2);
     assertThat(searchResponse.getResult())
       .hasSize(2)
       .containsExactly(
@@ -515,7 +503,6 @@ public class AssigneeRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(2);
     assertThat(searchResponse.getResult())
       .hasSize(2)
       .containsExactly(
@@ -543,7 +530,6 @@ public class AssigneeRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(1);
     assertThat(searchResponse.getResult())
       .hasSize(1)
       .containsExactlyInAnyOrder(
@@ -568,7 +554,6 @@ public class AssigneeRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(1);
     assertThat(searchResponse.getResult())
       .hasSize(1)
       .containsExactlyInAnyOrder(
@@ -594,7 +579,6 @@ public class AssigneeRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(1);
     assertThat(searchResponse.getResult())
       .singleElement()
       .isEqualTo(
@@ -620,7 +604,6 @@ public class AssigneeRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(1);
     assertThat(searchResponse.getResult())
       .singleElement()
       .isEqualTo(
@@ -646,7 +629,6 @@ public class AssigneeRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(2);
     assertThat(searchResponse.getResult())
       .hasSize(2)
       .containsExactlyInAnyOrder(
@@ -673,7 +655,6 @@ public class AssigneeRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(2);
     assertThat(searchResponse.getResult())
       .hasSize(2)
       .containsExactlyInAnyOrder(
@@ -701,7 +682,6 @@ public class AssigneeRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(2);
     assertThat(searchResponse.getResult()).hasSize(1);
   }
 
@@ -724,7 +704,6 @@ public class AssigneeRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(2);
     assertThat(searchResponse.getResult()).hasSize(1);
   }
 
@@ -746,7 +725,6 @@ public class AssigneeRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(1);
     assertThat(searchResponse.getResult())
       .singleElement()
       .isEqualTo(
@@ -773,7 +751,6 @@ public class AssigneeRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(1);
     assertThat(searchResponse.getResult())
       .singleElement()
       .isEqualTo(
@@ -808,7 +785,6 @@ public class AssigneeRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(2);
     assertThat(searchResponse.getResult())
       .hasSize(2)
       .containsExactly(
@@ -845,7 +821,6 @@ public class AssigneeRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(2);
     assertThat(searchResponse.getResult())
       .hasSize(2)
       .containsExactly(
@@ -871,7 +846,6 @@ public class AssigneeRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(1);
     assertThat(searchResponse.getResult())
       .singleElement()
       .isEqualTo(
@@ -898,7 +872,6 @@ public class AssigneeRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isEqualTo(1);
     assertThat(searchResponse.getResult())
       .singleElement()
       .isEqualTo(
@@ -924,7 +897,6 @@ public class AssigneeRestServiceIT extends AbstractPlatformIT {
     );
 
     // then
-    assertThat(searchResponse.getTotal()).isZero();
     assertThat(searchResponse.getResult()).isEmpty();
   }
 

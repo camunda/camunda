@@ -9,8 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.db.writer.incident.CompletedIncidentWriter;
-import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.job.importing.CompletedIncidentElasticsearchImportJob;
+import org.camunda.optimize.service.importing.DatabaseImportJob;
+import org.camunda.optimize.service.importing.job.CompletedIncidentDatabaseImportJob;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
@@ -29,10 +29,10 @@ public class CompletedIncidentImportService extends AbstractEngineIncidentImport
     this.completedIncidentWriter = completedIncidentWriter;
   }
 
-  protected ElasticsearchImportJob<IncidentDto> createElasticsearchImportJob(List<IncidentDto> incidents,
-                                                                             Runnable callback) {
-    CompletedIncidentElasticsearchImportJob incidentImportJob =
-      new CompletedIncidentElasticsearchImportJob(completedIncidentWriter, configurationService, callback);
+  protected DatabaseImportJob<IncidentDto> createDatabaseImportJob(List<IncidentDto> incidents,
+                                                                        Runnable callback) {
+    CompletedIncidentDatabaseImportJob incidentImportJob =
+      new CompletedIncidentDatabaseImportJob(completedIncidentWriter, configurationService, callback);
     incidentImportJob.setEntitiesToImport(incidents);
     return incidentImportJob;
   }

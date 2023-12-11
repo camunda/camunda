@@ -5,17 +5,16 @@
  */
 package org.camunda.optimize.rest;
 
-import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.LicenseInformationResponseDto;
-import org.camunda.optimize.service.license.LicenseManager;
-import org.springframework.stereotype.Component;
-
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.LicenseInformationResponseDto;
+import org.camunda.optimize.service.license.LicenseManager;
+import org.springframework.stereotype.Component;
 
 @AllArgsConstructor
 @Path(LicenseCheckingRestService.LICENSE_PATH)
@@ -30,7 +29,8 @@ public class LicenseCheckingRestService {
   @Consumes(MediaType.TEXT_PLAIN)
   @Produces(MediaType.APPLICATION_JSON)
   public LicenseInformationResponseDto validateOptimizeLicenseAndStoreIt(String license) {
-    LicenseInformationResponseDto licenseInformationDto = licenseManager.validateOptimizeLicense(license);
+    LicenseInformationResponseDto licenseInformationDto =
+      licenseManager.validateOptimizeLicense(license);
     licenseManager.storeLicense(license);
     return licenseInformationDto;
   }

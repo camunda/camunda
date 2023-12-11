@@ -17,13 +17,12 @@ import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto
 import org.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
-import org.camunda.optimize.service.importing.zeebe.fetcher.AbstractZeebeRecordFetcher;
 import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
+import org.camunda.optimize.service.importing.zeebe.fetcher.es.AbstractZeebeRecordFetcherES;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -61,7 +60,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
   private final LogCapturer positionBasedHandlerLogs = LogCapturer.create().captureForType(PositionBasedImportIndexHandler.class);
   @RegisterExtension
   @Order(2)
-  private final LogCapturer zeebeFetcherLogs = LogCapturer.create().captureForType(AbstractZeebeRecordFetcher.class);
+  private final LogCapturer zeebeFetcherLogs = LogCapturer.create().captureForType(AbstractZeebeRecordFetcherES.class);
 
   @Test
   public void importPositionIsZeroIfNothingIsImportedYet() {
@@ -89,14 +88,14 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     final List<Long> positionsBeforeRestart = getCurrentHandlerPositions();
     final List<OffsetDateTime> lastImportedEntityTimestamps = getLastImportedEntityTimestamps();
 
     // when
     startAndUseNewOptimizeInstance();
     setupZeebeImportAndReloadConfiguration();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertThat(getCurrentHandlerPositions())
@@ -115,14 +114,14 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     final List<Long> sequencesBeforeRestart = getCurrentHandlerSequences();
     final List<OffsetDateTime> lastImportedEntityTimestamps = getLastImportedEntityTimestamps();
 
     // when
     startAndUseNewOptimizeInstance();
     setupZeebeImportAndReloadConfiguration();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertThat(getCurrentHandlerSequences())
@@ -141,12 +140,12 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
 
     importAllZeebeEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     embeddedOptimizeExtension.resetImportStartIndexes();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertThat(getCurrentHandlerPositions()).allSatisfy(position -> assertThat(position).isZero());
@@ -175,13 +174,13 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
     // change position of a later record, so we can check that once we've seen a sequence field, fetcher queries based on
     // sequence and disregards position
     updatePositionOfStartEventCompletedRecords();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when importing the first record
     importAllZeebeEntitiesFromScratch(); // process activating - imported
 
     // then based on position, the first record is the process activating record, no flownode data yet
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(instance -> assertThat(instance.getFlowNodeInstances()).isEmpty());
 
@@ -190,7 +189,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromLastIndex(); // startEvent activating (first record with sequence) - imported
 
     // then based on position, the next imported record is the startEvent activating record
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(instance -> assertThat(instance.getFlowNodeInstances()).singleElement()
         .extracting(FlowNodeInstanceDto::getFlowNodeType, FlowNodeInstanceDto::getEndDate)
@@ -205,12 +204,12 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromLastIndex();  // start event completing - fetched but not imported
     importAllZeebeEntitiesFromLastIndex();  // start event completed - imported
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then based on sequence, the next imported record is the startEvent completed record demonstrating that the importer
     // ignores the position field of the startEvent completed record which was to 9999
     assertThat(getCurrentHandlerPositions()).contains(9999L);
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(instance -> {
         assertThat(instance.getFlowNodeInstances()).singleElement()
@@ -244,7 +243,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
     // and the last record to having a sequence that can be caught in the batch after the high sequenced documents
     updateSequenceOfRecordWithPosition(allProcessInstanceRecords.get(allProcessInstanceRecords.size() - 1).getPosition(), 5100);
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // the first search always uses the position query, so we set the page size here as we only want to import the first record
     embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().setMaxImportPageSize(1);
@@ -253,14 +252,14 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then the first record is imported, and the importer has seen a record with a sequence field
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(instance -> {
         assertThat(instance.getState()).isEqualTo(ProcessInstanceConstants.ACTIVE_STATE);
         assertThat(instance.getFlowNodeInstances()).isEmpty();
       });
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // we can increase the page size again to a more reasonable amount
     embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().setMaxImportPageSize(20);
@@ -271,7 +270,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromLastIndex();
 
     // we confirm that the instance is still not imported
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(instance -> {
         assertThat(instance.getState()).isEqualTo(ProcessInstanceConstants.ACTIVE_STATE);
@@ -301,7 +300,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromLastIndex();
 
     // Then the import for this instance is complete
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(instance -> {
         assertThat(instance.getState()).isEqualTo(ProcessInstanceConstants.COMPLETED_STATE);
@@ -319,7 +318,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
     deployAndStartInstanceForProcess(createStartEndProcess("aProcess"));
     waitUntilInstanceRecordWithElementTypeAndIntentExported(BpmnElementType.PROCESS, ELEMENT_COMPLETED);
     importAllZeebeEntitiesFromScratch();
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(instance -> assertThat(instance.getState()).isEqualTo(ProcessInstanceConstants.COMPLETED_STATE));
 
@@ -357,58 +356,53 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
       ImmutableMap.<String, String>builder().put("sequenceFieldName", ZeebeRecordDto.Fields.sequence).build()
     );
 
-    elasticSearchIntegrationTestExtension.updateZeebeRecordsForPrefix(
+    databaseIntegrationTestExtension.updateZeebeProcessRecordsOfBpmnElementTypeForPrefix(
       zeebeExtension.getZeebeRecordPrefix(),
-      DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
-      boolQuery()
-        .must(termQuery(
-          ZeebeRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.bpmnElementType,
-          BpmnElementType.PROCESS.name()
-        )),
+      BpmnElementType.PROCESS,
       substitutor.replace("ctx._source.remove(\"${sequenceFieldName}\");")
     );
   }
 
   private void updatePositionOfStartEventCompletedRecords() {
     final StringSubstitutor substitutor = new StringSubstitutor(
-      ImmutableMap.<String, String>builder().put("fieldName", ZeebeRecordDto.Fields.position).build()
+      ImmutableMap.<String, String>builder()
+        .put("positionField", ZeebeRecordDto.Fields.position)
+        .put("intentField", ZeebeRecordDto.Fields.intent)
+        .build()
     );
 
-    elasticSearchIntegrationTestExtension.updateZeebeRecordsForPrefix(
+    databaseIntegrationTestExtension.updateZeebeProcessRecordsOfBpmnElementTypeForPrefix(
       zeebeExtension.getZeebeRecordPrefix(),
-      DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
-      boolQuery()
-        .must(termQuery(
-          ZeebeRecordDto.Fields.value + "." + ZeebeProcessInstanceDataDto.Fields.bpmnElementType,
-          BpmnElementType.START_EVENT.name()
-        ))
-        .must(termQuery(ZeebeRecordDto.Fields.intent, ELEMENT_COMPLETED.name())),
-      substitutor.replace("ctx._source.${fieldName} = 9999;")
+      BpmnElementType.START_EVENT,
+      substitutor.replace("if (ctx._source.${intentField}.equals('ELEMENT_COMPLETED')) { ctx._source.${positionField} = 9999; }")
     );
   }
 
   private void updateSequenceOfAllProcessInstanceRecords(final long sequence) {
-    updateSequenceOfRecordsMatchingQuery(boolQuery(), sequence);
+    databaseIntegrationTestExtension.updateZeebeRecordsForPrefix(
+      zeebeExtension.getZeebeRecordPrefix(),
+      DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
+      getUpdateScript(sequence)
+    );
   }
 
   private void updateSequenceOfRecordWithPosition(final long position, final long sequence) {
-    updateSequenceOfRecordsMatchingQuery(boolQuery().must(termQuery(ZeebeRecordDto.Fields.position, position)), sequence);
+    databaseIntegrationTestExtension.updateZeebeRecordsWithPositionForPrefix(
+      zeebeExtension.getZeebeRecordPrefix(),
+      DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
+      position,
+      getUpdateScript(sequence)
+    );
   }
 
-  private void updateSequenceOfRecordsMatchingQuery(final BoolQueryBuilder query, final long sequence) {
+  private String getUpdateScript(final long sequence) {
     final StringSubstitutor substitutor = new StringSubstitutor(
       ImmutableMap.<String, String>builder()
         .put("fieldName", ZeebeRecordDto.Fields.sequence)
         .put("sequence", String.valueOf(sequence))
         .build()
     );
-
-    elasticSearchIntegrationTestExtension.updateZeebeRecordsForPrefix(
-      zeebeExtension.getZeebeRecordPrefix(),
-      DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
-      query,
-      substitutor.replace("ctx._source.${fieldName} = ${sequence};")
-    );
+    return substitutor.replace("ctx._source.${fieldName} = ${sequence};");
   }
 
   private List<Long> getCurrentHandlerPositions() {
@@ -442,7 +436,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
     final String expectedIndex =
       zeebeExtension.getZeebeRecordPrefix() + "-" + DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
     final OptimizeElasticsearchClient esClient =
-      elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
+      databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
     SearchRequest searchRequest = new SearchRequest()
       .indices(expectedIndex)
       .source(new SearchSourceBuilder()

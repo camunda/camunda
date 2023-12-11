@@ -26,7 +26,7 @@ import {
 } from 'components';
 import {formatters, loadEntity, updateEntity, checkDeleteConflict} from 'services';
 import {showError, addNotification} from 'notifications';
-import {getOptimizeProfile} from 'config';
+import {isUserSearchAvailable} from 'config';
 
 import {loadCollectionEntities, importEntity, removeEntities, checkConflicts} from './service';
 import {refreshBreadcrumbs} from 'components/navigation';
@@ -54,14 +54,16 @@ export class Collection extends Component {
     entities: null,
     sorting: null,
     isLoading: true,
-    optimizeProfile: null,
+    userSearchAvailable: false,
   };
 
   fileInput = createRef();
 
   async componentDidMount() {
     this.loadCollection();
-    this.setState({optimizeProfile: await getOptimizeProfile()});
+    this.setState({
+      userSearchAvailable: await isUserSearchAvailable(),
+    });
   }
 
   componentDidUpdate(prevProps) {
@@ -129,7 +131,7 @@ export class Collection extends Component {
       entities,
       sorting,
       isLoading,
-      optimizeProfile,
+      userSearchAvailable,
     } = this.state;
 
     const {match} = this.props;
@@ -303,7 +305,7 @@ export class Collection extends Component {
                 }
               />
             </Tabs.Tab>
-            {(optimizeProfile === 'cloud' || optimizeProfile === 'platform') && collection && (
+            {userSearchAvailable && collection && (
               <>
                 <Tabs.Tab
                   key="alerts"

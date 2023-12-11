@@ -10,9 +10,9 @@ import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.db.writer.usertask.RunningUserTaskInstanceWriter;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
-import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.job.importing.RunningUserTaskElasticsearchImportJob;
+import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
+import org.camunda.optimize.service.importing.DatabaseImportJob;
+import org.camunda.optimize.service.importing.job.RunningUserTaskDatabaseImportJob;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class RunningUserTaskInstanceImportService implements ImportService<HistoricUserTaskInstanceDto> {
 
-  private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final EngineContext engineContext;
   private final RunningUserTaskInstanceWriter runningUserTaskInstanceWriter;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
@@ -32,7 +32,7 @@ public class RunningUserTaskInstanceImportService implements ImportService<Histo
                                               final RunningUserTaskInstanceWriter runningUserTaskInstanceWriter,
                                               final EngineContext engineContext,
                                               final ProcessDefinitionResolverService processDefinitionResolverService) {
-    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+    this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.engineContext = engineContext;
@@ -49,19 +49,19 @@ public class RunningUserTaskInstanceImportService implements ImportService<Histo
     final boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
       final List<FlowNodeInstanceDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
-      final ElasticsearchImportJob<FlowNodeInstanceDto> elasticsearchImportJob = createElasticsearchImportJob(
+      final DatabaseImportJob<FlowNodeInstanceDto> databaseImportJob = createDatabaseImportJob(
         newOptimizeEntities, importCompleteCallback);
-      addElasticsearchImportJobToQueue(elasticsearchImportJob);
+      addDatabaseImportJobToQueue(databaseImportJob);
     }
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
-    return elasticsearchImportJobExecutor;
+  public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
+    return databaseImportJobExecutor;
   }
 
-  private void addElasticsearchImportJobToQueue(final ElasticsearchImportJob elasticsearchImportJob) {
-    elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
+  private void addDatabaseImportJobToQueue(final DatabaseImportJob databaseImportJob) {
+    databaseImportJobExecutor.executeImportJob(databaseImportJob);
   }
 
   private List<FlowNodeInstanceDto> mapEngineEntitiesToOptimizeEntities(final List<HistoricUserTaskInstanceDto> engineEntities) {
@@ -79,9 +79,9 @@ public class RunningUserTaskInstanceImportService implements ImportService<Histo
       .collect(Collectors.toList());
   }
 
-  private ElasticsearchImportJob<FlowNodeInstanceDto> createElasticsearchImportJob(final List<FlowNodeInstanceDto> userTasks,
-                                                                                   Runnable callback) {
-    final RunningUserTaskElasticsearchImportJob importJob = new RunningUserTaskElasticsearchImportJob(
+  private DatabaseImportJob<FlowNodeInstanceDto> createDatabaseImportJob(final List<FlowNodeInstanceDto> userTasks,
+                                                                              Runnable callback) {
+    final RunningUserTaskDatabaseImportJob importJob = new RunningUserTaskDatabaseImportJob(
       runningUserTaskInstanceWriter,
       configurationService,
       callback

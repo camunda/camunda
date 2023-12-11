@@ -7,7 +7,7 @@ package org.camunda.optimize.service.cleanup;
 
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableRequestDto;
-import org.camunda.optimize.service.es.schema.index.ExternalProcessVariableIndexES;
+import org.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableIndexES;
 import org.camunda.optimize.service.util.configuration.cleanup.ExternalVariableCleanupConfiguration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,7 +27,7 @@ public class ExternalVariableCleanupRolloverIT extends AbstractCleanupIT {
   @BeforeEach
   @AfterEach
   public void cleanUpExternalVariableIndices() {
-    elasticSearchIntegrationTestExtension.deleteAllExternalVariableIndices();
+    databaseIntegrationTestExtension.deleteAllExternalVariableIndices();
     embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
       embeddedOptimizeExtension.getOptimizeElasticClient(),
       new ExternalProcessVariableIndexES()
@@ -48,7 +48,7 @@ public class ExternalVariableCleanupRolloverIT extends AbstractCleanupIT {
     ingestionClient.ingestVariables(varsToCleanIndex1);
 
     // trigger rollover
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     embeddedOptimizeExtension.getConfigurationService().getVariableIndexRolloverConfiguration().setMaxIndexSizeGB(0);
     embeddedOptimizeExtension.getExternalProcessVariableIndexRolloverService().triggerRollover();
 
@@ -63,11 +63,11 @@ public class ExternalVariableCleanupRolloverIT extends AbstractCleanupIT {
     ingestionClient.ingestVariables(varsToCleanIndex2);
     dateFreezer().dateToFreeze(now).freezeDateAndReturn();
     ingestionClient.ingestVariables(varsToKeepIndex2);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertThat(getAllStoredExternalVariables())
@@ -84,7 +84,7 @@ public class ExternalVariableCleanupRolloverIT extends AbstractCleanupIT {
   }
 
   private List<ExternalProcessVariableDto> getAllStoredExternalVariables() {
-    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       EXTERNAL_PROCESS_VARIABLE_INDEX_NAME, ExternalProcessVariableDto.class
     );
   }

@@ -8,7 +8,7 @@ package org.camunda.optimize.service.process.archive;
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.service.archive.ProcessInstanceArchivingService;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceArchiveIndexES;
+import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceArchiveIndexES;
 import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.junit.jupiter.api.Test;
@@ -87,10 +87,10 @@ public class ProcessInstanceArchivingServiceIT extends AbstractPlatformIT {
   @SneakyThrows
   private List<String> getAllProcessInstanceArchiveIndexNames() {
     return Arrays.stream(
-        elasticSearchIntegrationTestExtension.getOptimizeElasticClient().getHighLevelClient()
+        databaseIntegrationTestExtension.getOptimizeElasticsearchClient().getHighLevelClient()
           .indices().get(
             new GetIndexRequest("*"),
-            elasticSearchIntegrationTestExtension.getOptimizeElasticClient().requestOptions()
+            databaseIntegrationTestExtension.getOptimizeElasticsearchClient().requestOptions()
           ).getIndices())
       .filter(index -> index.contains(DatabaseConstants.PROCESS_INSTANCE_ARCHIVE_INDEX_PREFIX))
       .collect(Collectors.toList());

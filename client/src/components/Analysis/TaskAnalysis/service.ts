@@ -5,7 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import {get, formatQuery} from 'request';
+import {t} from 'translation';
+import {post, formatQuery} from 'request';
 import {AnalysisDurationChartEntry} from 'types';
 
 export interface OutliersVariable {
@@ -45,7 +46,7 @@ export type SelectedNode = {
 export async function loadCommonOutliersVariables(
   params: AnalysisFlowNodeOutlierParameters
 ): Promise<OutliersVariable[]> {
-  const response = await get('api/analysis/significantOutlierVariableTerms', params);
+  const response = await post('api/analysis/significantOutlierVariableTerms', params);
   return await response.json();
 }
 
@@ -58,6 +59,13 @@ export function getInstancesDownloadUrl(query: AnalysisFlowNodeOutlierParameters
 export async function loadDurationData(
   params: AnalysisFlowNodeOutlierParameters
 ): Promise<AnalysisDurationChartEntry[]> {
-  const response = await get('api/analysis/durationChart', params);
+  const response = await post('api/analysis/durationChart', params);
   return await response.json();
+}
+
+export function getOutlierSummary(count: number, relation: number): string {
+  return t(`analysis.task.tooltipText.${count === 1 ? 'singular' : 'plural'}`, {
+    count,
+    percentage: Math.round(relation * 100),
+  }).toString();
 }

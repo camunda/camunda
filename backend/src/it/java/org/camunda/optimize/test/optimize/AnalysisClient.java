@@ -7,6 +7,7 @@ package org.camunda.optimize.test.optimize;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.ws.rs.core.Response;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
@@ -14,10 +15,11 @@ import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDt
 import org.camunda.optimize.dto.optimize.query.analysis.DurationChartEntryDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
 import org.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 
-import jakarta.ws.rs.core.Response;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Supplier;
@@ -101,14 +103,22 @@ public class AnalysisClient {
     return getFlowNodeOutliers(procDefKey, procDefVersions, tenants, 0, false);
   }
 
-  public List<DurationChartEntryDto> getDurationChart(String procDefKey, List<String> procDefVersions,
-                                                      List<String> tenants, String flowNodeId) {
+  public HashMap<String, FindingsDto> getFlowNodeOutliers(String procDefKey, List<String> procDefVersions,
+                                                          List<String> tenants, final List<ProcessFilterDto<?>> filters) {
+    return getRequestExecutor()
+      .buildFlowNodeOutliersRequest(procDefKey, procDefVersions, tenants, 0, false, filters)
+      .execute(new TypeReference<>() {
+      });
+  }
+
+  public List<DurationChartEntryDto> getDurationChart(final String procDefKey, final List<String> procDefVersions,
+                                                      final List<String> tenants, final String flowNodeId) {
     return getDurationChart(procDefKey, procDefVersions, tenants, flowNodeId, null, null);
   }
 
-  public List<DurationChartEntryDto> getDurationChart(String procDefKey, List<String> procDefVersions,
-                                                      List<String> tenants, String flowNodeId, Long lowerOutlierBound,
-                                                      Long higherOutlierBound) {
+  public List<DurationChartEntryDto> getDurationChart(final String procDefKey, final List<String> procDefVersions,
+                                                      final List<String> tenants, final String flowNodeId,
+                                                      final Long lowerOutlierBound, final Long higherOutlierBound) {
     return getRequestExecutor()
       .buildFlowNodeDurationChartRequest(
         procDefKey,
@@ -116,22 +126,52 @@ public class AnalysisClient {
         flowNodeId,
         tenants,
         lowerOutlierBound,
-        higherOutlierBound
+        higherOutlierBound,
+        Collections.emptyList()
       )
       .executeAndReturnList(DurationChartEntryDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public List<VariableTermDto> getVariableTermDtosActivity(long sampleOutliersHigherOutlierBound,
-                                                           String key, List<String> versions,
-                                                           List<String> tenantIds, String flowNodeId,
-                                                           Long lowerOutlierBound) {
+  public List<DurationChartEntryDto> getDurationChart(final String procDefKey, final List<String> procDefVersions,
+                                                      final List<String> tenants, final String flowNodeId,
+                                                      final Long lowerOutlierBound, final Long higherOutlierBound,
+                                                      final List<ProcessFilterDto<?>> filters) {
+    return getRequestExecutor()
+      .buildFlowNodeDurationChartRequest(
+        procDefKey,
+        procDefVersions,
+        flowNodeId,
+        tenants,
+        lowerOutlierBound,
+        higherOutlierBound,
+        filters
+      )
+      .executeAndReturnList(DurationChartEntryDto.class, Response.Status.OK.getStatusCode());
+  }
+
+  public List<VariableTermDto> getVariableTermDtos(final long sampleOutliersHigherOutlierBound,
+                                                   final String key, final List<String> versions,
+                                                   final List<String> tenantIds, final String flowNodeId,
+                                                   final Long lowerOutlierBound) {
+    return getVariableTermDtos(
+      sampleOutliersHigherOutlierBound, key, versions, tenantIds,
+      flowNodeId, lowerOutlierBound, Collections.emptyList()
+    );
+  }
+
+  public List<VariableTermDto> getVariableTermDtos(final long sampleOutliersHigherOutlierBound,
+                                                   final String key, final List<String> versions,
+                                                   final List<String> tenantIds, final String flowNodeId,
+                                                   final Long lowerOutlierBound,
+                                                   final List<ProcessFilterDto<?>> filters) {
     Response variableTermDtosActivityRawResponse = getVariableTermDtosActivityRawResponse(
       sampleOutliersHigherOutlierBound,
       key,
       versions,
       tenantIds,
       flowNodeId,
-      lowerOutlierBound
+      lowerOutlierBound,
+      filters
     );
     assertThat(variableTermDtosActivityRawResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
@@ -147,7 +187,7 @@ public class AnalysisClient {
   public Response getVariableTermDtosActivityRawResponse(long sampleOutliersHigherOutlierBound, String key,
                                                          List<String> versions, List<String> tenantIds,
                                                          String flowNodeId,
-                                                         Long lowerOutlierBound) {
+                                                         Long lowerOutlierBound, final List<ProcessFilterDto<?>> filters) {
     return getRequestExecutor()
       .buildSignificantOutlierVariableTermsRequest(
         key,
@@ -155,7 +195,8 @@ public class AnalysisClient {
         tenantIds,
         flowNodeId,
         lowerOutlierBound,
-        sampleOutliersHigherOutlierBound
+        sampleOutliersHigherOutlierBound,
+        filters
       )
       .execute();
   }

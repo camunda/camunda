@@ -15,6 +15,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import jakarta.ws.rs.core.Response;
+
 import java.util.Collections;
 import java.util.stream.Stream;
 
@@ -62,9 +63,7 @@ public class IdentityAuthorizationIT extends AbstractPlatformIT {
     // To not leak any unauthorized information, the total count reflects only what the user is allowed to see
     assertThat(searchResult)
       .isEqualTo(
-        new IdentitySearchResultResponseDto(
-          2L, Lists.newArrayList(userIdentity1, groupIdentity1)
-        ));
+        new IdentitySearchResultResponseDto(Lists.newArrayList(userIdentity1, groupIdentity1)));
   }
 
   @Test
@@ -139,9 +138,7 @@ public class IdentityAuthorizationIT extends AbstractPlatformIT {
     // user1, which kermit is not allowed to see.
     // To not leak any unauthorized information, the total count reflects only what the user is allowed to see
     assertThat(searchResult)
-      .isEqualTo(new IdentitySearchResultResponseDto(
-        1L, Lists.newArrayList(user2)
-      ));
+      .isEqualTo(new IdentitySearchResultResponseDto(Lists.newArrayList(user2)));
   }
 
   @ParameterizedTest
@@ -180,8 +177,6 @@ public class IdentityAuthorizationIT extends AbstractPlatformIT {
     // result returns user1 and user2, and of those kermit is only allowed to see user2.
     // To not leak any unauthorized information, the total count reflects only what the user is allowed to see
     assertThat(searchResult)
-      .isEqualTo(new IdentitySearchResultResponseDto(
-        2L, Lists.newArrayList(user2, user4)
-      ));
+      .isEqualTo(new IdentitySearchResultResponseDto(Lists.newArrayList(user2, user4)));
   }
 }

@@ -5,13 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
+import {Button} from '@carbon/react';
 
 import Configuration from './Configuration';
 import {typeA, typeB} from './visualizations';
-import {Button} from 'components';
-import PrecisionConfig from './visualizations/PrecisionConfig';
+import PrecisionConfig from './PrecisionConfig';
 
 jest.mock('./visualizations', () => {
   const typeA = () => null;
@@ -37,7 +36,7 @@ it('should be disabled if no type is set', () => {
     <Configuration report={{data: {configuration: {}, view: {properties: []}}}} />
   );
 
-  expect(node.find('.configurationPopover')).toBeDisabled();
+  expect(node.find('.configurationPopover').prop('trigger').props.disabled).toBe(true);
 });
 
 it('should be disabled if specified', () => {
@@ -49,7 +48,7 @@ it('should be disabled if specified', () => {
     />
   );
 
-  expect(node.find('.configurationPopover')).toBeDisabled();
+  expect(node.find('.configurationPopover').prop('trigger').props.disabled).toBe(true);
 });
 
 it('should be disabled if the report is combined with a duration view', () => {
@@ -65,7 +64,7 @@ it('should be disabled if the report is combined with a duration view', () => {
     />
   );
 
-  expect(node.find('.configurationPopover')).toBeDisabled();
+  expect(node.find('.configurationPopover').prop('trigger').props.disabled).toBe(true);
 });
 
 it('should contain the Component from the visualizations based on the type', () => {

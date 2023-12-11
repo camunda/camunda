@@ -38,10 +38,10 @@ import org.camunda.optimize.service.db.writer.AbstractProcessInstanceDataWriter;
 import org.camunda.optimize.service.db.writer.InstantDashboardMetadataWriter;
 import org.camunda.optimize.service.db.writer.activity.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.digest.DigestService;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.events.rollover.EventIndexRolloverService;
 import org.camunda.optimize.service.events.rollover.ExternalProcessVariableIndexRolloverService;
@@ -127,6 +127,7 @@ public class EmbeddedOptimizeExtension
   private static final ObjectMapper configObjectMapper = new ObjectMapper().registerModules(
     new JavaTimeModule(), new Jdk8Module()
   );
+
   private static String serializedDefaultConfiguration;
 
   public EmbeddedOptimizeExtension() {
@@ -218,8 +219,8 @@ public class EmbeddedOptimizeExtension
   }
 
   public void configureEsHostAndPort(final String host, final int esPort) {
-    getConfigurationService().getElasticsearchConnectionNodes().get(0).setHost(host);
-    getConfigurationService().getElasticsearchConnectionNodes().get(0).setHttpPort(esPort);
+    getConfigurationService().getElasticSearchConfiguration().getConnectionNodes().get(0).setHost(host);
+    getConfigurationService().getElasticSearchConfiguration().getConnectionNodes().get(0).setHttpPort(esPort);
     reloadConfiguration();
   }
 
@@ -713,8 +714,8 @@ public class EmbeddedOptimizeExtension
     return getBean(OptimizeElasticsearchClient.class);
   }
 
-  public ElasticsearchMetadataService getElasticsearchMetadataService() {
-    return getBean(ElasticsearchMetadataService.class);
+  public ElasticSearchMetadataService getElasticsearchMetadataService() {
+    return getBean(ElasticSearchMetadataService.class);
   }
 
   private boolean isResetImportOnStart() {

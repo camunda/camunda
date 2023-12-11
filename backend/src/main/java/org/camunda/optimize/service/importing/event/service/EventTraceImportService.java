@@ -7,8 +7,8 @@ package org.camunda.optimize.service.importing.event.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
-import org.camunda.optimize.service.es.job.importing.EventCountAndTracesImportJob;
+import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
+import org.camunda.optimize.service.importing.job.EventCountAndTracesImportJob;
 import org.camunda.optimize.service.events.EventTraceStateService;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -18,12 +18,12 @@ import java.util.List;
 @Slf4j
 public class EventTraceImportService implements ImportService<EventDto> {
 
-  private final ElasticsearchImportJobExecutor databaseImportJobExecutor;
+  private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final EventTraceStateService eventTraceStateService;
 
   public EventTraceImportService(final ConfigurationService configurationService,
                                  final EventTraceStateService eventTraceStateService) {
-    this.databaseImportJobExecutor = new ElasticsearchImportJobExecutor(
+    this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.eventTraceStateService = eventTraceStateService;
@@ -45,7 +45,7 @@ public class EventTraceImportService implements ImportService<EventDto> {
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
+  public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
     return databaseImportJobExecutor;
   }
 

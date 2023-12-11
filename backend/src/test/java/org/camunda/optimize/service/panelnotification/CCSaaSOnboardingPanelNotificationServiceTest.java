@@ -31,6 +31,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class CCSaaSOnboardingPanelNotificationServiceTest {
+
   private static final String PROCESS_KEY = "aProcessKey";
   private static final String PROCESS_NAME = "aProcessName";
   private static final String ORG_ID = "anOrgId";

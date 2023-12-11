@@ -10,28 +10,18 @@ import {shallow} from 'enzyme';
 import {ComboBox} from '@carbon/react';
 
 import {LoadingIndicator, TenantInfo, Typeahead} from 'components';
-import {getCollection} from 'services';
+import {getCollection, loadDefinitions} from 'services';
 import {getOptimizeProfile} from 'config';
 
 import {DefinitionSelection} from './DefinitionSelection';
 import VersionPopover from './VersionPopover';
 
-import {loadDefinitions, loadVersions, loadTenants} from './service';
+import {loadVersions, loadTenants} from './service';
 import MultiDefinitionSelection from './MultiDefinitionSelection';
 
 jest.mock('config', () => ({getOptimizeProfile: jest.fn().mockReturnValue('platform')}));
 
 jest.mock('./service', () => ({
-  loadDefinitions: jest.fn().mockReturnValue([
-    {
-      key: 'foo',
-      name: 'Foo',
-    },
-    {
-      key: 'bar',
-      name: 'Bar',
-    },
-  ]),
   loadVersions: jest.fn().mockReturnValue([
     {
       version: '3',
@@ -72,6 +62,16 @@ jest.mock('services', () => {
   return {
     ...rest,
     getCollection: jest.fn(),
+    loadDefinitions: jest.fn().mockReturnValue([
+      {
+        key: 'foo',
+        name: 'Foo',
+      },
+      {
+        key: 'bar',
+        name: 'Bar',
+      },
+    ]),
   };
 });
 jest.mock(

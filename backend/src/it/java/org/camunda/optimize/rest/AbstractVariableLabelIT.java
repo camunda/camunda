@@ -281,7 +281,7 @@ public abstract class AbstractVariableLabelIT extends AbstractPlatformIT {
   protected abstract Response executeUpdateProcessVariableLabelRequest(DefinitionVariableLabelsDto labelOptimizeDto);
 
   private List<DefinitionVariableLabelsDto> getAllDocumentsOfVariableLabelIndex() {
-    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       VARIABLE_LABEL_INDEX_NAME,
       DefinitionVariableLabelsDto.class
     );

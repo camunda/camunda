@@ -5,9 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-import RelativeAbsoluteSelection from './subComponents/RelativeAbsoluteSelection';
+import {FormGroup} from '@carbon/react';
+
 import {t} from 'translation';
+
+import RelativeAbsoluteSelection from './subComponents/RelativeAbsoluteSelection';
 
 export default function HeatmapConfig(props) {
   const {
@@ -15,8 +17,7 @@ export default function HeatmapConfig(props) {
     onChange,
   } = props;
   return (
-    <fieldset>
-      <legend>{t('report.config.tooltips.legend')}</legend>
+    <FormGroup legendText={t('report.config.tooltips.legend')}>
       <RelativeAbsoluteSelection
         reportType={reportType}
         hideRelative={data.view.properties[0] !== 'frequency'}
@@ -30,6 +31,6 @@ export default function HeatmapConfig(props) {
           }
         }}
       />
-    </fieldset>
+    </FormGroup>
   );
 }

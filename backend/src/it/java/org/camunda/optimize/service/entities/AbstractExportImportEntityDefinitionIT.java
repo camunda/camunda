@@ -302,7 +302,7 @@ public abstract class AbstractExportImportEntityDefinitionIT extends AbstractPla
     switch (definitionType) {
       case PROCESS:
         final ProcessDefinitionOptimizeDto processDefinition = createProcessDefinition(key, tenantId, version);
-        elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+        databaseIntegrationTestExtension.addEntryToDatabase(
           PROCESS_DEFINITION_INDEX_NAME,
           processDefinition.getId(),
           processDefinition
@@ -310,7 +310,7 @@ public abstract class AbstractExportImportEntityDefinitionIT extends AbstractPla
         break;
       case DECISION:
         final DecisionDefinitionOptimizeDto decisionDefinition = createDecisionDefinition(tenantId, version);
-        elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+        databaseIntegrationTestExtension.addEntryToDatabase(
           DECISION_DEFINITION_INDEX_NAME,
           decisionDefinition.getId(),
           decisionDefinition

@@ -12,9 +12,9 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.db.writer.ProcessDefinitionXmlWriter;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
-import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.job.importing.ProcessDefinitionXmlElasticsearchImportJob;
+import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
+import org.camunda.optimize.service.importing.DatabaseImportJob;
+import org.camunda.optimize.service.importing.job.ProcessDefinitionXmlDatabaseImportJob;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
@@ -28,14 +28,14 @@ import static org.camunda.optimize.service.util.BpmnModelUtil.parseBpmnModel;
 @Slf4j
 public class ProcessDefinitionXmlImportService implements ImportService<ProcessDefinitionXmlEngineDto> {
 
-  private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final EngineContext engineContext;
   private final ProcessDefinitionXmlWriter processDefinitionXmlWriter;
 
   public ProcessDefinitionXmlImportService(final ConfigurationService configurationService,
                                            final EngineContext engineContext,
                                            final ProcessDefinitionXmlWriter processDefinitionXmlWriter) {
-    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+    this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.engineContext = engineContext;
@@ -51,20 +51,20 @@ public class ProcessDefinitionXmlImportService implements ImportService<ProcessD
     if (newDataIsAvailable) {
       final List<ProcessDefinitionOptimizeDto> newOptimizeEntities =
         mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
-      final ElasticsearchImportJob<ProcessDefinitionOptimizeDto> elasticsearchImportJob =
-        createElasticsearchImportJob(newOptimizeEntities, importCompleteCallback);
-      addElasticsearchImportJobToQueue(elasticsearchImportJob);
+      final DatabaseImportJob<ProcessDefinitionOptimizeDto> databaseImportJob =
+        createDatabaseImportJob(newOptimizeEntities, importCompleteCallback);
+      addDatabaseImportJobToQueue(databaseImportJob);
     }
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
-    return elasticsearchImportJobExecutor;
+  public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
+    return databaseImportJobExecutor;
   }
 
-  private void addElasticsearchImportJobToQueue(
-    final ElasticsearchImportJob<ProcessDefinitionOptimizeDto> elasticsearchImportJob) {
-    elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
+  private void addDatabaseImportJobToQueue(
+    final DatabaseImportJob<ProcessDefinitionOptimizeDto> databaseImportJob) {
+    databaseImportJobExecutor.executeImportJob(databaseImportJob);
   }
 
   private List<ProcessDefinitionOptimizeDto> mapEngineEntitiesToOptimizeEntities(
@@ -74,10 +74,10 @@ public class ProcessDefinitionXmlImportService implements ImportService<ProcessD
       .collect(Collectors.toList());
   }
 
-  private ElasticsearchImportJob<ProcessDefinitionOptimizeDto> createElasticsearchImportJob(
+  private DatabaseImportJob<ProcessDefinitionOptimizeDto> createDatabaseImportJob(
     final List<ProcessDefinitionOptimizeDto> processDefinitions,
     final Runnable importCompleteCallback) {
-    ProcessDefinitionXmlElasticsearchImportJob procDefImportJob = new ProcessDefinitionXmlElasticsearchImportJob(
+    ProcessDefinitionXmlDatabaseImportJob procDefImportJob = new ProcessDefinitionXmlDatabaseImportJob(
       processDefinitionXmlWriter, importCompleteCallback
     );
     procDefImportJob.setEntitiesToImport(processDefinitions);

@@ -19,7 +19,6 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class IdentitySearchResultResponseDto {
-  private long total;
   private List<IdentityWithMetadataResponseDto> result = new ArrayList<>();
 
   /**
@@ -29,8 +28,7 @@ public class IdentitySearchResultResponseDto {
   @JsonIgnore
   private ScoreDoc scoreDoc;
 
-  public IdentitySearchResultResponseDto(final long total, final List<IdentityWithMetadataResponseDto> result) {
-    this.total = total;
+  public IdentitySearchResultResponseDto(final List<IdentityWithMetadataResponseDto> result) {
     this.result = result;
   }
 }

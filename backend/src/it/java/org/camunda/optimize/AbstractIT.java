@@ -6,7 +6,7 @@
 package org.camunda.optimize;
 
 import org.camunda.optimize.jetty.OptimizeResourceConstants;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
+import org.camunda.optimize.test.it.extension.DatabaseIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.optimize.AlertClient;
 import org.camunda.optimize.test.optimize.AnalysisClient;
@@ -58,8 +58,8 @@ public abstract class AbstractIT {
 
   @RegisterExtension
   @Order(1)
-  public static ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension =
-    new ElasticSearchIntegrationTestExtension();
+  public static DatabaseIntegrationTestExtension databaseIntegrationTestExtension =
+    new DatabaseIntegrationTestExtension();
 
   @RegisterExtension
   @Order(3)

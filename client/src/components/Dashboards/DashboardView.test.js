@@ -284,12 +284,12 @@ it('should create a collection with the current data source when copying instant
   createCopyButton.simulate('click');
 
   node.find('DashboardTemplateModal').prop('onConfirm')({
-    definitions: [{key: 'someKey', tenantIds: []}],
+    definitions: [{key: 'someKey', name: 'Def Name', tenantIds: []}],
   });
 
   await flushPromises();
 
-  expect(createEntity).toHaveBeenCalledWith('collection', {name: 'someKey'});
+  expect(createEntity).toHaveBeenCalledWith('collection', {name: 'Def Name'});
   expect(addSources).toHaveBeenCalledWith('collectionId', [
     {definitionKey: 'someKey', definitionType: 'process', tenants: []},
   ]);
@@ -335,6 +335,44 @@ it('should use existing collection with the same name if there is one for the cu
   expect(loadEntities).toHaveBeenCalled();
   expect(addSources).toHaveBeenCalledWith('someId', [
     {definitionKey: 'someKey', definitionType: 'process', tenants: []},
+  ]);
+});
+
+it('should use dashboard template name for copied instant dashboard with multiple data source', async () => {
+  const templateName = 'Process performance overview';
+  loadEntities.mockReturnValueOnce([
+    {
+      name: 'key1',
+      id: 'id1',
+      owner: 'User',
+    },
+    {
+      name: 'key2',
+      id: 'id2',
+      owner: 'User',
+    },
+  ]);
+  const node = shallow(<DashboardView isInstantDashboard />);
+
+  const createCopyButton = node.find('.create-copy');
+
+  createCopyButton.simulate('click');
+
+  node.find('DashboardTemplateModal').prop('onConfirm')({
+    name: templateName,
+    definitions: [
+      {key: 'key1', tenantIds: []},
+      {key: 'key2', tenantIds: []},
+    ],
+  });
+
+  await flushPromises();
+
+  expect(loadEntities).toHaveBeenCalled();
+  expect(createEntity).toHaveBeenCalledWith('collection', {name: templateName});
+  expect(addSources).toHaveBeenCalledWith('collectionId', [
+    {definitionKey: 'key1', definitionType: 'process', tenants: []},
+    {definitionKey: 'key2', definitionType: 'process', tenants: []},
   ]);
 });
 

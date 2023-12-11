@@ -46,7 +46,7 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     final List<EventProcessInstanceDto> eventProcessInstances = getEventProcessInstancesFromElasticsearch();
@@ -78,7 +78,7 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     final Map<String, List<EventProcessInstanceDto>> eventProcessInstances = getEventProcessInstancesFromElasticsearch()
@@ -101,7 +101,7 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     final List<EventProcessInstanceDto> eventProcessInstances = getEventProcessInstancesFromElasticsearch();
@@ -121,7 +121,7 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     final List<EventProcessInstanceDto> eventProcessInstances = getEventProcessInstancesFromElasticsearch();
@@ -159,7 +159,7 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     final Map<String, List<EventProcessInstanceDto>> eventProcessInstances = getEventProcessInstancesFromElasticsearch()
@@ -202,7 +202,7 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     final Map<String, List<EventProcessInstanceDto>> eventProcessInstances = getEventProcessInstancesFromElasticsearch()
@@ -233,7 +233,7 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     final List<EventProcessInstanceDto> eventProcessInstances = getEventProcessInstancesFromElasticsearch();

@@ -10,6 +10,8 @@ import React from 'react';
 import {getHeatmap} from './service';
 import Tooltip from './Tooltip';
 
+import './HeatmapOverlay.scss';
+
 export default class HeatmapOverlay extends React.Component {
   heatmap = undefined;
 
@@ -33,11 +35,22 @@ export default class HeatmapOverlay extends React.Component {
 
     if (onNodeClick) {
       viewer.get('eventBus').on('element.click', onNodeClick);
+      this.indicateClickableNodes();
     }
   }
 
+  indicateClickableNodes = () => {
+    if (this.props.data) {
+      Object.keys(this.props.data).forEach((id) => {
+        const node = document.body.querySelector(`[data-element-id=${id}]`);
+        node?.classList.add('clickable');
+      });
+    }
+  };
+
   componentDidUpdate() {
     this.renderHeatmap();
+    this.indicateClickableNodes();
   }
 
   componentWillUnmount() {

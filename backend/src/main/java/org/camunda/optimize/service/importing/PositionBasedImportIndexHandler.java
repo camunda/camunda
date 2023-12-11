@@ -50,14 +50,14 @@ public abstract class PositionBasedImportIndexHandler
     indexToStore.setSequenceOfLastEntity(persistedSequenceOfLastEntity);
     indexToStore.setTimestampOfLastEntity(timestampOfLastPersistedEntity);
     indexToStore.setHasSeenSequenceField(hasSeenSequenceField);
-    indexToStore.setEsTypeIndexRefersTo(getElasticsearchDocID());
+    indexToStore.setEsTypeIndexRefersTo(getDatabaseDocID());
     return indexToStore;
   }
 
   @PostConstruct
   protected void init() {
     final Optional<PositionBasedImportIndexDto> dto = positionBasedImportIndexReader
-      .getImportIndex(getElasticsearchDocID(), dataSource);
+      .getImportIndex(getDatabaseDocID(), dataSource);
     if (dto.isPresent()) {
       PositionBasedImportIndexDto loadedImportIndex = dto.get();
       updateLastPersistedEntityPositionAndSequence(
@@ -95,9 +95,9 @@ public abstract class PositionBasedImportIndexHandler
   }
 
   /**
-   * States the Elasticsearch document name where the index information should be stored.
+   * States the database document name where the index information should be stored.
    */
-  protected abstract String getElasticsearchDocID();
+  protected abstract String getDatabaseDocID();
 
   public void updateLastPersistedEntityPositionAndSequence(final long position, final long sequence) {
     this.persistedPositionOfLastEntity = position;
@@ -112,7 +112,7 @@ public abstract class PositionBasedImportIndexHandler
     this.pendingSequenceOfLastEntity = sequence;
     if (!hasSeenSequenceField && pendingSequenceOfLastEntity > 0) {
       log.info("First Zeebe record with sequence field for import type {} has been imported." +
-                 " Zeebe records will now be fetched based on sequence.", getElasticsearchDocID());
+                 " Zeebe records will now be fetched based on sequence.", getDatabaseDocID());
       hasSeenSequenceField = true;
     }
   }

@@ -8,7 +8,7 @@ package org.camunda.optimize.upgrade.steps.schema;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import org.camunda.optimize.service.es.schema.IndexMappingCreator;
+import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.UpgradeStepType;

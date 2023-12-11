@@ -22,7 +22,7 @@ public class ZeebeProcessInstanceImportIndexHandler extends PositionBasedImportI
   }
 
   @Override
-  protected String getElasticsearchDocID() {
+  protected String getDatabaseDocID() {
     return ZEEBE_PROC_INST_IMPORT_INDEX_DOC_ID;
   }
 

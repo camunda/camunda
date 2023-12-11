@@ -21,15 +21,14 @@ import {
 } from 'components';
 import {loadProcessDefinitionXml} from 'services';
 import {t} from 'translation';
-import {withErrorHandling} from 'HOC';
+import {useErrorHandling} from 'hooks';
 import {showError} from 'notifications';
 import {track} from 'tracking';
 
 import './TemplateModal.scss';
 
-export function TemplateModal({
+export default function TemplateModal({
   onClose,
-  mightFail,
   templateGroups,
   entity,
   className,
@@ -49,6 +48,7 @@ export function TemplateModal({
   const [selectedDefinitions, setSelectedDefinitions] = useState(initialDefinitions);
   const diagramArea = useRef();
   const templateContainer = useRef();
+  const {mightFail} = useErrorHandling();
 
   // load the xml for the selected definitions
   useEffect(() => {
@@ -139,7 +139,10 @@ export function TemplateModal({
     name,
     description,
     template,
-    definitions: selectedDefinitions.map((def) => ({...def, displayName: def.name})),
+    definitions: selectedDefinitions.map((def) => ({
+      ...def,
+      displayName: def.displayName || def.name,
+    })),
     xml: xmlData[0]?.xml,
   });
 
@@ -185,55 +188,48 @@ export function TemplateModal({
               {templateGroups.map(({name, templates}, idx) => (
                 <div key={idx} className="group">
                   <div className="groupTitle">{t('templates.templateGroups.' + name)}</div>
-                  {templates.map(
-                    ({name, disableDescription, hasSubtitle, img, config, disabled}, idx) => {
-                      const templateDescription = getDescription(entity, name, disableDescription);
+                  {templates.map(({name, disableDescription, img, config, disabled}, idx) => {
+                    const templateDescription = getDescription(entity, name, disableDescription);
 
-                      return (
-                        <Tooltip
-                          key={idx}
-                          content={
-                            disabled?.(selectedDefinitions)
-                              ? getDisableStateText(selectedDefinitions)
-                              : undefined
-                          }
-                          position="bottom"
-                          align="left"
-                        >
-                          <div>
-                            <LegacyButton
-                              className={classnames({
-                                active:
-                                  !disabled?.(selectedDefinitions) && deepEqual(template, config),
-                                hasSubtitle: hasSubtitle || templateDescription,
-                              })}
-                              onClick={() => {
-                                setTemplate(config);
-                                setName(t(entity + '.templates.' + name));
-                                setDescription(templateDescription);
-                              }}
-                              disabled={disabled?.(selectedDefinitions)}
-                            >
-                              {img ? (
-                                <img src={img} alt={t(entity + '.templates.' + name)} />
-                              ) : (
-                                <div className="imgPlaceholder" />
-                              )}
-                              <div className="name">{t(entity + '.templates.' + name)}</div>
-                              {hasSubtitle && (
-                                <div className="subTitle">
-                                  {t(entity + '.templates.' + name + '_subTitle')}
-                                </div>
-                              )}
-                              {templateDescription && !hasSubtitle && (
-                                <div className="subTitle">{templateDescription}</div>
-                              )}
-                            </LegacyButton>
-                          </div>
-                        </Tooltip>
-                      );
-                    }
-                  )}
+                    return (
+                      <Tooltip
+                        key={idx}
+                        content={
+                          disabled?.(selectedDefinitions)
+                            ? getDisableStateText(selectedDefinitions)
+                            : undefined
+                        }
+                        position="bottom"
+                        align="left"
+                      >
+                        <div>
+                          <LegacyButton
+                            className={classnames({
+                              active:
+                                !disabled?.(selectedDefinitions) && deepEqual(template, config),
+                              hasDescription: !!templateDescription,
+                            })}
+                            onClick={() => {
+                              setTemplate(config);
+                              setName(t(entity + '.templates.' + name));
+                              setDescription(templateDescription);
+                            }}
+                            disabled={disabled?.(selectedDefinitions)}
+                          >
+                            {img ? (
+                              <img src={img} alt={t(entity + '.templates.' + name)} />
+                            ) : (
+                              <div className="imgPlaceholder" />
+                            )}
+                            <div className="name">{t(entity + '.templates.' + name)}</div>
+                            {templateDescription && (
+                              <div className="description">{templateDescription}</div>
+                            )}
+                          </LegacyButton>
+                        </div>
+                      </Tooltip>
+                    );
+                  })}
                 </div>
               ))}
             </div>
@@ -297,8 +293,6 @@ function getDisableStateText(selectedDefinitions) {
     return t('templates.disabledMessage.singleProcess');
   }
 }
-
-export default withErrorHandling(TemplateModal);
 
 function getDescription(entity, name, disableDescription) {
   return !disableDescription ? t(entity + '.templates.' + name + '-description') : null;

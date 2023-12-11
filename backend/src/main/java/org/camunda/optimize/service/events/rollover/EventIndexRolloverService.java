@@ -41,7 +41,6 @@ public class EventIndexRolloverService extends AbstractIndexRolloverService {
     return configurationService.getEventIndexRolloverConfiguration().getMaxIndexSizeGB();
   }
 
-  // TODO change to configurationService.getIndexPrefix() with OPT-7349
   @Override
   protected int getScheduleIntervalInMinutes() {
     return configurationService.getEventIndexRolloverConfiguration().getScheduleIntervalInMinutes();
@@ -49,7 +48,7 @@ public class EventIndexRolloverService extends AbstractIndexRolloverService {
 
   @SneakyThrows
   private Set<String> getCamundaActivityEventsIndexAliases() {
-    return databaseClient.getAliasesForIndex(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*")
+    return databaseClient.getAliasesForIndexPattern(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*")
       .values()
       .stream()
       .flatMap(Set::stream)

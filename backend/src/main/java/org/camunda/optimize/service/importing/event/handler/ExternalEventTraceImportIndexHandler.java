@@ -15,7 +15,7 @@ import static org.camunda.optimize.service.db.DatabaseConstants.EXTERNAL_EVENTS_
 public class ExternalEventTraceImportIndexHandler extends TimestampBasedEventDataImportIndexHandler {
 
   @Override
-  protected String getElasticsearchDocID() {
+  protected String getDatabaseDocID() {
     return EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX + EXTERNAL_EVENTS_INDEX_SUFFIX;
   }
 }

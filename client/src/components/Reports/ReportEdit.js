@@ -333,14 +333,11 @@ export class ReportEdit extends React.Component {
           <div className="Report__content">
             {!combined && (
               <div className="visualization">
-                <div className="select">
-                  <span className="label">{t(`report.visualization.label`)}</span>
-                  <Visualization
-                    type={reportType}
-                    report={data}
-                    onChange={(change) => this.updateReport(change, true)}
-                  />
-                </div>
+                <Visualization
+                  type={reportType}
+                  report={data}
+                  onChange={(change) => this.updateReport(change, true)}
+                />
                 <Configuration
                   type={data.visualization}
                   onChange={this.updateReport}

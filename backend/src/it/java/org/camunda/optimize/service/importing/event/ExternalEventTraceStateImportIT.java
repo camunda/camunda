@@ -33,10 +33,10 @@ public class ExternalEventTraceStateImportIT extends AbstractEventTraceStateImpo
 
     // then
     assertThat(
-      elasticSearchIntegrationTestExtension.getDocumentCountOf(EventTraceStateIndex.constructIndexName(EXTERNAL_EVENTS_INDEX_SUFFIX)))
+      databaseIntegrationTestExtension.getDocumentCountOf(EventTraceStateIndex.constructIndexName(EXTERNAL_EVENTS_INDEX_SUFFIX)))
       .isZero();
     assertThat(
-      elasticSearchIntegrationTestExtension
+      databaseIntegrationTestExtension
         .getDocumentCountOf(EventSequenceCountIndex.constructIndexName(EXTERNAL_EVENTS_INDEX_SUFFIX))
     ).isZero();
   }

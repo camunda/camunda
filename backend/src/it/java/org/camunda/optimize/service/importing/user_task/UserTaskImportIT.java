@@ -64,7 +64,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
-      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+      databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .singleElement()
       .satisfies(processInstanceDto -> {
@@ -98,7 +98,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
-      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+      databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .singleElement()
       .satisfies(processInstanceDto -> {
@@ -128,7 +128,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(processInstanceDto -> assertThat(processInstanceDto.getUserTasks())
         .singleElement()
@@ -154,7 +154,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    final List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    final List<ProcessInstanceDto> allProcessInstances = databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(allProcessInstances).hasSize(2)
       .filteredOn(savedInstance -> savedInstance.getProcessInstanceId().equals(firstInstance.getId()))
       .singleElement()
@@ -183,7 +183,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(processInstanceDto -> assertThat(processInstanceDto.getUserTasks()).hasSize(2)
         .allSatisfy(userTask -> {
@@ -210,7 +210,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
-      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+      databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .singleElement()
       .satisfies(processInstanceDto -> {
@@ -233,7 +233,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances()).isEmpty();
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances()).isEmpty();
 
     // given ES update request fails
     deployAndStartTwoUserTasksProcess();
@@ -255,7 +255,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
 
     // then expected user tasks are stored on next successful update
     final List<ProcessInstanceDto> storedProcessInstances =
-      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+      databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .singleElement()
       .satisfies(processInstanceDto -> {
@@ -285,7 +285,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
-      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+      databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .singleElement()
       .satisfies(processInstanceDto -> assertThat(processInstanceDto.getUserTasks()).singleElement()
@@ -304,7 +304,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances()).isEmpty();
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances()).isEmpty();
   }
 
   @Test
@@ -323,7 +323,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
-      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+      databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .hasSize(2)
       .allSatisfy(persistedProcessInstanceDto -> {
@@ -353,7 +353,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances()).isEmpty();
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances()).isEmpty();
   }
 
   @Test
@@ -370,7 +370,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
-      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+      databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .singleElement()
       .satisfies(persistedProcessInstanceDto -> {
@@ -428,7 +428,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     // workDuration is the sum of all durations during which the usertask was assigned and
     // idleDuration is the sum of all durations during which the userTask was unassigned
     final List<ProcessInstanceDto> storedProcessInstances =
-      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+      databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .singleElement()
       .satisfies(persistedProcessInstanceDto -> {
@@ -453,7 +453,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     // then the usertask is assumed to be worked on programmatically only via API,
     // meaning totalDuration == workDuration and idleDuration == null
     final List<ProcessInstanceDto> storedProcessInstances =
-      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+      databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .flatExtracting(ProcessInstanceDto::getUserTasks)
       .allSatisfy(userTask -> {
@@ -475,7 +475,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
 
     // then the usertask is assumed to have been idle the entire time,
     // meaning idle == total and work == 0
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .hasSize(1)
       .flatExtracting(ProcessInstanceDto::getUserTasks)
       .singleElement()
@@ -496,7 +496,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     // with first import round, first userTask is updated
     importAllEngineEntitiesFromScratch();
     // change first userTask durations to be able to assert no update happens in second import round
-    elasticSearchIntegrationTestExtension.updateUserTaskDurations(
+    databaseIntegrationTestExtension.updateUserTaskDurations(
       processInstanceDto.getId(),
       processInstanceDto.getProcessDefinitionKey(),
       99999L
@@ -507,8 +507,8 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     importAllEngineEntitiesFromLastIndex();
 
     // then the durations for userTask1 are not recalculated because it was not updated in the second round
-    final List<ProcessInstanceDto> instances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    final List<ProcessInstanceDto> instances = databaseIntegrationTestExtension.getAllProcessInstances();
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .hasSize(1)
       .flatExtracting(ProcessInstanceDto::getUserTasks)
       .hasSize(2);
@@ -574,7 +574,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
-      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+      databaseIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
       .singleElement()
       .satisfies(processInstanceDto -> {
@@ -605,7 +605,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
         mediator.runImport().get(10, TimeUnit.SECONDS);
       }
     }
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
 }

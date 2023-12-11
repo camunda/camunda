@@ -16,11 +16,4 @@ export const reportColorPopover = (text) =>
   Selector('.TypeaheadMultipleSelection__valueListItem').withText(text).find('.Popover');
 export const redColor = Selector('.color[color="#DB3E00"]');
 export const configurationButton = Selector('.configurationPopover');
-export const goalSwitch = Selector('.configurationPopover fieldset')
-  .withText('Set Target')
-  .find('.Switch');
-export const goalInput = Selector('.configurationPopover fieldset')
-  .withText('Set Target')
-  .find('.Input[type="number"]');
-
 export const dragEndIndicator = Selector('.endIndicator');

@@ -54,7 +54,7 @@ export default function TargetValueBadge({values, viewer}: TargetValueBadgeProps
     (Object.keys(values) as (keyof typeof values)[]).forEach((id) => {
       if (values[id] && values[id]?.value) {
         const container = document.createElement('div');
-        container.innerHTML = `<span class="TargetValueBadge">${formatters.duration(
+        container.innerHTML = `<span class="TargetValueBadge cds--tag">${formatters.duration(
           values[id]
         )}</span>`;
         const overlayHtml = container.firstChild as HTMLElement;

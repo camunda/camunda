@@ -57,7 +57,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions())
+    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
       .singleElement()
       .satisfies(importedDef -> {
         assertThat(importedDef.getId()).isEqualTo(String.valueOf(deployedProcess.getProcessDefinitionKey()));
@@ -93,7 +93,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions())
+    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
       .singleElement()
       .satisfies(importedDef -> {
         assertThat(importedDef.getId()).isEqualTo(String.valueOf(deployedProcess.getProcessDefinitionKey()));
@@ -128,7 +128,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions()).hasSize(2)
+    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions()).hasSize(2)
       .extracting(DefinitionOptimizeResponseDto::getName)
       .containsExactlyInAnyOrder(firstProcessName, secondProcessName);
   }
@@ -150,7 +150,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions()).hasSize(2)
+    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions()).hasSize(2)
       .extracting(DefinitionOptimizeResponseDto::getName)
       .containsExactlyInAnyOrder(firstProcessName, secondProcessName);
   }
@@ -167,7 +167,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions()).hasSize(2)
+    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions()).hasSize(2)
       .extracting(DefinitionOptimizeResponseDto::getId, DefinitionOptimizeResponseDto::getVersion)
       .containsExactlyInAnyOrder(
         Tuple.tuple(String.valueOf(firstVersion.getProcessDefinitionKey()), String.valueOf(firstVersion.getVersion())),
@@ -191,14 +191,14 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions()).hasSize(1)
+    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions()).hasSize(1)
       .extracting(DefinitionOptimizeResponseDto::getName).containsExactlyInAnyOrder(firstProcessName);
 
     // when
     importAllZeebeEntitiesFromLastIndex();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions()).hasSize(2)
+    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions()).hasSize(2)
       .extracting(DefinitionOptimizeResponseDto::getName)
       .containsExactlyInAnyOrder(firstProcessName, secondProcessName);
   }
@@ -217,7 +217,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions())
+    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
       .singleElement()
       .extracting(ProcessDefinitionOptimizeDto::getFlowNodeData)
       .satisfies(flowNodeDataDtos -> assertThat(flowNodeDataDtos).extracting(FlowNodeDataDto::getId)
@@ -245,7 +245,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions())
+    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
       .singleElement()
       .extracting(ProcessDefinitionOptimizeDto::getFlowNodeData)
       .satisfies(flowNodeDataDtos -> assertThat(flowNodeDataDtos).extracting(FlowNodeDataDto::getId)
@@ -274,7 +274,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions())
+    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
       .extracting(ProcessDefinitionOptimizeDto::getTenantId)
       .singleElement()
       .isEqualTo(ZEEBE_DEFAULT_TENANT_ID);
@@ -293,7 +293,7 @@ public class ZeebeProcessDefinitionImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions())
+    assertThat(databaseIntegrationTestExtension.getAllProcessDefinitions())
       .extracting(ProcessDefinitionOptimizeDto::getTenantId)
       .singleElement()
       .isEqualTo(expectedTenantId);

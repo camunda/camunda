@@ -7,7 +7,7 @@ package org.camunda.optimize.service.license.es;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.license.OptimizeInvalidLicenseException;
 import org.camunda.optimize.service.license.LicenseManager;
@@ -22,6 +22,7 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import static org.camunda.optimize.service.db.schema.index.LicenseIndex.LICENSE;
 import static org.camunda.optimize.service.db.DatabaseConstants.LICENSE_INDEX_NAME;
@@ -36,7 +37,7 @@ public class LicenseManagerES extends LicenseManager {
   private final OptimizeElasticsearchClient esClient;
 
   @Override
-  protected String retrieveStoredOptimizeLicense() {
+  protected Optional<String> retrieveStoredOptimizeLicense() {
     log.debug("Retrieving stored optimize license!");
     GetRequest getRequest = new GetRequest(LICENSE_INDEX_NAME).id(licenseDocumentId);
 
@@ -49,11 +50,10 @@ public class LicenseManagerES extends LicenseManager {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    String licenseAsString = null;
     if (getResponse.isExists()) {
-      licenseAsString = getResponse.getSource().get(LICENSE).toString();
+      return Optional.of(getResponse.getSource().get(LICENSE).toString());
     }
-    return licenseAsString;
+    return Optional.empty();
   }
 
   @Override
@@ -84,14 +84,14 @@ public class LicenseManagerES extends LicenseManager {
     }
     boolean licenseWasStored = indexResponse.getShardInfo().getFailed() == 0;
     if (licenseWasStored) {
-      optimizeLicense = licenseAsString;
+      this.setOptimizeLicense(licenseAsString);
     } else {
       StringBuilder reason = new StringBuilder();
       for (ReplicationResponse.ShardInfo.Failure failure :
         indexResponse.getShardInfo().getFailures()) {
         reason.append(failure.reason()).append("\n");
       }
-      String errorMessage = String.format("Could not store license to Elasticsearch. Reason: %s", reason.toString());
+      String errorMessage = String.format("Could not store license to Elasticsearch. Reason: %s", reason);
       log.error(errorMessage);
       throw new OptimizeRuntimeException(errorMessage);
     }

@@ -9,13 +9,58 @@
     display: inline;
     position: relative;
     padding-right: 20px;
-    line-height: 50px;
 
     .DefinitionSelection {
       display: inline-block;
       margin: 0 0.5em;
       line-height: normal;
       width: 220px;
+    }
+  }
+
+  .Filter {
+    .filterHeader {
+      position: relative;
+      display: inline-flex;
+      margin-right: 20px;
+
+      .dropdownLabel {
+        margin-right: 10px;
+        flex-grow: 1;
+      }
+
+      .explanation {
+        display: none;
+      }
+    }
+
+    .emptyMessage,
+    .linkingTip {
+      display: none;
+    }
+
+    .FilterList {
+      display: inline;
+
+      > .listItem {
+        display: inline-flex;
+        width: auto;
+        margin-right: 10px;
+      }
+    }
+  }
+
+  .zScoreTooltip {
+    margin-left: 0.5rem;
+    height: 1rem;
+    vertical-align: -3px;
+
+    button {
+      padding: 0;
+      margin: 0;
+      border: none;
+      background: inherit;
+      color: inherit;
     }
   }
 }

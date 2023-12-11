@@ -7,6 +7,7 @@
 
 import {reportConfig, createReportUpdate} from 'services';
 import {CarbonSelect} from 'components';
+import {t} from 'translation';
 
 import './Visualization.scss';
 
@@ -16,12 +17,14 @@ export default function Visualization({type, report, onChange}) {
 
   return (
     <CarbonSelect
+      labelText={t(`report.visualization.label`).toString()}
       className="Visualization"
       onChange={(value) => {
         onChange(createReportUpdate(type, report, 'visualization', value));
       }}
       value={selectedOption?.key}
       disabled={!selectedOption}
+      size="md"
     >
       {selectedOption &&
         visualizations

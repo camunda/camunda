@@ -5,34 +5,60 @@
  */
 package org.camunda.optimize.service.license.os;
 
-import jakarta.ws.rs.NotSupportedException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.service.db.LicenseDto;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.license.LicenseManager;
-import org.camunda.optimize.service.os.OptimizeOpensearchClient;
+import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import org.opensearch.client.opensearch._types.Refresh;
+import org.opensearch.client.opensearch.core.IndexRequest;
+import org.opensearch.client.opensearch.core.IndexResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
+
+import java.util.Optional;
+
+import static org.camunda.optimize.service.db.DatabaseConstants.LICENSE_INDEX_NAME;
 
 @RequiredArgsConstructor
 @Component
 @Slf4j
 @Conditional(OpenSearchCondition.class)
 public class LicenseManagerOS extends LicenseManager {
-  private final OptimizeOpensearchClient osClient;
+  private final OptimizeOpenSearchClient osClient;
 
   @Override
-  protected String retrieveStoredOptimizeLicense() {
+  protected Optional<String> retrieveStoredOptimizeLicense() {
     log.debug("Retrieving stored optimize license!");
-    // TODO Will be implemented with OPT-7229
-    throw new NotSupportedException("functionality not yet supported");
+    return osClient.getRichOpenSearchClient()
+      .doc()
+      .getWithRetries(LICENSE_INDEX_NAME, licenseDocumentId, LicenseDto.class)
+      .map(LicenseDto::getLicense);
   }
 
   @Override
   public void storeLicense(String licenseAsString)
   {
-    // TODO Will be implemented with OPT-7229
-    throw new NotSupportedException("functionality not yet supported");
-  }
+    LicenseDto licenseDto = new LicenseDto(licenseAsString);
+    IndexRequest.Builder<LicenseDto> request = new IndexRequest.Builder<LicenseDto>()
+      .index(LICENSE_INDEX_NAME)
+      .id(licenseDocumentId)
+      .document(licenseDto)
+      .refresh(Refresh.True);
 
+    IndexResponse indexResponse = osClient.getRichOpenSearchClient().doc().index(request);
+    boolean licenseWasStored = indexResponse.shards().failures().isEmpty();
+
+    if (licenseWasStored) {
+      this.optimizeLicense = licenseAsString;
+    } else {
+      StringBuilder reason = new StringBuilder();
+      indexResponse.shards().failures().forEach(shardFailure -> reason.append(shardFailure.reason()));
+      String errorMessage = String.format("Could not store license to OpenSearch. Reason: %s", reason);
+      log.error(errorMessage);
+      throw new OptimizeRuntimeException(errorMessage);
+    }
+  }
 }

@@ -91,7 +91,7 @@ To write your own integration test, there are three extensions/rules to help you
 
 * **engineIntegrationExtension**: Cleans up the engine after each test and allows for interaction with/population of data to the engine using the rest api.
 * **embeddedOptimizeExtension**: Starts Optimize, ensures that the configuration is always reset, allows direct interaction with Optimize components.
-* **elasticSearchIntegrationTestExtension**: Cleans up Elasticsearch after each test, allows interaction with, populating data to Elasticsearch.
+* **databaseIntegrationTestExtension**: Cleans up Elasticsearch after each test, allows interaction with, populating data to Elasticsearch.
 
 These can be used by extending the `AbstractIT` class.
 
@@ -103,7 +103,7 @@ public class YourCustomIT  {
 
   @RegisterExtension
   @Order(1)
-  public ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension = new ElasticSearchIntegrationTestExtension();
+  public DatabaseIntegrationTestExtension databaseSearchIntegrationTestExtension = new DatabaseIntegrationTestExtension();
   @RegisterExtension
   @Order(2)
   public EngineIntegrationExtension engineIntegrationExtension = new EngineIntegrationExtension();

@@ -11,8 +11,8 @@ import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentType;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
-import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
+import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
+import org.camunda.optimize.service.importing.DatabaseImportJob;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public abstract class AbstractEngineIncidentImportService implements ImportService<HistoricIncidentEngineDto> {
 
-  protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  protected DatabaseImportJobExecutor databaseImportJobExecutor;
   protected EngineContext engineContext;
   protected final ConfigurationService configurationService;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
@@ -34,7 +34,7 @@ public abstract class AbstractEngineIncidentImportService implements ImportServi
   protected AbstractEngineIncidentImportService(final ConfigurationService configurationService,
                                                 final EngineContext engineContext,
                                                 final ProcessDefinitionResolverService processDefinitionResolverService) {
-    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+    this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.engineContext = engineContext;
@@ -50,18 +50,18 @@ public abstract class AbstractEngineIncidentImportService implements ImportServi
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
       List<IncidentDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
-      ElasticsearchImportJob<IncidentDto> elasticsearchImportJob =
-        createElasticsearchImportJob(newOptimizeEntities, importCompleteCallback);
-      addElasticsearchImportJobToQueue(elasticsearchImportJob);
+      DatabaseImportJob<IncidentDto> databaseImportJob =
+        createDatabaseImportJob(newOptimizeEntities, importCompleteCallback);
+      addDatabaseImportJobToQueue(databaseImportJob);
     }
   }
 
-  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
-    return elasticsearchImportJobExecutor;
+  public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
+    return databaseImportJobExecutor;
   }
 
-  private void addElasticsearchImportJobToQueue(ElasticsearchImportJob<?> elasticsearchImportJob) {
-    elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
+  private void addDatabaseImportJobToQueue(DatabaseImportJob<?> databaseImportJob) {
+    databaseImportJobExecutor.executeImportJob(databaseImportJob);
   }
 
   private List<IncidentDto> mapEngineEntitiesToOptimizeEntities(List<HistoricIncidentEngineDto> engineIncidents) {
@@ -75,8 +75,8 @@ public abstract class AbstractEngineIncidentImportService implements ImportServi
       .collect(Collectors.toList());
   }
 
-  protected abstract ElasticsearchImportJob<IncidentDto> createElasticsearchImportJob(List<IncidentDto> incidents,
-                                                                                      Runnable callback);
+  protected abstract DatabaseImportJob<IncidentDto> createDatabaseImportJob(List<IncidentDto> incidents,
+                                                                                 Runnable callback);
 
   private void logIncidentsToBeSkipped(List<HistoricIncidentEngineDto> engineIncidents) {
     List<String> incidentIdsWithoutProcessInstanceId = engineIncidents.stream()

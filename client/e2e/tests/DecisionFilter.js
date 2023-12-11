@@ -9,7 +9,6 @@ import {cleanEntities} from '../setup';
 import config from '../config';
 import * as u from '../utils';
 
-import * as Report from './DecisionReport.elements.js';
 import * as ProcessReport from './ProcessReport.elements.js';
 import * as Filter from './Filter.elements.js';
 import * as Common from './Common.elements.js';
@@ -31,8 +30,8 @@ test('should apply a filter to the report result', async (t) => {
   const unfiltered = +(await ProcessReport.reportNumber.textContent);
 
   await t.click(ProcessReport.sectionToggle('Filters'));
-  await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Input Variable'));
+  await t.click(ProcessReport.filterButton);
+  await t.click(Common.menuOption('Input Variable'));
   await t.click(Common.comboBox);
   await t.click(Common.carbonOption('Invoice Amount'));
   await t.click(Filter.variableFilterOperatorButton('is less than'));
@@ -53,14 +52,14 @@ test('should have seperate input and output variables', async (t) => {
   await u.selectView(t, 'Evaluation Count');
 
   await t.click(ProcessReport.sectionToggle('Filters'));
-  await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Input Variable'));
+  await t.click(ProcessReport.filterButton);
+  await t.click(Common.menuOption('Input Variable'));
   await t.click(Common.comboBox);
   await t.expect(Common.carbonOption('Classification').exists).notOk();
   await t.click(Filter.modalCancel);
 
-  await t.click(Report.filterButton);
-  await t.click(Report.filterOption('Output Variable'));
+  await t.click(ProcessReport.filterButton);
+  await t.click(Common.menuOption('Output Variable'));
   await t.click(Common.comboBox);
 
   await t.expect(Common.carbonOption('Invoice Amount').exists).notOk();

@@ -23,7 +23,7 @@ export const descriptionModalInput = descriptionModal.find('textarea');
 export const modalNameInput = Selector('.Modal.is-visible input[type="text"]');
 export const option = (text) => Selector('.DropdownOption').withText(text);
 export const carbonOption = (text) => Selector('.cds--list-box__menu-item').withText(text);
-export const menuOption = (text) => Selector('.cds--menu-item').withText(text);
+export const menuOption = (text) => Selector('.cds--menu-item').filterVisible().withText(text);
 export const submenuOption = (text) =>
   Selector('.cds--menu-item[aria-expanded=true] > .cds--menu > *').withText(text);
 export const selectedOption = (text) =>

@@ -395,7 +395,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
   public void createEventProcessReport() {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(PROCESS_KEY);
 
     SingleProcessReportDefinitionRequestDto reportDefinitionDto = reportClient.createSingleProcessReportDefinitionDto(
       null,
@@ -409,7 +409,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
   @Test
   public void getUnauthorizedEventProcessReport() {
     // given
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(PROCESS_KEY);
     String reportId = reportClient.createSingleReport(
       null,
       DefinitionType.PROCESS,
@@ -431,7 +431,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
   @Test
   public void getEventProcessReport() {
     // given
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(PROCESS_KEY);
     String reportId = reportClient.createSingleReport(
       null,
       DefinitionType.PROCESS,
@@ -452,7 +452,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
   @Test
   public void evaluateUnauthorizedEventProcessReport() {
     // given
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(PROCESS_KEY);
     String reportId = reportClient.createSingleReport(
       null,
       DefinitionType.PROCESS,
@@ -474,7 +474,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
   @Test
   public void evaluateEventProcessReport() {
     // given
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(PROCESS_KEY);
 
     String reportId = reportClient.createSingleReport(
       null,
@@ -490,7 +490,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
   @Test
   public void updateUnauthorizedEventProcessReport() {
     // given
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(PROCESS_KEY);
     String reportId = reportClient.createSingleReport(
       null,
       DefinitionType.PROCESS,
@@ -513,7 +513,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
   @Test
   public void updateEventProcessReport() {
     // given
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(PROCESS_KEY);
     String reportId = reportClient.createSingleReport(
       null,
       DefinitionType.PROCESS,
@@ -532,7 +532,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
   @Test
   public void deleteUnauthorizedEventProcessReport() {
     // given
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(PROCESS_KEY);
     String reportId = reportClient.createSingleReport(
       null,
       DefinitionType.PROCESS,
@@ -554,7 +554,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
   @Test
   public void deleteEventBasedReport() {
     // given
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(PROCESS_KEY);
+    databaseIntegrationTestExtension.addEventProcessDefinitionDtoToDatabase(PROCESS_KEY);
 
     String reportId = reportClient.createSingleReport(
       null,
@@ -743,12 +743,12 @@ public class ReportDefinitionAuthorizationIT extends AbstractPlatformIT {
           "ctx._source.roles = params.updatedRoles;",
           Collections.singletonMap(
             "updatedRoles",
-            elasticSearchIntegrationTestExtension.getObjectMapper()
+            databaseIntegrationTestExtension.getObjectMapper()
               .convertValue(normalizeToSimpleIdentityDtos(identityDtos), Object.class)
           )
         ))
         .setRefreshPolicy(IMMEDIATE);
-      final UpdateResponse updateResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+      final UpdateResponse updateResponse = databaseIntegrationTestExtension.getOptimizeElasticsearchClient()
         .update(request);
       if (updateResponse.getShardInfo().getFailed() > 0) {
         throw new OptimizeIntegrationTestException(String.format(

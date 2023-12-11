@@ -9,19 +9,9 @@ import React from 'react';
 import update from 'immutability-helper';
 import classnames from 'classnames';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
-import {Button} from '@carbon/react';
+import {Button, InlineNotification, Loading, TextInput} from '@carbon/react';
 
-import {
-  Modal,
-  BPMNDiagram,
-  Table,
-  Input,
-  Select,
-  TargetValueBadge,
-  Message,
-  LoadingIndicator,
-  ClickBehavior,
-} from 'components';
+import {Modal, BPMNDiagram, Table, CarbonSelect, TargetValueBadge, ClickBehavior} from 'components';
 import {formatters, numberParser, getReportResult} from 'services';
 
 import './DurationHeatmapModal.scss';
@@ -142,7 +132,11 @@ export default class DurationHeatmapModal extends React.Component {
         formatters.duration(resultEntry || 0),
         <>
           <div className="selection">
-            <Input
+            <TextInput
+              labelText={t('report.heatTarget.table.target')}
+              hideLabel
+              id={id}
+              size="sm"
               value={settings.value}
               type="number"
               ref={this.storeInputReferenceFor(id)}
@@ -153,24 +147,24 @@ export default class DurationHeatmapModal extends React.Component {
               onBlur={() => {
                 this.updateFocus(null);
               }}
-              isInvalid={!this.isValidInput(settings.value)}
+              invalid={!this.isValidInput(settings.value)}
             />
-            <Select
+            <CarbonSelect
               value={settings.unit}
               onChange={(value) => {
                 this.setTarget('unit', id)(value);
                 this.updateFocus(id);
               }}
             >
-              <Select.Option value="millis">{t('common.unit.milli.label-plural')}</Select.Option>
-              <Select.Option value="seconds">{t('common.unit.second.label-plural')}</Select.Option>
-              <Select.Option value="minutes">{t('common.unit.minute.label-plural')}</Select.Option>
-              <Select.Option value="hours">{t('common.unit.hour.label-plural')}</Select.Option>
-              <Select.Option value="days">{t('common.unit.day.label-plural')}</Select.Option>
-              <Select.Option value="weeks">{t('common.unit.week.label-plural')}</Select.Option>
-              <Select.Option value="months">{t('common.unit.month.label-plural')}</Select.Option>
-              <Select.Option value="years">{t('common.unit.year.label-plural')}</Select.Option>
-            </Select>
+              <CarbonSelect.Option value="millis" label={t('common.unit.milli.label-plural')} />
+              <CarbonSelect.Option value="seconds" label={t('common.unit.second.label-plural')} />
+              <CarbonSelect.Option value="minutes" label={t('common.unit.minute.label-plural')} />
+              <CarbonSelect.Option value="hours" label={t('common.unit.hour.label-plural')} />
+              <CarbonSelect.Option value="days" label={t('common.unit.day.label-plural')} />
+              <CarbonSelect.Option value="weeks" label={t('common.unit.week.label-plural')} />
+              <CarbonSelect.Option value="months" label={t('common.unit.month.label-plural')} />
+              <CarbonSelect.Option value="years" label={t('common.unit.year.label-plural')} />
+            </CarbonSelect>
           </div>
         </>,
       ];
@@ -250,9 +244,9 @@ export default class DurationHeatmapModal extends React.Component {
         onClose={onClose}
         className={classnames('DurationHeatmapModal', 'type-' + nodeType)}
       >
-        <Modal.Header>{t('report.heatTarget.title')} </Modal.Header>
+        <Modal.Header>{t('report.heatTarget.title')}</Modal.Header>
         <Modal.Content className="content-container">
-          {this.state.loading && <LoadingIndicator />}
+          {this.state.loading && <Loading className="loading" withOverlay={false} />}
           <div className="diagram-container">
             <BPMNDiagram xml={report.data.configuration.xml}>
               <ClickBehavior
@@ -263,19 +257,23 @@ export default class DurationHeatmapModal extends React.Component {
               <TargetValueBadge values={this.state.values} />
             </BPMNDiagram>
           </div>
-          {!this.state.loading && (
-            <Table
-              head={[
-                t('report.heatTarget.table.activity'),
-                t('report.heatTarget.table.value'),
-                t('report.heatTarget.table.target'),
-              ]}
-              body={this.constructTableBody()}
-              disablePagination
-            />
-          )}
+          <Table
+            loading={this.state.loading}
+            head={[
+              t('report.heatTarget.table.activity'),
+              t('report.heatTarget.table.value'),
+              t('report.heatTarget.table.target'),
+            ]}
+            body={this.constructTableBody()}
+            disablePagination
+          />
           {!this.areAllFieldsNumbers() && !this.state.loading && (
-            <Message error>{t('report.heatTarget.invalidValue')}</Message>
+            <InlineNotification
+              className="errorMessage"
+              kind="error"
+              hideCloseButton
+              subtitle={t('report.heatTarget.invalidValue')}
+            />
           )}
         </Modal.Content>
         <Modal.Footer>

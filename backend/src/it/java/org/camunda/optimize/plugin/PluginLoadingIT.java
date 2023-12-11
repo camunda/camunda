@@ -100,28 +100,6 @@ public class PluginLoadingIT extends AbstractPlatformIT {
   }
 
   @Test
-  public void loadedPluginDependencyIsIndependentToOptimizeDependency() {
-    // given
-    configurationService.setPluginDirectory("target/testPluginsValid");
-    String basePackage = "org.camunda.optimize.testplugin.pluginloading.testolddependency";
-    configurationService.setVariableImportPluginBasePackages(Collections.singletonList(basePackage));
-
-    // when
-    embeddedOptimizeExtension.reloadConfiguration();
-
-    // then
-    final List<VariableImportAdapter> plugins = pluginProvider.getPlugins();
-    assertThat(plugins).hasSize(1);
-
-
-    /* plugin uses old jackson databind version with a deprecated method that got removed in later version
-     * that we are using in Optimize.
-     * this means that the test will throw an exception on execution if the Optimize version is used !
-     */
-    plugins.get(0).adaptVariables(Collections.emptyList());
-  }
-
-  @Test
   public void loadedPluginHasNoDefaultConstructor() {
     // given
     configurationService.setPluginDirectory("target/testPluginsValid");

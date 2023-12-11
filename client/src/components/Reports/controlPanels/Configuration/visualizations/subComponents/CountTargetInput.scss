@@ -1,16 +1,17 @@
 .CountTargetInput {
-  > * {
-    margin-top: 10px;
-  }
-
   .targetInput {
     position: relative;
 
     .percentageIndicator {
       position: absolute;
-      right: 30px;
-      top: 6px;
-      color: var(--grey-lighten-56);
+      bottom: 0.725rem;
+      right: 2.25rem;
+      fill: var(--cds-text-secondary);
+
+      &[aria-disabled='true'] {
+        fill: var(--cds-text-disabled);
+        cursor: not-allowed;
+      }
     }
   }
 }

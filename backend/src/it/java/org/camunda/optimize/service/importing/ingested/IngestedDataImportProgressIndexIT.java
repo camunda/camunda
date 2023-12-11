@@ -33,7 +33,7 @@ public class IngestedDataImportProgressIndexIT extends AbstractIngestedDataImpor
 
     // then
     final long lastImportedExternalVariableTimestamp =
-      elasticSearchIntegrationTestExtension.getLastImportTimestampOfTimestampBasedImportIndex(
+      databaseIntegrationTestExtension.getLastImportTimestampOfTimestampBasedImportIndex(
         EXTERNAL_VARIABLE_UPDATE_IMPORT_INDEX_DOC_ID, ENGINE_ALIAS_OPTIMIZE
       ).toInstant().toEpochMilli();
 
@@ -54,7 +54,7 @@ public class IngestedDataImportProgressIndexIT extends AbstractIngestedDataImpor
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
 
     final long lastImportedExternalVariableTimestamp =
-      elasticSearchIntegrationTestExtension.getLastImportTimestampOfTimestampBasedImportIndex(
+      databaseIntegrationTestExtension.getLastImportTimestampOfTimestampBasedImportIndex(
         EXTERNAL_VARIABLE_UPDATE_IMPORT_INDEX_DOC_ID, ENGINE_ALIAS_OPTIMIZE
       ).toInstant().toEpochMilli();
 
@@ -69,7 +69,7 @@ public class IngestedDataImportProgressIndexIT extends AbstractIngestedDataImpor
   }
 
   private List<ExternalProcessVariableDto> getAllStoredExternalProcessVariables() {
-    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       EXTERNAL_PROCESS_VARIABLE_INDEX_NAME, ExternalProcessVariableDto.class
     );
   }

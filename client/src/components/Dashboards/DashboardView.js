@@ -10,7 +10,7 @@ import classnames from 'classnames';
 import {FullScreen, useFullScreenHandle} from 'react-full-screen';
 import {Link, useHistory} from 'react-router-dom';
 import {Button} from '@carbon/react';
-import {Copy, Edit, Filter, Maximize, Minimize, Share, TrashCan} from '@carbon/icons-react';
+import {Edit, Filter, Maximize, Minimize, Share, TrashCan} from '@carbon/icons-react';
 
 import {
   ShareEntity,
@@ -40,6 +40,7 @@ import {
 import {FiltersView} from './filters';
 import {AutoRefreshBehavior, AutoRefreshSelect} from './AutoRefresh';
 import useReportDefinitions from './useReportDefinitions';
+import {ReactComponent as DashboardCopyIcon} from './DashboardCopyIcon.svg';
 
 import './DashboardView.scss';
 
@@ -121,27 +122,29 @@ export function DashboardView(props) {
   async function handleInstantPreviewDashboardCopying(dashboardState) {
     const {definitions} = dashboardState;
     const [definition] = definitions || [];
-    const {key: definitionKey, tenantIds: tenants} = definition || {};
+    const {displayName, name, key} = definition || {};
+    const collectionName =
+      definitions.length === 1 ? displayName || name || key : dashboardState.name;
     let collectionId, existingCollection;
 
     mightFail(
       (async () => {
         const entities = await loadEntities();
-        existingCollection = entities.find((entity) => entity.name === definitionKey);
+        existingCollection = entities.find((entity) => entity.name === collectionName);
 
         if (existingCollection && existingCollection?.owner === user?.name) {
           collectionId = existingCollection.id;
         } else {
-          collectionId = await createEntity('collection', {name: definitionKey});
+          collectionId = await createEntity('collection', {name: collectionName});
         }
-
-        await addSources(collectionId, [
-          {
-            definitionKey,
+        await addSources(
+          collectionId,
+          definitions.map((def) => ({
+            definitionKey: def.key,
             definitionType: 'process',
-            tenants,
-          },
-        ]);
+            tenants: def.tenantIds,
+          }))
+        );
       })(),
       () =>
         history.push({
@@ -182,7 +185,7 @@ export function DashboardView(props) {
                       kind="primary"
                       className="create-copy"
                       hasIconOnly
-                      renderIcon={Copy}
+                      renderIcon={DashboardCopyIcon}
                       iconDescription={t('dashboard.copyInstantDashboard')}
                       onClick={() => setIsTemplateModalOpen(true)}
                     />

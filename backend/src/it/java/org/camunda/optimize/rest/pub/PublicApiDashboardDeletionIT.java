@@ -27,7 +27,7 @@ public class PublicApiDashboardDeletionIT extends AbstractPlatformIT {
 
     // then
     assertThat(deleteResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(DASHBOARD_INDEX_NAME)).isEqualTo(0);
+    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(DASHBOARD_INDEX_NAME)).isEqualTo(0);
   }
 
   @Test

@@ -13,9 +13,9 @@ import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.db.writer.DecisionDefinitionXmlWriter;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
-import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.job.importing.DecisionDefinitionXmlElasticsearchImportJob;
+import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
+import org.camunda.optimize.service.importing.DatabaseImportJob;
+import org.camunda.optimize.service.importing.job.DecisionDefinitionXmlDatabaseImportJob;
 import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionNotFoundException;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -30,7 +30,7 @@ import static org.camunda.optimize.service.util.DmnModelUtil.parseDmnModel;
 
 @Slf4j
 public class DecisionDefinitionXmlImportService implements ImportService<DecisionDefinitionXmlEngineDto> {
-  private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final EngineContext engineContext;
   private final DecisionDefinitionXmlWriter decisionDefinitionXmlWriter;
   private final DecisionDefinitionResolverService decisionDefinitionResolverService;
@@ -39,7 +39,7 @@ public class DecisionDefinitionXmlImportService implements ImportService<Decisio
                                             final EngineContext engineContext,
                                             final DecisionDefinitionXmlWriter decisionDefinitionXmlWriter,
                                             final DecisionDefinitionResolverService decisionDefinitionResolverService) {
-    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+    this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.engineContext = engineContext;
@@ -54,16 +54,16 @@ public class DecisionDefinitionXmlImportService implements ImportService<Decisio
     final boolean newDataIsAvailable = !engineDtoList.isEmpty();
     if (newDataIsAvailable) {
       final List<DecisionDefinitionOptimizeDto> optimizeDtos = mapEngineEntitiesToOptimizeEntities(engineDtoList);
-      final ElasticsearchImportJob<DecisionDefinitionOptimizeDto> elasticsearchImportJob = createElasticsearchImportJob(
+      final DatabaseImportJob<DecisionDefinitionOptimizeDto> databaseImportJob = createDatabaseImportJob(
         optimizeDtos, importCompleteCallback
       );
-      elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
+      databaseImportJobExecutor.executeImportJob(databaseImportJob);
     }
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
-    return elasticsearchImportJobExecutor;
+  public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
+    return databaseImportJobExecutor;
   }
 
   private List<DecisionDefinitionOptimizeDto> mapEngineEntitiesToOptimizeEntities(
@@ -75,10 +75,10 @@ public class DecisionDefinitionXmlImportService implements ImportService<Decisio
       .collect(Collectors.toList());
   }
 
-  private ElasticsearchImportJob<DecisionDefinitionOptimizeDto> createElasticsearchImportJob(
+  private DatabaseImportJob<DecisionDefinitionOptimizeDto> createDatabaseImportJob(
     final List<DecisionDefinitionOptimizeDto> optimizeDtos,
     final Runnable importCompleteCallback) {
-    DecisionDefinitionXmlElasticsearchImportJob importJob = new DecisionDefinitionXmlElasticsearchImportJob(
+    DecisionDefinitionXmlDatabaseImportJob importJob = new DecisionDefinitionXmlDatabaseImportJob(
       decisionDefinitionXmlWriter, importCompleteCallback
     );
     importJob.setEntitiesToImport(optimizeDtos);

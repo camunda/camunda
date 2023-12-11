@@ -449,7 +449,7 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
   }
 
   private ProcessInstanceDto getProcessInstanceForId(final String processInstanceId) {
-    return elasticSearchIntegrationTestExtension.getAllProcessInstances()
+    return databaseIntegrationTestExtension.getAllProcessInstances()
       .stream()
       .filter(instance -> instance.getProcessInstanceId().equals(processInstanceId))
       .collect(Collectors.toList()).stream()

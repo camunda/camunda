@@ -323,17 +323,17 @@ pipeline {
             }
           }
         }
-        stage("ES 8.8.0 EBP & Import IT") {
+        stage("ES 8.9.0 EBP & Import IT") {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build_880ebpimp_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              label "optimize-ci-build_890ebpimp_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("8.8.0", "${env.CAMBPM_VERSION}")
+              yaml mavenElasticsearchIntegrationTestAgent("8.9.0", "${env.CAMBPM_VERSION}")
             }
           }
           environment {
-            LABEL = "optimize-ci-build_880ebpimp_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+            LABEL = "optimize-ci-build_890ebpimp_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
           }
           steps {
             integrationTestSteps('', 'import,eventBasedProcess')
@@ -343,23 +343,23 @@ pipeline {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: false
               container('gcloud') {
                 sh 'apt-get install kubectl'
-                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_880_ebpimport.log'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_890_ebpimport.log'
               }
-              archiveArtifacts artifacts: 'elasticsearch_880_ebpimport.log', onlyIfSuccessful: false
+              archiveArtifacts artifacts: 'elasticsearch_890_ebpimport.log', onlyIfSuccessful: false
             }
           }
         }
-        stage("ES 8.8.0 Report Evaluation IT") {
+        stage("ES 8.9.0 Report Evaluation IT") {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build_880repev_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              label "optimize-ci-build_890repev_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("8.8.0", "${env.CAMBPM_VERSION}")
+              yaml mavenElasticsearchIntegrationTestAgent("8.9.0", "${env.CAMBPM_VERSION}")
             }
           }
           environment {
-            LABEL = "optimize-ci-build_880repev_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+            LABEL = "optimize-ci-build_890repev_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
           }
           steps {
             integrationTestSteps('', 'reportEvaluation')
@@ -369,23 +369,23 @@ pipeline {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: false
               container('gcloud') {
                 sh 'apt-get install kubectl'
-                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearchpd_880_reportevaluation.log'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearchpd_890_reportevaluation.log'
               }
-              archiveArtifacts artifacts: 'elasticsearchpd_880_reportevaluation.log', onlyIfSuccessful: false
+              archiveArtifacts artifacts: 'elasticsearchpd_890_reportevaluation.log', onlyIfSuccessful: false
             }
           }
         }
-        stage("ES 8.8.0 C8 Import IT") {
+        stage("ES 8.9.0 C8 Import IT") {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build_880c8import_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              label "optimize-ci-build_890c8import_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgentWithoutCambpm("8.8.0")
+              yaml mavenElasticsearchIntegrationTestAgentWithoutCambpm("8.9.0")
             }
           }
           environment {
-            LABEL = "optimize-ci-build_880c8import_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+            LABEL = "optimize-ci-build_890c8import_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
           }
           steps {
             integrationTestSteps('', 'ccsm-test', 'ccsm-it')
@@ -395,23 +395,23 @@ pipeline {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: false
               container('gcloud') {
                 sh 'apt-get install kubectl'
-                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_880_zeebe.log'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_890_zeebe.log'
               }
-              archiveArtifacts artifacts: 'elasticsearch_880_zeebe.log', onlyIfSuccessful: false
+              archiveArtifacts artifacts: 'elasticsearch_890_zeebe.log', onlyIfSuccessful: false
             }
           }
         }
-        stage("ES 8.8.0 IT") {
+        stage("ES 8.9.0 IT") {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build_880it_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              label "optimize-ci-build_890it_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("8.8.0", "${env.CAMBPM_VERSION}")
+              yaml mavenElasticsearchIntegrationTestAgent("8.9.0", "${env.CAMBPM_VERSION}")
             }
           }
           environment {
-            LABEL = "optimize-ci-build_880it_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+            LABEL = "optimize-ci-build_890it_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
           }
           steps {
             integrationTestSteps('ccsm-test,import,eventBasedProcess,reportEvaluation', '')
@@ -421,9 +421,9 @@ pipeline {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: false
               container('gcloud') {
                 sh 'apt-get install kubectl'
-                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_880_it.log'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_890_it.log'
               }
-              archiveArtifacts artifacts: 'elasticsearch_880_it.log', onlyIfSuccessful: false
+              archiveArtifacts artifacts: 'elasticsearch_890_it.log', onlyIfSuccessful: false
             }
           }
         }

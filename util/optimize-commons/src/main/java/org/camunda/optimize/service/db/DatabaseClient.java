@@ -6,8 +6,15 @@
 package org.camunda.optimize.service.db;
 
 import lombok.Getter;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
+import org.elasticsearch.action.search.ClearScrollRequest;
+import org.elasticsearch.action.search.ClearScrollResponse;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchScrollRequest;
+import org.elasticsearch.client.core.CountRequest;
+import org.elasticsearch.client.core.CountResponse;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -16,7 +23,15 @@ import java.util.Set;
 
 public abstract class DatabaseClient implements ConfigurationReloadable {
 
-  public abstract Map<String, Set<String>> getAliasesForIndex(final String indexName) throws IOException;
+  /**
+   * Get all the aliases for the indexes matching the indexNamePattern
+   *
+   * @param indexNamePattern Pattern for the name of an index, may contain wildcards
+   * @return A Map where the keys are the name of the matching indexes and the value is a set containing the aliases
+   * for the respective index. This map can have multiple keys because indexNamePattern may contain wildcards
+   * @throws IOException
+   */
+  public abstract Map<String, Set<String>> getAliasesForIndexPattern(final String indexNamePattern) throws IOException;
 
   public abstract Set<String> getAllIndicesForAlias(final String aliasName) throws IOException;
 
@@ -24,6 +39,20 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
 
   @Getter
   protected OptimizeIndexNameService indexNameService;
+
+  //todo will be handle in the OPT-7469
+  public abstract CountResponse count(final CountRequest unfilteredTotalInstanceCountRequest) throws IOException;
+
+  //todo will be handle in the OPT-7469
+  public abstract SearchResponse scroll(final SearchScrollRequest scrollRequest) throws IOException;
+
+  //todo will be handle in the OPT-7469
+  public abstract SearchResponse search(final SearchRequest searchRequest) throws IOException;
+
+  //todo will be handle in the OPT-7469
+  public abstract ClearScrollResponse clearScroll(final ClearScrollRequest clearScrollRequest) throws IOException ;
+
+  public abstract String getElasticsearchVersion() throws IOException ;
 
   protected String[] convertToPrefixedAliasNames(final String[] indices) {
     return Arrays.stream(indices)
@@ -37,5 +66,11 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
     final String prefixedIndexName = indexNameService.getOptimizeIndexAliasForIndex(rawIndexName);
     return hasExcludePrefix ? "-" + prefixedIndexName : prefixedIndexName;
   }
+
+  public abstract Set<String> performSearchDefinitionQuery(final String indexName,
+                                                           final String definitionXml,
+                                                           final String definitionIdField,
+                                                           final int maxPageSize,
+                                                           final String engineAlias);
 
 }

@@ -12,7 +12,7 @@ import {ComboBox} from '@carbon/react';
 
 import {Message, BPMNDiagram, LoadingIndicator, Popover, TenantInfo} from 'components';
 import {withErrorHandling} from 'HOC';
-import {getCollection, getRandomId} from 'services';
+import {getCollection, getRandomId, loadDefinitions} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
 import debouncePromise from 'debouncePromise';
@@ -21,7 +21,7 @@ import {getOptimizeProfile} from 'config';
 import MultiDefinitionSelection from './MultiDefinitionSelection';
 import TenantPopover from './TenantPopover';
 import VersionPopover from './VersionPopover';
-import {loadDefinitions, loadVersions, loadTenants} from './service';
+import {loadVersions, loadTenants} from './service';
 
 import './DefinitionSelection.scss';
 

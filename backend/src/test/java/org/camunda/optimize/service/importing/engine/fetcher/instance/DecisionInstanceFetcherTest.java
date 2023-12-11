@@ -35,7 +35,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class DecisionInstanceFetcherTest {
 
-  private ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
+  private final ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
 
   @Mock
   private EngineContext engineContext;

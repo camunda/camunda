@@ -5,9 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState} from 'react';
+import {useState} from 'react';
+import {Checkbox, FormGroup, Stack} from '@carbon/react';
 
-import {LabeledInput} from 'components';
 import {t} from 'translation';
 import {getReportResult} from 'services';
 import {getVariableLabel} from 'variables';
@@ -50,12 +50,11 @@ export default function ColumnSelection({report, onChange, disabled}) {
   const columnNames = getColumnNames(reportColumns);
 
   return (
-    <fieldset className="ColumnSelection">
-      <legend>{t('report.config.includeTableColumn')}</legend>
+    <FormGroup legendText={t('report.config.includeTableColumn')} className="ColumnSelection">
       {disabled ? (
         t('report.updateReportPreview.cannotUpdate')
       ) : (
-        <>
+        <Stack gap={4}>
           <AllColumnsButtons
             enableAll={() =>
               onChange({
@@ -68,11 +67,11 @@ export default function ColumnSelection({report, onChange, disabled}) {
               })
             }
           />
-          <LabeledInput
-            className="includeNew"
-            type="checkbox"
+          <Checkbox
+            id="includeNewVariables"
+            className="includeNewVariables"
+            labelText={t('report.config.includeNewVariables')}
             checked={includeNewVariables}
-            label={t('report.config.includeNewVariables')}
             onChange={({target: {checked}}) =>
               onChange({tableColumns: {includeNewVariables: {$set: checked}}})
             }
@@ -114,21 +113,23 @@ export default function ColumnSelection({report, onChange, disabled}) {
                   sectionTitle={sectionTitle}
                   toggleSectionOpen={() => toggleSectionOpen(groupKey)}
                 >
-                  {Object.entries(groupValue).map(([sectionEntryKey, sectionEntryValue]) => {
-                    const label = getSwitchLabel(sectionEntryKey, sectionEntryValue, sectionType);
-                    const columnId = `${sectionKey}:${sectionEntryKey}`;
+                  <Stack gap={4}>
+                    {Object.entries(groupValue).map(([sectionEntryKey, sectionEntryValue]) => {
+                      const label = getSwitchLabel(sectionEntryKey, sectionEntryValue, sectionType);
+                      const columnId = `${sectionKey}:${sectionEntryKey}`;
 
-                    return (
-                      <ColumnSwitch
-                        key={columnId}
-                        switchId={columnId}
-                        excludedColumns={excludedColumns}
-                        includedColumns={includedColumns}
-                        label={label}
-                        onChange={onChange}
-                      />
-                    );
-                  })}
+                      return (
+                        <ColumnSwitch
+                          key={columnId}
+                          switchId={columnId}
+                          excludedColumns={excludedColumns}
+                          includedColumns={includedColumns}
+                          label={label}
+                          onChange={onChange}
+                        />
+                      );
+                    })}
+                  </Stack>
                 </CollapsibleSection>
               );
             }
@@ -145,9 +146,9 @@ export default function ColumnSelection({report, onChange, disabled}) {
               />
             );
           })}
-        </>
+        </Stack>
       )}
-    </fieldset>
+    </FormGroup>
   );
 }
 

@@ -93,7 +93,7 @@
         "org.camunda.optimize:util",
         "org.camunda.optimize:qa",
         "org.camunda.optimize:optimize-plugin-parent",
-        "io.camunda:identity-sdk",
+        "io.camunda:identity-spring-boot-starter",
         "io.camunda:zeebe-client-java",
         "io.camunda:zeebe-protocol",
         "ant-contrib:ant-contrib"

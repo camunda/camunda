@@ -8,30 +8,32 @@
 import React, {useState, useEffect} from 'react';
 import useDeepCompareEffect from 'use-deep-compare-effect';
 import update from 'immutability-helper';
-import {Checkbox} from '@carbon/react';
+import {Checkbox, MenuItem} from '@carbon/react';
+import {Filter} from '@carbon/icons-react';
+import {MenuButton} from '@camunda/camunda-optimize-composite-components';
 
 import {getVariableNames, getVariableValues} from './service';
 
-import {Dropdown, Icon, Tooltip} from 'components';
 import {VariableFilter, AssigneeFilter} from 'filter';
-import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
 import {showPrompt} from 'prompt';
 import {getOptimizeProfile} from 'config';
+import {useErrorHandling} from 'hooks';
 
 export function AddFiltersButton({
   availableFilters,
   setAvailableFilters,
   reports = [],
   persistReports,
-  mightFail,
+  size,
 }) {
   const [showModal, setShowModal] = useState(false);
   const [openModalAfterReportUpdate, setOpenModalAfterReportUpdate] = useState(null);
   const [availableVariables, setAvailableVariables] = useState([]);
   const [allowCustomValues, setAllowCustomValues] = useState(false);
   const [optimizeProfile, setOptimizeProfile] = useState();
+  const {mightFail} = useErrorHandling();
 
   useEffect(() => {
     (async () => {
@@ -100,42 +102,40 @@ export function AddFiltersButton({
 
   return (
     <>
-      <Dropdown
-        main
-        className="AddFiltersButton tool-button"
-        label={
-          <>
-            <Icon type="plus" />
-            {t('dashboard.filter.label')}
-          </>
-        }
+      <MenuButton
+        className="AddFiltersButton"
+        size={size}
+        kind="ghost"
+        label={<Filter />}
+        menuLabel={t('dashboard.filter.label')}
+        iconDescription={t('dashboard.filter.label')}
+        hasIconOnly
       >
         {['instanceStartDate', 'instanceEndDate', 'state'].map((type) => (
-          <Dropdown.Option key={type} disabled={hasFilter(type)} onClick={() => addFilter(type)}>
-            {t('dashboard.filter.types.' + type)}
-          </Dropdown.Option>
+          <MenuItem
+            key={type}
+            disabled={hasFilter(type)}
+            onClick={() => addFilter(type)}
+            label={t('dashboard.filter.types.' + type)}
+          />
         ))}
-        <Tooltip
-          content={noReports ? t('dashboard.filter.disabledVariable') : undefined}
-          position="bottom"
-        >
-          <Dropdown.Option disabled={noReports} onClick={() => saveAndContinue('variable')}>
-            {t('dashboard.filter.types.variable')}
-          </Dropdown.Option>
-        </Tooltip>
+        <MenuItem
+          title={noReports ? t('dashboard.filter.disabledVariable') : undefined}
+          disabled={noReports}
+          onClick={() => saveAndContinue('variable')}
+          label={t('dashboard.filter.types.variable')}
+        />
         {optimizeProfile === 'platform' &&
           ['assignee', 'candidateGroup'].map((type) => (
-            <Tooltip
+            <MenuItem
               key={type}
-              content={noReports ? t('dashboard.filter.disabledAssignee') : undefined}
-              position="bottom"
-            >
-              <Dropdown.Option disabled={noReports} onClick={() => saveAndContinue(type)}>
-                {t('common.filter.types.' + type)}
-              </Dropdown.Option>
-            </Tooltip>
+              title={noReports ? t('dashboard.filter.disabledAssignee') : undefined}
+              disabled={noReports}
+              onClick={() => saveAndContinue(type)}
+              label={t('common.filter.types.' + type)}
+            />
           ))}
-      </Dropdown>
+      </MenuButton>
 
       {showModal === 'variable' && (
         <VariableFilter
@@ -244,4 +244,4 @@ export function AddFiltersButton({
   );
 }
 
-export default withErrorHandling(AddFiltersButton);
+export default AddFiltersButton;

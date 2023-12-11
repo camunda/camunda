@@ -31,7 +31,7 @@ public class CompletedProcessInstanceImportIndexHandler extends TimestampBasedEn
   }
 
   @Override
-  protected String getElasticsearchDocID() {
+  protected String getDatabaseDocID() {
     return COMPLETED_PROCESS_INSTANCE_IMPORT_INDEX_DOC_ID;
   }
 }

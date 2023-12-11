@@ -5,13 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState, useEffect} from 'react';
+import {useState, useEffect} from 'react';
+import {MenuItem} from '@carbon/react';
+import {MenuDropdown} from '@camunda/camunda-optimize-composite-components';
+import classnames from 'classnames';
 
-import {Dropdown} from 'components';
 import {t} from 'translation';
 import {getOptimizeProfile} from 'config';
-
-import './InstanceFilters.scss';
 
 export default function InstanceFilters({openNewFilterModal, processDefinitionIsNotSelected}) {
   const [optimizeProfile, setOptimizeProfile] = useState();
@@ -23,77 +23,81 @@ export default function InstanceFilters({openNewFilterModal, processDefinitionIs
   }, []);
 
   return (
-    <Dropdown
+    <MenuDropdown
+      size="sm"
+      kind="ghost"
       label={t('common.add')}
       id="ControlPanel__filters"
       className="InstanceFilters Filter__dropdown"
     >
-      <div className="dropdownInfo">{t('common.filter.dropdownInfo.instance')}</div>
-      <Dropdown.Option onClick={openNewFilterModal('instanceState')}>
-        {t('common.filter.types.instanceState')}
-      </Dropdown.Option>
-      <Dropdown.Submenu label={t('common.filter.types.date')} openToLeft>
-        <Dropdown.Option onClick={openNewFilterModal('instanceStartDate')}>
-          {t('common.filter.types.instanceStartDate')}
-        </Dropdown.Option>
-        <Dropdown.Option onClick={openNewFilterModal('instanceEndDate')}>
-          {t('common.filter.types.instanceEndDate')}
-        </Dropdown.Option>
-      </Dropdown.Submenu>
-      <Dropdown.Submenu
-        disabled={processDefinitionIsNotSelected}
+      <MenuItem
+        label={t('common.filter.types.instanceState')}
+        onClick={openNewFilterModal('instanceState')}
+      />
+      <MenuItem label={t('common.filter.types.date')}>
+        <MenuItem
+          label={t('common.filter.types.instanceStartDate')}
+          onClick={openNewFilterModal('instanceStartDate')}
+        />
+        <MenuItem
+          label={t('common.filter.types.instanceEndDate')}
+          onClick={openNewFilterModal('instanceEndDate')}
+        />
+      </MenuItem>
+      <MenuItem
+        className={classnames({'cds--menu-item--disabled': processDefinitionIsNotSelected})}
         label={t('common.filter.types.flowNodeDate')}
-        openToLeft
       >
-        <Dropdown.Option onClick={openNewFilterModal('flowNodeStartDate')}>
-          {t('common.filter.types.instanceStartDate')}
-        </Dropdown.Option>
-        <Dropdown.Option onClick={openNewFilterModal('flowNodeEndDate')}>
-          {t('common.filter.types.instanceEndDate')}
-        </Dropdown.Option>
-      </Dropdown.Submenu>
-      <Dropdown.Submenu label={t('common.filter.types.instanceDuration')} openToLeft>
-        <Dropdown.Option onClick={openNewFilterModal('processInstanceDuration')}>
-          {t('common.filter.types.instance')}
-        </Dropdown.Option>
-        <Dropdown.Option
+        <MenuItem
+          disabled={processDefinitionIsNotSelected}
+          label={t('common.filter.types.instanceStartDate')}
+          onClick={openNewFilterModal('flowNodeStartDate')}
+        />
+        <MenuItem
+          disabled={processDefinitionIsNotSelected}
+          label={t('common.filter.types.instanceEndDate')}
+          onClick={openNewFilterModal('flowNodeEndDate')}
+        />
+      </MenuItem>
+      <MenuItem label={t('common.filter.types.instanceDuration')}>
+        <MenuItem
+          label={t('common.filter.types.instance')}
+          onClick={openNewFilterModal('processInstanceDuration')}
+        />
+        <MenuItem
           disabled={processDefinitionIsNotSelected}
           onClick={openNewFilterModal('flowNodeDuration')}
-        >
-          {t('common.filter.types.flowNode')}
-        </Dropdown.Option>
-      </Dropdown.Submenu>
-      <Dropdown.Option
+          label={t('common.filter.types.flowNode')}
+        />
+      </MenuItem>
+      <MenuItem
+        label={t('common.filter.types.flowNode')}
         disabled={processDefinitionIsNotSelected}
         onClick={openNewFilterModal('executedFlowNodes')}
-      >
-        {t('common.filter.types.flowNode')}
-      </Dropdown.Option>
-      <Dropdown.Option onClick={openNewFilterModal('incidentInstances')}>
-        {t('common.filter.types.incident')}
-      </Dropdown.Option>
+      />
+      <MenuItem
+        label={t('common.filter.types.incident')}
+        onClick={openNewFilterModal('incidentInstances')}
+      />
       {optimizeProfile === 'platform' && (
         <>
-          <Dropdown.Option
+          <MenuItem
+            label={t('report.groupBy.userAssignee')}
             disabled={processDefinitionIsNotSelected}
             onClick={openNewFilterModal('assignee')}
-          >
-            {t('report.groupBy.userAssignee')}
-          </Dropdown.Option>
-          <Dropdown.Option
+          />
+          <MenuItem
+            label={t('report.groupBy.userGroup')}
             disabled={processDefinitionIsNotSelected}
             onClick={openNewFilterModal('candidateGroup')}
-          >
-            {t('report.groupBy.userGroup')}
-          </Dropdown.Option>
+          />
         </>
       )}
-      <Dropdown.Option
+      <MenuItem
+        label={t('common.filter.types.variable')}
         disabled={processDefinitionIsNotSelected}
         onClick={openNewFilterModal('multipleVariable')}
-      >
-        {t('common.filter.types.variable')}
-      </Dropdown.Option>
-    </Dropdown>
+      />
+    </MenuDropdown>
   );
 }

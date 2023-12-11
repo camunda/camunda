@@ -19,6 +19,15 @@ jest.mock('config', () => ({
   areTenantsAvailable: jest.fn().mockReturnValue(true),
 }));
 
+jest.mock('hooks', () => ({
+  useErrorHandling: jest.fn(() => ({
+    mightFail: jest.fn((data, cb) => cb(data)),
+  })),
+  useDocs: jest.fn(() => ({
+    generateDocsLink: jest.fn((url) => url),
+  })),
+}));
+
 jest.mock('./service', () => ({
   loadTenants: jest.fn().mockReturnValue([
     {

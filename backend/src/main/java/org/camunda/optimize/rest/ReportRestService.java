@@ -20,7 +20,6 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.UriInfo;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
@@ -107,8 +106,7 @@ public class ReportRestService {
   @POST
   @Path("/{id}/copy")
   @Produces(MediaType.APPLICATION_JSON)
-  public IdResponseDto copyReport(@Context UriInfo uriInfo,
-                                  @Context ContainerRequestContext requestContext,
+  public IdResponseDto copyReport(@Context ContainerRequestContext requestContext,
                                   @PathParam("id") String id,
                                   @QueryParam("collectionId") String collectionId,
                                   @QueryParam("name") String newReportName) {
@@ -129,7 +127,12 @@ public class ReportRestService {
     List<AuthorizedReportDefinitionResponseDto> reportDefinitions =
       reportService.findAndFilterPrivateReports(userId);
     reportDefinitions
-      .forEach(reportRestMapper::prepareRestResponse);
+      .forEach(
+        authorizedReportDefinitionDto ->
+          reportRestMapper.prepareLocalizedRestResponse(
+            authorizedReportDefinitionDto,
+            requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE)
+          ));
     return reportDefinitions;
   }
 
@@ -140,7 +143,7 @@ public class ReportRestService {
                                                          @PathParam("id") String reportId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     AuthorizedReportDefinitionResponseDto reportDefinition = reportService.getReportDefinition(reportId, userId);
-    reportRestMapper.prepareRestResponse(reportDefinition);
+    reportRestMapper.prepareLocalizedRestResponse(reportDefinition, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
     return reportDefinition;
   }
 

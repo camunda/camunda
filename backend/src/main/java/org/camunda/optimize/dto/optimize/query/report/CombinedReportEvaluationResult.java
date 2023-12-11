@@ -16,7 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginatedDataExportDto;
-import org.camunda.optimize.service.es.report.result.MapCommandResult;
+import org.camunda.optimize.service.db.es.report.result.MapCommandResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.export.CSVUtils;

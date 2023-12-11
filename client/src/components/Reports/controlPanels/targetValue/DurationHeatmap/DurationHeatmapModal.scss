@@ -6,6 +6,7 @@
   .content-container {
     display: flex;
     flex-direction: column;
+    position: relative;
   }
 
   .diagram-container {
@@ -21,30 +22,37 @@
       height: 100%;
     }
 
-    .Dropdown {
-      width: 130px;
-    }
-  }
-
-  .Message {
-    text-align: right;
-  }
-
-  .selection {
-    display: flex;
-    min-width: 0;
-    flex-grow: 1;
-    align-items: flex-start;
-    justify-content: space-between;
-    flex-direction: row;
-
-    .Input {
+    .selection {
+      display: flex;
       min-width: 0;
       flex-grow: 1;
-    }
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-direction: row;
 
-    .Select {
-      min-width: 0;
+      .cds--form-item {
+        min-width: 0;
+        flex-grow: 1;
+      }
+
+      .CarbonSelect {
+        margin-left: 0.5rem;
+        min-width: 130px;
+      }
     }
+  }
+
+  .errorMessage {
+    margin-top: 1rem;
+    max-width: 100%;
+  }
+
+  .loading {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
   }
 }

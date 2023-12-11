@@ -58,4 +58,5 @@ public class ConfigurationServiceBuilder {
   public ConfigurationService build() {
     return new ConfigurationService(configLocations, configurationValidator);
   }
+
 }

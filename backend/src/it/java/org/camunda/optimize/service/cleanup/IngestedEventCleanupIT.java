@@ -34,14 +34,14 @@ public class IngestedEventCleanupIT extends AbstractPlatformIT {
       ingestionClient.ingestEventBatchWithTimestamp(timestampLessThanTtl, 10);
     final List<CloudEventRequestDto> eventsToKeep =
       ingestionClient.ingestEventBatchWithTimestamp(Instant.now().minusSeconds(10L), 10);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllStoredExternalEvents())
+    assertThat(databaseIntegrationTestExtension.getAllStoredExternalEvents())
       .extracting(EventDto::getId)
       .containsExactlyInAnyOrderElementsOf(eventsToKeep.stream().map(CloudEventRequestDto::getId).collect(Collectors.toSet()));
   }
@@ -53,14 +53,14 @@ public class IngestedEventCleanupIT extends AbstractPlatformIT {
     final Instant timestampLessThanTtl = getTimestampLessThanIngestedEventsTtl();
     final List<CloudEventRequestDto> eventsToKeep =
       ingestionClient.ingestEventBatchWithTimestamp(timestampLessThanTtl, 10);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllStoredExternalEvents())
+    assertThat(databaseIntegrationTestExtension.getAllStoredExternalEvents())
       .extracting(EventDto::getId)
       .containsExactlyInAnyOrderElementsOf(eventsToKeep.stream().map(CloudEventRequestDto::getId).collect(Collectors.toSet()));
   }

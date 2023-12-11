@@ -29,7 +29,8 @@ public class ProcessDefinitionImportIndexHandler extends TimestampBasedEngineImp
   }
 
   @Override
-  protected String getElasticsearchDocID() {
+  protected String getDatabaseDocID() {
     return PROCESS_DEFINITION_IMPORT_INDEX_DOC_ID;
   }
+
 }

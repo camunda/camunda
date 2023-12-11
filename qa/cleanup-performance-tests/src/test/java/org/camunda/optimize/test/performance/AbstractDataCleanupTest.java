@@ -6,7 +6,7 @@
 package org.camunda.optimize.test.performance;
 
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
+import org.camunda.optimize.test.it.extension.DatabaseIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.junit.jupiter.api.BeforeAll;
@@ -39,8 +39,8 @@ public abstract class AbstractDataCleanupTest {
 
   @RegisterExtension
   @Order(1)
-  protected static ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension =
-    new ElasticSearchIntegrationTestExtension(false);
+  protected static DatabaseIntegrationTestExtension databaseIntegrationTestExtension =
+    new DatabaseIntegrationTestExtension(false);
   @RegisterExtension
   @Order(2)
   protected static EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
@@ -60,7 +60,7 @@ public abstract class AbstractDataCleanupTest {
     logger.info("Starting import of engine data to Optimize...");
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
     embeddedOptimizeExtension.importAllEngineData();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     OffsetDateTime afterImport = OffsetDateTime.now();
     long importDurationInMinutes = ChronoUnit.MINUTES.between(importStart, afterImport);
     logger.info("Import took [ " + importDurationInMinutes + " ] min");

@@ -69,5 +69,5 @@ it('should load variable label and display if it exists', async () => {
 
   await runLastEffect();
 
-  expect(node.find('.title')).toIncludeText('fooLabel');
+  expect(node.find('.tooltipTrigger')).toIncludeText('fooLabel');
 });

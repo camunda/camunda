@@ -55,6 +55,7 @@ type Config = {
   exportCsvLimit: number;
   onboarding: Onboarding;
   notificationsUrl: string;
+  userSearchAvailable: boolean;
 };
 
 let config: Record<string, unknown>;
@@ -108,5 +109,6 @@ export const getExportCsvLimit = createAccessorFunction<number>('exportCsvLimit'
 export const isEnterpriseMode = createAccessorFunction<boolean>('enterpriseMode');
 export const getOnboardingConfig = createAccessorFunction<Onboarding>('onboarding');
 export const getNotificationsUrl = createAccessorFunction<string>('notificationsUrl');
+export const isUserSearchAvailable = createAccessorFunction<boolean>('userSearchAvailable');
 
 export {default as newReport} from './newReport.json';

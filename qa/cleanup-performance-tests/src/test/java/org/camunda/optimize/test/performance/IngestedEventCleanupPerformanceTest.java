@@ -32,14 +32,14 @@ public class IngestedEventCleanupPerformanceTest extends AbstractDataCleanupTest
     // and run the cleanup
     runCleanupAndAssertFinishedWithinTimeout();
     // and refresh es
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertThat(getIngestedEventCount()).isZero();
   }
 
   private Integer getIngestedEventCount() {
-    return elasticSearchIntegrationTestExtension.getDocumentCountOf(EXTERNAL_EVENTS_INDEX_NAME);
+    return databaseIntegrationTestExtension.getDocumentCountOf(EXTERNAL_EVENTS_INDEX_NAME);
   }
 
 }

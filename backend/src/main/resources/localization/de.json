@@ -475,7 +475,7 @@
         "value": "Tatsächlicher Wert",
         "target": "Sollwert"
       },
-      "invalidValue": "Alle Felder sollten einen numerischen Wert haben",
+      "invalidValue": "Alle Felder sollten einen positiven numerischen Wert haben",
       "targetDuration": "Solldauer",
       "actualDuration": "<b>{duration}</b><br/>{percentage}% des Sollwerts",
       "duration": {
@@ -642,7 +642,6 @@
       "axisSettings": {
         "legend": "Achseneinstellungen",
         "logScale": "Logarithmische Skala (Basis 10)",
-        "label": "Achsenbeschriftung",
         "xAxis": "X-Achse Beschriftung",
         "yAxis": "Y-Achse Beschriftung"
       },
@@ -651,6 +650,7 @@
         "goalValue": "Zielwert",
         "baseline": "Grundlinie",
         "target": "Ziel",
+        "markTargets": "Ziele markieren",
         "invalidInput": "Einen positiven Zahlenwert eingeben",
         "lessThanTargetError": "Ziel muss größer als die Grundlinie sein",
         "setKpi": "Anzeige als Prozess-KPI",
@@ -679,6 +679,7 @@
       "bucket": {
         "buckets": "Buckets",
         "bucketSize": "Bucket Größe",
+        "size": "Größe",
         "baseline": "Grundlinie",
         "invalidNumber": "Muss eine gültige Zahl sein"
       },
@@ -839,9 +840,9 @@
       "processDashboard": "Prozess Übersicht",
       "processDashboard-description": "Dieses Dashboard bietet eine Übersicht der Metriken und Anwendungsfälle, die mit Optimize abgedeckt werden können.",
       "portfolioPerformance": "Portfolio-Performance-Übersicht",
-      "portfolioPerformance_subTitle": "Eine Zusammenfassung von bis zu 10 Prozessen anzeigen",
+      "portfolioPerformance-description": "Eine Zusammenfassung von bis zu 10 Prozessen anzeigen",
       "operationsMonitoring": "Betriebsüberwachung",
-      "operationsMonitoring_subTitle": "Aktive Prozesse und Vorfälle überwachen",
+      "operationsMonitoring-description": "Aktive Prozesse und Vorfälle überwachen",
       "completedProcesses": "Abgeschlossene Prozesse",
       "activeIncidents": "Aktive Zwischenfälle",
       "runningProcesses": "Welche Prozesse laufen?",
@@ -959,6 +960,8 @@
     "branchAnalysis": "Verlaufsanalyse",
     "task": {
       "label": "Aufgabeanalyse",
+      "totalTaskInstances": "Aufgabeninstanzen insgesamt: {count}",
+      "result": "Ergebnis: {count} Prozessinstanzen erfüllen diese Kriterien",
       "totalInstances": "Instanzen insgesamt",
       "tooltip": {
         "outlier": {
@@ -968,17 +971,23 @@
         "tookDuration": {
           "singular": "benötigte eine Dauer von",
           "plural": "benötigten eine Dauer von"
-        }
+        },
+        "zScore": "Ausreißer werden basierend auf dem Z-Score berechnet. Der Z-Score ist eine statistische Messung, die die Beziehung eines Werts zum Mittelwert einer Gruppe von Werten beschreibt. Der Z-Score wird anhand der Standardabweichungen vom Mittelwert gemessen."
       },
       "notFound": "Keine Ausreißer für den ausgewählten Prozess gefunden",
-      "onlyCompletedHint": "Hinweis: Die Ausreißeranalyse wird nur für abgeschlossene Knoten durchgeführt",
+      "onlyCompletedHint": "Hinweis: Die Aufgabeanalyse wird nur für abgeschlossene Knoten durchgeführt",
       "info": "Die Heatmap zeigt die Häufigkeit nach oben abweichender Ausreißer basierend auf der Dauer an. Berechnet mit dem Z-Score.",
       "tooltipText": {
         "singular": "{count} Instanz hat {percentage}% länger gedauert als der Durchschnitt.",
         "plural": "{count} Instanzen haben {percentage}% länger gedauert als der Durchschnitt."
       },
+      "table": {
+        "heading": "Randaufgaben",
+        "taskName": "Aufgabennname",
+        "outliers": "Ausreißer"
+      },
       "detailsModal": {
-        "title": "Ausreißer von {name} Prozessknoten",
+        "title": "Ergebnisse für Aufgabe \"{name}\"",
         "durationChart": "Laufzeitverteilungsdiagramm",
         "variablesTable": "Tabelle der signifikanten Variablenwerte",
         "axisLabels": {
@@ -1050,6 +1059,7 @@
     "disabled": "deaktiviert",
     "and": "und",
     "or": "oder",
+    "on": "An",
     "off": "Aus",
     "none": "Keine",
     "all": "Alle",
@@ -1426,10 +1436,6 @@
         "instance": "Prozessinstanzen filtern",
         "view": "Prozessknoten-Daten filtern",
         "decision": "Entscheidungsevaluierungen filtern"
-      },
-      "dropdownInfo": {
-        "instance": "Rückgabe Instanzen gefiltert nach...",
-        "view": "Rückgabe von Prozessknoten-Daten gefiltert nach..."
       },
       "allVisible": {
         "instance": "Alle Instanzen sichtbar",

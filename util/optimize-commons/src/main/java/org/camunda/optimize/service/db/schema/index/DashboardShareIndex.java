@@ -8,7 +8,7 @@ package org.camunda.optimize.service.db.schema.index;
 import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.tile.DimensionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.tile.PositionDto;
-import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.db.DatabaseConstants;
 import org.elasticsearch.xcontent.XContentBuilder;
 

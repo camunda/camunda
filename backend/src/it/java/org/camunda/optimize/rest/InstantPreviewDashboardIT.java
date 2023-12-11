@@ -64,34 +64,34 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
   private static final String TEXT_FIELD = "text";
   public static final String EXTERNAL_PATH = "/external";
   public static final String FRONTEND_EXTERNAL_RESOURCES_PATH = "../client/public";
+  public static final String TEMPLATE_1_FILENAME = "template1.json";
+  public static final String TEMPLATE_2_FILENAME = "template2.json";
+  public static final String TEMPLATE_3_FILENAME = "template3.json";
+  public static final String PROCESS_DEF_KEY = "dummy";
 
   @Test
-  public void instantPreviewDashboardHappyCase() {
+  public void instantPreviewDashboardCreatedAsExpected() {
     // given
     final InstantPreviewDashboardService instantPreviewDashboardService =
       embeddedOptimizeExtension.getInstantPreviewDashboardService();
-    String processDefKey = "dummy";
-    String dashboardJsonTemplateFilename = "template2.json";
-    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEF_KEY));
     importAllEngineEntitiesFromScratch();
 
     // when
     final Optional<InstantDashboardDataDto> instantPreviewDashboard =
-      instantPreviewDashboardService.createInstantPreviewDashboard(processDefKey, dashboardJsonTemplateFilename);
+      instantPreviewDashboardService.createInstantPreviewDashboard(PROCESS_DEF_KEY, TEMPLATE_2_FILENAME);
 
     // then
     assertThat(instantPreviewDashboard).isPresent();
     final InstantDashboardDataDto instantPreviewDashboardDto = instantPreviewDashboard.get();
     assertThat(instantPreviewDashboardDto.getInstantDashboardId()).isEqualTo(
-      processDefKey + "_" + dashboardJsonTemplateFilename.replace(".", ""));
-    assertThat(instantPreviewDashboardDto.getProcessDefinitionKey()).isEqualTo(processDefKey);
-    assertThat(instantPreviewDashboardDto.getTemplateName()).isEqualTo(dashboardJsonTemplateFilename);
-    assertThat(instantPreviewDashboardDto.getTemplateHash()).isEqualTo(calculateExpectedChecksum(dashboardJsonTemplateFilename));
+      PROCESS_DEF_KEY + "_" + TEMPLATE_2_FILENAME.replace(".", ""));
+    assertThat(instantPreviewDashboardDto.getProcessDefinitionKey()).isEqualTo(PROCESS_DEF_KEY);
+    assertThat(instantPreviewDashboardDto.getTemplateName()).isEqualTo(TEMPLATE_2_FILENAME);
+    assertThat(instantPreviewDashboardDto.getTemplateHash()).isEqualTo(calculateExpectedChecksum(TEMPLATE_2_FILENAME));
     // when
     DashboardDefinitionRestDto returnedDashboard = dashboardClient.getInstantPreviewDashboard(
-      processDefKey,
-      dashboardJsonTemplateFilename
-    );
+      PROCESS_DEF_KEY, TEMPLATE_2_FILENAME);
 
     // then
     assertThat(returnedDashboard).isNotNull();
@@ -107,26 +107,25 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     // given
     final InstantPreviewDashboardService instantPreviewDashboardService =
       embeddedOptimizeExtension.getInstantPreviewDashboardService();
-    String processDefKey = "dummy";
-    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEF_KEY));
     importAllEngineEntitiesFromScratch();
 
     // when
     final Optional<InstantDashboardDataDto> instantPreviewDashboard =
-      instantPreviewDashboardService.createInstantPreviewDashboard(processDefKey, emptyTemplate);
+      instantPreviewDashboardService.createInstantPreviewDashboard(PROCESS_DEF_KEY, emptyTemplate);
 
     // then
     assertThat(instantPreviewDashboard).isPresent();
     final InstantDashboardDataDto instantPreviewDashboardDto = instantPreviewDashboard.get();
-    assertThat(instantPreviewDashboardDto.getInstantDashboardId()).isEqualTo(processDefKey + "_" + INSTANT_DASHBOARD_DEFAULT_TEMPLATE
+    assertThat(instantPreviewDashboardDto.getInstantDashboardId()).isEqualTo(PROCESS_DEF_KEY + "_" + INSTANT_DASHBOARD_DEFAULT_TEMPLATE
       .replaceAll("\\.", ""));
-    assertThat(instantPreviewDashboardDto.getProcessDefinitionKey()).isEqualTo(processDefKey);
+    assertThat(instantPreviewDashboardDto.getProcessDefinitionKey()).isEqualTo(PROCESS_DEF_KEY);
     assertThat(instantPreviewDashboardDto.getTemplateName()).isEqualTo(INSTANT_DASHBOARD_DEFAULT_TEMPLATE);
     assertThat(instantPreviewDashboardDto.getTemplateHash())
       .isEqualTo(calculateExpectedChecksum(INSTANT_DASHBOARD_DEFAULT_TEMPLATE));
 
     // when
-    DashboardDefinitionRestDto returnedDashboard = dashboardClient.getInstantPreviewDashboard(processDefKey, emptyTemplate);
+    DashboardDefinitionRestDto returnedDashboard = dashboardClient.getInstantPreviewDashboard(PROCESS_DEF_KEY, emptyTemplate);
 
     // then
     assertThat(returnedDashboard).isNotNull();
@@ -169,14 +168,12 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     // given
     final InstantPreviewDashboardService instantPreviewDashboardService =
       embeddedOptimizeExtension.getInstantPreviewDashboardService();
-    String processDefKey = "dummy";
-    String dashboardJsonTemplate = "template3.json";
-    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEF_KEY));
     importAllEngineEntitiesFromScratch();
 
     // when
     final Optional<InstantDashboardDataDto> instantPreviewDashboard =
-      instantPreviewDashboardService.createInstantPreviewDashboard(processDefKey, dashboardJsonTemplate);
+      instantPreviewDashboardService.createInstantPreviewDashboard(PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
 
     // then
     assertThat(instantPreviewDashboard).isPresent();
@@ -184,9 +181,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     // given
     final InstantDashboardDataDto instantPreviewDashboardDto = instantPreviewDashboard.get();
     DashboardDefinitionRestDto originalDashboard = dashboardClient.getInstantPreviewDashboard(
-      processDefKey,
-      dashboardJsonTemplate
-    );
+      PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
     // Let's keep track of the report IDs that belong to this dashboard, this will be important later
     Set<String> originalReportIds = originalDashboard.getTileIds();
 
@@ -198,9 +193,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     embeddedOptimizeExtension.getInstantPreviewDashboardService().deleteInstantPreviewDashboardsAndEntitiesForChangedTemplates();
     // Now get the dashboard again
     DashboardDefinitionRestDto newDashboard = dashboardClient.getInstantPreviewDashboard(
-      processDefKey,
-      dashboardJsonTemplate
-    );
+      PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
 
     // then
     //Since the entry had been de-validated, I expect that a new dashboard with a new ID has been created
@@ -218,24 +211,20 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     // given
     final InstantPreviewDashboardService instantPreviewDashboardService =
       embeddedOptimizeExtension.getInstantPreviewDashboardService();
-    String processDefKey = "dummy";
-    String dashboardJsonTemplate = "template3.json";
-    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEF_KEY));
     importAllEngineEntitiesFromScratch();
 
     // when
     final Optional<InstantDashboardDataDto> instantPreviewDashboard =
-      instantPreviewDashboardService.createInstantPreviewDashboard(processDefKey, dashboardJsonTemplate);
+      instantPreviewDashboardService.createInstantPreviewDashboard(PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
 
     // then
     assertThat(instantPreviewDashboard).isPresent();
 
     // given
     DashboardDefinitionRestDto originalDashboard = dashboardClient.getInstantPreviewDashboard(
-      processDefKey,
-      dashboardJsonTemplate
-    );
-    // Let's keep track of the report IDs that belong to this dashboard, this will be important later
+      PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
+    // We keep track of the report IDs that belong to this dashboard, this will be important later
     Set<String> originalReportIds = originalDashboard.getTileIds();
 
     // when
@@ -243,9 +232,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     embeddedOptimizeExtension.getInstantPreviewDashboardService().deleteInstantPreviewDashboardsAndEntitiesForChangedTemplates();
     // Now get the dashboard again. Since the entry was still valid, I expect the same old dashboard with the same ID
     DashboardDefinitionRestDto newDashboard = dashboardClient.getInstantPreviewDashboard(
-      processDefKey,
-      dashboardJsonTemplate
-    );
+      PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
 
     // then
     assertThat(newDashboard.getId()).isEqualTo(originalDashboard.getId());
@@ -258,38 +245,31 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     // given
     final InstantPreviewDashboardService instantPreviewDashboardService =
       embeddedOptimizeExtension.getInstantPreviewDashboardService();
-    String processDefKey = "dummy";
-    String dashboardJsonTemplate = "template3.json";
-    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEF_KEY));
     importAllEngineEntitiesFromScratch();
 
     // when
     final Optional<InstantDashboardDataDto> instantPreviewDashboard =
-      instantPreviewDashboardService.createInstantPreviewDashboard(processDefKey, dashboardJsonTemplate);
+      instantPreviewDashboardService.createInstantPreviewDashboard(PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
 
     // then
     assertThat(instantPreviewDashboard).isPresent();
 
     // given
     DashboardDefinitionRestDto originalDashboard = dashboardClient.getInstantPreviewDashboard(
-      processDefKey,
-      dashboardJsonTemplate
-    );
-    // Let's keep track of the report IDs that belong to this dashboard, this will be important later
+      PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
+    // We keep track of the report IDs that belong to this dashboard, this will be important later
     Set<String> originalReportIds = originalDashboard.getTileIds();
 
     // when
-    // Let's retrieve the dashboard again and see what happens
-    DashboardDefinitionRestDto hopefullyExistingDashboard = dashboardClient.getInstantPreviewDashboard(
-      processDefKey,
-      dashboardJsonTemplate
-    );
+    DashboardDefinitionRestDto refetchedDashboard = dashboardClient.getInstantPreviewDashboard(
+      PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
 
     // then
     // I expect the same old dashboard with the same ID
-    assertThat(hopefullyExistingDashboard.getId()).isEqualTo(originalDashboard.getId());
+    assertThat(refetchedDashboard.getId()).isEqualTo(originalDashboard.getId());
     // I expect that the reports from the dashboard also remain the same
-    assertThat(hopefullyExistingDashboard.getTileIds()).isEqualTo(originalReportIds);
+    assertThat(refetchedDashboard.getTileIds()).isEqualTo(originalReportIds);
   }
 
   @Test
@@ -297,23 +277,21 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     // given
     final InstantPreviewDashboardService instantPreviewDashboardService =
       embeddedOptimizeExtension.getInstantPreviewDashboardService();
-    String processDefKey = "dummy";
-    String dashboardJsonTemplate = "template3.json";
-    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEF_KEY));
     importAllEngineEntitiesFromScratch();
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     // when
     final Optional<InstantDashboardDataDto> instantPreviewDashboard =
-      instantPreviewDashboardService.createInstantPreviewDashboard(processDefKey, dashboardJsonTemplate);
+      instantPreviewDashboardService.createInstantPreviewDashboard(PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
 
     // then
     assertThat(instantPreviewDashboard).isPresent();
 
     // given
     DashboardDefinitionRestDto originalDashboard =
-      dashboardClient.getInstantPreviewDashboard(processDefKey, dashboardJsonTemplate);
+      dashboardClient.getInstantPreviewDashboard(PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
     originalDashboard.getTileIds().forEach(reportId -> {
       // when
       Response response = reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
@@ -334,15 +312,6 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     });
   }
 
-  private Set<String> getInstantPreviewReportIDsForProcess(final String processDefKey) {
-    String dashboardJsonTemplate = "template3.json";
-    DashboardDefinitionRestDto originalDashboard =
-      dashboardClient.getInstantPreviewDashboard(processDefKey, dashboardJsonTemplate);
-    final Set<String> reportIds = originalDashboard.getTileIds();
-    assertThat(reportIds).isNotEmpty();
-    return reportIds;
-  }
-
   @Test
   public void createInstantPreviewEntitiesManuallyNotSupported() {
     // given
@@ -361,17 +330,29 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
   }
 
   @Test
+  public void getPrivateReportsExcludesInstantPreviewReports() {
+    // given
+    final InstantPreviewDashboardService instantPreviewDashboardService =
+      embeddedOptimizeExtension.getInstantPreviewDashboardService();
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEF_KEY));
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    instantPreviewDashboardService.createInstantPreviewDashboard(PROCESS_DEF_KEY, TEMPLATE_2_FILENAME);
+
+    // when
+    assertThat(reportClient.getAllReportsAsUser()).isEmpty();
+  }
+
+  @Test
   public void updateInstantPreviewEntitiesNotSupported() {
     // given
-    final String processDefKey = "dummy";
-    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEF_KEY));
     importAllEngineEntitiesFromScratch();
     final DashboardDefinitionRestDto updatedDashboard = new DashboardDefinitionRestDto();
     updatedDashboard.setInstantPreviewDashboard(true);
     DashboardDefinitionRestDto originalDashboard = dashboardClient.getInstantPreviewDashboard(
-      processDefKey,
-      "template3.json"
-    );
+      PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
     final Optional<String> instantReportId = originalDashboard.getTileIds().stream().findFirst();
     assertThat(instantReportId).isPresent();
 
@@ -393,13 +374,10 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
   @Test
   public void deleteInstantPreviewEntitiesNotSupported() {
     // given
-    final String processDefKey = "dummy";
-    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEF_KEY));
     importAllEngineEntitiesFromScratch();
     DashboardDefinitionRestDto originalDashboard = dashboardClient.getInstantPreviewDashboard(
-      processDefKey,
-      "template3.json"
-    );
+      PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
     final Optional<String> instantReportId = originalDashboard.getTileIds().stream().findFirst();
     assertThat(instantReportId).isPresent();
 
@@ -415,13 +393,10 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
   @Test
   public void importInstantPreviewEntitiesNotSupported() {
     // given
-    final String processDefKey = "dummy";
-    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEF_KEY));
     importAllEngineEntitiesFromScratch();
     DashboardDefinitionRestDto originalDashboard = dashboardClient.getInstantPreviewDashboard(
-      processDefKey,
-      "template3.json"
-    );
+      PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
     final DashboardDefinitionExportDto dashboardExport = new DashboardDefinitionExportDto(originalDashboard);
     dashboardExport.setInstantPreviewDashboard(true);
     final SingleProcessReportDefinitionExportDto reportExport =
@@ -440,13 +415,10 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
   @Test
   public void copyInstantPreviewEntitiesNotSupported() {
     // given
-    final String processDefKey = "dummy";
-    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEF_KEY));
     importAllEngineEntitiesFromScratch();
     DashboardDefinitionRestDto originalDashboard = dashboardClient.getInstantPreviewDashboard(
-      processDefKey,
-      "template3.json"
-    );
+      PROCESS_DEF_KEY, TEMPLATE_3_FILENAME);
     final Optional<String> instantReportId = originalDashboard.getTileIds().stream().findFirst();
     assertThat(instantReportId).isPresent();
 
@@ -467,20 +439,19 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     // given
     final InstantPreviewDashboardService instantPreviewDashboardService =
       embeddedOptimizeExtension.getInstantPreviewDashboardService();
-    String processDefKey = "dummy";
-    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEF_KEY));
     importAllEngineEntitiesFromScratch();
 
     // when
     final Optional<InstantDashboardDataDto> instantPreviewDashboard =
-      instantPreviewDashboardService.createInstantPreviewDashboard(processDefKey, template);
+      instantPreviewDashboardService.createInstantPreviewDashboard(PROCESS_DEF_KEY, template);
 
     // then
     assertThat(instantPreviewDashboard).isPresent();
 
     // when
     final DashboardDefinitionRestDto localizedDashboard =
-      dashboardClient.getInstantPreviewDashboardLocalized(processDefKey, template, locale);
+      dashboardClient.getInstantPreviewDashboardLocalized(PROCESS_DEF_KEY, template, locale);
     final Set<String> reportNames = localizedDashboard.getTileIds().stream()
       .map(tileId -> reportClient.evaluateProcessReportLocalized(tileId, locale)
         .getReportDefinition()
@@ -498,20 +469,19 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     // given
     final InstantPreviewDashboardService instantPreviewDashboardService =
       embeddedOptimizeExtension.getInstantPreviewDashboardService();
-    String processDefKey = "dummy";
-    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEF_KEY));
     importAllEngineEntitiesFromScratch();
 
     // when
     final Optional<InstantDashboardDataDto> instantPreviewDashboard =
-      instantPreviewDashboardService.createInstantPreviewDashboard(processDefKey, template);
+      instantPreviewDashboardService.createInstantPreviewDashboard(PROCESS_DEF_KEY, template);
 
     // then
     assertThat(instantPreviewDashboard).isPresent();
 
     // when
     final DashboardDefinitionRestDto dashboardData =
-      dashboardClient.getInstantPreviewDashboardLocalized(processDefKey, template, locale);
+      dashboardClient.getInstantPreviewDashboardLocalized(PROCESS_DEF_KEY, template, locale);
 
     dashboardData.getTiles().forEach(tile -> {
       if (tile.getType() == DashboardTileType.TEXT) {
@@ -645,8 +615,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
   @Test
   public void allDashboardTemplatesAreValid() {
     // given
-    String processDefKey = "dummy";
-    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEF_KEY));
     importAllEngineEntitiesFromScratch();
     final InstantPreviewDashboardService instantPreviewDashboardService =
       embeddedOptimizeExtension.getInstantPreviewDashboardService();
@@ -659,7 +628,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
       .forEach(templateFile -> {
         // when
         final Optional<InstantDashboardDataDto> instantPreviewDashboard =
-          instantPreviewDashboardService.createInstantPreviewDashboard(processDefKey, templateFile);
+          instantPreviewDashboardService.createInstantPreviewDashboard(PROCESS_DEF_KEY, templateFile);
 
         // then
         assertThat(instantPreviewDashboard).isPresent();
@@ -667,7 +636,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
 
         // when
         DashboardDefinitionRestDto returnedDashboard =
-          dashboardClient.getInstantPreviewDashboard(processDefKey, templateFile);
+          dashboardClient.getInstantPreviewDashboard(PROCESS_DEF_KEY, templateFile);
 
         // then
         assertThat(returnedDashboard).isNotNull();
@@ -700,6 +669,14 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
       });
   }
 
+  private Set<String> getInstantPreviewReportIDsForProcess(final String processDefKey) {
+    DashboardDefinitionRestDto originalDashboard =
+      dashboardClient.getInstantPreviewDashboard(processDefKey, TEMPLATE_3_FILENAME);
+    final Set<String> reportIds = originalDashboard.getTileIds();
+    assertThat(reportIds).isNotEmpty();
+    return reportIds;
+  }
+
   @NotNull
   private Long calculateExpectedChecksum(final String dashboardJsonTemplate) {
     InputStream templateInputStream = getClass().getClassLoader()
@@ -713,8 +690,10 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
 
   private void assertImagePresent(Map<String, Object> textTileConfiguration, final String imageTag) {
     // Reverse-engineering the frontend external resources URI to the frontend resources folder
-    String filePath = ((String) textTileConfiguration.get(imageTag)).replace(EXTERNAL_PATH,
-                                                                          FRONTEND_EXTERNAL_RESOURCES_PATH);
+    String filePath = ((String) textTileConfiguration.get(imageTag)).replace(
+      EXTERNAL_PATH,
+      FRONTEND_EXTERNAL_RESOURCES_PATH
+    );
     // then
     assertThat(new File(filePath)).exists();
   }
@@ -725,7 +704,8 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
       "Instant Prozess Übersicht",
       "Dieses Dashboard bietet eine Übersicht der Metriken und Anwendungsfälle, die mit Optimize abgedeckt werden können.",
       "Melde Geschäftskennzahlen",
-      "Aggregiere und gruppiere Prozessausführungsdaten in Tagen, Wochen und Monaten um Metriken und Key Performance Indikatoren (KPI) zu überwachen und zu melden.",
+      "Aggregiere und gruppiere Prozessausführungsdaten in Tagen, Wochen und Monaten um Metriken und Key Performance " +
+        "Indikatoren (KPI) zu überwachen und zu melden.",
       "Abonniere einen wöchentlichen E-Mail Digest der Prozessmetriken und KPIs",
       "Analysiere Probleme und finde Verbesserungen",
       "Nutze alle gesammelten Prozessausführungsdaten, um Probleme zu untersuchen oder neue Prozessverbesserungen einzuleiten.",
@@ -752,9 +732,11 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     ));
     expectedStrings.put("en", List.of(
       "Instant Process Dashboard",
-      "This dashboard provides a competitive overview of metrics and use cases that can be covered with Optimize. It is available for any process as soon as a process is deployed.",
+      "This dashboard provides a competitive overview of metrics and use cases that can be covered with Optimize. It is " +
+        "available for any process as soon as a process is deployed.",
       "Report business metrics",
-      "Aggregate and group the process execution data into days, weeks, and months to monitor and report business metrics and key performance indicators (KPI).",
+      "Aggregate and group the process execution data into days, weeks, and months to monitor and report business metrics and " +
+        "key performance indicators (KPI).",
       "Subscribe to an email digest to obtain a weekly summary of your process metrics and KPIs",
       "Investigate problems and find improvements",
       "Use all gathered process execution data to investigate problems or kick off new process improvements.",
@@ -792,7 +774,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
   private static Stream<Arguments> templateAndExpectedLocalizedNames() {
     return Stream.of(
       Arguments.of(
-        "template3.json",
+        TEMPLATE_3_FILENAME,
         "en",
         "Instant Preview Dashboard",
         Set.of(
@@ -811,7 +793,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
         )
       ),
       Arguments.of(
-        "template3.json",
+        TEMPLATE_3_FILENAME,
         "de",
         "Instant Preview Dashboard",
         Set.of(
@@ -830,7 +812,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
         )
       ),
       Arguments.of(
-        "template2.json",
+        TEMPLATE_2_FILENAME,
         "en",
         "KPI Dashboard",
         Set.of(
@@ -842,7 +824,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
         )
       ),
       Arguments.of(
-        "template2.json",
+        TEMPLATE_2_FILENAME,
         "de",
         "KPI Dashboard",
         Set.of(
@@ -859,14 +841,14 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
   @SuppressWarnings(UNUSED)
   private static Stream<Arguments> templateAndLocales() {
     return Stream.of(
-      Arguments.of("template1.json", "en"),
-      Arguments.of("template1.json", "de")
+      Arguments.of(TEMPLATE_1_FILENAME, "en"),
+      Arguments.of(TEMPLATE_1_FILENAME, "de")
     );
   }
 
   @SuppressWarnings(UNUSED)
   private static Stream<String> templates() {
-    return Stream.of("template1.json", "template2.json", "template3.json");
+    return Stream.of(TEMPLATE_1_FILENAME, TEMPLATE_2_FILENAME, TEMPLATE_3_FILENAME);
   }
 
 }

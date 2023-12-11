@@ -24,7 +24,7 @@ import org.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReport
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 import org.camunda.optimize.service.db.schema.index.DashboardIndex;
 import org.camunda.optimize.service.entities.AbstractExportImportEntityDefinitionIT;
-import org.camunda.optimize.service.es.schema.index.DashboardIndexES;
+import org.camunda.optimize.service.db.es.schema.index.DashboardIndexES;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
 

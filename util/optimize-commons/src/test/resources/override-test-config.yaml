@@ -17,4 +17,13 @@ es:
       certificate_authorities: ''
       enabled: true
 
+opensearch:
+  security:
+    username: ''
+    password: ''
+    ssl:
+      certificate: ''
+      certificate_authorities: ''
+      enabled: true
+
 isIt: true

@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndexES;
+import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.service.db.DatabaseConstants;
@@ -147,16 +147,16 @@ public class ExportLimitsIT extends AbstractPlatformIT {
           new IndexRequest(getProcessInstanceIndexAliasName(processDefinitionKey))
             .id(processInstanceDto.getProcessInstanceId())
             .source(
-              elasticSearchIntegrationTestExtension.getObjectMapper().writeValueAsString(processInstanceDto),
+              databaseIntegrationTestExtension.getObjectMapper().writeValueAsString(processInstanceDto),
               XContentType.JSON
             );
 
         bulkInsert.add(indexRequest);
       }
 
-      elasticSearchIntegrationTestExtension.getOptimizeElasticClient().bulk(bulkInsert);
+      databaseIntegrationTestExtension.getOptimizeElasticsearchClient().bulk(bulkInsert);
     }
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private String createAndStoreRawReportDefinition(String processDefinitionKey,

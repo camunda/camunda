@@ -20,6 +20,7 @@ public class UIConfigurationResponseDto {
   private boolean emailEnabled;
   private boolean sharingEnabled;
   private boolean tenantsAvailable;
+  private boolean userSearchAvailable;
   private String optimizeVersion;
   private String optimizeDocsVersion;
   private boolean isEnterpriseMode;

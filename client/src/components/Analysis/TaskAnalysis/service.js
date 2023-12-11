@@ -5,11 +5,16 @@
  * except in compliance with the proprietary license.
  */
 
-import {get} from 'request';
+import {post} from 'request';
 
 export async function loadNodesOutliers(config) {
-  const response = await get('api/analysis/flowNodeOutliers', config);
+  const response = await post('api/analysis/flowNodeOutliers', config);
   return await response.json();
 }
 
-export {loadDurationData, loadCommonOutliersVariables, getInstancesDownloadUrl} from './service.ts';
+export {
+  loadDurationData,
+  loadCommonOutliersVariables,
+  getInstancesDownloadUrl,
+  getOutlierSummary,
+} from './service.ts';

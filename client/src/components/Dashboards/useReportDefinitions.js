@@ -5,10 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import {useErrorHandling} from 'hooks';
 import {useEffect, useState} from 'react';
 
 import {loadEntity} from 'services';
+import {useErrorHandling} from 'hooks';
 
 export default function useReportDefinitions(existingReport, errorHandler) {
   const [definitions, setDefinitions] = useState();

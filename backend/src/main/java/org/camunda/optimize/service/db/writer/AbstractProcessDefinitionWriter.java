@@ -6,11 +6,10 @@
 package org.camunda.optimize.service.db.writer;
 
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.elasticsearch.action.bulk.BulkRequest;
 
-public interface AbstractProcessDefinitionWriter {
+public interface AbstractProcessDefinitionWriter<T> {
 
-  void addImportProcessDefinitionToRequest(final BulkRequest bulkRequest,
+  void addImportProcessDefinitionToRequest(final T bulkRequest,
                                            final ProcessDefinitionOptimizeDto processDefinitionDto);
 
 }

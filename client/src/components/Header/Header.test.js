@@ -33,6 +33,18 @@ jest.mock('config', () => ({
   getNotificationsUrl: jest.fn().mockReturnValue('notificationsUrl'),
 }));
 
+jest.mock('hooks', () => ({
+  useErrorHandling: jest.fn(() => ({
+    mightFail: jest.fn(async (data, cb) => cb(await data)),
+  })),
+  useDocs: jest.fn(() => ({
+    generateDocsLink: (url) => url,
+  })),
+  useUser: jest.fn(() => ({
+    user: undefined,
+  })),
+}));
+
 jest.mock('./service', () => ({
   isEventBasedProcessEnabled: jest.fn().mockReturnValue(true),
   getUserToken: jest.fn().mockReturnValue('userToken'),
@@ -53,7 +65,6 @@ function getNavItem(node, key) {
 }
 
 const props = {
-  mightFail: async (data, cb) => cb(await data),
   location: {pathname: '/'},
   history: {push: jest.fn()},
 };

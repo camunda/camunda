@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinit
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState;
 import org.camunda.optimize.service.EventProcessDefinitionService;
-import org.camunda.optimize.service.importing.eventprocess.EventProcessInstanceIndexManager;
+import org.camunda.optimize.service.db.EventProcessInstanceIndexManager;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.springframework.stereotype.Component;
@@ -36,7 +36,7 @@ public class EventProcessDefinitionImportService {
       .stream()
       .filter(eventProcessPublishStateDto -> EventProcessState.PUBLISHED.equals(eventProcessPublishStateDto.getState()))
       .peek(eventProcessPublishStateDto -> publishedStateProcessIds.add(eventProcessPublishStateDto.getId()))
-      .collect(Collectors.toList());
+      .toList();
 
     final Set<String> existingEventProcessDefinitionIds =
       eventProcessDefinitionService.getAllEventProcessesDefinitionsOmitXml()
@@ -47,7 +47,7 @@ public class EventProcessDefinitionImportService {
     final List<EventProcessDefinitionDto> newOrUpdatedDefinitions = publishedEventProcesses.stream()
       .filter(eventProcessPublishStateDto -> !existingEventProcessDefinitionIds.contains(eventProcessPublishStateDto.getId()))
       .map(this::createEventProcessDefinitionDto)
-      .collect(Collectors.toList());
+      .toList();
     if (!newOrUpdatedDefinitions.isEmpty()) {
       eventProcessDefinitionService.importEventProcessDefinitions(newOrUpdatedDefinitions);
       updateDefinitionXmlsInReports(newOrUpdatedDefinitions);
@@ -62,11 +62,9 @@ public class EventProcessDefinitionImportService {
   }
 
   private void updateDefinitionXmlsInReports(final List<EventProcessDefinitionDto> definitions) {
-    definitions.forEach(eventProcessDefinitionDto -> {
-      reportService.updateDefinitionXmlOfProcessReports(
-        eventProcessDefinitionDto.getKey(), eventProcessDefinitionDto.getBpmn20Xml()
-      );
-    });
+    definitions.forEach(eventProcessDefinitionDto -> reportService.updateDefinitionXmlOfProcessReports(
+      eventProcessDefinitionDto.getKey(), eventProcessDefinitionDto.getBpmn20Xml()
+    ));
   }
 
   private EventProcessDefinitionDto createEventProcessDefinitionDto(final EventProcessPublishStateDto eventProcessPublishStateDto) {

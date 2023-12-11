@@ -54,7 +54,7 @@ public class ProcessInitialOwnerIT extends AbstractPlatformIT {
       embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
     // Process the pending data
     onboardingSchedulerService.onboardNewProcesses();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertThat(responseInitialOwner.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -81,7 +81,7 @@ public class ProcessInitialOwnerIT extends AbstractPlatformIT {
       embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
     // Process the pending data
     onboardingSchedulerService.onboardNewProcesses();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertThat(responseInitialOwner.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -313,7 +313,7 @@ public class ProcessInitialOwnerIT extends AbstractPlatformIT {
           .getIdentityNameById(expectedOwnerId)
           .orElseThrow(() -> new OptimizeIntegrationTestException("Could not find default user in cache")))));
     // we also assert that the last results are initialised as empty rather to avoid potential null checks on overview load
-    final List<Map<String, String>> lastKpiResultsForDef = elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    final List<Map<String, String>> lastKpiResultsForDef = databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
         PROCESS_OVERVIEW_INDEX_NAME,
         ProcessOverviewDto.class
       ).stream()

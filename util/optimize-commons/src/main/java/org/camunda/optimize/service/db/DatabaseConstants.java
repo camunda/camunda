@@ -22,6 +22,10 @@ public class DatabaseConstants {
 
   public static final int IGNORE_ABOVE_CHAR_LIMIT = 7000;
 
+  public static final int MAX_GRAM = 10;
+
+  public static final int DEFAULT_SHARD_NUMBER = 1;
+
   public static final String OPTIMIZE_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
 
   public static final String NUMBER_OF_REPLICAS_SETTING = "number_of_replicas";
@@ -40,6 +44,10 @@ public class DatabaseConstants {
   public static final String LOWERCASE_NGRAM = "lowercase_ngram";
   public static final String LOWERCASE_NORMALIZER = "lowercase_normalizer";
   public static final String MAPPING_ENABLED_SETTING = "enabled";
+  public static final String NGRAM_TOKENIZER = "ngram_tokenizer";
+  public static final String IS_PRESENT_FILTER = "is_present_filter";
+  public static final String IS_PRESENT_ANALYZER = "is_present_analyzer";
+  public static final String MAX_NGRAM_DIFF = "max_ngram_diff";
 
   public static final String MAPPING_PROPERTY_TYPE = "type";
   public static final String PROPERTIES_PROPERTY_TYPE = "properties";
@@ -126,5 +134,8 @@ public class DatabaseConstants {
 
   // Aggregation constants
   public static final String FREQUENCY_AGGREGATION = "_frequency";
+
+  // Units
+  public static final String GB_UNIT = "gb";
 
 }

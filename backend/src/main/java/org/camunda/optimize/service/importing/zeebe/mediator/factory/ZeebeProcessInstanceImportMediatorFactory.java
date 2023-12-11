@@ -7,13 +7,13 @@ package org.camunda.optimize.service.importing.zeebe.mediator.factory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.db.writer.ZeebeProcessInstanceWriter;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.service.zeebe.ZeebeProcessInstanceImportService;
-import org.camunda.optimize.service.importing.zeebe.fetcher.ZeebeProcessInstanceFetcher;
+import org.camunda.optimize.service.importing.zeebe.db.ZeebeProcessInstanceFetcher;
 import org.camunda.optimize.service.importing.zeebe.mediator.ZeebeProcessInstanceImportMediator;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -35,8 +35,8 @@ public class ZeebeProcessInstanceImportMediatorFactory extends AbstractZeebeImpo
                                                    final ZeebeProcessInstanceWriter zeebeProcessInstanceWriter,
                                                    final ProcessDefinitionReader processDefinitionReader,
                                                    final ObjectMapper objectMapper,
-                                                   final OptimizeElasticsearchClient esClient) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService, objectMapper, esClient);
+                                                   final DatabaseClient databaseClient) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService, objectMapper, databaseClient);
     this.zeebeProcessInstanceWriter = zeebeProcessInstanceWriter;
     this.processDefinitionReader = processDefinitionReader;
   }
@@ -49,7 +49,7 @@ public class ZeebeProcessInstanceImportMediatorFactory extends AbstractZeebeImpo
         beanFactory.getBean(
           ZeebeProcessInstanceFetcher.class,
           zeebeDataSourceDto.getPartitionId(),
-          esClient,
+          databaseClient,
           objectMapper,
           configurationService
         ),

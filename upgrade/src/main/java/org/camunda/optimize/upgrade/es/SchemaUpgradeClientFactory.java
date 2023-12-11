@@ -8,10 +8,10 @@ package org.camunda.optimize.upgrade.es;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.service.db.schema.MappingMetadataUtil;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
@@ -28,7 +28,7 @@ public class SchemaUpgradeClientFactory {
     );
   }
 
-  public static SchemaUpgradeClient createSchemaUpgradeClient(final ElasticsearchMetadataService metadataService,
+  public static SchemaUpgradeClient createSchemaUpgradeClient(final ElasticSearchMetadataService metadataService,
                                                               final ConfigurationService configurationService,
                                                               final OptimizeIndexNameService indexNameService,
                                                               final OptimizeElasticsearchClient esClient) {
@@ -42,7 +42,7 @@ public class SchemaUpgradeClientFactory {
   }
 
   public static SchemaUpgradeClient createSchemaUpgradeClient(final ElasticSearchSchemaManager schemaManager,
-                                                              final ElasticsearchMetadataService metadataService,
+                                                              final ElasticSearchMetadataService metadataService,
                                                               final ConfigurationService configurationService,
                                                               final OptimizeElasticsearchClient esClient) {
     return new SchemaUpgradeClient(

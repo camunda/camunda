@@ -1,6 +1,6 @@
-ARG BASE_IMAGE_NAME="alpine:3.18.4"
-ARG BASE_IMAGE_SHA_AMD64="sha256:48d9183eb12a05c99bcc0bf44a003607b8e941e1d4f41f9ad12bdcc4b5672f86"
-ARG BASE_IMAGE_SHA_ARM64="sha256:6ce9a9a256a3495ae60ab0059ed1c7aee5ee89450477f2223f6ea7f6296df555"
+ARG BASE_IMAGE_NAME="alpine:3.19.0"
+ARG BASE_IMAGE_SHA_AMD64="sha256:13b7e62e8df80264dbb747995705a986aa530415763a6c58f84a3ca8af9a5bcd"
+ARG BASE_IMAGE_SHA_ARM64="sha256:a70bcfbd89c9620d4085f6bc2a3e2eef32e8f3cdf5a90e35a1f95dcbd7f71548"
 
 # Building prod image amd64
 FROM ${BASE_IMAGE_NAME}@${BASE_IMAGE_SHA_AMD64} as prod-amd64
@@ -88,15 +88,15 @@ RUN apk add --no-cache bash curl tini openjdk17-jre tzdata && \
     apk -U upgrade && \
     curl "https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh" --output /usr/local/bin/wait-for-it.sh && \
     chmod +x /usr/local/bin/wait-for-it.sh && \
-    addgroup -S optimize && \
-    adduser -S -g optimize optimize && \
+    addgroup -S -g 1001 camunda && \
+    adduser -S -g 1001 -u 1001 camunda && \
     mkdir -p /optimize && \
-    chown optimize:optimize /optimize
+    chown 1001:1001 /optimize
 
 WORKDIR /optimize
-USER optimize
+USER 1001:1001
 
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["./optimize.sh"]
 
-COPY --chown=optimize:optimize --from=builder /tmp/build .
+COPY --chown=1001:1001 --from=builder /tmp/build .

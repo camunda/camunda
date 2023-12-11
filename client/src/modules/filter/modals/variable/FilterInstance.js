@@ -6,7 +6,15 @@
  */
 
 import React, {useState, useEffect} from 'react';
-import {Button, ComboBox, InlineNotification, Stack, Tag} from '@carbon/react';
+import {
+  Button,
+  ComboBox,
+  InlineNotification,
+  TagSkeleton,
+  Stack,
+  Tag,
+  TextInputSkeleton,
+} from '@carbon/react';
 import {ChevronDown, TrashCan} from '@carbon/icons-react';
 import classnames from 'classnames';
 
@@ -66,7 +74,7 @@ export default function FilterInstance({
   }, [collapsed, filters, expanded, filterIdx]);
 
   useEffect(() => {
-    if (filter) {
+    if (filter && variables) {
       setSelectedVariable(() => findVariableForFilter(variables, filter));
     }
   }, [filter, variables]);
@@ -97,7 +105,11 @@ export default function FilterInstance({
             onClick={isValid ? toggleExpanded : undefined}
             onKeyDown={handleKeyDown}
           >
-            <Tag type="blue">{getVariableLabel(variables, filter)}</Tag>
+            {variables ? (
+              <Tag type="blue">{getVariableLabel(variables, filter)}</Tag>
+            ) : (
+              <TagSkeleton />
+            )}
             <span>{t('common.filter.list.operators.is')}…</span>
             {!collapsed && (
               <Button
@@ -116,26 +128,30 @@ export default function FilterInstance({
             {isValid && <ChevronDown className={classnames('sectionToggle', {expanded})} />}
           </div>
         )}
-        {!variables.length && (
+        {variables && !variables.length && (
           <InlineNotification
             kind="warning"
             hideCloseButton
             subtitle={t('common.filter.variableModal.noVariables')}
           />
         )}
-        <ComboBox
-          id="multiVariableSelection"
-          titleText={t('common.filter.variableModal.inputLabel')}
-          placeholder={t('common.filter.variableModal.inputPlaceholder')}
-          disabled={!variables.length}
-          items={variables}
-          itemToString={getVariableName}
-          selectedItem={selectedVariable}
-          onChange={selectVariable}
-          shouldFilterItem={({item}) =>
-            !filters.some((filter) => filter.name === item.name && filter.type === item.type)
-          }
-        />
+        {variables ? (
+          <ComboBox
+            id="multiVariableSelection"
+            titleText={t('common.filter.variableModal.inputLabel')}
+            placeholder={t('common.filter.variableModal.inputPlaceholder')}
+            disabled={!variables.length}
+            items={variables}
+            itemToString={getVariableName}
+            selectedItem={selectedVariable}
+            onChange={selectVariable}
+            shouldFilterItem={({item}) =>
+              !filters.some((filter) => filter.name === item.name && filter.type === item.type)
+            }
+          />
+        ) : (
+          <TextInputSkeleton />
+        )}
         {applyTo && (
           <InputComponent
             config={config}

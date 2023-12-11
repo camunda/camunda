@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.rest;
 
+import jakarta.ws.rs.core.Response;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import org.camunda.optimize.service.dashboard.ManagementDashboardService;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
@@ -19,20 +18,17 @@ import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
-import jakarta.ws.rs.core.Response;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
 import static jakarta.ws.rs.HttpMethod.DELETE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
 import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
-import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
-import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_SHARE_INDEX_NAME;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
+import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.mockserver.model.HttpRequest.request;
 
 public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
@@ -317,14 +313,9 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
 
   @SneakyThrows
   private boolean documentShareExists(final String shareId) {
-    SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(DASHBOARD_SHARE_INDEX_NAME);
-    List<String> storedShareIds = new ArrayList<>();
-    for (SearchHit searchHitFields : idsResp.getHits()) {
-      storedShareIds.add(elasticSearchIntegrationTestExtension.getObjectMapper()
-                           .readValue(searchHitFields.getSourceAsString(), DashboardShareRestDto.class).getId());
-    }
-    return storedShareIds.contains(shareId);
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(DASHBOARD_SHARE_INDEX_NAME, DashboardShareRestDto.class)
+      .stream()
+      .anyMatch(dashboardShare -> dashboardShare.getId().equals(shareId));
   }
 
   private void createEmptyReportToDashboard(final String dashboardId) {

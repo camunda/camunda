@@ -5,10 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-import RelativeAbsoluteSelection from './subComponents/RelativeAbsoluteSelection';
+import {FormGroup} from '@carbon/react';
+
 import {isDurationReport} from 'services';
 import {t} from 'translation';
+
+import RelativeAbsoluteSelection from './subComponents/RelativeAbsoluteSelection';
 
 export default function PieChartConfig({onChange, report}) {
   const {
@@ -17,8 +19,7 @@ export default function PieChartConfig({onChange, report}) {
   } = report;
 
   return (
-    <fieldset>
-      <legend>{t('report.config.tooltips.legend')}</legend>
+    <FormGroup legendText={t('report.config.tooltips.legend')}>
       <RelativeAbsoluteSelection
         reportType={reportType}
         hideRelative={isDurationReport(report)}
@@ -32,6 +33,6 @@ export default function PieChartConfig({onChange, report}) {
           }
         }}
       />
-    </fieldset>
+    </FormGroup>
   );
 }

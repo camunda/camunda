@@ -85,6 +85,7 @@ export function DefinitionEditor({mightFail, collection, type, definition, tenan
               selected={definition.versions}
               selectedSpecificVersions={selectedSpecificVersions}
               loading={loadingVersions}
+              align="bottom-left"
               onChange={async (newVersions) => {
                 setLoadingVersions(true);
                 if (isSpecificVersion(newVersions)) {
@@ -128,7 +129,7 @@ export function DefinitionEditor({mightFail, collection, type, definition, tenan
                   await onChange({...definition, tenantIds: newTenants});
                   setLoadingTenants(false);
                 }}
-                align="bottom-right"
+                align="bottom-left"
                 label={t('common.tenant.label')}
               />
             </div>

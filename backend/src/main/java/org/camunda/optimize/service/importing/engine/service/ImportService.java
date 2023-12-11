@@ -5,14 +5,15 @@
  */
 package org.camunda.optimize.service.importing.engine.service;
 
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
+import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 
 import java.util.List;
 
 public interface ImportService<T> {
+
   void executeImport(List<T> pageOfEngineEntities, Runnable importCompleteCallback);
 
-  ElasticsearchImportJobExecutor getDatabaseImportJobExecutor();
+  DatabaseImportJobExecutor getDatabaseImportJobExecutor();
 
   default void shutdown() {
     getDatabaseImportJobExecutor().shutdown();
@@ -21,4 +22,5 @@ public interface ImportService<T> {
   default boolean hasPendingImportJobs() {
     return getDatabaseImportJobExecutor().isActive();
   }
+
 }

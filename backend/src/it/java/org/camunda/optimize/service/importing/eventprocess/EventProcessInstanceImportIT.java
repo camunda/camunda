@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublish
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndexES;
+import org.camunda.optimize.service.db.es.schema.index.events.EventProcessInstanceIndexES;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.optimize.EventProcessClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
@@ -735,23 +735,23 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
   }
 
   private String getVersionedEventProcessInstanceIndexNameForPublishedStateId(final String eventProcessPublishStateId) {
-    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+    return databaseIntegrationTestExtension.getOptimizeElasticsearchClient()
       .getIndexNameService()
       .getOptimizeIndexNameWithVersion(new EventProcessInstanceIndexES(eventProcessPublishStateId));
   }
 
   private String getOptimizeIndexAliasForIndexName(final String indexName) {
-    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+    return databaseIntegrationTestExtension.getOptimizeElasticsearchClient()
       .getIndexNameService()
       .getOptimizeIndexAliasForIndex(indexName);
   }
 
   @SneakyThrows
   private boolean eventProcessInstanceIndicesExist() {
-    final String indexAlias = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+    final String indexAlias = databaseIntegrationTestExtension.getOptimizeElasticsearchClient()
       .getIndexNameService()
       .getOptimizeIndexAliasForIndex(EVENT_PROCESS_INSTANCE_INDEX_PREFIX) + "*";
-    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+    return databaseIntegrationTestExtension.getOptimizeElasticsearchClient()
       .exists(new GetIndexRequest(indexAlias));
   }
 

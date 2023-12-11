@@ -7,9 +7,9 @@ package org.camunda.optimize.service.schema;
 
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractPlatformIT;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.IndexMappingCreator;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.schema.IndexMappingCreator;
+import org.camunda.optimize.test.it.extension.DatabaseIntegrationTestExtension;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
@@ -23,8 +23,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexAliasForIndexNameAndPrefix;
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion;
+import static org.camunda.optimize.service.db.schema.OptimizeIndexNameService.getOptimizeIndexAliasForIndexNameAndPrefix;
+import static org.camunda.optimize.service.db.schema.OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 
 public class CustomIndexPrefixIT extends AbstractPlatformIT {
@@ -32,8 +32,8 @@ public class CustomIndexPrefixIT extends AbstractPlatformIT {
 
   @RegisterExtension
   @Order(2)
-  public ElasticSearchIntegrationTestExtension customPrefixElasticSearchIntegrationTestExtension
-    = new ElasticSearchIntegrationTestExtension(CUSTOM_PREFIX);
+  public DatabaseIntegrationTestExtension customPrefixDatabaseIntegrationTestExtension
+    = new DatabaseIntegrationTestExtension(CUSTOM_PREFIX);
 
   private OptimizeElasticsearchClient prefixAwareRestHighLevelClient;
 
@@ -45,7 +45,7 @@ public class CustomIndexPrefixIT extends AbstractPlatformIT {
   @Test
   public void optimizeCustomPrefixIndexExistsAfterSchemaInitialization() {
     // given
-    embeddedOptimizeExtension.getConfigurationService().setEsIndexPrefix(CUSTOM_PREFIX);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setIndexPrefix(CUSTOM_PREFIX);
     embeddedOptimizeExtension.reloadConfiguration();
 
     // when
@@ -60,7 +60,7 @@ public class CustomIndexPrefixIT extends AbstractPlatformIT {
   @Test
   public void allTypesWithPrefixExistAfterSchemaInitialization() throws IOException {
     // given
-    embeddedOptimizeExtension.getConfigurationService().setEsIndexPrefix(CUSTOM_PREFIX);
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setIndexPrefix(CUSTOM_PREFIX);
     embeddedOptimizeExtension.reloadConfiguration();
 
     // when
@@ -79,7 +79,7 @@ public class CustomIndexPrefixIT extends AbstractPlatformIT {
         + mapping.getIndexNameInitialSuffix();
 
       final OptimizeElasticsearchClient esClient =
-        customPrefixElasticSearchIntegrationTestExtension.getOptimizeElasticClient();
+        customPrefixDatabaseIntegrationTestExtension.getOptimizeElasticsearchClient();
       final RestHighLevelClient highLevelClient = esClient.getHighLevelClient();
 
       assertThat(highLevelClient.indices().exists(new GetIndexRequest(expectedAliasName), esClient.requestOptions()))
@@ -96,8 +96,8 @@ public class CustomIndexPrefixIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    embeddedOptimizeExtension.getConfigurationService().setEsIndexPrefix(
-      customPrefixElasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setIndexPrefix(
+      customPrefixDatabaseIntegrationTestExtension.getOptimizeElasticsearchClient()
         .getIndexNameService()
         .getIndexPrefix()
     );
@@ -107,12 +107,12 @@ public class CustomIndexPrefixIT extends AbstractPlatformIT {
     deploySimpleProcess();
 
     importAllEngineEntitiesFromScratch();
-    customPrefixElasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    customPrefixDatabaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS)).isEqualTo(1);
+    assertThat(databaseIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS)).isEqualTo(1);
     assertThat(
-      customPrefixElasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS)
+      customPrefixDatabaseIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_MULTI_ALIAS)
     ).isEqualTo(2);
   }
 

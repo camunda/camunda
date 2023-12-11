@@ -10,6 +10,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.ClientRequestFilter;
@@ -26,6 +27,9 @@ import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
+import org.camunda.optimize.dto.optimize.query.analysis.FlowNodeOutlierParametersDto;
+import org.camunda.optimize.dto.optimize.query.analysis.FlowNodeOutlierVariableParametersDto;
+import org.camunda.optimize.dto.optimize.query.analysis.ProcessDefinitionParametersDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
@@ -53,6 +57,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
@@ -85,7 +90,6 @@ import org.camunda.optimize.jetty.OptimizeResourceConstants;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
@@ -94,7 +98,6 @@ import org.glassfish.jersey.client.ClientProperties;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-import jakarta.validation.constraints.NotNull;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -149,6 +152,7 @@ import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 @Slf4j
 public class OptimizeRequestExecutor {
+
   private static final int MAX_LOGGED_BODY_SIZE = 10_000;
   private static final String ALERT = "alert";
 
@@ -1390,101 +1394,140 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildFlowNodeOutliersRequest(String key,
-                                                              List<String> version,
-                                                              List<String> tenantIds) {
+  public OptimizeRequestExecutor buildFlowNodeOutliersRequest(final String key,
+                                                              final List<String> version,
+                                                              final List<String> tenantIds) {
     return buildFlowNodeOutliersRequest(key, version, tenantIds, 0, false);
   }
 
-  public OptimizeRequestExecutor buildFlowNodeOutliersRequest(String key,
-                                                              List<String> version,
-                                                              List<String> tenantIds,
+  public OptimizeRequestExecutor buildFlowNodeOutliersRequest(final String key,
+                                                              final List<String> version,
+                                                              final List<String> tenantIds,
                                                               final long minimalDeviationInMs,
                                                               final boolean onlyHumanTasks) {
+    return buildFlowNodeOutliersRequest(key, version, tenantIds, minimalDeviationInMs, onlyHumanTasks, Collections.emptyList());
+  }
+
+  public OptimizeRequestExecutor buildFlowNodeOutliersRequest(final String key,
+                                                              final List<String> version,
+                                                              final List<String> tenantIds,
+                                                              final long minimalDeviationInMs,
+                                                              final boolean onlyHumanTasks,
+                                                              final List<ProcessFilterDto<?>> filters) {
+    final ProcessDefinitionParametersDto processDefinitionParametersDto =
+      new ProcessDefinitionParametersDto();
+    processDefinitionParametersDto.setProcessDefinitionKey(key);
+    processDefinitionParametersDto.setProcessDefinitionVersions(version);
+    processDefinitionParametersDto.setTenantIds(tenantIds);
+    processDefinitionParametersDto.setMinimumDeviationFromAvg(minimalDeviationInMs);
+    processDefinitionParametersDto.setDisconsiderAutomatedTasks(onlyHumanTasks);
+    processDefinitionParametersDto.setFilters(filters);
     this.path = "analysis/flowNodeOutliers";
-    this.method = GET;
-    this.addSingleQueryParam("processDefinitionKey", key);
-    this.addSingleQueryParam("processDefinitionVersions", version);
-    this.addSingleQueryParam("tenantIds", tenantIds);
-    this.addSingleQueryParam("minimumDeviationFromAvg", minimalDeviationInMs);
-    this.addSingleQueryParam("disconsiderAutomatedTasks", onlyHumanTasks);
+    this.method = POST;
+    this.body = getBody(processDefinitionParametersDto);
     return this;
   }
 
-  public OptimizeRequestExecutor buildFlowNodeDurationChartRequest(String key,
-                                                                   List<String> version,
-                                                                   List<String> tenantIds,
-                                                                   String flowNodeId) {
-    return buildFlowNodeDurationChartRequest(key, version, flowNodeId, tenantIds, null, null);
+  public OptimizeRequestExecutor buildFlowNodeDurationChartRequest(final String key,
+                                                                   final List<String> version,
+                                                                   final List<String> tenantIds,
+                                                                   final String flowNodeId) {
+    return buildFlowNodeDurationChartRequest(key, version, flowNodeId, tenantIds, null, null, Collections.emptyList());
   }
 
-  public OptimizeRequestExecutor buildFlowNodeDurationChartRequest(String key,
-                                                                   List<String> version,
-                                                                   String flowNodeId,
-                                                                   List<String> tenantIds,
-                                                                   Long lowerOutlierBound,
-                                                                   Long higherOutlierBound) {
+  public OptimizeRequestExecutor buildFlowNodeDurationChartRequest(final String key,
+                                                                   final List<String> version,
+                                                                   final String flowNodeId,
+                                                                   final List<String> tenantIds,
+                                                                   final Long lowerOutlierBound,
+                                                                   final Long higherOutlierBound,
+                                                                   final List<ProcessFilterDto<?>> filters) {
     this.path = "analysis/durationChart";
-    this.method = GET;
-    this.addSingleQueryParam("processDefinitionKey", key);
-    this.addSingleQueryParam("processDefinitionVersions", version);
-    this.addSingleQueryParam("flowNodeId", flowNodeId);
-    this.addSingleQueryParam("tenantIds", tenantIds);
-    this.addSingleQueryParam("lowerOutlierBound", lowerOutlierBound);
-    this.addSingleQueryParam("higherOutlierBound", higherOutlierBound);
+    this.method = POST;
+    final FlowNodeOutlierParametersDto requestDto = new FlowNodeOutlierParametersDto();
+    requestDto.setProcessDefinitionKey(key);
+    requestDto.setProcessDefinitionVersions(version);
+    requestDto.setFlowNodeId(flowNodeId);
+    requestDto.setTenantIds(tenantIds);
+    requestDto.setLowerOutlierBound(lowerOutlierBound);
+    requestDto.setHigherOutlierBound(higherOutlierBound);
+    requestDto.setFilters(filters);
+    this.body = getBody(requestDto);
     return this;
   }
 
-  public OptimizeRequestExecutor buildSignificantOutlierVariableTermsRequest(String key,
-                                                                             List<String> version,
-                                                                             List<String> tenantIds,
-                                                                             String flowNodeId,
-                                                                             Long lowerOutlierBound,
-                                                                             Long higherOutlierBound) {
+  public OptimizeRequestExecutor buildSignificantOutlierVariableTermsRequest(final String key,
+                                                                             final List<String> version,
+                                                                             final List<String> tenantIds,
+                                                                             final String flowNodeId,
+                                                                             final Long lowerOutlierBound,
+                                                                             final Long higherOutlierBound,
+                                                                             final List<ProcessFilterDto<?>> filters) {
     this.path = "analysis/significantOutlierVariableTerms";
-    this.method = GET;
-    this.addSingleQueryParam("processDefinitionKey", key);
-    this.addSingleQueryParam("processDefinitionVersions", version);
-    this.addSingleQueryParam("flowNodeId", flowNodeId);
-    this.addSingleQueryParam("tenantIds", tenantIds);
-    this.addSingleQueryParam("lowerOutlierBound", lowerOutlierBound);
-    this.addSingleQueryParam("higherOutlierBound", higherOutlierBound);
+    this.method = POST;
+    final FlowNodeOutlierParametersDto requestDto = new FlowNodeOutlierParametersDto();
+    requestDto.setProcessDefinitionKey(key);
+    requestDto.setProcessDefinitionVersions(version);
+    requestDto.setFlowNodeId(flowNodeId);
+    requestDto.setTenantIds(tenantIds);
+    requestDto.setLowerOutlierBound(lowerOutlierBound);
+    requestDto.setHigherOutlierBound(higherOutlierBound);
+    requestDto.setFilters(filters);
+    this.body = getBody(requestDto);
     return this;
   }
 
-  public OptimizeRequestExecutor buildSignificantOutlierVariableTermsInstanceIdsRequest(String key,
-                                                                                        List<String> version,
-                                                                                        List<String> tenantIds,
-                                                                                        String flowNodeId,
-                                                                                        Long lowerOutlierBound,
-                                                                                        Long higherOutlierBound,
-                                                                                        String variableName,
-                                                                                        String variableTerm) {
+  public OptimizeRequestExecutor buildSignificantOutlierVariableTermsInstanceIdsRequest(final String key,
+                                                                                        final List<String> version,
+                                                                                        final List<String> tenantIds,
+                                                                                        final String flowNodeId,
+                                                                                        final Long lowerOutlierBound,
+                                                                                        final Long higherOutlierBound,
+                                                                                        final String variableName,
+                                                                                        final String variableTerm) {
+    return buildSignificantOutlierVariableTermsInstanceIdsRequest(
+      key, version, tenantIds, flowNodeId, lowerOutlierBound,
+      higherOutlierBound, variableName, variableTerm, Collections.emptyList()
+    );
+  }
+
+  public OptimizeRequestExecutor buildSignificantOutlierVariableTermsInstanceIdsRequest(final String key,
+                                                                                        final List<String> version,
+                                                                                        final List<String> tenantIds,
+                                                                                        final String flowNodeId,
+                                                                                        final Long lowerOutlierBound,
+                                                                                        final Long higherOutlierBound,
+                                                                                        final String variableName,
+                                                                                        final String variableTerm,
+                                                                                        final List<ProcessFilterDto<?>> filters) {
     this.path = "analysis/significantOutlierVariableTerms/processInstanceIdsExport";
-    this.method = GET;
-    this.addSingleQueryParam("processDefinitionKey", key);
-    this.addSingleQueryParam("processDefinitionVersions", version);
-    this.addSingleQueryParam("flowNodeId", flowNodeId);
-    this.addSingleQueryParam("tenantIds", tenantIds);
-    this.addSingleQueryParam("lowerOutlierBound", lowerOutlierBound);
-    this.addSingleQueryParam("higherOutlierBound", higherOutlierBound);
-    this.addSingleQueryParam("variableName", variableName);
-    this.addSingleQueryParam("variableTerm", variableTerm);
+    this.method = POST;
+    final FlowNodeOutlierVariableParametersDto requestDto = new FlowNodeOutlierVariableParametersDto();
+    requestDto.setProcessDefinitionKey(key);
+    requestDto.setProcessDefinitionVersions(version);
+    requestDto.setTenantIds(tenantIds);
+    requestDto.setFlowNodeId(flowNodeId);
+    requestDto.setLowerOutlierBound(lowerOutlierBound);
+    requestDto.setHigherOutlierBound(higherOutlierBound);
+    requestDto.setVariableName(variableName);
+    requestDto.setVariableTerm(variableTerm);
+    requestDto.setFilters(filters);
+    this.body = getBody(requestDto);
     return this;
   }
 
-  public OptimizeRequestExecutor buildCopyReportRequest(String id, String collectionId) {
+  public OptimizeRequestExecutor buildCopyReportRequest(final String id, final String collectionId) {
     this.path = "report/" + id + "/copy";
     this.method = POST;
     setCollectionIdQueryParam(collectionId);
     return this;
   }
 
-  public OptimizeRequestExecutor buildCopyDashboardRequest(String id) {
+  public OptimizeRequestExecutor buildCopyDashboardRequest(final String id) {
     return buildCopyDashboardRequest(id, null);
   }
 
-  public OptimizeRequestExecutor buildCopyDashboardRequest(String id, String collectionId) {
+  public OptimizeRequestExecutor buildCopyDashboardRequest(final String id, final String collectionId) {
     this.path = "dashboard/" + id + "/copy";
     this.method = POST;
     setCollectionIdQueryParam(collectionId);
@@ -1497,14 +1540,14 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildCreateEventProcessMappingRequest(EventProcessMappingCreateRequestDto eventProcessMappingCreateRequestDto) {
+  public OptimizeRequestExecutor buildCreateEventProcessMappingRequest(final EventProcessMappingCreateRequestDto eventProcessMappingCreateRequestDto) {
     this.path = "eventBasedProcess/";
     this.body = getBody(eventProcessMappingCreateRequestDto);
     this.method = POST;
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetEventProcessMappingRequest(String eventProcessId) {
+  public OptimizeRequestExecutor buildGetEventProcessMappingRequest(final String eventProcessId) {
     this.path = "eventBasedProcess/" + eventProcessId;
     this.method = GET;
     return this;
@@ -1516,60 +1559,60 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildUpdateEventProcessMappingRequest(String eventProcessId,
-                                                                       EventProcessMappingDto eventProcessMappingDto) {
+  public OptimizeRequestExecutor buildUpdateEventProcessMappingRequest(final String eventProcessId,
+                                                                       final EventProcessMappingDto eventProcessMappingDto) {
     this.path = "eventBasedProcess/" + eventProcessId;
     this.body = getBody(eventProcessMappingDto);
     this.method = PUT;
     return this;
   }
 
-  public OptimizeRequestExecutor buildUpdateEventProcessRolesRequest(String eventProcessId,
-                                                                     List<EventProcessRoleRequestDto<IdentityDto>> roleRestDtos) {
+  public OptimizeRequestExecutor buildUpdateEventProcessRolesRequest(final String eventProcessId,
+                                                                     final List<EventProcessRoleRequestDto<IdentityDto>> roleRestDtos) {
     this.path = "eventBasedProcess/" + eventProcessId + "/role";
     this.method = PUT;
     this.body = getBody(roleRestDtos);
     return this;
   }
 
-  public OptimizeRequestExecutor buildPublishEventProcessMappingRequest(String eventProcessId) {
+  public OptimizeRequestExecutor buildPublishEventProcessMappingRequest(final String eventProcessId) {
     this.path = "eventBasedProcess/" + eventProcessId + "/_publish";
     this.method = POST;
     return this;
   }
 
-  public OptimizeRequestExecutor buildCancelPublishEventProcessMappingRequest(String eventProcessId) {
+  public OptimizeRequestExecutor buildCancelPublishEventProcessMappingRequest(final String eventProcessId) {
     this.path = "eventBasedProcess/" + eventProcessId + "/_cancelPublish";
     this.method = POST;
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetDeleteConflictsForEventProcessMappingRequest(String eventProcessId) {
+  public OptimizeRequestExecutor buildGetDeleteConflictsForEventProcessMappingRequest(final String eventProcessId) {
     this.path = "eventBasedProcess/" + eventProcessId + "/delete-conflicts";
     this.method = GET;
     return this;
   }
 
-  public OptimizeRequestExecutor buildCheckBulkDeleteConflictsForEventProcessMappingRequest(List<String> eventBasedProcessConflictIds) {
+  public OptimizeRequestExecutor buildCheckBulkDeleteConflictsForEventProcessMappingRequest(final List<String> eventBasedProcessConflictIds) {
     this.path = "eventBasedProcess/delete-conflicts";
     this.method = POST;
     this.body = getBody(eventBasedProcessConflictIds);
     return this;
   }
 
-  public OptimizeRequestExecutor buildDeleteEventProcessMappingRequest(String eventProcessId) {
+  public OptimizeRequestExecutor buildDeleteEventProcessMappingRequest(final String eventProcessId) {
     this.path = "eventBasedProcess/" + eventProcessId;
     this.method = DELETE;
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetEventProcessMappingRolesRequest(String eventProcessId) {
+  public OptimizeRequestExecutor buildGetEventProcessMappingRolesRequest(final String eventProcessId) {
     this.path = "eventBasedProcess/" + eventProcessId + "/role";
     this.method = GET;
     return this;
   }
 
-  public OptimizeRequestExecutor buildCleanupEventProcessMappingRequest(EventMappingCleanupRequestDto cleanupRequestDto) {
+  public OptimizeRequestExecutor buildCleanupEventProcessMappingRequest(final EventMappingCleanupRequestDto cleanupRequestDto) {
     this.path = "eventBasedProcess/_mappingCleanup";
     this.body = getBody(cleanupRequestDto);
     this.method = POST;
@@ -1582,35 +1625,35 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildAddScopeEntryToCollectionRequest(String collectionId,
-                                                                       CollectionScopeEntryDto entryDto) {
+  public OptimizeRequestExecutor buildAddScopeEntryToCollectionRequest(final String collectionId,
+                                                                       final CollectionScopeEntryDto entryDto) {
     return buildAddScopeEntriesToCollectionRequest(collectionId, Collections.singletonList(entryDto));
   }
 
-  public OptimizeRequestExecutor buildAddScopeEntriesToCollectionRequest(String collectionId,
-                                                                         List<CollectionScopeEntryDto> entryDto) {
+  public OptimizeRequestExecutor buildAddScopeEntriesToCollectionRequest(final String collectionId,
+                                                                         final List<CollectionScopeEntryDto> entryDto) {
     this.path = "collection/" + collectionId + "/scope";
     this.method = PUT;
     this.body = getBody(entryDto);
     return this;
   }
 
-  public OptimizeRequestExecutor buildDeleteScopeEntryFromCollectionRequest(String collectionId,
-                                                                            String scopeEntryId) {
+  public OptimizeRequestExecutor buildDeleteScopeEntryFromCollectionRequest(final String collectionId,
+                                                                            final String scopeEntryId) {
     return buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeEntryId, false);
   }
 
-  public OptimizeRequestExecutor buildBulkDeleteScopeEntriesFromCollectionRequest(List<String> collectionScopeIds,
-                                                                                  String collectionId) {
+  public OptimizeRequestExecutor buildBulkDeleteScopeEntriesFromCollectionRequest(final List<String> collectionScopeIds,
+                                                                                  final String collectionId) {
     this.path = "collection/" + collectionId + "/scope/delete";
     this.method = POST;
     this.body = getBody(collectionScopeIds);
     return this;
   }
 
-  public OptimizeRequestExecutor buildDeleteScopeEntryFromCollectionRequest(String collectionId,
-                                                                            String scopeEntryId,
-                                                                            Boolean force) {
+  public OptimizeRequestExecutor buildDeleteScopeEntryFromCollectionRequest(final String collectionId,
+                                                                            final String scopeEntryId,
+                                                                            final Boolean force) {
     this.path = "collection/" + collectionId + "/scope/" + scopeEntryId;
     this.method = DELETE;
     Optional.ofNullable(force).ifPresent(value -> addSingleQueryParam("force", value));
@@ -1975,9 +2018,9 @@ public class OptimizeRequestExecutor {
   }
 
   private static ObjectMapper getDefaultObjectMapper() {
-    final ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
     return new ObjectMapperFactory(
-      new OptimizeDateTimeFormatterFactory().getObject(), configurationService
+      new OptimizeDateTimeFormatterFactory().getObject(),
+      ConfigurationServiceBuilder.createDefaultConfiguration()
     ).createOptimizeMapper();
   }
 

@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow, mount} from 'enzyme';
 
 import {BPMNDiagram, Table} from 'components';
@@ -119,7 +118,7 @@ it('should apply previously defined target values to input fields', async () => 
   expect(node.state('values').a.unit).toBe('days');
 });
 
-it('should set isInvalid property for input if value is invalid', async () => {
+it('should set invalid property for input if value is invalid', async () => {
   global.ResizeObserver = class {
     observe(element, initObject) {}
   };
@@ -131,10 +130,7 @@ it('should set isInvalid property for input if value is invalid', async () => {
 
   await node.update();
 
-  expect(node.find('.selection > [type="number"]').first().props()).toHaveProperty(
-    'isInvalid',
-    true
-  );
+  expect(node.find('.selection > [type="number"]').first().props()).toHaveProperty('invalid', true);
 });
 
 it('should not crash if report result is not an array', async () => {

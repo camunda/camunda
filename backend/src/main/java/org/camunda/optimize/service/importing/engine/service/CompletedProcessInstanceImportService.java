@@ -12,8 +12,8 @@ import org.camunda.optimize.plugin.BusinessKeyImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.db.writer.CompletedProcessInstanceWriter;
-import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.job.importing.CompletedProcessInstanceElasticsearchImportJob;
+import org.camunda.optimize.service.importing.DatabaseImportJob;
+import org.camunda.optimize.service.importing.job.CompletedProcessInstanceDatabaseImportJob;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
@@ -38,10 +38,10 @@ public class CompletedProcessInstanceImportService extends AbstractProcessInstan
 
 
   @Override
-  protected ElasticsearchImportJob<ProcessInstanceDto> createElasticsearchImportJob(
+  protected DatabaseImportJob<ProcessInstanceDto> createDatabaseImportJob(
     final List<ProcessInstanceDto> processInstances,
     final Runnable callback) {
-    CompletedProcessInstanceElasticsearchImportJob importJob = new CompletedProcessInstanceElasticsearchImportJob(
+    CompletedProcessInstanceDatabaseImportJob importJob = new CompletedProcessInstanceDatabaseImportJob(
       completedProcessInstanceWriter, camundaEventService, configurationService, callback);
     importJob.setEntitiesToImport(processInstances);
     return importJob;

@@ -7,8 +7,8 @@ package org.camunda.optimize.service.importing.zeebe.mediator.factory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.PositionBasedImportIndexWriter;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
 import org.camunda.optimize.service.importing.engine.service.StorePositionBasedIndexImportService;
@@ -25,12 +25,12 @@ public class StorePositionBasedImportProgressMediatorFactory extends AbstractZee
   private final PositionBasedImportIndexWriter importIndexWriter;
 
   public StorePositionBasedImportProgressMediatorFactory(final BeanFactory beanFactory,
-                                                         final ImportIndexHandlerRegistry importIndexHandlerRegistry,
-                                                         final ConfigurationService configurationService,
-                                                         final PositionBasedImportIndexWriter importIndexWriter,
-                                                         final ObjectMapper objectMapper,
-                                                         final OptimizeElasticsearchClient esClient) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService, objectMapper, esClient);
+                                                           final ImportIndexHandlerRegistry importIndexHandlerRegistry,
+                                                           final ConfigurationService configurationService,
+                                                           final PositionBasedImportIndexWriter importIndexWriter,
+                                                           final ObjectMapper objectMapper,
+                                                           final DatabaseClient databaseClient) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService, objectMapper, databaseClient);
     this.importIndexWriter = importIndexWriter;
   }
 

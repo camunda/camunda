@@ -14,8 +14,8 @@ import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndexES;
-import org.camunda.optimize.service.es.schema.index.events.EventIndexES;
+import org.camunda.optimize.service.db.es.schema.index.VariableUpdateInstanceIndexES;
+import org.camunda.optimize.service.db.es.schema.index.events.EventIndexES;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
@@ -52,8 +52,8 @@ public abstract class AbstractCleanupIT extends AbstractPlatformIT {
 
   // TODO decouple these tests from elastic search dependency, to be dealt with OPT-7225
   protected void cleanUpEventIndices() {
-    elasticSearchIntegrationTestExtension.deleteAllExternalEventIndices();
-    elasticSearchIntegrationTestExtension.deleteAllVariableUpdateInstanceIndices();
+    databaseIntegrationTestExtension.deleteAllExternalEventIndices();
+    databaseIntegrationTestExtension.deleteAllVariableUpdateInstanceIndices();
     embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
       embeddedOptimizeExtension.getOptimizeElasticClient(),
       new EventIndexES()
@@ -154,7 +154,7 @@ public abstract class AbstractCleanupIT extends AbstractPlatformIT {
       .indices(PROCESS_INSTANCE_MULTI_ALIAS)
       .source(searchSourceBuilder);
 
-    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient().search(searchRequest);
+    return databaseIntegrationTestExtension.getOptimizeElasticsearchClient().search(searchRequest);
   }
 
   protected void assertProcessInstanceDataCompleteInEs(final String instanceId) throws IOException {
@@ -198,13 +198,13 @@ public abstract class AbstractCleanupIT extends AbstractPlatformIT {
   }
 
   protected List<CamundaActivityEventDto> getCamundaActivityEvents() {
-    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*", CamundaActivityEventDto.class
     );
   }
 
   protected List<BusinessKeyDto> getAllCamundaEventBusinessKeys() {
-    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
       BUSINESS_KEY_INDEX_NAME,
       BusinessKeyDto.class
     );

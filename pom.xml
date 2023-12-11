@@ -6,6 +6,83 @@
   <artifactId>parent</artifactId>
   <version>3.12.0</version>
   <packaging>pom</packaging>
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <project.previousVersion>3.11.0</project.previousVersion>
+
+    <camunda.engine.version>7.18.0</camunda.engine.version>
+    <camunda.maven.artifacts.version>7.18.11-ee</camunda.maven.artifacts.version>
+
+    <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
+    <zeebe.version>8.4.0-alpha2</zeebe.version>
+    <identity.version>8.4.0-alpha2</identity.version>
+    <!-- We use this for the Zeebe test container version only -->
+    <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
+
+    <!-- maven plugins -->
+    <surefire-plugin.version>3.2.2</surefire-plugin.version>
+    <plugin.version.sonar>3.10.0.2594</plugin.version.sonar>
+
+    <!-- database config -->
+    <elasticsearch.version>7.17.14</elasticsearch.version>
+    <opensearch.version>2.8.0</opensearch.version>
+    <!-- The default es 8 version we are going to be testing with-->
+    <elasticsearch8.test.version>8.8.0</elasticsearch8.test.version>
+    <!--The least supported elasticsearch version we should test against-->
+    <elasticsearch.test.version>7.10.0</elasticsearch.test.version>
+    <!--the ElasticSearch version of the previous Optimize version -->
+    <previous.optimize.elasticsearch.version>7.10.0</previous.optimize.elasticsearch.version>
+    <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
+    <elasticsearch.log4j.version>2.22.0</elasticsearch.log4j.version>
+
+    <jackson.version>2.15.3</jackson.version>
+    <jsonpath.version>2.8.0</jsonpath.version>
+    <apache.http5-client.version>5.2.1</apache.http5-client.version>
+    <apache.http5-core.version>5.2.3</apache.http5-core.version>
+    <guava.version>32.1.3-jre</guava.version>
+    <spring.boot.version>3.1.5</spring.boot.version>
+    <spring.version>6.1.0</spring.version>
+    <httpclient.version>4.5.14</httpclient.version>
+    <quartz.version>2.3.2</quartz.version>
+    <jakarta.rs-api.version>3.1.0</jakarta.rs-api.version>
+    <netty.version>4.1.100.Final</netty.version>
+    <lombok.version>1.18.30</lombok.version>
+    <logback.version>1.4.14</logback.version>
+    <slf4j.version>2.0.9</slf4j.version>
+    <commons.io.version>2.15.1</commons.io.version>
+
+    <version.node>v20.9.0</version.node>
+    <version.yarn>v1.22.19</version.yarn>
+
+    <!-- testing config -->
+    <h2.version>2.2.224</h2.version>
+    <postgres.version>42.7.0</postgres.version>
+    <mockito.version>5.7.0</mockito.version>
+    <mockito-inline.version>5.2.0</mockito-inline.version>
+    <junit.jupiter.version>5.10.1</junit.jupiter.version>
+    <junit.platform.version>1.10.1</junit.platform.version>
+    <mockserver.version>5.15.0</mockserver.version>
+    <assertj.version>3.24.2</assertj.version>
+    <!-- This is the default profile used for the DB selection in tests -->
+    <database.profile>elasticsearch</database.profile>
+
+    <skipTests>false</skipTests>
+    <skip.unit.tests>${skipTests}</skip.unit.tests>
+    <skip.docker>false</skip.docker>
+    <docker.compose.file>docker-compose.yml</docker.compose.file>
+
+    <sonar.organization>camunda</sonar.organization>
+    <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+    <aggregate.report.dir>test-coverage/target/site/jacoco-aggregate/jacoco.xml</aggregate.report.dir>
+    <sonar.junit.reportPaths>
+      ${project.build.directory}/surefire-reports/,${project.build.directory}/failsafe-reports/,${project.build.directory}/failsafe-reports/1/,${project.build.directory}/failsafe-reports/2/,${project.build.directory}/failsafe-reports/3/,${project.build.directory}/failsafe-reports/4/
+    </sonar.junit.reportPaths>
+
+    <maven.compiler.target>17</maven.compiler.target>
+    <maven.compiler.source>17</maven.compiler.source>
+  </properties>
+
   <name>Camunda Optimize</name>
 
   <modules>
@@ -19,77 +96,6 @@
     <module>upgrade</module>
     <module>test-coverage</module>
   </modules>
-
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <project.previousVersion>3.11.0</project.previousVersion>
-
-    <camunda.engine.version>7.18.0</camunda.engine.version>
-    <camunda.maven.artifacts.version>7.18.11-ee</camunda.maven.artifacts.version>
-
-    <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
-    <zeebe.version>8.4.0-alpha1</zeebe.version>
-    <identity.version>8.4.0-alpha1</identity.version>
-    <!-- We use this for the Zeebe test container version only -->
-    <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
-
-    <surefire-plugin.version>3.2.2</surefire-plugin.version>
-    <!-- maven plugins -->
-    <plugin.version.sonar>3.10.0.2594</plugin.version.sonar>
-
-    <jackson.version>2.15.3</jackson.version>
-    <jsonpath.version>2.8.0</jsonpath.version>
-    <elasticsearch.version>7.17.14</elasticsearch.version>
-    <opensearch.version>2.8.0</opensearch.version>
-    <apache.http5-client.version>5.2.1</apache.http5-client.version>
-    <apache.http5-core.version>5.2.3</apache.http5-core.version>
-    <!-- The default es 8 version we are going to be testing with-->
-    <elasticsearch8.test.version>8.8.0</elasticsearch8.test.version>
-    <!--The least supported elasticsearch version we should test against-->
-    <elasticsearch.test.version>7.10.0</elasticsearch.test.version>
-    <!--the ElasticSearch version of the previous Optimize version -->
-    <previous.optimize.elasticsearch.version>7.10.0</previous.optimize.elasticsearch.version>
-    <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
-    <elasticsearch.log4j.version>2.21.1</elasticsearch.log4j.version>
-    <guava.version>32.1.3-jre</guava.version>
-    <spring.boot.version>3.0.12</spring.boot.version>
-    <spring.version>6.0.13</spring.version>
-    <mockito.version>5.7.0</mockito.version>
-    <mockito-inline.version>5.2.0</mockito-inline.version>
-    <httpclient.version>4.5.14</httpclient.version>
-    <junit.jupiter.version>5.10.1</junit.jupiter.version>
-    <junit.platform.version>1.10.1</junit.platform.version>
-    <mockserver.version>5.15.0</mockserver.version>
-    <quartz.version>2.3.2</quartz.version>
-    <assertj.version>3.24.2</assertj.version>
-    <postgres.version>42.6.0</postgres.version>
-    <jakarta.rs-api.version>3.1.0</jakarta.rs-api.version>
-    <netty.version>4.1.100.Final</netty.version>
-
-    <lombok.version>1.18.30</lombok.version>
-    <logback.version>1.4.11</logback.version>
-    <slf4j.version>2.0.9</slf4j.version>
-
-    <version.node>v16.16.0</version.node>
-    <version.yarn>v1.22.18</version.yarn>
-
-    <skipTests>false</skipTests>
-    <skip.unit.tests>${skipTests}</skip.unit.tests>
-    <skip.docker>false</skip.docker>
-    <docker.compose.file>docker-compose.yml</docker.compose.file>
-
-    <sonar.organization>camunda</sonar.organization>
-    <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-    <aggregate.report.dir>test-coverage/target/site/jacoco-aggregate/jacoco.xml</aggregate.report.dir>
-    <sonar.junit.reportPaths>
-      ${project.build.directory}/surefire-reports/,${project.build.directory}/failsafe-reports/,${project.build.directory}/failsafe-reports/1/,${project.build.directory}/failsafe-reports/2/,${project.build.directory}/failsafe-reports/3/,${project.build.directory}/failsafe-reports/4/
-    </sonar.junit.reportPaths>
-    <h2.version>2.2.224</h2.version>
-
-    <maven.compiler.target>17</maven.compiler.target>
-    <maven.compiler.source>17</maven.compiler.source>
-  </properties>
 
   <dependencyManagement>
     <dependencies>
@@ -112,6 +118,7 @@
 
   <profiles>
 
+   <!-- engine profiles-->
     <profile>
       <id>engine-latest</id>
       <activation>
@@ -120,7 +127,6 @@
       <properties>
       </properties>
     </profile>
-
     <profile>
       <id>engine-snapshot</id>
       <properties>
@@ -132,21 +138,18 @@
         <camunda.engine.version>${env.CAMBPM_SNAPSHOT_VERSION}</camunda.engine.version>
       </properties>
     </profile>
-
     <profile>
       <id>engine-7.20</id>
       <properties>
         <camunda.engine.version>7.20.0</camunda.engine.version>
       </properties>
     </profile>
-
     <profile>
       <id>engine-7.19</id>
       <properties>
         <camunda.engine.version>7.19.0</camunda.engine.version>
       </properties>
     </profile>
-
     <profile>
       <id>engine-7.18</id>
       <properties>
@@ -154,6 +157,7 @@
       </properties>
     </profile>
 
+    <!-- release profile-->
     <profile>
       <id>release</id>
       <properties>
@@ -200,20 +204,19 @@
       </build>
     </profile>
 
+    <!-- testing profiles-->
     <profile>
       <id>it</id>
       <properties>
         <skip.unit.tests>true</skip.unit.tests>
       </properties>
     </profile>
-
     <profile>
       <id>ccsm-it</id>
       <properties>
         <skip.unit.tests>true</skip.unit.tests>
       </properties>
     </profile>
-
     <profile>
       <id>coverage</id>
       <build>
@@ -234,6 +237,24 @@
       </build>
     </profile>
 
+    <!-- database profiles-->
+    <profile>
+      <id>elasticsearch</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <database.profile>elasticsearch</database.profile>
+      </properties>
+    </profile>
+    <!-- database profiles-->
+    <profile>
+      <id>opensearch</id>
+      <properties>
+        <database.profile>opensearch</database.profile>
+      </properties>
+    </profile>
+
     <!-- profile to perform only static code analysis using sonar scanner -->
     <profile>
       <id>sonar</id>
@@ -244,11 +265,7 @@
         <sonar.organization>camunda</sonar.organization>
         <sonar.projectKey>camunda_camunda-optimize</sonar.projectKey>
         <sonar.moduleKey>${project.artifactId}</sonar.moduleKey>
-        <sonar.login>${env.SONARCLOUD_TOKEN}</sonar.login>
-        <!-- sonar exclusions on duplication detection -->
-        <!-- As part of our migration testing we have to c&p index classes to have their old state -->
-        <!-- available during migration testing, we thus want to exlude them from duplication detection. -->
-        <sonar.cpd.exclusions>**/org/camunda/optimize/upgrade/**/*Old.java</sonar.cpd.exclusions>
+        <sonar.token>${env.SONARCLOUD_TOKEN}</sonar.token>
       </properties>
       <build>
         <plugins>
@@ -402,7 +419,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>build-helper-maven-plugin</artifactId>
-          <version>3.4.0</version>
+          <version>3.5.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>

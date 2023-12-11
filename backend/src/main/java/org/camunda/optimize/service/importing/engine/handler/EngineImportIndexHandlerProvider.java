@@ -28,6 +28,7 @@ import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class EngineImportIndexHandlerProvider {
+
   private static final List<Class<?>> TIMESTAMP_BASED_HANDLER_CLASSES;
   private static final List<Class<?>> SCROLL_BASED_HANDLER_CLASSES;
   private static final List<Class<?>> ALL_ENTITIES_HANDLER_CLASSES;
@@ -47,6 +48,7 @@ public class EngineImportIndexHandlerProvider {
   }
 
   private final EngineContext engineContext;
+
   @Autowired
   private BeanFactory beanFactory;
   private List<AllEntitiesBasedImportIndexHandler> allEntitiesBasedHandlers;
@@ -138,4 +140,5 @@ public class EngineImportIndexHandlerProvider {
   private boolean isInstantiated(Class<?> handlerClass) {
     return allHandlers.get(handlerClass.getSimpleName()) != null;
   }
+
 }

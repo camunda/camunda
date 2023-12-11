@@ -5,9 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {Component} from 'react';
+import {Tooltip} from '@carbon/react';
+import {Information} from '@carbon/icons-react';
 
-import {Icon, Tooltip} from 'components';
 import {loadVariables} from 'services';
 import {t} from 'translation';
 
@@ -29,7 +30,7 @@ import ViewFilters from './ViewFilters';
 
 import './Filter.scss';
 
-export default class Filter extends React.Component {
+export default class Filter extends Component {
   state = {
     newFilterType: null,
     newFilterLevel: null,
@@ -167,13 +168,10 @@ export default class Filter extends React.Component {
           <div className="filterHeader">
             <span className="dropdownLabel">{t('common.filter.dropdownLabel.instance')}</span>
             <div className="explanation">
-              <Tooltip
-                align="right"
-                content={
-                  <div className="filterLevelTooltip">{t('common.filter.tooltip.instance')}</div>
-                }
-              >
-                <Icon type="info" />
+              <Tooltip label={t('common.filter.tooltip.instance')}>
+                <button className="tooltipTriggerBtn">
+                  <Information />
+                </button>
               </Tooltip>
             </div>
             <InstanceFilters
@@ -186,13 +184,10 @@ export default class Filter extends React.Component {
           <div className="filterHeader">
             <span className="dropdownLabel">{t('common.filter.dropdownLabel.view')}</span>
             <div className="explanation">
-              <Tooltip
-                align="right"
-                content={
-                  <div className="filterLevelTooltip">{t('common.filter.tooltip.view')}</div>
-                }
-              >
-                <Icon type="info" />
+              <Tooltip className="flowNodeFilterTooltip" label={t('common.filter.tooltip.view')}>
+                <button className="tooltipTriggerBtn">
+                  <Information />
+                </button>
               </Tooltip>
             </div>
             <ViewFilters

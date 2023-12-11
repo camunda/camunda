@@ -286,7 +286,7 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
     // given
     ingestTestEvent(STARTED_EVENT, OffsetDateTime.now());
     ingestTestEvent(FINISHED_EVENT, OffsetDateTime.now());
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
 
     // when

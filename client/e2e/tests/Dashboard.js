@@ -215,7 +215,7 @@ test('sharing with filters', async (t) => {
   await u.addReportToDashboard(t, 'Blank report');
 
   await t.click(e.addFilterButton);
-  await t.click(Common.option('Instance State'));
+  await t.click(Common.menuOption('Instance State'));
 
   await u.save(t);
 
@@ -337,11 +337,11 @@ test('filters', async (t) => {
   await t.click(Common.editButton);
 
   await t.click(e.addFilterButton);
-  await t.click(Common.option('Instance State'));
+  await t.click(Common.menuOption('Instance State'));
   await t.click(e.addFilterButton);
-  await t.click(Common.option('Start Date'));
+  await t.click(Common.menuOption('Start Date'));
   await t.click(e.addFilterButton);
-  await t.click(Common.option('Variable'));
+  await t.click(Common.menuOption('Variable'));
 
   await t.typeText(Common.comboBox, 'invoiceCategory', {replace: true});
   await t.click(Common.carbonOption('invoiceCategory'));
@@ -554,7 +554,7 @@ test('copy instant preview dashboard', async (t) => {
 
   await u.gotoOverview(t);
 
-  await t.expect(Common.collectionItem.textContent).contains('AnalysisTestingProcess');
+  await t.expect(Common.collectionItem.textContent).contains('Analysis Testing Process');
 
   await t.click(Common.collectionItem);
   await t.expect(Common.dashboardItem.count).eql(1);
@@ -596,6 +596,6 @@ test('copy instant preview dashboard', async (t) => {
   await u.gotoOverview(t);
 
   await t.expect(Common.collectionItem.count).eql(2);
-  await t.expect(Common.collectionItem.nth(0).textContent).contains('AnalysisTestingProcess');
+  await t.expect(Common.collectionItem.nth(0).textContent).contains('Analysis Testing Process');
   await t.expect(Common.collectionItem.nth(1).textContent).contains('another Collection Name');
 });

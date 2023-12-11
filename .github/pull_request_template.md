@@ -17,6 +17,7 @@
 - [ ] If there are changes to a translation file, I have added the testing of relevant translations to the testing notes
 - [ ] If there are new Mixpanel events, I have informed Eran 
 - [ ] If there are API changes, I have updated our [Rest API docs](https://confluence.camunda.com/display/CO/REST-API)
+- [ ] If there are external API changes, I have messaged [Christina](@christinaausley) to let her know of the changes
 - [ ] If there are schema changes, this PR includes a migration script or a link to a follow-up task for the migration script
 - [ ] If this change needs backporting to any older maintenance branches, I have added the respective backporting label to the PR as well as the corresponding patch version label to the 'fix version' field in the Jira ticket
 - [ ] If there are other changes to coordinate (controller, documentation etc.), they are linked here: {INSERT LINKS}

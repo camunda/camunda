@@ -6,30 +6,29 @@
  */
 
 import React from 'react';
-import update from 'immutability-helper';
 import {shallow} from 'enzyme';
-import {Input, LabeledInput, Select} from 'components';
+import {NumberInput} from '@carbon/react';
+
+import {CarbonSelect} from 'components';
 
 import BucketSize from './BucketSize';
 
-const report = {
-  data: {
-    groupBy: {type: 'variable', value: {type: 'Integer'}},
-    distributedBy: {
-      type: 'none',
-      value: null,
-    },
-    configuration: {
-      customBucket: {
-        active: false,
-        bucketSize: '10.0',
-        bucketSizeUnit: 'minute',
-        baseline: '0.0',
-        baselineUnit: 'minute',
-      },
+const props = {
+  groupBy: {type: 'variable', value: {type: 'Integer'}},
+  distributedBy: {
+    type: 'none',
+    value: null,
+  },
+  configuration: {
+    customBucket: {
+      active: false,
+      bucketSize: '10.0',
+      bucketSizeUnit: 'minute',
+      baseline: '0.0',
+      baselineUnit: 'minute',
     },
   },
-  result: {
+  reportResult: {
     measures: [
       {
         data: [{key: '1'}, {key: '2'}, {key: 'missing'}],
@@ -42,26 +41,26 @@ jest.mock('debounce', () => jest.fn((fn) => fn));
 
 it('should render nothing if the current variable is not a number', () => {
   const node = shallow(
-    <BucketSize
-      report={{data: {...report.data, groupBy: {type: 'variable', value: {type: 'Date'}}}}}
-    />
+    <BucketSize {...props} groupBy={{type: 'variable', value: {type: 'Date'}}} />
   );
 
-  expect(node).toMatchSnapshot();
+  expect(node.text()).toBe('');
 });
 
 it('should render bucket options', () => {
-  const node = shallow(<BucketSize report={report} />);
+  const node = shallow(<BucketSize {...props} />);
 
-  expect(node).toMatchSnapshot();
+  expect(node.find('FormGroup').prop('legendText').props.id).toBe('bucketSizeToggle');
+  expect(node.find(NumberInput).at(0).props().id).toBe('bucketSize');
+  expect(node.find(NumberInput).at(1).props().id).toBe('bucketSizeBaseline');
 });
 
 it('should invoke onChange when triggering the activation switch', () => {
   const spy = jest.fn();
 
-  const node = shallow(<BucketSize report={report} onChange={spy} />);
+  const node = shallow(<BucketSize {...props} onChange={spy} />);
 
-  node.find('Switch').prop('onChange')({target: {checked: true}});
+  node.find('FormGroup').prop('legendText').props.onToggle(true);
 
   expect(spy.mock.calls[0][0].customBucket.active).toEqual({$set: true});
 });
@@ -69,45 +68,49 @@ it('should invoke onChange when triggering the activation switch', () => {
 it('should reevaluate the report when changing the size or baseline to a valid value', () => {
   const spy = jest.fn();
 
-  const node = shallow(<BucketSize report={report} onChange={spy} />);
+  const node = shallow(<BucketSize {...props} onChange={spy} />);
 
-  node.find(Input).prop('onChange')({target: {value: '-50'}});
+  node.find(NumberInput).at(0).prop('onChange')(undefined, {value: '-50'});
   expect(spy).not.toHaveBeenCalled();
-  expect(node.find('Message').dive()).toIncludeText('positive');
+  expect(node.find(NumberInput).at(0).prop('invalidText')).toBe('Enter a positive number');
 
-  node.find(LabeledInput).prop('onChange')({target: {value: '-1'}});
+  node.find(NumberInput).at(1).prop('onChange')(undefined, {value: '-1'});
 
   expect(spy).toHaveBeenCalledWith({customBucket: {baseline: {$set: '-1'}}}, true);
 });
 
 it('should include a unit selection when report is grouped by duration', () => {
-  const durationReport = update(report, {data: {groupBy: {$set: {type: 'duration'}}}});
+  const node = shallow(
+    <BucketSize {...props} groupBy={{type: 'duration', value: {type: 'Integer'}}} />
+  );
 
-  const node = shallow(<BucketSize report={durationReport} />);
-
-  expect(node.find(Select)).toExist();
+  expect(node.find(CarbonSelect)).toExist();
 });
 
 it('should include a unit selection when report is distributed by number variable', () => {
   const distributedByVariableReport = {
-    data: {
-      groupBy: {type: 'startDate'},
-      distributedBy: {type: 'variable', value: {type: 'Double'}},
-      configuration: {
-        distributeByCustomBucket: report.data.configuration.customBucket,
+    groupBy: {type: 'startDate'},
+    distributedBy: {type: 'variable', value: {type: 'Double'}},
+    configuration: {
+      distributeByCustomBucket: {
+        active: false,
+        bucketSize: '10.0',
+        bucketSizeUnit: 'minute',
+        baseline: '0.0',
+        baselineUnit: 'minute',
       },
     },
   };
-  const node = shallow(<BucketSize report={distributedByVariableReport} />);
+  const node = shallow(<BucketSize {...props} {...distributedByVariableReport} />);
 
   expect(node.find('.BucketSize')).toExist();
 });
 
 it('should find an apropriate bucket size and baseline when enabling the switch the first time', () => {
   const spy = jest.fn();
-  const node = shallow(<BucketSize report={report} onChange={spy} />);
+  const node = shallow(<BucketSize {...props} onChange={spy} />);
 
-  node.find('Switch').prop('onChange')({target: {checked: true}});
+  node.find('FormGroup').prop('legendText').props.onToggle(true);
 
   expect(spy).toHaveBeenCalledWith(
     {customBucket: {active: {$set: true}, baseline: {$set: 1}, bucketSize: {$set: 0.1}}},
@@ -116,10 +119,10 @@ it('should find an apropriate bucket size and baseline when enabling the switch 
 });
 
 it('should disable the switch and set the tooltip message when disabled', () => {
-  const node = shallow(<BucketSize report={report} disabled />);
+  const node = shallow(<BucketSize {...props} disabled />);
 
-  expect(node.find('Switch').prop('title')).toBe(
+  expect(node.find('FormGroup').prop('legendText').props.labelText).toBe(
     'This function only works with automatic preview update turned on'
   );
-  expect(node.find('Switch').prop('disabled')).toBe(true);
+  expect(node.find('FormGroup').prop('legendText').props.disabled).toBe(true);
 });

@@ -5,10 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
-
-import {Button} from 'components';
 
 import BarLineConfig from './BarLineConfig';
 
@@ -41,7 +38,7 @@ it('should show point markers and barchart config', () => {
 it('should select measure visualization according to configuration', () => {
   const node = shallow(<BarLineConfig report={report} />);
   const isButtonActive = (measureIdx, buttonIdx) =>
-    node.find('.measureContainer').at(measureIdx).find(Button).at(buttonIdx).prop('active');
+    node.find('RadioButtonGroup').at(measureIdx).find('RadioButton').at(buttonIdx).prop('checked');
 
   expect(isButtonActive(0, 0)).toBe(false);
   expect(isButtonActive(0, 1)).toBe(true);
@@ -53,13 +50,13 @@ it('should change measure visualization on button click', () => {
   const spy = jest.fn();
   const node = shallow(<BarLineConfig report={report} onChange={spy} />);
 
-  node.find('.measureContainer').at(0).find(Button).at(0).simulate('click');
+  node.find('RadioButtonGroup').at(0).find('RadioButton').at(0).simulate('click');
   expect(spy.mock.calls[0][0].measureVisualizations.$set).toEqual({
     frequency: 'line',
     duration: 'bar',
   });
 
-  node.find('.measureContainer').at(1).find(Button).at(0).simulate('click');
+  node.find('RadioButtonGroup').at(1).find('RadioButton').at(0).simulate('click');
   expect(spy.mock.calls[1][0].measureVisualizations.$set).toEqual({
     frequency: 'bar',
     duration: 'line',

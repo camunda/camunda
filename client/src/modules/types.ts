@@ -97,11 +97,11 @@ interface SingleViewProperty {
 
 interface ProcessView {
   entity: ViewProcessViewEntity;
-  properties: SingleViewProperty[];
+  properties: (SingleViewProperty | string)[];
 }
 
 interface DecisionView {
-  properties: SingleViewProperty[];
+  properties: (SingleViewProperty | string)[];
 }
 
 interface GroupProcessGroupByDto<VALUE> {
@@ -347,11 +347,39 @@ interface CombinedReportData {
     id: string;
     color: string;
   }[];
+  result: {
+    data: Record<
+      string,
+      {
+        data: {
+          view: {
+            properties: string[];
+          };
+        };
+      }
+    >;
+  };
 }
 
-export type GenericReport = Report<
-  SingleProcessReportData | SingleDecisionReportData | CombinedReportData
->;
+type CombinedReport = Report<CombinedReportData> & {
+  combined: true;
+  result: {
+    data: Record<
+      string,
+      {
+        data: {
+          view: {
+            properties: string[];
+          };
+        };
+      }
+    >;
+  };
+};
+type SingleProcessReport = Report<SingleProcessReportData> & {combined: false};
+type SingleDecisionReport = Report<SingleDecisionReportData> & {combined: false};
+
+export type GenericReport = CombinedReport | SingleDecisionReport | SingleProcessReport;
 
 export interface DashboardTile {
   id: string;

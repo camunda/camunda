@@ -9,9 +9,9 @@ import lombok.extern.slf4j.Slf4j;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.importing.ImportSchedulerManagerService;
-import org.camunda.optimize.service.os.OptimizeOpensearchClient;
+import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.opensearch.client.opensearch._types.HealthStatus;
@@ -27,9 +27,9 @@ import java.time.Duration;
 @Conditional(OpenSearchCondition.class)
 public class StatusCheckingServiceOS extends StatusCheckingService {
 
-  private final OptimizeOpensearchClient osClient;
+  private final OptimizeOpenSearchClient osClient;
 
-  public StatusCheckingServiceOS(final OptimizeOpensearchClient osClient,
+  public StatusCheckingServiceOS(final OptimizeOpenSearchClient osClient,
                                  final ConfigurationService configurationService,
                                  final EngineContextFactory engineContextFactory,
                                  final ImportSchedulerManagerService importSchedulerManagerService,
@@ -51,7 +51,7 @@ public class StatusCheckingServiceOS extends StatusCheckingService {
       .get(
         () -> {
           final HealthResponse clusterHealthResponse =
-            osClient.getDatabaseClient().cluster().health(new HealthRequest.Builder().build());
+            osClient.getOpenSearchClient().cluster().health(new HealthRequest.Builder().build());
           return clusterHealthResponse.status() != HealthStatus.Red;
         });
   }

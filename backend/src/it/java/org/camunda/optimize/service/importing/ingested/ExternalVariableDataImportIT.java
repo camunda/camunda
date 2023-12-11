@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
-import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.DOUBLE;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.LONG;
@@ -42,7 +41,7 @@ public class ExternalVariableDataImportIT extends AbstractIngestedDataImportIT {
     importIngestedDataFromScratchRefreshIndicesBeforeAndAfter();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(instance -> {
         assertThat(instance.getProcessInstanceId()).isEqualTo(externalVariable.getProcessInstanceId());
@@ -73,10 +72,10 @@ public class ExternalVariableDataImportIT extends AbstractIngestedDataImportIT {
     importIngestedDataFromScratchRefreshIndicesBeforeAndAfter();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.indexExists(
+    assertThat(databaseIntegrationTestExtension.indexExists(
       InstanceIndexUtil.getProcessInstanceIndexAliasName(variables.get(0).getProcessDefinitionKey())
     )).isTrue();
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(instance -> {
         assertThat(instance.getProcessInstanceId()).isEqualTo(variables.get(0).getProcessInstanceId());
@@ -100,7 +99,7 @@ public class ExternalVariableDataImportIT extends AbstractIngestedDataImportIT {
     importIngestedDataFromScratchRefreshIndicesBeforeAndAfter();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .allSatisfy(processInstanceDto -> {
         // as process instance id and variable name are identical, check if variables are written to expected instances
         assertThat(processInstanceDto.getVariables())
@@ -132,7 +131,7 @@ public class ExternalVariableDataImportIT extends AbstractIngestedDataImportIT {
     importIngestedDataFromScratchRefreshIndicesBeforeAndAfter();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(instance -> assertThat(instance.getVariables())
         .extracting(SimpleProcessVariableDto::getId)
@@ -142,7 +141,7 @@ public class ExternalVariableDataImportIT extends AbstractIngestedDataImportIT {
     // when
     importIngestedDataFromScratchRefreshIndicesBeforeAndAfter();
 
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(instance -> assertThat(instance.getVariables())
         .extracting(SimpleProcessVariableDto::getId)
@@ -171,7 +170,7 @@ public class ExternalVariableDataImportIT extends AbstractIngestedDataImportIT {
     importIngestedDataFromScratchRefreshIndicesBeforeAndAfter();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(instance -> {
         assertThat(instance.getProcessInstanceId()).isEqualTo(processInstance.getId());
@@ -202,10 +201,10 @@ public class ExternalVariableDataImportIT extends AbstractIngestedDataImportIT {
     importIngestedDataFromLastIndexRefreshIndicesBeforeAndAfter();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.indexExists(
+    assertThat(databaseIntegrationTestExtension.indexExists(
       InstanceIndexUtil.getProcessInstanceIndexAliasName(variable.getProcessDefinitionKey())
     )).isTrue();
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(instance -> {
         assertThat(instance.getProcessInstanceId()).isEqualTo(variable.getProcessInstanceId());
@@ -232,10 +231,10 @@ public class ExternalVariableDataImportIT extends AbstractIngestedDataImportIT {
     importIngestedDataFromScratchRefreshIndicesBeforeAndAfter();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.indexExists(
+    assertThat(databaseIntegrationTestExtension.indexExists(
       InstanceIndexUtil.getProcessInstanceIndexAliasName(variable.getProcessDefinitionKey())
     )).isTrue();
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(instance -> {
         assertThat(instance.getProcessInstanceId()).isEqualTo(variable.getProcessInstanceId());
@@ -262,7 +261,7 @@ public class ExternalVariableDataImportIT extends AbstractIngestedDataImportIT {
     importIngestedDataFromScratchRefreshIndicesBeforeAndAfter();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances()
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances()
                  .stream()
                  .findFirst()
                  .map(ProcessInstanceDto::getVariables)
@@ -305,7 +304,7 @@ public class ExternalVariableDataImportIT extends AbstractIngestedDataImportIT {
     importIngestedDataFromLastIndexRefreshIndicesBeforeAndAfter();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances()
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances()
                  .stream()
                  .findFirst()
                  .map(ProcessInstanceDto::getVariables)

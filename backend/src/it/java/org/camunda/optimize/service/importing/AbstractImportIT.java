@@ -5,19 +5,17 @@
  */
 package org.camunda.optimize.service.importing;
 
+import jakarta.ws.rs.core.Response;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.schema.IndexMappingCreator;
+import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.camunda.optimize.util.BpmnModels;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Tag;
 import org.mockserver.model.HttpResponse;
 
-import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -32,43 +30,26 @@ import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 @Tag("import")
 public abstract class AbstractImportIT extends AbstractPlatformIT {
 
-  protected void assertAllEntriesInElasticsearchHaveAllData(String elasticsearchIndex,
-                                                            final Set<String> excludedFields) {
-    assertAllEntriesInElasticsearchHaveAllDataWithCount(elasticsearchIndex, 1L, excludedFields);
+  protected <T> void assertAllEntriesInElasticsearchHaveAllData(String elasticsearchIndex,
+                                                                final Class<T> type,
+                                                                final Set<String> excludedFields) {
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(elasticsearchIndex, type, 1, excludedFields);
   }
 
 
-  protected void assertAllEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchIndex,
-                                                                     final long count) {
-    assertAllEntriesInElasticsearchHaveAllDataWithCount(elasticsearchIndex, count, Collections.emptySet());
+  protected <T> void assertAllEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchIndex,
+                                                                         final Class<T> type,
+                                                                         final int count) {
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(elasticsearchIndex, type, count, Collections.emptySet());
   }
 
-  protected void assertAllEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchIndex,
-                                                                     final long count,
-                                                                     final Set<String> nullValueFields) {
-    SearchResponse idsResp = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(elasticsearchIndex);
-
-    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(count);
-    for (SearchHit searchHit : idsResp.getHits().getHits()) {
-      assertAllFieldsSet(nullValueFields, searchHit);
-    }
-  }
-
-  protected void assertAllFieldsSet(final Set<String> nullValueFields, final SearchHit searchHit) {
-    for (Map.Entry<String, Object> searchHitField : searchHit.getSourceAsMap().entrySet()) {
-      if (nullValueFields.contains(searchHitField.getKey())) {
-        assertThat(searchHitField.getValue()).isNull();
-      } else {
-        String errorMessage = "Something went wrong during fetching of field: " + searchHitField.getKey() +
-          ". Should actually have a value!";
-        assertThat(searchHitField.getValue()).withFailMessage(errorMessage).isNotNull();
-        if (searchHitField.getValue() instanceof String) {
-          String value = (String) searchHitField.getValue();
-          assertThat(value).withFailMessage(errorMessage).isNotEmpty();
-        }
-      }
-    }
+  protected <T> void assertAllEntriesInElasticsearchHaveAllDataWithCount(final String indexName,
+                                                                         final Class<T> type,
+                                                                         final int count,
+                                                                         final Set<String> nullValueFields) {
+    final List<T> savedDocs = databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(indexName, type);
+    assertThat(savedDocs).hasSize(count)
+      .allSatisfy(def -> assertThat(def).hasNoNullFieldsOrPropertiesExcept(nullValueFields.toArray(String[]::new)));
   }
 
   protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {

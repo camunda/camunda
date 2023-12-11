@@ -32,9 +32,9 @@ import org.camunda.optimize.dto.optimize.query.event.process.MappedEventType;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.db.writer.EventProcessInstanceWriter;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
-import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.job.importing.EventProcessInstanceElasticsearchImportJob;
+import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
+import org.camunda.optimize.service.importing.DatabaseImportJob;
+import org.camunda.optimize.service.importing.job.EventProcessInstanceDatabaseImportJob;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -70,7 +70,7 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
   private static final String PARALLEL_GATEWAY = "parallelGateway";
   private static final String EVENT_BASED_GATEWAY = "eventBasedGateway";
 
-  private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
+  private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final EventProcessInstanceWriter eventProcessInstanceWriter;
 
   private final EventProcessPublishStateDto eventProcessPublishStateDto;
@@ -80,7 +80,7 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
   public EventProcessInstanceImportService(final ConfigurationService configurationService,
                                            final EventProcessPublishStateDto eventProcessPublishStateDto,
                                            final EventProcessInstanceWriter eventProcessInstanceWriter) {
-    this.elasticsearchImportJobExecutor = new ElasticsearchImportJobExecutor(
+    this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.eventProcessPublishStateDto = eventProcessPublishStateDto;
@@ -99,8 +99,8 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
     boolean newDataIsAvailable = !pageOfEvents.isEmpty();
     if (newDataIsAvailable) {
       final List<EventProcessInstanceDto> newOptimizeEntities = mapToProcessInstances(pageOfEvents);
-      elasticsearchImportJobExecutor.executeImportJob(
-        createElasticsearchImportJob(newOptimizeEntities, importCompleteCallback)
+      databaseImportJobExecutor.executeImportJob(
+        createDatabaseImportJob(newOptimizeEntities, importCompleteCallback)
       );
     } else {
       importCompleteCallback.run();
@@ -108,8 +108,8 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
   }
 
   @Override
-  public ElasticsearchImportJobExecutor getDatabaseImportJobExecutor() {
-    return elasticsearchImportJobExecutor;
+  public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
+    return databaseImportJobExecutor;
   }
 
   private List<EventProcessInstanceDto> mapToProcessInstances(final List<EventDto> importedEvents) {
@@ -439,9 +439,9 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
     }
   }
 
-  private ElasticsearchImportJob<EventProcessInstanceDto> createElasticsearchImportJob(List<EventProcessInstanceDto> processInstances,
-                                                                                       Runnable callback) {
-    EventProcessInstanceElasticsearchImportJob importJob = new EventProcessInstanceElasticsearchImportJob(
+  private DatabaseImportJob<EventProcessInstanceDto> createDatabaseImportJob(List<EventProcessInstanceDto> processInstances,
+                                                                                  Runnable callback) {
+    EventProcessInstanceDatabaseImportJob importJob = new EventProcessInstanceDatabaseImportJob(
       eventProcessInstanceWriter, callback
     );
     importJob.setEntitiesToImport(processInstances);

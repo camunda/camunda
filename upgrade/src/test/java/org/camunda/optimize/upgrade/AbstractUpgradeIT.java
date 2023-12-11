@@ -12,14 +12,14 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
-import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
-import org.camunda.optimize.service.es.schema.IndexMappingCreator;
-import org.camunda.optimize.service.es.schema.IndexSettingsBuilderES;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.index.MetadataIndexES;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
+import org.camunda.optimize.service.db.schema.IndexMappingCreator;
+import org.camunda.optimize.service.db.es.schema.ElasticSearchIndexSettingsBuilder;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.db.es.schema.index.MetadataIndexES;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
@@ -99,7 +99,7 @@ public abstract class AbstractUpgradeIT {
   protected OptimizeElasticsearchClient prefixAwareClient;
   protected OptimizeIndexNameService indexNameService;
   protected UpgradeExecutionDependencies upgradeDependencies;
-  protected ElasticsearchMetadataService metadataService;
+  protected ElasticSearchMetadataService metadataService;
   protected ConfigurationService configurationService;
   protected UpgradeProcedure upgradeProcedure;
 
@@ -107,7 +107,7 @@ public abstract class AbstractUpgradeIT {
   protected void setUp() throws Exception {
     this.configurationService = createDefaultConfiguration();
     final DatabaseConnectionNodeConfiguration elasticConfig =
-      this.configurationService.getFirstElasticsearchConnectionNode();
+      this.configurationService.getElasticSearchConfiguration().getFirstConnectionNode();
 
     this.esMockServer = createElasticMock(elasticConfig);
     elasticConfig.setHost(MockServerUtil.MOCKSERVER_HOST);
@@ -269,7 +269,7 @@ public abstract class AbstractUpgradeIT {
 
   private Settings createIndexSettings(IndexMappingCreator indexMappingCreator) {
     try {
-      return IndexSettingsBuilderES.buildAllSettings(configurationService, indexMappingCreator);
+      return ElasticSearchIndexSettingsBuilder.buildAllSettings(configurationService, indexMappingCreator);
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Could not create index settings");
     }

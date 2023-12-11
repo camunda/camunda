@@ -15,27 +15,26 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndexES;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.db.es.schema.index.events.CamundaActivityEventIndexES;
 import org.camunda.optimize.service.importing.AbstractImportIT;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.admin.indices.alias.Alias;
-import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.events.CamundaEventService.PROCESS_END_TYPE;
 import static org.camunda.optimize.service.events.CamundaEventService.PROCESS_START_TYPE;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceEndEventSuffix;
@@ -44,7 +43,6 @@ import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamunda
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
@@ -252,7 +250,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
 
     // then the original definition and events are stored
     final List<ProcessDefinitionOptimizeDto> allProcessDefinitions =
-      elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+      databaseIntegrationTestExtension.getAllProcessDefinitions();
     assertThat(allProcessDefinitions).singleElement()
       .satisfies(definition -> assertThat(definition.getKey()).isEqualTo(processInstanceEngineDto.getProcessDefinitionKey()));
     final List<CamundaActivityEventDto> savedEvents = getSavedEventsForProcessDefinitionKey(
@@ -446,7 +444,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
+    OptimizeElasticsearchClient esClient = databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
     GetIndexRequest request = new GetIndexRequest(
       createExpectedIndexNameForProcessDefinition(firstProcessInstanceEngineDto.getProcessDefinitionKey()),
       createExpectedIndexNameForProcessDefinition(secondProcessInstanceEngineDto.getProcessDefinitionKey())
@@ -476,7 +474,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromLastIndex();
 
     // then
-    OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
+    OptimizeElasticsearchClient esClient = databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
     GetIndexRequest request = new GetIndexRequest(
       createExpectedIndexNameForProcessDefinition(firstProcessInstanceEngineDto.getProcessDefinitionKey()),
       createExpectedIndexNameForProcessDefinition(secondProcessInstanceEngineDto.getProcessDefinitionKey())
@@ -506,7 +504,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
+    OptimizeElasticsearchClient esClient = databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
     GetIndexRequest request = new GetIndexRequest(
       createExpectedIndexNameForProcessDefinition(processInstanceEngineDto.getProcessDefinitionKey()));
     assertThat(esClient.exists(request)).isFalse();
@@ -525,9 +523,9 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
 
     // when
     final List<CamundaActivityEventDto> savedCamundaEvents =
-      elasticSearchIntegrationTestExtension.getAllStoredCamundaActivityEventsForDefinition(deletedDefinition.getKey());
+      databaseIntegrationTestExtension.getAllStoredCamundaActivityEventsForDefinition(deletedDefinition.getKey());
     final List<ProcessDefinitionOptimizeDto> allProcessDefinitions =
-      elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+      databaseIntegrationTestExtension.getAllProcessDefinitions();
 
     // then
     assertThat(allProcessDefinitions).singleElement()
@@ -558,16 +556,10 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
 
   private List<CamundaActivityEventDto> getSavedEventsForProcessDefinitionKey(final String processDefinitionKey) throws
                                                                                                                  JsonProcessingException {
-    SearchResponse response = elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(
-      CamundaActivityEventIndex.constructIndexName(processDefinitionKey)
+    return databaseIntegrationTestExtension.getAllDocumentsOfIndexAs(
+      CamundaActivityEventIndex.constructIndexName(processDefinitionKey),
+      CamundaActivityEventDto.class
     );
-    List<CamundaActivityEventDto> storedEvents = new ArrayList<>();
-    for (SearchHit searchHitFields : response.getHits()) {
-      final CamundaActivityEventDto camundaActivityEventDto = embeddedOptimizeExtension.getObjectMapper().readValue(
-        searchHitFields.getSourceAsString(), CamundaActivityEventDto.class);
-      storedEvents.add(camundaActivityEventDto);
-    }
-    return storedEvents;
   }
 
   private ProcessInstanceEngineDto deployAndStartUserTaskProcessWithName(String processName) {
@@ -603,7 +595,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
   @SneakyThrows
   private void createCamundaActivityEventsIndexForKey(final String key) {
     final OptimizeElasticsearchClient esClient =
-      elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
+      databaseIntegrationTestExtension.getOptimizeElasticsearchClient();
     final OptimizeIndexNameService indexNameService =
       esClient.getIndexNameService();
     final CamundaActivityEventIndexES newIndex = new CamundaActivityEventIndexES(key);
@@ -628,7 +620,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
       .deleted(true)
       .bpmn20Xml("someXml")
       .build();
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+    databaseIntegrationTestExtension.addEntryToDatabase(
       PROCESS_DEFINITION_INDEX_NAME,
       expectedDto.getId(),
       expectedDto

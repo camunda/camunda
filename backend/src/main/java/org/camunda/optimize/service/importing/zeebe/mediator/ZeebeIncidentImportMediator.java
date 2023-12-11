@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.zeebe.incident.ZeebeIncidentRecordDto;
 import org.camunda.optimize.service.importing.PositionBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.MediatorRank;
 import org.camunda.optimize.service.importing.engine.service.zeebe.ZeebeIncidentImportService;
-import org.camunda.optimize.service.importing.zeebe.fetcher.ZeebeIncidentFetcher;
+import org.camunda.optimize.service.importing.zeebe.db.ZeebeIncidentFetcher;
 import org.camunda.optimize.service.importing.zeebe.handler.ZeebeIncidentImportIndexHandler;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;

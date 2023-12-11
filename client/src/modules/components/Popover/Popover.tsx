@@ -22,6 +22,7 @@ import {
   PopoverContent,
   PopoverProps as CarbonPopoverProps,
   Button,
+  Layer,
 } from '@carbon/react';
 import ListBox from '@carbon/react/lib/components/ListBox';
 
@@ -294,7 +295,7 @@ export default function Popover({
               isInsideClick.current = true;
             }}
           >
-            <div ref={contentRef}>{children}</div>
+            <Layer ref={contentRef}>{children}</Layer>
           </PopoverContent>
         )}
       </CarbonPopover>

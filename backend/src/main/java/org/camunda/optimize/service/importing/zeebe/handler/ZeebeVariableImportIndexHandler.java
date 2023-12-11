@@ -22,7 +22,7 @@ public class ZeebeVariableImportIndexHandler extends PositionBasedImportIndexHan
   }
 
   @Override
-  protected String getElasticsearchDocID() {
+  protected String getDatabaseDocID() {
     return ZEEBE_VAR_IMPORT_INDEX_DOC_ID;
   }
 

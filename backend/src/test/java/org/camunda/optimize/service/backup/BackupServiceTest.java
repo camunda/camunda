@@ -16,8 +16,10 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeSnapshotRepositoryNotFoundException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ElasticSearchConfiguration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -38,12 +40,19 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class BackupServiceTest {
+
   @Mock
   private BackupReader backupReader;
+
   @Mock
   private BackupWriter backupWriter;
+
+  @Mock
+  private ElasticSearchConfiguration databaseConfiguration;
+
   @Mock
   private ConfigurationService configurationService;
+
   @InjectMocks
   private BackupService backupService;
   private static MockedStatic<StringUtils> stringUtils;
@@ -51,6 +60,11 @@ public class BackupServiceTest {
   @BeforeAll
   public static void beforeAll() {
     stringUtils = Mockito.mockStatic(StringUtils.class);
+  }
+
+  @BeforeEach
+  public void beforeEach() {
+    when(configurationService.getElasticSearchConfiguration()).thenReturn(databaseConfiguration);
   }
 
   @AfterAll
@@ -230,4 +244,5 @@ public class BackupServiceTest {
     );
     assertThat(thrown.getMessage()).isEqualTo("No repository with name [does_not_exist] could be found.");
   }
+
 }
