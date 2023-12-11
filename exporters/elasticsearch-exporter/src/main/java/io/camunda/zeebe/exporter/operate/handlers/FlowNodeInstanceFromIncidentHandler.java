@@ -91,4 +91,9 @@ public class FlowNodeInstanceFromIncidentHandler
 
   }
 
+  @Override
+  public String getIndexName() {
+    return flowNodeInstanceTemplate.getFullQualifiedName();
+  }
+  
 }

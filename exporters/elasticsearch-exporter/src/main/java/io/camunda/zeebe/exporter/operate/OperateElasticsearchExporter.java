@@ -76,9 +76,6 @@ public class OperateElasticsearchExporter implements Exporter {
   // dynamic state for the lifetime of the exporter
   private long lastExportedPosition = -1;
   private OperateElasticsearchManager schemaManager;
-
-  // dynamic state for the current batch of ES writes
-  private NoSpringElasticsearchBatchRequest request;
   private ExportBatchWriter writer;
 
   @Override
@@ -102,6 +99,8 @@ public class OperateElasticsearchExporter implements Exporter {
     schemaManager = new OperateElasticsearchManager(esClient);
     schemaManager.createSchema();
 
+    this.writer = createBatchWriter();
+
     scheduleDelayedFlush();
   }
 
@@ -115,11 +114,6 @@ public class OperateElasticsearchExporter implements Exporter {
    */
   @Override
   public void export(Record<?> record) {
-    if (request == null) {
-      request = new NoSpringElasticsearchBatchRequest(esClient);
-      writer = createBatchWriter(request);
-    }
-
     writer.addRecord(record);
 
     this.lastExportedPosition = record.getPosition();
@@ -127,6 +121,7 @@ public class OperateElasticsearchExporter implements Exporter {
     if (writer.hasAtLeastEntities(configuration.getBulk().size)) {
       try {
         flush();
+        // TODO: call updateLastExportedPosition
       } catch (PersistenceException e) {
         // TODO: in this case we would send an entity with the same ID twice, not sure what happens
         // then
@@ -135,6 +130,10 @@ public class OperateElasticsearchExporter implements Exporter {
             + "This indicates a bug because this exporter is not retryable", e);
       }
     }
+  }
+  
+  public ExportBatchWriter getWriter() {
+    return writer;
   }
 
   private void scheduleDelayedFlush() {
@@ -154,7 +153,11 @@ public class OperateElasticsearchExporter implements Exporter {
   }
 
   private void flush() throws PersistenceException {
-    writer.flush();
+
+    NoSpringElasticsearchBatchRequest request = new NoSpringElasticsearchBatchRequest(esClient);
+    writer.flush(request);
+    request.execute();
+    // TODO: handle the elasticsearch response here; handle OperatePersistenceException
 
     writer = null;
     request = null;
@@ -177,7 +180,7 @@ public class OperateElasticsearchExporter implements Exporter {
     controller.updateLastExportedRecordPosition(lastExportedPosition);
   }
 
-  private RestHighLevelClient createEsClient() {
+  public RestHighLevelClient createEsClient() {
     logger.debug("Creating Elasticsearch connection...");
     final RestClientBuilder restClientBuilder =
         RestClient.builder(parseUrlConfig(configuration.getUrl()))
@@ -221,9 +224,9 @@ public class OperateElasticsearchExporter implements Exporter {
     builder.setDefaultCredentialsProvider(credentialsProvider);
   }
 
-  private ExportBatchWriter createBatchWriter(NoSpringElasticsearchBatchRequest request) {
+  private ExportBatchWriter createBatchWriter() {
 
-    return ExportBatchWriter.Builder.forRequest(request)
+    return ExportBatchWriter.Builder.begin()
         // ImportBulkProcessor
         // #processDecisionRecords
         .withHandler(

@@ -155,4 +155,9 @@ public class EventFromProcessInstanceHandler
     // write event
     batchRequest.upsert(eventTemplate.getFullQualifiedName(), entity.getId(), entity, jsonMap);
   }
+  
+  @Override
+  public String getIndexName() {
+    return eventTemplate.getFullQualifiedName();
+  }
 }

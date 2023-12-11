@@ -88,5 +88,10 @@ public class DecisionRequirementsHandler
         ConversionUtils.toStringOrNull(entity.getKey()), entity);
 
   }
+  
+  @Override
+  public String getIndexName() {
+    return decisionRequirementsIndex.getFullQualifiedName();
+  }
 
 }

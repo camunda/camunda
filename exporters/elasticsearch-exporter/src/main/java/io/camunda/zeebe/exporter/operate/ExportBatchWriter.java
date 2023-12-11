@@ -34,12 +34,6 @@ public class ExportBatchWriter {
 
   private List<Tuple<String, Class<?>>> idFlushOrder = new ArrayList<>();
 
-  private BatchRequest request;
-
-  public ExportBatchWriter(BatchRequest request) {
-    this.request = request;
-  }
-
   public void addRecord(Record<?> record) {
     // TODO: need to filter to only handle events
 
@@ -87,7 +81,7 @@ public class ExportBatchWriter {
 
   }
 
-  public void flush() throws PersistenceException {
+  public void flush(BatchRequest request) throws PersistenceException {
     // TODO: flush here to an ES bulk request
     // TODO: consider that some handlers modify the same entity (e.g. list view flow node instances
     // are
@@ -113,14 +107,26 @@ public class ExportBatchWriter {
         decisionInstanceHandler.flush(entity, request);
       }
     }
+    
+    reset();
+  }
+
+  private void reset() {
+    cachedEntities.clear();
+    cachedDecisionInstanceEntities.clear();
+    idFlushOrder.clear();
+  }
+  
+  public List<ExportHandler<?, ?>> getHandlersForValueType(ValueType type) {
+    return handlers.get(type);
   }
 
   public static class Builder {
     private ExportBatchWriter writer;
 
-    public static Builder forRequest(BatchRequest request) {
+    public static Builder begin() {
       Builder builder = new Builder();
-      builder.writer = new ExportBatchWriter(request);
+      builder.writer = new ExportBatchWriter();
       return builder;
     }
 

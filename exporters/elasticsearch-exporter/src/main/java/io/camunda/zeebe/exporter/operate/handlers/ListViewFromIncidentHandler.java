@@ -90,4 +90,8 @@ public class ListViewFromIncidentHandler
         updateFields, entity.getProcessInstanceKey().toString());
   }
 
+  @Override
+  public String getIndexName() {
+    return listViewTemplate.getFullQualifiedName();
+  }
 }

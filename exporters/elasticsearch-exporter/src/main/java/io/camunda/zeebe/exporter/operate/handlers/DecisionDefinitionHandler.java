@@ -79,4 +79,9 @@ public class DecisionDefinitionHandler
 
   }
 
+  @Override
+  public String getIndexName() {
+    return decisionIndex.getFullQualifiedName();
+  }
+
 }

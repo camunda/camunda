@@ -148,5 +148,10 @@ public class EventFromJobHandler implements ExportHandler<EventEntity, JobRecord
     batchRequest.upsert(eventTemplate.getFullQualifiedName(), entity.getId(), entity, jsonMap);
 
   }
+  
+  @Override
+  public String getIndexName() {
+    return eventTemplate.getFullQualifiedName();
+  }
 
 }

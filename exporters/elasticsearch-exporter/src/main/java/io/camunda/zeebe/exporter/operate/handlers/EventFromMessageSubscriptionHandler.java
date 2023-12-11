@@ -146,5 +146,10 @@ public class EventFromMessageSubscriptionHandler
     batchRequest.upsert(eventTemplate.getFullQualifiedName(), entity.getId(), entity, jsonMap);
 
   }
+  
+  @Override
+  public String getIndexName() {
+    return eventTemplate.getFullQualifiedName();
+  }
 
 }

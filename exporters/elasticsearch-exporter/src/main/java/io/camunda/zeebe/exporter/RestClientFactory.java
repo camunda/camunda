@@ -17,7 +17,7 @@ import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 
-final class RestClientFactory {
+public final class RestClientFactory {
   private static final RestClientFactory INSTANCE = new RestClientFactory();
 
   private RestClientFactory() {}

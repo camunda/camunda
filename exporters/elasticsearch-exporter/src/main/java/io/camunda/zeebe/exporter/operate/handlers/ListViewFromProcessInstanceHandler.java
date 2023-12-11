@@ -218,5 +218,10 @@ public class ListViewFromProcessInstanceHandler
 
     return false;
   }
+  
+  @Override
+  public String getIndexName() {
+    return listViewTemplate.getFullQualifiedName();
+  }
 
 }

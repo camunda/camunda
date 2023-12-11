@@ -132,4 +132,8 @@ public class EventFromIncidentHandler implements ExportHandler<EventEntity, Inci
     batchRequest.upsert(eventTemplate.getFullQualifiedName(), entity.getId(), entity, jsonMap);
   }
 
+  @Override
+  public String getIndexName() {
+    return eventTemplate.getFullQualifiedName();
+  }
 }

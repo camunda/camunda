@@ -109,5 +109,10 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
         ConversionUtils.toStringOrNull(processEntity.getKey()), processEntity);
 
   }
+  
+  @Override
+  public String getIndexName() {
+    return processIndex.getFullQualifiedName();
+  }
 
 }

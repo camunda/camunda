@@ -96,7 +96,7 @@ public class ElasticsearchExporter implements Exporter {
 
     final var recordSequence = recordCounters.getNextRecordSequence(record);
 
-    //    client.index(record, recordSequence);
+    client.index(record, recordSequence);
     lastPosition = record.getPosition();
 
     if (client.shouldFlush()) {

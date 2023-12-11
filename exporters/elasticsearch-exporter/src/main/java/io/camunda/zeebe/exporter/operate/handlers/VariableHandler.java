@@ -99,5 +99,10 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
     // }
 
   }
+  
+  @Override
+  public String getIndexName() {
+    return variableTemplate.getFullQualifiedName();
+  }
 
 }

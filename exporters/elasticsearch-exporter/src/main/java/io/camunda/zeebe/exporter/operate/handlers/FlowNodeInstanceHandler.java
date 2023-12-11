@@ -185,4 +185,9 @@ public class FlowNodeInstanceHandler
 
     return false;
   }
+  
+  @Override
+  public String getIndexName() {
+    return flowNodeInstanceTemplate.getFullQualifiedName();
+  }
 }

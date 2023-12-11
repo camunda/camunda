@@ -176,5 +176,10 @@ public class ListViewFromActivityInstanceHandler
 
     return false;
   }
+  
+  @Override
+  public String getIndexName() {
+    return listViewTemplate.getFullQualifiedName();
+  }
 
 }

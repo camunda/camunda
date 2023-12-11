@@ -109,4 +109,9 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
     batchRequest.upsert(incidentTemplate.getFullQualifiedName(), String.valueOf(incident.getKey()),
         incident, Map.of());
   }
+  
+  @Override
+  public String getIndexName() {
+    return incidentTemplate.getFullQualifiedName();
+  }
 }

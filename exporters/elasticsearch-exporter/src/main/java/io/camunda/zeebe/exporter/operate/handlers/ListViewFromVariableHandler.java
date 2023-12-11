@@ -95,4 +95,8 @@ public class ListViewFromVariableHandler
 
   }
 
+  @Override
+  public String getIndexName() {
+    return listViewTemplate.getFullQualifiedName();
+  }
 }

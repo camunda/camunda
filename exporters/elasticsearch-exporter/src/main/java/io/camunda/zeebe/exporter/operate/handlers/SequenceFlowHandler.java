@@ -71,5 +71,10 @@ public class SequenceFlowHandler
     batchRequest.add(sequenceFlowTemplate.getFullQualifiedName(), entity);
 
   }
+  
+  @Override
+  public String getIndexName() {
+    return sequenceFlowTemplate.getFullQualifiedName();
+  }
 
 }

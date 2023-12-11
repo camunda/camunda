@@ -60,4 +60,9 @@ public class PostImporterQueueHandler
       throws PersistenceException {
     batchRequest.add(postImporterQueueTemplate.getFullQualifiedName(), entity);
   }
+  
+  @Override
+  public String getIndexName() {
+    return postImporterQueueTemplate.getFullQualifiedName();
+  }
 }

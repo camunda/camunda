@@ -111,5 +111,9 @@ public class DecisionInstanceHandler {
       throws PersistenceException {
     batchRequest.add(decisionInstanceTemplate.getFullQualifiedName(), entity);
   }
+  
+  public String getIndexName() {
+    return decisionInstanceTemplate.getFullQualifiedName();
+  }
 
 }

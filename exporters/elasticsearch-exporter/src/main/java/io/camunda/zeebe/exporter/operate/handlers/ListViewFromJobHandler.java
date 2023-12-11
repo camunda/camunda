@@ -101,4 +101,8 @@ public class ListViewFromJobHandler
 
   }
 
+  @Override
+  public String getIndexName() {
+    return listViewTemplate.getFullQualifiedName();
+  }
 }
