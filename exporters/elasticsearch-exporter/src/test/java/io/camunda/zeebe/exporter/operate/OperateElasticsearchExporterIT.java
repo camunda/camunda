@@ -21,6 +21,8 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -109,10 +111,23 @@ public class OperateElasticsearchExporterIT {
   public void shouldExportRecord(ValueType valueType, Intent intent) {
 
     // given
-    final Record<RecordValue> record =
+    Record<RecordValue> record =
         factory.generateRecord(
-            valueType, b -> b.withIntent(intent).withRecordType(RecordType.EVENT));
+            valueType, b -> {
+              b.withIntent(intent).withRecordType(RecordType.EVENT)
+                  .withTimestamp(System.currentTimeMillis());
 
+              return b;
+            });
+    if (valueType.equals(ValueType.JOB)) {
+      final JobRecordValue recordValue = (JobRecordValue) record.getValue();
+      record =
+          factory.generateRecord(
+              valueType, b -> b.withValue(ImmutableJobRecordValue.builder().from(recordValue)
+                  .withDeadline(System.currentTimeMillis()).build())
+                  .withIntent(intent).withRecordType(RecordType.EVENT)
+                  .withTimestamp(System.currentTimeMillis()));
+    }
     final List<ExportHandler<?, ?>> handlersForRecord =
         writer.getHandlersForValueType(record.getValueType());
 
