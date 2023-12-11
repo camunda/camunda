@@ -28,7 +28,7 @@ runs:
         credentials_json: ${{ steps.secrets.outputs.GCP_CREDENTIALS }}
 
     - name: Configure Google SDK
-      uses: google-github-actions/setup-gcloud@v1.1.1
+      uses: google-github-actions/setup-gcloud@825196879a077b7efa50db2e88409f44de4635c2 # v2.0.0
       with:
         project_id: ${{ inputs.project_id }}
         install_components: gke-gcloud-auth-plugin, kubectl
