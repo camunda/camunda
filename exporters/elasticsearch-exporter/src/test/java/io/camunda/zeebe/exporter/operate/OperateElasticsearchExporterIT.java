@@ -2,7 +2,6 @@ package io.camunda.zeebe.exporter.operate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.zeebe.exporter.TestClient;
 import io.camunda.zeebe.exporter.TestSupport;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
@@ -23,7 +22,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import io.camunda.zeebe.util.collection.Tuple;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
@@ -38,7 +36,6 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -51,52 +48,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @TestInstance(Lifecycle.PER_CLASS)
 public class OperateElasticsearchExporterIT {
-
-  private static final Map<ValueType, List<? extends Intent>> INTENTS_PER_VALUE_TYPE =
-      new HashMap<>();
-
-  static {
-    INTENTS_PER_VALUE_TYPE.put(ValueType.DECISION, Arrays.asList(DecisionIntent.CREATED));
-    INTENTS_PER_VALUE_TYPE.put(
-        ValueType.DECISION_REQUIREMENTS, Arrays.asList(DecisionRequirementsIntent.CREATED));
-    INTENTS_PER_VALUE_TYPE.put(
-        ValueType.DECISION_EVALUATION,
-        Arrays.asList(DecisionEvaluationIntent.FAILED, DecisionEvaluationIntent.EVALUATED));
-    INTENTS_PER_VALUE_TYPE.put(
-        ValueType.JOB,
-        Arrays.asList(
-            JobIntent.CREATED,
-            JobIntent.COMPLETED,
-            JobIntent.CANCELED,
-            JobIntent.TIMED_OUT,
-            JobIntent.FAILED,
-            JobIntent.RETRIES_UPDATED,
-            JobIntent.ERROR_THROWN,
-            JobIntent.RECURRED_AFTER_BACKOFF,
-            JobIntent.YIELDED,
-            JobIntent.TIMEOUT_UPDATED,
-            JobIntent.MIGRATED));
-    INTENTS_PER_VALUE_TYPE.put(
-        ValueType.INCIDENT, Arrays.asList(IncidentIntent.CREATED, IncidentIntent.RESOLVED));
-    INTENTS_PER_VALUE_TYPE.put(ValueType.PROCESS, Arrays.asList(ProcessIntent.CREATED));
-    INTENTS_PER_VALUE_TYPE.put(
-        ValueType.PROCESS_INSTANCE,
-        Arrays.asList(
-            ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN,
-            ProcessInstanceIntent.ELEMENT_ACTIVATING,
-            ProcessInstanceIntent.ELEMENT_ACTIVATED,
-            ProcessInstanceIntent.ELEMENT_COMPLETING,
-            ProcessInstanceIntent.ELEMENT_COMPLETED,
-            ProcessInstanceIntent.ELEMENT_TERMINATING,
-            ProcessInstanceIntent.ELEMENT_TERMINATED,
-            ProcessInstanceIntent.ELEMENT_MIGRATED));
-    INTENTS_PER_VALUE_TYPE.put(
-        ValueType.VARIABLE, Arrays.asList(VariableIntent.CREATED, VariableIntent.UPDATED));
-    INTENTS_PER_VALUE_TYPE.put(ValueType.VARIABLE_DOCUMENT, Arrays.asList());
-    INTENTS_PER_VALUE_TYPE.put(
-        ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
-        Arrays.asList(ProcessMessageSubscriptionIntent.CREATED));
-  }
 
   @Container
   private static final ElasticsearchContainer CONTAINER = TestSupport.createDefaultContainer();
@@ -152,15 +103,12 @@ public class OperateElasticsearchExporterIT {
     writer = null;
   }
 
-  @ParameterizedTest(name = "{0}")
+  @ParameterizedTest(name = "{0} - {1}")
   @MethodSource(
-      "io.camunda.zeebe.exporter.operate.OperateElasticsearchExporterIT#getValueTypeIntentCombinations")
-  public void shouldExportRecord(Tuple<ValueType, Intent> parameter) {
+      "io.camunda.zeebe.exporter.operate.OperateElasticsearchExporterIT#provideParameters")
+  public void shouldExportRecord(ValueType valueType, Intent intent) {
 
     // given
-    final ValueType valueType = parameter.getLeft();
-    final Intent intent = parameter.getRight();
-
     final Record<RecordValue> record =
         factory.generateRecord(
             valueType, b -> b.withIntent(intent).withRecordType(RecordType.EVENT));
@@ -207,26 +155,37 @@ public class OperateElasticsearchExporterIT {
     }
   }
 
-  public static Stream<Arguments> getValueTypeIntentCombinations() {
-    return INTENTS_PER_VALUE_TYPE.entrySet().stream()
-        .flatMap(
-            entry ->
-                entry.getValue().stream()
-                    .map(
-                        intent ->
-                            asNamedJunitParameter(
-                                new Tuple<>(entry.getKey(), intent),
-                                String.format("%s - %s", entry.getKey(), intent))));
-    // eclipse chokes if parameters are formatted in a certain way, when
-    // you want to re-run an individual instance (e.g. containing < or : characters)
+  public static Stream<Arguments> provideParameters() {
+    return Stream.of(
+      Arguments.of(ValueType.DECISION, DecisionIntent.CREATED),
+      Arguments.of(ValueType.DECISION_REQUIREMENTS, DecisionRequirementsIntent.CREATED),
+      Arguments.of(ValueType.DECISION_EVALUATION, DecisionEvaluationIntent.FAILED),
+      Arguments.of(ValueType.DECISION_EVALUATION, DecisionEvaluationIntent.EVALUATED),
+      Arguments.of(ValueType.INCIDENT, IncidentIntent.CREATED, IncidentIntent.RESOLVED),
+      Arguments.of(ValueType.PROCESS, ProcessIntent.CREATED),
+      Arguments.of(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+      Arguments.of(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+      Arguments.of(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+      Arguments.of(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_COMPLETING),
+      Arguments.of(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_COMPLETED),
+      Arguments.of(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATING),
+      Arguments.of(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATED),
+      Arguments.of(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_MIGRATED),
+      Arguments.of(ValueType.VARIABLE, VariableIntent.CREATED, VariableIntent.UPDATED),
+      Arguments.of(ValueType.VARIABLE_DOCUMENT, Arrays.asList()),
+      Arguments.of(ValueType.PROCESS_MESSAGE_SUBSCRIPTION, ProcessMessageSubscriptionIntent.CREATED),
+      Arguments.of(ValueType.JOB, JobIntent.CREATED),
+      Arguments.of(ValueType.JOB, JobIntent.COMPLETED),
+      Arguments.of(ValueType.JOB, JobIntent.CANCELED),
+      Arguments.of(ValueType.JOB, JobIntent.TIMED_OUT),
+      Arguments.of(ValueType.JOB, JobIntent.FAILED),
+      Arguments.of(ValueType.JOB, JobIntent.RETRIES_UPDATED),
+      Arguments.of(ValueType.JOB, JobIntent.ERROR_THROWN),
+      Arguments.of(ValueType.JOB, JobIntent.RECURRED_AFTER_BACKOFF),
+      Arguments.of(ValueType.JOB, JobIntent.YIELDED),
+      Arguments.of(ValueType.JOB, JobIntent.TIMEOUT_UPDATED),
+      Arguments.of(ValueType.JOB, JobIntent.MIGRATED)
+    );
   }
 
-  private static Arguments asNamedJunitParameter(Object o, String name) {
-    return Arguments.of(Named.of(name, o));
-  }
-
-  public static Stream<ValueType> getSupportedValueTypes() {
-    return Arrays.stream(ImportValueType.values())
-        .map(operateType -> ValueType.valueOf(operateType.name()));
-  }
 }
