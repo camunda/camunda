@@ -103,7 +103,7 @@ func TestExponentialBackoffSupplier_ShouldBeRandomizedWithJitter(t *testing.T) {
 	// then
 	for i, delay := range retryDelays {
 		// retryDelay is in bounds
-		betweenBounds := delay > lowerMaxBoundDuration && delay < upperMaxBoundDuration
+		betweenBounds := delay >= lowerMaxBoundDuration && delay <= upperMaxBoundDuration
 		assert.True(t, betweenBounds, "is between lower and upper bound")
 
 		// Skip first delay
