@@ -108,14 +108,23 @@
             <artifactId>protobuf-maven-plugin</artifactId>
             <executions>
               <execution>
+                <id>go</id>
                 <goals>
                   <goal>compile-custom</goal>
                 </goals>
                 <configuration>
                   <pluginId>go</pluginId>
                   <pluginExecutable>${env.GOPATH}/bin/protoc-gen-go</pluginExecutable>
-                  <pluginParameter>plugins=grpc</pluginParameter>
-
+                </configuration>
+              </execution>
+              <execution>
+                <id>go-grpc</id>
+                <goals>
+                  <goal>compile-custom</goal>
+                </goals>
+                <configuration>
+                  <pluginId>go-grpc</pluginId>
+                  <pluginExecutable>${env.GOPATH}/bin/protoc-gen-go-grpc</pluginExecutable>
                 </configuration>
               </execution>
             </executions>
@@ -132,6 +141,7 @@
                 <configuration>
                   <target>
                     <copy failonerror="true" file="${project.build.directory}/generated-sources/protobuf/go/gateway.pb.go" tofile="${maven.multiModuleProjectDirectory}/clients/go/pkg/pb/gateway.pb.go"></copy>
+                    <copy failonerror="true" file="${project.build.directory}/generated-sources/protobuf/go-grpc/gateway_grpc.pb.go" tofile="${maven.multiModuleProjectDirectory}/clients/go/pkg/pb/gateway_grpc.pb.go"></copy>
                   </target>
                 </configuration>
               </execution>
