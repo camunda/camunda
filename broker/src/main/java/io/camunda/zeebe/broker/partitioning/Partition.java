@@ -151,7 +151,7 @@ public final class Partition {
                                     return;
                                   }
                                   try {
-                                    FileUtil.deleteFolder(partitionDirectory);
+                                    FileUtil.deleteFolderIfExists(partitionDirectory);
                                   } catch (final Exception e) {
                                     LOGGER.warn(
                                         "Failed to delete partition directory {} after leaving. Data will remain until manually removed.",
