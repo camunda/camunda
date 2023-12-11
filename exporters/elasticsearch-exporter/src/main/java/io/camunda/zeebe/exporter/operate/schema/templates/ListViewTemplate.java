@@ -1,8 +1,8 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a proprietary license.
- * See the License.txt file for more information. You may not use this file
- * except in compliance with the proprietary license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more
+ * contributor license agreements. Licensed under a proprietary license. See the License.txt file
+ * for more information. You may not use this file except in compliance with the proprietary
+ * license.
  */
 package io.camunda.zeebe.exporter.operate.schema.templates;
 
@@ -32,8 +32,8 @@ public class ListViewTemplate extends AbstractTemplateDescriptor implements Prio
   public static final String ERROR_MSG = "errorMessage";
   public static final String JOB_FAILED_WITH_RETRIES_LEFT = "jobFailedWithRetriesLeft";
 
-  //used both for process instance and flow node instance
-  public static final String INCIDENT = "incident";     //true/false
+  // used both for process instance and flow node instance
+  public static final String INCIDENT = "incident"; // true/false
 
   public static final String VAR_NAME = "varName";
   public static final String VAR_VALUE = "varValue";
@@ -43,7 +43,8 @@ public class ListViewTemplate extends AbstractTemplateDescriptor implements Prio
 
   public static final String JOIN_RELATION = "joinRelation";
   public static final String PROCESS_INSTANCE_JOIN_RELATION = "processInstance";
-  public static final String ACTIVITIES_JOIN_RELATION = "activity";     //now we call it flow node instance
+  public static final String ACTIVITIES_JOIN_RELATION = "activity"; // now we call it flow node
+                                                                    // instance
   public static final String VARIABLES_JOIN_RELATION = "variable";
 
   public ListViewTemplate(String indexPrefix) {
@@ -57,7 +58,7 @@ public class ListViewTemplate extends AbstractTemplateDescriptor implements Prio
 
   @Override
   public String getVersion() {
-     return "8.3.0";
+    return "8.3.0";
   }
 
 }

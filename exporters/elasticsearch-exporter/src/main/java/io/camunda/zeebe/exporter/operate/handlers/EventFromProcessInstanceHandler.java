@@ -24,10 +24,11 @@ public class EventFromProcessInstanceHandler
     implements ExportHandler<EventEntity, ProcessInstanceRecordValue> {
 
   private static final String ID_PATTERN = "%s_%s";
-  private static final Logger logger = LoggerFactory.getLogger(EventFromProcessInstanceHandler.class);
+  private static final Logger logger =
+      LoggerFactory.getLogger(EventFromProcessInstanceHandler.class);
 
   private EventTemplate eventTemplate;
-  
+
   public EventFromProcessInstanceHandler(EventTemplate eventTemplate) {
     this.eventTemplate = eventTemplate;
   }
@@ -41,7 +42,7 @@ public class EventFromProcessInstanceHandler
   public Class<EventEntity> getEntityType() {
     return EventEntity.class;
   }
-  
+
   @Override
   public boolean handlesRecord(Record<ProcessInstanceRecordValue> record) {
 

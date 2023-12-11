@@ -19,11 +19,11 @@ import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 
-public class DecisionRequirementsHandler implements ExportHandler<DecisionRequirementsEntity, DecisionRequirementsRecordValue> {
+public class DecisionRequirementsHandler
+    implements ExportHandler<DecisionRequirementsEntity, DecisionRequirementsRecordValue> {
 
 
-  private static final Logger logger = LoggerFactory.getLogger(
-      DecisionRequirementsHandler.class);
+  private static final Logger logger = LoggerFactory.getLogger(DecisionRequirementsHandler.class);
 
   private static final Charset CHARSET = StandardCharsets.UTF_8;
 
@@ -31,18 +31,18 @@ public class DecisionRequirementsHandler implements ExportHandler<DecisionRequir
   static {
     STATES.add(DecisionRequirementsIntent.CREATED);
   }
-  
+
   private DecisionRequirementsIndex decisionRequirementsIndex;
 
   public DecisionRequirementsHandler(DecisionRequirementsIndex decisionRequirementsIndex) {
     this.decisionRequirementsIndex = decisionRequirementsIndex;
   }
-  
+
   @Override
   public ValueType getHandledValueType() {
     return ValueType.DECISION_REQUIREMENTS;
   }
-  
+
   @Override
   public Class<DecisionRequirementsEntity> getEntityType() {
     return DecisionRequirementsEntity.class;
@@ -60,24 +60,21 @@ public class DecisionRequirementsHandler implements ExportHandler<DecisionRequir
 
   @Override
   public DecisionRequirementsEntity createNewEntity(String id) {
-    return new DecisionRequirementsEntity()
-        .setId(id);
+    return new DecisionRequirementsEntity().setId(id);
   }
 
   @Override
   public void updateEntity(Record<DecisionRequirementsRecordValue> record,
       DecisionRequirementsEntity entity) {
     DecisionRequirementsRecordValue decisionRequirements = record.getValue();
-    
+
     byte[] byteArray = decisionRequirements.getResource();
     String dmn = new String(byteArray, CHARSET);
-    entity
-        .setKey(decisionRequirements.getDecisionRequirementsKey())
+    entity.setKey(decisionRequirements.getDecisionRequirementsKey())
         .setName(decisionRequirements.getDecisionRequirementsName())
         .setDecisionRequirementsId(decisionRequirements.getDecisionRequirementsId())
         .setVersion(decisionRequirements.getDecisionRequirementsVersion())
-        .setResourceName(decisionRequirements.getResourceName())
-        .setXml(dmn)
+        .setResourceName(decisionRequirements.getResourceName()).setXml(dmn)
         .setTenantId(tenantOrDefault(decisionRequirements.getTenantId()));
   }
 
@@ -87,8 +84,9 @@ public class DecisionRequirementsHandler implements ExportHandler<DecisionRequir
     logger.debug("Process: key {}, decisionRequirementsId {}", entity.getKey(),
         entity.getDecisionRequirementsId());
 
-    batchRequest.addWithId(decisionRequirementsIndex.getFullQualifiedName(), ConversionUtils.toStringOrNull(entity.getKey()), entity);
-    
+    batchRequest.addWithId(decisionRequirementsIndex.getFullQualifiedName(),
+        ConversionUtils.toStringOrNull(entity.getKey()), entity);
+
   }
 
 }

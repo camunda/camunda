@@ -30,11 +30,11 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
   static {
     STATES.add(ProcessIntent.CREATED);
   }
-  
+
   private ProcessIndex processIndex;
 
   private XMLUtil xmlUtil = new XMLUtil();
-  
+
   public ProcessHandler(ProcessIndex processIndex) {
     this.processIndex = processIndex;
   }
@@ -43,7 +43,7 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
   public ValueType getHandledValueType() {
     return ValueType.PROCESS;
   }
-  
+
   @Override
   public Class<ProcessEntity> getEntityType() {
     return ProcessEntity.class;
@@ -61,19 +61,15 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
 
   @Override
   public ProcessEntity createNewEntity(String id) {
-    return new ProcessEntity()
-        .setId(id);
+    return new ProcessEntity().setId(id);
   }
 
   @Override
   public void updateEntity(Record<Process> record, ProcessEntity entity) {
     Process process = record.getValue();
-    
-    entity
-        .setKey(process.getProcessDefinitionKey())
-        .setBpmnProcessId(process.getBpmnProcessId())
-        .setVersion(process.getVersion())
-        .setTenantId(tenantOrDefault(process.getTenantId()));
+
+    entity.setKey(process.getProcessDefinitionKey()).setBpmnProcessId(process.getBpmnProcessId())
+        .setVersion(process.getVersion()).setTenantId(tenantOrDefault(process.getTenantId()));
 
     byte[] byteArray = process.getResource();
 
@@ -85,28 +81,33 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
 
     final Optional<ProcessEntity> diagramData = xmlUtil.extractDiagramData(byteArray);
     if (diagramData.isPresent()) {
-      entity.setName(diagramData.get().getName())
-          .setFlowNodes(diagramData.get().getFlowNodes());
+      entity.setName(diagramData.get().getName()).setFlowNodes(diagramData.get().getFlowNodes());
     }
   }
 
   @Override
-  public void flush(ProcessEntity processEntity, BatchRequest batchRequest) throws PersistenceException {
-    logger.debug("Process: key {}, bpmnProcessId {}", processEntity.getKey(), processEntity.getBpmnProcessId());
+  public void flush(ProcessEntity processEntity, BatchRequest batchRequest)
+      throws PersistenceException {
+    logger.debug("Process: key {}, bpmnProcessId {}", processEntity.getKey(),
+        processEntity.getBpmnProcessId());
 
-    // TODO: afaik this code updates the version in process instance records, if they have been imported
+    // TODO: afaik this code updates the version in process instance records, if they have been
+    // imported
     // before the process itself was seen. This race condition should not exist anymore
-    
-//    List<Long> processInstanceKeys = listViewStore.getProcessInstanceKeysWithEmptyProcessVersionFor(processEntity.getKey());
-//    for (Long processInstanceKey : processInstanceKeys) {
-//      Map<String, Object> updateFields = new HashMap<>();
-//      updateFields.put(ListViewTemplate.PROCESS_NAME, processEntity.getName());
-//      updateFields.put(ListViewTemplate.PROCESS_VERSION, processEntity.getVersion());
-//      batchRequest.update(listViewTemplate.getFullQualifiedName(), processInstanceKey.toString(), updateFields);
-//    }
-    
-    batchRequest.addWithId(processIndex.getFullQualifiedName(),ConversionUtils.toStringOrNull(processEntity.getKey()), processEntity);
-    
+
+    // List<Long> processInstanceKeys =
+    // listViewStore.getProcessInstanceKeysWithEmptyProcessVersionFor(processEntity.getKey());
+    // for (Long processInstanceKey : processInstanceKeys) {
+    // Map<String, Object> updateFields = new HashMap<>();
+    // updateFields.put(ListViewTemplate.PROCESS_NAME, processEntity.getName());
+    // updateFields.put(ListViewTemplate.PROCESS_VERSION, processEntity.getVersion());
+    // batchRequest.update(listViewTemplate.getFullQualifiedName(), processInstanceKey.toString(),
+    // updateFields);
+    // }
+
+    batchRequest.addWithId(processIndex.getFullQualifiedName(),
+        ConversionUtils.toStringOrNull(processEntity.getKey()), processEntity);
+
   }
 
 }

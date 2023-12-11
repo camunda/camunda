@@ -1,15 +1,16 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a proprietary license.
- * See the License.txt file for more information. You may not use this file
- * except in compliance with the proprietary license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more
+ * contributor license agreements. Licensed under a proprietary license. See the License.txt file
+ * for more information. You may not use this file except in compliance with the proprietary
+ * license.
  */
 package io.camunda.zeebe.exporter.operate.schema.templates;
 
 import io.camunda.operate.schema.backup.Prio3Backup;
 import io.camunda.operate.schema.templates.ProcessInstanceDependant;
 
-public class IncidentTemplate extends AbstractTemplateDescriptor implements ProcessInstanceDependant, Prio3Backup {
+public class IncidentTemplate extends AbstractTemplateDescriptor
+    implements ProcessInstanceDependant, Prio3Backup {
 
 
   public static final String INDEX_NAME = "incident";
@@ -39,7 +40,8 @@ public class IncidentTemplate extends AbstractTemplateDescriptor implements Proc
   }
 
   @Override
-  //we have to use version 8.3.1 here, as we mistakenly released 8.3.0 index version in Operate 8.2.6
+  // we have to use version 8.3.1 here, as we mistakenly released 8.3.0 index version in Operate
+  // 8.2.6
   public String getVersion() {
     return "8.3.1";
   }

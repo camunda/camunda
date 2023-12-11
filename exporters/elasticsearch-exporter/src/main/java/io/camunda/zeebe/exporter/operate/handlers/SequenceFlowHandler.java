@@ -13,13 +13,14 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 
-public class SequenceFlowHandler implements ExportHandler<SequenceFlowEntity, ProcessInstanceRecordValue> {
-  
+public class SequenceFlowHandler
+    implements ExportHandler<SequenceFlowEntity, ProcessInstanceRecordValue> {
+
   private static final String ID_PATTERN = "%s_%s";
   private static final Logger logger = LoggerFactory.getLogger(SequenceFlowHandler.class);
 
   private SequenceFlowTemplate sequenceFlowTemplate;
-  
+
   public SequenceFlowHandler(SequenceFlowTemplate sequenceFlowTemplate) {
     this.sequenceFlowTemplate = sequenceFlowTemplate;
   }
@@ -28,7 +29,7 @@ public class SequenceFlowHandler implements ExportHandler<SequenceFlowEntity, Pr
   public ValueType getHandledValueType() {
     return ValueType.PROCESS_INSTANCE;
   }
-  
+
   @Override
   public Class<SequenceFlowEntity> getEntityType() {
     return SequenceFlowEntity.class;
@@ -36,14 +37,15 @@ public class SequenceFlowHandler implements ExportHandler<SequenceFlowEntity, Pr
 
   @Override
   public boolean handlesRecord(Record<ProcessInstanceRecordValue> record) {
-    
+
     return ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN.equals(record.getIntent());
   }
 
   @Override
   public String generateId(Record<ProcessInstanceRecordValue> record) {
     ProcessInstanceRecordValue recordValue = record.getValue();
-    return String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementId());
+    return String.format(ID_PATTERN, recordValue.getProcessInstanceKey(),
+        recordValue.getElementId());
   }
 
   @Override
@@ -54,12 +56,10 @@ public class SequenceFlowHandler implements ExportHandler<SequenceFlowEntity, Pr
   @Override
   public void updateEntity(Record<ProcessInstanceRecordValue> record, SequenceFlowEntity entity) {
     ProcessInstanceRecordValue recordValue = record.getValue();
-    
-    entity
-        .setProcessInstanceKey(recordValue.getProcessInstanceKey())
+
+    entity.setProcessInstanceKey(recordValue.getProcessInstanceKey())
         .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
-        .setBpmnProcessId(recordValue.getBpmnProcessId())
-        .setActivityId(recordValue.getElementId())
+        .setBpmnProcessId(recordValue.getBpmnProcessId()).setActivityId(recordValue.getElementId())
         .setTenantId(tenantOrDefault(recordValue.getTenantId()));
   }
 
@@ -69,7 +69,7 @@ public class SequenceFlowHandler implements ExportHandler<SequenceFlowEntity, Pr
 
     logger.debug("Index sequence flow: id {}", entity.getId());
     batchRequest.add(sequenceFlowTemplate.getFullQualifiedName(), entity);
-    
+
   }
 
 }

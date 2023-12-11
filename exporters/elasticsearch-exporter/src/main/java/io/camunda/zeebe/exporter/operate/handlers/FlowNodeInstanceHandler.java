@@ -31,8 +31,7 @@ public class FlowNodeInstanceHandler
 
   private static final Logger logger = LoggerFactory.getLogger(FlowNodeInstanceHandler.class);
 
-  private static final Set<Intent> AI_FINISH_STATES =
-      Set.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
+  private static final Set<Intent> AI_FINISH_STATES = Set.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
   private static final Set<Intent> AI_START_STATES = Set.of(ELEMENT_ACTIVATING);
 
   // TODO: fix spring-wired property access
@@ -46,7 +45,7 @@ public class FlowNodeInstanceHandler
   public ValueType getHandledValueType() {
     return ValueType.PROCESS_INSTANCE;
   }
-  
+
   @Override
   public Class<FlowNodeInstanceEntity> getEntityType() {
     return FlowNodeInstanceEntity.class;
@@ -60,7 +59,7 @@ public class FlowNodeInstanceHandler
         && (AI_START_STATES.contains(intent) || AI_FINISH_STATES.contains(intent));
 
   }
-  
+
   private boolean isProcessEvent(ProcessInstanceRecordValue recordValue) {
     return isOfType(recordValue, BpmnElementType.PROCESS);
   }

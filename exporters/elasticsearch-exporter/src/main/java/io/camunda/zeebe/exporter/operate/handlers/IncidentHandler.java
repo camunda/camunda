@@ -27,18 +27,18 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
 
   private IncidentTemplate incidentTemplate;
 
-  
+
   // TODO: Did not port over the webhook call that notifies users of a new incident
-  
+
   public IncidentHandler(IncidentTemplate incidentTemplate) {
     this.incidentTemplate = incidentTemplate;
   }
-  
+
   @Override
   public ValueType getHandledValueType() {
     return ValueType.INCIDENT;
   }
-  
+
   @Override
   public Class<IncidentEntity> getEntityType() {
     return IncidentEntity.class;
@@ -56,8 +56,7 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
 
   @Override
   public IncidentEntity createNewEntity(String id) {
-    return new IncidentEntity()
-        .setId(id);
+    return new IncidentEntity().setId(id);
   }
 
   @Override
@@ -66,18 +65,16 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
     Intent intent = record.getIntent();
     Long incidentKey = record.getKey();
     IncidentRecordValue recordValue = record.getValue();
-    
+
     if (intent == IncidentIntent.RESOLVED) {
 
       // TODO: restore completing operations
-//      //resolve corresponding operation
-//      operationsManager.completeOperation(null, recordValue.getProcessInstanceKey(), incidentKey,
-//          OperationType.RESOLVE_INCIDENT, batchRequest);
-//      //resolved incident is not updated directly, only in post importer
+      // //resolve corresponding operation
+      // operationsManager.completeOperation(null, recordValue.getProcessInstanceKey(), incidentKey,
+      // OperationType.RESOLVE_INCIDENT, batchRequest);
+      // //resolved incident is not updated directly, only in post importer
     } else if (intent == IncidentIntent.CREATED) {
-      incident
-        .setKey(incidentKey)
-        .setPartitionId(record.getPartitionId());
+      incident.setKey(incidentKey).setPartitionId(record.getPartitionId());
       if (recordValue.getJobKey() > 0) {
         incident.setJobKey(recordValue.getJobKey());
       }
@@ -90,7 +87,8 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
       incident.setBpmnProcessId(recordValue.getBpmnProcessId());
       String errorMessage = StringUtils.trimWhitespace(recordValue.getErrorMessage());
       incident.setErrorMessage(errorMessage)
-          .setErrorType(ErrorType.fromZeebeErrorType(recordValue.getErrorType() == null ? null : recordValue.getErrorType().name()))
+          .setErrorType(ErrorType.fromZeebeErrorType(
+              recordValue.getErrorType() == null ? null : recordValue.getErrorType().name()))
           .setFlowNodeId(recordValue.getElementId());
       if (recordValue.getElementInstanceKey() > 0) {
         incident.setFlowNodeInstanceKey(recordValue.getElementInstanceKey());
@@ -103,10 +101,12 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
   }
 
   @Override
-  public void flush(IncidentEntity incident, BatchRequest batchRequest) throws PersistenceException {
+  public void flush(IncidentEntity incident, BatchRequest batchRequest)
+      throws PersistenceException {
 
     logger.debug("Index incident: id {}", incident.getId());
-    //we only insert incidents but never update -> update will be performed in post importer
-    batchRequest.upsert(incidentTemplate.getFullQualifiedName(), String.valueOf(incident.getKey()), incident, Map.of());
+    // we only insert incidents but never update -> update will be performed in post importer
+    batchRequest.upsert(incidentTemplate.getFullQualifiedName(), String.valueOf(incident.getKey()),
+        incident, Map.of());
   }
 }

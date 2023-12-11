@@ -28,7 +28,8 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 public class ListViewFromProcessInstanceHandler
     implements ExportHandler<ProcessInstanceForListViewEntity, ProcessInstanceRecordValue> {
 
-  private static final Logger logger = LoggerFactory.getLogger(ListViewFromProcessInstanceHandler.class);
+  private static final Logger logger =
+      LoggerFactory.getLogger(ListViewFromProcessInstanceHandler.class);
   private static final Set<String> PI_AND_AI_START_STATES = new HashSet<>();
   private static final Set<String> PI_AND_AI_FINISH_STATES = new HashSet<>();
   protected static final int EMPTY_PARENT_PROCESS_INSTANCE_ID = -1;
@@ -40,7 +41,7 @@ public class ListViewFromProcessInstanceHandler
   }
 
   private ListViewTemplate listViewTemplate;
-  
+
   public ListViewFromProcessInstanceHandler(ListViewTemplate listViewTemplate) {
     this.listViewTemplate = listViewTemplate;
   }
@@ -49,7 +50,7 @@ public class ListViewFromProcessInstanceHandler
   public ValueType getHandledValueType() {
     return ValueType.PROCESS_INSTANCE;
   }
-  
+
   @Override
   public Class<ProcessInstanceForListViewEntity> getEntityType() {
     return ProcessInstanceForListViewEntity.class;
@@ -73,35 +74,38 @@ public class ListViewFromProcessInstanceHandler
   @Override
   public void updateEntity(Record<ProcessInstanceRecordValue> record,
       ProcessInstanceForListViewEntity piEntity) {
-    
+
     if (isProcessInstanceTerminated(record)) {
-      //resolve corresponding operation
-      
+      // resolve corresponding operation
+
       // TODO: complete operations again; consider doing this in a separate handler?
-//          operationsManager.completeOperation(null, record.getKey(), null, OperationType.CANCEL_PROCESS_INSTANCE, batchRequest);
+      // operationsManager.completeOperation(null, record.getKey(), null,
+      // OperationType.CANCEL_PROCESS_INSTANCE, batchRequest);
     }
 
     final var recordValue = record.getValue();
     final var intentStr = record.getIntent().name();
 
-    piEntity
-        .setProcessInstanceKey(recordValue.getProcessInstanceKey())
+    piEntity.setProcessInstanceKey(recordValue.getProcessInstanceKey())
         .setKey(recordValue.getProcessInstanceKey())
         .setTenantId(tenantOrDefault(recordValue.getTenantId()))
         .setPartitionId(record.getPartitionId())
         .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
         .setBpmnProcessId(recordValue.getBpmnProcessId())
         .setProcessVersion(recordValue.getVersion())
-        // TODO: restore process name resolving
-//        .setProcessName(processCache.getProcessNameOrDefaultValue(piEntity.getProcessDefinitionKey(), recordValue.getBpmnProcessId()))
-        ;
+    // TODO: restore process name resolving
+    // .setProcessName(processCache.getProcessNameOrDefaultValue(piEntity.getProcessDefinitionKey(),
+    // recordValue.getBpmnProcessId()))
+    ;
 
-    OffsetDateTime timestamp = DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
-    final boolean isRootProcessInstance = recordValue.getParentProcessInstanceKey() == EMPTY_PARENT_PROCESS_INSTANCE_ID;
+    OffsetDateTime timestamp =
+        DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
+    final boolean isRootProcessInstance =
+        recordValue.getParentProcessInstanceKey() == EMPTY_PARENT_PROCESS_INSTANCE_ID;
     if (intentStr.equals(ELEMENT_COMPLETED.name()) || intentStr.equals(ELEMENT_TERMINATED.name())) {
-      
+
       // TODO: restore metrics
-//      importBatch.incrementFinishedWiCount();
+      // importBatch.incrementFinishedWiCount();
       piEntity.setEndDate(timestamp);
       if (intentStr.equals(ELEMENT_TERMINATED.name())) {
         piEntity.setState(ProcessInstanceState.CANCELED);
@@ -109,42 +113,41 @@ public class ListViewFromProcessInstanceHandler
         piEntity.setState(ProcessInstanceState.COMPLETED);
       }
     } else if (intentStr.equals(ELEMENT_ACTIVATING.name())) {
-      piEntity.setStartDate(timestamp)
-          .setState(ProcessInstanceState.ACTIVE);
+      piEntity.setStartDate(timestamp).setState(ProcessInstanceState.ACTIVE);
       // TODO: restore metrics
-//      if(isRootProcessInstance){
-//        registerStartedRootProcessInstance(piEntity, batchRequest, timestamp);
-//      }
+      // if(isRootProcessInstance){
+      // registerStartedRootProcessInstance(piEntity, batchRequest, timestamp);
+      // }
     } else {
       piEntity.setState(ProcessInstanceState.ACTIVE);
     }
-    //call activity related fields
+    // call activity related fields
     if (!isRootProcessInstance) {
-      piEntity
-          .setParentProcessInstanceKey(recordValue.getParentProcessInstanceKey())
+      piEntity.setParentProcessInstanceKey(recordValue.getParentProcessInstanceKey())
           .setParentFlowNodeInstanceKey(recordValue.getParentElementInstanceKey());
       // TODO: restore tree path logic
-//      if (piEntity.getTreePath() == null) {
-//        final String treePath = getTreePathForCalledProcess(recordValue);
-//        piEntity.setTreePath(treePath);
-//        treePathMap.put(String.valueOf(record.getKey()), treePath);
-//      }
+      // if (piEntity.getTreePath() == null) {
+      // final String treePath = getTreePathForCalledProcess(recordValue);
+      // piEntity.setTreePath(treePath);
+      // treePathMap.put(String.valueOf(record.getKey()), treePath);
+      // }
     }
     // TODO: restore tree path
-//    if (piEntity.getTreePath() == null) {
-//      final String treePath = new TreePath().startTreePath(
-//          ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey())).toString();
-//      piEntity.setTreePath(treePath);
-//      getTreePathCache()
-//          .put(ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()), treePath);
-//    }
+    // if (piEntity.getTreePath() == null) {
+    // final String treePath = new TreePath().startTreePath(
+    // ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey())).toString();
+    // piEntity.setTreePath(treePath);
+    // getTreePathCache()
+    // .put(ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()), treePath);
+    // }
   }
-  
-  private boolean shouldProcessProcessInstanceRecord(final Record<ProcessInstanceRecordValue> record) {
+
+  private boolean shouldProcessProcessInstanceRecord(
+      final Record<ProcessInstanceRecordValue> record) {
     final var intent = record.getIntent().name();
     return PI_AND_AI_START_STATES.contains(intent) || PI_AND_AI_FINISH_STATES.contains(intent);
   }
-  
+
   // TODO: this is duplicated in other handlers
   private boolean isProcessEvent(ProcessInstanceRecordValue recordValue) {
     return isOfType(recordValue, BpmnElementType.PROCESS);
@@ -157,16 +160,16 @@ public class ListViewFromProcessInstanceHandler
     }
     return bpmnElementType.equals(type);
   }
-  
+
 
   private boolean isProcessInstanceTerminated(final Record<ProcessInstanceRecordValue> record) {
     return record.getIntent() == ELEMENT_TERMINATED;
   }
-  
+
   @Override
   public void flush(ProcessInstanceForListViewEntity piEntity, BatchRequest batchRequest)
       throws PersistenceException {
-    
+
     logger.debug("Process instance for list view: id {}", piEntity.getId());
 
     if (canOptimizeProcessInstanceIndexing(piEntity)) {
@@ -185,14 +188,16 @@ public class ListViewFromProcessInstanceHandler
         updateFields.put(ListViewTemplate.STATE, piEntity.getState());
       }
 
-      batchRequest.upsert(listViewTemplate.getFullQualifiedName(), piEntity.getId(), piEntity, updateFields);
+      batchRequest.upsert(listViewTemplate.getFullQualifiedName(), piEntity.getId(), piEntity,
+          updateFields);
     }
-    
+
   }
-  
+
   // TODO: put this logic in a single place
   // check if it is still needed
-  private boolean canOptimizeProcessInstanceIndexing(final ProcessInstanceForListViewEntity entity) {
+  private boolean canOptimizeProcessInstanceIndexing(
+      final ProcessInstanceForListViewEntity entity) {
     final var startDate = entity.getStartDate();
     final var endDate = entity.getEndDate();
 
@@ -203,10 +208,10 @@ public class ListViewFromProcessInstanceHandler
       // by submitting an IndexRequest instead of a UpdateRequest.
       // In such case, the following is assumed:
       // * When the duration between start and end time is lower than
-      //   (or equal to) 2 seconds, then it can safely be assumed that
-      //   there was no incident in between.
+      // (or equal to) 2 seconds, then it can safely be assumed that
+      // there was no incident in between.
       // * The 2s duration is chosen arbitrarily. It should not be
-      //   too short but not too long to avoid any negative side.
+      // too short but not too long to avoid any negative side.
       final var duration = Duration.between(startDate, endDate);
       return duration.getSeconds() <= 2L;
     }

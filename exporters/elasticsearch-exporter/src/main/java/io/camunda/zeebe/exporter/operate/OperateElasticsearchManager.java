@@ -61,7 +61,7 @@ public class OperateElasticsearchManager implements SchemaManager {
 
   private static final String NUMBER_OF_SHARDS = "index.number_of_shards";
   private static final String NUMBER_OF_REPLICAS = "index.number_of_replicas";
-  
+
   protected NoSpringRetryElasticsearchClient retryElasticsearchClient;
   protected OperateProperties operateProperties;
   private List<IndexDescriptor> indexDescriptors;
@@ -70,47 +70,33 @@ public class OperateElasticsearchManager implements SchemaManager {
   public OperateElasticsearchManager(RestHighLevelClient client) {
     this.retryElasticsearchClient = new NoSpringRetryElasticsearchClient(client);
     this.operateProperties = new OperateProperties(); // trying with the default properties for nwo
-    
+
     String indexPrefix = operateProperties.getElasticsearch().getIndexPrefix();
-    
-    indexDescriptors = Arrays.asList(
-        new DecisionIndex(indexPrefix),
-        new DecisionRequirementsIndex(indexPrefix),
-        new ImportPositionIndex(indexPrefix),
-        new MetricIndex(indexPrefix),
-        new MigrationRepositoryIndex(indexPrefix),
-        new OperateWebSessionIndex(indexPrefix),
-        new ProcessIndex(indexPrefix),
-        new UserIndex(indexPrefix)
-        );
-    templateDescriptors = Arrays.asList(
-        new BatchOperationTemplate(indexPrefix),
-        new DecisionInstanceTemplate(indexPrefix),
-        new EventTemplate(indexPrefix),
-        new FlowNodeInstanceTemplate(indexPrefix),
-        new IncidentTemplate(indexPrefix),
-        new ListViewTemplate(indexPrefix),
-        new OperationTemplate(indexPrefix),
-        new PostImporterQueueTemplate(indexPrefix),
-        new SequenceFlowTemplate(indexPrefix),
-        new VariableTemplate(indexPrefix)
-        );
+
+    indexDescriptors =
+        Arrays.asList(new DecisionIndex(indexPrefix), new DecisionRequirementsIndex(indexPrefix),
+            new ImportPositionIndex(indexPrefix), new MetricIndex(indexPrefix),
+            new MigrationRepositoryIndex(indexPrefix), new OperateWebSessionIndex(indexPrefix),
+            new ProcessIndex(indexPrefix), new UserIndex(indexPrefix));
+    templateDescriptors = Arrays.asList(new BatchOperationTemplate(indexPrefix),
+        new DecisionInstanceTemplate(indexPrefix), new EventTemplate(indexPrefix),
+        new FlowNodeInstanceTemplate(indexPrefix), new IncidentTemplate(indexPrefix),
+        new ListViewTemplate(indexPrefix), new OperationTemplate(indexPrefix),
+        new PostImporterQueueTemplate(indexPrefix), new SequenceFlowTemplate(indexPrefix),
+        new VariableTemplate(indexPrefix));
   }
-  
+
   public <T extends IndexDescriptor> T getIndexDescriptor(Class<T> clazz) {
-    return (T) indexDescriptors.stream()
-        .filter(i -> i.getClass() == clazz)
-        .findFirst()
-        .orElseThrow(() -> new RuntimeException("Could not find template descriptor of class " + clazz));
+    return (T) indexDescriptors.stream().filter(i -> i.getClass() == clazz).findFirst().orElseThrow(
+        () -> new RuntimeException("Could not find template descriptor of class " + clazz));
   }
-  
+
   public <T extends TemplateDescriptor> T getTemplateDescriptor(Class<T> clazz) {
-    return (T) templateDescriptors.stream()
-        .filter(i -> i.getClass() == clazz)
-        .findFirst()
-        .orElseThrow(() -> new RuntimeException("Could not find template descriptor of class " + clazz));
+    return (T) templateDescriptors.stream().filter(i -> i.getClass() == clazz).findFirst()
+        .orElseThrow(
+            () -> new RuntimeException("Could not find template descriptor of class " + clazz));
   }
-  
+
   @Override
   public void createSchema() {
     if (operateProperties.getArchiver().isIlmEnabled()) {
@@ -123,7 +109,8 @@ public class OperateElasticsearchManager implements SchemaManager {
 
   @Override
   public boolean setIndexSettingsFor(Map<String, ?> settings, String indexPattern) {
-    return retryElasticsearchClient.setIndexSettingsFor(Settings.builder().loadFromMap(settings).build(), indexPattern);
+    return retryElasticsearchClient
+        .setIndexSettingsFor(Settings.builder().loadFromMap(settings).build(), indexPattern);
   }
 
   @Override
@@ -188,26 +175,22 @@ public class OperateElasticsearchManager implements SchemaManager {
 
   private Settings getIndexSettings() {
     final OperateElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
-    return Settings.builder()
-        .put(NUMBER_OF_SHARDS, elsConfig.getNumberOfShards())
-        .put(NUMBER_OF_REPLICAS, elsConfig.getNumberOfReplicas())
-        .build();
+    return Settings.builder().put(NUMBER_OF_SHARDS, elsConfig.getNumberOfShards())
+        .put(NUMBER_OF_REPLICAS, elsConfig.getNumberOfReplicas()).build();
   }
 
   private void createDefaults() {
     final OperateElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
     final String settingsTemplate = settingsTemplateName();
-    logger.info("Create default settings from '{}' with {} shards and {} replicas per index.", settingsTemplate,
-        elsConfig.getNumberOfShards(),
-        elsConfig.getNumberOfReplicas());
+    logger.info("Create default settings from '{}' with {} shards and {} replicas per index.",
+        settingsTemplate, elsConfig.getNumberOfShards(), elsConfig.getNumberOfReplicas());
 
     Settings settings = getIndexSettings();
 
     final Template template = new Template(settings, null, null);
     final ComponentTemplate componentTemplate = new ComponentTemplate(template, null, null);
     final PutComponentTemplateRequest request = new PutComponentTemplateRequest()
-        .name(settingsTemplate)
-        .componentTemplate(componentTemplate);
+        .name(settingsTemplate).componentTemplate(componentTemplate);
     retryElasticsearchClient.createComponentTemplate(request);
   }
 
@@ -215,16 +198,15 @@ public class OperateElasticsearchManager implements SchemaManager {
     final TimeValue timeValue = TimeValue.parseTimeValue(
         operateProperties.getArchiver().getIlmMinAgeForDeleteArchivedIndices(),
         "IndexLifeCycle " + INDEX_LIFECYCLE_NAME);
-    logger.info("Create Index Lifecycle {} for min age of {} ", OPERATE_DELETE_ARCHIVED_INDICES, timeValue.getStringRep());
+    logger.info("Create Index Lifecycle {} for min age of {} ", OPERATE_DELETE_ARCHIVED_INDICES,
+        timeValue.getStringRep());
     Map<String, Phase> phases = new HashMap<>();
     Map<String, LifecycleAction> deleteActions =
         Collections.singletonMap(DeleteAction.NAME, new DeleteAction());
     phases.put(DELETE_PHASE, new Phase(DELETE_PHASE, timeValue, deleteActions));
 
-    LifecyclePolicy policy = new LifecyclePolicy(OPERATE_DELETE_ARCHIVED_INDICES,
-        phases);
-    PutLifecyclePolicyRequest request =
-        new PutLifecyclePolicyRequest(policy);
+    LifecyclePolicy policy = new LifecyclePolicy(OPERATE_DELETE_ARCHIVED_INDICES, phases);
+    PutLifecyclePolicyRequest request = new PutLifecyclePolicyRequest(policy);
     retryElasticsearchClient.putLifeCyclePolicy(request);
   }
 
@@ -237,11 +219,11 @@ public class OperateElasticsearchManager implements SchemaManager {
   }
 
   private void createIndex(final IndexDescriptor indexDescriptor) {
-    final String indexFilename = String.format("/schema/create/index/operate-%s.json",
-        indexDescriptor.getIndexName());
+    final String indexFilename =
+        String.format("/schema/create/index/operate-%s.json", indexDescriptor.getIndexName());
     final Map<String, Object> indexDescription = readJSONFileToMap(indexFilename);
-    createIndex(new CreateIndexRequest(indexDescriptor.getFullQualifiedName())
-            .source(indexDescription)
+    createIndex(
+        new CreateIndexRequest(indexDescriptor.getFullQualifiedName()).source(indexDescription)
             .aliases(Set.of(new Alias(indexDescriptor.getAlias()).writeIndex(false)))
             .settings(getIndexSettings()),
         indexDescriptor.getFullQualifiedName());
@@ -250,38 +232,37 @@ public class OperateElasticsearchManager implements SchemaManager {
   private void createTemplate(final TemplateDescriptor templateDescriptor) {
     Template template = getTemplateFrom(templateDescriptor);
     ComposableIndexTemplate composableTemplate = new ComposableIndexTemplate.Builder()
-        .indexPatterns(List.of(templateDescriptor.getIndexPattern()))
-        .template(template)
-        .componentTemplates(List.of(settingsTemplateName()))
-        .build();
+        .indexPatterns(List.of(templateDescriptor.getIndexPattern())).template(template)
+        .componentTemplates(List.of(settingsTemplateName())).build();
     putIndexTemplate(new PutComposableIndexTemplateRequest()
-        .name(templateDescriptor.getTemplateName())
-        .indexTemplate(composableTemplate));
+        .name(templateDescriptor.getTemplateName()).indexTemplate(composableTemplate));
     // This is necessary, otherwise operate won't find indexes at startup
     String indexName = templateDescriptor.getFullQualifiedName();
     createIndex(new CreateIndexRequest(indexName), indexName);
   }
 
   private Template getTemplateFrom(final TemplateDescriptor templateDescriptor) {
-    final String templateFilename = String.format("/schema/create/template/operate-%s.json", templateDescriptor
-        .getIndexName());
+    final String templateFilename =
+        String.format("/schema/create/template/operate-%s.json", templateDescriptor.getIndexName());
     // Easiest way to create Template from json file: create 'old' request ang retrieve needed info
     final Map<String, Object> templateConfig = readJSONFileToMap(templateFilename);
-    PutIndexTemplateRequest ptr = new PutIndexTemplateRequest(templateDescriptor.getTemplateName())
-        .source(templateConfig);
+    PutIndexTemplateRequest ptr =
+        new PutIndexTemplateRequest(templateDescriptor.getTemplateName()).source(templateConfig);
     try {
-      final Map<String, AliasMetadata> aliases = Map.of(
-          templateDescriptor.getAlias(), AliasMetadata.builder(templateDescriptor.getAlias()).build());
+      final Map<String, AliasMetadata> aliases = Map.of(templateDescriptor.getAlias(),
+          AliasMetadata.builder(templateDescriptor.getAlias()).build());
       return new Template(ptr.settings(), new CompressedXContent(ptr.mappings()), aliases);
     } catch (IOException e) {
       throw new OperateRuntimeException(
-          String.format("Error in reading mappings for %s ", templateDescriptor.getTemplateName()), e);
+          String.format("Error in reading mappings for %s ", templateDescriptor.getTemplateName()),
+          e);
     }
   }
 
   private Map<String, Object> readJSONFileToMap(final String filename) {
     final Map<String, Object> result;
-    try (InputStream inputStream = OperateElasticsearchManager.class.getResourceAsStream(filename)) {
+    try (
+        InputStream inputStream = OperateElasticsearchManager.class.getResourceAsStream(filename)) {
       if (inputStream != null) {
         result = XContentHelper.convertToMap(XContentType.JSON.xContent(), inputStream, true);
       } else {

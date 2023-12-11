@@ -14,13 +14,15 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 
-// TODO: VariableForListViewEntity is not properly parameterized, so this breaks without a change in the operate dependency
-public class ListViewFromVariableHandler implements ExportHandler<VariableForListViewEntity, VariableRecordValue> {
+// TODO: VariableForListViewEntity is not properly parameterized, so this breaks without a change in
+// the operate dependency
+public class ListViewFromVariableHandler
+    implements ExportHandler<VariableForListViewEntity, VariableRecordValue> {
 
   private static final Logger logger = LoggerFactory.getLogger(ListViewFromVariableHandler.class);
 
   private ListViewTemplate listViewTemplate;
-  
+
   public ListViewFromVariableHandler(ListViewTemplate listViewTemplate) {
     this.listViewTemplate = listViewTemplate;
   }
@@ -29,7 +31,7 @@ public class ListViewFromVariableHandler implements ExportHandler<VariableForLis
   public ValueType getHandledValueType() {
     return ValueType.VARIABLE;
   }
-  
+
   @Override
   public Class<VariableForListViewEntity> getEntityType() {
     return VariableForListViewEntity.class;
@@ -48,15 +50,15 @@ public class ListViewFromVariableHandler implements ExportHandler<VariableForLis
 
   @Override
   public VariableForListViewEntity createNewEntity(String id) {
-    return new VariableForListViewEntity()
-        .setId(id);
+    return new VariableForListViewEntity().setId(id);
   }
 
   @Override
   public void updateEntity(Record<VariableRecordValue> record, VariableForListViewEntity entity) {
-    
+
     final var recordValue = record.getValue();
-    entity.setId(VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()));
+    entity
+        .setId(VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()));
     entity.setKey(record.getKey());
     entity.setPartitionId(record.getPartitionId());
     entity.setScopeKey(recordValue.getScopeKey());
@@ -65,30 +67,32 @@ public class ListViewFromVariableHandler implements ExportHandler<VariableForLis
     entity.setVarValue(recordValue.getValue());
     entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
-    //set parent
+    // set parent
     Long processInstanceKey = recordValue.getProcessInstanceKey();
     entity.getJoinRelation().setParent(processInstanceKey);
-    
+
   }
 
   @Override
   public void flush(VariableForListViewEntity variableEntity, BatchRequest batchRequest)
       throws PersistenceException {
     // TODO: restore insert or upsert behavior
-//    final var initialIntent = cachedVariable.getLeft();
+    // final var initialIntent = cachedVariable.getLeft();
 
     logger.debug("Variable for list view: id {}", variableEntity.getId());
-//    if (initialIntent == VariableIntent.CREATED) {
-//      batchRequest.addWithRouting(listViewTemplate.getFullQualifiedName(), variableEntity,  variableEntity.getProcessInstanceKey().toString());
-//    } else {
-      final var processInstanceKey = variableEntity.getProcessInstanceKey();
+    // if (initialIntent == VariableIntent.CREATED) {
+    // batchRequest.addWithRouting(listViewTemplate.getFullQualifiedName(), variableEntity,
+    // variableEntity.getProcessInstanceKey().toString());
+    // } else {
+    final var processInstanceKey = variableEntity.getProcessInstanceKey();
 
-      Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(ListViewTemplate.VAR_NAME, variableEntity.getVarName());
-      updateFields.put( ListViewTemplate.VAR_VALUE, variableEntity.getVarValue());
-      batchRequest.upsertWithRouting(listViewTemplate.getFullQualifiedName(), variableEntity.getId(), variableEntity, updateFields, processInstanceKey.toString());
-//    }
-    
+    Map<String, Object> updateFields = new HashMap<>();
+    updateFields.put(ListViewTemplate.VAR_NAME, variableEntity.getVarName());
+    updateFields.put(ListViewTemplate.VAR_VALUE, variableEntity.getVarValue());
+    batchRequest.upsertWithRouting(listViewTemplate.getFullQualifiedName(), variableEntity.getId(),
+        variableEntity, updateFields, processInstanceKey.toString());
+    // }
+
   }
 
 }

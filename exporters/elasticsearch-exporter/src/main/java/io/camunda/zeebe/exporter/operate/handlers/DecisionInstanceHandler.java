@@ -23,11 +23,12 @@ import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedInputValue;
 import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
 
-// TODO: currently not implemented as an ExportHandler, because it produces multiple Operate Entities from one record
+// TODO: currently not implemented as an ExportHandler, because it produces multiple Operate
+// Entities from one record
 public class DecisionInstanceHandler {
 
   private DecisionInstanceTemplate decisionInstanceTemplate;
-  
+
   public DecisionInstanceHandler(DecisionInstanceTemplate decisionInstanceTemplate) {
     this.decisionInstanceTemplate = decisionInstanceTemplate;
   }
@@ -38,21 +39,17 @@ public class DecisionInstanceHandler {
 
   public List<DecisionInstanceEntity> createEntities(Record<DecisionEvaluationRecordValue> record) {
     DecisionEvaluationRecordValue decisionEvaluation = record.getValue();
-    
+
     List<DecisionInstanceEntity> entities = new ArrayList<>();
     for (int i = 1; i <= decisionEvaluation.getEvaluatedDecisions().size(); i++) {
-      final EvaluatedDecisionValue decision = decisionEvaluation
-          .getEvaluatedDecisions().get(i - 1);
-      OffsetDateTime timestamp = DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
+      final EvaluatedDecisionValue decision = decisionEvaluation.getEvaluatedDecisions().get(i - 1);
+      OffsetDateTime timestamp =
+          DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
       final DecisionInstanceState state = getState(record, decisionEvaluation, i);
 
-      final DecisionInstanceEntity entity = new DecisionInstanceEntity()
-          .setId(record.getKey(), i)
-          .setKey(record.getKey())
-          .setExecutionIndex(i)
-          .setPosition(record.getPosition())
-          .setPartitionId(record.getPartitionId())
-          .setEvaluationDate(timestamp)
+      final DecisionInstanceEntity entity = new DecisionInstanceEntity().setId(record.getKey(), i)
+          .setKey(record.getKey()).setExecutionIndex(i).setPosition(record.getPosition())
+          .setPartitionId(record.getPartitionId()).setEvaluationDate(timestamp)
           .setProcessInstanceKey(decisionEvaluation.getProcessInstanceKey())
           .setProcessDefinitionKey(decisionEvaluation.getProcessDefinitionKey())
           .setBpmnProcessId(decisionEvaluation.getBpmnProcessId())
@@ -67,8 +64,7 @@ public class DecisionInstanceHandler {
           .setDecisionDefinitionId(String.valueOf(decision.getDecisionKey()))
           .setDecisionType(DecisionType.fromZeebeDecisionType(decision.getDecisionType()))
           .setDecisionName(decision.getDecisionName())
-          .setDecisionVersion((int)decision.getDecisionVersion())
-          .setState(state)
+          .setDecisionVersion((int) decision.getDecisionVersion()).setState(state)
           .setResult(decision.getDecisionOutput())
           .setEvaluatedOutputs(createEvaluationOutputs(decision.getMatchedRules()))
           .setEvaluatedInputs(createEvaluationInputs(decision.getEvaluatedInputs()))
@@ -80,36 +76,33 @@ public class DecisionInstanceHandler {
     }
     return entities;
   }
-  
+
   private DecisionInstanceState getState(final Record record,
       final DecisionEvaluationRecordValue decisionEvaluation, final int i) {
-    if (record.getIntent().name().equals(DecisionEvaluationIntent.FAILED.name()) && i == decisionEvaluation
-        .getEvaluatedDecisions().size()) {
+    if (record.getIntent().name().equals(DecisionEvaluationIntent.FAILED.name())
+        && i == decisionEvaluation.getEvaluatedDecisions().size()) {
       return DecisionInstanceState.FAILED;
     } else {
       return DecisionInstanceState.EVALUATED;
     }
   }
-  
+
   private List<DecisionInstanceInputEntity> createEvaluationInputs(
       final List<EvaluatedInputValue> evaluatedInputs) {
-    return evaluatedInputs.stream().map(input -> new DecisionInstanceInputEntity()
-        .setId(input.getInputId())
-        .setName(input.getInputName())
-        .setValue(input.getInputValue())).collect(Collectors.toList());
+    return evaluatedInputs.stream()
+        .map(input -> new DecisionInstanceInputEntity().setId(input.getInputId())
+            .setName(input.getInputName()).setValue(input.getInputValue()))
+        .collect(Collectors.toList());
   }
 
   private List<DecisionInstanceOutputEntity> createEvaluationOutputs(
       final List<MatchedRuleValue> matchedRules) {
     List<DecisionInstanceOutputEntity> outputs = new ArrayList<>();
-    matchedRules.stream().forEach(rule ->
-        outputs.addAll(rule.getEvaluatedOutputs().stream().map(output ->
-            new DecisionInstanceOutputEntity()
-                .setRuleId(rule.getRuleId())
-                .setRuleIndex(rule.getRuleIndex())
-                .setId(output.getOutputId())
-                .setName(output.getOutputName())
-                .setValue(output.getOutputValue()))
+    matchedRules.stream()
+        .forEach(rule -> outputs.addAll(rule.getEvaluatedOutputs().stream()
+            .map(output -> new DecisionInstanceOutputEntity().setRuleId(rule.getRuleId())
+                .setRuleIndex(rule.getRuleIndex()).setId(output.getOutputId())
+                .setName(output.getOutputName()).setValue(output.getOutputValue()))
             .collect(Collectors.toList())));
     return outputs;
   }

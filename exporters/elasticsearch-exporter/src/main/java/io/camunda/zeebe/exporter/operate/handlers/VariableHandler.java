@@ -17,14 +17,14 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 
 public class VariableHandler implements ExportHandler<VariableEntity, VariableRecordValue> {
-  
+
   private static final Logger logger = LoggerFactory.getLogger(VariableHandler.class);
 
   // TODO: in the original code this was configurable through the operate properties
   private static final int VARIABLE_SIZE_LIMIT = ImportProperties.DEFAULT_VARIABLE_SIZE_THRESHOLD;
 
   private VariableTemplate variableTemplate;
-  
+
   public VariableHandler(VariableTemplate variableTemplate) {
     this.variableTemplate = variableTemplate;
   }
@@ -33,7 +33,7 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
   public ValueType getHandledValueType() {
     return ValueType.VARIABLE;
   }
-  
+
   @Override
   public Class<VariableEntity> getEntityType() {
     return VariableEntity.class;
@@ -60,21 +60,15 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
     // TODO Auto-generated method stub
     final var recordValue = record.getValue();
 
-    entity
-        .setKey(record.getKey())
-        .setPartitionId(record.getPartitionId())
+    entity.setKey(record.getKey()).setPartitionId(record.getPartitionId())
         .setScopeKey(recordValue.getScopeKey())
         .setProcessInstanceKey(recordValue.getProcessInstanceKey())
         .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
-        .setBpmnProcessId(recordValue.getBpmnProcessId())
-        .setName(recordValue.getName())
+        .setBpmnProcessId(recordValue.getBpmnProcessId()).setName(recordValue.getName())
         .setTenantId(tenantOrDefault(recordValue.getTenantId()));
     if (recordValue.getValue().length() > VARIABLE_SIZE_LIMIT) {
       // store preview
-      entity.setValue(
-          recordValue
-              .getValue()
-              .substring(0, VARIABLE_SIZE_LIMIT));
+      entity.setValue(recordValue.getValue().substring(0, VARIABLE_SIZE_LIMIT));
       entity.setFullValue(recordValue.getValue());
       entity.setIsPreview(true);
     } else {
@@ -85,23 +79,25 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
   }
 
   @Override
-  public void flush(VariableEntity variableEntity, BatchRequest batchRequest) throws PersistenceException {
-    
+  public void flush(VariableEntity variableEntity, BatchRequest batchRequest)
+      throws PersistenceException {
+
     // TODO: restore the distinction between insert and upsert
-//    final var initialIntent = cachedVariable.getLeft();
+    // final var initialIntent = cachedVariable.getLeft();
 
     logger.debug("Variable instance: id {}", variableEntity.getId());
 
-//    if (initialIntent == VariableIntent.CREATED) {
-//      batchRequest.add(variableTemplate.getFullQualifiedName(), variableEntity);
-//    } else {
-      Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(VariableTemplate.VALUE, variableEntity.getValue());
-      updateFields.put(VariableTemplate.FULL_VALUE, variableEntity.getFullValue());
-      updateFields.put(VariableTemplate.IS_PREVIEW, variableEntity.getIsPreview());
-      batchRequest.upsert(variableTemplate.getFullQualifiedName(), variableEntity.getId(), variableEntity, updateFields);
-//    }
-    
+    // if (initialIntent == VariableIntent.CREATED) {
+    // batchRequest.add(variableTemplate.getFullQualifiedName(), variableEntity);
+    // } else {
+    Map<String, Object> updateFields = new HashMap<>();
+    updateFields.put(VariableTemplate.VALUE, variableEntity.getValue());
+    updateFields.put(VariableTemplate.FULL_VALUE, variableEntity.getFullValue());
+    updateFields.put(VariableTemplate.IS_PREVIEW, variableEntity.getIsPreview());
+    batchRequest.upsert(variableTemplate.getFullQualifiedName(), variableEntity.getId(),
+        variableEntity, updateFields);
+    // }
+
   }
 
 }

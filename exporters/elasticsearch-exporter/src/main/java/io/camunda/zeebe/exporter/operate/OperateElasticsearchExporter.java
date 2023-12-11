@@ -67,7 +67,7 @@ import io.camunda.zeebe.protocol.record.Record;
 public class OperateElasticsearchExporter implements Exporter {
 
   private static final Logger logger = LoggerFactory.getLogger(OperateElasticsearchExporter.class);
-  
+
   private OperateElasticsearchExporterConfiguration configuration;
   private RestHighLevelClient esClient;
 
@@ -76,41 +76,40 @@ public class OperateElasticsearchExporter implements Exporter {
   // dynamic state for the lifetime of the exporter
   private long lastExportedPosition = -1;
   private OperateElasticsearchManager schemaManager;
-  
+
   // dynamic state for the current batch of ES writes
   private NoSpringElasticsearchBatchRequest request;
   private ExportBatchWriter writer;
-  
+
   @Override
   public void configure(Context context) throws Exception {
-    
+
     configuration =
         context.getConfiguration().instantiate(OperateElasticsearchExporterConfiguration.class);
     logger.debug("Exporter configured with {}", configuration);
 
     // TODO: filter here to only handle events (and potentially also only certain event types)
-//    context.setFilter(new ElasticsearchRecordFilter(configuration));
-    
+    // context.setFilter(new ElasticsearchRecordFilter(configuration));
+
   }
-  
+
   @Override
   public void open(Controller controller) {
-     this.esClient = createEsClient();
-     this.controller = controller;
-     
-     // TODO: init client
-     schemaManager = new OperateElasticsearchManager(esClient);
-     schemaManager.createSchema();
+    this.esClient = createEsClient();
+    this.controller = controller;
 
-     scheduleDelayedFlush();
+    // TODO: init client
+    schemaManager = new OperateElasticsearchManager(esClient);
+    schemaManager.createSchema();
+
+    scheduleDelayedFlush();
   }
-  
+
   /*
-   * TODO: could be interesting to get an array of currently avaiable records 
-   * (e.g. sized to a "batch" in zeebe, e.g.
-   * what is contained in the current Zeebe file buffer) => effect would be to 
-   * reduce latency by knowing that a small batch indicates that there is not more new data
-   * and we can flush a smaller batch to Elasticsearch
+   * TODO: could be interesting to get an array of currently avaiable records (e.g. sized to a
+   * "batch" in zeebe, e.g. what is contained in the current Zeebe file buffer) => effect would be
+   * to reduce latency by knowing that a small batch indicates that there is not more new data and
+   * we can flush a smaller batch to Elasticsearch
    * 
    * TODO: consider adding metrics that allows debugging the behavior of the exporter sufficiently
    */
@@ -120,41 +119,43 @@ public class OperateElasticsearchExporter implements Exporter {
       request = new NoSpringElasticsearchBatchRequest(esClient);
       writer = createBatchWriter(request);
     }
-   
+
     writer.addRecord(record);
 
     this.lastExportedPosition = record.getPosition();
-    
+
     if (writer.hasAtLeastEntities(configuration.getBulk().size)) {
       try {
         flush();
       } catch (PersistenceException e) {
-        // TODO: in this case we would send an entity with the same ID twice, not sure what happens then
-        //       risk is acceptable for a prototype
+        // TODO: in this case we would send an entity with the same ID twice, not sure what happens
+        // then
+        // risk is acceptable for a prototype
         throw new RuntimeException("Could not flush during regular export. "
             + "This indicates a bug because this exporter is not retryable", e);
       }
     }
   }
-  
+
   private void scheduleDelayedFlush() {
-    controller.scheduleCancellableTask(
-        Duration.ofSeconds(configuration.getBulk().delay), this::flushAndReschedule);
+    controller.scheduleCancellableTask(Duration.ofSeconds(configuration.getBulk().delay),
+        this::flushAndReschedule);
   }
-  
+
   private void flushAndReschedule() {
     try {
       flush();
       updateLastExportedPosition();
     } catch (final Exception e) {
-      logger.warn("Unexpected exception occurred on periodically flushing bulk, will retry later.", e);
+      logger.warn("Unexpected exception occurred on periodically flushing bulk, will retry later.",
+          e);
     }
     scheduleDelayedFlush();
   }
-  
+
   private void flush() throws PersistenceException {
     writer.flush();
-    
+
     writer = null;
     request = null;
   }
@@ -167,30 +168,28 @@ public class OperateElasticsearchExporter implements Exporter {
       throw new RuntimeException("Could not close ES client", e);
     }
   }
-  
+
   public OperateElasticsearchManager getSchemaManager() {
     return schemaManager;
   }
-  
+
   private void updateLastExportedPosition() {
     controller.updateLastExportedRecordPosition(lastExportedPosition);
   }
-  
+
   private RestHighLevelClient createEsClient() {
     logger.debug("Creating Elasticsearch connection...");
     final RestClientBuilder restClientBuilder =
         RestClient.builder(parseUrlConfig(configuration.getUrl()))
-        .setRequestConfigCallback(
-            b ->
-                b.setConnectTimeout(configuration.getRequestTimeoutMs())
-                    .setSocketTimeout(configuration.getRequestTimeoutMs()))
-        .setHttpClientConfigCallback(b -> configureHttpClient(b));
+            .setRequestConfigCallback(b -> b.setConnectTimeout(configuration.getRequestTimeoutMs())
+                .setSocketTimeout(configuration.getRequestTimeoutMs()))
+            .setHttpClientConfigCallback(b -> configureHttpClient(b));
 
     final RestHighLevelClient esClient = new RestHighLevelClientBuilder(restClientBuilder.build())
         .setApiCompatibilityMode(true).build();
     return esClient;
   }
-  
+
   private HttpHost[] parseUrlConfig(String urlConfig) {
     final var urls = urlConfig.split(",");
     final var hosts = new HttpHost[urls.length];
@@ -201,7 +200,7 @@ public class OperateElasticsearchExporter implements Exporter {
 
     return hosts;
   }
-  
+
   private HttpAsyncClientBuilder configureHttpClient(final HttpAsyncClientBuilder builder) {
     // use single thread for rest client
     builder.setDefaultIOReactorConfig(IOReactorConfig.custom().setIoThreadCount(1).build());
@@ -212,76 +211,95 @@ public class OperateElasticsearchExporter implements Exporter {
 
     return builder;
   }
-  
+
   private void setupBasicAuthentication(final HttpAsyncClientBuilder builder) {
     final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-    credentialsProvider.setCredentials(
-        AuthScope.ANY,
-        new UsernamePasswordCredentials(
-            configuration.getAuthentication().getUsername(), configuration.getAuthentication().getPassword()));
+    credentialsProvider.setCredentials(AuthScope.ANY,
+        new UsernamePasswordCredentials(configuration.getAuthentication().getUsername(),
+            configuration.getAuthentication().getPassword()));
 
     builder.setDefaultCredentialsProvider(credentialsProvider);
   }
-  
+
   private ExportBatchWriter createBatchWriter(NoSpringElasticsearchBatchRequest request) {
-    
+
     return ExportBatchWriter.Builder.forRequest(request)
         // ImportBulkProcessor
         // #processDecisionRecords
-        .withHandler(new DecisionDefinitionHandler(schemaManager.getIndexDescriptor(DecisionIndex.class)))
+        .withHandler(
+            new DecisionDefinitionHandler(schemaManager.getIndexDescriptor(DecisionIndex.class)))
         // #processDecisionRequirementsRecord
-        .withHandler(new DecisionRequirementsHandler(schemaManager.getIndexDescriptor(DecisionRequirementsIndex.class)))
+        .withHandler(new DecisionRequirementsHandler(
+            schemaManager.getIndexDescriptor(DecisionRequirementsIndex.class)))
         // #processDecisionEvaluationRecords
-        // TODO: can covert this to a proper handler some day in the future, if we can handle transforming one record
-        //   to multiple entities
-        .withDecisionInstanceHandler(new DecisionInstanceHandler(schemaManager.getTemplateDescriptor(DecisionInstanceTemplate.class)))
+        // TODO: can covert this to a proper handler some day in the future, if we can handle
+        // transforming one record
+        // to multiple entities
+        .withDecisionInstanceHandler(new DecisionInstanceHandler(
+            schemaManager.getTemplateDescriptor(DecisionInstanceTemplate.class)))
         // #processProcessInstanceRecords
-        //   FlowNodeInstanceZeebeRecordProcessor#processProcessInstanceRecord
-        .withHandler(new FlowNodeInstanceHandler(schemaManager.getTemplateDescriptor(FlowNodeInstanceTemplate.class)))
-        //   eventZeebeRecordProcessor.processProcessInstanceRecords
-        .withHandler(new EventFromProcessInstanceHandler(schemaManager.getTemplateDescriptor(EventTemplate.class)))
-        //   sequenceFlowZeebeRecordProcessor.processSequenceFlowRecord
-        .withHandler(new SequenceFlowHandler(schemaManager.getTemplateDescriptor(SequenceFlowTemplate.class)))
-        //   listViewZeebeRecordProcessor.processProcessInstanceRecord
-        .withHandler(new ListViewFromProcessInstanceHandler(schemaManager.getTemplateDescriptor(ListViewTemplate.class)))
+        // FlowNodeInstanceZeebeRecordProcessor#processProcessInstanceRecord
+        .withHandler(new FlowNodeInstanceHandler(
+            schemaManager.getTemplateDescriptor(FlowNodeInstanceTemplate.class)))
+        // eventZeebeRecordProcessor.processProcessInstanceRecords
+        .withHandler(new EventFromProcessInstanceHandler(
+            schemaManager.getTemplateDescriptor(EventTemplate.class)))
+        // sequenceFlowZeebeRecordProcessor.processSequenceFlowRecord
+        .withHandler(new SequenceFlowHandler(
+            schemaManager.getTemplateDescriptor(SequenceFlowTemplate.class)))
+        // listViewZeebeRecordProcessor.processProcessInstanceRecord
+        .withHandler(new ListViewFromProcessInstanceHandler(
+            schemaManager.getTemplateDescriptor(ListViewTemplate.class)))
         // TODO: need to choose between upsert and insert (see optimization in
         // FlowNodeInstanceZeebeRecordProcessor#canOptimizeFlowNodeInstanceIndexing)
-        .withHandler(new ListViewFromActivityInstanceHandler(schemaManager.getTemplateDescriptor(ListViewTemplate.class)))
+        .withHandler(new ListViewFromActivityInstanceHandler(
+            schemaManager.getTemplateDescriptor(ListViewTemplate.class)))
         // #processIncidentRecords
-        //   incidentZeebeRecordProcessor.processIncidentRecord
-        .withHandler(new IncidentHandler(schemaManager.getTemplateDescriptor(IncidentTemplate.class)))
-        .withHandler(new PostImporterQueueHandler(schemaManager.getTemplateDescriptor(PostImporterQueueTemplate.class)))
-        
-        
-        // TODO: These two are in conflict: they create entities with the same id in different indexes
-        
-        //   listViewZeebeRecordProcessor.processIncidentRecord
-        .withHandler(new ListViewFromIncidentHandler(schemaManager.getTemplateDescriptor(ListViewTemplate.class)))
-        //   flowNodeInstanceZeebeRecordProcessor.processIncidentRecord
-        .withHandler(new FlowNodeInstanceFromIncidentHandler(schemaManager.getTemplateDescriptor(FlowNodeInstanceTemplate.class)))
-        
-        
-        //   eventZeebeRecordProcessor.processIncidentRecords
-        .withHandler(new EventFromIncidentHandler(schemaManager.getTemplateDescriptor(EventTemplate.class)))
+        // incidentZeebeRecordProcessor.processIncidentRecord
+        .withHandler(
+            new IncidentHandler(schemaManager.getTemplateDescriptor(IncidentTemplate.class)))
+        .withHandler(new PostImporterQueueHandler(
+            schemaManager.getTemplateDescriptor(PostImporterQueueTemplate.class)))
+
+
+        // TODO: These two are in conflict: they create entities with the same id in different
+        // indexes
+
+        // listViewZeebeRecordProcessor.processIncidentRecord
+        .withHandler(new ListViewFromIncidentHandler(
+            schemaManager.getTemplateDescriptor(ListViewTemplate.class)))
+        // flowNodeInstanceZeebeRecordProcessor.processIncidentRecord
+        .withHandler(new FlowNodeInstanceFromIncidentHandler(
+            schemaManager.getTemplateDescriptor(FlowNodeInstanceTemplate.class)))
+
+
+        // eventZeebeRecordProcessor.processIncidentRecords
+        .withHandler(
+            new EventFromIncidentHandler(schemaManager.getTemplateDescriptor(EventTemplate.class)))
         // #processVariableRecords
-        //   listViewZeebeRecordProcessor.processVariableRecords
-        .withHandler(new ListViewFromVariableHandler(schemaManager.getTemplateDescriptor(ListViewTemplate.class)))
-        //   variableZeebeRecordProcessor.processVariableRecords
-        .withHandler(new VariableHandler(schemaManager.getTemplateDescriptor(VariableTemplate.class)))
+        // listViewZeebeRecordProcessor.processVariableRecords
+        .withHandler(new ListViewFromVariableHandler(
+            schemaManager.getTemplateDescriptor(ListViewTemplate.class)))
+        // variableZeebeRecordProcessor.processVariableRecords
+        .withHandler(
+            new VariableHandler(schemaManager.getTemplateDescriptor(VariableTemplate.class)))
         // #processVariableDocumentRecords
-        //   operationZeebeRecordProcessor.processVariableDocumentRecords
-        //   TODO: currently not implemented; is needed to complete operations
+        // operationZeebeRecordProcessor.processVariableDocumentRecords
+        // TODO: currently not implemented; is needed to complete operations
         // #processProcessRecords
-        //   processZeebeRecordProcessor.processDeploymentRecord
+        // processZeebeRecordProcessor.processDeploymentRecord
         .withHandler(new ProcessHandler(schemaManager.getIndexDescriptor(ProcessIndex.class)))
         // #processJobRecords
-        //   listViewZeebeRecordProcessor.processJobRecords
-        .withHandler(new ListViewFromJobHandler(schemaManager.getTemplateDescriptor(ListViewTemplate.class)))
-        //   eventZeebeRecordProcessor.processJobRecords
-        .withHandler(new EventFromJobHandler(schemaManager.getTemplateDescriptor(EventTemplate.class)))
+        // listViewZeebeRecordProcessor.processJobRecords
+        .withHandler(
+            new ListViewFromJobHandler(schemaManager.getTemplateDescriptor(ListViewTemplate.class)))
+        // eventZeebeRecordProcessor.processJobRecords
+        .withHandler(
+            new EventFromJobHandler(schemaManager.getTemplateDescriptor(EventTemplate.class)))
         // #processProcessMessageSubscription
-        //   eventZeebeRecordProcessor.processProcessMessageSubscription
-        .withHandler(new EventFromMessageSubscriptionHandler(schemaManager.getTemplateDescriptor(EventTemplate.class)))
+        // eventZeebeRecordProcessor.processProcessMessageSubscription
+        .withHandler(new EventFromMessageSubscriptionHandler(
+            schemaManager.getTemplateDescriptor(EventTemplate.class)))
         .build();
   }
 }

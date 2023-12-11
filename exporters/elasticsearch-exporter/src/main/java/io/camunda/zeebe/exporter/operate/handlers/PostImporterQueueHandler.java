@@ -11,10 +11,11 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 
-public class PostImporterQueueHandler implements ExportHandler<PostImporterQueueEntity, IncidentRecordValue> {
+public class PostImporterQueueHandler
+    implements ExportHandler<PostImporterQueueEntity, IncidentRecordValue> {
 
   private PostImporterQueueTemplate postImporterQueueTemplate;
-  
+
   public PostImporterQueueHandler(PostImporterQueueTemplate postImporterQueueTemplate) {
     this.postImporterQueueTemplate = postImporterQueueTemplate;
   }
@@ -23,7 +24,7 @@ public class PostImporterQueueHandler implements ExportHandler<PostImporterQueue
   public ValueType getHandledValueType() {
     return ValueType.INCIDENT;
   }
-  
+
   @Override
   public Class<PostImporterQueueEntity> getEntityType() {
     return PostImporterQueueEntity.class;
@@ -41,22 +42,17 @@ public class PostImporterQueueHandler implements ExportHandler<PostImporterQueue
 
   @Override
   public PostImporterQueueEntity createNewEntity(String id) {
-    return new PostImporterQueueEntity()
-        .setId(id);
+    return new PostImporterQueueEntity().setId(id);
   }
 
   @Override
   public void updateEntity(Record<IncidentRecordValue> record, PostImporterQueueEntity entity) {
     String intent = record.getIntent().name();
-    entity
-        .setActionType(PostImporterActionType.INCIDENT)
-        .setIntent(intent)
-        .setKey(record.getKey())
-        .setPosition(record.getPosition())
-        .setCreationTime(OffsetDateTime.now())
+    entity.setActionType(PostImporterActionType.INCIDENT).setIntent(intent).setKey(record.getKey())
+        .setPosition(record.getPosition()).setCreationTime(OffsetDateTime.now())
         .setPartitionId(record.getPartitionId())
         .setProcessInstanceKey(record.getValue().getProcessInstanceKey());
-    
+
   }
 
   @Override

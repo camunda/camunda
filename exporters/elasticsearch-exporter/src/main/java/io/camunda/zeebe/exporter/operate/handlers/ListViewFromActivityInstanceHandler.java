@@ -28,7 +28,8 @@ public class ListViewFromActivityInstanceHandler
 
   // TODO: unify with ListViewFromProcessInstanceHandler and get rid of code duplication
 
-  private static final Logger logger = LoggerFactory.getLogger(ListViewFromActivityInstanceHandler.class);
+  private static final Logger logger =
+      LoggerFactory.getLogger(ListViewFromActivityInstanceHandler.class);
   private static final Set<String> PI_AND_AI_START_STATES = new HashSet<>();
   private static final Set<String> PI_AND_AI_FINISH_STATES = new HashSet<>();
 
@@ -37,7 +38,7 @@ public class ListViewFromActivityInstanceHandler
     PI_AND_AI_FINISH_STATES.add(ELEMENT_COMPLETED.name());
     PI_AND_AI_FINISH_STATES.add(ELEMENT_TERMINATED.name());
   }
-  
+
   private ListViewTemplate listViewTemplate;
 
   public ListViewFromActivityInstanceHandler(ListViewTemplate listViewTemplate) {
@@ -48,7 +49,7 @@ public class ListViewFromActivityInstanceHandler
   public ValueType getHandledValueType() {
     return ValueType.PROCESS_INSTANCE;
   }
-  
+
   @Override
   public Class<FlowNodeInstanceForListViewEntity> getEntityType() {
     return FlowNodeInstanceForListViewEntity.class;
@@ -58,11 +59,11 @@ public class ListViewFromActivityInstanceHandler
   public boolean handlesRecord(Record<ProcessInstanceRecordValue> record) {
     return shouldProcessProcessInstanceRecord(record) && !isProcessEvent(record.getValue());
   }
-  
+
   private boolean isProcessEvent(ProcessInstanceRecordValue recordValue) {
     return isOfType(recordValue, BpmnElementType.PROCESS);
   }
-  
+
   private boolean isOfType(ProcessInstanceRecordValue recordValue, BpmnElementType type) {
     final BpmnElementType bpmnElementType = recordValue.getBpmnElementType();
     if (bpmnElementType == null) {
@@ -70,8 +71,9 @@ public class ListViewFromActivityInstanceHandler
     }
     return bpmnElementType.equals(type);
   }
-  
-  private boolean shouldProcessProcessInstanceRecord(final Record<ProcessInstanceRecordValue> record) {
+
+  private boolean shouldProcessProcessInstanceRecord(
+      final Record<ProcessInstanceRecordValue> record) {
     final var intent = record.getIntent().name();
     return PI_AND_AI_START_STATES.contains(intent) || PI_AND_AI_FINISH_STATES.contains(intent);
   }
@@ -89,12 +91,12 @@ public class ListViewFromActivityInstanceHandler
   @Override
   public void updateEntity(Record<ProcessInstanceRecordValue> record,
       FlowNodeInstanceForListViewEntity entity) {
-    
+
     final var recordValue = record.getValue();
     final var intentStr = record.getIntent().name();
 
     entity.setKey(record.getKey());
-    entity.setId( ConversionUtils.toStringOrNull(record.getKey()));
+    entity.setId(ConversionUtils.toStringOrNull(record.getKey()));
     entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
@@ -114,18 +116,18 @@ public class ListViewFromActivityInstanceHandler
       }
     }
 
-    entity.setActivityType(FlowNodeType.fromZeebeBpmnElementType(recordValue.getBpmnElementType() == null ? null : recordValue.getBpmnElementType().name()));
+    entity.setActivityType(FlowNodeType.fromZeebeBpmnElementType(
+        recordValue.getBpmnElementType() == null ? null : recordValue.getBpmnElementType().name()));
 
     // TODO: restore call activity id cache if needed
-//    if (FlowNodeType.CALL_ACTIVITY.equals(entity.getActivityType())) {
-//      getCallActivityIdCache().put(entity.getId(), entity.getActivityId());
-//    }
+    // if (FlowNodeType.CALL_ACTIVITY.equals(entity.getActivityType())) {
+    // getCallActivityIdCache().put(entity.getId(), entity.getActivityId());
+    // }
 
-    //set parent
+    // set parent
     Long processInstanceKey = recordValue.getProcessInstanceKey();
     entity.getJoinRelation().setParent(processInstanceKey);
-    
-    
+
 
 
   }
@@ -135,10 +137,11 @@ public class ListViewFromActivityInstanceHandler
       throws PersistenceException {
 
     Long processInstanceKey = actEntity.getProcessInstanceKey();
-    
+
     logger.debug("Flow node instance for list view: id {}", actEntity.getId());
     if (canOptimizeFlowNodeInstanceIndexing(actEntity)) {
-      batchRequest.addWithRouting(listViewTemplate.getFullQualifiedName(), actEntity, processInstanceKey.toString());
+      batchRequest.addWithRouting(listViewTemplate.getFullQualifiedName(), actEntity,
+          processInstanceKey.toString());
     } else {
       Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(ListViewTemplate.ID, actEntity.getId());
@@ -146,11 +149,13 @@ public class ListViewFromActivityInstanceHandler
       updateFields.put(ListViewTemplate.ACTIVITY_TYPE, actEntity.getActivityType());
       updateFields.put(ListViewTemplate.ACTIVITY_STATE, actEntity.getActivityState());
 
-      batchRequest.upsertWithRouting(listViewTemplate.getFullQualifiedName(), actEntity.getId() , actEntity, updateFields, processInstanceKey.toString());
+      batchRequest.upsertWithRouting(listViewTemplate.getFullQualifiedName(), actEntity.getId(),
+          actEntity, updateFields, processInstanceKey.toString());
     }
   }
-  
-  private boolean canOptimizeFlowNodeInstanceIndexing(final FlowNodeInstanceForListViewEntity entity) {
+
+  private boolean canOptimizeFlowNodeInstanceIndexing(
+      final FlowNodeInstanceForListViewEntity entity) {
     final var startTime = entity.getStartTime();
     final var endTime = entity.getEndTime();
 
@@ -161,11 +166,11 @@ public class ListViewFromActivityInstanceHandler
       // by submitting an IndexRequest instead of a UpdateRequest.
       // In such case, the following is assumed:
       // * When the duration between start and end time is lower than
-      //   (or equal to) 2 seconds, then it can "safely" be assumed
-      //   that there was no incident in between.
+      // (or equal to) 2 seconds, then it can "safely" be assumed
+      // that there was no incident in between.
       // * The 2s duration is chosen arbitrarily. However, it should
-      //   not be too short but not too long to avoid any negative
-      //   side effects with incidents.
+      // not be too short but not too long to avoid any negative
+      // side effects with incidents.
       return (endTime - startTime) <= 2000L;
     }
 

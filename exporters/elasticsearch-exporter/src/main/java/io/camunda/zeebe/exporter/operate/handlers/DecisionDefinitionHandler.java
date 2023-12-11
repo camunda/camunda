@@ -17,27 +17,27 @@ import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 
-public class DecisionDefinitionHandler implements ExportHandler<DecisionDefinitionEntity, DecisionRecordValue> {
+public class DecisionDefinitionHandler
+    implements ExportHandler<DecisionDefinitionEntity, DecisionRecordValue> {
 
-  private static final Logger logger = LoggerFactory.getLogger(
-      DecisionDefinitionHandler.class);
-  
+  private static final Logger logger = LoggerFactory.getLogger(DecisionDefinitionHandler.class);
+
   private final static Set<Intent> STATES = new HashSet<>();
   static {
     STATES.add(DecisionIntent.CREATED);
   }
 
   private DecisionIndex decisionIndex;
-  
+
   public DecisionDefinitionHandler(DecisionIndex decisionIndex) {
     this.decisionIndex = decisionIndex;
   }
-  
+
   @Override
   public ValueType getHandledValueType() {
     return ValueType.DECISION;
   }
-  
+
   @Override
   public Class<DecisionDefinitionEntity> getEntityType() {
     return DecisionDefinitionEntity.class;
@@ -55,31 +55,28 @@ public class DecisionDefinitionHandler implements ExportHandler<DecisionDefiniti
 
   @Override
   public DecisionDefinitionEntity createNewEntity(String id) {
-    return new DecisionDefinitionEntity()
-        .setId(id);
+    return new DecisionDefinitionEntity().setId(id);
   }
 
   @Override
   public void updateEntity(Record<DecisionRecordValue> record, DecisionDefinitionEntity entity) {
     DecisionRecordValue decision = record.getValue();
-    
-    entity
-      .setKey(decision.getDecisionKey())
-      .setName(decision.getDecisionName())
-      .setVersion(decision.getVersion())
-      .setDecisionId(decision.getDecisionId())
-      .setDecisionRequirementsId(decision.getDecisionRequirementsId())
-      .setDecisionRequirementsKey(decision.getDecisionRequirementsKey())
-      .setTenantId(tenantOrDefault(decision.getTenantId()));
-    
+
+    entity.setKey(decision.getDecisionKey()).setName(decision.getDecisionName())
+        .setVersion(decision.getVersion()).setDecisionId(decision.getDecisionId())
+        .setDecisionRequirementsId(decision.getDecisionRequirementsId())
+        .setDecisionRequirementsKey(decision.getDecisionRequirementsKey())
+        .setTenantId(tenantOrDefault(decision.getTenantId()));
+
   }
 
   @Override
   public void flush(DecisionDefinitionEntity entity, BatchRequest batchRequest)
       throws PersistenceException {
     logger.debug("Decision: key {}, decisionId {}", entity.getKey(), entity.getDecisionId());
-    batchRequest.addWithId(decisionIndex.getFullQualifiedName(), ConversionUtils.toStringOrNull(entity.getKey()), entity);
-    
+    batchRequest.addWithId(decisionIndex.getFullQualifiedName(),
+        ConversionUtils.toStringOrNull(entity.getKey()), entity);
+
   }
 
 }

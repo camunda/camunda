@@ -17,12 +17,13 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 
-public class ListViewFromIncidentHandler implements ExportHandler<FlowNodeInstanceForListViewEntity, IncidentRecordValue> {
+public class ListViewFromIncidentHandler
+    implements ExportHandler<FlowNodeInstanceForListViewEntity, IncidentRecordValue> {
 
   private static final Logger logger = LoggerFactory.getLogger(ListViewFromIncidentHandler.class);
 
   private ListViewTemplate listViewTemplate;
-  
+
   public ListViewFromIncidentHandler(ListViewTemplate listViewTemplate) {
     this.listViewTemplate = listViewTemplate;
   }
@@ -31,7 +32,7 @@ public class ListViewFromIncidentHandler implements ExportHandler<FlowNodeInstan
   public ValueType getHandledValueType() {
     return ValueType.INCIDENT;
   }
-  
+
   @Override
   public Class<FlowNodeInstanceForListViewEntity> getEntityType() {
     return FlowNodeInstanceForListViewEntity.class;
@@ -49,8 +50,7 @@ public class ListViewFromIncidentHandler implements ExportHandler<FlowNodeInstan
 
   @Override
   public FlowNodeInstanceForListViewEntity createNewEntity(String id) {
-    return new FlowNodeInstanceForListViewEntity()
-        .setId(id);
+    return new FlowNodeInstanceForListViewEntity().setId(id);
   }
 
   @Override
@@ -59,7 +59,7 @@ public class ListViewFromIncidentHandler implements ExportHandler<FlowNodeInstan
     final Intent intent = record.getIntent();
     IncidentRecordValue recordValue = record.getValue();
 
-    //update activity instance
+    // update activity instance
     entity.setKey(recordValue.getElementInstanceKey());
     entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
@@ -72,19 +72,19 @@ public class ListViewFromIncidentHandler implements ExportHandler<FlowNodeInstan
       entity.setErrorMessage(null);
     }
 
-    //set parent
+    // set parent
     Long processInstanceKey = recordValue.getProcessInstanceKey();
     entity.getJoinRelation().setParent(processInstanceKey);
 
-    
-    
+
+
   }
 
   @Override
   public void flush(FlowNodeInstanceForListViewEntity entity, BatchRequest batchRequest)
       throws PersistenceException {
     logger.debug("Activity instance for list view: id {}", entity.getId());
-    var updateFields = new HashMap<String,Object>();
+    var updateFields = new HashMap<String, Object>();
     updateFields.put(ListViewTemplate.ERROR_MSG, entity.getErrorMessage());
     batchRequest.upsertWithRouting(listViewTemplate.getFullQualifiedName(), entity.getId(), entity,
         updateFields, entity.getProcessInstanceKey().toString());

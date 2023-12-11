@@ -22,11 +22,11 @@ public class OperateElasticsearchExporterConfiguration {
   public AuthenticationConfiguration getAuthentication() {
     return authentication;
   }
-  
+
   public BulkConfiguration getBulk() {
     return bulk;
   }
-  
+
   public String getUrl() {
     return url;
   }
@@ -73,7 +73,7 @@ public class OperateElasticsearchExporterConfiguration {
       return "AuthenticationConfiguration{Confidential information}";
     }
   }
-  
+
   public static class BulkConfiguration {
     // delay before forced flush
     public int delay = 5;
@@ -84,14 +84,8 @@ public class OperateElasticsearchExporterConfiguration {
 
     @Override
     public String toString() {
-      return "BulkConfiguration{"
-          + "delay="
-          + delay
-          + ", size="
-          + size
-          + ", memoryLimit="
-          + memoryLimit
-          + '}';
+      return "BulkConfiguration{" + "delay=" + delay + ", size=" + size + ", memoryLimit="
+          + memoryLimit + '}';
     }
   }
 

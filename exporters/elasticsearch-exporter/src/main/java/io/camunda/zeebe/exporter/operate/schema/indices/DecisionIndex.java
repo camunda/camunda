@@ -1,8 +1,8 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a proprietary license.
- * See the License.txt file for more information. You may not use this file
- * except in compliance with the proprietary license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more
+ * contributor license agreements. Licensed under a proprietary license. See the License.txt file
+ * for more information. You may not use this file except in compliance with the proprietary
+ * license.
  */
 package io.camunda.zeebe.exporter.operate.schema.indices;
 
@@ -18,7 +18,7 @@ public class DecisionIndex extends AbstractIndexDescriptor implements Prio4Backu
   public static final String VERSION = "version";
   public static final String DECISION_REQUIREMENTS_ID = "decisionRequirementsId";
   public static final String DECISION_REQUIREMENTS_KEY = "decisionRequirementsKey";
-  
+
   public DecisionIndex(String indexPrefix) {
     super(indexPrefix);
   }

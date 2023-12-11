@@ -22,26 +22,25 @@ public class NoSpringJacksonConfig {
   public static ObjectMapper buildObjectMapper() {
 
     JavaTimeModule javaTimeModule = new JavaTimeModule();
-    javaTimeModule.addSerializer(OffsetDateTime.class, new CustomOffsetDateTimeSerializer(dateTimeFormatter()));
-    javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomOffsetDateTimeDeserializer(dateTimeFormatter()));
+    javaTimeModule.addSerializer(OffsetDateTime.class,
+        new CustomOffsetDateTimeSerializer(dateTimeFormatter()));
+    javaTimeModule.addDeserializer(OffsetDateTime.class,
+        new CustomOffsetDateTimeDeserializer(dateTimeFormatter()));
     javaTimeModule.addDeserializer(Instant.class, new CustomInstantDeserializer());
 
-    return Jackson2ObjectMapperBuilder.json()
-        .modules(javaTimeModule, new Jdk8Module())
-        .featuresToDisable(
-            SerializationFeature.INDENT_OUTPUT,
+    return Jackson2ObjectMapperBuilder.json().modules(javaTimeModule, new Jdk8Module())
+        .featuresToDisable(SerializationFeature.INDENT_OUTPUT,
             SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
             DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
             DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
             DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
         .featuresToEnable(JsonParser.Feature.ALLOW_COMMENTS)
-        //make sure that Jackson uses setters and getters, not fields
+        // make sure that Jackson uses setters and getters, not fields
         .visibility(PropertyAccessor.GETTER, Visibility.ANY)
         .visibility(PropertyAccessor.IS_GETTER, Visibility.ANY)
         .visibility(PropertyAccessor.SETTER, Visibility.ANY)
         .visibility(PropertyAccessor.FIELD, Visibility.NONE)
-        .visibility(PropertyAccessor.CREATOR, Visibility.ANY)
-        .build();
+        .visibility(PropertyAccessor.CREATOR, Visibility.ANY).build();
   }
 
   public static DateTimeFormatter dateTimeFormatter() {

@@ -18,14 +18,16 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 
-public class ListViewFromJobHandler implements ExportHandler<FlowNodeInstanceForListViewEntity, JobRecordValue> {
+public class ListViewFromJobHandler
+    implements ExportHandler<FlowNodeInstanceForListViewEntity, JobRecordValue> {
 
-  // TODO: has the same problem like other handlers in that it updates an entity actually created by another handler
-  
+  // TODO: has the same problem like other handlers in that it updates an entity actually created by
+  // another handler
+
   private static final Logger logger = LoggerFactory.getLogger(ListViewFromJobHandler.class);
-  
+
   private final static Set<String> FAILED_JOB_EVENTS = new HashSet<>();
-  
+
   static {
     FAILED_JOB_EVENTS.add(JobIntent.FAIL.name());
     FAILED_JOB_EVENTS.add(JobIntent.FAILED.name());
@@ -41,7 +43,7 @@ public class ListViewFromJobHandler implements ExportHandler<FlowNodeInstanceFor
   public ValueType getHandledValueType() {
     return ValueType.JOB;
   }
-  
+
   @Override
   public Class<FlowNodeInstanceForListViewEntity> getEntityType() {
     return FlowNodeInstanceForListViewEntity.class;
@@ -65,7 +67,7 @@ public class ListViewFromJobHandler implements ExportHandler<FlowNodeInstanceFor
   @Override
   public void updateEntity(Record<JobRecordValue> record,
       FlowNodeInstanceForListViewEntity entity) {
-    
+
     final var recordValue = record.getValue();
     final var intentStr = record.getIntent().name();
 
@@ -86,15 +88,17 @@ public class ListViewFromJobHandler implements ExportHandler<FlowNodeInstanceFor
   @Override
   public void flush(FlowNodeInstanceForListViewEntity entity, BatchRequest batchRequest)
       throws PersistenceException {
-    
-    logger.debug("Update job state for flow node instance: id {} JobFailedWithRetriesLeft {}", entity.getId(), entity.isJobFailedWithRetriesLeft());
+
+    logger.debug("Update job state for flow node instance: id {} JobFailedWithRetriesLeft {}",
+        entity.getId(), entity.isJobFailedWithRetriesLeft());
     Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(ListViewTemplate.ID, entity.getId());
-    updateFields.put(ListViewTemplate.JOB_FAILED_WITH_RETRIES_LEFT, entity.isJobFailedWithRetriesLeft());
+    updateFields.put(ListViewTemplate.JOB_FAILED_WITH_RETRIES_LEFT,
+        entity.isJobFailedWithRetriesLeft());
 
-    batchRequest.upsertWithRouting(listViewTemplate.getFullQualifiedName(), entity.getId(), entity, updateFields,
-        String.valueOf(entity.getProcessInstanceKey()));
-    
+    batchRequest.upsertWithRouting(listViewTemplate.getFullQualifiedName(), entity.getId(), entity,
+        updateFields, String.valueOf(entity.getProcessInstanceKey()));
+
   }
 
 }
