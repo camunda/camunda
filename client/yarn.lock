@@ -1170,10 +1170,10 @@
   resolved "https://registry.yarnpkg.com/@carbon/icon-helpers/-/icon-helpers-10.45.0.tgz#c66669b96d309a8c86035700406fd6260b2188fb"
   integrity sha512-HP92JjZoccDXwucstEJ9Cx8jq2HHJM/U/vPmgfeXYIaegIGfu2zQkL+MDn/fSzIKvQ+ckK/GCrm89K/S8fbtBA==
 
-"@carbon/icons-react@^11.31.0":
-  version "11.31.0"
-  resolved "https://registry.yarnpkg.com/@carbon/icons-react/-/icons-react-11.31.0.tgz#4bc1a56ed77659db0bd9e8654cb60cf2d6f2c0fb"
-  integrity sha512-hGrxoH7Kt94WDVB/lNExUKzgNLcvvt2bH8Lxb894rgwNKbvxPgoJb7tncMJFz+tZwnDPwKvRdMX8kDFukA+rww==
+"@carbon/icons-react@^11.32.0":
+  version "11.32.0"
+  resolved "https://registry.yarnpkg.com/@carbon/icons-react/-/icons-react-11.32.0.tgz#86886a40ed0c44aae7cf9affe9f212f396619a2d"
+  integrity sha512-VWEih6t4X14RsgqyGbNeHF2YA1WQNETZRKvCzjRexTk8chVEaRJfIRKZnB5GlZBFD0QdT9vbh+l/MitQwHeEhg==
   dependencies:
     "@carbon/icon-helpers" "^10.45.0"
     "@carbon/telemetry" "0.1.0"
@@ -1194,16 +1194,16 @@
   resolved "https://registry.yarnpkg.com/@carbon/motion/-/motion-11.16.1.tgz#91d6cd57cc4402d391ac55e3985f96d051a749be"
   integrity sha512-e865DvKnoxg41/L3g2zaNc5+xA+OXk0dNfOmG9MpzWBMlViCYUnCYCVKuyhdT7YSbRJuBuXXsisAVIJzBkEQKQ==
 
-"@carbon/react@1.44.0":
-  version "1.44.0"
-  resolved "https://registry.yarnpkg.com/@carbon/react/-/react-1.44.0.tgz#d46d17f50beb86aeba0915b277f006a8b0dc0a1c"
-  integrity sha512-tAnIDpB6kGCfQTl/Wx1k1K6KYxZeGutxAlBL2hrFkoUoknV81bHSeSbX2M9DQ52/aCFGW2HA3ECFdKGPnJuwNg==
+"@carbon/react@1.45.0":
+  version "1.45.0"
+  resolved "https://registry.yarnpkg.com/@carbon/react/-/react-1.45.0.tgz#f186dc5dd1c0a42e902d2070777ede322df2d151"
+  integrity sha512-/hduR6fbDOJjP2RUCWYbg/W/b4oaBVmHSDkEoKnb0XAe8prIXtNM1E4KIQYbw3E3+BPZzftcdnA/rgLmMV9VrA==
   dependencies:
     "@babel/runtime" "^7.18.3"
     "@carbon/feature-flags" "^0.16.0"
-    "@carbon/icons-react" "^11.31.0"
+    "@carbon/icons-react" "^11.32.0"
     "@carbon/layout" "^11.20.0"
-    "@carbon/styles" "^1.44.0"
+    "@carbon/styles" "^1.45.0"
     "@carbon/telemetry" "0.1.0"
     classnames "2.3.2"
     copy-to-clipboard "^3.3.1"
@@ -1221,10 +1221,10 @@
     wicg-inert "^3.1.1"
     window-or-global "^1.0.1"
 
-"@carbon/styles@^1.44.0":
-  version "1.44.0"
-  resolved "https://registry.yarnpkg.com/@carbon/styles/-/styles-1.44.0.tgz#3f3a68cc7aae8a60cae5b20943a6decfc8c09f5f"
-  integrity sha512-5geQru8tuQvZwo2x4oUQ6F6zYhrxAb/dLYjNCKrs6bM1Hf1Ha2mAiu4y/NXt9T0WcCQJs4CX8XEEOEn6iAyJww==
+"@carbon/styles@^1.45.0":
+  version "1.45.0"
+  resolved "https://registry.yarnpkg.com/@carbon/styles/-/styles-1.45.0.tgz#9c0d49c0ead86c5475605a6eabc4d9b2b6521d32"
+  integrity sha512-ihBjGeURX9BOyyesCQH7gAMS/BboPGXIp12gUIy0G9dBvDOjVJ3rJszF/iu/qatGMHLk0Gt53UQe2WL0i0Utvw==
   dependencies:
     "@carbon/colors" "^11.20.0"
     "@carbon/feature-flags" "^0.16.0"
