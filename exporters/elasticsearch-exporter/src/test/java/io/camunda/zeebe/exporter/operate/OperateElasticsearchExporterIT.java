@@ -38,9 +38,11 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -205,10 +207,22 @@ public class OperateElasticsearchExporterIT {
     }
   }
 
-  public static Stream<Tuple<ValueType, Intent>> getValueTypeIntentCombinations() {
+  public static Stream<Arguments> getValueTypeIntentCombinations() {
     return INTENTS_PER_VALUE_TYPE.entrySet().stream()
         .flatMap(
-            entry -> entry.getValue().stream().map(intent -> new Tuple<>(entry.getKey(), intent)));
+            entry ->
+                entry.getValue().stream()
+                    .map(
+                        intent ->
+                            asNamedJunitParameter(
+                                new Tuple<>(entry.getKey(), intent),
+                                String.format("%s - %s", entry.getKey(), intent))));
+    // eclipse chokes if parameters are formatted in a certain way, when
+    // you want to re-run an individual instance (e.g. containing < or : characters)
+  }
+
+  private static Arguments asNamedJunitParameter(Object o, String name) {
+    return Arguments.of(Named.of(name, o));
   }
 
   public static Stream<ValueType> getSupportedValueTypes() {
