@@ -674,10 +674,6 @@ jobs:
     #
     # The workflow is divided into multiple sequential jobs to allow giving only minimal permissions to
     # the GitHub token passed around.
-    #
-    # Once we're using the merge queue feature, I think we can simplify this workflow a lot by relying
-    # on dependabot merging PRs via its commands, as it will always wait for checks to be green before
-    # merging.
     name: Auto-merge backport and renovate PRs
     runs-on: ubuntu-latest
     needs: [ test-summary ]
