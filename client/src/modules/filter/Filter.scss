@@ -13,10 +13,10 @@
     }
 
     .explanation {
-      margin-left: 0.5rem;
       flex-grow: 1;
+      margin: 0 0.5rem;
 
-      .cds--tooltip button {
+      .tooltipTriggerBtn {
         padding: 0;
         margin: 0;
         border: none;
@@ -25,6 +25,10 @@
         svg {
           fill: currentColor;
         }
+      }
+
+      .flowNodeFilterTooltip .cds--tooltip-content {
+        max-width: 240px;
       }
     }
   }

@@ -52,11 +52,11 @@ public class UIConfigurationService {
     uiConfigurationDto.setEmailEnabled(configurationService.getEmailEnabled());
     uiConfigurationDto.setSharingEnabled(settingService.getSettings().getSharingEnabled().orElse(false));
     uiConfigurationDto.setTenantsAvailable(tenantService.isMultiTenantEnvironment());
-    uiConfigurationDto.setUserSearchAvailable(true); // TODO to be made dependent on identity flag with OPT-7412
     uiConfigurationDto.setOptimizeVersion(versionService.getRawVersion());
     uiConfigurationDto.setOptimizeDocsVersion(versionService.getDocsVersion());
     final OptimizeProfile optimizeProfile = ConfigurationService.getOptimizeProfile(environment);
     uiConfigurationDto.setEnterpriseMode(isEnterpriseMode(optimizeProfile));
+    uiConfigurationDto.setUserSearchAvailable(isUserSearchAvailable(optimizeProfile)); // TODO to be made dependent on identity flag with OPT-7412
     uiConfigurationDto.setOptimizeProfile(optimizeProfile.getId());
     uiConfigurationDto.setWebappsEndpoints(getCamundaWebappsEndpoints());
     uiConfigurationDto.setWebhooks(getConfiguredWebhooks());
@@ -119,6 +119,10 @@ public class UIConfigurationService {
     List<String> sortedWebhooksList = Lists.newArrayList(configurationService.getConfiguredWebhooks().keySet());
     sortedWebhooksList.sort(String.CASE_INSENSITIVE_ORDER);
     return sortedWebhooksList;
+  }
+
+  private boolean isUserSearchAvailable(final OptimizeProfile optimizeProfile) {
+    return !CCSM.equals(optimizeProfile);
   }
 
 }

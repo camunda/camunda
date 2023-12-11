@@ -125,6 +125,7 @@ export default function BucketSize({
                 applyChanges('bucketSize', value, valid);
               }}
               defaultValue={active ? removeTrailingZeros(bucketSize) : '-'}
+              hideSteppers
             />
             {isGroupedByDuration && (
               <CarbonSelect
@@ -158,6 +159,7 @@ export default function BucketSize({
                 applyChanges('baseline', value, valid);
               }}
               defaultValue={active ? removeTrailingZeros(baseline) : '-'}
+              hideSteppers
             />
             {isGroupedByDuration && (
               <CarbonSelect
