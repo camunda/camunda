@@ -403,4 +403,10 @@ describe('formatLabel', () => {
     expect(formatLabel(numberString, true)).toBe('1.111111111111111e+53');
     expect(formatLabel(string, true)).toBe(string);
   });
+
+  it('should not change label when mixing numbers with strings', () => {
+    const numberWithString = '02132' + new Array(55).join('a');
+
+    expect(formatLabel(numberWithString, true)).toBe(numberWithString);
+  });
 });
