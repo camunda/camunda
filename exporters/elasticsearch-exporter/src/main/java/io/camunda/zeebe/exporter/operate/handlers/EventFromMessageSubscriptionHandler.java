@@ -46,7 +46,7 @@ public class EventFromMessageSubscriptionHandler
 
   @Override
   public ValueType getHandledValueType() {
-    return ValueType.MESSAGE_SUBSCRIPTION;
+    return ValueType.PROCESS_MESSAGE_SUBSCRIPTION;
   }
 
   @Override
