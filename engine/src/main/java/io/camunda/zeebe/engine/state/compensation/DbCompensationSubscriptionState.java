@@ -53,8 +53,9 @@ public class DbCompensationSubscriptionState implements MutableCompensationSubsc
   public CompensationSubscription get(
       final String tenantId, final long processInstanceKey, final String compensableActivityId) {
     wrapCompensationKeys(processInstanceKey, compensableActivityId, tenantId);
-    return compensationSubscriptionColumnFamily.get(
-        tenantAwareProcessInstanceKeyCompensableActivityId);
+    return compensationSubscriptionColumnFamily
+        .get(tenantAwareProcessInstanceKeyCompensableActivityId)
+        .copy();
   }
 
   @Override
@@ -68,6 +69,22 @@ public class DbCompensationSubscriptionState implements MutableCompensationSubsc
 
     compensationSubscriptionColumnFamily.upsert(
         tenantAwareProcessInstanceKeyCompensableActivityId, compensationSubscription);
+  }
+
+  @Override
+  public void update(final CompensationSubscriptionRecord compensation) {
+    tenantIdKey.wrapString(compensation.getTenantId());
+    processInstanceKey.wrapLong(compensation.getProcessInstanceKey());
+
+    compensationSubscriptionColumnFamily.whileEqualPrefix(
+        new DbCompositeKey<>(tenantIdKey, processInstanceKey),
+        ((key, value) -> {
+          value
+              .getRecord()
+              .setThrowEventId(compensation.getThrowEventId())
+              .setThrowEventInstanceKey(compensation.getThrowEventInstanceKey());
+          compensationSubscriptionColumnFamily.upsert(key, value);
+        }));
   }
 
   private void wrapCompensationKeys(

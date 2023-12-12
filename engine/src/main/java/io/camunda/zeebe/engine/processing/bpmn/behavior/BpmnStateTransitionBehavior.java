@@ -100,6 +100,10 @@ public final class BpmnStateTransitionBehavior {
           context.copy(newElementInstanceKey, context.getRecordValue(), context.getIntent());
     }
 
+    if (isCompensationThrowEvent(context)) {
+      updateCompensationSubscription(context);
+    }
+
     return transitionTo(transitionContext, ProcessInstanceIntent.ELEMENT_ACTIVATING);
   }
 
@@ -559,6 +563,23 @@ public final class BpmnStateTransitionBehavior {
             .setCompensableActivityId(BufferUtil.bufferAsString(context.getElementId()))
             .setCompensableActivityScopeId(context.getFlowScopeKey());
     stateWriter.appendFollowUpEvent(key, CompensationSubscriptionIntent.CREATED, compensation);
+  }
+
+  private boolean isCompensationThrowEvent(final BpmnElementContext context) {
+    return BpmnEventType.COMPENSATION.equals(context.getBpmnEventType())
+        && (BpmnElementType.INTERMEDIATE_THROW_EVENT.equals(context.getBpmnElementType())
+            || BpmnElementType.END_EVENT.equals(context.getBpmnElementType()));
+  }
+
+  private void updateCompensationSubscription(final BpmnElementContext context) {
+    final var key = keyGenerator.nextKey();
+    final var compensation =
+        new CompensationSubscriptionRecord()
+            .setTenantId(context.getTenantId())
+            .setProcessInstanceKey(context.getProcessInstanceKey())
+            .setThrowEventId(BufferUtil.bufferAsString(context.getElementId()))
+            .setThrowEventInstanceKey(context.getElementInstanceKey());
+    stateWriter.appendFollowUpEvent(key, CompensationSubscriptionIntent.TRIGGERED, compensation);
   }
 
   private static final class ChildTerminationStackOverflowException extends RuntimeException {

@@ -135,7 +135,7 @@ public class CompensationEventExecutionTest {
   }
 
   @Test
-  public void shouldCreateCompensationSubscriptionForCompletedTask() {
+  public void shouldCreateAndUpdateCompensationSubscriptionForCompletedTask() {
     // given
     final var process =
         createModelFromClasspathResource("/compensation/compensation-throw-event.bpmn");
@@ -183,7 +183,8 @@ public class CompensationEventExecutionTest {
                 .withProcessInstanceKey(processInstanceKey))
         .extracting(Record::getValueType, Record::getIntent)
         .containsSequence(
-            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.CREATED));
+            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.CREATED),
+            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.TRIGGERED));
   }
 
   private BpmnModelInstance createModelFromClasspathResource(final String classpath) {

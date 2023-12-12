@@ -24,6 +24,22 @@ public class CompensationSubscription extends UnpackedObject implements DbValue 
     declareProperty(recordProp).declareProperty(keyProp);
   }
 
+  public CompensationSubscription copy() {
+    final var copy = new CompensationSubscription();
+    copy.keyProp.setValue(getKey());
+    copy.recordProp.getValue().setTenantId(getRecord().getTenantId());
+    copy.recordProp.getValue().setProcessInstanceKey(getRecord().getProcessInstanceKey());
+    copy.recordProp.getValue().setProcessDefinitionKey(getRecord().getProcessDefinitionKey());
+    copy.recordProp.getValue().setCompensableActivityId(getRecord().getCompensableActivityId());
+    copy.recordProp
+        .getValue()
+        .setCompensableActivityScopeId(getRecord().getCompensableActivityScopeId());
+    copy.recordProp.getValue().setThrowEventId(getRecord().getThrowEventId());
+    copy.recordProp.getValue().setThrowEventInstanceKey(getRecord().getThrowEventInstanceKey());
+    copy.recordProp.getValue().setVariables(getRecord().getVariablesBuffer());
+    return copy;
+  }
+
   public CompensationSubscriptionRecord getRecord() {
     return recordProp.getValue();
   }

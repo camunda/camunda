@@ -29,7 +29,7 @@ public class CompensationSubscriptionStateTest {
 
   @Test
   public void shouldPutCompensationSubscriptionRecord() {
-    final var compensation = createCompensation();
+    final var compensation = createCompensation(1L);
     state.put(1L, compensation);
     assertThat(
             state.get(
@@ -39,10 +39,53 @@ public class CompensationSubscriptionStateTest {
         .isNotNull();
   }
 
-  private CompensationSubscriptionRecord createCompensation() {
+  @Test
+  public void shouldUpdateAllTheCompensationSubscriptionWithSameTenantIdAndProcessInstanceKey() {
+    final var compensationToUpdate = createCompensation(1L);
+    final var compensationToNOTUpdate = createCompensation(2L);
+
+    state.put(1L, compensationToUpdate);
+    state.put(2L, compensationToNOTUpdate);
+
+    final var updatedCompensationInfo =
+        new CompensationSubscriptionRecord()
+            .setTenantId("tenantId")
+            .setProcessInstanceKey(1L)
+            .setThrowEventId("updateThrowEventId")
+            .setThrowEventInstanceKey(2L);
+
+    state.update(updatedCompensationInfo);
+
+    final var updatedCompensation =
+        state
+            .get(
+                compensationToUpdate.getTenantId(),
+                compensationToUpdate.getProcessInstanceKey(),
+                compensationToUpdate.getCompensableActivityId())
+            .getRecord();
+
+    final var notUpdatedCompensation =
+        state
+            .get(
+                compensationToNOTUpdate.getTenantId(),
+                compensationToNOTUpdate.getProcessInstanceKey(),
+                compensationToNOTUpdate.getCompensableActivityId())
+            .getRecord();
+
+    assertThat(updatedCompensation.getCompensableActivityId()).isEqualTo("compensableActivityId");
+    assertThat(updatedCompensation.getThrowEventId()).isEqualTo("updateThrowEventId");
+    assertThat(updatedCompensation.getThrowEventInstanceKey()).isEqualTo(2L);
+
+    assertThat(notUpdatedCompensation.getCompensableActivityId())
+        .isEqualTo("compensableActivityId");
+    assertThat(notUpdatedCompensation.getThrowEventId()).isEqualTo("throwEventId");
+    assertThat(notUpdatedCompensation.getThrowEventInstanceKey()).isEqualTo(1L);
+  }
+
+  private CompensationSubscriptionRecord createCompensation(final long key) {
     return new CompensationSubscriptionRecord()
         .setTenantId("tenantId")
-        .setProcessInstanceKey(1L)
+        .setProcessInstanceKey(key)
         .setProcessDefinitionKey(1L)
         .setCompensableActivityId("compensableActivityId")
         .setCompensableActivityScopeId(1L)

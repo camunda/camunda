@@ -13,4 +13,6 @@ import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubs
 public interface MutableCompensationSubscriptionState extends CompensationSubscriptionState {
 
   void put(final long key, CompensationSubscriptionRecord compensation);
+
+  void update(CompensationSubscriptionRecord compensation);
 }
