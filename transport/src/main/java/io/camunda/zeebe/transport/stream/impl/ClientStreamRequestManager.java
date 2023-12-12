@@ -132,7 +132,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
       return;
     }
 
-    final var registration = streamsPerHost.get(stream.getStreamId());
+    final var registration = streamsPerHost.get(stream.streamId());
     if (registration != null) {
       remove(registration);
     }
@@ -236,7 +236,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
       final AggregatedClientStream<M> stream, final MemberId serverId) {
     final var streamsPerHost = registrations.computeIfAbsent(serverId, ignored -> new HashMap<>());
     return streamsPerHost.computeIfAbsent(
-        stream.getStreamId(), streamId -> new ClientStreamRegistration<>(stream, serverId));
+        stream.streamId(), streamId -> new ClientStreamRegistration<>(stream, serverId));
   }
 
   private void sendAddRequest(

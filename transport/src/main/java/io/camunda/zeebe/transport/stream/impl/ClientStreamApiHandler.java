@@ -10,10 +10,6 @@ package io.camunda.zeebe.transport.stream.impl;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.transport.stream.api.ClientStreamBlockedException;
-import io.camunda.zeebe.transport.stream.api.NoSuchStreamException;
-import io.camunda.zeebe.transport.stream.api.StreamExhaustedException;
-import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamResponse;
@@ -55,18 +51,10 @@ final class ClientStreamApiHandler {
       return;
     }
 
-    final var errorResponse = new ErrorResponse();
-    switch (error) {
-      case final StreamExhaustedException e -> errorResponse
-          .code(ErrorCode.EXHAUSTED)
-          .message(e.getMessage());
-      case final ClientStreamBlockedException e -> errorResponse
-          .code(ErrorCode.BLOCKED)
-          .message(e.getMessage());
-      case final NoSuchStreamException e -> errorResponse
-          .code(ErrorCode.NOT_FOUND)
-          .message(e.getMessage());
-      default -> errorResponse.code(ErrorCode.INTERNAL_ERROR).message(error.getMessage());
+    final var errorResponse =
+        new ErrorResponse().code(ErrorResponse.mapErrorToCode(error)).message(error.getMessage());
+    for (final var detail : error.getSuppressed()) {
+      errorResponse.addDetail(ErrorResponse.mapErrorToCode(detail), detail.getMessage());
     }
 
     response.complete(errorResponse);

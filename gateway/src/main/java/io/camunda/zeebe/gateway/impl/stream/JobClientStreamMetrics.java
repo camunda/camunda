@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.impl.stream;
 
 import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
+import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
@@ -46,6 +47,13 @@ final class JobClientStreamMetrics implements ClientStreamMetrics {
           .help("Count of pushed payloads, tagged by result status (success, failure)")
           .labelNames("status")
           .register();
+  private static final Counter PUSH_TRY_FAILED_COUNT =
+      Counter.build()
+          .namespace(NAMESPACE)
+          .name("push_fail_try")
+          .help("Total number of failed attempts when pushing jobs to the clients, grouped by code")
+          .labelNames("code")
+          .register();
 
   private final Counter.Child pushSuccessCount;
   private final Counter.Child pushFailureCount;
@@ -83,5 +91,10 @@ final class JobClientStreamMetrics implements ClientStreamMetrics {
   @Override
   public void pushFailed() {
     pushFailureCount.inc();
+  }
+
+  @Override
+  public void pushTryFailed(final ErrorCode code) {
+    PUSH_TRY_FAILED_COUNT.labels(code.name()).inc();
   }
 }

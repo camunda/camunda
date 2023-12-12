@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.entry;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,16 +36,18 @@ public class OutputMappingTest {
   private static final String PROCESS_ID = "processId";
   private final BpmnModelInstance bpmnModelInstance;
   private final String elementId;
-  private final boolean createsJob;
+  private final Consumer<Long> completionHandler;
 
   public OutputMappingTest(
-      final BpmnModelInstance bpmnModelInstance, final String elementId, final boolean createsJob) {
+      final BpmnModelInstance bpmnModelInstance,
+      final String elementId,
+      final Consumer<Long> completionHandler) {
     this.bpmnModelInstance = bpmnModelInstance;
     this.elementId = elementId;
-    this.createsJob = createsJob;
+    this.completionHandler = completionHandler;
   }
 
-  @Parameters(name = "{index}: {0}")
+  @Parameters(name = "{index}: {1}")
   public static Collection<Object[]> parameters() {
     return Arrays.asList(
         new Object[][] {
@@ -56,7 +60,7 @@ public class OutputMappingTest {
                 .endEvent()
                 .done(),
             "serviceTaskId",
-            true
+            handler(key -> ENGINE.job().withType("type").ofInstance(key).complete())
           },
           {
             Bpmn.createExecutableProcess(PROCESS_ID)
@@ -66,8 +70,29 @@ public class OutputMappingTest {
                 .endEvent()
                 .done(),
             "intermediateThrowEventId",
-            false
-          }
+            handler(key -> {})
+          },
+          {
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("userTaskId", b -> b.zeebeOutputExpression("foo", "bar"))
+                .endEvent()
+                .done(),
+            "userTaskId",
+            handler(
+                key ->
+                    ENGINE.job().withType(Protocol.USER_TASK_JOB_TYPE).ofInstance(key).complete())
+          },
+          {
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("nativeUserTaskId", b -> b.zeebeOutputExpression("foo", "bar"))
+                .zeebeUserTask()
+                .endEvent()
+                .done(),
+            "nativeUserTaskId",
+            handler(key -> ENGINE.userTask().ofInstance(key).complete())
+          },
         });
   }
 
@@ -84,9 +109,7 @@ public class OutputMappingTest {
             .create();
 
     // when
-    if (createsJob) {
-      ENGINE.job().withType("type").ofInstance(processInstanceKey).complete();
-    }
+    completionHandler.accept(processInstanceKey);
 
     // then
     final Record<ProcessInstanceRecordValue> record =
@@ -98,5 +121,9 @@ public class OutputMappingTest {
     final Map<String, String> variables =
         ProcessInstances.getCurrentVariables(processInstanceKey, record.getPosition());
     assertThat(variables).contains(entry("bar", "1"));
+  }
+
+  private static Consumer<Long> handler(final Consumer<Long> handler) {
+    return handler;
   }
 }

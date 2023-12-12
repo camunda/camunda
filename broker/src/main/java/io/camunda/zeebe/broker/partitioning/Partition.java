@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.partitioning.startup.steps.ZeebePartitionStep;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupProcess;
+import io.camunda.zeebe.util.FileUtil;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -125,6 +126,7 @@ public final class Partition {
     final var result = concurrencyControl.<Partition>createFuture();
     concurrencyControl.run(
         () -> {
+          final var partitionDirectory = context.partitionDirectory();
           final var raftPartition = raftPartition();
           if (raftPartition == null) {
             result.completeExceptionally(
@@ -134,24 +136,31 @@ public final class Partition {
           raftPartition
               .leave()
               .whenComplete(
-                  (leaveOk, leaveError) -> {
-                    concurrencyControl.run(
-                        () -> {
-                          if (leaveError != null) {
-                            result.completeExceptionally(leaveError);
-                            return;
-                          }
-                          concurrencyControl.runOnCompletion(
-                              startupProcess.shutdown(concurrencyControl, context),
-                              (shutdownOk, shutdownError) -> {
-                                if (shutdownError != null) {
-                                  result.completeExceptionally(shutdownError);
-                                  return;
-                                }
-                                result.complete(this);
-                              });
-                        });
-                  });
+                  (leaveOk, leaveError) ->
+                      concurrencyControl.run(
+                          () -> {
+                            if (leaveError != null) {
+                              result.completeExceptionally(leaveError);
+                              return;
+                            }
+                            concurrencyControl.runOnCompletion(
+                                startupProcess.shutdown(concurrencyControl, context),
+                                (shutdownOk, shutdownError) -> {
+                                  if (shutdownError != null) {
+                                    result.completeExceptionally(shutdownError);
+                                    return;
+                                  }
+                                  try {
+                                    FileUtil.deleteFolderIfExists(partitionDirectory);
+                                  } catch (final Exception e) {
+                                    LOGGER.warn(
+                                        "Failed to delete partition directory {} after leaving. Data will remain until manually removed.",
+                                        partitionDirectory,
+                                        e);
+                                  }
+                                  result.complete(this);
+                                });
+                          }));
         });
 
     return result;

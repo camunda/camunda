@@ -12,9 +12,11 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamErrorHandler;
-import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
+import io.camunda.zeebe.transport.stream.api.StreamResponseException;
 import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamId;
 import io.camunda.zeebe.transport.stream.impl.RemoteStreamPusher.Transport;
+import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
+import io.camunda.zeebe.transport.stream.impl.messages.ErrorResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamResponse;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -25,14 +27,19 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import org.agrona.MutableDirectBuffer;
+import org.assertj.core.condition.VerboseCondition;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.EnumSource.Mode;
 
 final class RemoteStreamPusherTest {
   private final StreamId streamId = new StreamId(UUID.randomUUID(), MemberId.anonymous());
   private final TestTransport transport = new TestTransport();
   private final Executor executor = Runnable::run;
+  private final TestRemoteStreamMetrics metrics = new TestRemoteStreamMetrics();
   private final RemoteStreamPusher<Payload> pusher =
-      new RemoteStreamPusher<>(transport, executor, RemoteStreamMetrics.noop());
+      new RemoteStreamPusher<>(transport, executor, metrics);
 
   @Test
   void shouldPushPayload() {
@@ -50,6 +57,7 @@ final class RemoteStreamPusherTest {
     assertThat(sentRequest.request.streamId()).isEqualTo(streamId.streamId());
     assertThat(sentRequest.request.payloadWriter()).isEqualTo(payload);
     assertThat(sentRequest.receiver).isEqualTo(streamId.receiver());
+    assertThat(metrics.getPushSucceeded()).isOne();
   }
 
   @Test
@@ -64,6 +72,7 @@ final class RemoteStreamPusherTest {
     pusher.pushAsync(payload, errorHandler, streamId);
 
     // then
+    assertThat(metrics.getPushFailed()).isOne();
     assertThat(errorHandler.errors)
         .hasSize(1)
         .first()
@@ -83,6 +92,7 @@ final class RemoteStreamPusherTest {
     pusher.pushAsync(payload, errorHandler, streamId);
 
     // then
+    assertThat(metrics.getPushFailed()).isOne();
     assertThat(errorHandler.errors)
         .hasSize(1)
         .first()
@@ -95,9 +105,17 @@ final class RemoteStreamPusherTest {
     // given
     final var errorHandler = new TestErrorHandler();
 
-    // when - then
-    assertThatCode(() -> pusher.pushAsync(null, errorHandler, streamId))
-        .isInstanceOf(NullPointerException.class);
+    // when
+    pusher.pushAsync(null, errorHandler, streamId);
+
+    // then
+    assertThat(errorHandler.errors())
+        .haveExactly(
+            1,
+            VerboseCondition.verboseCondition(
+                e -> (e.error instanceof NullPointerException),
+                "a null pointer exception",
+                e -> " but it has an error of type '%s'".formatted(e.error.getClass())));
   }
 
   @Test
@@ -108,6 +126,27 @@ final class RemoteStreamPusherTest {
     // when - then
     assertThatCode(() -> pusher.pushAsync(payload, null, streamId))
         .isInstanceOf(NullPointerException.class);
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = ErrorCode.class,
+      mode = Mode.EXCLUDE,
+      names = {"SBE_UNKNOWN", "NULL_VAL"})
+  void shouldTrackFailedPushTries(final ErrorCode detailCode) {
+    // given
+    final var payload = new Payload(1);
+    final var errorHandler = new TestErrorHandler();
+    final var errorResponse =
+        new ErrorResponse().code(ErrorCode.INTERNAL).message("foo").addDetail(detailCode, "bar");
+    final var failure = new StreamResponseException(errorResponse);
+    transport.response = CompletableFuture.failedFuture(failure);
+
+    // when
+    pusher.pushAsync(payload, errorHandler, streamId);
+
+    // then
+    assertThat(metrics.getFailedPushTry(detailCode)).isOne();
   }
 
   private record Payload(int version) implements BufferWriter {

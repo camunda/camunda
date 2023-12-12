@@ -12,7 +12,6 @@ import io.camunda.zeebe.transport.stream.api.RemoteStreamErrorHandler;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.api.StreamResponseException;
 import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamId;
-import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamResponse;
@@ -52,11 +51,15 @@ final class RemoteStreamPusher<P extends BufferWriter> {
 
   public void pushAsync(
       final P payload, final RemoteStreamErrorHandler<P> errorHandler, final StreamId streamId) {
-    Objects.requireNonNull(payload, "must specify a payload");
     Objects.requireNonNull(errorHandler, "must specify a error handler");
 
-    executor.execute(
-        () -> push(payload, instrumentingErrorHandler(errorHandler, streamId), streamId));
+    try {
+      Objects.requireNonNull(payload, "must specify a payload");
+      executor.execute(
+          () -> push(payload, instrumentingErrorHandler(errorHandler, streamId), streamId));
+    } catch (final Exception e) {
+      errorHandler.handleError(e, payload);
+    }
   }
 
   private RemoteStreamErrorHandler<P> instrumentingErrorHandler(
@@ -66,13 +69,9 @@ final class RemoteStreamPusher<P extends BufferWriter> {
         return;
       }
 
-      if (error instanceof final StreamResponseException e
-          && (e.code() == ErrorCode.INVALID || e.code() == ErrorCode.MALFORMED)) {
-        pushErrorLogger.error(
-            "Failed to push (size = {}) to stream {}, request could not be parsed",
-            payload.getLength(),
-            streamId,
-            e);
+      if (error instanceof final StreamResponseException e) {
+        logResponseError(streamId, payload, e);
+        e.details().forEach(d -> metrics.pushTryFailed(d.code()));
       } else {
         pushWarnLogger.warn(
             "Failed to push (size = {}) to stream {}", payload.getLength(), streamId, error);
@@ -81,6 +80,24 @@ final class RemoteStreamPusher<P extends BufferWriter> {
       metrics.pushFailed();
       errorHandler.handleError(error, payload);
     };
+  }
+
+  private void logResponseError(
+      final StreamId streamId, final P payload, final StreamResponseException e) {
+    switch (e.code()) {
+      case INVALID, MALFORMED -> pushErrorLogger.error(
+          "Failed to push (size = {}) to stream {}, request could not be parsed",
+          payload.getLength(),
+          streamId,
+          e);
+      case EXHAUSTED -> LOG.trace(
+          "Failed to push (size = {}) to stream {} after trying all clients",
+          payload.getLength(),
+          streamId,
+          e);
+      default -> pushWarnLogger.warn(
+          "Failed to push (size = {}) to stream {}", payload.getLength(), streamId, e);
+    }
   }
 
   private void push(

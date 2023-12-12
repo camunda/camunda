@@ -91,7 +91,8 @@ public final class BpmnProcessors {
         typedRecordProcessors, processingState, writers, bpmnBehaviors, processEngineMetrics);
     addProcessInstanceModificationStreamProcessors(
         typedRecordProcessors, processingState, writers, bpmnBehaviors);
-    addProcessInstanceMigrationStreamProcessors(typedRecordProcessors, processingState, writers);
+    addProcessInstanceMigrationStreamProcessors(
+        typedRecordProcessors, processingState, writers, bpmnBehaviors);
     addProcessInstanceBatchStreamProcessors(typedRecordProcessors, processingState, writers);
 
     return bpmnStreamProcessor;
@@ -227,11 +228,12 @@ public final class BpmnProcessors {
   private static void addProcessInstanceMigrationStreamProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final ProcessingState processingState,
-      final Writers writers) {
+      final Writers writers,
+      final BpmnBehaviors bpmnBehaviors) {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_MIGRATION,
         ProcessInstanceMigrationIntent.MIGRATE,
-        new ProcessInstanceMigrationMigrateProcessor(writers, processingState));
+        new ProcessInstanceMigrationMigrateProcessor(writers, processingState, bpmnBehaviors));
   }
 
   private static void addProcessInstanceBatchStreamProcessors(

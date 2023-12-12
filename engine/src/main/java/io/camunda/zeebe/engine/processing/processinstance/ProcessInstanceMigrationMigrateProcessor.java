@@ -9,6 +9,10 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCIDENT;
 
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -66,12 +70,16 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final JobState jobState;
   private final VariableState variableState;
   private final IncidentState incidentState;
+  private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
 
   public ProcessInstanceMigrationMigrateProcessor(
-      final Writers writers, final ProcessingState processingState) {
+      final Writers writers,
+      final ProcessingState processingState,
+      final BpmnBehaviors bpmnBehaviors) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
+    eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     elementInstanceState = processingState.getElementInstanceState();
     processState = processingState.getProcessState();
     jobState = processingState.getJobState();
@@ -138,6 +146,11 @@ public class ProcessInstanceMigrationMigrateProcessor
       responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }
+    if (error instanceof final IncorrectMappingException e) {
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, e.getMessage());
+      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
+      return ProcessingError.EXPECTED_ERROR;
+    }
     if (error instanceof final ElementWithIncidentException e) {
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, e.getMessage());
       responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
@@ -195,6 +208,19 @@ public class ProcessInstanceMigrationMigrateProcessor
           elementInstanceRecord.getProcessInstanceKey(), elementInstanceRecord.getElementId());
     }
 
+    final BpmnElementType targetElementType =
+        processDefinition.getProcess().getElementById(targetElementId).getElementType();
+    if (elementInstanceRecord.getBpmnElementType() != targetElementType) {
+      throw new IncorrectMappingException(
+          elementInstanceRecord.getProcessInstanceKey(),
+          elementInstanceRecord.getElementId(),
+          elementInstanceRecord.getBpmnElementType(),
+          targetElementId,
+          targetElementType);
+    }
+
+    eventSubscriptionBehavior.unsubscribeFromEvents(elementInstance.getKey());
+
     stateWriter.appendFollowUpEvent(
         elementInstance.getKey(),
         ProcessInstanceIntent.ELEMENT_MIGRATED,
@@ -231,6 +257,15 @@ public class ProcessInstanceMigrationMigrateProcessor
                         .setProcessDefinitionKey(processDefinition.getKey())
                         .setBpmnProcessId(processDefinition.getBpmnProcessId())
                         .setTenantId(elementInstance.getValue().getTenantId())));
+
+    final var targetElement =
+        processDefinition
+            .getProcess()
+            .getElementById(targetElementId, ExecutableCatchEventSupplier.class);
+    final var bpmnElementContext = new BpmnElementContextImpl();
+    bpmnElementContext.init(
+        elementInstance.getKey(), elementInstance.getValue(), elementInstance.getState());
+    eventSubscriptionBehavior.subscribeToEvents(targetElement, bpmnElementContext);
   }
 
   /**
@@ -265,6 +300,33 @@ public class ProcessInstanceMigrationMigrateProcessor
               but no mapping instruction defined for active element with id '%s'. \
               Elements cannot be migrated without a mapping.""",
               processInstanceKey, elementId));
+    }
+  }
+
+  /**
+   * Exception that can be thrown during the migration of a process instance, in case any of the
+   * mapping instructions of the command refer to a source and a target element with different
+   * element type, or different event type.
+   */
+  private static final class IncorrectMappingException extends RuntimeException {
+    IncorrectMappingException(
+        final long processInstanceKey,
+        final String elementId,
+        final BpmnElementType bpmnElementType,
+        final String targetElementId,
+        final BpmnElementType targetBpmnElementType) {
+      super(
+          String.format(
+              """
+              Expected to migrate process instance '%s' \
+              but active element with id '%s' and type '%s' is mapped to \
+              an element with id '%s' and different type '%s'. \
+              Active elements must be mapped to the same type.""",
+              processInstanceKey,
+              elementId,
+              bpmnElementType,
+              targetElementId,
+              targetBpmnElementType));
     }
   }
 

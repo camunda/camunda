@@ -308,6 +308,8 @@ public final class EventAppliers implements EventApplier {
     register(UserTaskIntent.CREATED, new UserTaskCreatedApplier(state));
     register(UserTaskIntent.CANCELING, new UserTaskCancelingApplier(state));
     register(UserTaskIntent.CANCELED, new UserTaskCanceledApplier(state));
+    register(UserTaskIntent.COMPLETING, new UserTaskCompletingApplier(state));
+    register(UserTaskIntent.COMPLETED, new UserTaskCompletedApplier(state));
   }
 
   private void registerCommandDistributionAppliers(final MutableProcessingState state) {

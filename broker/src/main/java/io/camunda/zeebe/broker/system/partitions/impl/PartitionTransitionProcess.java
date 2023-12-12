@@ -28,9 +28,14 @@ import org.slf4j.Logger;
 
 final class PartitionTransitionProcess {
 
+  public static final String MSG_PREPARE_TRANSITION =
+      "Prepare transition from {}[term: {}] -> {}[term: {}]";
+  public static final String MSG_PREPARE_TRANSITION_STEP =
+      MSG_PREPARE_TRANSITION + " - preparing {}";
+  public static final String MSG_PREPARE_TRANSITION_COMPLETED =
+      MSG_PREPARE_TRANSITION + " completed";
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final long STEP_TIMEOUT_MS = Duration.ofSeconds(60).toMillis();
-
   private PartitionTransitionStep currentStep;
   private final List<PartitionTransitionStep> pendingSteps;
   private final Deque<PartitionTransitionStep> stepsToPrepare = new ArrayDeque<>();
@@ -111,10 +116,11 @@ final class PartitionTransitionProcess {
 
   ActorFuture<Void> prepare(final long newTerm, final Role newRole) {
     LOG.info(
-        "Prepare transition from {} on term {} to {}",
+        MSG_PREPARE_TRANSITION,
         context.getCurrentRole(),
         context.getCurrentTerm(),
-        newRole);
+        newRole,
+        newTerm);
     final ActorFuture<Void> prepareFuture = concurrencyControl.createFuture();
 
     if (stepsToPrepare.isEmpty()) {
@@ -133,10 +139,11 @@ final class PartitionTransitionProcess {
           final var nextPrepareStep = stepsToPrepare.pop();
 
           LOG.info(
-              "Prepare transition from {} on term {} to {} - preparing {}",
+              MSG_PREPARE_TRANSITION_STEP,
               context.getCurrentRole(),
               context.getCurrentTerm(),
               newRole,
+              newTerm,
               nextPrepareStep.getName());
 
           nextPrepareStep
@@ -159,9 +166,11 @@ final class PartitionTransitionProcess {
 
     if (stepsToPrepare.isEmpty()) {
       LOG.info(
-          "Preparing transition from {} on term {} completed",
+          MSG_PREPARE_TRANSITION_COMPLETED,
           context.getCurrentRole(),
-          context.getCurrentTerm());
+          context.getCurrentTerm(),
+          newRole,
+          newTerm);
       future.complete(null);
 
       return;
