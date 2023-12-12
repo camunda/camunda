@@ -30,6 +30,7 @@ import (
 )
 
 func TestStreamJobsCommand(t *testing.T) {
+	// given
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -66,22 +67,23 @@ func TestStreamJobsCommand(t *testing.T) {
 		CustomHeaders: "{}",
 		Variables:     "{}",
 	}
-
 	expectedJobs := []entities.Job{{ActivatedJob: &job1}, {ActivatedJob: &job2}}
-
-	gomock.InOrder(
-		stream.EXPECT().Recv().Return(&job1, nil),
-		stream.EXPECT().Recv().Return(&job2, nil),
-		stream.EXPECT().Recv().Return(nil, io.EOF),
-	)
-
-	client.EXPECT().StreamActivatedJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stream, nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()
 
 	jobsChan := make(chan entities.Job, 2)
 	defer close(jobsChan)
+
+	// when - then
+	// setting up the expectations is in itself asserting - any calls with different arguments will cause the
+	// test to fail
+	gomock.InOrder(
+		stream.EXPECT().Recv().Return(&job1, nil),
+		stream.EXPECT().Recv().Return(&job2, nil),
+		stream.EXPECT().Recv().Return(nil, io.EOF),
+	)
+	client.EXPECT().StreamActivatedJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stream, nil)
 	err := NewStreamJobsCommand(client, func(context.Context, error) bool {
 		return false
 	}).JobType("foo").Consumer(jobsChan).Send(ctx)
@@ -90,7 +92,6 @@ func TestStreamJobsCommand(t *testing.T) {
 
 	// simulate job receive
 	jobs := []entities.Job{<-jobsChan, <-jobsChan}
-
 	if len(jobs) != len(expectedJobs) {
 		t.Error("Failed to receive all jobs: ", jobs, expectedJobs)
 	}
@@ -104,6 +105,7 @@ func TestStreamJobsCommand(t *testing.T) {
 }
 
 func TestStreamJobsCommandWithTimeout(t *testing.T) {
+	// given
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -116,14 +118,17 @@ func TestStreamJobsCommandWithTimeout(t *testing.T) {
 		Worker:  DefaultJobWorkerName,
 	}
 
-	stream.EXPECT().Recv().Return(nil, io.EOF)
-	client.EXPECT().StreamActivatedJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stream, nil)
-
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()
 
 	jobsChan := make(chan entities.Job, 5)
 	defer close(jobsChan)
+
+	// when - then
+	// setting up the expectations is in itself asserting - any calls with different arguments will cause the
+	// test to fail
+	stream.EXPECT().Recv().Return(nil, io.EOF)
+	client.EXPECT().StreamActivatedJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stream, nil)
 	err := NewStreamJobsCommand(client, func(context.Context, error) bool {
 		return false
 	}).JobType("foo").Consumer(jobsChan).Timeout(1 * time.Minute).Send(ctx)
@@ -134,6 +139,41 @@ func TestStreamJobsCommandWithTimeout(t *testing.T) {
 }
 
 func TestStreamJobsCommandWithWorkerName(t *testing.T) {
+	// given
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+	stream := mock_pb.NewMockGateway_StreamActivatedJobsClient(ctrl)
+
+	request := &pb.StreamActivatedJobsRequest{
+		Type:    "foo",
+		Timeout: 300 * 1000,
+		Worker:  "bar",
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	jobsChan := make(chan entities.Job, 5)
+	defer close(jobsChan)
+
+	// when - then
+	// setting up the expectations is in itself asserting - any calls with different arguments will cause the
+	// test to fail
+	stream.EXPECT().Recv().Return(nil, io.EOF)
+	client.EXPECT().StreamActivatedJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stream, nil)
+	err := NewStreamJobsCommand(client, func(context.Context, error) bool {
+		return false
+	}).JobType("foo").Consumer(jobsChan).WorkerName("bar").Send(ctx)
+
+	if err != nil {
+		assert.NoError(t, err, "Failed to send request")
+	}
+}
+
+func TestStreamJobsCommandWithFetchVariables(t *testing.T) {
+	// given
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -148,14 +188,17 @@ func TestStreamJobsCommandWithWorkerName(t *testing.T) {
 		FetchVariable: fetchVariables,
 	}
 
-	stream.EXPECT().Recv().Return(nil, io.EOF)
-	client.EXPECT().StreamActivatedJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stream, nil)
-
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()
 
 	jobsChan := make(chan entities.Job, 5)
 	defer close(jobsChan)
+
+	// when - then
+	// setting up the expectations is in itself asserting - any calls with different arguments will cause the
+	// test to fail
+	stream.EXPECT().Recv().Return(nil, io.EOF)
+	client.EXPECT().StreamActivatedJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stream, nil)
 	err := NewStreamJobsCommand(client, func(context.Context, error) bool {
 		return false
 	}).JobType("foo").Consumer(jobsChan).FetchVariables(fetchVariables...).Send(ctx)
@@ -166,6 +209,7 @@ func TestStreamJobsCommandWithWorkerName(t *testing.T) {
 }
 
 func TestStreamJobsCommandWithTenantIds(t *testing.T) {
+	// given
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -179,15 +223,17 @@ func TestStreamJobsCommandWithTenantIds(t *testing.T) {
 		Worker:    DefaultJobWorkerName,
 		TenantIds: tenantIds,
 	}
-
-	stream.EXPECT().Recv().Return(nil, io.EOF)
-	client.EXPECT().StreamActivatedJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stream, nil)
-
 	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
 	defer cancel()
 
 	jobsChan := make(chan entities.Job, 5)
 	defer close(jobsChan)
+
+	// when - then
+	// setting up the expectations is in itself asserting - any calls with different arguments will cause the
+	// test to fail
+	stream.EXPECT().Recv().Return(nil, io.EOF)
+	client.EXPECT().StreamActivatedJobs(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stream, nil)
 	err := NewStreamJobsCommand(client, func(context.Context, error) bool {
 		return false
 	}).JobType("foo").Consumer(jobsChan).TenantIds(tenantIds...).Send(ctx)
