@@ -64,9 +64,9 @@ public final class InterceptorUtil {
   }
 
   /**
-   * Returns a gRPC context {@link Key} that can be used to set a List of authorized tenant IDs in
-   * an interceptor. Note that, as per the gRPC documentation, it's perfectly fine to block in a
-   * call and/or listener, which may greatly simplify the usage of the API in your code.
+   * Returns a gRPC context {@link Key} that can be used to set a {@link List<String>} of authorized
+   * tenant IDs in an interceptor. Note that, as per the gRPC documentation, it's perfectly fine to
+   * block in a call and/or listener, which may greatly simplify the usage of the API in your code.
    *
    * <p>If you use the API asynchronously, there are a few gotchas to remember:
    *
@@ -95,5 +95,17 @@ public final class InterceptorUtil {
    */
   public static Key<List<String>> getAuthorizedTenantsKey() {
     return AUTHORIZED_TENANTS_KEY;
+  }
+
+  /**
+   * A helper method to set a {@link List<String>} of authorized tenant IDs on the {@code
+   * AUTHORIZED_TENANTS_KEY} gRPC Context key.
+   *
+   * @param authorizedTenants - a List of Strings that specify the authorized tenants for the gRPC
+   *     request
+   * @return the current {@link Context}
+   */
+  public static Context setAuthorizedTenants(final List<String> authorizedTenants) {
+    return Context.current().withValue(getAuthorizedTenantsKey(), authorizedTenants);
   }
 }

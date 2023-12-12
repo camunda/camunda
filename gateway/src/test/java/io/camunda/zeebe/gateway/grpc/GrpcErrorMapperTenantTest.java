@@ -15,7 +15,6 @@ import io.camunda.zeebe.gateway.cmd.InvalidTenantRequestException;
 import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.logging.RecordingAppender;
-import io.grpc.Context;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
 import java.util.List;
@@ -96,9 +95,7 @@ public class GrpcErrorMapperTenantTest {
         multiTenancyEnabled
             ? List.of(validTenantId)
             : List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    Context.current()
-        .withValue(InterceptorUtil.getAuthorizedTenantsKey(), authorizedTenants)
-        .attach();
+    InterceptorUtil.setAuthorizedTenants(authorizedTenants).attach();
 
     // when
     RequestMapper.setMultiTenancyEnabled(multiTenancyEnabled);
@@ -146,9 +143,7 @@ public class GrpcErrorMapperTenantTest {
     final String requestName = "ActivateJobs";
     final List<String> authorizedTenants =
         multiTenancyEnabled ? validTenantIds : List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    Context.current()
-        .withValue(InterceptorUtil.getAuthorizedTenantsKey(), authorizedTenants)
-        .attach();
+    InterceptorUtil.setAuthorizedTenants(authorizedTenants).attach();
 
     // when
     RequestMapper.setMultiTenancyEnabled(multiTenancyEnabled);

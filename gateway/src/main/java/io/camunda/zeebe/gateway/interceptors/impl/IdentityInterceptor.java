@@ -14,7 +14,6 @@ import io.camunda.identity.sdk.tenants.dto.Tenant;
 import io.camunda.zeebe.gateway.impl.configuration.IdentityCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
-import io.grpc.Context;
 import io.grpc.Contexts;
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
@@ -98,8 +97,7 @@ public final class IdentityInterceptor implements ServerInterceptor {
     try {
       final List<String> authorizedTenants =
           identity.tenants().forToken(token).stream().map(Tenant::getTenantId).toList();
-      final var context =
-          Context.current().withValue(InterceptorUtil.getAuthorizedTenantsKey(), authorizedTenants);
+      final var context = InterceptorUtil.setAuthorizedTenants(authorizedTenants);
       return Contexts.interceptCall(context, call, headers, next);
 
     } catch (final RuntimeException e) {
