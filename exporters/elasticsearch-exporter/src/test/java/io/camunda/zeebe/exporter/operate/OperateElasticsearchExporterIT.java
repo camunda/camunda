@@ -1,3 +1,10 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
+ */
 package io.camunda.zeebe.exporter.operate;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,6 +40,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
@@ -47,7 +55,6 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +65,9 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -241,7 +251,10 @@ public class OperateElasticsearchExporterIT {
         schemaManager.getTemplateDescriptor(FlowNodeInstanceTemplate.class).getFullQualifiedName();
 
     final Map<String, FlowNodeInstanceEntity> flowNodeInstances =
-        getAllDocumentsInIndex(flowNodeIndexName, FlowNodeInstanceEntity.class);
+        getMatchingDocuments(
+            flowNodeIndexName,
+            FlowNodeInstanceEntity.class,
+            QueryBuilders.termQuery("processInstanceKey", 2251799813685251L));
     assertThat(flowNodeInstances).hasSize(3);
 
     // start event 2251799813685253
@@ -364,12 +377,13 @@ public class OperateElasticsearchExporterIT {
     }
   }
 
-  private <T extends OperateEntity<T>> Map<String, T> getAllDocumentsInIndex(
-      String index, Class<T> entityClass) {
+  private <T extends OperateEntity<T>> Map<String, T> getMatchingDocuments(
+      String index, Class<T> entityClass, QueryBuilder query) {
     try {
       schemaManager.refresh(index); // ensure latest data is visible
 
-      final SearchRequest request = new SearchRequest(index);
+      final SearchRequest request =
+          new SearchRequest(index).source(new SearchSourceBuilder().query(query));
       final List<T> searchResults =
           ElasticsearchUtil.scroll(
               request, entityClass, NoSpringJacksonConfig.buildObjectMapper(), esClient);
@@ -401,7 +415,7 @@ public class OperateElasticsearchExporterIT {
         Arguments.of(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATED),
         Arguments.of(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_MIGRATED),
         Arguments.of(ValueType.VARIABLE, VariableIntent.CREATED, VariableIntent.UPDATED),
-        Arguments.of(ValueType.VARIABLE_DOCUMENT, Arrays.asList()),
+        Arguments.of(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATED),
         Arguments.of(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION, ProcessMessageSubscriptionIntent.CREATED),
         Arguments.of(ValueType.JOB, JobIntent.CREATED),
