@@ -21,7 +21,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler;
-import io.camunda.zeebe.gateway.interceptors.impl.IdentityInterceptor;
+import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
@@ -489,7 +489,7 @@ public final class EndpointManager {
 
     final List<String> authorizedTenants =
         multiTenancy.isEnabled()
-            ? Context.current().call(IdentityInterceptor.AUTHORIZED_TENANTS_KEY::get)
+            ? Context.current().call(InterceptorUtil.getAuthorizedTenantsKey()::get)
             : List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     final String authorizationToken =
         Authorization.jwtEncoder()

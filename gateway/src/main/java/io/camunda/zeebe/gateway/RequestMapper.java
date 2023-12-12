@@ -31,7 +31,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerThrowErrorRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobTimeoutRequest;
-import io.camunda.zeebe.gateway.interceptors.impl.IdentityInterceptor;
+import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
@@ -345,7 +345,7 @@ public final class RequestMapper {
 
     final List<String> authorizedTenants;
     try {
-      authorizedTenants = Context.current().call(IdentityInterceptor.AUTHORIZED_TENANTS_KEY::get);
+      authorizedTenants = Context.current().call(InterceptorUtil.getAuthorizedTenantsKey()::get);
     } catch (final Exception e) {
       throw new InvalidTenantRequestException(
           commandName, tenantId, "tenant could not be retrieved from the request context", e);

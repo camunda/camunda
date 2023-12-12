@@ -96,5 +96,4 @@ public final class InterceptorUtil {
   public static Key<List<String>> getAuthorizedTenantsKey() {
     return AUTHORIZED_TENANTS_KEY;
   }
-
 }
