@@ -104,21 +104,20 @@ func (cmd *StreamJobsCommand) Send(ctx context.Context) error {
 
 	for {
 		job, err := stream.Recv()
-		if err == io.EOF {
-			break
-		}
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
 
-		if cmd.shouldRetry(ctx, err) {
+			if !cmd.shouldRetry(ctx, err) {
+				return err
+			}
+
 			stream, err = cmd.openStream(ctx)
 			if err != nil {
 				log.Printf("Failed to reopen job stream: %v\n", err)
+				return err
 			}
-
-			continue
-		}
-
-		if err != nil {
-			return err
 		}
 
 		cmd.consumer <- entities.Job{ActivatedJob: job}
