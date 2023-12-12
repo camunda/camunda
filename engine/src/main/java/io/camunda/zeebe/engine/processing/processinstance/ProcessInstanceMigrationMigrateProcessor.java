@@ -17,12 +17,14 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
@@ -76,6 +78,7 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final JobState jobState;
   private final VariableState variableState;
   private final IncidentState incidentState;
+  private final EventScopeInstanceState eventScopeInstanceState;
 
   public ProcessInstanceMigrationMigrateProcessor(
       final Writers writers, final ProcessingState processingState) {
@@ -87,6 +90,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     jobState = processingState.getJobState();
     variableState = processingState.getVariableState();
     incidentState = processingState.getIncidentState();
+    eventScopeInstanceState = processingState.getEventScopeInstanceState();
   }
 
   @Override
@@ -254,6 +258,11 @@ public class ProcessInstanceMigrationMigrateProcessor
       responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }
+    if (error instanceof final ConcurrentCommandException e) {
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, e.getMessage());
+      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
+      return ProcessingError.EXPECTED_ERROR;
+    }
 
     return ProcessingError.UNEXPECTED_ERROR;
   }
@@ -282,9 +291,11 @@ public class ProcessInstanceMigrationMigrateProcessor
       final Map<String, String> sourceElementIdToTargetElementId) {
 
     final var elementInstanceRecord = elementInstance.getValue();
+    final long processInstanceKey = elementInstanceRecord.getProcessInstanceKey();
+
     if (UNSUPPORTED_ELEMENT_TYPES.contains(elementInstanceRecord.getBpmnElementType())) {
       throw new UnsupportedElementMigrationException(
-          elementInstanceRecord.getProcessInstanceKey(),
+          processInstanceKey,
           elementInstanceRecord.getElementId(),
           elementInstanceRecord.getBpmnElementType());
     }
@@ -293,7 +304,7 @@ public class ProcessInstanceMigrationMigrateProcessor
         sourceElementIdToTargetElementId.get(elementInstanceRecord.getElementId());
     if (targetElementId == null) {
       throw new UnmappedActiveElementException(
-          elementInstanceRecord.getProcessInstanceKey(), elementInstanceRecord.getElementId());
+          processInstanceKey, elementInstanceRecord.getElementId());
     }
 
     final boolean hasIncident =
@@ -311,7 +322,7 @@ public class ProcessInstanceMigrationMigrateProcessor
         targetProcessDefinition.getProcess().getElementById(targetElementId).getElementType();
     if (elementInstanceRecord.getBpmnElementType() != targetElementType) {
       throw new ElementTypeChangedException(
-          elementInstanceRecord.getProcessInstanceKey(),
+          processInstanceKey,
           elementInstanceRecord.getElementId(),
           elementInstanceRecord.getBpmnElementType(),
           targetElementId,
@@ -365,6 +376,13 @@ public class ProcessInstanceMigrationMigrateProcessor
           elementInstanceRecord.getProcessInstanceKey(),
           elementInstanceRecord.getElementId(),
           "target");
+    }
+    final EventTrigger eventTrigger =
+        eventScopeInstanceState.peekEventTrigger(elementInstance.getKey());
+    if (eventTrigger != null) {
+      // An event trigger indicates a concurrent command. It is created when completing a job, or
+      // triggering a timer/message/signal event.
+      throw new ConcurrentCommandException(processInstanceKey);
     }
 
     stateWriter.appendFollowUpEvent(
@@ -572,6 +590,24 @@ public class ProcessInstanceMigrationMigrateProcessor
               but %s element with id '%s' has a boundary event. \
               Migrating %s elements with boundary events is not possible yet.""",
               processInstanceKey, source, elementId, source));
+    }
+  }
+
+  /**
+   * Exception that can be thrown during the migration of a process instance, in case the engine
+   * processes another command concurrently for the process instance, for example, a job complete, a
+   * timer trigger, or a message correlation. Since the concurrent command modifies the process
+   * instance, it is not safe to apply the migration in between.
+   */
+  private static final class ConcurrentCommandException extends RuntimeException {
+    ConcurrentCommandException(final long processInstanceKey) {
+      super(
+          String.format(
+              """
+              Expected to migrate process instance '%s' \
+              but a concurrent command was executed on the process instance. \
+              Please retry the migration.""",
+              processInstanceKey));
     }
   }
 }
