@@ -211,7 +211,7 @@ public class MigrateProcessInstanceRejectionTest {
                 """
                 Expected to migrate process instance '%d' \
                 but active element with id 'A' has an incident. \
-                Elements cannot be migrated with an incident. \
+                Elements cannot be migrated with an incident yet. \
                 Please retry migration after resolving the incident.""",
                 processInstanceKey))
         .hasKey(processInstanceKey);
@@ -290,7 +290,7 @@ public class MigrateProcessInstanceRejectionTest {
                 """
                 Expected to migrate process instance '%d' \
                 but active element with id 'A' has an incident. \
-                Elements cannot be migrated with an incident. \
+                Elements cannot be migrated with an incident yet. \
                 Please retry migration after resolving the incident.""",
                 processInstanceKey))
         .hasKey(processInstanceKey);

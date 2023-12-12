@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
@@ -67,20 +68,15 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final IncidentState incidentState;
 
   public ProcessInstanceMigrationMigrateProcessor(
-      final Writers writers,
-      final ElementInstanceState elementInstanceState,
-      final ProcessState processState,
-      final JobState jobState,
-      final VariableState variableState,
-      final IncidentState incidentState) {
+      final Writers writers, final ProcessingState processingState) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
-    this.elementInstanceState = elementInstanceState;
-    this.processState = processState;
-    this.jobState = jobState;
-    this.variableState = variableState;
-    this.incidentState = incidentState;
+    elementInstanceState = processingState.getElementInstanceState();
+    processState = processingState.getProcessState();
+    jobState = processingState.getJobState();
+    variableState = processingState.getVariableState();
+    incidentState = processingState.getIncidentState();
   }
 
   @Override
@@ -188,12 +184,13 @@ public class ProcessInstanceMigrationMigrateProcessor
           elementInstanceRecord.getProcessInstanceKey(), elementInstanceRecord.getElementId());
     }
 
-    final boolean hasProcessIncident =
-        incidentState.getProcessInstanceIncidentKey(elementInstance.getKey()) != MISSING_INCIDENT;
-    final boolean hasJobIncident =
-        incidentState.getJobIncidentKey(elementInstance.getJobKey()) != MISSING_INCIDENT;
+    final boolean hasIncident =
+        incidentState.getProcessInstanceIncidentKey(elementInstance.getKey()) != MISSING_INCIDENT
+            || (elementInstance.getJobKey() > -1L
+                && incidentState.getJobIncidentKey(elementInstance.getJobKey())
+                    != MISSING_INCIDENT);
 
-    if (hasProcessIncident || hasJobIncident) {
+    if (hasIncident) {
       throw new ElementWithIncidentException(
           elementInstanceRecord.getProcessInstanceKey(), elementInstanceRecord.getElementId());
     }
@@ -282,7 +279,7 @@ public class ProcessInstanceMigrationMigrateProcessor
               """
               Expected to migrate process instance '%s' \
               but active element with id '%s' has an incident. \
-              Elements cannot be migrated with an incident. \
+              Elements cannot be migrated with an incident yet. \
               Please retry migration after resolving the incident.""",
               processInstanceKey, elementId));
     }
