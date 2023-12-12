@@ -1,13 +1,21 @@
 package io.camunda.zeebe.exporter.operate;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
+import static org.assertj.core.api.Assertions.entry;
+import io.camunda.operate.entities.FlowNodeInstanceEntity;
+import io.camunda.operate.entities.FlowNodeType;
+import io.camunda.operate.entities.OperateEntity;
+import io.camunda.operate.exceptions.PersistenceException;
+import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.zeebe.exporter.TestClient;
 import io.camunda.zeebe.exporter.TestSupport;
 import io.camunda.zeebe.exporter.operate.schema.templates.DecisionInstanceTemplate;
+import io.camunda.zeebe.exporter.operate.schema.templates.FlowNodeInstanceTemplate;
+import io.camunda.zeebe.exporter.operate.schema.templates.ListViewTemplate;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
+import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -28,19 +36,29 @@ import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+import org.apache.commons.io.IOUtils;
+import org.assertj.core.api.Assertions;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -49,6 +67,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 @Testcontainers
 @TestInstance(Lifecycle.PER_CLASS)
@@ -139,8 +160,8 @@ public class OperateElasticsearchExporterIT {
     if (valueType.equals(ValueType.DECISION_EVALUATION)) {
       final List<EvaluatedDecisionValue> evaluatedDecisions = ((DecisionEvaluationRecordValue) record.getValue()).getEvaluatedDecisions();
       for (int i = 1; i <= evaluatedDecisions.size(); i++) {
-        String expectedId = String.format("%d-%d", record.getKey(), i);
-        String indexName = schemaManager.getTemplateDescriptor(DecisionInstanceTemplate.class)
+        final String expectedId = String.format("%d-%d", record.getKey(), i);
+        final String indexName = schemaManager.getTemplateDescriptor(DecisionInstanceTemplate.class)
             .getFullQualifiedName();
         assertDocument(expectedId, indexName, "DecisionInstanceHandler");
       }
@@ -164,15 +185,152 @@ public class OperateElasticsearchExporterIT {
     }
   }
 
+  @Test
+  public void shouldExportAFullProcessInstanceLog() throws JsonProcessingException, PersistenceException {
+
+    // given
+    // effectively disabling automatic flush so that we can flush all changes at once and at will
+    exporter.setBatchSize(1000);
+
+    final List<Record<?>> records = readRecordsFromJsonResource("process-instance-event-log.json");
+
+    // when
+    records.forEach(record -> exporter.export(record));
+    exporter.flush();
+
+    // then
+    //TODO: assert state of process instance in ES
+    // there should be a process instance record in the list view index
+    final String listViewIndexName = schemaManager.getTemplateDescriptor(ListViewTemplate.class).getFullQualifiedName();
+    final String processInstanceKey = "2251799813685251";
+    final Map<String, Object> processInstance = findElasticsearchDocument(listViewIndexName, processInstanceKey);
+    assertThat(processInstance).contains(
+        entry("id", "2251799813685251"),
+        entry("key", 2251799813685251L),
+        entry("partitionId", 0),
+        entry("processDefinitionKey", 2251799813685249L),
+        entry("bpmnProcessId", "process"),
+        entry("processName", null),
+        entry("processVersion", 1),
+        entry("processInstanceKey", 2251799813685251L),
+        entry("parentProcessInstanceKey", null),
+        entry("parentFlowNodeInstanceKey", null),
+        entry("startDate", "2023-12-12T08:55:35.547Z"),
+        entry("endDate", "2023-12-12T08:55:35.671Z"),
+        entry("state", "COMPLETED"),
+        entry("batchOperationIds", null),
+        entry("incident", false),
+        entry("tenantId", "<default>"),
+        entry("treePath", null)
+        );
+
+    // there should be flow node instances
+    final String flowNodeIndexName = schemaManager.getTemplateDescriptor(FlowNodeInstanceTemplate.class).getFullQualifiedName();
+
+    final Map<String, FlowNodeInstanceEntity> flowNodeInstances = getAllDocumentsInIndex(flowNodeIndexName, FlowNodeInstanceEntity.class);
+    assertThat(flowNodeInstances).hasSize(3);
+
+    // start event 2251799813685253
+    final FlowNodeInstanceEntity startEvent = flowNodeInstances.get("2251799813685253");
+
+    assertThat(startEvent.getId()).isEqualTo("2251799813685253");
+    assertThat(startEvent.getKey()).isEqualTo(2251799813685253L);
+    assertThat(startEvent.getPartitionId()).isEqualTo(0);
+    assertThat(startEvent.getPosition()).isEqualTo(10);
+
+    assertThat(startEvent.getFlowNodeId()).isEqualTo("start");
+    assertThat(startEvent.getLevel()).isEqualTo(0);
+    assertThat(startEvent.getType()).isEqualTo(FlowNodeType.START_EVENT);
+
+    assertThat(startEvent.getBpmnProcessId()).isEqualTo("process");
+    assertThat(startEvent.getProcessDefinitionKey()).isEqualTo(2251799813685249L);
+    assertThat(startEvent.getProcessInstanceKey()).isEqualTo(2251799813685251L);
+
+    assertThat(startEvent.getStartDate()).isEqualTo(asDate(1702371335547L));
+    assertThat(startEvent.getEndDate()).isEqualTo(asDate(1702371335547L));
+    assertThat(startEvent.getIncidentKey()).isNull();
+    assertThat(startEvent.getTenantId()).isEqualTo("<default>");
+    assertThat(startEvent.getTreePath()).isNull();
+
+    // service task 2251799813685255
+    final FlowNodeInstanceEntity serviceTask = flowNodeInstances.get("2251799813685255");
+
+    assertThat(serviceTask.getId()).isEqualTo("2251799813685255");
+    assertThat(serviceTask.getKey()).isEqualTo(2251799813685255L);
+    assertThat(serviceTask.getPartitionId()).isEqualTo(0);
+    assertThat(serviceTask.getPosition()).isEqualTo(17);
+
+    assertThat(serviceTask.getFlowNodeId()).isEqualTo("task");
+    assertThat(serviceTask.getLevel()).isEqualTo(0);
+    assertThat(serviceTask.getType()).isEqualTo(FlowNodeType.SERVICE_TASK);
+
+    assertThat(serviceTask.getBpmnProcessId()).isEqualTo("process");
+    assertThat(serviceTask.getProcessDefinitionKey()).isEqualTo(2251799813685249L);
+    assertThat(serviceTask.getProcessInstanceKey()).isEqualTo(2251799813685251L);
+
+    assertThat(serviceTask.getStartDate()).isEqualTo(asDate(1702371335547L));
+    assertThat(serviceTask.getEndDate()).isEqualTo(asDate(1702371335671L));
+    assertThat(serviceTask.getIncidentKey()).isNull();
+    assertThat(serviceTask.getTenantId()).isEqualTo("<default>");
+    assertThat(serviceTask.getTreePath()).isNull();
+
+    // end event 2251799813685260
+    final FlowNodeInstanceEntity endEvent = flowNodeInstances.get("2251799813685260");
+
+    assertThat(endEvent.getId()).isEqualTo("2251799813685260");
+    assertThat(endEvent.getKey()).isEqualTo(2251799813685260L);
+    assertThat(endEvent.getPartitionId()).isEqualTo(0);
+    assertThat(endEvent.getPosition()).isEqualTo(30);
+
+    assertThat(endEvent.getFlowNodeId()).isEqualTo("end");
+    assertThat(endEvent.getLevel()).isEqualTo(0);
+    assertThat(endEvent.getType()).isEqualTo(FlowNodeType.END_EVENT);
+
+    assertThat(endEvent.getBpmnProcessId()).isEqualTo("process");
+    assertThat(endEvent.getProcessDefinitionKey()).isEqualTo(2251799813685249L);
+    assertThat(endEvent.getProcessInstanceKey()).isEqualTo(2251799813685251L);
+
+    assertThat(endEvent.getStartDate()).isEqualTo(asDate(1702371335671L));
+    assertThat(endEvent.getEndDate()).isEqualTo(asDate(1702371335671L));
+    assertThat(endEvent.getIncidentKey()).isNull();
+    assertThat(endEvent.getTenantId()).isEqualTo("<default>");
+    assertThat(endEvent.getTreePath()).isNull();
+  }
+
+  private OffsetDateTime asDate(long time) {
+    return OffsetDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneId.systemDefault());
+  }
+
+  private List<Record<?>> readRecordsFromJsonResource(String resourceName) {
+    final List<Record<?>> result = new ArrayList<>();
+
+    try {
+
+      final ObjectMapper objectMapper = new ObjectMapper().registerModule(new ZeebeProtocolModule());
+      try (InputStream inputStream = OperateElasticsearchExporterIT.class.getClassLoader().getResourceAsStream(resourceName)) {
+        final List<String> lines = IOUtils.readLines(inputStream, StandardCharsets.UTF_8);
+
+        for (String jsonString : lines) {
+          final Record<?> record = objectMapper.readValue(jsonString, new TypeReference<Record<?>>() {});
+          result.add(record);
+        }
+      }
+    } catch (IOException e) {
+      throw new RuntimeException(String.format("Could not read records from classpath resource %s", resourceName), e);
+    }
+
+    return result;
+  }
+
   private void assertDocument(final String expectedId, final String indexName, String handlerName) {
     final Map<String, Object> document =
-        findElasticsearchDocument(indexName, expectedId, handlerName);
+        findElasticsearchDocument(indexName, expectedId);
     assertThat(document).isNotNull();
     System.out.println(String.format("Returned document %s", document));
   }
 
   private Map<String, Object> findElasticsearchDocument(
-      String index, String id, String handlerName) {
+      String index, String id) {
 
     try {
       schemaManager.refresh(index); // ensure latest data is visible
@@ -184,8 +342,25 @@ public class OperateElasticsearchExporterIT {
         throw new RuntimeException(
             String.format(
                 "Could not find document with id %s in index %s",
-                id, index, handlerName));
+                id, index));
       }
+
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  private <T extends OperateEntity<T>> Map<String, T> getAllDocumentsInIndex(String index, Class<T> entityClass) {
+    try {
+      schemaManager.refresh(index); // ensure latest data is visible
+
+      final SearchRequest request = new SearchRequest(index);
+      final List<T> searchResults = ElasticsearchUtil.scroll(request, entityClass, NoSpringJacksonConfig.buildObjectMapper(), esClient);
+
+      final Map<String, T> result = new HashMap<>();
+      searchResults.forEach(entity -> result.put(entity.getId(), entity));
+
+      return result;
 
     } catch (final IOException e) {
       throw new UncheckedIOException(e);

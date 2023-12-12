@@ -56,6 +56,7 @@ public class OperateElasticsearchExporter implements Exporter {
   private static final Logger LOGGER = LoggerFactory.getLogger(OperateElasticsearchExporter.class);
 
   private OperateElasticsearchExporterConfiguration configuration;
+  private int batchSize; // stored separately so that we can change it easily in tests
   private RestHighLevelClient esClient;
 
   private Controller controller;
@@ -70,6 +71,7 @@ public class OperateElasticsearchExporter implements Exporter {
 
     configuration =
         context.getConfiguration().instantiate(OperateElasticsearchExporterConfiguration.class);
+    batchSize = configuration.getBulk().size;
     LOGGER.debug("Exporter configured with {}", configuration);
 
     // TODO: filter here to only handle events (and potentially also only certain event types)
@@ -105,7 +107,7 @@ public class OperateElasticsearchExporter implements Exporter {
 
     this.lastExportedPosition = record.getPosition();
 
-    if (writer.hasAtLeastEntities(configuration.getBulk().size)) {
+    if (writer.hasAtLeastEntities(batchSize)) {
       try {
         flush();
         // TODO: call updateLastExportedPosition
@@ -125,6 +127,10 @@ public class OperateElasticsearchExporter implements Exporter {
     return writer;
   }
 
+  public void setBatchSize(int batchSize) {
+    this.batchSize = batchSize;
+  }
+
   private void scheduleDelayedFlush() {
     controller.scheduleCancellableTask(
         Duration.ofSeconds(configuration.getBulk().delay), this::flushAndReschedule);
@@ -141,15 +147,15 @@ public class OperateElasticsearchExporter implements Exporter {
     scheduleDelayedFlush();
   }
 
-  private void flush() throws PersistenceException {
+  /*
+   * Public so that we can flush from tests at any point
+   */
+  public void flush() throws PersistenceException {
 
     NoSpringElasticsearchBatchRequest request = new NoSpringElasticsearchBatchRequest(esClient);
     writer.flush(request);
     request.execute();
     // TODO: handle the elasticsearch response here; handle OperatePersistenceException
-
-    writer = null;
-    request = null;
   }
 
   @Override

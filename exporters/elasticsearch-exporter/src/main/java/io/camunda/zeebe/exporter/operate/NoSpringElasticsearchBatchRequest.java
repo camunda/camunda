@@ -29,6 +29,7 @@ public class NoSpringElasticsearchBatchRequest implements BatchRequest {
 
   private final BulkRequest bulkRequest = new BulkRequest();
 
+  // TODO: don't build a new object mapper on every batch
   private ObjectMapper objectMapper = NoSpringJacksonConfig.buildObjectMapper();
 
   private RestHighLevelClient esClient;
