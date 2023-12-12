@@ -164,6 +164,8 @@ RUN groupadd --gid 1001 camunda && \
 COPY --link --chown=1001:0 docker/utils/startup.sh /usr/local/bin/startup.sh
 COPY --from=dist --chown=1001:0 /zeebe/camunda-zeebe ${ZB_HOME}
 
+RUN chmod +x /usr/local/zeebe/bin/broker
+
 USER 1001:1001
 
 ENTRYPOINT ["tini", "--", "/usr/local/bin/startup.sh"]
