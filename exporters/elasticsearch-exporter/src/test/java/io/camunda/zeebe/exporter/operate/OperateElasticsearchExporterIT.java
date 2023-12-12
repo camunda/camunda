@@ -324,6 +324,74 @@ public class OperateElasticsearchExporterIT {
     assertThat(endEvent.getTreePath()).isNull();
   }
 
+  @Test
+  public void shouldExportTreePathsForCallActivies() throws PersistenceException {
+
+    // given
+    // effectively disabling automatic flush so that we can flush all changes at once and at will
+    exporter.setBatchSize(1000);
+
+    final List<Record<?>> records = readRecordsFromJsonResource("call-activity-event-log.json");
+
+    // when
+    records.forEach(record -> exporter.export(record));
+    exporter.flush();
+
+    // then
+    // there should be a process instance record in the list view index
+    final String listViewIndexName =
+        schemaManager.getTemplateDescriptor(ListViewTemplate.class).getFullQualifiedName();
+    final String parentProcessInstanceKey = "2251799813685252";
+    final String childProcessInstanceKey = "2251799813685257";
+    final Map<String, Object> parentProcessInstance =
+        findElasticsearchDocument(listViewIndexName, parentProcessInstanceKey);
+    final Map<String, Object> childProcessInstance =
+        findElasticsearchDocument(listViewIndexName, childProcessInstanceKey);
+    assertThat(parentProcessInstance)
+        .contains(
+            entry("id", parentProcessInstanceKey),
+            entry("treePath", "PI_2251799813685252"));
+    assertThat(childProcessInstance)
+        .contains(
+            entry("id", childProcessInstanceKey),
+            entry("treePath", "PI_2251799813685252/FN_call/FNI_2251799813685256/PI_2251799813685257"));
+  }
+
+  @Test
+  public void shouldExportTreePathsSubprocesses() throws PersistenceException {
+
+    // given
+    // effectively disabling automatic flush so that we can flush all changes at once and at will
+    exporter.setBatchSize(1000);
+
+    final List<Record<?>> records = readRecordsFromJsonResource("subprocess-event-log.json");
+
+    // when
+    records.forEach(record -> exporter.export(record));
+    exporter.flush();
+
+    // then
+    // there should be a process instance record in the list view index
+    final String flowNodeIndexName =
+        schemaManager.getTemplateDescriptor(FlowNodeInstanceTemplate.class).getFullQualifiedName();
+
+    final Map<String, FlowNodeInstanceEntity> flowNodeInstances =
+        getMatchingDocuments(
+            flowNodeIndexName,
+            FlowNodeInstanceEntity.class,
+            QueryBuilders.termQuery("level", "2"));
+    int i = 1;
+    assertThat(flowNodeInstances).hasSize(2);
+
+    final FlowNodeInstanceEntity startEvent = flowNodeInstances.get("2251799813685256");
+    assertThat(startEvent.getTreePath()).isEqualTo("2251799813685251/2251799813685255/2251799813685256");
+
+    final FlowNodeInstanceEntity endEvent = flowNodeInstances.get("2251799813685258");
+    assertThat(endEvent.getTreePath()).isEqualTo("2251799813685251/2251799813685255/2251799813685258");
+
+  }
+
+
   private OffsetDateTime asDate(long time) {
     return OffsetDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneId.systemDefault());
   }

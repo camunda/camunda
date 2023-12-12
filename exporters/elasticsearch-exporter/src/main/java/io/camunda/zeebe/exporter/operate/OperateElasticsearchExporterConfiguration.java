@@ -17,6 +17,18 @@ public class OperateElasticsearchExporterConfiguration {
   /** The request timeout for the elastic search client. The timeout unit is milliseconds. */
   public int requestTimeoutMs = 30_000;
 
+  /**
+   * When true the treePaths will be defined for two cases: * call activity hierarchy * hierarchy of
+   * flow node instances within one process instance
+   */
+  public boolean calculateTreePaths = true;
+
+  /**
+   * Number of elements to store in cache when calculating tree paths. Cache may be bigger, this
+   * size defines number of elements with strong references that cannot be garbage collected.
+   */
+  public int treePathCacheSize = 1_000;
+
   private final AuthenticationConfiguration authentication = new AuthenticationConfiguration();
   private final BulkConfiguration bulk = new BulkConfiguration();
 
@@ -46,6 +58,26 @@ public class OperateElasticsearchExporterConfiguration {
 
   public void setRequestTimeoutMs(int requestTimeoutMs) {
     this.requestTimeoutMs = requestTimeoutMs;
+  }
+
+  public boolean isCalculateTreePaths() {
+    return calculateTreePaths;
+  }
+
+  public OperateElasticsearchExporterConfiguration setCalculateTreePaths(
+      final boolean calculateTreePaths) {
+    this.calculateTreePaths = calculateTreePaths;
+    return this;
+  }
+
+  public int getTreePathCacheSize() {
+    return treePathCacheSize;
+  }
+
+  public OperateElasticsearchExporterConfiguration setTreePathCacheSize(
+      final int treePathCacheSize) {
+    this.treePathCacheSize = treePathCacheSize;
+    return this;
   }
 
   public static class AuthenticationConfiguration {

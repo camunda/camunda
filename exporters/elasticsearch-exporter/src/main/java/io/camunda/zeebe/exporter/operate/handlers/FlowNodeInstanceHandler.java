@@ -11,26 +11,36 @@ import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
+import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
+import io.camunda.operate.util.SoftHashMap;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.OperateElasticsearchExporterConfiguration;
 import io.camunda.zeebe.exporter.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,9 +54,30 @@ public class FlowNodeInstanceHandler
 
   // TODO: fix spring-wired property access
   private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+  private OperateElasticsearchExporterConfiguration configuration;
+  private final RestHighLevelClient esClient;
+  // treePath by flowNodeInstanceKey cache
+  private Map<String, String> treePathCache;
+  private final Map<String, String> callActivityIdCache;
 
-  public FlowNodeInstanceHandler(FlowNodeInstanceTemplate flowNodeInstanceTemplate) {
+  public FlowNodeInstanceHandler(
+      FlowNodeInstanceTemplate flowNodeInstanceTemplate,
+      OperateElasticsearchExporterConfiguration configuration,
+      Map<String, String> callActivityIdCache,
+      RestHighLevelClient esClient) {
     this.flowNodeInstanceTemplate = flowNodeInstanceTemplate;
+    this.configuration = configuration;
+    this.esClient = esClient;
+    this.callActivityIdCache = callActivityIdCache;
+    if (configuration.isCalculateTreePaths()) {
+      initTreePathCaches();
+    }
+  }
+
+  private void initTreePathCaches() {
+    if (treePathCache == null) {
+      treePathCache = new SoftHashMap<>(configuration.getTreePathCacheSize());
+    }
   }
 
   @Override
@@ -110,14 +141,13 @@ public class FlowNodeInstanceHandler
     entity.setBpmnProcessId(recordValue.getBpmnProcessId());
     entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
-    // TODO: restore tree path logic
-    // if (entity.getTreePath() == null) {
-    //
-    // String parentTreePath = getParentTreePath(record, recordValue);
-    // entity.setTreePath(
-    // String.join("/", parentTreePath, ConversionUtils.toStringOrNull(record.getKey())));
-    // entity.setLevel(parentTreePath.split("/").length);
-    // }
+    if (entity.getTreePath() == null) {
+
+      String parentTreePath = getParentTreePath(record, recordValue);
+      entity.setTreePath(
+          String.join("/", parentTreePath, ConversionUtils.toStringOrNull(record.getKey())));
+      entity.setLevel(parentTreePath.split("/").length);
+    }
 
     if (AI_FINISH_STATES.contains(intent)) {
       if (intent.equals(ELEMENT_TERMINATED)) {
@@ -129,6 +159,9 @@ public class FlowNodeInstanceHandler
     } else {
       entity.setState(FlowNodeState.ACTIVE);
       if (AI_START_STATES.contains(intent)) {
+        if (record.getValue().getBpmnElementType().equals(BpmnElementType.CALL_ACTIVITY)) {
+          callActivityIdCache.put(String.valueOf(record.getKey()), record.getValue().getElementId());
+        }
         entity.setStartDate(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
         entity.setPosition(record.getPosition());
       }
@@ -139,6 +172,74 @@ public class FlowNodeInstanceHandler
             recordValue.getBpmnElementType() == null
                 ? null
                 : recordValue.getBpmnElementType().name()));
+  }
+
+  private String getParentTreePath(
+      final Record record, final ProcessInstanceRecordValue recordValue) {
+    String parentTreePath;
+    // if scopeKey differs from processInstanceKey, then it's inner tree level and we need to search
+    // for parent 1st
+    if (recordValue.getFlowScopeKey() == recordValue.getProcessInstanceKey()) {
+      parentTreePath = ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey());
+    } else {
+      // find parent flow node instance
+      parentTreePath = null;
+      // search in cache
+      if (treePathCache.get(ConversionUtils.toStringOrNull(recordValue.getFlowScopeKey()))
+          != null) {
+        parentTreePath =
+            treePathCache.get(ConversionUtils.toStringOrNull(recordValue.getFlowScopeKey()));
+      }
+      // query from ELS
+      if (parentTreePath == null) {
+        parentTreePath = findParentTreePath(recordValue.getFlowScopeKey());
+      }
+
+      if (parentTreePath == null) {
+        LOGGER.warn(
+            "Unable to find parent tree path for flow node instance id ["
+                + record.getKey()
+                + "], parent flow node instance id ["
+                + recordValue.getFlowScopeKey()
+                + "]");
+        parentTreePath = ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey());
+      }
+    }
+    treePathCache.put(
+        ConversionUtils.toStringOrNull(record.getKey()),
+        String.join("/", parentTreePath, ConversionUtils.toStringOrNull(record.getKey())));
+    return parentTreePath;
+  }
+
+  private String findParentTreePath(final long parentFlowNodeInstanceKey) {
+    final SearchRequest searchRequest =
+        new SearchRequest(flowNodeInstanceTemplate.getFullQualifiedName())
+            .source(
+                new SearchSourceBuilder()
+                    .query(
+                        termQuery(
+                            io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.KEY,
+                            parentFlowNodeInstanceKey))
+                    .fetchSource(
+                        io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TREE_PATH,
+                        null));
+    try {
+      final SearchHits hits = esClient.search(searchRequest, RequestOptions.DEFAULT).getHits();
+      if (hits.getTotalHits().value > 0) {
+        return (String)
+            hits.getHits()[0]
+                .getSourceAsMap()
+                .get(io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TREE_PATH);
+      } else {
+        return null;
+      }
+    } catch (IOException e) {
+      final String message =
+          String.format(
+              "Exception occurred, while searching for parent flow node instance processes: %s",
+              e.getMessage());
+      throw new OperateRuntimeException(message, e);
+    }
   }
 
   @Override

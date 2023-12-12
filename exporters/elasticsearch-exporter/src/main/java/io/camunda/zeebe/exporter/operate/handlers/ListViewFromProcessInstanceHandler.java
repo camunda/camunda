@@ -7,22 +7,33 @@
  */
 package io.camunda.zeebe.exporter.operate.handlers;
 
+import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITY_ID;
+import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
+import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
+import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
+import io.camunda.operate.util.SoftHashMap;
+import io.camunda.operate.util.TreePath;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.OperateElasticsearchExporterConfiguration;
 import io.camunda.zeebe.exporter.operate.schema.templates.ListViewTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -30,6 +41,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,10 +66,30 @@ public class ListViewFromProcessInstanceHandler
     PI_AND_AI_FINISH_STATES.add(ELEMENT_TERMINATED.name());
   }
 
+  private OperateElasticsearchExporterConfiguration configuration;
   private ListViewTemplate listViewTemplate;
+  private Map<String, String> treePathCache;
+  private Map<String, String> callActivityIdCache;
+  private final RestHighLevelClient esClient;
 
-  public ListViewFromProcessInstanceHandler(ListViewTemplate listViewTemplate) {
+  public ListViewFromProcessInstanceHandler(
+      ListViewTemplate listViewTemplate,
+      OperateElasticsearchExporterConfiguration configuration,
+      Map<String, String> callActivityIdCache,
+      RestHighLevelClient esClient) {
     this.listViewTemplate = listViewTemplate;
+    this.configuration = configuration;
+    this.esClient = esClient;
+    this.callActivityIdCache = callActivityIdCache;
+    if (configuration.isCalculateTreePaths()) {
+      initTreePathCache();
+    }
+  }
+
+  private void initTreePathCache() {
+    if (treePathCache == null) {
+      treePathCache = new SoftHashMap<>(configuration.getTreePathCacheSize());
+    }
   }
 
   @Override
@@ -134,21 +172,124 @@ public class ListViewFromProcessInstanceHandler
       piEntity
           .setParentProcessInstanceKey(recordValue.getParentProcessInstanceKey())
           .setParentFlowNodeInstanceKey(recordValue.getParentElementInstanceKey());
-      // TODO: restore tree path logic
-      // if (piEntity.getTreePath() == null) {
-      // final String treePath = getTreePathForCalledProcess(recordValue);
-      // piEntity.setTreePath(treePath);
-      // treePathMap.put(String.valueOf(record.getKey()), treePath);
-      // }
+      if (piEntity.getTreePath() == null && configuration.isCalculateTreePaths()) {
+        final String treePath = getTreePathForCalledProcess(recordValue);
+        piEntity.setTreePath(treePath);
+        treePathCache.put(String.valueOf(record.getKey()), treePath);
+      }
     }
-    // TODO: restore tree path
-    // if (piEntity.getTreePath() == null) {
-    // final String treePath = new TreePath().startTreePath(
-    // ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey())).toString();
-    // piEntity.setTreePath(treePath);
-    // getTreePathCache()
-    // .put(ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()), treePath);
-    // }
+    if (piEntity.getTreePath() == null) {
+      final String treePath =
+          new TreePath()
+              .startTreePath(ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()))
+              .toString();
+      piEntity.setTreePath(treePath);
+      treePathCache.put(
+          ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()), treePath);
+    }
+  }
+
+  private String getTreePathForCalledProcess(final ProcessInstanceRecordValue recordValue) {
+    String parentTreePath = null;
+
+    // search in cache
+    final String cachedValue =
+        treePathCache.get(
+            ConversionUtils.toStringOrNull(recordValue.getParentProcessInstanceKey()));
+    if (cachedValue != null) {
+      parentTreePath = cachedValue;
+    }
+    // query from ELS
+    if (parentTreePath == null) {
+      parentTreePath = findProcessInstanceTreePathFor(recordValue.getParentProcessInstanceKey());
+    }
+    if (parentTreePath != null) {
+      final String flowNodeInstanceId =
+          ConversionUtils.toStringOrNull(recordValue.getParentElementInstanceKey());
+      final String callActivityId = getCallActivityId(flowNodeInstanceId);
+      String treePath =
+          new TreePath(parentTreePath)
+              .appendEntries(
+                  callActivityId,
+                  flowNodeInstanceId,
+                  ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()))
+              .toString();
+      treePathCache.put(
+          ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()), treePath);
+      return treePath;
+    } else {
+      LOGGER.warn(
+          "Unable to find parent tree path for parent instance id "
+              + recordValue.getParentProcessInstanceKey());
+      String treePath =
+          new TreePath()
+              .startTreePath(ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()))
+              .toString();
+      treePathCache.put(
+          ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()), treePath);
+      return treePath;
+    }
+  }
+
+  private String getCallActivityId(String flowNodeInstanceId) {
+    String callActivityId = callActivityIdCache.get(flowNodeInstanceId);
+    if (callActivityId == null) {
+      callActivityId = getFlowNodeIdByFlowNodeInstanceId(flowNodeInstanceId);
+      callActivityIdCache.put(flowNodeInstanceId, callActivityId);
+    }
+    return callActivityId;
+  }
+
+  public String getFlowNodeIdByFlowNodeInstanceId(String flowNodeInstanceId) {
+    final QueryBuilder query =
+        joinWithAnd(
+            termQuery(JOIN_RELATION, ACTIVITIES_JOIN_RELATION),
+            termQuery(io.camunda.operate.schema.templates.ListViewTemplate.ID, flowNodeInstanceId));
+    final SearchRequest request =
+        new SearchRequest(listViewTemplate.getFullQualifiedName())
+            .source(new SearchSourceBuilder().query(query).fetchSource(ACTIVITY_ID, null));
+    final SearchResponse response;
+    try {
+      response = esClient.search(request, RequestOptions.DEFAULT);
+      if (response.getHits().getTotalHits().value != 1) {
+        return null;
+//        throw new OperateRuntimeException("Flow node instance is not found: " + flowNodeInstanceId);
+      } else {
+        return String.valueOf(response.getHits().getAt(0).getSourceAsMap().get(ACTIVITY_ID));
+      }
+    } catch (IOException e) {
+      throw new OperateRuntimeException(
+          "Error occurred when searching for flow node instance: " + flowNodeInstanceId, e);
+    }
+  }
+
+  private String findProcessInstanceTreePathFor(final long processInstanceKey) {
+    final SearchRequest searchRequest =
+        new SearchRequest(listViewTemplate.getFullQualifiedName())
+            .source(
+                new SearchSourceBuilder()
+                    .query(
+                        termQuery(
+                            io.camunda.operate.schema.templates.ListViewTemplate.KEY,
+                            processInstanceKey))
+                    .fetchSource(
+                        io.camunda.operate.schema.templates.ListViewTemplate.TREE_PATH, null));
+    try {
+      final SearchHits hits = esClient.search(searchRequest, RequestOptions.DEFAULT).getHits();
+      if (hits.getTotalHits().value > 0) {
+        return (String)
+            hits.getHits()[0]
+                .getSourceAsMap()
+                .get(io.camunda.operate.schema.templates.ListViewTemplate.TREE_PATH);
+      }
+      return null;
+    } catch (IOException e) {
+      final String message =
+          String.format(
+              "Exception occurred, while searching for process instance tree path: %s",
+              e.getMessage());
+      throw new OperateRuntimeException(message, e);
+    }
   }
 
   private boolean shouldProcessProcessInstanceRecord(

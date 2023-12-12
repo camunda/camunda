@@ -8,6 +8,7 @@
 package io.camunda.zeebe.exporter.operate;
 
 import io.camunda.operate.exceptions.PersistenceException;
+import io.camunda.operate.util.SoftHashMap;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -234,6 +235,8 @@ public class OperateElasticsearchExporter implements Exporter {
 
   private ExportBatchWriter createBatchWriter() {
 
+    final SoftHashMap<String, String> callActivityIdCache = new SoftHashMap<>(
+        configuration.getTreePathCacheSize());
     return ExportBatchWriter.Builder.begin()
         // ImportBulkProcessor
         // #processDecisionRecords
@@ -254,7 +257,10 @@ public class OperateElasticsearchExporter implements Exporter {
         // FlowNodeInstanceZeebeRecordProcessor#processProcessInstanceRecord
         .withHandler(
             new FlowNodeInstanceHandler(
-                schemaManager.getTemplateDescriptor(FlowNodeInstanceTemplate.class)))
+                schemaManager.getTemplateDescriptor(FlowNodeInstanceTemplate.class),
+                configuration,
+                callActivityIdCache,
+                esClient))
         // eventZeebeRecordProcessor.processProcessInstanceRecords
         .withHandler(
             new EventFromProcessInstanceHandler(
@@ -266,7 +272,10 @@ public class OperateElasticsearchExporter implements Exporter {
         // listViewZeebeRecordProcessor.processProcessInstanceRecord
         .withHandler(
             new ListViewFromProcessInstanceHandler(
-                schemaManager.getTemplateDescriptor(ListViewTemplate.class)))
+                schemaManager.getTemplateDescriptor(ListViewTemplate.class),
+                configuration,
+                callActivityIdCache,
+                esClient))
         // TODO: need to choose between upsert and insert (see optimization in
         // FlowNodeInstanceZeebeRecordProcessor#canOptimizeFlowNodeInstanceIndexing)
         .withHandler(
