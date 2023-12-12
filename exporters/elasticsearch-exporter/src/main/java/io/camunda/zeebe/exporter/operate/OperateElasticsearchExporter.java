@@ -82,9 +82,7 @@ public class OperateElasticsearchExporter implements Exporter {
     batchSize = configuration.getBulk().size;
     LOGGER.debug("Exporter configured with {}", configuration);
 
-    // TODO: filter here to only handle events (and potentially also only certain event types)
-    // context.setFilter(new ElasticsearchRecordFilter(configuration));
-
+    context.setFilter(new OperateElasticSearchRecordFilter());
   }
 
   @Override
