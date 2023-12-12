@@ -29,7 +29,7 @@ import org.slf4j.Logger;
 final class PartitionTransitionProcess {
 
   public static final String MSG_PREPARE_TRANSITION =
-      "Prepare transition from [role: {}, term: {}] -> [role: {}, term: {}]";
+      "Prepare transition from {}[term: {}] -> {}[term: {}]";
   public static final String MSG_PREPARE_TRANSITION_STEP =
       MSG_PREPARE_TRANSITION + " - preparing {}";
   public static final String MSG_PREPARE_TRANSITION_COMPLETED =
