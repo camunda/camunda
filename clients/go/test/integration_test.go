@@ -566,3 +566,51 @@ func readBpmnWithCustomJobType(path string, jobType string) ([]byte, error) {
 
 	return []byte(bpmn), nil
 }
+
+func (s *integrationTestSuite) TestUpdateJobTimeout() {
+	// given
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	deployment, err := s.client.NewDeployResourceCommand().AddResourceFile("testdata/service_task.bpmn").Send(ctx)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	deployedResource := deployment.GetDeployments()[0]
+	s.NotNil(deployedResource)
+
+	process := deployedResource.GetProcess()
+	s.NotNil(process)
+	_, err = s.client.NewCreateInstanceCommand().ProcessDefinitionKey(process.GetProcessDefinitionKey()).Send(ctx)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	// when
+	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	jobs, err := s.client.NewActivateJobsCommand().JobType("task").MaxJobsToActivate(1).Timeout(time.Minute * 5).WorkerName("worker").Send(ctx)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	// then
+	for _, job := range jobs {
+		ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		failedJob, err := s.client.NewUpdateJobTimeoutCommand().JobKey(job.GetKey()).Timeout(50000).Send(ctx)
+		if err != nil {
+			s.T().Fatal(err)
+		}
+
+		if failedJob == nil {
+			s.T().Fatal("Empty fail job response")
+		}
+	}
+}
