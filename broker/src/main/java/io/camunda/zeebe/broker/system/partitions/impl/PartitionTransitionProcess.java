@@ -166,9 +166,11 @@ final class PartitionTransitionProcess {
 
     if (stepsToPrepare.isEmpty()) {
       LOG.info(
-          "Preparing transition from {} on term {} completed",
+          MSG_PREPARE_TRANSITION_COMPLETED,
           context.getCurrentRole(),
-          context.getCurrentTerm());
+          context.getCurrentTerm(),
+          newRole,
+          newTerm);
       future.complete(null);
 
       return;
