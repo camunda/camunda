@@ -48,6 +48,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol-jackson</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
