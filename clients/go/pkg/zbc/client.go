@@ -18,13 +18,14 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/camunda/zeebe/clients/go/v8/internal/embedded"
-	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/camunda/zeebe/clients/go/v8/internal/embedded"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
@@ -145,6 +146,10 @@ func (c *ClientImpl) NewThrowErrorCommand() commands.ThrowErrorCommandStep1 {
 
 func (c *ClientImpl) NewDeleteResourceCommand() commands.DeleteResourceCommandStep1 {
 	return commands.NewDeleteResourceCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
+}
+
+func (c *ClientImpl) NewStreamJobsCommand() commands.StreamJobsCommandStep1 {
+	return commands.NewStreamJobsCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
 func (c *ClientImpl) NewJobWorker() worker.JobWorkerBuilderStep1 {
