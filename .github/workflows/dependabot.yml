@@ -1,0 +1,27 @@
+name: Dependabot
+
+on:
+  schedule:
+    - cron: '0 11 * * 2'
+
+jobs:
+  dependabot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Maven
+        uses: actions/setup-java@v2
+        with:
+          java-version: '17'
+
+      - name: Set up Environment Variables
+        run: |
+          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+
+      - name: Run Dependabot
+        run: |
+          curl -O https://dependabot.com/dependabot.sh
+          sh dependabot.sh
+

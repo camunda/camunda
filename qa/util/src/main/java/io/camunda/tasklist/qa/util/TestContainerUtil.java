@@ -252,13 +252,14 @@ public class TestContainerUtil {
   public void startOpenSearch(TestContext testContext) {
     LOGGER.info("************ Starting OpenSearch ************");
     osContainer =
-        new OpensearchContainer(
-                String.format(
-                    "%s:%s", DOCKER_OPENSEARCH_IMAGE_NAME, DOCKER_OPENSEARCH_IMAGE_VERSION))
-            .withNetwork(Network.SHARED)
-            .withEnv("path.repo", "~/")
-            .withNetworkAliases(OS_NETWORK_ALIAS)
-            .withExposedPorts(OS_PORT);
+        (OpensearchContainer)
+            new OpensearchContainer(
+                    String.format(
+                        "%s:%s", DOCKER_OPENSEARCH_IMAGE_NAME, DOCKER_OPENSEARCH_IMAGE_VERSION))
+                .withNetwork(Network.SHARED)
+                .withEnv("path.repo", "~/")
+                .withNetworkAliases(OS_NETWORK_ALIAS)
+                .withExposedPorts(OS_PORT);
     osContainer.setWaitStrategy(
         new HostPortWaitStrategy().withStartupTimeout(Duration.ofSeconds(240L)));
     osContainer.start();

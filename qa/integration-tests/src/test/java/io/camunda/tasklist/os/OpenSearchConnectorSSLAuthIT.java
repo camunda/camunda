@@ -44,19 +44,19 @@ public class OpenSearchConnectorSSLAuthIT extends TasklistIntegrationTest {
   static String certDir = new File("src/test/resources/certs").getAbsolutePath();
 
   static OpensearchContainer opensearch =
-      new OpensearchContainer("opensearchproject/opensearch:2.9.0")
-          .withCopyFileToContainer(
-              MountableFile.forHostPath("src/test/resources/certs/elastic-stack-ca.p12"),
-              "/usr/share/elasticsearch/config/certs/elastic-stack-ca.p12")
-          // .withCopyFileToContainer(MountableFile.forClasspathResource("/certs/elastic-stack-ca.p12"),"/usr/share/elasticsearch/config/certs/elastic-stack-ca.p12")
-          // .withPassword("elastic")
-          .withSecurityEnabled()
-          .withEnv(
-              Map.of(
-                  "xpack.security.http.ssl.keystore.path",
-                  "/usr/share/elasticsearch/config/certs/elastic-stack-ca.p12"))
-          .withExposedPorts(9200)
-          .waitingFor(Wait.forHttps("/").withBasicCredentials("elastic", "elastic"));
+      (OpensearchContainer)
+          new OpensearchContainer("opensearchproject/opensearch:2.9.0")
+              .withCopyFileToContainer(
+                  MountableFile.forHostPath("src/test/resources/certs/elastic-stack-ca.p12"),
+                  "/usr/share/elasticsearch/config/certs/elastic-stack-ca.p12")
+              // .withCopyFileToContainer(MountableFile.forClasspathResource("/certs/elastic-stack-ca.p12"),"/usr/share/elasticsearch/config/certs/elastic-stack-ca.p12")
+              // .withPassword("elastic")
+              .withEnv(
+                  Map.of(
+                      "xpack.security.http.ssl.keystore.path",
+                      "/usr/share/elasticsearch/config/certs/elastic-stack-ca.p12"))
+              .withExposedPorts(9200)
+              .waitingFor(Wait.forHttps("/").withBasicCredentials("elastic", "elastic"));
 
   @Autowired
   @Qualifier("openSearchClient")

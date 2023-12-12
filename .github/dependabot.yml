@@ -10,4 +10,4 @@ updates:
     groups:
       patches:
         update-types:
-        - "patch"
+          - "patch"

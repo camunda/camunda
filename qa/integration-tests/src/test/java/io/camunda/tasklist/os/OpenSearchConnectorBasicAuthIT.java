@@ -51,21 +51,23 @@ import org.springframework.test.context.junit4.SpringRunner;
 public class OpenSearchConnectorBasicAuthIT extends TasklistIntegrationTest {
 
   static OpensearchContainer opensearch =
-      new OpensearchContainer("opensearchproject/opensearch:2.9.0")
-          .withEnv(
-              Map.of(
-                  // "plugins.security.disabled", "false",
-                  "OPENSEARCH_PASSWORD", "changeme",
-                  "plugins.security.allow_unsafe_democertificates", "true"
-                  //        "xpack.security.transport.ssl.enabled","true",
-                  //        "xpack.security.http.ssl.enabled", "true",
-                  //        "xpack.security.transport.ssl.verification_mode","none",//"certificate",
-                  //        "xpack.security.transport.ssl.keystore.path",
-                  // "elastic-certificates.p12",
-                  //        "xpack.security.transport.ssl.truststore.path",
-                  // "elastic-certificates.p12"
-                  ))
-          .withExposedPorts(9200, 9200);
+      (OpensearchContainer)
+          new OpensearchContainer("opensearchproject/opensearch:2.9.0")
+              .withEnv(
+                  Map.of(
+                      // "plugins.security.disabled", "false",
+                      "OPENSEARCH_PASSWORD", "changeme",
+                      "plugins.security.allow_unsafe_democertificates", "true"
+                      //        "xpack.security.transport.ssl.enabled","true",
+                      //        "xpack.security.http.ssl.enabled", "true",
+                      //
+                      // "xpack.security.transport.ssl.verification_mode","none",//"certificate",
+                      //        "xpack.security.transport.ssl.keystore.path",
+                      // "elastic-certificates.p12",
+                      //        "xpack.security.transport.ssl.truststore.path",
+                      // "elastic-certificates.p12"
+                      ))
+              .withExposedPorts(9200, 9200);
 
   @Autowired
   @Qualifier("openSearchClient")

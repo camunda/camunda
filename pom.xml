@@ -38,7 +38,7 @@
     <version.log4j>2.19.0</version.log4j>
     <version.junit>4.13.2</version.junit>
     <version.jakarta.json>2.0.1</version.jakarta.json>
-    <version.micrometer>1.12.0</version.micrometer>
+    <version.micrometer>1.12.1</version.micrometer>
     <version.mockito>5.0.0</version.mockito>
     <version.byte.buddy>1.14.10</version.byte.buddy>
     <version.assertj-core>3.24.2</version.assertj-core>
@@ -58,7 +58,7 @@
 
     <zeebe-test-container.version>3.6.0</zeebe-test-container.version>
     <elasticsearch-test-container.version>1.19.3</elasticsearch-test-container.version>
-    <opensearch-testcontainers.version>2.0.0</opensearch-testcontainers.version>
+    <opensearch-testcontainers.version>2.0.1</opensearch-testcontainers.version>
     <postgres-test-container.version>1.17.6</postgres-test-container.version>
     <testcontainers.version>1.17.6</testcontainers.version>
     <keycloak-client.version>22.0.1</keycloak-client.version>
@@ -395,7 +395,7 @@
       <dependency>
         <groupId>com.amazonaws</groupId>
         <artifactId>aws-java-sdk-sts</artifactId>
-        <version>1.12.598</version>
+        <version>1.12.610</version>
       </dependency>
 
       <dependency>
