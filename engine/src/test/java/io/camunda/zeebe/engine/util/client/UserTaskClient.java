@@ -63,6 +63,11 @@ public final class UserTaskClient {
     return this;
   }
 
+  public UserTaskClient withAssignee(final String assignee) {
+    userTaskRecord.setAssignee(assignee);
+    return this;
+  }
+
   public UserTaskClient withVariables(final String variables) {
     userTaskRecord.setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variables)));
     return this;
@@ -99,6 +104,17 @@ public final class UserTaskClient {
     }
 
     return userTaskKey;
+  }
+
+  public Record<UserTaskRecordValue> assign() {
+    final long userTaskKey = findUserTaskKey();
+    final long position =
+        writer.writeCommand(
+            userTaskKey,
+            UserTaskIntent.ASSIGN,
+            userTaskRecord.setUserTaskKey(userTaskKey),
+            authorizedTenantIds.toArray(new String[0]));
+    return expectation.apply(position);
   }
 
   public Record<UserTaskRecordValue> complete() {
