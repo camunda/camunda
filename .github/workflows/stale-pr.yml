@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # https://github.com/actions/stale
-      - uses: actions/stale@v8
+      - uses: actions/stale@v9
         with:
           days-before-issue-stale: -1 # Don't mark issues as stale
           days-before-pr-stale: 31
