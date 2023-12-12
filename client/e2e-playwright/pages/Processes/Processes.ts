@@ -6,9 +6,10 @@
  */
 
 import {Page, Locator, expect} from '@playwright/test';
-import {convertToQueryString} from '../utils/convertToQueryString';
+import {convertToQueryString} from '../../utils/convertToQueryString';
 import {Paths} from 'modules/Routes';
-import {DeleteResourceModal} from './components/DeleteResourceModal';
+import {DeleteResourceModal} from '../components/DeleteResourceModal';
+import MigrationModal from '../components/MigrationModal';
 
 type OptionalFilter =
   | 'Variable'
@@ -23,6 +24,7 @@ type OptionalFilter =
 export class Processes {
   private page: Page;
   readonly deleteResourceModal: InstanceType<typeof DeleteResourceModal>;
+  readonly migrationModal: InstanceType<typeof MigrationModal>;
   readonly activeCheckbox: Locator;
   readonly incidentsCheckbox: Locator;
   readonly runningInstancesCheckbox: Locator;
@@ -42,6 +44,7 @@ export class Processes {
   readonly variableNameFilter: Locator;
   readonly variableValueFilter: Locator;
   readonly deleteResourceButton: Locator;
+  readonly migrateButton: Locator;
   readonly processInstancesTable: Locator;
 
   constructor(page: Page) {
@@ -49,6 +52,7 @@ export class Processes {
     this.deleteResourceModal = new DeleteResourceModal(page, {
       name: /Delete Process Definition/i,
     });
+    this.migrationModal = new MigrationModal(page);
     this.activeCheckbox = page.getByRole('checkbox', {name: 'Active'});
     this.incidentsCheckbox = page.getByRole('checkbox', {name: 'Incidents'});
     this.runningInstancesCheckbox = page.getByRole('checkbox', {
@@ -106,6 +110,10 @@ export class Processes {
 
     this.deleteResourceButton = page.getByRole('button', {
       name: 'Delete Process Definition',
+    });
+
+    this.migrateButton = page.getByRole('button', {
+      name: 'Migrate',
     });
 
     this.processInstancesTable = page.getByRole('region', {

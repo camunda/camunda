@@ -47,17 +47,17 @@
     "eslint": "eslint src/ e2e-playwright/ --max-warnings=0",
     "lint": "yarn ts-check && yarn eslint",
     "fix:prettier": "prettier --write \"**/*.ts\"",
-    "test:e2e": "IS_E2E=true PORT=8081 ZEEBE_GATEWAY_ADDRESS=localhost:26503 yarn playwright e2e-playwright/tests",
-    "test:a11y": "IS_A11Y=true yarn playwright e2e-playwright/a11y",
-    "generate-screenshots": "IS_SCREENSHOT_GENERATOR=true yarn playwright e2e-playwright/docs-screenshots",
-    "test:e2e:ci": "IS_E2E=true PORT=8080 yarn playwright e2e-playwright/tests",
+    "test:e2e": "cross-env IS_E2E=true PORT=8081 ZEEBE_GATEWAY_ADDRESS=localhost:26503 yarn playwright e2e-playwright/tests",
+    "test:a11y": "cross-env IS_A11Y=true yarn playwright e2e-playwright/a11y",
+    "generate-screenshots": "cross-env IS_SCREENSHOT_GENERATOR=true yarn playwright e2e-playwright/docs-screenshots",
+    "test:e2e:ci": "cross-env IS_E2E=true PORT=8080 yarn playwright e2e-playwright/tests",
     "postinstall": "cd .. && husky install",
     "coverage": "yarn test --coverage --collectCoverageFrom=src/**/* --changedSince=origin/master --watchAll=false --passWithNoTests",
     "analyze-bundle": "react-scripts build && source-map-explorer 'build/static/js/*.js'",
     "playwright": "playwright test",
     "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.39.0-focal /bin/bash",
     "start:visual-regression": "serve build/ -p 8081 -n -s -L",
-    "build:visual-regression": "REACT_APP_VERSION=0.0.0-SNAPSHOT yarn build"
+    "build:visual-regression": "cross-env REACT_APP_VERSION=0.0.0-SNAPSHOT yarn build"
   },
   "jest": {
     "transformIgnorePatterns": [

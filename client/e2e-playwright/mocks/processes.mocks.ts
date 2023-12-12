@@ -13,6 +13,7 @@ import {BatchOperationDto} from 'modules/api/sharedTypes';
 
 function mockResponses({
   batchOperations,
+  batchOperation,
   groupedProcesses,
   statistics,
   processInstances,
@@ -20,6 +21,7 @@ function mockResponses({
   deleteProcess,
 }: {
   batchOperations?: OperationEntity[];
+  batchOperation?: OperationEntity;
   groupedProcesses?: ProcessDto[];
   statistics?: ProcessInstancesStatisticsDto[];
   processInstances?: ProcessInstancesDto;
@@ -50,6 +52,18 @@ function mockResponses({
       return route.fulfill({
         status: batchOperations === undefined ? 400 : 200,
         body: JSON.stringify(batchOperations),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (
+      route.request().url().includes('/api/process-instances/batch-operation')
+    ) {
+      return route.fulfill({
+        status: batchOperation === undefined ? 400 : 200,
+        body: JSON.stringify(batchOperation),
         headers: {
           'content-type': 'application/json',
         },
@@ -3740,6 +3754,58 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
   totalCount: 891,
 };
 
+const mockOrderProcessInstances: ProcessInstancesDto = {
+  totalCount: 20,
+  processInstances: Array(20)
+    .fill(0)
+    .map((_, index) => {
+      return {
+        id: `22517998139543${index}`,
+        processId: '2251799813687188',
+        processName: '',
+        processVersion: 1,
+        startDate: '2023-09-29T14:12:11.684+0000',
+        endDate: null,
+        state: 'ACTIVE' as InstanceEntityState,
+        bpmnProcessId: 'orderProcess',
+        hasActiveOperation: false,
+        operations: [],
+        parentInstanceId: null,
+        rootInstanceId: null,
+        callHierarchy: [],
+        tenantId: '<default>',
+        sortValues: [],
+        permissions: [],
+      };
+    }),
+};
+
+const mockOrderProcessV2Instances: ProcessInstancesDto = {
+  totalCount: 3,
+  processInstances: Array(3)
+    .fill(0)
+    .map((_, index) => {
+      return {
+        id: `22517998139543${index}`,
+        processId: '2251799813687188',
+        processName: '',
+        processVersion: 2,
+        startDate: '2023-09-29T14:12:11.684+0000',
+        endDate: null,
+        state: 'ACTIVE' as InstanceEntityState,
+        bpmnProcessId: 'orderProcess',
+        hasActiveOperation: false,
+        operations: [],
+        parentInstanceId: null,
+        rootInstanceId: null,
+        callHierarchy: [],
+        tenantId: '<default>',
+        sortValues: [],
+        permissions: [],
+      };
+    }),
+};
+
 const mockStatistics = [
   {
     activityId: 'eventSubprocess',
@@ -3954,6 +4020,17 @@ const mockProcessXml = `<?xml version="1.0" encoding="UTF-8"?>
 </bpmn:definitions>
 `;
 
+const mockMigrationOperation: OperationEntity = {
+  id: '653ed5e6-49ed-4675-85bf-2c54a94d8180',
+  name: null,
+  type: 'MIGRATE_PROCESS_INSTANCE',
+  startDate: '2023-09-29T16:23:10.684+0000',
+  endDate: null,
+  instancesCount: 3,
+  operationsTotalCount: 1,
+  operationsFinishedCount: 0,
+};
+
 const mockDeleteProcess = {
   username: 'demo',
   id: 'b5aa7d44-3a4b-4dfb-9694-e3cf582a80a8',
@@ -3977,4 +4054,7 @@ export {
   mockResponses,
   mockNewDeleteOperation,
   mockDeleteProcess,
+  mockOrderProcessInstances,
+  mockOrderProcessV2Instances,
+  mockMigrationOperation,
 };

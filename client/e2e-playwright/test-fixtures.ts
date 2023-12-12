@@ -9,11 +9,12 @@ import {test as base} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import {Common} from './pages/Common';
 import {Login} from './pages/Login';
-import {Processes} from './pages/Processes';
+import {Processes} from './pages/Processes/Processes';
 import fs from 'fs';
 import {Dashboard} from './pages/Dashboard';
 import {ProcessInstance} from './pages/ProcessInstance';
 import {Decisions} from './pages/Decisions';
+import {MigrationView} from './pages/Processes/MigrationView';
 
 type Fixture = {
   makeAxeBuilder: () => AxeBuilder;
@@ -43,6 +44,7 @@ const test = base.extend<
     processInstancePage: ProcessInstance;
     decisionsPage: Decisions;
     commonPage: Common;
+    migrationMode: MigrationView;
   },
   {workerStorageState: string}
 >({
@@ -96,6 +98,9 @@ const test = base.extend<
   },
   commonPage: async ({page}, use) => {
     await use(new Common(page));
+  },
+  migrationMode: async ({page}, use) => {
+    await use(new MigrationView(page));
   },
 });
 
