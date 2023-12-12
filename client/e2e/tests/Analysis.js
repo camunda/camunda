@@ -124,3 +124,53 @@ test('should show common outliers variables as a table', async (t) => {
 
   await t.expect(Analysis.variablesTable.visible).ok();
 });
+
+test('should render outlier details table and allow to view more details modal', async (t) => {
+  await u.selectDefinition(t, 'Analysis Testing Process', 'All');
+  await t.expect(Analysis.outliersTableRow('Shipment File Preparation').visible).ok();
+
+  await t.click(Analysis.outliersTableDetailsButton('Shipment File Preparation'));
+
+  await t.expect(Analysis.chart.visible).ok();
+  await t.expect(Analysis.variablesTableRow('delay=true').visible).ok();
+});
+
+test('should filter task outliers', async (t) => {
+  await u.selectDefinition(t, 'Analysis Testing Process', 'All');
+
+  await t.click(Analysis.filtersDropdown);
+  await t.click(Common.menuOption('Instance State'));
+  await t.click(Common.radioButton('Non Suspended'));
+  await t.click(Common.modalConfirmButton);
+
+  await t.click(Analysis.filtersDropdown);
+  await t.click(Common.menuOption('Incident'));
+  await t.click(Common.radioButton('Without Incidents'));
+  await t.click(Common.modalConfirmButton);
+
+  await t.expect(Analysis.outliersTableRow('delay=true').visible).ok();
+
+  await t.click(Analysis.filtersDropdown);
+  await t.click(Common.menuOption('Instance State'));
+  await t.click(Common.radioButton('Canceled'));
+  await t.click(Common.modalConfirmButton);
+
+  await t.expect(Analysis.chart.visible).notOk();
+  await t.expect(Analysis.outliersTable.visible).notOk();
+});
+
+test('should show warning message when there are filter conflicts', async (t) => {
+  await u.selectDefinition(t, 'Analysis Testing Process', 'All');
+
+  await t.click(Analysis.filtersDropdown);
+  await t.click(Common.menuOption('Instance State'));
+  await t.click(Common.radioButton('Canceled'));
+  await t.click(Common.modalConfirmButton);
+
+  await t.click(Analysis.filtersDropdown);
+  await t.click(Common.menuOption('Instance State'));
+  await t.click(Common.radioButton('Non Canceled'));
+  await t.click(Common.modalConfirmButton);
+
+  await t.expect(Analysis.warningMessage.visible).ok();
+});

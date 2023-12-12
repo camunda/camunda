@@ -17,3 +17,12 @@ export const branchAnalysisLink = Selector('.NavItem').withText('Branch Analysis
 export const heatmapEl = Selector('svg .viewport image');
 export const chart = Selector('.DurationChart canvas');
 export const variablesTable = Selector('.VariablesTable.Table');
+export const variablesTableRow = (text) => variablesTable.find('tr').withText(text);
+export const outliersTable = Selector('.OutlierDetailsTable');
+export const outliersTableRow = (text) => outliersTable.find('tr').withText(text);
+export const outliersTableDetailsButton = (text) =>
+  outliersTableRow(text).find('button').withText('View Details');
+export const filtersDropdown = Selector('.filterHeader .MenuDropdown');
+export const warningMessage = Selector('.MessageBox--warning').withText(
+  'No data shown due to incompatible filters'
+);
