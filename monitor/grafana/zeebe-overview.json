@@ -754,7 +754,7 @@
         }
       ],
       "title": "Backpressure Dropping Requests",
-      "type": "stat"
+      "type": "timeseries"
     },
     {
       "aliasColors": {},
