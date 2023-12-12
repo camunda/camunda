@@ -160,7 +160,8 @@ public class FlowNodeInstanceHandler
       entity.setState(FlowNodeState.ACTIVE);
       if (AI_START_STATES.contains(intent)) {
         if (record.getValue().getBpmnElementType().equals(BpmnElementType.CALL_ACTIVITY)) {
-          callActivityIdCache.put(String.valueOf(record.getKey()), record.getValue().getElementId());
+          callActivityIdCache.put(
+              String.valueOf(record.getKey()), record.getValue().getElementId());
         }
         entity.setStartDate(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
         entity.setPosition(record.getPosition());

@@ -253,7 +253,8 @@ public class ListViewFromProcessInstanceHandler
       response = esClient.search(request, RequestOptions.DEFAULT);
       if (response.getHits().getTotalHits().value != 1) {
         return null;
-//        throw new OperateRuntimeException("Flow node instance is not found: " + flowNodeInstanceId);
+        //        throw new OperateRuntimeException("Flow node instance is not found: " +
+        // flowNodeInstanceId);
       } else {
         return String.valueOf(response.getHits().getAt(0).getSourceAsMap().get(ACTIVITY_ID));
       }

@@ -348,13 +348,13 @@ public class OperateElasticsearchExporterIT {
     final Map<String, Object> childProcessInstance =
         findElasticsearchDocument(listViewIndexName, childProcessInstanceKey);
     assertThat(parentProcessInstance)
-        .contains(
-            entry("id", parentProcessInstanceKey),
-            entry("treePath", "PI_2251799813685252"));
+        .contains(entry("id", parentProcessInstanceKey), entry("treePath", "PI_2251799813685252"));
     assertThat(childProcessInstance)
         .contains(
             entry("id", childProcessInstanceKey),
-            entry("treePath", "PI_2251799813685252/FN_call/FNI_2251799813685256/PI_2251799813685257"));
+            entry(
+                "treePath",
+                "PI_2251799813685252/FN_call/FNI_2251799813685256/PI_2251799813685257"));
   }
 
   @Test
@@ -377,20 +377,18 @@ public class OperateElasticsearchExporterIT {
 
     final Map<String, FlowNodeInstanceEntity> flowNodeInstances =
         getMatchingDocuments(
-            flowNodeIndexName,
-            FlowNodeInstanceEntity.class,
-            QueryBuilders.termQuery("level", "2"));
+            flowNodeIndexName, FlowNodeInstanceEntity.class, QueryBuilders.termQuery("level", "2"));
     int i = 1;
     assertThat(flowNodeInstances).hasSize(2);
 
     final FlowNodeInstanceEntity startEvent = flowNodeInstances.get("2251799813685256");
-    assertThat(startEvent.getTreePath()).isEqualTo("2251799813685251/2251799813685255/2251799813685256");
+    assertThat(startEvent.getTreePath())
+        .isEqualTo("2251799813685251/2251799813685255/2251799813685256");
 
     final FlowNodeInstanceEntity endEvent = flowNodeInstances.get("2251799813685258");
-    assertThat(endEvent.getTreePath()).isEqualTo("2251799813685251/2251799813685255/2251799813685258");
-
+    assertThat(endEvent.getTreePath())
+        .isEqualTo("2251799813685251/2251799813685255/2251799813685258");
   }
-
 
   private OffsetDateTime asDate(long time) {
     return OffsetDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneId.systemDefault());

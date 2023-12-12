@@ -235,8 +235,8 @@ public class OperateElasticsearchExporter implements Exporter {
 
   private ExportBatchWriter createBatchWriter() {
 
-    final SoftHashMap<String, String> callActivityIdCache = new SoftHashMap<>(
-        configuration.getTreePathCacheSize());
+    final SoftHashMap<String, String> callActivityIdCache =
+        new SoftHashMap<>(configuration.getTreePathCacheSize());
     return ExportBatchWriter.Builder.begin()
         // ImportBulkProcessor
         // #processDecisionRecords
