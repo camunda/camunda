@@ -47,6 +47,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol-jackson</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-db</artifactId>
     </dependency>
 

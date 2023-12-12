@@ -9,12 +9,18 @@ package io.camunda.zeebe.engine.util;
 
 import static io.camunda.zeebe.stream.impl.TypedEventRegistry.EVENT_REGISTRY;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.stream.impl.records.RecordValues;
+import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
 import io.camunda.zeebe.util.ReflectUtil;
 import java.util.EnumMap;
 import java.util.Map;
@@ -50,24 +56,45 @@ public final class LogStreamPrinter {
     LOGGER.info(sb.toString());
   }
 
+  private static ObjectMapper objectMapper =
+      new ObjectMapper().registerModule(new ZeebeProtocolModule());
+
   private static void writeRecord(
       final Map<ValueType, UnpackedObject> eventCache,
       final LoggedEvent event,
       final StringBuilder sb) {
-    sb.append(HEADER_INDENTATION);
-    writeRecordHeader(event, sb);
-    sb.append("\n");
-    final RecordMetadata metadata = new RecordMetadata();
-    event.readMetadata(metadata);
-    sb.append(ENTRY_INDENTATION);
-    writeMetadata(metadata, sb);
+
+    RecordValues recordValues = new RecordValues();
+    TypedRecordImpl typedEvent = new TypedRecordImpl(0);
+    RecordMetadata rawMetadata = new RecordMetadata();
+    event.readMetadata(rawMetadata);
+
+    final UnifiedRecordValue recordValue =
+        recordValues.readRecordValue(event, rawMetadata.getValueType());
+
+    typedEvent.wrap(event, rawMetadata, recordValue);
+
+    try {
+      sb.append(objectMapper.writeValueAsString(typedEvent));
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException("Could not write record", e);
+    }
     sb.append("\n");
 
-    final UnpackedObject unpackedObject = eventCache.get(metadata.getValueType());
-    event.readValue(unpackedObject);
-    sb.append(ENTRY_INDENTATION).append("Value:\n");
-    unpackedObject.writeJSON(sb);
-    sb.append("\n");
+    //    sb.append(HEADER_INDENTATION);
+    //    writeRecordHeader(event, sb);
+    //    sb.append("\n");
+    //    final RecordMetadata metadata = new RecordMetadata();
+    //    event.readMetadata(metadata);
+    //    sb.append(ENTRY_INDENTATION);
+    //    writeMetadata(metadata, sb);
+    //    sb.append("\n");
+    //
+    //    final UnpackedObject unpackedObject = eventCache.get(metadata.getValueType());
+    //    event.readValue(unpackedObject);
+    //    sb.append(ENTRY_INDENTATION).append("Value:\n");
+    //    unpackedObject.writeJSON(sb);
+    //    sb.append("\n");
   }
 
   private static void writeRecordHeader(final LoggedEvent event, final StringBuilder sb) {
