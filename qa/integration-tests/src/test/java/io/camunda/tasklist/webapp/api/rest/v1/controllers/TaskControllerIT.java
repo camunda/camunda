@@ -1319,7 +1319,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
 
     createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstancesAdmin, "Admins");
     createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstancesUser, "Users");
-    createTaskWithCandidateUser(bpmnProcessId, flowNodeBpmnId, numberOfInstancesUser, "Demo User");
+    createTaskWithCandidateUser(bpmnProcessId, flowNodeBpmnId, numberOfInstancesUser, "demo");
 
     // Mock identity service behaviour
     identityProperties.setUserAccessRestrictionsEnabled(true);

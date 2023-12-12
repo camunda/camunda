@@ -37,6 +37,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   private Tokens tokens;
   private String id;
   private String name;
+  private String userDisplayName;
   private List<String> permissions;
   private String subject;
   private Date expires;
@@ -162,6 +163,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     final UserDetails userDetails = accessToken.getUserDetails();
     id = userDetails.getId();
     name = retrieveName(userDetails);
+    userDisplayName = retrieveUserDisplayName();
     permissions = accessToken.getPermissions();
     if (!getPermissions().contains(Permission.READ)) {
       throw new InsufficientAuthenticationException("No read permissions");
@@ -218,6 +220,24 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
 
   public IdentityAuthentication setPermissions(final List<String> permissions) {
     this.permissions = permissions;
+    return this;
+  }
+
+  public String getUserDisplayName() {
+    return userDisplayName;
+  }
+
+  private String retrieveUserDisplayName() {
+    return getIdentity()
+        .authentication()
+        .verifyToken(this.tokens.getAccessToken())
+        .getUserDetails()
+        .getName()
+        .orElse(this.name);
+  }
+
+  public IdentityAuthentication setUserDisplayName(String userDisplayName) {
+    this.userDisplayName = userDisplayName;
     return this;
   }
 

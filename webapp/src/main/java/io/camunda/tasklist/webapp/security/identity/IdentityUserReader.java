@@ -37,7 +37,7 @@ public class IdentityUserReader implements UserReader {
           new UserDTO()
               // For testing assignee migration locally use 'identityAuthentication.getId()'
               .setUserId(/*identityAuthentication.getId()*/ identityAuthentication.getName())
-              .setDisplayName(identityAuthentication.getName())
+              .setDisplayName(identityAuthentication.getUserDisplayName())
               .setPermissions(identityAuthentication.getPermissions())
               .setTenants(identityAuthentication.getTenants()));
     } else if (authentication
@@ -51,10 +51,13 @@ public class IdentityUserReader implements UserReader {
               .map(PermissionConverter.getInstance()::convert)
               .collect(Collectors.toList());
 
+      final String userDisplayName =
+          accessToken.getUserDetails().getName().orElse(identityTenantAwareToken.getName());
+
       return Optional.of(
           new UserDTO()
               .setUserId(identityTenantAwareToken.getName())
-              .setDisplayName(identityTenantAwareToken.getName())
+              .setDisplayName(userDisplayName)
               .setApiUser(true)
               .setPermissions(permissions)
               .setTenants(identityTenantAwareToken.getTenants()));

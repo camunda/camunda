@@ -91,7 +91,7 @@ public class TaskController extends ApiErrorController {
 
     if (tasklistProperties.getIdentity() != null
         && tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()) {
-      final String userName = userReader.getCurrentUser().getDisplayName();
+      final String userName = userReader.getCurrentUser().getUserId();
       final List<String> listOfUserGroups = identityAuthorizationService.getUserGroups();
       if (!listOfUserGroups.contains(IdentityProperties.FULL_GROUP_ACCESS)) {
         final TaskByCandidateUserOrGroup taskByCandidateUserOrGroup =
