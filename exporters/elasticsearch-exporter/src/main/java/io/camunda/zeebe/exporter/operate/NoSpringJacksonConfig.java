@@ -13,6 +13,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.operate.connect.CustomInstantDeserializer;
@@ -29,14 +30,16 @@ public class NoSpringJacksonConfig {
   public static ObjectMapper buildObjectMapper() {
 
     final JavaTimeModule javaTimeModule = new JavaTimeModule();
-    javaTimeModule.addSerializer(
+
+    final SimpleModule customDateTimeOverrides = new SimpleModule();
+    customDateTimeOverrides.addSerializer(
         OffsetDateTime.class, new CustomOffsetDateTimeSerializer(dateTimeFormatter()));
-    javaTimeModule.addDeserializer(
+    customDateTimeOverrides.addDeserializer(
         OffsetDateTime.class, new CustomOffsetDateTimeDeserializer(dateTimeFormatter()));
-    javaTimeModule.addDeserializer(Instant.class, new CustomInstantDeserializer());
+    customDateTimeOverrides.addDeserializer(Instant.class, new CustomInstantDeserializer());
 
     return Jackson2ObjectMapperBuilder.json()
-        .modules(javaTimeModule, new Jdk8Module())
+        .modules(javaTimeModule, customDateTimeOverrides, new Jdk8Module())
         .featuresToDisable(
             SerializationFeature.INDENT_OUTPUT,
             SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
