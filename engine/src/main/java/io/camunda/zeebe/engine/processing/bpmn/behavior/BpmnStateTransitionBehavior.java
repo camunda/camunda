@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
@@ -22,14 +23,17 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
 import java.util.function.Function;
 
@@ -529,6 +533,30 @@ public final class BpmnStateTransitionBehavior {
             child ->
                 terminateElement(context.copy(child.getKey(), child.getValue(), child.getState())),
             () -> containerProcessor.onChildTerminated(element, context, null));
+  }
+
+  private boolean hasCompensationBoundaryEvent(final ExecutableFlowNode element) {
+    if (!(element instanceof ExecutableActivity)) {
+      return false;
+    }
+    final var compensationBoundaryEvent =
+        ((ExecutableActivity) element)
+            .getBoundaryEvents().stream()
+                .filter(boundaryEvent -> boundaryEvent.getEventType() == BpmnEventType.COMPENSATION)
+                .findFirst();
+    return compensationBoundaryEvent.isPresent();
+  }
+
+  private void createCompensationSubscription(final BpmnElementContext context) {
+    final var key = keyGenerator.nextKey();
+    final var compensation =
+        new CompensationSubscriptionRecord()
+            .setTenantId(context.getTenantId())
+            .setProcessInstanceKey(context.getProcessInstanceKey())
+            .setProcessDefinitionKey(context.getProcessDefinitionKey())
+            .setCompensableActivityId(BufferUtil.bufferAsString(context.getElementId()))
+            .setCompensableActivityScopeId(context.getFlowScopeKey());
+    stateWriter.appendFollowUpEvent(key, CompensationSubscriptionIntent.CREATED, compensation);
   }
 
   private static final class ChildTerminationStackOverflowException extends RuntimeException {
