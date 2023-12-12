@@ -2,6 +2,10 @@ package io.camunda.zeebe.exporter.operate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.entities.OperateEntity;
@@ -49,7 +53,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.apache.commons.io.IOUtils;
-import org.assertj.core.api.Assertions;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
@@ -67,9 +70,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.type.TypeReference;
 
 @Testcontainers
 @TestInstance(Lifecycle.PER_CLASS)
@@ -137,8 +137,10 @@ public class OperateElasticsearchExporterIT {
     // given
     Record<RecordValue> record =
         factory.generateRecord(
-            valueType, b -> {
-              b.withIntent(intent).withRecordType(RecordType.EVENT)
+            valueType,
+            b -> {
+              b.withIntent(intent)
+                  .withRecordType(RecordType.EVENT)
                   .withTimestamp(System.currentTimeMillis());
 
               return b;
@@ -147,10 +149,16 @@ public class OperateElasticsearchExporterIT {
       final JobRecordValue recordValue = (JobRecordValue) record.getValue();
       record =
           factory.generateRecord(
-              valueType, b -> b.withValue(ImmutableJobRecordValue.builder().from(recordValue)
-                  .withDeadline(System.currentTimeMillis()).build())
-                  .withIntent(intent).withRecordType(RecordType.EVENT)
-                  .withTimestamp(System.currentTimeMillis()));
+              valueType,
+              b ->
+                  b.withValue(
+                          ImmutableJobRecordValue.builder()
+                              .from(recordValue)
+                              .withDeadline(System.currentTimeMillis())
+                              .build())
+                      .withIntent(intent)
+                      .withRecordType(RecordType.EVENT)
+                      .withTimestamp(System.currentTimeMillis()));
     }
 
     // when
@@ -158,11 +166,14 @@ public class OperateElasticsearchExporterIT {
 
     // then
     if (valueType.equals(ValueType.DECISION_EVALUATION)) {
-      final List<EvaluatedDecisionValue> evaluatedDecisions = ((DecisionEvaluationRecordValue) record.getValue()).getEvaluatedDecisions();
+      final List<EvaluatedDecisionValue> evaluatedDecisions =
+          ((DecisionEvaluationRecordValue) record.getValue()).getEvaluatedDecisions();
       for (int i = 1; i <= evaluatedDecisions.size(); i++) {
         final String expectedId = String.format("%d-%d", record.getKey(), i);
-        final String indexName = schemaManager.getTemplateDescriptor(DecisionInstanceTemplate.class)
-            .getFullQualifiedName();
+        final String indexName =
+            schemaManager
+                .getTemplateDescriptor(DecisionInstanceTemplate.class)
+                .getFullQualifiedName();
         assertDocument(expectedId, indexName, "DecisionInstanceHandler");
       }
     } else {
@@ -179,14 +190,14 @@ public class OperateElasticsearchExporterIT {
           final String indexName = handler.getIndexName();
 
           assertDocument(expectedId, indexName, handler.getClass().getSimpleName());
-
         }
       }
     }
   }
 
   @Test
-  public void shouldExportAFullProcessInstanceLog() throws JsonProcessingException, PersistenceException {
+  public void shouldExportAFullProcessInstanceLog()
+      throws JsonProcessingException, PersistenceException {
 
     // given
     // effectively disabling automatic flush so that we can flush all changes at once and at will
@@ -199,35 +210,38 @@ public class OperateElasticsearchExporterIT {
     exporter.flush();
 
     // then
-    //TODO: assert state of process instance in ES
     // there should be a process instance record in the list view index
-    final String listViewIndexName = schemaManager.getTemplateDescriptor(ListViewTemplate.class).getFullQualifiedName();
+    final String listViewIndexName =
+        schemaManager.getTemplateDescriptor(ListViewTemplate.class).getFullQualifiedName();
     final String processInstanceKey = "2251799813685251";
-    final Map<String, Object> processInstance = findElasticsearchDocument(listViewIndexName, processInstanceKey);
-    assertThat(processInstance).contains(
-        entry("id", "2251799813685251"),
-        entry("key", 2251799813685251L),
-        entry("partitionId", 0),
-        entry("processDefinitionKey", 2251799813685249L),
-        entry("bpmnProcessId", "process"),
-        entry("processName", null),
-        entry("processVersion", 1),
-        entry("processInstanceKey", 2251799813685251L),
-        entry("parentProcessInstanceKey", null),
-        entry("parentFlowNodeInstanceKey", null),
-        entry("startDate", "2023-12-12T08:55:35.547Z"),
-        entry("endDate", "2023-12-12T08:55:35.671Z"),
-        entry("state", "COMPLETED"),
-        entry("batchOperationIds", null),
-        entry("incident", false),
-        entry("tenantId", "<default>"),
-        entry("treePath", null)
-        );
+    final Map<String, Object> processInstance =
+        findElasticsearchDocument(listViewIndexName, processInstanceKey);
+    assertThat(processInstance)
+        .contains(
+            entry("id", "2251799813685251"),
+            entry("key", 2251799813685251L),
+            entry("partitionId", 0),
+            entry("processDefinitionKey", 2251799813685249L),
+            entry("bpmnProcessId", "process"),
+            entry("processName", null),
+            entry("processVersion", 1),
+            entry("processInstanceKey", 2251799813685251L),
+            entry("parentProcessInstanceKey", null),
+            entry("parentFlowNodeInstanceKey", null),
+            entry("startDate", "2023-12-12T08:55:35.547Z"),
+            entry("endDate", "2023-12-12T08:55:35.671Z"),
+            entry("state", "COMPLETED"),
+            entry("batchOperationIds", null),
+            entry("incident", false),
+            entry("tenantId", "<default>"),
+            entry("treePath", null));
 
     // there should be flow node instances
-    final String flowNodeIndexName = schemaManager.getTemplateDescriptor(FlowNodeInstanceTemplate.class).getFullQualifiedName();
+    final String flowNodeIndexName =
+        schemaManager.getTemplateDescriptor(FlowNodeInstanceTemplate.class).getFullQualifiedName();
 
-    final Map<String, FlowNodeInstanceEntity> flowNodeInstances = getAllDocumentsInIndex(flowNodeIndexName, FlowNodeInstanceEntity.class);
+    final Map<String, FlowNodeInstanceEntity> flowNodeInstances =
+        getAllDocumentsInIndex(flowNodeIndexName, FlowNodeInstanceEntity.class);
     assertThat(flowNodeInstances).hasSize(3);
 
     // start event 2251799813685253
@@ -306,31 +320,33 @@ public class OperateElasticsearchExporterIT {
 
     try {
 
-      final ObjectMapper objectMapper = new ObjectMapper().registerModule(new ZeebeProtocolModule());
-      try (InputStream inputStream = OperateElasticsearchExporterIT.class.getClassLoader().getResourceAsStream(resourceName)) {
+      final ObjectMapper objectMapper =
+          new ObjectMapper().registerModule(new ZeebeProtocolModule());
+      try (InputStream inputStream =
+          OperateElasticsearchExporterIT.class.getClassLoader().getResourceAsStream(resourceName)) {
         final List<String> lines = IOUtils.readLines(inputStream, StandardCharsets.UTF_8);
 
         for (String jsonString : lines) {
-          final Record<?> record = objectMapper.readValue(jsonString, new TypeReference<Record<?>>() {});
+          final Record<?> record =
+              objectMapper.readValue(jsonString, new TypeReference<Record<?>>() {});
           result.add(record);
         }
       }
     } catch (IOException e) {
-      throw new RuntimeException(String.format("Could not read records from classpath resource %s", resourceName), e);
+      throw new RuntimeException(
+          String.format("Could not read records from classpath resource %s", resourceName), e);
     }
 
     return result;
   }
 
   private void assertDocument(final String expectedId, final String indexName, String handlerName) {
-    final Map<String, Object> document =
-        findElasticsearchDocument(indexName, expectedId);
+    final Map<String, Object> document = findElasticsearchDocument(indexName, expectedId);
     assertThat(document).isNotNull();
     System.out.println(String.format("Returned document %s", document));
   }
 
-  private Map<String, Object> findElasticsearchDocument(
-      String index, String id) {
+  private Map<String, Object> findElasticsearchDocument(String index, String id) {
 
     try {
       schemaManager.refresh(index); // ensure latest data is visible
@@ -340,9 +356,7 @@ public class OperateElasticsearchExporterIT {
         return response.getSourceAsMap();
       } else {
         throw new RuntimeException(
-            String.format(
-                "Could not find document with id %s in index %s",
-                id, index));
+            String.format("Could not find document with id %s in index %s", id, index));
       }
 
     } catch (final IOException e) {
@@ -350,12 +364,15 @@ public class OperateElasticsearchExporterIT {
     }
   }
 
-  private <T extends OperateEntity<T>> Map<String, T> getAllDocumentsInIndex(String index, Class<T> entityClass) {
+  private <T extends OperateEntity<T>> Map<String, T> getAllDocumentsInIndex(
+      String index, Class<T> entityClass) {
     try {
       schemaManager.refresh(index); // ensure latest data is visible
 
       final SearchRequest request = new SearchRequest(index);
-      final List<T> searchResults = ElasticsearchUtil.scroll(request, entityClass, NoSpringJacksonConfig.buildObjectMapper(), esClient);
+      final List<T> searchResults =
+          ElasticsearchUtil.scroll(
+              request, entityClass, NoSpringJacksonConfig.buildObjectMapper(), esClient);
 
       final Map<String, T> result = new HashMap<>();
       searchResults.forEach(entity -> result.put(entity.getId(), entity));
@@ -369,35 +386,34 @@ public class OperateElasticsearchExporterIT {
 
   public static Stream<Arguments> provideParameters() {
     return Stream.of(
-      Arguments.of(ValueType.DECISION, DecisionIntent.CREATED),
-      Arguments.of(ValueType.DECISION_REQUIREMENTS, DecisionRequirementsIntent.CREATED),
-      Arguments.of(ValueType.DECISION_EVALUATION, DecisionEvaluationIntent.FAILED),
-      Arguments.of(ValueType.DECISION_EVALUATION, DecisionEvaluationIntent.EVALUATED),
-      Arguments.of(ValueType.INCIDENT, IncidentIntent.CREATED, IncidentIntent.RESOLVED),
-      Arguments.of(ValueType.PROCESS, ProcessIntent.CREATED),
-      Arguments.of(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
-      Arguments.of(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATING),
-      Arguments.of(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-      Arguments.of(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_COMPLETING),
-      Arguments.of(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_COMPLETED),
-      Arguments.of(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATING),
-      Arguments.of(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATED),
-      Arguments.of(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_MIGRATED),
-      Arguments.of(ValueType.VARIABLE, VariableIntent.CREATED, VariableIntent.UPDATED),
-      Arguments.of(ValueType.VARIABLE_DOCUMENT, Arrays.asList()),
-      Arguments.of(ValueType.PROCESS_MESSAGE_SUBSCRIPTION, ProcessMessageSubscriptionIntent.CREATED),
-      Arguments.of(ValueType.JOB, JobIntent.CREATED),
-      Arguments.of(ValueType.JOB, JobIntent.COMPLETED),
-      Arguments.of(ValueType.JOB, JobIntent.CANCELED),
-      Arguments.of(ValueType.JOB, JobIntent.TIMED_OUT),
-      Arguments.of(ValueType.JOB, JobIntent.FAILED),
-      Arguments.of(ValueType.JOB, JobIntent.RETRIES_UPDATED),
-      Arguments.of(ValueType.JOB, JobIntent.ERROR_THROWN),
-      Arguments.of(ValueType.JOB, JobIntent.RECURRED_AFTER_BACKOFF),
-      Arguments.of(ValueType.JOB, JobIntent.YIELDED),
-      Arguments.of(ValueType.JOB, JobIntent.TIMEOUT_UPDATED),
-      Arguments.of(ValueType.JOB, JobIntent.MIGRATED)
-    );
+        Arguments.of(ValueType.DECISION, DecisionIntent.CREATED),
+        Arguments.of(ValueType.DECISION_REQUIREMENTS, DecisionRequirementsIntent.CREATED),
+        Arguments.of(ValueType.DECISION_EVALUATION, DecisionEvaluationIntent.FAILED),
+        Arguments.of(ValueType.DECISION_EVALUATION, DecisionEvaluationIntent.EVALUATED),
+        Arguments.of(ValueType.INCIDENT, IncidentIntent.CREATED, IncidentIntent.RESOLVED),
+        Arguments.of(ValueType.PROCESS, ProcessIntent.CREATED),
+        Arguments.of(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+        Arguments.of(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+        Arguments.of(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+        Arguments.of(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_COMPLETING),
+        Arguments.of(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_COMPLETED),
+        Arguments.of(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATING),
+        Arguments.of(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATED),
+        Arguments.of(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_MIGRATED),
+        Arguments.of(ValueType.VARIABLE, VariableIntent.CREATED, VariableIntent.UPDATED),
+        Arguments.of(ValueType.VARIABLE_DOCUMENT, Arrays.asList()),
+        Arguments.of(
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION, ProcessMessageSubscriptionIntent.CREATED),
+        Arguments.of(ValueType.JOB, JobIntent.CREATED),
+        Arguments.of(ValueType.JOB, JobIntent.COMPLETED),
+        Arguments.of(ValueType.JOB, JobIntent.CANCELED),
+        Arguments.of(ValueType.JOB, JobIntent.TIMED_OUT),
+        Arguments.of(ValueType.JOB, JobIntent.FAILED),
+        Arguments.of(ValueType.JOB, JobIntent.RETRIES_UPDATED),
+        Arguments.of(ValueType.JOB, JobIntent.ERROR_THROWN),
+        Arguments.of(ValueType.JOB, JobIntent.RECURRED_AFTER_BACKOFF),
+        Arguments.of(ValueType.JOB, JobIntent.YIELDED),
+        Arguments.of(ValueType.JOB, JobIntent.TIMEOUT_UPDATED),
+        Arguments.of(ValueType.JOB, JobIntent.MIGRATED));
   }
-
 }

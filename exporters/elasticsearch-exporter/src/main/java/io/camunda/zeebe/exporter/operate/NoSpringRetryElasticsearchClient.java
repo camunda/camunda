@@ -181,25 +181,29 @@ public class NoSpringRetryElasticsearchClient {
   }
 
   public Set<String> getAliasesNames(String namePattern) {
-    return executeWithRetries("Get aliases for " + namePattern, () -> {
-      try {
-        final GetAliasesRequest request = new GetAliasesRequest(namePattern);
-        final GetAliasesResponse response = esClient.indices().getAlias(request, requestOptions);
+    return executeWithRetries(
+        "Get aliases for " + namePattern,
+        () -> {
+          try {
+            final GetAliasesRequest request = new GetAliasesRequest(namePattern);
+            final GetAliasesResponse response =
+                esClient.indices().getAlias(request, requestOptions);
 
-        final Set<String> returnAliases = new HashSet<>();
-        final Map<String, Set<AliasMetadata>> mapAliases = response.getAliases();
-        for (Map.Entry<String, Set<AliasMetadata>> a : mapAliases.entrySet()) {
-          returnAliases.addAll(a.getValue().stream().map(m -> m.getAlias()).collect(Collectors.toSet()));
-        }
-        return returnAliases;
-      } catch (ElasticsearchException e) {
-        //NOT_FOUND response means that aliases are not found
-        if (e.status().equals(RestStatus.NOT_FOUND)) {
-          return Set.of();
-        }
-        throw e;
-      }
-    });
+            final Set<String> returnAliases = new HashSet<>();
+            final Map<String, Set<AliasMetadata>> mapAliases = response.getAliases();
+            for (Map.Entry<String, Set<AliasMetadata>> a : mapAliases.entrySet()) {
+              returnAliases.addAll(
+                  a.getValue().stream().map(m -> m.getAlias()).collect(Collectors.toSet()));
+            }
+            return returnAliases;
+          } catch (ElasticsearchException e) {
+            // NOT_FOUND response means that aliases are not found
+            if (e.status().equals(RestStatus.NOT_FOUND)) {
+              return Set.of();
+            }
+            throw e;
+          }
+        });
   }
 
   public boolean createIndex(CreateIndexRequest createIndexRequest) {
