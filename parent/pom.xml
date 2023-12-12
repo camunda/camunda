@@ -51,7 +51,7 @@
     <version.commons-text>1.10.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.2.14</version.docker-java-api>
-    <version.elasticsearch>7.17.9</version.elasticsearch>
+    <version.elasticsearch>7.17.16</version.elasticsearch>
     <version.error-prone>2.18.0</version.error-prone>
     <version.grpc>1.59.1</version.grpc>
     <version.gson>2.10.1</version.gson>
