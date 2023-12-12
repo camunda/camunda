@@ -24,7 +24,11 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
   COMPLETED(4),
 
   CANCELING(5),
-  CANCELED(6);
+  CANCELED(6),
+
+  ASSIGN(7),
+  ASSIGNING(8),
+  ASSIGNED(9);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -58,6 +62,12 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
         return CANCELING;
       case 6:
         return CANCELED;
+      case 7:
+        return ASSIGN;
+      case 8:
+        return ASSIGNING;
+      case 9:
+        return ASSIGNED;
       default:
         return UNKNOWN;
     }

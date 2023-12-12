@@ -34,9 +34,14 @@ public final class UserTaskEventProcessors {
             bpmnBehaviors.eventTriggerBehavior(),
             bpmnBehaviors.stateBehavior());
 
-    typedRecordProcessors.onCommand(
-        ValueType.USER_TASK,
-        UserTaskIntent.COMPLETE,
-        new UserTaskCompleteProcessor(processingState, eventHandle, writers));
+    typedRecordProcessors
+        .onCommand(
+            ValueType.USER_TASK,
+            UserTaskIntent.COMPLETE,
+            new UserTaskCompleteProcessor(processingState, eventHandle, writers))
+        .onCommand(
+            ValueType.USER_TASK,
+            UserTaskIntent.ASSIGN,
+            new UserTaskAssignProcessor(processingState, writers));
   }
 }
