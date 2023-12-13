@@ -17,6 +17,7 @@ interface GradientBarsSwitchProps {
 export default function GradientBarsSwitch({configuration, onChange}: GradientBarsSwitchProps) {
   return (
     <Toggle
+      size="sm"
       id="showGradientBarsToggle"
       toggled={!!configuration.showGradientBars}
       onToggle={(checked) => onChange({showGradientBars: {$set: checked}})}
