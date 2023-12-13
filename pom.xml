@@ -83,7 +83,7 @@
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.commons.lang>3.12.0</version.commons.lang>
     <version.guava.annotations>r03</version.guava.annotations>
-    <version.commons.codec>1.15</version.commons.codec>
+    <version.commons.codec>1.16.0</version.commons.codec>
   </properties>
 
   <dependencyManagement>
