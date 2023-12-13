@@ -142,6 +142,13 @@ async function createHealthStatusConfig() {
           title: 'Open renovate BE PRs',
           state: 'open',
         },
+        {
+          author: 'renovate[bot]',
+          labels: ['renovate', 'infra'],
+          resultType: 'count',
+          title: 'Open renovate Infra PRs',
+          state: 'open',
+        },
       ],
     },
   };
