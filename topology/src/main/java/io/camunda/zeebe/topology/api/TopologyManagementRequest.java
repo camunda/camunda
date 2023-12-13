@@ -15,25 +15,32 @@ public sealed interface TopologyManagementRequest {
 
   /**
    * Marks a request as dry run. Changes are planned and validated but not applied so the cluster
-   * topology remains unchanged. Requests that don't support dry-run return false by default.
+   * topology remains unchanged.
    */
-  default boolean dryRun() {
-    return false;
-  }
+  boolean dryRun();
 
-  record AddMembersRequest(Set<MemberId> members) implements TopologyManagementRequest {}
-
-  record RemoveMembersRequest(Set<MemberId> members) implements TopologyManagementRequest {}
-
-  record JoinPartitionRequest(MemberId memberId, int partitionId, int priority)
+  record AddMembersRequest(Set<MemberId> members, boolean dryRun)
       implements TopologyManagementRequest {}
 
-  record LeavePartitionRequest(MemberId memberId, int partitionId)
+  record RemoveMembersRequest(Set<MemberId> members, boolean dryRun)
       implements TopologyManagementRequest {}
 
-  record ReassignPartitionsRequest(Set<MemberId> members) implements TopologyManagementRequest {}
+  record JoinPartitionRequest(MemberId memberId, int partitionId, int priority, boolean dryRun)
+      implements TopologyManagementRequest {}
+
+  record LeavePartitionRequest(MemberId memberId, int partitionId, boolean dryRun)
+      implements TopologyManagementRequest {}
+
+  record ReassignPartitionsRequest(Set<MemberId> members, boolean dryRun)
+      implements TopologyManagementRequest {}
 
   record ScaleRequest(Set<MemberId> members, boolean dryRun) implements TopologyManagementRequest {}
 
-  record CancelChangeRequest(long changeId) implements TopologyManagementRequest {}
+  record CancelChangeRequest(long changeId) implements TopologyManagementRequest {
+
+    @Override
+    public boolean dryRun() {
+      return false;
+    }
+  }
 }

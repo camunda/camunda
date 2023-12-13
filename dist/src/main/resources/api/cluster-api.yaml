@@ -23,6 +23,7 @@ paths:
                    to complete the operation.
       parameters:
         - $ref: '#/components/parameters/BrokerId'
+        - $ref: '#/components/parameters/DryRunParameter'
       responses:
         '202':
           $ref: '#/components/responses/AddBrokersResponse'
@@ -42,6 +43,7 @@ paths:
                    running to complete the operation.
       parameters:
         - $ref: '#/components/parameters/BrokerId'
+        - $ref: '#/components/parameters/DryRunParameter'
       responses:
         '202':
           $ref: '#/components/responses/RemoveBrokerResponse'
@@ -69,14 +71,7 @@ paths:
             schema:
               $ref: "#/components/schemas/ScaleRequest"
       parameters:
-        - name: dryRun
-          description: If true, requested changes are only simulated and not actually applied.
-          in: query
-          style: form
-          required: false
-          schema:
-            type: boolean
-            default: false
+        - $ref: '#/components/parameters/DryRunParameter'
       responses:
         '202':
           $ref: "#/components/responses/ScaleBrokersResponse"
@@ -125,6 +120,15 @@ components:
       description: Id of the broker
       schema:
         $ref: '#/components/schemas/BrokerId'
+    DryRunParameter:
+      name: dryRun
+      description: If true, requested changes are only simulated and not actually applied.
+      in: query
+      style: form
+      required: false
+      schema:
+        type: boolean
+        default: false
 
   responses:
     ConcurrentChangeError:

@@ -388,6 +388,7 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
   public byte[] encodeAddMembersRequest(final AddMembersRequest req) {
     return Requests.AddMembersRequest.newBuilder()
         .addAllMemberIds(req.members().stream().map(MemberId::id).toList())
+        .setDryRun(req.dryRun())
         .build()
         .toByteArray();
   }
@@ -396,6 +397,7 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
   public byte[] encodeRemoveMembersRequest(final RemoveMembersRequest req) {
     return Requests.RemoveMembersRequest.newBuilder()
         .addAllMemberIds(req.members().stream().map(MemberId::id).toList())
+        .setDryRun(req.dryRun())
         .build()
         .toByteArray();
   }
@@ -406,6 +408,7 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
         .setMemberId(req.memberId().id())
         .setPartitionId(req.partitionId())
         .setPriority(req.priority())
+        .setDryRun(req.dryRun())
         .build()
         .toByteArray();
   }
@@ -415,6 +418,7 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
     return Requests.LeavePartitionRequest.newBuilder()
         .setMemberId(req.memberId().id())
         .setPartitionId(req.partitionId())
+        .setDryRun(req.dryRun())
         .build()
         .toByteArray();
   }
@@ -424,6 +428,7 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
       final ReassignPartitionsRequest reassignPartitionsRequest) {
     return Requests.ReassignAllPartitionsRequest.newBuilder()
         .addAllMemberIds(reassignPartitionsRequest.members().stream().map(MemberId::id).toList())
+        .setDryRun(reassignPartitionsRequest.dryRun())
         .build()
         .toByteArray();
   }
@@ -452,7 +457,8 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
       return new AddMembersRequest(
           addMemberRequest.getMemberIdsList().stream()
               .map(MemberId::from)
-              .collect(Collectors.toSet()));
+              .collect(Collectors.toSet()),
+          addMemberRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
@@ -465,7 +471,8 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
       return new RemoveMembersRequest(
           removeMemberRequest.getMemberIdsList().stream()
               .map(MemberId::from)
-              .collect(Collectors.toSet()));
+              .collect(Collectors.toSet()),
+          removeMemberRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
@@ -478,7 +485,8 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
       return new JoinPartitionRequest(
           MemberId.from(joinPartitionRequest.getMemberId()),
           joinPartitionRequest.getPartitionId(),
-          joinPartitionRequest.getPriority());
+          joinPartitionRequest.getPriority(),
+          joinPartitionRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
@@ -490,7 +498,8 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
       final var leavePartitionRequest = Requests.LeavePartitionRequest.parseFrom(encodedState);
       return new LeavePartitionRequest(
           MemberId.from(leavePartitionRequest.getMemberId()),
-          leavePartitionRequest.getPartitionId());
+          leavePartitionRequest.getPartitionId(),
+          leavePartitionRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
@@ -504,7 +513,8 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
       return new ReassignPartitionsRequest(
           reassignPartitionsRequest.getMemberIdsList().stream()
               .map(MemberId::from)
-              .collect(Collectors.toSet()));
+              .collect(Collectors.toSet()),
+          reassignPartitionsRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
