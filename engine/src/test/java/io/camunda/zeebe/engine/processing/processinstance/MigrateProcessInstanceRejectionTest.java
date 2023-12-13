@@ -559,6 +559,56 @@ public class MigrateProcessInstanceRejectionTest {
         .hasKey(childProcessInstanceKey);
   }
 
+  @Test
+  public void shouldRejectCommandWhenSourceElementIdIsMappedInMultipleMappingInstructions() {
+    // given
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process")
+                    .startEvent()
+                    .serviceTask("A", t -> t.zeebeJobType("task"))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process2")
+                    .startEvent()
+                    .serviceTask("A", t -> t.zeebeJobType("task"))
+                    .serviceTask("B", t -> t.zeebeJobType("task"))
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
+
+    final long targetProcessDefinitionKey =
+        extractTargetProcessDefinitionKey(deployment, "process2");
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "A")
+        .addMappingInstruction("A", "B")
+        .expectRejection()
+        .migrate();
+
+    // then
+    final var rejectionRecord =
+        RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst();
+
+    assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            String.format(
+                "Expected to migrate process instance '%s' but the mapping instructions contain duplicate source element ids '%s'.",
+                processInstanceKey, "[A]"))
+        .hasKey(processInstanceKey);
+  }
+
   private static long extractTargetProcessDefinitionKey(
       final Record<DeploymentRecordValue> deployment, final String bpmnProcessId) {
     return deployment.getValue().getProcessesMetadata().stream()
