@@ -187,20 +187,26 @@ jobs:
           done
 
       # Upload: Upload Docker Image
-      - name: Upload Docker Image
+      - name: Login to docker hub
         if: ${{ inputs.dryRun == false }}
-        env:
-          IMAGE_NAME: "camunda/tasklist"
-          IMAGE_TAG: ${{ inputs.releaseVersion }}
-          IS_LATEST: ${{ inputs.isLatest }}
-        run: |
-          git checkout ${{ env.IMAGE_TAG }}
-          mvn -B -pl webapp jib:build -Dimage=${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} -Djib.to.auth.username=${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }} -Djib.to.auth.password=${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-
-          if ${{ env.IS_LATEST }}; then
-            mvn -B -pl webapp jib:build -Dimage=${{ env.IMAGE_NAME }}:latest -Djib.to.auth.username=${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }} -Djib.to.auth.password=${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-          fi
-          git checkout -
+        uses: docker/login-action@v3
+        with:
+          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+      - name: Upload Docker image
+        if: ${{ inputs.dryRun == false }}
+        uses: ./.github/actions/build-docker
+        with:
+          repository: camunda/tasklist
+          version: ${{ inputs.releaseVersion }}
+          push: true
+      - name: Upload latest Docker image
+        if: ${{ inputs.dryRun == false }} && ${{ inputs.isLatest }}
+        uses: ./.github/actions/build-docker
+        with:
+          repository: camunda/tasklist
+          version: latest
+          push: true
 
       #########################################################################
       # Notify: send Slack notification of release failure

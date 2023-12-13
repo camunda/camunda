@@ -17,6 +17,10 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - name: Test Dockerfile with Hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          ignore: DL3018 # redundant when pinning the base image
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@2fb925f14cae8d86a835e7f5c14065e98fad63d8
@@ -48,10 +52,19 @@ jobs:
           mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
       - name: Build backend
         run: mvn clean install -P -docker -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
-      - name: Build Docker and push to local registry
-        run: mvn -pl webapp jib:build -Dimage=${{ env.TASKLIST_TEST_DOCKER_IMAGE }} -Djib.allowInsecureRegistries=true
-        env:
-          IMAGE_TAG: ${{ env.BRANCH_NAME }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: network=host
+      - name: Build and push to local registry
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ env.TASKLIST_TEST_DOCKER_IMAGE }}
+          cache-from: type=gha,ignore-error=true
+          cache-to: type=gha,mode=max,ignore-error=true
+          no-cache-filters: build,distball,dist
       - name: Run Docker tests
         run: mvn -f qa/integration-tests -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
       - name: Upload Test Report

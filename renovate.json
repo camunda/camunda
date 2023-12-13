@@ -5,14 +5,13 @@
     ":rebaseStalePrs",
     ":semanticCommitTypeAll(chore)"
   ],
-  "includePaths": ["client/**", ".github/**", ".ci/**"],
+  "includePaths": ["client/**", ".github/**", ".ci/**", "Dockerfile"],
   "ignorePaths": ["client/pom.xml"],
   "helmv3": {
     "registryAliases": {
       "helm-camunda-io": "https://helm.camunda.io"
     }
   },
-  "reviewers": ["team:hto-frontend"],
   "packageRules": [
     {
       "groupName": "definitelyTyped",
@@ -33,10 +32,13 @@
       "groupSlug": "all-minor-patch"
     },
     {
-      "extends": "packages:apollographql",
-      "groupName": "Apollo GraphQL packages"
+      "matchManagers": "dockerfile",
+      "separateMajorMinor": true,
+      "separateMinorPatch": true,
+      "labels": ["area/security", "docker", "dependencies"],
+      "matchBaseBranches": ["master", "/^stable\\/.*/"]
     }
   ],
-  "branchPrefix": "fe-renovate/",
+  "branchPrefix": "renovate/",
   "ignoreDeps": ["docker.elastic.co/elasticsearch/elasticsearch"]
 }

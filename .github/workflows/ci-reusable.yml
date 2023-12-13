@@ -127,15 +127,30 @@ jobs:
         run: |
           mvn com.coveo:fmt-maven-plugin:check -T1C clean deploy -P -docker -DskipTests=true -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
 
-      - name: Build Docker images
-        run: |
-          mvn -B -pl webapp jib:build -Dimage=${{ env.ZEEBE_TASKLIST_DOCKER_IMAGE }}:${{ env.IMAGE_TAG }} -Djib.to.auth.username=${{ steps.secrets.outputs.NEXUS_USR }} -Djib.to.auth.password=${{ steps.secrets.outputs.NEXUS_PSW }}
-          mvn -B -pl webapp jib:build -Dimage=${{ env.ZEEBE_TASKLIST_DOCKER_IMAGE }}:${{ env.CI_IMAGE_TAG }} -Djib.to.auth.username=${{ steps.secrets.outputs.NEXUS_USR }} -Djib.to.auth.password=${{ steps.secrets.outputs.NEXUS_PSW }}
-          mvn -B -pl webapp jib:build -Dimage=${{ env.ZEEBE_TASKLIST_DOCKER_IMAGE }}:${{ env.PR_IMAGE_TAG }} -Djib.to.auth.username=${{ steps.secrets.outputs.NEXUS_USR }} -Djib.to.auth.password=${{ steps.secrets.outputs.NEXUS_PSW }}
-
-          if [ ${{ env.IS_MASTER_BRANCH }} ]; then
-            mvn -B -pl webapp jib:build -Dimage=${{ env.ZEEBE_TASKLIST_DOCKER_IMAGE }}:latest -Djib.to.auth.username=${{ steps.secrets.outputs.NEXUS_USR }} -Djib.to.auth.password=${{ steps.secrets.outputs.NEXUS_PSW }}
-          fi
+      - name: Login to Harbor docker registry
+        uses: docker/login-action@v3
+        with:
+          registry: registry.camunda.cloud
+          username: ${{ steps.secrets.outputs.NEXUS_USR }}
+          password: ${{ steps.secrets.outputs.NEXUS_PSW }}
+      - name: Build Docker image
+        uses: ./.github/actions/build-docker
+        with:
+          repository: ${{ env.ZEEBE_TASKLIST_DOCKER_IMAGE }}
+          version: ${{ env.IMAGE_TAG }}
+          push: true
+      - name: Build CI Docker image
+        uses: ./.github/actions/build-docker
+        with:
+          repository: ${{ env.ZEEBE_TASKLIST_DOCKER_IMAGE }}
+          version: ${{ env.CI_IMAGE_TAG }}
+          push: true
+      - name: Build Preview Docker image
+        uses: ./.github/actions/build-docker
+        with:
+          repository: ${{ env.ZEEBE_TASKLIST_DOCKER_IMAGE }}
+          version: ${{ env.PR_IMAGE_TAG }}
+          push: true
 
       #########################################################################
       # Tests: run tests for all Maven modules
@@ -171,14 +186,19 @@ jobs:
 
       #########################################################################
       # Upload: deploy SNAPSHOT Docker image and mvn artifacts
-      - name: Deploy - Docker Image SNAPSHOT
+      - name: Login to docker hub
         if: ${{ env.IS_MASTER_BRANCH == 'true' }}
-        env:
-          SNAPSHOT_IMAGE_NAME: "camunda/tasklist"
-          SNAPSHOT_IMAGE_TAG: "SNAPSHOT"
-        run: |
-          mvn -B -pl webapp jib:build -Dimage=${{ env.SNAPSHOT_IMAGE_NAME }}:${{ env.SNAPSHOT_IMAGE_TAG }} -Djib.to.auth.username=${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }} -Djib.to.auth.password=${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-
+        uses: docker/login-action@v3
+        with:
+          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+      - name: Build SNAPSHOT Docker image
+        if: ${{ env.IS_MASTER_BRANCH == 'true' }}
+        uses: ./.github/actions/build-docker
+        with:
+          repository: camunda/tasklist
+          version: SNAPSHOT
+          push: true
       - name: Deploy - Nexus SNAPSHOT
         if: ${{ env.IS_MASTER_BRANCH == 'true' }}
         run: |
