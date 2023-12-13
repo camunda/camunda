@@ -114,7 +114,7 @@ public final class AssignUserTaskTest {
 
     // when
     final Record<UserTaskRecordValue> assignedRecord =
-        ENGINE.userTask().ofInstance(processInstanceKey).assign();
+        ENGINE.userTask().ofInstance(processInstanceKey).withoutAssignee().assign();
 
     // then
     Assertions.assertThat(assignedRecord)

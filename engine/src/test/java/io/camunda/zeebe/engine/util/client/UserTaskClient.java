@@ -68,6 +68,11 @@ public final class UserTaskClient {
     return this;
   }
 
+  public UserTaskClient withoutAssignee() {
+    userTaskRecord.setAssignee("");
+    return this;
+  }
+
   public UserTaskClient withVariables(final String variables) {
     userTaskRecord.setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variables)));
     return this;
