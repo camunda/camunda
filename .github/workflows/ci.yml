@@ -340,7 +340,7 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with:
           languages: java
           queries: +security-and-quality
@@ -348,7 +348,7 @@ jobs:
         with:
           maven-extra-args: -T1C
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v3
         with:
           upload: False
           output: sarif-results
@@ -362,7 +362,7 @@ jobs:
           input: sarif-results/java.sarif
           output: sarif-results/java.sarif
       - name: Upload CodeQL Results
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: sarif-results/java.sarif
   go-lint:
@@ -443,7 +443,7 @@ jobs:
           verbose: true
       - name: Upload Hadolint Results
         if: always()
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-zeebe
