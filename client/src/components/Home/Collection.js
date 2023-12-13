@@ -230,7 +230,7 @@ export class Collection extends Component {
                 columns={[
                   {name: 'Type', key: 'entityType', defaultOrder: 'asc', hidden: true},
                   {name: t('common.name'), key: 'name', defaultOrder: 'asc'},
-                  {name: t('common.description'), key: 'description', defaultOrder: 'asc'},
+                  {name: t('common.description')},
                   t('home.contents'),
                   {name: 'Modified by', key: 'lastModifier', defaultOrder: 'asc'},
                   {name: t('common.entity.modified'), key: 'lastModified', defaultOrder: 'desc'},
