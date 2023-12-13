@@ -51,7 +51,7 @@
     <version.docker-java-api>3.3.4</version.docker-java-api>
     <version.elasticsearch>7.17.16</version.elasticsearch>
     <version.error-prone>2.15.0</version.error-prone>
-    <version.grpc>1.49.2</version.grpc>
+    <version.grpc>1.59.1</version.grpc>
     <version.gson>2.9.1</version.gson>
     <version.guava>31.1-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
@@ -68,7 +68,7 @@
     <version.mockito>5.3.1</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.6</version.msgpack>
-    <version.netty>4.1.100.Final</version.netty>
+    <version.netty>4.1.102.Final</version.netty>
     <version.objenesis>3.3</version.objenesis>
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.21.12</version.protobuf>
@@ -1032,6 +1032,13 @@
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
         <version>1.22</version>
+      </dependency>
+
+      <!-- between gRPC and Guava -->
+      <dependency>
+        <groupId>com.google.j2objc</groupId>
+        <artifactId>j2objc-annotations</artifactId>
+        <version>2.8</version>
       </dependency>
 
     </dependencies>
