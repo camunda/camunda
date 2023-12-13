@@ -85,6 +85,7 @@ test('should show outliers heatmap when selecting a process definition', async (
   await t.hover(Analysis.flowNode('AE0010P0030'));
 
   await t
+    .resizeWindow(1600, 800)
     .takeScreenshot('process-analysis/img/outlierExample_1_heatMap.png', {
       fullPage: true,
     })
@@ -102,7 +103,7 @@ test('should show outlier details modal when clicking on a flow node', async (t)
     .resizeWindow(1600, 800)
     .takeElementScreenshot(
       Common.modalContainer,
-      'process-analysis/img/outlierExample_2_distribution.png'
+      'process-analysis/img/outlierExample_2_detailsModal.png'
     )
     .maximizeWindow();
 
@@ -113,14 +114,6 @@ test('should show common outliers variables as a table', async (t) => {
   await u.selectDefinition(t, 'Analysis Testing Process', [6, 5, 4, 3]);
 
   await t.click(Analysis.flowNode('AE0010P0030'));
-
-  await t
-    .resizeWindow(1600, 800)
-    .takeElementScreenshot(
-      Common.modalContainer,
-      'process-analysis/img/outlierExample_3_Variables.png'
-    )
-    .maximizeWindow();
 
   await t.expect(Analysis.variablesTable.visible).ok();
 });
