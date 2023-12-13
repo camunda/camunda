@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class ProcessInstanceMigrationMigrateProcessor
@@ -156,6 +157,11 @@ public class ProcessInstanceMigrationMigrateProcessor
       responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }
+    if (error instanceof final ChangedElementFlowScopeException e) {
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, e.getMessage());
+      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
+      return ProcessingError.EXPECTED_ERROR;
+    }
 
     return ProcessingError.UNEXPECTED_ERROR;
   }
@@ -217,6 +223,23 @@ public class ProcessInstanceMigrationMigrateProcessor
           elementInstanceRecord.getBpmnElementType(),
           targetElementId,
           targetElementType);
+    }
+
+    final ElementInstance sourceFlowScopeElement =
+        elementInstanceState.getInstance(elementInstanceRecord.getFlowScopeKey());
+    if (sourceFlowScopeElement != null) {
+      final DirectBuffer expectedFlowScopeId =
+          sourceFlowScopeElement.getValue().getElementIdBuffer();
+      final DirectBuffer actualFlowScopeId =
+          processDefinition.getProcess().getElementById(targetElementId).getFlowScope().getId();
+
+      if (!expectedFlowScopeId.equals(actualFlowScopeId)) {
+        throw new ChangedElementFlowScopeException(
+            elementInstanceRecord.getProcessInstanceKey(),
+            elementInstanceRecord.getElementId(),
+            BufferUtil.bufferAsString(expectedFlowScopeId),
+            BufferUtil.bufferAsString(actualFlowScopeId));
+      }
     }
 
     eventSubscriptionBehavior.unsubscribeFromEvents(elementInstance.getKey());
@@ -344,6 +367,27 @@ public class ProcessInstanceMigrationMigrateProcessor
               Elements cannot be migrated with an incident yet. \
               Please retry migration after resolving the incident.""",
               processInstanceKey, elementId));
+    }
+  }
+
+  /**
+   * Exception that can be thrown during the migration of a process instance, in case the engine
+   * attempts to change element flow scope in the target process definition.
+   */
+  private static final class ChangedElementFlowScopeException extends RuntimeException {
+    ChangedElementFlowScopeException(
+        final long processInstanceKey,
+        final String elementId,
+        final String expectedFlowScopeId,
+        final String actualFlowScopeId) {
+      super(
+          String.format(
+              """
+              Expected to migrate process instance '%s' \
+              but the flow scope of active element with id '%s' is changed. \
+              The flow scope of the active element is expected to be '%s' but was '%s'. \
+              The flow scope of an element cannot be changed during migration yet.""",
+              processInstanceKey, elementId, expectedFlowScopeId, actualFlowScopeId));
     }
   }
 }
