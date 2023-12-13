@@ -37,7 +37,7 @@ public class UserTaskCommandPreconditionChecker {
     this.userTaskState = userTaskState;
   }
 
-  protected Either<Tuple<RejectionType, String>, Void> check(
+  protected Either<Tuple<RejectionType, String>, UserTaskRecord> check(
       final TypedRecord<UserTaskRecord> command) {
     final long userTaskKey = command.getKey();
     final UserTaskRecord persistedRecord =
@@ -53,7 +53,7 @@ public class UserTaskCommandPreconditionChecker {
     final LifecycleState lifecycleState = userTaskState.getLifecycleState(userTaskKey);
 
     if (validLifecycleStates.contains(lifecycleState)) {
-      return Either.right(null);
+      return Either.right(persistedRecord);
     }
 
     return Either.left(

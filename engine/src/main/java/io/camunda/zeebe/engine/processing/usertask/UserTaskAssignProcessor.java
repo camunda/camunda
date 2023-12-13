@@ -39,29 +39,27 @@ public final class UserTaskAssignProcessor implements TypedRecordProcessor<UserT
   }
 
   @Override
-  public void processRecord(final TypedRecord<UserTaskRecord> userTaskRecord) {
+  public void processRecord(final TypedRecord<UserTaskRecord> command) {
     preconditionChecker
-        .check(userTaskRecord)
+        .check(command)
         .ifRightOrLeft(
-            ok -> assignUserTask(userTaskRecord),
+            persistedRecord -> assignUserTask(command, persistedRecord),
             violation -> {
-              rejectionWriter.appendRejection(
-                  userTaskRecord, violation.getLeft(), violation.getRight());
+              rejectionWriter.appendRejection(command, violation.getLeft(), violation.getRight());
               responseWriter.writeRejectionOnCommand(
-                  userTaskRecord, violation.getLeft(), violation.getRight());
+                  command, violation.getLeft(), violation.getRight());
             });
   }
 
-  private void assignUserTask(final TypedRecord<UserTaskRecord> userTaskRecord) {
-    final long userTaskKey = userTaskRecord.getKey();
-    final UserTaskRecord persistedUserTask =
-        userTaskState.getUserTask(userTaskKey, userTaskRecord.getAuthorizations());
+  private void assignUserTask(
+      final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
+    final long userTaskKey = command.getKey();
 
-    persistedUserTask.setAssignee(userTaskRecord.getValue().getAssignee());
+    userTaskRecord.setAssignee(command.getValue().getAssignee());
 
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNING, persistedUserTask);
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, persistedUserTask);
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
     responseWriter.writeEventOnCommand(
-        userTaskKey, UserTaskIntent.ASSIGNED, persistedUserTask, userTaskRecord);
+        userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord, command);
   }
 }
