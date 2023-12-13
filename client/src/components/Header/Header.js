@@ -287,13 +287,6 @@ function createInfoSideBarProps(setWhatsNewOpen, generateDocsLink, enterpriseMod
           }
         },
       },
-      {
-        key: 'slackCommunityChannel',
-        label: t('navigation.slack'),
-        onClick: () => {
-          window.open('https://camunda-slack-invite.herokuapp.com/', '_blank');
-        },
-      },
     ],
   };
 }
