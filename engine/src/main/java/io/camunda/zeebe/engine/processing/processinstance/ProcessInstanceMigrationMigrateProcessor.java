@@ -42,6 +42,7 @@ import java.util.ArrayDeque;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
@@ -59,6 +60,8 @@ public class ProcessInstanceMigrationMigrateProcessor
       "Expected to migrate process instance but no process instance found with key '%d'";
   private static final String ERROR_MESSAGE_PROCESS_DEFINITION_NOT_FOUND =
       "Expected to migrate process instance to process definition but no process definition found with key '%d'";
+  private static final String ERROR_MESSAGE_DUPLICATE_SOURCE_ELEMENT_IDS =
+      "Expected to migrate process instance '%s' but the mapping instructions contain duplicate source element ids '%s'.";
 
   private static final long NO_PARENT = -1L;
   private static final UnsafeBuffer NIL_VALUE = new UnsafeBuffer(MsgPackHelper.NIL);
@@ -117,6 +120,29 @@ public class ProcessInstanceMigrationMigrateProcessor
           String.format(ERROR_MESSAGE_PROCESS_DEFINITION_NOT_FOUND, targetProcessDefinitionKey);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
+      return;
+    }
+
+    final Map<String, Long> countBySourceElementId =
+        mappingInstructions.stream()
+            .collect(
+                Collectors.groupingBy(
+                    ProcessInstanceMigrationMappingInstructionValue::getSourceElementId,
+                    Collectors.counting()));
+    final List<String> duplicateSourceElementIds =
+        countBySourceElementId.entrySet().stream()
+            .filter(entry -> entry.getValue() > 1)
+            .map(Entry::getKey)
+            .toList();
+
+    if (!duplicateSourceElementIds.isEmpty()) {
+      final String reason =
+          String.format(
+              ERROR_MESSAGE_DUPLICATE_SOURCE_ELEMENT_IDS,
+              processInstanceKey,
+              duplicateSourceElementIds);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_ARGUMENT, reason);
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, reason);
       return;
     }
 
