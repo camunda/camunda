@@ -27,6 +27,15 @@ jobs:
       with:
         branch: ${{ env.BRANCH_NAME }}
         max_length: '15'
+    - name: Set GitHub environment variables
+      run: |
+        if [ "${{ env.BRANCH_NAME }}" == 'master' ]; then
+          echo "APP_NAME='stage'" >> $GITHUB_ENV
+        elif [[ "${{ env.BRANCH_NAME }}" == stable/* ]]; then
+          echo "APP_NAME=${{ steps.sanitize.outputs.branch_name }}" >> $GITHUB_ENV
+        else
+          echo "APP_NAME=${{ steps.sanitize.outputs.branch_name }}-app" >> $GITHUB_ENV
+        fi
     #########################################################################
     # Setup: import secrets from vault
     - name: Import secrets
@@ -60,7 +69,7 @@ jobs:
       env:
         docker_tag: "pr-${{ github.event.pull_request.head.sha || github.sha }}" # commit id of latest PR event || sha of push event
         revision: ${{ env.BRANCH_NAME }}
-        app_name: tasklist-${{ steps.sanitize.outputs.branch_name == 'master' && 'stage' || steps.sanitize.outputs.branch_name }}-app
+        app_name: tasklist-${{ env.APP_NAME }}
     #########################################################################
     # Create a preview environment
     - name: Deploy Preview Environment
@@ -68,8 +77,8 @@ jobs:
       with:
         revision: ${{ env.BRANCH_NAME }}
         argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
-        app_name: tasklist-${{ steps.sanitize.outputs.branch_name == 'master' && 'stage' || steps.sanitize.outputs.branch_name }}-app
-        app_url: https://${{ steps.sanitize.outputs.branch_name == 'master' && 'stage' || steps.sanitize.outputs.branch_name }}-app.tasklist.camunda.cloud
+        app_name: tasklist-${{ env.APP_NAME }}
+        app_url: https://${{ env.APP_NAME }}.tasklist.camunda.cloud
         argocd_arguments: ${{ env.argocd_arguments }}
 
   clean:
