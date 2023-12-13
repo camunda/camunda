@@ -31,7 +31,7 @@
 
     <version.zeebe>8.4.0-alpha2</version.zeebe>
     <version.identity>8.4.0-alpha2</version.identity>
-    <version.elasticsearch>7.17.15</version.elasticsearch>
+    <version.elasticsearch>7.17.16</version.elasticsearch>
     <version.elasticsearch-client>8.7.1</version.elasticsearch-client>
     <version.opensearch>2.7.0</version.opensearch>
     <version.spring.boot>3.1.6</version.spring.boot>
