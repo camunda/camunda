@@ -8,18 +8,18 @@
 import {Form} from '@bpmn-io/form-js-viewer';
 import {isEqual} from 'lodash';
 
-type FormJSData = Parameters<Form['importSchema']>[1];
+type FormJSData = Record<string, unknown>;
 
 class FormManager {
   #form = new Form();
   #schema: string | null = null;
-  #onSubmit: (result: {errors: object; data: object}) => void = () => {};
-  #data: FormJSData;
+  #onSubmit: (result: {errors: object; data: FormJSData}) => void = () => {};
+  #data: FormJSData | null = null;
 
   render = async (options: {
     schema: string;
     data: FormJSData;
-    onSubmit: (result: {errors: object; data: object}) => void;
+    onSubmit: (result: {errors: object; data: FormJSData}) => void;
     onImportError?: () => void;
     container: HTMLElement;
   }) => {

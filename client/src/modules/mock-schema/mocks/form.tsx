@@ -96,4 +96,52 @@ const dynamicForm: Form = {
   }),
 };
 
-export {form, invalidForm, dynamicForm};
+const nestedForm: Form = {
+  id: 'camunda-forms:bpmn:form-0',
+  processDefinitionKey: 'process',
+  title: 'A form',
+  version: null,
+  schema: JSON.stringify({
+    components: [
+      {
+        components: [
+          {
+            components: [
+              {
+                label: 'Surname',
+                type: 'textfield',
+                id: 'Field_0qtjl2z',
+                key: 'test_field',
+              },
+            ],
+            showOutline: false,
+            type: 'group',
+            id: 'Field_155wjbg',
+            path: 'nested',
+          },
+          {
+            label: 'Name',
+            type: 'textfield',
+            id: 'name_field',
+            key: 'name',
+          },
+        ],
+        showOutline: false,
+        type: 'group',
+        id: 'Field_1kot1wx',
+        path: 'root',
+      },
+    ],
+    type: 'default',
+    id: 'surnameForm',
+    executionPlatform: 'Camunda Cloud',
+    executionPlatformVersion: '8.4.0',
+    exporter: {
+      name: 'Camunda Modeler',
+      version: '5.18.0-nightly.20231207',
+    },
+    schemaVersion: 12,
+  }),
+};
+
+export {form, invalidForm, dynamicForm, nestedForm};

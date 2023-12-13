@@ -11,6 +11,7 @@ import {Variable} from 'modules/types';
 import {FormManager} from 'modules/formManager';
 import '@bpmn-io/form-js-viewer/dist/assets/form-js-base.css';
 import '@bpmn-io/form-js-carbon-styles/src/carbon-styles.scss';
+import {mergeVariables} from './mergeVariables';
 
 type Props = {
   handleSubmit: (variables: Variable[]) => Promise<void>;
@@ -60,10 +61,12 @@ const FormJSRenderer: React.FC<Props> = ({
           schema,
           data,
           onImportError,
-          onSubmit: async ({data, errors}) => {
+          onSubmit: async ({data: newData, errors}) => {
             onSubmitStart?.();
             if (Object.keys(errors).length === 0) {
-              const variables = Object.entries(data).map(
+              const variables = Object.entries(
+                mergeVariables(data, newData),
+              ).map(
                 ([name, value]) =>
                   ({
                     name,
