@@ -8,9 +8,12 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.compensation.CompensationSubscription;
+import java.util.Set;
 
 public interface CompensationSubscriptionState {
 
   CompensationSubscription get(
       String tenantId, long processInstanceKey, String compensableActivityId);
+
+  Set<String> getCompletedActivitiesToCompensate(String tenantId, long processInstanceKey);
 }

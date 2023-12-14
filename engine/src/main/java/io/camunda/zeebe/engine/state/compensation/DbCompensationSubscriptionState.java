@@ -18,6 +18,8 @@ import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.state.mutable.MutableCompensationSubscriptionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
+import java.util.HashSet;
+import java.util.Set;
 
 public class DbCompensationSubscriptionState implements MutableCompensationSubscriptionState {
 
@@ -56,6 +58,20 @@ public class DbCompensationSubscriptionState implements MutableCompensationSubsc
     return compensationSubscriptionColumnFamily
         .get(tenantAwareProcessInstanceKeyCompensableActivityId)
         .copy();
+  }
+
+  @Override
+  public Set<String> getCompletedActivitiesToCompensate(final String tenantId, final long piKey) {
+    tenantIdKey.wrapString(tenantId);
+    processInstanceKey.wrapLong(piKey);
+
+    final Set<String> completedActivities = new HashSet<>();
+    compensationSubscriptionColumnFamily.whileEqualPrefix(
+        new DbCompositeKey<>(tenantIdKey, processInstanceKey),
+        ((key, value) -> {
+          completedActivities.add(value.getRecord().getCompensableActivityId());
+        }));
+    return completedActivities;
   }
 
   @Override

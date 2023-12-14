@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBeha
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnSignalBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableIntermediateThrowEvent;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 
 public class IntermediateThrowEventProcessor
@@ -44,6 +46,7 @@ public class IntermediateThrowEventProcessor
   private final BpmnEventPublicationBehavior eventPublicationBehavior;
   private final ExpressionProcessor expressionProcessor;
   private final BpmnSignalBehavior signalBehavior;
+  private final BpmnStateBehavior stateBehavior;
 
   public IntermediateThrowEventProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -55,6 +58,7 @@ public class IntermediateThrowEventProcessor
     eventPublicationBehavior = bpmnBehaviors.eventPublicationBehavior();
     expressionProcessor = bpmnBehaviors.expressionBehavior();
     signalBehavior = bpmnBehaviors.signalBehavior();
+    stateBehavior = bpmnBehaviors.stateBehavior();
   }
 
   @Override
@@ -310,7 +314,20 @@ public class IntermediateThrowEventProcessor
         final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating) {
       final BpmnElementContext activated =
           stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
-      stateTransitionBehavior.completeElement(activated);
+
+      // check for activities that are completed and have compensation handlers
+      final Set<String> completedActivities =
+          stateBehavior.getCompletedActivitiesToCompensate(activated);
+
+      if (completedActivities.isEmpty()) {
+        stateTransitionBehavior.completeElement(activated);
+      } else {
+        // activate the compensation handler
+        completedActivities.forEach(
+            activity -> {
+              eventPublicationBehavior.activateCompensationHandler(activity, activated);
+            });
+      }
     }
 
     @Override

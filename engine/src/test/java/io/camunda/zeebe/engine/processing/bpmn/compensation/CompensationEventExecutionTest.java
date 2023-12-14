@@ -149,42 +149,78 @@ public class CompensationEventExecutionTest {
 
     // then
     assertThat(
-            RecordingExporter.processInstanceRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .limitToProcessInstanceCompleted())
-        .extracting(
-            r -> r.getValue().getBpmnElementType(),
-            Record::getIntent,
-            r -> r.getValue().getBpmnEventType())
-        .containsSubsequence(
-            tuple(
-                BpmnElementType.USER_TASK,
-                ProcessInstanceIntent.ELEMENT_COMPLETED,
-                BpmnEventType.UNSPECIFIED),
-            tuple(
-                BpmnElementType.INTERMEDIATE_THROW_EVENT,
-                ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                BpmnEventType.COMPENSATION),
-            tuple(
-                BpmnElementType.INTERMEDIATE_THROW_EVENT,
-                ProcessInstanceIntent.ELEMENT_COMPLETED,
-                BpmnEventType.COMPENSATION),
-            tuple(
-                BpmnElementType.END_EVENT,
-                ProcessInstanceIntent.ELEMENT_COMPLETED,
-                BpmnEventType.NONE),
-            tuple(
-                BpmnElementType.PROCESS,
-                ProcessInstanceIntent.ELEMENT_COMPLETED,
-                BpmnEventType.UNSPECIFIED));
-
-    assertThat(
             RecordingExporter.compensationSubscriptionRecords()
                 .withProcessInstanceKey(processInstanceKey))
         .extracting(Record::getValueType, Record::getIntent)
         .containsSequence(
             tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.CREATED),
             tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.TRIGGERED));
+  }
+
+  @Test
+  public void shouldActivateCompensationHandlerForIntermediateThrowEvent() {
+    // given
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-throw-event.bpmn");
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType(Protocol.USER_TASK_JOB_TYPE).complete();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(
+            r -> r.getValue().getBpmnElementType(),
+            Record::getIntent,
+            r -> r.getValue().getElementId())
+        .containsSubsequence(
+            tuple(
+                BpmnElementType.USER_TASK,
+                ProcessInstanceIntent.ELEMENT_ACTIVATING,
+                "Activity_1epoz0g"),
+            tuple(
+                BpmnElementType.USER_TASK,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                "Activity_1epoz0g"));
+  }
+
+  @Test
+  public void shouldActivateCompensationHandlerForEndEvent() {
+    // given
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-end-event.bpmn");
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType(Protocol.USER_TASK_JOB_TYPE).complete();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(
+            r -> r.getValue().getBpmnElementType(),
+            Record::getIntent,
+            r -> r.getValue().getElementId())
+        .containsSubsequence(
+            tuple(
+                BpmnElementType.USER_TASK,
+                ProcessInstanceIntent.ELEMENT_ACTIVATING,
+                "Activity_1epoz0g"),
+            tuple(
+                BpmnElementType.USER_TASK,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                "Activity_1epoz0g"));
   }
 
   private BpmnModelInstance createModelFromClasspathResource(final String classpath) {
