@@ -38,6 +38,14 @@
       "enabled": false
     },
     {
+      "matchPackagePrefixes": ["co.elastic"],
+      "matchUpdateTypes": [
+        "minor",
+        "major"
+      ],
+      "enabled": false
+    },
+    {
       "matchManagers": [
         "dockerfile"
       ],
