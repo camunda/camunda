@@ -124,12 +124,14 @@ public class OperateElasticsearchManager implements SchemaManager {
 
   @Override
   public void createSchema() {
+    LOGGER.info("Creating schema");
     if (operateProperties.getArchiver().isIlmEnabled()) {
       createIndexLifeCycles();
     }
     createDefaults();
     createTemplates();
     createIndices();
+    LOGGER.info("Schema created");
   }
 
   @Override
@@ -325,9 +327,9 @@ public class OperateElasticsearchManager implements SchemaManager {
   private void createIndex(final CreateIndexRequest createIndexRequest, String indexName) {
     final boolean created = retryElasticsearchClient.createIndex(createIndexRequest);
     if (created) {
-      LOGGER.debug("Index [{}] was successfully created", indexName);
+      LOGGER.info("Index [{}] was successfully created", indexName);
     } else {
-      LOGGER.debug("Index [{}] was NOT created", indexName);
+      LOGGER.info("Index [{}] was NOT created", indexName);
     }
   }
 
