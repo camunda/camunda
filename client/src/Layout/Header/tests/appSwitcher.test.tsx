@@ -35,9 +35,11 @@ describe('App switcher', () => {
       wrapper: getWrapper(),
     });
 
+    expect(await screen.findByText('Console')).toBeInTheDocument();
+
     await user.click(
       await screen.findByRole('button', {
-        name: /camunda apps/i,
+        name: /camunda components/i,
       }),
     );
 
