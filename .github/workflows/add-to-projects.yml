@@ -21,8 +21,8 @@ jobs:
                 }
               }
             }
-          owner: ${{ github.event.repository.owner.name }}
-          repo: ${{ github.event.repository.name }}
+          owner: "camunda"
+          repo: "zeebe"
           issue: ${{ github.event.issue.number }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
