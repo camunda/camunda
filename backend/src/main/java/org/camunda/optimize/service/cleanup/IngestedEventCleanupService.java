@@ -17,7 +17,7 @@ import java.time.OffsetDateTime;
 @AllArgsConstructor
 @Component
 @Slf4j
-public class IngestedEventCleanupService implements CleanupService {
+public class IngestedEventCleanupService extends CleanupService {
 
   private final ConfigurationService configurationService;
   private final ExternalEventWriter externalEventWriter;

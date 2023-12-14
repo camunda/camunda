@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.cleanup;
 
 import com.google.common.collect.ImmutableList;
+import io.github.netmikey.logunit.api.LogCapturer;
 import org.apache.commons.collections.ListUtils;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.PageResultDto;
@@ -16,7 +17,6 @@ import org.camunda.optimize.service.db.writer.CamundaActivityEventWriter;
 import org.camunda.optimize.service.db.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.db.writer.variable.VariableUpdateInstanceWriter;
-import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
@@ -25,6 +25,7 @@ import org.camunda.optimize.service.util.configuration.cleanup.ProcessDefinition
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
@@ -41,7 +42,6 @@ import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toMap;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -74,6 +74,9 @@ public class OptimizeProcessCleanupServiceTest {
   private CamundaActivityEventWriter camundaActivityEventWriter;
 
   private ConfigurationService configurationService;
+
+  @RegisterExtension
+  LogCapturer logCapturer = LogCapturer.create().captureForType(CleanupService.class);
 
   @BeforeEach
   public void init() {
@@ -182,7 +185,6 @@ public class OptimizeProcessCleanupServiceTest {
     // when
     mockProcessDefinitions(allProcessDefinitionKeys);
     mockGetProcessInstanceIdsForProcessInstanceDelete(allProcessDefinitionKeys);
-//    mockGetProcessInstanceDefinitionKeysForProcessInstanceDelete(allProcessDefinitionKeys);
     mockNextPageOfEntities();
     final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
@@ -215,28 +217,32 @@ public class OptimizeProcessCleanupServiceTest {
   }
 
   @Test
-  public void testFailCleanupOnSpecificKeyConfigWithNoMatchingProcessDefinition() {
+  public void testWarnOnCleanupOnSpecificKeyConfigWithNoMatchingProcessDefinition() {
     // given I have a key specific config
-    final String configuredKey = "myMistypedKey";
+    final String misconfiguredKey = "myMistypedKey";
     getCleanupConfiguration()
       .getProcessDataCleanupConfiguration()
       .getProcessDefinitionSpecificConfiguration()
       .put(
-        configuredKey,
+        misconfiguredKey,
         new ProcessDefinitionCleanupConfiguration(CleanupMode.VARIABLES)
       );
-    // and this key is not present in the known process definition keys
-    mockProcessDefinitions(generateRandomDefinitionsKeys(3));
+    final List<String> processDefinitionKeys = generateRandomDefinitionsKeys(3);
+    mockProcessDefinitions(processDefinitionKeys);
+    mockGetProcessInstanceIdsForProcessInstanceDelete(processDefinitionKeys);
+    mockNextPageOfEntities();
 
-    // when I run the cleanup
+    // when
     final CleanupService underTest = createOptimizeCleanupServiceToTest();
+    doCleanup(underTest);
 
-    // then it fails with an exception
-    OptimizeConfigurationException exception = assertThrows(
-      OptimizeConfigurationException.class,
-      () -> doCleanup(underTest)
-    );
-    assertThat(exception.getMessage()).contains(configuredKey);
+    // then
+    assertDeleteProcessInstancesExecutedFor(processDefinitionKeys, getCleanupConfiguration().getTtl());
+
+    // and it warns on misconfigured keys
+    logCapturer.assertContains(String.format(
+      "History Cleanup Configuration contains definition keys for which there is no "
+        + "definition imported yet. The keys without a match in the database are: [%s]", misconfiguredKey));
   }
 
   private void mockGetProcessInstanceIdsForProcessInstanceDelete(final List<String> expectedKeys) {

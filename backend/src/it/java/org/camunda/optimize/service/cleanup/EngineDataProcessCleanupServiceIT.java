@@ -5,16 +5,19 @@
  */
 package org.camunda.optimize.service.cleanup;
 
+import io.github.netmikey.logunit.api.LogCapturer;
 import lombok.SneakyThrows;
-import org.apache.commons.collections.ListUtils;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import org.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
@@ -28,6 +31,11 @@ import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 import static org.mockserver.model.JsonBody.json;
 
 public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
+
+  @RegisterExtension
+  LogCapturer cleanupServiceLogs = LogCapturer.create().captureForType(CleanupService.class);
+  @RegisterExtension
+  LogCapturer engineDataCleanupLogs = LogCapturer.create().captureForType(EngineDataProcessCleanupService.class);
 
   @BeforeEach
   public void enableProcessCleanup() {
@@ -279,6 +287,31 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
   @Test
   @SneakyThrows
+  public void testCleanupModeVariables_specificKeyCleanupMode_noInstanceDataExists() {
+    // given
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
+    final ProcessDefinitionEngineDto processDefinitionEngineDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      BpmnModels.getSingleUserTaskDiagram());
+    getCleanupConfiguration().getProcessDataCleanupConfiguration()
+      .getProcessDefinitionSpecificConfiguration()
+      .put(
+        processDefinitionEngineDto.getKey(),
+        ProcessDefinitionCleanupConfiguration.builder().cleanupMode(CleanupMode.VARIABLES).build()
+      );
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    engineDataCleanupLogs.assertContains(
+      "Finished cleanup on process instances for processDefinitionKey: aProcess, with ttl: P2Y and mode:VARIABLES");
+  }
+
+  @Test
+  @SneakyThrows
   public void testCleanupModeVariables_specificKeyTtl() {
     // given
     getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
@@ -359,9 +392,10 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
   @Test
   @SneakyThrows
   @SuppressWarnings(UNCHECKED_CAST)
-  public void testFailCleanupOnSpecificKeyConfigWithNoMatchingProcessDefinitionNoInstancesCleaned() {
+  public void testCleanupOnSpecificKeyConfigWithNoMatchingProcessDefinitionLogsWarning() {
     // given I have a key specific config
     final String configuredKey = "myMistypedKey";
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.VARIABLES);
     getProcessDataCleanupConfiguration().getProcessDefinitionSpecificConfiguration().put(
       configuredKey,
       new ProcessDefinitionCleanupConfiguration(CleanupMode.VARIABLES)
@@ -378,10 +412,13 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    // all data is still there
-    assertProcessInstanceDataCompleteInEs(extractProcessInstanceIds(
-      (List<ProcessInstanceEngineDto>) ListUtils.union(instancesWithEndTimeLessThanTtl, instancesWithEndTimeWithinTtl)
-    ));
+    // then data clear up has succeeded as expected
+    assertProcessInstanceDataCompleteInEs(extractProcessInstanceIds(instancesWithEndTimeWithinTtl));
+    assertVariablesEmptyInProcessInstances(extractProcessInstanceIds(instancesWithEndTimeLessThanTtl));
+    // and the misconfigured process is logged
+    cleanupServiceLogs.assertContains(String.format(
+      "History Cleanup Configuration contains definition keys for which there is no "
+        + "definition imported yet. The keys without a match in the database are: [%s]", configuredKey));
   }
 
   private String createBulkDeleteProcessInstanceRequestJson(final String processInstanceId,

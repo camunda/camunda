@@ -5,10 +5,11 @@
  */
 package org.camunda.optimize.service.cleanup;
 
+import io.github.netmikey.logunit.api.LogCapturer;
 import org.apache.commons.collections4.SetUtils;
-import org.camunda.optimize.service.db.reader.DecisionInstanceReader;
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.service.db.reader.DecisionDefinitionReader;
 import org.camunda.optimize.service.db.writer.DecisionInstanceWriter;
-import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
@@ -16,6 +17,7 @@ import org.camunda.optimize.service.util.configuration.cleanup.DecisionDefinitio
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -31,7 +33,6 @@ import java.util.stream.IntStream;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -40,11 +41,14 @@ import static org.mockito.Mockito.when;
 public class OptimizeDecisionCleanupServiceTest {
 
   @Mock
-  private DecisionInstanceReader decisionInstanceReader;
+  private DecisionDefinitionReader decisionDefinitionReader;
   @Mock
   private DecisionInstanceWriter decisionInstanceWriter;
 
   private ConfigurationService configurationService;
+
+  @RegisterExtension
+  LogCapturer logCapturer = LogCapturer.create().captureForType(CleanupService.class);
 
   @BeforeEach
   public void init() {
@@ -128,23 +132,31 @@ public class OptimizeDecisionCleanupServiceTest {
   }
 
   @Test
-  public void testFailCleanupOnSpecificKeyConfigWithNoMatchingDecisionDefinition() {
+  public void testWarnOnCleanupOnSpecificKeyConfigWithNoMatchingDecisionDefinition() {
     // given I have a key specific config
-    final String configuredKey = "myMistypedKey";
+    final String misconfiguredKey = "myMistypedKey";
     getCleanupConfiguration()
       .getDecisionCleanupConfiguration()
       .getDecisionDefinitionSpecificConfiguration()
       .put(
-        configuredKey,
+        misconfiguredKey,
         new DecisionDefinitionCleanupConfiguration(Period.parse("P2M"))
       );
-    // and this key is not present in the known process definition keys
-    mockDecisionDefinitions(generateRandomDefinitionsKeys(3));
+    // and this key is not present in the known decision definition keys
+    final Set<String> decisionDefinitionKeys = generateRandomDefinitionsKeys(3);
+    mockDecisionDefinitions(decisionDefinitionKeys);
 
-    // when I run the cleanup then it fails with an exception
-    OptimizeConfigurationException exception =
-      assertThrows(OptimizeConfigurationException.class, () -> doCleanup(createOptimizeCleanupServiceToTest()));
-    assertThat(exception.getMessage()).contains(configuredKey);
+    // when
+    final CleanupService underTest = createOptimizeCleanupServiceToTest();
+    doCleanup(underTest);
+
+    // then
+    assertDeleteDecisionInstancesExecutedFor(decisionDefinitionKeys, getCleanupConfiguration().getTtl());
+
+    // and it warns on misconfigured keys
+    logCapturer.assertContains(String.format(
+      "History Cleanup Configuration contains definition keys for which there is no "
+        + "definition imported yet. The keys without a match in the database are: [%s]", misconfiguredKey));
   }
 
   private void doCleanup(final CleanupService underTest) {
@@ -200,10 +212,15 @@ public class OptimizeDecisionCleanupServiceTest {
     return filteredDecisionInstancesWithDateFilter;
   }
 
-  private Set<String> mockDecisionDefinitions(Set<String> decisionDefinitionKeys) {
-    when(decisionInstanceReader.getExistingDecisionDefinitionKeysFromInstances())
-      .thenReturn(decisionDefinitionKeys);
-    return decisionDefinitionKeys;
+  private void mockDecisionDefinitions(Set<String> decisionDefinitionKeys) {
+    when(decisionDefinitionReader.getAllDecisionDefinitions())
+      .thenReturn(
+        decisionDefinitionKeys.stream().map(defKeys -> {
+          final DecisionDefinitionOptimizeDto def = new DecisionDefinitionOptimizeDto();
+          def.setKey(defKeys);
+          return def;
+        }).toList()
+      );
   }
 
   private Set<String> generateRandomDefinitionsKeys(Integer amount) {
@@ -215,7 +232,7 @@ public class OptimizeDecisionCleanupServiceTest {
   private EngineDataDecisionCleanupService createOptimizeCleanupServiceToTest() {
     return new EngineDataDecisionCleanupService(
       configurationService,
-      decisionInstanceReader,
+      decisionDefinitionReader,
       decisionInstanceWriter
     );
   }

@@ -5,26 +5,29 @@
  */
 package org.camunda.optimize.service.cleanup;
 
-import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.OffsetDateTime;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-public interface CleanupService {
+@Slf4j
+public abstract class CleanupService {
 
-  boolean isEnabled();
+  public abstract boolean isEnabled();
 
-  void doCleanup(final OffsetDateTime startTime);
+  public abstract void doCleanup(final OffsetDateTime startTime);
 
-  static void enforceAllSpecificDefinitionKeyConfigurationsHaveMatchInKnown(final Set<String> knownDefinitionKeys,
-                                                                            final Set<String> specificDefinitionConfigKeys) {
-    specificDefinitionConfigKeys.removeAll(knownDefinitionKeys);
+  public void verifyConfiguredKeysAreKnownDefinitionKeys(final Set<String> knownDefinitionKeys,
+                                                         final Set<String> specificDefinitionConfigKeys) {
+    final Set<String> knownConfiguredKeys = specificDefinitionConfigKeys.stream()
+      .filter(knownDefinitionKeys::contains)
+      .collect(Collectors.toSet());
+    specificDefinitionConfigKeys.removeAll(knownConfiguredKeys);
     if (!specificDefinitionConfigKeys.isEmpty()) {
-      final String message =
-        "History Cleanup Configuration contains definition keys for which there is no "
-          + "definition imported yet, aborting this cleanup run to avoid unintended data loss."
-          + "The keys without a match in the database are: " + specificDefinitionConfigKeys;
-      throw new OptimizeConfigurationException(message);
+      log.warn("History Cleanup Configuration contains definition keys for which there is no "
+                 + "definition imported yet. The keys without a match in the database are: "
+                 + specificDefinitionConfigKeys);
     }
   }
 

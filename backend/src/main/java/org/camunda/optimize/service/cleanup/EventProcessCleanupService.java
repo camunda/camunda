@@ -23,7 +23,7 @@ import java.util.Collection;
 @AllArgsConstructor
 @Component
 @Slf4j
-public class EventProcessCleanupService implements CleanupService {
+public class EventProcessCleanupService extends CleanupService {
 
   private final ConfigurationService configurationService;
   private final EventProcessPublishStateReader eventProcessPublishStateReader;
