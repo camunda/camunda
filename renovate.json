@@ -39,6 +39,7 @@
       "matchBaseBranches": ["master", "/^stable\\/.*/"]
     }
   ],
-  "branchPrefix": "renovate/",
+  "branchPrefix": "rnv8/",
+  "additionalBranchPrefix": "{{parentDir}}/",
   "ignoreDeps": ["docker.elastic.co/elasticsearch/elasticsearch"]
 }
