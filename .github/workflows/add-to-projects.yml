@@ -26,7 +26,7 @@ jobs:
             repo: "zeebe"
             issue: ${{ github.event.issue.number }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
       - id: has-project
         run: echo "result=${{ fromJSON(steps.get_project_count.outputs.data).repository.issue.projectsV2.totalCount > 0 }}" >> $GITHUB_OUTPUT
       - id: add-to-zdp
@@ -35,7 +35,7 @@ jobs:
         uses: actions/add-to-project@v0.5.0
         with:
           project-url: https://github.com/orgs/camunda/projects/92
-          github-token: ${{ secrets.PROJECT_ADMIN_TOKEN }}
+          github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           labeled: kind/task
           label-operator: NOT
       - id: add-to-zda
@@ -44,6 +44,6 @@ jobs:
         if: ${{ steps.has-project.outputs.result == 'false' }}
         with:
           project-url: https://github.com/orgs/camunda/projects/29
-          github-token: ${{ secrets.PROJECT_ADMIN_TOKEN }}
+          github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           labeled: kind/task
           label-operator: NOT
