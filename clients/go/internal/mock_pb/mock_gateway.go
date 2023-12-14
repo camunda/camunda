@@ -292,6 +292,26 @@ func (mr *MockGatewayClientMockRecorder) FailJob(ctx, in interface{}, opts ...in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailJob", reflect.TypeOf((*MockGatewayClient)(nil).FailJob), varargs...)
 }
 
+// MigrateProcessInstance mocks base method.
+func (m *MockGatewayClient) MigrateProcessInstance(ctx context.Context, in *pb.MigrateProcessInstanceRequest, opts ...grpc.CallOption) (*pb.MigrateProcessInstanceResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "MigrateProcessInstance", varargs...)
+	ret0, _ := ret[0].(*pb.MigrateProcessInstanceResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// MigrateProcessInstance indicates an expected call of MigrateProcessInstance.
+func (mr *MockGatewayClientMockRecorder) MigrateProcessInstance(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MigrateProcessInstance", reflect.TypeOf((*MockGatewayClient)(nil).MigrateProcessInstance), varargs...)
+}
+
 // ModifyProcessInstance mocks base method.
 func (m *MockGatewayClient) ModifyProcessInstance(ctx context.Context, in *pb.ModifyProcessInstanceRequest, opts ...grpc.CallOption) (*pb.ModifyProcessInstanceResponse, error) {
 	m.ctrl.T.Helper()
@@ -450,6 +470,26 @@ func (mr *MockGatewayClientMockRecorder) UpdateJobRetries(ctx, in interface{}, o
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateJobRetries", reflect.TypeOf((*MockGatewayClient)(nil).UpdateJobRetries), varargs...)
+}
+
+// UpdateJobTimeout mocks base method.
+func (m *MockGatewayClient) UpdateJobTimeout(ctx context.Context, in *pb.UpdateJobTimeoutRequest, opts ...grpc.CallOption) (*pb.UpdateJobTimeoutResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateJobTimeout", varargs...)
+	ret0, _ := ret[0].(*pb.UpdateJobTimeoutResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateJobTimeout indicates an expected call of UpdateJobTimeout.
+func (mr *MockGatewayClientMockRecorder) UpdateJobTimeout(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateJobTimeout", reflect.TypeOf((*MockGatewayClient)(nil).UpdateJobTimeout), varargs...)
 }
 
 // MockGateway_ActivateJobsClient is a mock of Gateway_ActivateJobsClient interface.
@@ -885,6 +925,21 @@ func (mr *MockGatewayServerMockRecorder) FailJob(arg0, arg1 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailJob", reflect.TypeOf((*MockGatewayServer)(nil).FailJob), arg0, arg1)
 }
 
+// MigrateProcessInstance mocks base method.
+func (m *MockGatewayServer) MigrateProcessInstance(arg0 context.Context, arg1 *pb.MigrateProcessInstanceRequest) (*pb.MigrateProcessInstanceResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MigrateProcessInstance", arg0, arg1)
+	ret0, _ := ret[0].(*pb.MigrateProcessInstanceResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// MigrateProcessInstance indicates an expected call of MigrateProcessInstance.
+func (mr *MockGatewayServerMockRecorder) MigrateProcessInstance(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MigrateProcessInstance", reflect.TypeOf((*MockGatewayServer)(nil).MigrateProcessInstance), arg0, arg1)
+}
+
 // ModifyProcessInstance mocks base method.
 func (m *MockGatewayServer) ModifyProcessInstance(arg0 context.Context, arg1 *pb.ModifyProcessInstanceRequest) (*pb.ModifyProcessInstanceResponse, error) {
 	m.ctrl.T.Helper()
@@ -1002,6 +1057,21 @@ func (m *MockGatewayServer) UpdateJobRetries(arg0 context.Context, arg1 *pb.Upda
 func (mr *MockGatewayServerMockRecorder) UpdateJobRetries(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateJobRetries", reflect.TypeOf((*MockGatewayServer)(nil).UpdateJobRetries), arg0, arg1)
+}
+
+// UpdateJobTimeout mocks base method.
+func (m *MockGatewayServer) UpdateJobTimeout(arg0 context.Context, arg1 *pb.UpdateJobTimeoutRequest) (*pb.UpdateJobTimeoutResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateJobTimeout", arg0, arg1)
+	ret0, _ := ret[0].(*pb.UpdateJobTimeoutResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateJobTimeout indicates an expected call of UpdateJobTimeout.
+func (mr *MockGatewayServerMockRecorder) UpdateJobTimeout(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateJobTimeout", reflect.TypeOf((*MockGatewayServer)(nil).UpdateJobTimeout), arg0, arg1)
 }
 
 // MockGateway_ActivateJobsServer is a mock of Gateway_ActivateJobsServer interface.
