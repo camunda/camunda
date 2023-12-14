@@ -67,6 +67,7 @@ runs:
         cache-from: type=gha,ignore-error=true
         cache-to: type=gha,mode=max,ignore-error=true
         no-cache-filters: build,distball,dist
+        provenance: false
         platforms: ${{ inputs.platforms }}
         build-args: |
           DATE=${{ steps.get-date.outputs.result }}
