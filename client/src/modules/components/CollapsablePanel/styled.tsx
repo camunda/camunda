@@ -22,7 +22,7 @@ type CollapsableProps = {
   $maxWidth: number;
 };
 
-const Collapsable = styled.div<CollapsableProps>`
+const Collapsable = styled.section<CollapsableProps>`
   ${({$isCollapsed, $isOverlay, $panelPosition, $maxWidth}) => {
     const isLeft = $panelPosition === 'LEFT';
     const isRight = $panelPosition === 'RIGHT';

@@ -35,7 +35,7 @@ const config: PlaywrightTestConfig = {
   },
   forbidOnly: IS_CI,
   retries: 0,
-  workers: IS_CI ? 1 : undefined,
+  workers: 1,
   reporter: 'html',
   projects: [
     {

@@ -31,7 +31,7 @@ test.describe('process instance migration', () => {
     page,
     commonPage,
     processesPage,
-    migrationMode,
+    migrationView,
   }) => {
     await page.route(
       /^.*\/api.*$/i,
@@ -89,14 +89,19 @@ test.describe('process instance migration', () => {
       },
     });
 
-    const checkboxes = page.getByRole('row', {name: /select row/i});
-    await checkboxes.nth(3).locator('label').click();
-    await checkboxes.nth(4).locator('label').click();
-    await checkboxes.nth(5).locator('label').click();
+    await processesPage.getNthProcessInstanceCheckbox(3).click();
+    await processesPage.getNthProcessInstanceCheckbox(4).click();
+    await processesPage.getNthProcessInstanceCheckbox(5).click();
 
-    await commonPage.addRightArrow(checkboxes.nth(3).locator('label'));
-    await commonPage.addRightArrow(checkboxes.nth(4).locator('label'));
-    await commonPage.addRightArrow(checkboxes.nth(5).locator('label'));
+    await commonPage.addRightArrow(
+      processesPage.getNthProcessInstanceCheckbox(3),
+    );
+    await commonPage.addRightArrow(
+      processesPage.getNthProcessInstanceCheckbox(4),
+    );
+    await commonPage.addRightArrow(
+      processesPage.getNthProcessInstanceCheckbox(5),
+    );
     await commonPage.addDownArrow(processesPage.migrateButton);
 
     await page.screenshot({
@@ -127,10 +132,10 @@ test.describe('process instance migration', () => {
     await processesPage.migrateButton.click();
     await processesPage.migrationModal.confirmButton.click();
 
-    await migrationMode.selectTargetProcess('Order process');
+    await migrationView.selectTargetProcess('Order process');
 
-    await commonPage.addDownArrow(migrationMode.targetProcessDropdown);
-    await commonPage.addDownArrow(migrationMode.targetVersionDropdown);
+    await commonPage.addDownArrow(migrationView.targetProcessDropdown);
+    await commonPage.addDownArrow(migrationView.targetVersionDropdown);
 
     await page.screenshot({
       path: path.join(baseDirectory, 'select-target-process.png'),
@@ -138,17 +143,17 @@ test.describe('process instance migration', () => {
 
     await commonPage.deleteArrows();
 
-    await migrationMode.mapFlowNode({
+    await migrationView.mapFlowNode({
       sourceFlowNodeName: 'Check payment',
       targetFlowNodeName: 'Check payment',
     });
 
-    await migrationMode.mapFlowNode({
+    await migrationView.mapFlowNode({
       sourceFlowNodeName: 'Ship Articles',
       targetFlowNodeName: 'Ship Articles',
     });
 
-    await migrationMode.mapFlowNode({
+    await migrationView.mapFlowNode({
       sourceFlowNodeName: 'Request for payment',
       targetFlowNodeName: 'Request for payment',
     });
@@ -169,7 +174,7 @@ test.describe('process instance migration', () => {
 
     await commonPage.deleteArrows();
 
-    await migrationMode.selectTargetSourceFlowNode('Check payment');
+    await migrationView.selectTargetSourceFlowNode('Check payment');
 
     const flowNodes = page
       .getByTestId('diagram')
@@ -184,7 +189,7 @@ test.describe('process instance migration', () => {
 
     await commonPage.deleteArrows();
 
-    await migrationMode.nextButton.click();
+    await migrationView.nextButton.click();
 
     await commonPage.addUpArrow(page.getByTestId('state-overlay'));
     await commonPage.addUpArrow(page.getByTestId('modifications-overlay'));
@@ -223,7 +228,7 @@ test.describe('process instance migration', () => {
       }),
     );
 
-    await migrationMode.confirmButton.click();
+    await migrationView.confirmButton.click();
 
     const taskBoundingBox = await page
       .getByTestId('diagram')

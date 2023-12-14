@@ -14,6 +14,7 @@ export class MigrationView {
   readonly targetVersionDropdown: Locator;
   readonly nextButton: Locator;
   readonly confirmButton: Locator;
+  readonly summaryNotification: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -34,28 +35,30 @@ export class MigrationView {
     this.confirmButton = page.getByRole('button', {
       name: /^confirm$/i,
     });
+
+    this.summaryNotification = page.getByRole('main').getByRole('status');
   }
 
-  selectTargetProcess = async (option: string) => {
+  async selectTargetProcess(option: string) {
     await this.targetProcessDropdown.click();
     await this.page.getByRole('option', {name: option}).click();
-  };
+  }
 
-  mapFlowNode = async ({
+  mapFlowNode({
     sourceFlowNodeName,
     targetFlowNodeName,
   }: {
     sourceFlowNodeName: string;
     targetFlowNodeName: string;
-  }) => {
-    await this.page
+  }) {
+    return this.page
       .getByLabel(`Target flow node for ${sourceFlowNodeName}`)
       .selectOption(targetFlowNodeName);
-  };
+  }
 
-  selectTargetSourceFlowNode = async (flowNodeName: string) => {
-    await this.page
+  selectTargetSourceFlowNode(flowNodeName: string) {
+    return this.page
       .getByRole('cell', {name: flowNodeName, exact: true})
       .click();
-  };
+  }
 }

@@ -18,29 +18,41 @@ export class Common {
   readonly openSettingsButton: Locator;
   readonly processesTab: Locator;
   readonly logoutButton: Locator;
+  readonly operationsList: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.openSettingsButton = page.getByRole('button', {name: 'Open Settings'});
     this.processesTab = page.getByRole('link', {name: 'Processes'});
     this.logoutButton = page.getByRole('button', {name: 'Log out'});
+    this.operationsList = page.getByTestId('operations-list');
   }
 
-  async clickOpenSettingsButton(): Promise<void> {
-    await this.openSettingsButton.click();
+  clickOpenSettingsButton() {
+    return this.openSettingsButton.click();
   }
 
-  async clickLogoutButton(): Promise<void> {
-    await this.logoutButton.click();
+  clickLogoutButton() {
+    return this.logoutButton.click();
   }
 
-  async logout(): Promise<void> {
+  async logout() {
     await this.clickOpenSettingsButton();
     await this.clickLogoutButton();
   }
 
-  async changeTheme(theme: string): Promise<void> {
-    await this.page.addInitScript((theme) => {
+  collapseOperationsPanel() {
+    return this.page
+      .getByRole('button', {name: /collapse operations/i})
+      .click();
+  }
+
+  expandOperationsPanel() {
+    return this.page.getByRole('button', {name: /expand operations/i}).click();
+  }
+
+  changeTheme(theme: string) {
+    return this.page.addInitScript((theme) => {
       window.localStorage.setItem(
         'sharedState',
         JSON.stringify({theme: theme}),
@@ -48,7 +60,7 @@ export class Common {
     }, theme);
   }
 
-  async disableModalAnimation() {
+  disableModalAnimation() {
     return this.page.addStyleTag({
       content: `
         .cds--modal-container {
@@ -87,7 +99,7 @@ export class Common {
     return arrowElement;
   }
 
-  async setArrowPosition({
+  setArrowPosition({
     arrowElement,
     arrowPositionX,
     arrowPositionY,
@@ -96,7 +108,7 @@ export class Common {
     arrowPositionX: number;
     arrowPositionY: number;
   }) {
-    await this.page.evaluate(
+    return this.page.evaluate(
       ({arrow, x, y}) => {
         arrow.style.position = 'absolute';
         arrow.style.left = `${x}px`;
@@ -106,10 +118,7 @@ export class Common {
     );
   }
 
-  async addRightArrow(
-    element: Locator,
-    additionalContent?: string,
-  ): Promise<void> {
+  async addRightArrow(element: Locator, additionalContent?: string) {
     const arrowElement = await this.createArrowElement({
       direction: 'right',
       additionalContent,
@@ -133,10 +142,7 @@ export class Common {
     });
   }
 
-  async addLeftArrow(
-    element: Locator,
-    additionalContent?: string,
-  ): Promise<void> {
+  async addLeftArrow(element: Locator, additionalContent?: string) {
     const arrowElement = await this.createArrowElement({
       direction: 'left',
       additionalContent,
@@ -160,10 +166,7 @@ export class Common {
     });
   }
 
-  async addDownArrow(
-    element: Locator,
-    additionalContent?: string,
-  ): Promise<void> {
+  async addDownArrow(element: Locator, additionalContent?: string) {
     const arrowElement = await this.createArrowElement({
       direction: 'down',
       additionalContent,
@@ -187,10 +190,7 @@ export class Common {
     });
   }
 
-  async addUpArrow(
-    element: Locator,
-    additionalContent?: string,
-  ): Promise<void> {
+  async addUpArrow(element: Locator, additionalContent?: string) {
     const arrowElement = await this.createArrowElement({
       direction: 'up',
       additionalContent,
@@ -214,8 +214,8 @@ export class Common {
     });
   }
 
-  async deleteArrows(): Promise<void> {
-    await this.page.evaluate(() => {
+  deleteArrows() {
+    return this.page.evaluate(() => {
       const arrowElement = document.querySelectorAll(
         `[class^="custom-arrow-"]`,
       );
@@ -226,10 +226,10 @@ export class Common {
     });
   }
 
-  async mockClientConfig(
+  mockClientConfig(
     context: BrowserContext,
     config?: (typeof window)['clientConfig'],
-  ): Promise<void> {
+  ) {
     const defaultConfig = {
       isEnterprise: true,
       canLogout: true,
@@ -242,7 +242,7 @@ export class Common {
       mixpanelAPIHost: null,
     };
 
-    await context.route('**/client-config.js', (route) =>
+    return context.route('**/client-config.js', (route) =>
       route.fulfill({
         status: 200,
         headers: {

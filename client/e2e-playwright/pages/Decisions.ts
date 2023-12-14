@@ -49,12 +49,18 @@ export class Decisions {
 
   async selectDecision(option: string) {
     await this.decisionNameFilter.click();
-    await this.page.getByTestId('expanded-panel').getByText(option).click();
+    await this.page
+      .getByRole('region', {name: /filter/i})
+      .getByRole('option', {name: option, exact: true})
+      .click();
   }
 
   async selectVersion(option: string) {
     await this.decisionVersionFilter.click();
-    await this.page.getByTestId('expanded-panel').getByText(option).click();
+    await this.page
+      .getByRole('region', {name: /filter/i})
+      .getByRole('option', {name: option, exact: true})
+      .click();
   }
 
   async displayOptionalFilter(filterName: OptionalFilter) {

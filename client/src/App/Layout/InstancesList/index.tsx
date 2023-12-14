@@ -48,7 +48,7 @@ const InstancesList: React.FC<Props> = observer(
         $hasFooter={footer !== undefined}
         $hasAdditionalTopContent={additionalTopContent !== undefined}
       >
-        {leftPanel && <section>{leftPanel}</section>}
+        {leftPanel}
         {additionalTopContent && <>{additionalTopContent}</>}
         <div ref={containerRef}>
           <ResizablePanel

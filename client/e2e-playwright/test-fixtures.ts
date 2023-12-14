@@ -44,7 +44,7 @@ const test = base.extend<
     processInstancePage: ProcessInstance;
     decisionsPage: Decisions;
     commonPage: Common;
-    migrationMode: MigrationView;
+    migrationView: MigrationView;
   },
   {workerStorageState: string}
 >({
@@ -99,7 +99,7 @@ const test = base.extend<
   commonPage: async ({page}, use) => {
     await use(new Common(page));
   },
-  migrationMode: async ({page}, use) => {
+  migrationView: async ({page}, use) => {
     await use(new MigrationView(page));
   },
 });

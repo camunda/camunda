@@ -85,18 +85,18 @@ test.beforeEach(async ({page, dashboardPage}) => {
 });
 
 test.describe('Operations', () => {
-  test('infinite scrolling', async ({page}) => {
-    await page
-      .getByRole('button', {
-        name: /expand operations/i,
-      })
-      .click();
+  test('infinite scrolling', async ({page, commonPage}) => {
+    await commonPage.expandOperationsPanel();
     await expect(page.getByTestId('operations-entry')).toHaveCount(20);
     await page.getByTestId('operations-entry').nth(19).scrollIntoViewIfNeeded();
     await expect(page.getByTestId('operations-entry')).toHaveCount(40);
   });
 
-  test('Retry and Cancel single instance ', async ({processesPage, page}) => {
+  test('Retry and Cancel single instance ', async ({
+    commonPage,
+    processesPage,
+    page,
+  }) => {
     const instance = initialData.singleOperationInstance;
 
     // ensure page is loaded
@@ -139,17 +139,12 @@ test.describe('Operations', () => {
       page.getByText('There are no Instances matching this filter set'),
     ).toBeVisible();
 
-    await expect(page.getByTestId('operations-list')).toBeHidden();
-    await page
-      .getByRole('button', {
-        name: /expand operations/i,
-      })
-      .click();
+    await expect(commonPage.operationsList).toBeHidden();
+    await commonPage.expandOperationsPanel();
 
-    await expect(page.getByTestId('operations-list')).toBeVisible();
+    await expect(commonPage.operationsList).toBeVisible();
 
-    const operationItem = page
-      .getByTestId('operations-list')
+    const operationItem = commonPage.operationsList
       .getByRole('listitem')
       .nth(0);
 
@@ -174,9 +169,12 @@ test.describe('Operations', () => {
     await expect(
       instanceRow.getByText(instance.processInstanceKey),
     ).toBeVisible();
+
+    await commonPage.collapseOperationsPanel();
   });
 
   test('Retry and cancel multiple instances ', async ({
+    commonPage,
     processesPage,
     page,
   }) => {
@@ -200,18 +198,16 @@ test.describe('Operations', () => {
 
     await page.getByRole('button', {name: 'Retry', exact: true}).click();
 
-    await expect(page.getByTestId('operations-list')).toBeHidden();
+    await expect(commonPage.operationsList).toBeHidden();
 
     await page.getByRole('button', {name: 'Apply'}).click();
-    await expect(page.getByTestId('operations-list')).toBeVisible();
+    await expect(commonPage.operationsList).toBeVisible();
 
     await expect(page.getByTitle(/has scheduled operations/i)).toHaveCount(
       instances.length,
     );
 
-    const operationsListItems = page
-      .getByTestId('operations-list')
-      .getByRole('listitem');
+    const operationsListItems = commonPage.operationsList.getByRole('listitem');
 
     // expect first operation item to have progress bar
     await expect(
@@ -260,17 +256,13 @@ test.describe('Operations', () => {
       ),
     );
 
-    await page
-      .getByRole('button', {
-        name: /collapse operations/i,
-      })
-      .click();
+    await commonPage.collapseOperationsPanel();
     await page.getByRole('columnheader', {name: 'Select all rows'}).click();
 
     await page.getByRole('button', {name: 'Cancel', exact: true}).click();
     await page.getByRole('button', {name: 'Apply'}).click();
 
-    await expect(page.getByTestId('operations-list')).toBeVisible();
+    await expect(commonPage.operationsList).toBeVisible();
     await expect(page.getByTitle(/has scheduled operations/i)).toHaveCount(
       instances.length,
     );

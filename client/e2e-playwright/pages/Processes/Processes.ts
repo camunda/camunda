@@ -145,14 +145,25 @@ export class Processes {
       .click();
   }
 
+  async removeOptionalFilter(filterName: OptionalFilter) {
+    await this.page.getByLabel(filterName, {exact: true}).hover();
+    await this.page.getByLabel(`Remove ${filterName} Filter`).click();
+  }
+
   async selectProcess(option: string) {
     await this.processNameFilter.click();
-    await this.page.getByTestId('expanded-panel').getByText(option).click();
+    await this.page
+      .getByRole('region', {name: /filter/i})
+      .getByRole('option', {name: option, exact: true})
+      .click();
   }
 
   async selectVersion(option: string) {
     await this.processVersionFilter.click();
-    await this.page.getByTestId('expanded-panel').getByText(option).click();
+    await this.page
+      .getByRole('region', {name: /filter/i})
+      .getByRole('option', {name: option, exact: true})
+      .click();
   }
 
   async selectFlowNode(option: string) {
@@ -209,5 +220,12 @@ export class Processes {
       await this.page.getByTestId('toTime').clear();
       await this.page.getByTestId('toTime').type(toTime);
     }
+  };
+
+  getNthProcessInstanceCheckbox = (index: number) => {
+    return this.processInstancesTable
+      .getByRole('row', {name: /select row/i})
+      .nth(index)
+      .locator('label');
   };
 }

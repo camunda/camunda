@@ -318,10 +318,10 @@ test.describe('process instance modification', () => {
     await expect(
       page.getByText(/Planned modifications for Process Instance/i),
     ).toBeVisible();
-    await expect(page.getByRole('cell', {name: /$move/i})).toBeVisible();
-    await expect(page.getByRole('cell', {name: /$add^/i})).toBeVisible();
+    await expect(page.getByRole('cell', {name: /^move$/i})).toBeVisible();
+    await expect(page.getByRole('cell', {name: /^add$/i})).toBeVisible();
     await expect(
-      page.getByRole('cell', {name: /$edit^/, exact: true}),
+      page.getByRole('cell', {name: /^edit$/i, exact: true}),
     ).toBeVisible();
 
     // text content inside the modal was not visible in the screenshot without randomly waiting a while

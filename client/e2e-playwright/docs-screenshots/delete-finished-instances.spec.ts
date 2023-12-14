@@ -103,13 +103,13 @@ test.describe('delete finished instances', () => {
       options: {waitUntil: 'networkidle'},
     });
 
-    await page.getByRole('button', {name: /expand operations/i}).click();
+    await commonPage.expandOperationsPanel();
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/delete-finished-instances/operate-operations-panel-delete-operation.png',
     });
 
-    await page.getByRole('button', {name: /collapse operations/i}).click();
+    await commonPage.collapseOperationsPanel();
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/delete-finished-instances/operate-instance-detail-finished-instances.png',

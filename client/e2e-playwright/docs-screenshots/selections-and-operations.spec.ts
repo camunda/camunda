@@ -66,6 +66,7 @@ test.describe('selections and operations', () => {
 
   test('view operations panel after retry operation', async ({
     page,
+    commonPage,
     processesPage,
   }) => {
     await page.route(
@@ -84,7 +85,7 @@ test.describe('selections and operations', () => {
       options: {waitUntil: 'networkidle'},
     });
 
-    await page.getByRole('button', {name: /expand operations/i}).click();
+    await commonPage.expandOperationsPanel();
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/selections-and-operations/operate-operations-panel.png',
