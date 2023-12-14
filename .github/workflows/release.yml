@@ -211,7 +211,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Download Release Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
       - name: Create Artifact Checksums
@@ -286,7 +286,7 @@ jobs:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
       - name: Download Zeebe Release Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
       - name: Build Docker Image
