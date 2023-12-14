@@ -52,7 +52,6 @@ env:
   IS_MASTER_BRANCH: ${{ inputs.branch == 'master' }}
   IS_FE_BRANCH: ${{ startsWith(inputs.branch, 'fe-') }}
   LIMITS_CPU: ${{ inputs.forkCount }} # consumed by `maven-surefire-plugin` & `maven-failsafe-plugin` plugins defined in main `pom.xml` file
-  ZEEBE_TASKLIST_DOCKER_IMAGE: "registry.camunda.cloud/team-hto/tasklist"
 
 jobs:
   build:
@@ -133,23 +132,20 @@ jobs:
           registry: registry.camunda.cloud
           username: ${{ steps.secrets.outputs.NEXUS_USR }}
           password: ${{ steps.secrets.outputs.NEXUS_PSW }}
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            registry.camunda.cloud/team-hto/tasklist
+          tags: |
+            ${{ env.IMAGE_TAG }}
+            ${{ env.CI_IMAGE_TAG }}
+            ${{ env.PR_IMAGE_TAG }}
       - name: Build Docker image
         uses: ./.github/actions/build-docker
         with:
-          repository: ${{ env.ZEEBE_TASKLIST_DOCKER_IMAGE }}
-          version: ${{ env.IMAGE_TAG }}
-          push: true
-      - name: Build CI Docker image
-        uses: ./.github/actions/build-docker
-        with:
-          repository: ${{ env.ZEEBE_TASKLIST_DOCKER_IMAGE }}
-          version: ${{ env.CI_IMAGE_TAG }}
-          push: true
-      - name: Build Preview Docker image
-        uses: ./.github/actions/build-docker
-        with:
-          repository: ${{ env.ZEEBE_TASKLIST_DOCKER_IMAGE }}
-          version: ${{ env.PR_IMAGE_TAG }}
+          tags: ${{ steps.meta.outputs.tags }}
           push: true
 
       #########################################################################
@@ -196,8 +192,8 @@ jobs:
         if: ${{ env.IS_MASTER_BRANCH == 'true' }}
         uses: ./.github/actions/build-docker
         with:
-          repository: camunda/tasklist
-          version: SNAPSHOT
+          tags: |
+            camunda/tasklist:SNAPSHOT
           push: true
       - name: Deploy - Nexus SNAPSHOT
         if: ${{ env.IS_MASTER_BRANCH == 'true' }}

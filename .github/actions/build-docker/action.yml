@@ -4,12 +4,8 @@ name: Build Docker Image
 description: Builds the Tasklist Docker image
 
 inputs:
-  repository:
-    description: 'The image repository, e.g. camunda/tasklist'
-    default: 'camunda/tasklist'
-    required: true
-  version:
-    description: 'The image tag version, e.g. SNAPSHOT, 8.1.0, latest'
+  tags:
+    description: 'Docker image tags'
     required: true
   revision:
     description: 'The revision of the source the content of this image is based on.'
@@ -25,9 +21,6 @@ inputs:
     default: 'linux/arm64,linux/amd64'
 
 outputs:
-  image:
-    description: "Fully qualified image name available in your local Docker daemon"
-    value: ${{ steps.get-image.outputs.result }}
   date:
     description: "The ISO 8601 date at which the image was created"
     value: ${{ steps.get-date.outputs.result }}
@@ -50,10 +43,6 @@ runs:
       id: get-date
       shell: bash
       run: echo "result=$(date --iso-8601=seconds)" >> $GITHUB_OUTPUT
-    - name: Set image name from params and/or project version
-      id: get-image
-      shell: bash
-      run: echo "result=${{ inputs.repository }}:${{ inputs.version }}" >> $GITHUB_OUTPUT
     - name: "Read Java / Version Info"
       id: "pom-info"
       uses: YunaBraska/java-info-action@main
@@ -61,7 +50,7 @@ runs:
       uses: docker/build-push-action@v5
       with:
         context: .
-        tags: ${{ steps.get-image.outputs.result }}
+        tags: ${{ inputs.tags }}
         load: ${{ inputs.push != 'true' }}
         push: ${{ inputs.push }}
         cache-from: type=gha,ignore-error=true

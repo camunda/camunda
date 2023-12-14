@@ -193,19 +193,20 @@ jobs:
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            camunda/tasklist
+          tags: |
+            ${{ inputs.releaseVersion }}
+            latest,enable=${{ inputs.isLatest }}
       - name: Upload Docker image
         if: ${{ inputs.dryRun == false }}
         uses: ./.github/actions/build-docker
         with:
-          repository: camunda/tasklist
-          version: ${{ inputs.releaseVersion }}
-          push: true
-      - name: Upload latest Docker image
-        if: ${{ inputs.dryRun == false }} && ${{ inputs.isLatest }}
-        uses: ./.github/actions/build-docker
-        with:
-          repository: camunda/tasklist
-          version: latest
+          tags: ${{ steps.meta.outputs.tags }}
           push: true
 
       #########################################################################
