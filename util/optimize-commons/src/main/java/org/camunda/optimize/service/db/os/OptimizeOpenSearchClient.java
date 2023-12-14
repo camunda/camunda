@@ -11,9 +11,9 @@ import org.camunda.optimize.dto.optimize.DataImportSourceType;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.service.db.DatabaseClient;
+import org.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
 import org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.ClearScrollRequest;
@@ -30,7 +30,6 @@ import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.IndexResponse;
-import org.opensearch.client.opensearch.core.MgetRequest;
 import org.opensearch.client.opensearch.core.MgetResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -95,13 +94,14 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     this.requestOptionsProvider = new RequestOptionsProvider(List.of(), configurationService);
   }
 
-  public final <T> GetResponse<T> get(final GetRequest getRequest,
-                                      final Class<T> responseClass) throws IOException {
-    return openSearchClient.get(getRequest, responseClass);
+  public final <T> GetResponse<T> get(final GetRequest.Builder requestBuilder,
+                                      final Class<T> responseClass,
+                                      final String errorMessage) {
+    return richOpenSearchClient.doc().get(requestBuilder, responseClass, e -> errorMessage);
   }
 
-  public DeleteResponse delete(final DeleteRequest request) throws IOException {
-    return openSearchClient.delete(request);
+  public DeleteResponse delete(final DeleteRequest.Builder requestBuilder, final String errorMessage) {
+    return richOpenSearchClient.doc().delete(requestBuilder, e -> errorMessage);
   }
 
   public UpdateResponse update(final UpdateRequest.Builder requestBuilder, final String errorMessage) {
@@ -191,9 +191,8 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   }
 
   //todo rename it in scope of OPT-7469
-  public CountResponse countOs(final CountRequest countRequest) throws
-                                                                IOException {
-    return openSearchClient.count(countRequest);
+  public CountResponse countOs(final CountRequest.Builder requestBuilder, final String errorMessage) {
+    return richOpenSearchClient.doc().count(requestBuilder, e -> errorMessage);
   }
 
   //todo rename it in scope of OPT-7469
@@ -209,8 +208,8 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return null;
   }
 
-  public <T> MgetResponse<T> mget(MgetRequest mgetRequest, Class<T> responseType) throws IOException {
-    return getOpenSearchClient().mget(mgetRequest, responseType);
+  public <T> MgetResponse<T> mget(Class<T> responseType, final String errorMessage, String param, String... indexes) {
+    return richOpenSearchClient.doc().mget(responseType, e -> errorMessage, param, indexes);
   }
 
   @Override

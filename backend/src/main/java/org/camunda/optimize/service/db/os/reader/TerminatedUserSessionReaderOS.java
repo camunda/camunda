@@ -14,7 +14,6 @@ import org.opensearch.client.opensearch.core.GetRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.Collections;
 
 import static org.camunda.optimize.service.db.DatabaseConstants.TERMINATED_USER_SESSION_INDEX_NAME;
@@ -27,13 +26,15 @@ public class TerminatedUserSessionReaderOS extends TerminatedUserSessionReader {
   private final OptimizeOpenSearchClient osClient;
 
   @Override
-  protected boolean sessionIdExists(final String sessionId) throws IOException {
-    final GetRequest sessionByIdRequest = new GetRequest.Builder()
+  protected boolean sessionIdExists(final String sessionId) {
+    GetRequest.Builder requestBuilder = new GetRequest.Builder()
       .index(TERMINATED_USER_SESSION_INDEX_NAME)
       .id(sessionId)
-      .sourceIncludes(Collections.emptyList())
-      .build();
-    return osClient.get(sessionByIdRequest, TerminatedUserSessionDto.class).found();
+      .sourceIncludes(Collections.emptyList());
+
+    String errorMessage = String.format("Was not able to fetch user session for ID [%s]", sessionId);
+
+    return osClient.get(requestBuilder, TerminatedUserSessionDto.class, errorMessage).found();
   }
 
 }

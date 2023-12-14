@@ -30,12 +30,10 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.CountRequest;
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.GetResponse;
-import org.opensearch.client.opensearch.core.MgetRequest;
 import org.opensearch.client.opensearch.core.MgetResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.get.GetResult;
-import org.opensearch.client.opensearch.core.mget.MultiGetOperation;
 import org.opensearch.client.opensearch.core.mget.MultiGetResponseItem;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.SourceConfig;
@@ -91,15 +89,12 @@ public class ReportReaderOS implements ReportReader {
   @Override
   public Optional<SingleProcessReportDefinitionRequestDto> getSingleProcessReportOmitXml(final String reportId) {
     log.debug("Fetching single process report with id [{}]", reportId);
-    GetRequest getRequest = getGetRequestOmitXml(SINGLE_PROCESS_REPORT_INDEX_NAME, reportId);
-    GetResponse<SingleProcessReportDefinitionRequestDto> getResponse;
-    try {
-      getResponse = osClient.get(getRequest, SingleProcessReportDefinitionRequestDto.class);
-    } catch (IOException e) {
-      String reason = String.format("Could not fetch single process report with id [%s]", reportId);
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
+    GetRequest.Builder getRequest = getGetRequestOmitXml(SINGLE_PROCESS_REPORT_INDEX_NAME, reportId);
+
+    String errorMessage = String.format("Could not fetch single process report with id [%s]", reportId);
+
+    GetResponse<SingleProcessReportDefinitionRequestDto> getResponse =
+      osClient.get(getRequest, SingleProcessReportDefinitionRequestDto.class, errorMessage);
 
     if (!getResponse.found()) {
       return Optional.empty();
@@ -111,16 +106,12 @@ public class ReportReaderOS implements ReportReader {
   @Override
   public Optional<SingleDecisionReportDefinitionRequestDto> getSingleDecisionReportOmitXml(final String reportId) {
     log.debug("Fetching single decision report with id [{}]", reportId);
-    GetRequest getRequest = getGetRequestOmitXml(SINGLE_DECISION_REPORT_INDEX_NAME, reportId);
+    GetRequest.Builder getRequest = getGetRequestOmitXml(SINGLE_DECISION_REPORT_INDEX_NAME, reportId);
 
-    GetResponse<SingleDecisionReportDefinitionRequestDto> getResponse;
-    try {
-      getResponse = osClient.get(getRequest, SingleDecisionReportDefinitionRequestDto.class);
-    } catch (IOException e) {
-      String reason = String.format("Could not fetch single decision report with id [%s]", reportId);
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
+    String errorMessage = String.format("Could not fetch single decision report with id [%s]", reportId);
+
+    GetResponse<SingleDecisionReportDefinitionRequestDto> getResponse =
+      osClient.get(getRequest, SingleDecisionReportDefinitionRequestDto.class, errorMessage);
 
     if (!getResponse.found()) {
       return Optional.empty();
@@ -240,11 +231,8 @@ public class ReportReaderOS implements ReportReader {
       countRequest = new CountRequest.Builder()
         .index(SINGLE_DECISION_REPORT_INDEX_NAME);
     }
-    try {
-      return osClient.countOs(countRequest.build()).count();
-    } catch (IOException e) {
-      throw new OptimizeRuntimeException("Was not able to retrieve report counts!", e);
-    }
+    String reason = "Was not able to retrieve report counts!";
+    return osClient.countOs(countRequest, reason).count();
   }
 
   private List<ReportDefinitionDto> getAllProcessReportsForDefinitionKeyOmitXml(final String definitionKey) {
@@ -371,10 +359,11 @@ public class ReportReaderOS implements ReportReader {
     return result;
   }
 
-  private GetRequest getGetRequestOmitXml(final String index, final String reportId) {
-    GetRequest.Builder getRequest = new GetRequest.Builder().index(index).id(reportId);
-    getRequest.sourceExcludes(Arrays.asList(REPORT_LIST_EXCLUDES));
-    return getRequest.build();
+  private GetRequest.Builder getGetRequestOmitXml(final String index, final String reportId) {
+    return new GetRequest.Builder()
+      .index(index)
+      .id(reportId)
+      .sourceExcludes(Arrays.asList(REPORT_LIST_EXCLUDES));
   }
 
   private SearchRequest.Builder getSearchRequestOmitXml(final Query query, final String[] indices) {
@@ -428,30 +417,16 @@ public class ReportReaderOS implements ReportReader {
   }
 
   private MgetResponse<ReportDefinitionDto> performMultiGetReportRequest(String reportId) {
-    MgetRequest request = new MgetRequest.Builder()
-      .docs(
-        getMultiGetOperation(SINGLE_PROCESS_REPORT_INDEX_NAME, reportId),
-        getMultiGetOperation(SINGLE_DECISION_REPORT_INDEX_NAME, reportId),
-        getMultiGetOperation(COMBINED_REPORT_INDEX_NAME, reportId)
-      )
-      .build();
+    String errorMessage = String.format("Could not fetch report with id [%s]", reportId);
 
-    MgetResponse<ReportDefinitionDto> multiGetItemResponses;
-    try {
-      multiGetItemResponses = osClient.mget(request, ReportDefinitionDto.class);
-    } catch (IOException e) {
-      String reason = String.format("Could not fetch report with id [%s]", reportId);
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-    return multiGetItemResponses;
-  }
-
-  private MultiGetOperation getMultiGetOperation(String index, String id) {
-    return new MultiGetOperation.Builder()
-      .id(id)
-      .index(index)
-      .build();
+    return osClient.mget(
+      ReportDefinitionDto.class,
+      errorMessage,
+      reportId,
+      SINGLE_PROCESS_REPORT_INDEX_NAME,
+      SINGLE_DECISION_REPORT_INDEX_NAME,
+      COMBINED_REPORT_INDEX_NAME
+    );
   }
 
 }

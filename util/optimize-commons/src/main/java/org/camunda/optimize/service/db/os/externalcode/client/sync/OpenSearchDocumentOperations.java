@@ -14,17 +14,25 @@ import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.CountRequest;
+import org.opensearch.client.opensearch.core.CountResponse;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
+import org.opensearch.client.opensearch.core.DeleteRequest;
+import org.opensearch.client.opensearch.core.DeleteResponse;
+import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.IndexResponse;
+import org.opensearch.client.opensearch.core.MgetRequest;
+import org.opensearch.client.opensearch.core.MgetResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.UpdateByQueryRequest;
 import org.opensearch.client.opensearch.core.UpdateByQueryResponse;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.UpdateResponse;
+import org.opensearch.client.opensearch.core.mget.MultiGetOperation;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
 
@@ -37,6 +45,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static java.lang.String.format;
 import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.ids;
@@ -286,10 +295,11 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
 
   public <R> Optional<R> getWithRetries(String index, String id, Class<R> entityClass) {
     return executeWithRetries(() -> {
-      final GetResponse<R> response = openSearchClient.get(
-        applyIndexPrefix(getRequest(index, id)).build(),
-        entityClass
-      );
+      final GetResponse<R> response =
+        openSearchClient.get(
+          applyIndexPrefix(getRequest(index, id)).build(),
+          entityClass
+        );
       return response.found() ? Optional.ofNullable(response.source()) : Optional.empty();
     });
   }
@@ -308,23 +318,38 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   public boolean deleteWithRetries(String index, Query query) {
     return executeWithRetries(
       () -> {
-        final DeleteByQueryRequest request = deleteByQueryRequestBuilder(applyIndexPrefix(index)).query(query).build();
+        final DeleteByQueryRequest request = applyIndexPrefix(deleteByQueryRequestBuilder(List.of(index))).query(query).build();
         final DeleteByQueryResponse response = openSearchClient.deleteByQuery(request);
         return response.failures().isEmpty() && response.deleted() > 0;
       });
   }
 
-  public long deleteByQuery(Query query, String ... index) {
-    return executeWithRetries(
+  public long deleteByQuery(Query query, String... indexes) {
+    List<String> listIndexes = List.of(indexes);
+    Long status = executeWithRetries(
       () -> {
-        final DeleteByQueryRequest request = deleteByQueryRequestBuilder(applyIndexPrefix(index)).query(query).build();
+        final DeleteByQueryRequest request = applyIndexPrefix(deleteByQueryRequestBuilder(listIndexes)).query(query).build();
         final DeleteByQueryResponse response = openSearchClient.deleteByQuery(request);
         return response.deleted();
       });
+
+    if (status == null) {
+      String message = String.format("Could not delete any record from the indexes [%s]", listIndexes);
+      log.error(message);
+      throw new OptimizeRuntimeException(message);
+    } else {
+      String message = String.format(
+        "Deleted [%s] records from the indexes [%s]",
+        status,
+        listIndexes
+      );
+      log.debug(message);
+      return status;
+    }
   }
 
   public long updateByQuery(String index, Query query, Script script) {
-    return executeWithRetries(
+    Long status = executeWithRetries(
       () -> {
         final UpdateByQueryRequest request = applyIndexPrefix(updateByQueryRequestBuilder(List.of(index))).query(query)
           .script(script)
@@ -332,6 +357,21 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
         final UpdateByQueryResponse response = openSearchClient.updateByQuery(request);
         return response.updated();
       });
+
+    if (status == null) {
+      String message = String.format("Could not update any record from the [%s]", index);
+      log.error(message);
+      throw new OptimizeRuntimeException(message);
+    } else {
+      String message = String.format(
+        "Updated [%s] records from the index [%s]",
+        status,
+        index
+      );
+      log.debug(message);
+      return status;
+    }
+
   }
 
   public boolean deleteWithRetries(String index, String id) {
@@ -352,6 +392,51 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
       () -> openSearchClient.update(applyIndexPrefix(requestBuilder).build(), Void.class),
       errorMessageSupplier
     );
+  }
+
+  public DeleteResponse delete(DeleteRequest.Builder requestBuilder, Function<Exception, String> errorMessageSupplier) {
+    return safe(
+      () -> openSearchClient.delete(applyIndexPrefix(requestBuilder).build()),
+      errorMessageSupplier
+    );
+  }
+
+  public CountResponse count(CountRequest.Builder requestBuilder, Function<Exception, String> errorMessageSupplier) {
+    return safe(
+      () -> openSearchClient.count(applyIndexPrefix(requestBuilder).build()),
+      errorMessageSupplier
+    );
+  }
+
+  public <T> GetResponse<T> get(final GetRequest.Builder requestBuilder, final Class<T> responseClass, final Function<Exception,
+    String> errorMessageSupplier) {
+    return safe(
+      () -> openSearchClient.get(applyIndexPrefix(requestBuilder).build(), responseClass),
+      errorMessageSupplier
+    );
+  }
+
+  public <T> MgetResponse<T> mget(final Class<T> responseClass, final Function<Exception,
+    String> errorMessageSupplier, String id, String... indexes) {
+
+    List<MultiGetOperation> operations = Stream.of(indexes)
+      .map(this::getIndexAliasFor)
+      .map(index -> getMultiGetOperation(index, id))
+      .toList();
+
+    MgetRequest.Builder requestBuilder = new MgetRequest.Builder()
+      .docs(operations);
+    return safe(
+      () -> openSearchClient.mget(requestBuilder.build(), responseClass),
+      errorMessageSupplier
+    );
+  }
+
+  private MultiGetOperation getMultiGetOperation(String index, String id) {
+    return new MultiGetOperation.Builder()
+      .id(id)
+      .index(index)
+      .build();
   }
 
 }

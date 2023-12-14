@@ -73,12 +73,13 @@ public class OpenSearchOperation {
     try {
       return supplier.get();
     } catch (OpenSearchException e) {
-      throw e;
+      final String message = "An exception has occurred when trying to execute an OpenSearch operation";
+      log.error(message, e);
+      throw new OptimizeRuntimeException(message, e);
     } catch (Exception e) {
       final String message = errorMessage.apply(e);
       log.error(message, e);
-      // TODO throw Optimize Exception - fix with OPT-7352
-      return null;
+      throw new OptimizeRuntimeException(message, e);
     }
   }
 

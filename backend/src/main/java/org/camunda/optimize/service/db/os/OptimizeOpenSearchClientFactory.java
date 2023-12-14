@@ -5,7 +5,15 @@
  */
 package org.camunda.optimize.service.db.os;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.DateSerializer;
+import com.fasterxml.jackson.databind.util.StdDateFormat;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -25,6 +33,10 @@ import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.ssl.TrustStrategy;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
 import org.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
@@ -33,14 +45,19 @@ import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
+import org.camunda.optimize.service.util.mapper.CustomAuthorizedReportDefinitionDeserializer;
+import org.camunda.optimize.service.util.mapper.CustomCollectionEntityDeserializer;
+import org.camunda.optimize.service.util.mapper.CustomDefinitionDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
+import org.camunda.optimize.service.util.mapper.CustomReportDefinitionDeserializer;
 import org.elasticsearch.client.RequestOptions;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.transport.OpenSearchTransport;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.util.StringUtils;
 
 import javax.net.ssl.SSLContext;
@@ -59,6 +76,7 @@ import java.security.cert.CertificateFactory;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
+import java.util.Date;
 
 import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.service.util.DatabaseVersionChecker.checkOSVersionSupport;
@@ -93,14 +111,49 @@ public class OptimizeOpenSearchClientFactory {
         return requestConfigBuilder;
       });
 
-    ObjectMapper objectMapper = new ObjectMapper();
-
     DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
+
     JavaTimeModule javaTimeModule = new JavaTimeModule();
-    javaTimeModule.addSerializer(OffsetDateTime.class, new CustomOffsetDateTimeSerializer(dateTimeFormatter));
-    javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomOffsetDateTimeDeserializer(dateTimeFormatter));
-    objectMapper.registerModule(javaTimeModule);
-    final JacksonJsonpMapper jsonpMapper = new JacksonJsonpMapper(objectMapper);
+    javaTimeModule.addSerializer(
+      OffsetDateTime.class,
+      new CustomOffsetDateTimeSerializer(dateTimeFormatter)
+    );
+    javaTimeModule.addSerializer(Date.class, new DateSerializer(false, new StdDateFormat().withColonInTimeZone(false)));
+    javaTimeModule.addDeserializer(
+      OffsetDateTime.class,
+      new CustomOffsetDateTimeDeserializer(dateTimeFormatter)
+    );
+
+    ObjectMapper mapper = Jackson2ObjectMapperBuilder
+      .json()
+      .modules(new Jdk8Module(), javaTimeModule)
+      .featuresToDisable(
+        SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
+        DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
+        DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+        DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES,
+        DeserializationFeature.FAIL_ON_MISSING_EXTERNAL_TYPE_ID_PROPERTY,
+        SerializationFeature.FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS
+      )
+      .featuresToEnable(
+        JsonParser.Feature.ALLOW_COMMENTS,
+        SerializationFeature.INDENT_OUTPUT,
+        DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY,
+        MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS
+      )
+      .build();
+
+    SimpleModule module = new SimpleModule();
+    module.addDeserializer(DefinitionOptimizeResponseDto.class, new CustomDefinitionDeserializer(mapper));
+    module.addDeserializer(ReportDefinitionDto.class, new CustomReportDefinitionDeserializer(mapper));
+    module.addDeserializer(
+      AuthorizedReportDefinitionResponseDto.class,
+      new CustomAuthorizedReportDefinitionDeserializer(mapper)
+    );
+    module.addDeserializer(CollectionEntity.class, new CustomCollectionEntityDeserializer(mapper));
+    mapper.registerModule(module);
+
+    final JacksonJsonpMapper jsonpMapper = new JacksonJsonpMapper(mapper);
     builder.setMapper(jsonpMapper);
 
     final OpenSearchTransport transport = builder.build();

@@ -5,14 +5,15 @@
  */
 package org.camunda.optimize.service.db;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 
 @FieldNameConstants
-@Getter
-@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Data
 @AllArgsConstructor
 public class LicenseDto {
   String license;

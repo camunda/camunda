@@ -285,21 +285,16 @@ public class ReportWriterOS implements ReportWriter {
   public void deleteCombinedReport(final String reportId) {
     log.debug("Deleting combined report with id [{}]", reportId);
 
-    DeleteRequest request = new DeleteRequest.Builder()
+    DeleteRequest.Builder requestBuilder = new DeleteRequest.Builder()
       .index(COMBINED_REPORT_INDEX_NAME)
       .id(reportId)
-      .refresh(Refresh.True)
-      .build();
+      .refresh(Refresh.True);
 
     DeleteResponse deleteResponse;
-    try {
-      deleteResponse = osClient.delete(request);
-    } catch (IOException e) {
-      String reason =
-        String.format("Could not delete combined report with id [%s].", reportId);
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
+
+    String reason = String.format("Could not delete combined report with id [%s].", reportId);
+
+    deleteResponse = osClient.delete(requestBuilder, reason);
 
     if (!deleteResponse.result().equals(Result.Deleted)) {
       String message =
