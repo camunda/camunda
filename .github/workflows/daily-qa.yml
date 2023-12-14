@@ -61,9 +61,18 @@ jobs:
           - ${{ format('stable/{0}', needs.get-versions.outputs.latest-version) }}
           - ${{ format('stable/{0}', needs.get-versions.outputs.previous-latest-version) }}
           - ${{ format('stable/{0}', needs.get-versions.outputs.previous-previous-latest-version) }}
+        include:
+          - branch: 'main'
+            generation_template: 'Zeebe SNAPSHOT'
+          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.latest-version) }}
+            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.latest-version) }}
+          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.previous-latest-version) }}
+            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.previous-latest-version) }}
+          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.previous-previous-latest-version) }}
+            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.previous-previous-latest-version) }}
     name: Daily QA
     uses: ./.github/workflows/qa-testbench.yaml
     with:
       branch: ${{ matrix.branch }}
-      generation: Zeebe SNAPSHOT
+      generation: ${{ matrix.generation_template }}
     secrets: inherit
