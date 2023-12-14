@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:dupl after the line 15
+
 package commands
 
 import (
