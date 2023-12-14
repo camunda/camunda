@@ -34,7 +34,6 @@ public class OperateElasticSearchRecordFilter implements RecordFilter {
 
   @Override
   public boolean acceptValue(ValueType valueType) {
-    // TODO Auto-generated method stub
-    return false;
+    return ACCEPTED_VALUE_TYPES.contains(valueType);
   }
 }
