@@ -30,45 +30,6 @@ import (
 
 type JobStreamerSuite struct {
 	suite.Suite
-	command   mockStreamJobsCommand
-	backoff   mockBackoffSupplier
-	streamer  jobStreamer
-	jobQueue  chan entities.Job
-	waitGroup sync.WaitGroup
-}
-
-func (s *JobStreamerSuite) BeforeTest(_, _ string) {
-	s.jobQueue = make(chan entities.Job)
-	s.command = mockStreamJobsCommand{
-		sendChan: make(chan context.Context, 10),
-	}
-	s.backoff = mockBackoffSupplier{}
-	s.streamer = jobStreamer{
-		request:         &s.command,
-		workerFinished:  make(chan bool),
-		closeSignal:     make(chan struct{}),
-		backoffSupplier: &s.backoff,
-	}
-	s.waitGroup.Add(1)
-}
-
-func (s *JobStreamerSuite) AfterTest(_, _ string) {
-	close(s.streamer.closeSignal)
-
-	c := make(chan struct{})
-	go func() {
-		s.waitGroup.Wait()
-		close(c)
-	}()
-
-	for {
-		select {
-		case <-c:
-			return
-		case <-time.After(utils.DefaultTestTimeout):
-			s.FailNow("Failed to wait for job streamer to close")
-		}
-	}
 }
 
 func TestJobStreamerSuite(t *testing.T) {
@@ -79,12 +40,14 @@ func (s *JobStreamerSuite) TestShouldNotOpenStreamIfClosed() {
 	// given
 	// since we aren't going to stream, the wait group has to be decremented
 	// to allow the AfterTest to run properly
+	state := newTestState()
+	defer state.close(s)
 	finished := make(chan bool)
-	s.streamer.close()
+	state.streamer.close()
 
 	// when - should not hang because the stream is closed
 	go func() {
-		s.streamer.stream(&s.waitGroup)
+		state.streamer.stream(state.waitGroup)
 		finished <- true
 		close(finished)
 	}()
@@ -92,7 +55,7 @@ func (s *JobStreamerSuite) TestShouldNotOpenStreamIfClosed() {
 	// then
 	select {
 	case <-finished:
-		s.EqualValues(0, s.command.sendCount)
+		s.EqualValues(0, state.command.sendCount)
 	case <-time.After(10 * time.Second):
 		s.FailNow("Timed out waiting for stream call to finish")
 	}
@@ -101,13 +64,15 @@ func (s *JobStreamerSuite) TestShouldNotOpenStreamIfClosed() {
 func (s *JobStreamerSuite) TestShouldStopStreamOnCloseSignal() {
 	// given
 	var ctx context.Context
-	s.command.setSendChanBuffer(0)
+	state := newTestState()
+	defer state.close(s)
+	state.command.setSendChanBuffer(0)
 
 	// when - should not hang because the stream is closed
-	go s.streamer.stream(&s.waitGroup)
+	go state.streamer.stream(state.waitGroup)
 	select {
-	case ctx = <-s.command.sendChan:
-		s.streamer.closeSignal <- struct{}{}
+	case ctx = <-state.command.sendChan:
+		state.streamer.closeSignal <- struct{}{}
 	case <-time.After(10 * time.Second):
 		s.FailNow("Timed out waiting for stream call to finish")
 	}
@@ -115,8 +80,10 @@ func (s *JobStreamerSuite) TestShouldStopStreamOnCloseSignal() {
 	// then
 	select {
 	case <-ctx.Done():
-		// closing is async, so there will be for sure a second call
-		s.EqualValues(2, s.command.sendCount)
+		// since recreating the stream is async, this may be 1 or 2 depending on the
+		// scheduling
+		s.GreaterOrEqual(state.command.sendCount, 1)
+		s.LessOrEqual(state.command.sendCount, 2)
 	case <-time.After(10 * time.Second):
 		s.FailNow("Context was not canceled even though the streamer was closed via a signal")
 	}
@@ -125,17 +92,19 @@ func (s *JobStreamerSuite) TestShouldStopStreamOnCloseSignal() {
 func (s *JobStreamerSuite) TestShouldRecreateStreamOnCompleted() {
 	// given
 	var ctx context.Context
+	state := newTestState()
+	defer state.close(s)
 	// will block on the second send call
-	s.command.setSendChanBuffer(0)
+	state.command.setSendChanBuffer(0)
 
 	// when - should not hang because the stream is closed
-	go s.streamer.stream(&s.waitGroup)
+	go state.streamer.stream(state.waitGroup)
 	select {
 	// capture second call context
-	case <-s.command.sendChan:
+	case <-state.command.sendChan:
 		select {
-		case ctx = <-s.command.sendChan:
-			s.streamer.closeSignal <- struct{}{}
+		case ctx = <-state.command.sendChan:
+			state.streamer.closeSignal <- struct{}{}
 		case <-time.After(10 * time.Second):
 			s.FailNow("Timed out waiting for stream call to finish")
 		}
@@ -146,8 +115,8 @@ func (s *JobStreamerSuite) TestShouldRecreateStreamOnCompleted() {
 	// then
 	select {
 	case <-ctx.Done():
-		s.EqualValues(2, s.command.sendCount)
-		s.EqualValues(0, s.backoff.calledCount)
+		s.EqualValues(2, state.command.sendCount)
+		s.EqualValues(0, state.backoff.calledCount)
 	case <-time.After(10 * time.Second):
 		s.FailNow("Context was not canceled even though the streamer was closed via a signal")
 	}
@@ -156,19 +125,21 @@ func (s *JobStreamerSuite) TestShouldRecreateStreamOnCompleted() {
 func (s *JobStreamerSuite) TestShouldRecreateStreamOnErrorWithBackoff() {
 	// given
 	var ctx context.Context
-	s.command.err = errors.New("Foo")
-	s.backoff.delaySequence = []time.Duration{1, 2 * time.Hour}
+	state := newTestState()
+	defer state.close(s)
+	state.command.err = errors.New("Foo")
+	state.backoff.delaySequence = []time.Duration{1, 2 * time.Hour}
 	// will block on the second send call
-	s.command.setSendChanBuffer(1)
+	state.command.setSendChanBuffer(2)
 
 	// when - should not hang because the stream is closed
-	go s.streamer.stream(&s.waitGroup)
+	go state.streamer.stream(state.waitGroup)
 	select {
 	// capture second call context
-	case <-s.command.sendChan:
+	case <-state.command.sendChan:
 		select {
-		case ctx = <-s.command.sendChan:
-			s.streamer.closeSignal <- struct{}{}
+		case ctx = <-state.command.sendChan:
+			state.streamer.closeSignal <- struct{}{}
 		case <-time.After(10 * time.Second):
 			s.FailNow("Timed out waiting for stream call to finish")
 		}
@@ -180,12 +151,62 @@ func (s *JobStreamerSuite) TestShouldRecreateStreamOnErrorWithBackoff() {
 
 	select {
 	case <-ctx.Done():
-		s.EqualValues(2, s.backoff.calledCount)
-		s.Require().Len(s.backoff.currentRetryDelays, 2)
-		s.EqualValues(0, s.backoff.currentRetryDelays[0])
-		s.EqualValues(1, s.backoff.currentRetryDelays[1])
+		s.EqualValues(2, state.backoff.calledCount)
+		s.Require().Len(state.backoff.currentRetryDelays, 2)
+		s.EqualValues(0, state.backoff.currentRetryDelays[0])
+		s.EqualValues(1, state.backoff.currentRetryDelays[1])
 	case <-time.After(10 * time.Second):
 		s.FailNow("Context was not canceled even though the streamer was closed via a signal")
+	}
+}
+
+type testState struct {
+	command   *mockStreamJobsCommand
+	backoff   *mockBackoffSupplier
+	streamer  *jobStreamer
+	jobQueue  chan entities.Job
+	waitGroup *sync.WaitGroup
+}
+
+func newTestState() *testState {
+	command := mockStreamJobsCommand{
+		sendChan: make(chan context.Context, 10),
+	}
+	backoff := mockBackoffSupplier{}
+	state := testState{
+		command: &command,
+		backoff: &backoff,
+		streamer: &jobStreamer{
+			request:         &command,
+			workerFinished:  make(chan bool),
+			closeSignal:     make(chan struct{}),
+			backoffSupplier: &backoff,
+		},
+		jobQueue:  make(chan entities.Job),
+		waitGroup: &sync.WaitGroup{},
+	}
+
+	state.waitGroup.Add(1)
+
+	return &state
+}
+
+func (state *testState) close(suite *JobStreamerSuite) {
+	close(state.streamer.closeSignal)
+
+	c := make(chan struct{})
+	go func() {
+		state.waitGroup.Wait()
+		close(c)
+	}()
+
+	for {
+		select {
+		case <-c:
+			return
+		case <-time.After(utils.DefaultTestTimeout):
+			suite.FailNow("Failed to wait for job streamer to close")
+		}
 	}
 }
 
