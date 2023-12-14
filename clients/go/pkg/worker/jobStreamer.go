@@ -84,17 +84,21 @@ func (streamer *jobStreamer) stream(closeWait *sync.WaitGroup) {
 }
 
 func (streamer *jobStreamer) openStream(ctx context.Context, onClose chan<- error) {
+	// only keep one open stream at a time
+	var err error
+	streamer.streamMutex.Lock()
+
+	defer func() {
+		streamer.streamMutex.Unlock()
+		onClose <- err
+		close(onClose)
+	}()
+
 	if streamer.isClosed() {
-		onClose <- nil
 		return
 	}
 
-	// only keep one open stream at a time
-	streamer.streamMutex.Lock()
-	defer streamer.streamMutex.Unlock()
-
-	onClose <- streamer.request.Send(ctx)
-	close(onClose)
+	err = streamer.request.Send(ctx)
 }
 
 func (streamer *jobStreamer) isClosed() bool {
