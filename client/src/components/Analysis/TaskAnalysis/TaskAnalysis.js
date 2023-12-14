@@ -104,10 +104,13 @@ export default function TaskAnalysis() {
       mightFail(
         loadNodesOutliers(config),
         async (data) => {
-          const heatData = Object.keys(data).reduce(
-            (acc, key) => ({...acc, [key]: data[key].higherOutlierHeat || undefined}),
-            {}
-          );
+          const heatData = Object.keys(data).reduce((acc, key) => {
+            // taking only high outliers into consideration
+            if (data[key].higherOutlierHeat && data[key].higherOutlier) {
+              return {...acc, [key]: data[key].higherOutlierHeat};
+            }
+            return acc;
+          }, {});
 
           const outlierVariables = await loadOutlierVariables(heatData, data, config);
 

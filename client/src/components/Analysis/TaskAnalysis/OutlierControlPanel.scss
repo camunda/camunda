@@ -7,22 +7,22 @@
 
   .list .item {
     display: inline;
-    position: relative;
-    padding-right: 20px;
 
     .DefinitionSelection {
       display: inline-block;
-      margin: 0 0.5em;
       line-height: normal;
       width: 220px;
+    }
+
+    &:not(:last-of-type) {
+      padding-right: 20px;
     }
   }
 
   .Filter {
     .filterHeader {
-      position: relative;
       display: inline-flex;
-      margin-right: 20px;
+      margin: 0;
 
       .dropdownLabel {
         margin-right: 10px;
@@ -40,12 +40,12 @@
     }
 
     .FilterList {
-      display: inline;
+      display: flex;
 
       > .listItem {
         display: inline-flex;
         width: auto;
-        margin-right: 10px;
+        margin: 12px 12px 0 0;
       }
     }
   }

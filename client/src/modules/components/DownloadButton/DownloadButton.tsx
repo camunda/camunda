@@ -89,7 +89,7 @@ export function DownloadButton({
         {...props}
         onClick={() => (totalCount > exportLimit ? setModalOpen(true) : triggerDownload())}
       />
-      <Modal open={modalOpen} onClose={closeModal}>
+      <Modal open={modalOpen} onClose={closeModal} className="DownloadButtonConfirmationModal">
         <Modal.Header>{t('report.downloadCSV')}</Modal.Header>
         <Modal.Content>
           <p>
