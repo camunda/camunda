@@ -19,10 +19,12 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
@@ -51,14 +53,14 @@ public class MigrateProcessInstanceConcurrentTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
                     .startEvent()
-                    .serviceTask("A_v1", a -> a.zeebeJobType("A"))
+                    .serviceTask("A", a -> a.zeebeJobType("A"))
                     .serviceTask("B_v1", s -> s.zeebeJobType("B"))
                     .endEvent("end_v1")
                     .done())
             .withXmlResource(
                 Bpmn.createExecutableProcess(targetProcessId)
                     .startEvent()
-                    .serviceTask("A_v2", a -> a.zeebeJobType("A"))
+                    .serviceTask("A", a -> a.zeebeJobType("A"))
                     .serviceTask("B_v2", s -> s.zeebeJobType("B"))
                     .endEvent("end_v2")
                     .done())
@@ -85,12 +87,30 @@ public class MigrateProcessInstanceConcurrentTest {
                     .setTargetProcessDefinitionKey(targetProcessDefinitionKey)
                     .addMappingInstruction(
                         new ProcessInstanceMigrationMappingInstruction()
-                            .setSourceElementId("A_v1")
-                            .setTargetElementId("A_v2"))
-                    .addMappingInstruction(
-                        new ProcessInstanceMigrationMappingInstruction()
-                            .setSourceElementId("B_v1")
-                            .setTargetElementId("B_v2"))));
+                            .setSourceElementId("A")
+                            .setTargetElementId("A"))));
+
+    final var migrationRejection =
+        RecordingExporter.processInstanceMigrationRecords(ProcessInstanceMigrationIntent.MIGRATE)
+            .withProcessInstanceKey(processInstanceKey)
+            .onlyCommandRejections()
+            .getFirst();
+
+    assertThat(migrationRejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            """
+            Expected to migrate process instance '%d' but no mapping instruction defined for active element with id 'B_v1'. \
+            Elements cannot be migrated without a mapping."""
+                .formatted(processInstanceKey));
+
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("B_v1", "B_v2")
+        .migrate();
 
     ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
 
@@ -122,14 +142,14 @@ public class MigrateProcessInstanceConcurrentTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
                     .startEvent()
-                    .serviceTask("A_v1", a -> a.zeebeJobType("A"))
+                    .serviceTask("A", a -> a.zeebeJobType("A"))
                     .serviceTask("B_v1", s -> s.zeebeJobType("B"))
                     .endEvent("end_v1")
                     .done())
             .withXmlResource(
                 Bpmn.createExecutableProcess(targetProcessId)
                     .startEvent()
-                    .serviceTask("A_v2", a -> a.zeebeJobType("A"))
+                    .serviceTask("A", a -> a.zeebeJobType("A"))
                     .serviceTask("B_v2", s -> s.zeebeJobType("B"))
                     .endEvent("end_v2")
                     .done())
@@ -155,12 +175,8 @@ public class MigrateProcessInstanceConcurrentTest {
                     .setTargetProcessDefinitionKey(targetProcessDefinitionKey)
                     .addMappingInstruction(
                         new ProcessInstanceMigrationMappingInstruction()
-                            .setSourceElementId("A_v1")
-                            .setTargetElementId("A_v2"))
-                    .addMappingInstruction(
-                        new ProcessInstanceMigrationMappingInstruction()
-                            .setSourceElementId("B_v1")
-                            .setTargetElementId("B_v2"))),
+                            .setSourceElementId("A")
+                            .setTargetElementId("A"))),
         RecordToWrite.command().job(JobIntent.COMPLETE, new JobRecord()).key(jobKey));
 
     ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
@@ -172,12 +188,11 @@ public class MigrateProcessInstanceConcurrentTest {
                 .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
         .containsSubsequence(
-            tuple("A_v2", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple("B_v2", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple("end_v2", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(targetProcessId, ProcessInstanceIntent.ELEMENT_COMPLETED))
         .doesNotContain(
-            tuple("A_v1", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple("B_v1", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple("end_v1", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
@@ -195,21 +210,21 @@ public class MigrateProcessInstanceConcurrentTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
                     .startEvent()
-                    .serviceTask("A_v1", t -> t.zeebeJobType("A"))
-                    .boundaryEvent("timer_v1", b -> b.timerWithDuration("PT1H"))
+                    .serviceTask("A", t -> t.zeebeJobType("A"))
+                    .boundaryEvent("timer", b -> b.timerWithDuration("PT1H"))
                     .serviceTask("B_v1", t -> t.zeebeJobType("B"))
                     .endEvent("end_v1")
-                    .moveToActivity("A_v1")
+                    .moveToActivity("A")
                     .endEvent("end_2_v1")
                     .done())
             .withXmlResource(
                 Bpmn.createExecutableProcess(targetProcessId)
                     .startEvent()
-                    .serviceTask("A_v2", t -> t.zeebeJobType("A"))
-                    .boundaryEvent("timer_v2", b -> b.timerWithDuration("PT1H"))
+                    .serviceTask("A", t -> t.zeebeJobType("A"))
+                    .boundaryEvent("timer", b -> b.timerWithDuration("PT1H"))
                     .serviceTask("B_v2", t -> t.zeebeJobType("B"))
                     .endEvent("end_v2")
-                    .moveToActivity("A_v2")
+                    .moveToActivity("A")
                     .endEvent("end_2_v2")
                     .done())
             .deploy();
@@ -236,12 +251,30 @@ public class MigrateProcessInstanceConcurrentTest {
                     .setTargetProcessDefinitionKey(targetProcessDefinitionKey)
                     .addMappingInstruction(
                         new ProcessInstanceMigrationMappingInstruction()
-                            .setSourceElementId("A_v1")
-                            .setTargetElementId("A_v2"))
-                    .addMappingInstruction(
-                        new ProcessInstanceMigrationMappingInstruction()
-                            .setSourceElementId("B_v1")
-                            .setTargetElementId("B_v2"))));
+                            .setSourceElementId("A")
+                            .setTargetElementId("A"))));
+
+    final var migrationRejection =
+        RecordingExporter.processInstanceMigrationRecords(ProcessInstanceMigrationIntent.MIGRATE)
+            .withProcessInstanceKey(processInstanceKey)
+            .onlyCommandRejections()
+            .getFirst();
+
+    assertThat(migrationRejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            """
+            Expected to migrate process instance '%d' but no mapping instruction defined for active element with id 'B_v1'. \
+            Elements cannot be migrated without a mapping."""
+                .formatted(processInstanceKey));
+
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("B_v1", "B_v2")
+        .migrate();
 
     ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
 
@@ -273,21 +306,21 @@ public class MigrateProcessInstanceConcurrentTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
                     .startEvent()
-                    .serviceTask("A_v1", t -> t.zeebeJobType("A"))
-                    .boundaryEvent("timer_v1", b -> b.timerWithDuration("PT1H"))
+                    .serviceTask("A", t -> t.zeebeJobType("A"))
+                    .boundaryEvent("timer", b -> b.timerWithDuration("PT1H"))
                     .serviceTask("B_v1", t -> t.zeebeJobType("B"))
                     .endEvent("end_v1")
-                    .moveToActivity("A_v1")
+                    .moveToActivity("A")
                     .endEvent("end_2_v1")
                     .done())
             .withXmlResource(
                 Bpmn.createExecutableProcess(targetProcessId)
                     .startEvent()
-                    .serviceTask("A_v2", t -> t.zeebeJobType("A"))
-                    .boundaryEvent("timer_v2", b -> b.timerWithDuration("PT1H"))
+                    .serviceTask("A", t -> t.zeebeJobType("A"))
+                    .boundaryEvent("timer", b -> b.timerWithDuration("PT1H"))
                     .serviceTask("B_v2", t -> t.zeebeJobType("B"))
                     .endEvent("end_v2")
-                    .moveToActivity("A_v2")
+                    .moveToActivity("A")
                     .endEvent("end_2_v2")
                     .done())
             .deploy();
@@ -311,12 +344,8 @@ public class MigrateProcessInstanceConcurrentTest {
                     .setTargetProcessDefinitionKey(targetProcessDefinitionKey)
                     .addMappingInstruction(
                         new ProcessInstanceMigrationMappingInstruction()
-                            .setSourceElementId("A_v1")
-                            .setTargetElementId("A_v2"))
-                    .addMappingInstruction(
-                        new ProcessInstanceMigrationMappingInstruction()
-                            .setSourceElementId("B_v1")
-                            .setTargetElementId("B_v2"))),
+                            .setSourceElementId("A")
+                            .setTargetElementId("A"))),
         RecordToWrite.command()
             .timer(TimerIntent.TRIGGER, timerCreated.getValue())
             .key(timerCreated.getKey()));
@@ -363,26 +392,26 @@ public class MigrateProcessInstanceConcurrentTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
                     .startEvent()
-                    .serviceTask("A_v1", t -> t.zeebeJobType("A"))
+                    .serviceTask("A", t -> t.zeebeJobType("A"))
                     .boundaryEvent(
-                        "message_v1",
+                        "message",
                         b -> b.message(m -> m.name("message").zeebeCorrelationKeyExpression("key")))
                     .serviceTask("B_v1", t -> t.zeebeJobType("B"))
                     .endEvent("end_v1")
-                    .moveToActivity("A_v1")
+                    .moveToActivity("A")
                     .endEvent("end_2_v1")
                     .done())
             .withXmlResource(
                 Bpmn.createExecutableProcess(targetProcessId)
                     .startEvent()
-                    .serviceTask("A_v2", t -> t.zeebeJobType("A"))
+                    .serviceTask("A", t -> t.zeebeJobType("A"))
                     .boundaryEvent(
-                        "message_v2",
+                        "message",
                         b ->
                             b.message(m -> m.name("message2").zeebeCorrelationKeyExpression("key")))
                     .serviceTask("B_v2", t -> t.zeebeJobType("B"))
                     .endEvent("end_v2")
-                    .moveToActivity("A_v2")
+                    .moveToActivity("A")
                     .endEvent("end_2_v2")
                     .done())
             .deploy();
@@ -417,12 +446,30 @@ public class MigrateProcessInstanceConcurrentTest {
                     .setTargetProcessDefinitionKey(targetProcessDefinitionKey)
                     .addMappingInstruction(
                         new ProcessInstanceMigrationMappingInstruction()
-                            .setSourceElementId("A_v1")
-                            .setTargetElementId("A_v2"))
-                    .addMappingInstruction(
-                        new ProcessInstanceMigrationMappingInstruction()
-                            .setSourceElementId("B_v1")
-                            .setTargetElementId("B_v2"))));
+                            .setSourceElementId("A")
+                            .setTargetElementId("A"))));
+
+    final var migrationRejection =
+        RecordingExporter.processInstanceMigrationRecords(ProcessInstanceMigrationIntent.MIGRATE)
+            .withProcessInstanceKey(processInstanceKey)
+            .onlyCommandRejections()
+            .getFirst();
+
+    assertThat(migrationRejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            """
+            Expected to migrate process instance '%d' but no mapping instruction defined for active element with id 'B_v1'. \
+            Elements cannot be migrated without a mapping."""
+                .formatted(processInstanceKey));
+
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("B_v1", "B_v2")
+        .migrate();
 
     ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
 
@@ -455,26 +502,26 @@ public class MigrateProcessInstanceConcurrentTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
                     .startEvent()
-                    .serviceTask("A_v1", t -> t.zeebeJobType("A"))
+                    .serviceTask("A", t -> t.zeebeJobType("A"))
                     .boundaryEvent(
-                        "message_v1",
+                        "message",
                         b -> b.message(m -> m.name("message").zeebeCorrelationKeyExpression("key")))
                     .serviceTask("B_v1", t -> t.zeebeJobType("B"))
                     .endEvent("end_v1")
-                    .moveToActivity("A_v1")
+                    .moveToActivity("A")
                     .endEvent("end_2_v1")
                     .done())
             .withXmlResource(
                 Bpmn.createExecutableProcess(targetProcessId)
                     .startEvent()
-                    .serviceTask("A_v2", t -> t.zeebeJobType("A"))
+                    .serviceTask("A", t -> t.zeebeJobType("A"))
                     .boundaryEvent(
-                        "message_v2",
+                        "message",
                         b ->
                             b.message(m -> m.name("message2").zeebeCorrelationKeyExpression("key")))
                     .serviceTask("B_v2", t -> t.zeebeJobType("B"))
                     .endEvent("end_v2")
-                    .moveToActivity("A_v2")
+                    .moveToActivity("A")
                     .endEvent("end_2_v2")
                     .done())
             .deploy();
@@ -502,12 +549,8 @@ public class MigrateProcessInstanceConcurrentTest {
                     .setTargetProcessDefinitionKey(targetProcessDefinitionKey)
                     .addMappingInstruction(
                         new ProcessInstanceMigrationMappingInstruction()
-                            .setSourceElementId("A_v1")
-                            .setTargetElementId("A_v2"))
-                    .addMappingInstruction(
-                        new ProcessInstanceMigrationMappingInstruction()
-                            .setSourceElementId("B_v1")
-                            .setTargetElementId("B_v2"))),
+                            .setSourceElementId("A")
+                            .setTargetElementId("A"))),
         RecordToWrite.command()
             .message(
                 MessageIntent.PUBLISH,
