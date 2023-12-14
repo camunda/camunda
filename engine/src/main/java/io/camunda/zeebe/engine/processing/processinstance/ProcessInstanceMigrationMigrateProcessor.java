@@ -385,6 +385,12 @@ public class ProcessInstanceMigrationMigrateProcessor
       throw new ConcurrentCommandException(processInstanceKey);
     }
 
+    if (elementInstance.getActiveSequenceFlows() > 0) {
+      // An active sequence flow indicates a concurrent command. It is created when taking a
+      // sequence flow and writing an ACTIVATE command for the next element.
+      throw new ConcurrentCommandException(processInstanceKey);
+    }
+
     stateWriter.appendFollowUpEvent(
         elementInstance.getKey(),
         ProcessInstanceIntent.ELEMENT_MIGRATED,
