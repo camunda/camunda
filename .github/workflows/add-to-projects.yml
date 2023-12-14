@@ -1,0 +1,48 @@
+name: Assign new issues to the default projects
+on:
+  issues:
+    types: [ opened, reopened, transferred ]
+jobs:
+  add-to-projects:
+    name: Add issue to ZDP/ZPA project if no project set yet
+    runs-on: ubuntu-latest
+    steps:
+      - id: get_project_count
+        uses: octokit/graphql-action@v2.2.25
+        with:
+          # API https://docs.github.com/en/graphql/reference/objects#issue
+          query: |
+            query getProjectCount($owner:String!, $repo:String!, $issue: Int!) {
+              repository(name: $repo, owner: $owner) {
+                issue: issue(number: $issue) {
+                  projectsV2 {
+                    totalCount
+                  }
+                }
+              }
+            }
+          owner: ${{ github.event.repository.owner.name }}
+          repo: ${{ github.event.repository.name }}
+          issue: ${{ github.event.issue.number }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - id: has-project
+        run: echo "result=${{ fromJSON(steps.get_project_count.outputs.data).repository.issue.projectsV2.totalCount > 0 }}" >> $GITHUB_OUTPUT
+      - id: add-to-zdp
+        name: Add to ZDP project
+        if: ${{ !steps.has-project.outputs.result }}
+        uses: actions/add-to-project@v0.5.0
+        with:
+          project-url: https://github.com/orgs/camunda/projects/92
+          github-token: ${{ secrets.PROJECT_ADMIN_TOKEN }}
+          labeled: kind/task
+          label-operator: NOT
+      - id: add-to-zda
+        name: Add to ZPA project
+        uses: actions/add-to-project@v0.5.0
+        if: ${{ !steps.has-project.outputs.result }}
+        with:
+          project-url: https://github.com/orgs/camunda/projects/29
+          github-token: ${{ secrets.PROJECT_ADMIN_TOKEN }}
+          labeled: kind/task
+          label-operator: NOT
