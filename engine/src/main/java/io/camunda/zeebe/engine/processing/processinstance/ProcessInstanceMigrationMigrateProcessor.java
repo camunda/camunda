@@ -67,6 +67,20 @@ public class ProcessInstanceMigrationMigrateProcessor
       "Expected to migrate process instance but target process has an event subprocess. Target processes with event subprocesses cannot be migrated yet.";
 
   private static final long NO_PARENT = -1L;
+
+  private static final Map<Class<? extends Exception>, RejectionType> MIGRATION_EXCEPTIONS =
+      Map.ofEntries(
+          Map.entry(UnsupportedElementMigrationException.class, RejectionType.INVALID_STATE),
+          Map.entry(UnmappedActiveElementException.class, RejectionType.INVALID_STATE),
+          Map.entry(ElementTypeChangedException.class, RejectionType.INVALID_STATE),
+          Map.entry(ElementWithIncidentException.class, RejectionType.INVALID_STATE),
+          Map.entry(ChangedElementFlowScopeException.class, RejectionType.INVALID_STATE),
+          Map.entry(ChildProcessMigrationException.class, RejectionType.INVALID_STATE),
+          Map.entry(NonExistingElementException.class, RejectionType.INVALID_ARGUMENT),
+          Map.entry(
+              EventSubscriptionMigrationNotSupportedException.class, RejectionType.INVALID_STATE),
+          Map.entry(ConcurrentCommandException.class, RejectionType.INVALID_STATE));
+
   private static final UnsafeBuffer NIL_VALUE = new UnsafeBuffer(MsgPackHelper.NIL);
   private final VariableRecord variableRecord = new VariableRecord().setValue(NIL_VALUE);
 
@@ -217,54 +231,19 @@ public class ProcessInstanceMigrationMigrateProcessor
   @Override
   public ProcessingError tryHandleError(
       final TypedRecord<ProcessInstanceMigrationRecord> command, final Throwable error) {
-    if (error instanceof final UnsupportedElementMigrationException e) {
-      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, e.getMessage());
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
-      return ProcessingError.EXPECTED_ERROR;
-    }
-    if (error instanceof final UnmappedActiveElementException e) {
-      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, e.getMessage());
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
-      return ProcessingError.EXPECTED_ERROR;
-    }
-    if (error instanceof final ElementTypeChangedException e) {
-      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, e.getMessage());
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
-      return ProcessingError.EXPECTED_ERROR;
-    }
-    if (error instanceof final ElementWithIncidentException e) {
-      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, e.getMessage());
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
-      return ProcessingError.EXPECTED_ERROR;
-    }
-    if (error instanceof final ChangedElementFlowScopeException e) {
-      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, e.getMessage());
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
-      return ProcessingError.EXPECTED_ERROR;
-    }
-    if (error instanceof final ChildProcessMigrationException e) {
-      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, e.getMessage());
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
-      return ProcessingError.EXPECTED_ERROR;
-    }
-    if (error instanceof final NonExistingElementException e) {
-      rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, e.getMessage());
-      responseWriter.writeRejectionOnCommand(
-          command, RejectionType.INVALID_ARGUMENT, e.getMessage());
-      return ProcessingError.EXPECTED_ERROR;
-    }
-    if (error instanceof final EventSubscriptionMigrationNotSupportedException e) {
-      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, e.getMessage());
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
-      return ProcessingError.EXPECTED_ERROR;
-    }
-    if (error instanceof final ConcurrentCommandException e) {
-      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, e.getMessage());
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
-      return ProcessingError.EXPECTED_ERROR;
-    }
 
-    return ProcessingError.UNEXPECTED_ERROR;
+    return MIGRATION_EXCEPTIONS.entrySet().stream()
+        .filter(entry -> entry.getKey().isInstance(error))
+        .findFirst()
+        .map(
+            entry -> {
+              final var rejectionType = entry.getValue();
+              rejectionWriter.appendRejection(command, rejectionType, error.getMessage());
+              responseWriter.writeRejectionOnCommand(command, rejectionType, error.getMessage());
+
+              return ProcessingError.EXPECTED_ERROR;
+            })
+        .orElse(ProcessingError.UNEXPECTED_ERROR);
   }
 
   private Map<String, String> mapElementIds(
