@@ -4697,13 +4697,13 @@ bpmn-js-disable-collapsed-subprocess@^0.1.7:
   dependencies:
     min-dash "^4.0.0"
 
-bpmn-js@14.2.0:
-  version "14.2.0"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-14.2.0.tgz#71813cd667339d37aa316f3975075df5dd42fd65"
-  integrity sha512-KuJGjXHugrfUur74xPQ/jkXQXmmlhw+xV8+h2EtDJ4vMZMVP+tJyppiucsHDEjAR6Iq+i3P9yECGt290nbq9cg==
+bpmn-js@16.0.0:
+  version "16.0.0"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-16.0.0.tgz#201bbadba578349f1c95ef2f931cc2b2a13b27c9"
+  integrity sha512-LcrDkJoPRy8GkIWsW52gCkZOL3svDkj5ll67FlXnkzkv3Io6gn6O8YSXGesH5D2aCKRJ1FCfzgmxWu8B8euuSw==
   dependencies:
     bpmn-moddle "^8.0.1"
-    diagram-js "^12.5.0"
+    diagram-js "^13.0.0"
     diagram-js-direct-editing "^2.0.0"
     ids "^1.0.5"
     inherits-browser "^0.1.0"
@@ -6046,22 +6046,6 @@ diagram-js-direct-editing@^2.0.0:
     min-dash "^4.0.0"
     min-dom "^4.0.2"
 
-diagram-js@^12.5.0:
-  version "12.5.0"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-12.5.0.tgz#b4de7f906f9b15acf9614e27a0a73216fcd12203"
-  integrity sha512-jrX+NFUPVcCdrUD11Fo1frwWHF9FWys4r/lhi8M4CBuQ8eSePkOq5osFhc6tUoXZawS3sjhbNvd2AYAZZBUjnQ==
-  dependencies:
-    "@bpmn-io/diagram-js-ui" "^0.2.2"
-    clsx "^2.0.0"
-    didi "^9.0.2"
-    hammerjs "^2.0.1"
-    inherits-browser "^0.1.0"
-    min-dash "^4.1.0"
-    min-dom "^4.1.0"
-    object-refs "^0.3.0"
-    path-intersection "^2.2.1"
-    tiny-svg "^3.0.1"
-
 diagram-js@^13.0.0:
   version "13.0.0"
   resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-13.0.0.tgz#2f24d72b647f04a3101ff9cec8dad61f4b7ec667"
@@ -6102,11 +6086,6 @@ didi@^5.2.1:
   version "5.2.1"
   resolved "https://registry.yarnpkg.com/didi/-/didi-5.2.1.tgz#1a0b1336be8baa0b068a72036eedd9fb94135bff"
   integrity sha512-IKNnajUlD4lWMy/Q9Emkk7H1qnzREgY4UyE3IhmOi/9IKua0JYtYldk928bOdt1yNxN8EiOy1sqtSozEYsmjCg==
-
-didi@^9.0.2:
-  version "9.0.2"
-  resolved "https://registry.yarnpkg.com/didi/-/didi-9.0.2.tgz#e49a80aa281b5672e45519ba1980d7fba2e32cfb"
-  integrity sha512-q2+aj+lnJcUweV7A9pdUrwFr4LHVmRPwTmQLtHPFz4aT7IBoryN6Iy+jmFku+oIzr5ebBkvtBCOb87+dJhb7bg==
 
 didyoumean@^1.2.2:
   version "1.2.2"
