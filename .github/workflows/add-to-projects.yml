@@ -21,9 +21,10 @@ jobs:
                 }
               }
             }
-          owner: "camunda"
-          repo: "zeebe"
-          issue: ${{ github.event.issue.number }}
+          variables: |
+            owner: "camunda"
+            repo: "zeebe"
+            issue: ${{ github.event.issue.number }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - id: has-project
