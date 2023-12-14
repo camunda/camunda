@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/zbc"
 	"os"
 	"os/exec"
 	"regexp"
@@ -219,6 +220,22 @@ var tests = []testCase{
 		},
 		cmd:        strings.Fields("--insecure delete resource 2251799813685257"),
 		goldenFile: "testdata/delete_resource.golden",
+	},
+	{
+		name:       "update unknown job timeout",
+		setupCmds:  [][]string{},
+		cmd:        strings.Fields("--insecure update timeout 2251799813685253 --timeout 10000"),
+		goldenFile: "testdata/update_unknown_job_timeout.golden",
+	},
+	{
+		name: "update job timeout",
+		setupCmds: [][]string{
+			strings.Fields("--insecure deploy resource testdata/job_model.bpmn"),
+			strings.Fields("--insecure create instance jobProcess"),
+			strings.Fields("--insecure activate jobs jobType --maxJobsToActivate 1"),
+		},
+		cmd:        strings.Fields("--insecure update timeout 2251799813685359 --timeout 10000"),
+		goldenFile: "testdata/update_job_timeout.golden",
 	},
 }
 

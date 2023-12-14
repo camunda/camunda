@@ -45,7 +45,7 @@ var updateTimeoutCmd = &cobra.Command{
 	Args:    keyArg(&updateTimeoutKey),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
+		ctx, cancel := context.WithTimeout(cmd.Context(), timeoutFlag)
 		defer cancel()
 
 		resp, err := client.NewUpdateJobTimeoutCommand().JobKey(updateTimeoutKey).Timeout(updateTimeoutFlag).Send(ctx)
