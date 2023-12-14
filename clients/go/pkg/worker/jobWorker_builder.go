@@ -227,12 +227,9 @@ func (builder *JobWorkerBuilder) Open() JobWorker {
 			WorkerName(builder.request.Worker).
 			RequestTimeout(builder.streamRequestTimeout)
 		streamer := jobStreamer{
-			jobQueue:        jobQueue,
 			workerFinished:  workerFinished,
 			closeSignal:     closeStreamer,
 			request:         streamRequest,
-			metrics:         builder.metrics,
-			shouldRetry:     builder.shouldRetry,
 			backoffSupplier: builder.backoffSupplier,
 			retryDelay:      0,
 		}

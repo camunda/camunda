@@ -21,16 +21,12 @@ import (
 	"time"
 
 	"github.com/camunda/zeebe/clients/go/v8/pkg/commands"
-	"github.com/camunda/zeebe/clients/go/v8/pkg/entities"
 )
 
 type jobStreamer struct {
 	request         commands.DispatchStreamJobsCommand
-	jobQueue        chan entities.Job
 	workerFinished  chan bool
 	closeSignal     chan struct{}
-	metrics         JobWorkerMetrics
-	shouldRetry     func(context.Context, error) bool
 	backoffSupplier BackoffSupplier
 	retryDelay      time.Duration
 
@@ -57,12 +53,12 @@ func (streamer *jobStreamer) stream(closeWait *sync.WaitGroup) {
 		// stream was closed, check if we need to recreate it
 		case err := <-streamClosed:
 			if streamer.isClosed() {
-				break
+				return
 			}
 
 			if err != nil {
 				prevDelay := retryDelay
-				retryDelay = streamer.backoffSupplier.SupplyRetryDelay(time.Duration(prevDelay))
+				retryDelay = streamer.backoffSupplier.SupplyRetryDelay(prevDelay)
 
 				streamClosed = make(chan error, 1)
 				timer = time.AfterFunc(retryDelay, func() { streamer.openStream(streamCtx, streamClosed) })
@@ -89,6 +85,7 @@ func (streamer *jobStreamer) stream(closeWait *sync.WaitGroup) {
 
 func (streamer *jobStreamer) openStream(ctx context.Context, onClose chan<- error) {
 	if streamer.isClosed() {
+		onClose <- nil
 		return
 	}
 
