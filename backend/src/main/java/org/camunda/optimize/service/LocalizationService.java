@@ -11,11 +11,14 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.io.ByteStreams;
 import lombok.extern.slf4j.Slf4j;
+import org.agrona.Strings;
 import org.apache.commons.lang3.StringUtils;
+import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.util.SuppressionConstants;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
@@ -39,6 +42,10 @@ public class LocalizationService implements ConfigurationReloadable {
   private static final String MARKDOWN_FILE_EXTENSION = "md";
   private static final String LOCALIZATION_FILE_PREFIX_WHATSNEW = "whatsnew";
   private static final String REPORT_FIELD = "report";
+  private static final String REPORT_GROUPING_FIELD = "groupBy";
+  private static final String REPORT_VIEW_FIELD = "view";
+  public static final String REPORT_COUNT_KEY = "count";
+  public static final String REPORT_DURATION_KEY = "duration";
   private static final String MISSING_ASSIGNEE_FIELD = "missingAssignee";
 
   private final ObjectMapper objectMapper = new ObjectMapper();
@@ -97,6 +104,33 @@ public class LocalizationService implements ConfigurationReloadable {
 
   public String getLocalizationForInstantPreviewReportCode(final String localeCode, final String reportCode) {
     return getNestedMessageForCode(localeCode, INSTANT_DASHBOARD_FIELD, REPORT_FIELD, reportCode);
+  }
+
+  public String getLocalizedXLabel(final String validLocale, final String xLabelKey) {
+    if (Strings.isEmpty(xLabelKey)) {
+      return xLabelKey;
+    }
+    final Map<String, Map<String, String>> reportLocalistionMap =
+      getNestedLocalizationMap(validLocale, REPORT_FIELD);
+    final Map<String, String> reportGroupByMap = reportLocalistionMap.get(REPORT_GROUPING_FIELD);
+    return reportGroupByMap.get(xLabelKey);
+  }
+
+  public String getLocalizedYLabel(final String validLocale, final String yLabel, final ViewProperty view) {
+    if (Strings.isEmpty(yLabel)) {
+      return yLabel;
+    }
+    final Map<String, Map<String, String>> reportLocalistionMap =
+      getNestedLocalizationMap(validLocale, REPORT_FIELD);
+    final Map<String, String> reportGroupByMap = reportLocalistionMap.get(REPORT_VIEW_FIELD);
+    final String localizedReportView = reportGroupByMap.get(yLabel);
+    if (view.equals(ViewProperty.FREQUENCY)) {
+      return localizedReportView + " " + reportGroupByMap.get(REPORT_COUNT_KEY);
+    } else if (view.equals(ViewProperty.DURATION)) {
+      return localizedReportView + " " + reportGroupByMap.get(REPORT_DURATION_KEY);
+    } else {
+      return localizedReportView;
+    }
   }
 
   public String validateAndReturnValidLocale(final String locale) {
@@ -207,20 +241,22 @@ public class LocalizationService implements ConfigurationReloadable {
     return getMessageForCode(localeCode, API_ERRORS_FIELD, errorCode);
   }
 
-  @SuppressWarnings({"unchecked"})
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
   private String getMessageForCode(final String localeCode, final String categoryCode, final String messageCode) {
     final Map<String, String> categoryMessageCodeMap =
       (Map<String, String>) localeToLocalizationMapCache.get(localeCode).get(categoryCode);
     return categoryMessageCodeMap.get(messageCode);
   }
 
-
-  @SuppressWarnings({"unchecked"})
   private String getNestedMessageForCode(final String localeCode, final String categoryCode,
                                          final String subcategoryCode, final String messageCode) {
-    final Map<String, Map<String, String>> categoryMessageCodeMap =
-      (Map<String, Map<String, String>>) localeToLocalizationMapCache.get(localeCode).get(categoryCode);
+    final Map<String, Map<String, String>> categoryMessageCodeMap = getNestedLocalizationMap(localeCode, categoryCode);
     return categoryMessageCodeMap.get(subcategoryCode).get(messageCode);
+  }
+
+  @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
+  private Map<String, Map<String, String>> getNestedLocalizationMap(final String localeCode, final String categoryCode) {
+    return (Map<String, Map<String, String>>) localeToLocalizationMapCache.get(localeCode).get(categoryCode);
   }
 
   private void validateLocalizationSetup() {

@@ -66,11 +66,11 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
       errorCode = GENERIC_ERROR_CODE;
     }
 
-    String localisedMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
+    String localizedMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
 
     return new ErrorResponseDto(
       errorCode,
-      localisedMessage,
+      localizedMessage,
       e.getMessage()
     );
   }

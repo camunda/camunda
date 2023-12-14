@@ -1716,7 +1716,7 @@
       "processDashboard_processEndedGroupedByMonth": "Processes ended grouped by month",
       "processDashboard_processEndedGroupedByMonth-description": "This report provides an overview of the utilization of the process in the last months. ",
       "processDashboard_bottlenecksInTheProcess": "Bottlenecks in the process ended in the last 6 months",
-      "processDashboard_bottlenecksInTheProcess-description": "The heatmap highlights the flow nodes that consume in average the most time to be completed.",
+      "processDashboard_bottlenecksInTheProcess-description": "The heatmap highlights the flow nodes that consume on average the most time to be completed.",
       "percentSLAMet": "% SLA Met",
       "flownodeDuration": "Which process steps take too much time? (To Do: Add Target values for these process steps)",
       "controlChart": "Is my process within control?",

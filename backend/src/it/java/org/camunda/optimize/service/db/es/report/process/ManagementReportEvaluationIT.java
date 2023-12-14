@@ -15,6 +15,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
@@ -45,10 +46,10 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_I
 import static org.camunda.optimize.service.dashboard.ManagementDashboardService.CURRENTLY_IN_PROGRESS_NAME_LOCALIZATION_CODE;
 import static org.camunda.optimize.service.dashboard.ManagementDashboardService.ENDED_IN_LAST_SIX_MONTHS_NAME_LOCALIZATION_CODE;
 import static org.camunda.optimize.service.dashboard.ManagementDashboardService.STARTED_IN_LAST_SIX_MONTHS_NAME_LOCALIZATION_CODE;
+import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.VERSION_TAG;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
@@ -366,19 +367,26 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
   }
 
   @ParameterizedTest
-  @MethodSource("localizedReportNames")
+  @MethodSource("localizedReportData")
   public void managementReportNamesAndDescriptionsAreLocalized(final String locale,
-                                                               final Set<ReportNameAndDescription> expectedReportNamesAndDescriptions) {
+                                                               final Set<LocalizedReportData> expectedReportNamesAndDescriptions) {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram(FIRST_DEF_KEY));
     importAllEngineEntitiesFromScratch();
 
     // when
-    final Set<ReportNameAndDescription> localizedReportNamesAndDescriptions = getAllManagementReports().stream()
+    final Set<LocalizedReportData> localizedReportNamesAndDescriptions = getAllManagementReports().stream()
       .map(report -> {
-        final SingleProcessReportDefinitionRequestDto resultDef = reportClient.evaluateProcessReportLocalized(
-          report.getId(), locale).getReportDefinition();
-        return new ReportNameAndDescription(resultDef.getName(), resultDef.getDescription());
+        final AuthorizedProcessReportEvaluationResponseDto<Object> reportResponse =
+          reportClient.evaluateProcessReportLocalized(report.getId(), locale);
+        final SingleProcessReportDefinitionRequestDto responseDef = reportResponse.getReportDefinition();
+        final SingleReportConfigurationDto reportConfig = responseDef.getData().getConfiguration();
+        return new LocalizedReportData(
+          responseDef.getName(),
+          responseDef.getDescription(),
+          reportConfig.getYLabel(),
+          reportConfig.getXLabel()
+        );
       })
       .collect(toSet());
 
@@ -434,36 +442,51 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
   }
 
   @SuppressWarnings(UNUSED)
-  private static Stream<Arguments> localizedReportNames() {
+  private static Stream<Arguments> localizedReportData() {
     return Stream.of(
       Arguments.of(
         "en",
         Set.of(
-          new ReportNameAndDescription("Currently in progress", "This report shows how busy your cluster currently is."),
-          new ReportNameAndDescription(
-            "Started in the last 6 months",
-            "This report provides insight into the overall adoption of process orchestration."
+          new LocalizedReportData(
+            "Currently in progress",
+            "This report shows how busy your cluster currently is.",
+            "",
+            ""
           ),
-          new ReportNameAndDescription(
+          new LocalizedReportData(
+            "Started in the last 6 months",
+            "This report provides insight into the overall adoption of process orchestration.",
+            "Process Instance Count",
+            "End Date"
+          ),
+          new LocalizedReportData(
             "Ended in the last 6 months",
-            "This report shows the total number of automated process instances ended."
+            "This report shows the total number of automated process instances ended.",
+            "",
+            ""
           )
         )
       ),
       Arguments.of(
         "de",
         Set.of(
-          new ReportNameAndDescription(
+          new LocalizedReportData(
             "Aktuell laufende Prozesse",
-            "Dieser Bericht zeigt, wie stark der Cluster aktuell genutzt wird."
+            "Dieser Bericht zeigt, wie stark der Cluster aktuell genutzt wird.",
+            "",
+            ""
           ),
-          new ReportNameAndDescription(
+          new LocalizedReportData(
             "In den letzten 6 Monaten gestartete Prozesse",
-            "Dieser Bericht gibt Aufschluss über den Status der Einführung der Prozessorchestrierung."
+            "Dieser Bericht gibt Aufschluss über den Status der Einführung der Prozessorchestrierung.",
+            "Prozessinstanz Anzahl",
+            "Enddatum"
           ),
-          new ReportNameAndDescription(
+          new LocalizedReportData(
             "In den letzten 6 Monaten beendete Prozesse",
-            "Dieser Bericht zeigt die Anzahl der beendeten Prozess Instanzen."
+            "Dieser Bericht zeigt die Anzahl der beendeten Prozess Instanzen.",
+            "",
+            ""
           )
         )
       )
@@ -472,9 +495,11 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
 
   @Data
   @AllArgsConstructor
-  private static class ReportNameAndDescription {
+  private static class LocalizedReportData {
     private String reportName;
     private String reportDescription;
+    private String yLabel;
+    private String xLabel;
   }
 
 }

@@ -130,7 +130,7 @@ public class UserTaskDurationByCandidateGroupByProcessReportEvaluationIT extends
       .containsExactly(
         // We cannot assert on the actual values as unassigned tasks are still running
         Tuple.tuple(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME),
-        Tuple.tuple(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
+        Tuple.tuple(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalizedUnassignedLabel())
       );
   }
 
@@ -367,7 +367,7 @@ public class UserTaskDurationByCandidateGroupByProcessReportEvaluationIT extends
     return reportData;
   }
 
-  private String getLocalisedUnassignedLabel() {
+  private String getLocalizedUnassignedLabel() {
     return embeddedOptimizeExtension.getLocalizationService()
       .getDefaultLocaleMessageForMissingAssigneeLabel();
   }

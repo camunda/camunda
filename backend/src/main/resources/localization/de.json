@@ -1689,7 +1689,7 @@
   "instantDashboard": {
     "IP_DashboardName": "Instant Preview Dashboard",
     "IP_KpiDashboardName": "KPI Dashboard",
-    "processDashboard": "Instant Prozess Übersicht",
+    "processDashboard": "Instant Prozessübersicht",
     "processDashboard-description": "Dieses Dashboard bietet eine Übersicht der Metriken und Anwendungsfälle, die mit Optimize abgedeckt werden können.",
     "processDashboard_text1_line1": "Melde Geschäftskennzahlen",
     "processDashboard_text1_line2": "Aggregiere und gruppiere Prozessausführungsdaten in Tagen, Wochen und Monaten um Metriken und Key Performance Indikatoren (KPI) zu überwachen und zu melden.",

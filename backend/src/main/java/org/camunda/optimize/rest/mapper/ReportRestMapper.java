@@ -14,6 +14,8 @@ import org.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEvaluationResponseDto;
@@ -103,6 +105,28 @@ public class ReportRestMapper {
           validLocale,
           reportDefinitionDto.getDescription()
         )).ifPresent(reportDefinitionDto::setDescription);
+      }
+      localizeChartLabels(reportDefinitionDto, localizationService, validLocale);
+    }
+  }
+
+  private static void localizeChartLabels(final ReportDefinitionDto<?> reportDefinitionDto,
+                                          final LocalizationService localizationService, final String validLocale) {
+    if ((reportDefinitionDto.getData() instanceof SingleReportDataDto reportDataDto)
+      && (reportDataDto.getConfiguration() != null)) {
+      Optional.ofNullable(reportDataDto.getConfiguration().getXLabel())
+        .map(xLabel -> localizationService.getLocalizedXLabel(validLocale, xLabel))
+        .ifPresent(localizedLabel -> ((SingleReportDataDto) reportDefinitionDto.getData()).getConfiguration()
+          .setXLabel(localizedLabel));
+      if (reportDataDto instanceof ProcessReportDataDto processReportData) {
+        Optional.ofNullable(processReportData.getConfiguration().getYLabel())
+          .map(yLabel -> localizationService.getLocalizedYLabel(
+            validLocale,
+            yLabel,
+            processReportData.getView().getFirstProperty()
+          ))
+          .ifPresent(localizedLabel -> ((SingleReportDataDto) reportDefinitionDto.getData()).getConfiguration()
+            .setYLabel(localizedLabel));
       }
     }
   }
