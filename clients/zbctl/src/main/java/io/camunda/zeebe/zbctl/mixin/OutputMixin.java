@@ -9,7 +9,11 @@ package io.camunda.zeebe.zbctl.mixin;
 
 import io.camunda.zeebe.zbctl.serde.JsonOutputFormatter;
 import io.camunda.zeebe.zbctl.serde.OutputFormatter;
-import java.util.function.Supplier;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.util.function.Function;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ScopeType;
 
@@ -22,21 +26,27 @@ public final class OutputMixin {
       scope = ScopeType.INHERIT)
   private OutputFormat outputFormat;
 
+  private final OutputStream output = System.out;
+
   public OutputFormatter formatter() {
-    return outputFormat.format();
+    return outputFormat.format(writer());
+  }
+
+  public Writer writer() {
+    return new OutputStreamWriter(output, StandardCharsets.UTF_8);
   }
 
   public enum OutputFormat {
     JSON(JsonOutputFormatter::new);
 
-    private final Supplier<OutputFormatter> factory;
+    private final Function<Writer, OutputFormatter> factory;
 
-    OutputFormat(final Supplier<OutputFormatter> factory) {
+    OutputFormat(final Function<Writer, OutputFormatter> factory) {
       this.factory = factory;
     }
 
-    private OutputFormatter format() {
-      return factory.get();
+    private OutputFormatter format(final Writer writer) {
+      return factory.apply(writer);
     }
   }
 }
