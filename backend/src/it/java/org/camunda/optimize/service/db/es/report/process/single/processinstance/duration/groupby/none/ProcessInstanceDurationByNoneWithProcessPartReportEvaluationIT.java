@@ -37,12 +37,9 @@ import java.util.stream.Collectors;
 import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
-import static org.camunda.optimize.test.util.DurationAggregationUtil.getAggregationTypesAsListForProcessParts;
 import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE_WITH_PART;
+import static org.camunda.optimize.test.util.DurationAggregationUtil.getAggregationTypesAsListForProcessParts;
 import static org.camunda.optimize.util.BpmnModels.END_LOOP;
 import static org.camunda.optimize.util.BpmnModels.START_LOOP;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -213,7 +210,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
       reportClient.evaluateNumberReport(reportData);
 
     // then
-    assertAggregationResults(evaluationResponse);
+    assertAggregationResults(evaluationResponse, 1000., 2000., 9000.);
   }
 
   @Test
@@ -421,7 +418,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
       reportClient.evaluateNumberReport(reportData);
 
     // then
-    assertAggregationResults(evaluationResponse);
+    assertAggregationResults(evaluationResponse, 1000., 9000., 2000.);
   }
 
   @Test
@@ -506,16 +503,16 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 
-  private void assertAggregationResults(AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse) {
+  private void assertAggregationResults(AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse,
+                                        Number... durationsToCalculate) {
+    final Map<AggregationDto, Double> expectedAggregationResults =
+      databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(durationsToCalculate);
     final Map<AggregationDto, Double> resultByAggregationType = evaluationResponse.getResult()
       .getMeasures()
       .stream()
       .collect(Collectors.toMap(MeasureResponseDto::getAggregationType, MeasureResponseDto::getData));
-    assertThat(resultByAggregationType)
-      .hasSize(getAggregationTypesAsListForProcessParts().length)
-      .containsEntry(new AggregationDto(AVERAGE), 4000.)
-      .containsEntry(new AggregationDto(MIN), 1000.)
-      .containsEntry(new AggregationDto(MAX), 9000.);
+    assertThat(resultByAggregationType.entrySet())
+      .allSatisfy(entry -> assertThat(expectedAggregationResults.entrySet()).contains(entry));
   }
 
   private ProcessReportDataDto createReport(String definitionKey, String definitionVersion, String start, String end) {

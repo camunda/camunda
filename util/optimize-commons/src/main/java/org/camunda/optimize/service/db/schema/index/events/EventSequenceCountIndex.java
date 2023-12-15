@@ -7,8 +7,8 @@ package org.camunda.optimize.service.db.schema.index.events;
 
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
-import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
@@ -27,10 +27,11 @@ public abstract class EventSequenceCountIndex<TBuilder> extends DefaultIndexMapp
   public static final String GROUP = EventTypeDto.Fields.group;
   public static final String SOURCE = EventTypeDto.Fields.source;
   public static final String EVENT_NAME = EventTypeDto.Fields.eventName;
+  public static final String EVENT_LABEL = EventTypeDto.Fields.eventLabel;
 
   public static final String N_GRAM_FIELD = "nGramField";
 
-  public static final int VERSION = 3;
+  public static final int VERSION = 4;
 
   private final String indexName;
 
@@ -101,6 +102,9 @@ public abstract class EventSequenceCountIndex<TBuilder> extends DefaultIndexMapp
               .endObject()
             .endObject()
           .endObject()
+          .startObject(EVENT_LABEL)
+            .field("type", "keyword")
+          .endObject()
         .endObject()
       .endObject()
       .startObject(TARGET_EVENT)
@@ -113,6 +117,9 @@ public abstract class EventSequenceCountIndex<TBuilder> extends DefaultIndexMapp
             .field("type", "keyword")
           .endObject()
           .startObject(EVENT_NAME)
+            .field("type", "keyword")
+          .endObject()
+          .startObject(EVENT_LABEL)
             .field("type", "keyword")
           .endObject()
         .endObject()

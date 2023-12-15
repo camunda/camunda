@@ -58,7 +58,7 @@ services:
       - HTPASSWD=elastic:$$apr1$$rAPWdsDW$$/7taaK2oH4AwXgLTbYSpa0
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.8.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.9.0}
     container_name: elasticsearch
     environment:
       - cluster.name=elasticsearch

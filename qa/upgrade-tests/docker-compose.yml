@@ -38,7 +38,7 @@ services:
       timeout: 5s
       retries: 10
   elasticsearch-new:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${NEW_ES_VERSION:-8.8.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${NEW_ES_VERSION:-8.9.0}
     container_name: upgrade-schema-tests-new-elasticsearch-version
     volumes:
       - essnapshot:/var/tmp:rw

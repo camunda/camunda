@@ -28,7 +28,7 @@
     <elasticsearch.version>7.17.15</elasticsearch.version>
     <opensearch.version>2.8.1</opensearch.version>
     <!-- The default es 8 version we are going to be testing with-->
-    <elasticsearch8.test.version>8.8.0</elasticsearch8.test.version>
+    <elasticsearch8.test.version>8.9.0</elasticsearch8.test.version>
     <!--The least supported elasticsearch version we should test against-->
     <elasticsearch.test.version>7.10.0</elasticsearch.test.version>
     <!--the ElasticSearch version of the previous Optimize version -->

@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.es.report.process.single.processinstance.duration.groupby.none;
 
+import jakarta.ws.rs.core.Response;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
@@ -26,7 +27,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import jakarta.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -43,9 +43,9 @@ import static org.camunda.optimize.dto.optimize.query.report.single.configuratio
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.PERCENTILE;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.GREATER_THAN_EQUALS;
+import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.getSupportedAggregationTypes;
-import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE;
 
 public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -177,7 +177,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
       reportClient.evaluateNumberReport(reportData);
 
     // then
-    assertAggregationResults(evaluationResponse);
+    assertAggregationResults(evaluationResponse, 1000., 2000., 9000.);
   }
 
   @Test
@@ -219,7 +219,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
       reportClient.evaluateNumberReport(reportData);
 
     // then
-    assertAggregationResults(evaluationResponse);
+    assertAggregationResults(evaluationResponse, 1000., 9000., 2000.);
   }
 
   @Test
@@ -541,21 +541,17 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 
-  private void assertAggregationResults(AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse) {
+  private void assertAggregationResults(AuthorizedProcessReportEvaluationResponseDto<Double> evaluationResponse,
+                                        Number... durationsToCalculate) {
+    final Map<AggregationDto, Double> expectedAggregationResults =
+      databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(durationsToCalculate);
     final Map<AggregationDto, Double> resultByAggregationType = evaluationResponse.getResult()
       .getMeasures()
       .stream()
       .collect(Collectors.toMap(MeasureResponseDto::getAggregationType, MeasureResponseDto::getData));
     assertThat(resultByAggregationType)
       .hasSize(getSupportedAggregationTypes().length)
-      .containsEntry(new AggregationDto(AVERAGE), 4000.)
-      .containsEntry(new AggregationDto(MIN), 1000.)
-      .containsEntry(new AggregationDto(MAX), 9000.)
-      .containsEntry(new AggregationDto(PERCENTILE, 99.), 9000.)
-      .containsEntry(new AggregationDto(PERCENTILE, 95.), 9000.)
-      .containsEntry(new AggregationDto(PERCENTILE, 75.), 7250.)
-      .containsEntry(new AggregationDto(PERCENTILE, 50.), 2000.)
-      .containsEntry(new AggregationDto(PERCENTILE, 25.), 1250.);
+      .containsAllEntriesOf(expectedAggregationResults);
   }
 
   private ProcessReportDataDto createReport(String processKey, String definitionVersion) {
