@@ -12,7 +12,6 @@ import io.camunda.zeebe.zbctl.cmd.DeployCommand.ResourceCommand;
 import io.camunda.zeebe.zbctl.converters.PathConverter;
 import io.camunda.zeebe.zbctl.mixin.ClientMixin;
 import io.camunda.zeebe.zbctl.mixin.OutputMixin;
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -30,8 +29,6 @@ import picocli.CommandLine.Parameters;
     description = "Deploy a resource",
     subcommands = {ResourceCommand.class})
 public class DeployCommand {
-
-  private static final List<String> EMPTY_STRING_LIST = List.of();
 
   @Command(name = "resource", description = "Deploy a resource")
   public static class ResourceCommand implements Callable<Integer> {
@@ -55,8 +52,7 @@ public class DeployCommand {
 
     @Override
     public Integer call() throws Exception {
-      try (final var client = clientMixin.client();
-          final var output = new BufferedOutputStream(System.out)) {
+      try (final var client = clientMixin.client()) {
 
         final var commandStep1 = client.newDeployResourceCommand();
         String resourceName =
@@ -76,7 +72,7 @@ public class DeployCommand {
         }
 
         final var response = command.send().join(30, TimeUnit.SECONDS);
-        outputMixin.formatter().write(output, response, DeploymentEvent.class);
+        outputMixin.formatter().write(response, DeploymentEvent.class);
       }
 
       return 0;
