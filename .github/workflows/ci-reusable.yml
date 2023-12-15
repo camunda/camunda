@@ -50,7 +50,7 @@ env:
   JAVA_VERSION: ${{ inputs.javaVersion }}
   BRANCH_NAME: ${{ inputs.branch }}
   IS_MASTER_BRANCH: ${{ inputs.branch == 'master' }}
-  IS_FE_BRANCH: ${{ startsWith(inputs.branch, 'fe-') || startsWith(inputs.branch, 'rnv8/client/') }}
+  IS_FE_BRANCH: ${{ startsWith(inputs.branch, 'fe-') || startsWith(inputs.branch, 'renovate/client/') }}
   LIMITS_CPU: ${{ inputs.forkCount }} # consumed by `maven-surefire-plugin` & `maven-failsafe-plugin` plugins defined in main `pom.xml` file
 
 jobs:
