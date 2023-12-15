@@ -10,10 +10,8 @@ package io.camunda.zeebe.zbctl;
 import io.camunda.zeebe.zbctl.cmd.CreateCommand;
 import io.camunda.zeebe.zbctl.cmd.PublishCommand;
 import io.camunda.zeebe.zbctl.cmd.StatusCommand;
-import java.util.concurrent.Callable;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
-import picocli.CommandLine.ExitCode;
 import picocli.CommandLine.HelpCommand;
 
 @Command(
@@ -38,16 +36,11 @@ import picocli.CommandLine.HelpCommand;
       PublishCommand.class,
       StatusCommand.class
     })
-public final class Application implements Callable<Integer> {
+public final class Application {
 
   public static void main(final String... args) {
     final var exitCode =
         new CommandLine(new Application()).setCaseInsensitiveEnumValuesAllowed(true).execute(args);
     System.exit(exitCode);
-  }
-
-  @Override
-  public Integer call() throws Exception {
-    return ExitCode.OK;
   }
 }

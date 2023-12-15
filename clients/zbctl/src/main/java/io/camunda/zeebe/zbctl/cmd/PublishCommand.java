@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.ExitCode;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
@@ -88,7 +89,7 @@ public class PublishCommand {
         outputMixin.formatter().write(output, response, PublishMessageResponse.class);
       }
 
-      return 0;
+      return ExitCode.OK;
     }
   }
 }

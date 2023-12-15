@@ -13,6 +13,7 @@ import io.camunda.zeebe.zbctl.mixin.OutputMixin;
 import java.io.BufferedOutputStream;
 import java.util.concurrent.Callable;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.ExitCode;
 import picocli.CommandLine.Mixin;
 
 @Command(name = "status", description = "Checks the current status of the cluster")
@@ -28,6 +29,6 @@ public final class StatusCommand implements Callable<Integer> {
       outputMixin.formatter().write(output, topology, Topology.class);
     }
 
-    return 0;
+    return ExitCode.OK;
   }
 }
