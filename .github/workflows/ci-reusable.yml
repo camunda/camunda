@@ -173,7 +173,7 @@ jobs:
           max_length: '50'
 
       - name: Upload JaCoCo report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ env.IS_FE_BRANCH == 'false' && (success() || failure()) }}
         with:
           name: jacoco-report-${{ steps.sanitize.outputs.branch_name }}
