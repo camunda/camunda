@@ -148,17 +148,18 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     final DeployedProcess sourceProcessDefinition =
         processState.getProcessByKeyAndTenant(
-            targetProcessDefinitionKey, processInstance.getValue().getTenantId());
+            processInstance.getValue().getProcessDefinitionKey(),
+            processInstance.getValue().getTenantId());
     mappingInstructions.forEach(
         instruction -> {
-          final String targetElementId = instruction.getTargetElementId();
-          if (processDefinition.getProcess().getElementById(targetElementId) == null) {
-            throw new NonExistingElementException(processInstanceKey, targetElementId, "target");
-          }
-
           final String sourceElementId = instruction.getSourceElementId();
           if (sourceProcessDefinition.getProcess().getElementById(sourceElementId) == null) {
             throw new NonExistingElementException(processInstanceKey, sourceElementId, "source");
+          }
+
+          final String targetElementId = instruction.getTargetElementId();
+          if (processDefinition.getProcess().getElementById(targetElementId) == null) {
+            throw new NonExistingElementException(processInstanceKey, targetElementId, "target");
           }
         });
 
