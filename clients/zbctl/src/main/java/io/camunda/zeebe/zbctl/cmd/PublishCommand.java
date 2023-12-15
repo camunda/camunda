@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.zbctl.cmd;
 
+import io.camunda.zeebe.client.api.response.PublishMessageResponse;
 import io.camunda.zeebe.zbctl.cmd.PublishCommand.MessageCommand;
 import io.camunda.zeebe.zbctl.converters.DurationConverter;
 import io.camunda.zeebe.zbctl.converters.JsonInputConverter;
@@ -84,7 +85,7 @@ public class PublishCommand {
         }
 
         final var response = command.send().join(30, TimeUnit.SECONDS);
-        outputMixin.formatter().write(output, response);
+        outputMixin.formatter().write(output, response, PublishMessageResponse.class);
       }
 
       return 0;

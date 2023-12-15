@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.zbctl.cmd;
 
+import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.zbctl.mixin.ClientMixin;
 import io.camunda.zeebe.zbctl.mixin.OutputMixin;
 import java.io.BufferedOutputStream;
@@ -24,7 +25,7 @@ public final class StatusCommand implements Callable<Integer> {
     try (final var client = clientMixin.client();
         final var output = new BufferedOutputStream(System.out)) {
       final var topology = client.newTopologyRequest().send().join();
-      outputMixin.formatter().write(output, topology);
+      outputMixin.formatter().write(output, topology, Topology.class);
     }
 
     return 0;

@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.zbctl.mixin;
 
-import io.camunda.zeebe.zbctl.serde.HumanOutputFormatter;
 import io.camunda.zeebe.zbctl.serde.JsonOutputFormatter;
 import io.camunda.zeebe.zbctl.serde.OutputFormatter;
 import java.util.function.Supplier;
@@ -19,7 +18,7 @@ public final class OutputMixin {
       names = "--format",
       description =
           "Specifies the output format of commands. Must be one of: [${COMPLETION-CANDIDATES}]",
-      defaultValue = "HUMAN",
+      defaultValue = "JSON",
       scope = ScopeType.INHERIT)
   private OutputFormat outputFormat;
 
@@ -28,8 +27,7 @@ public final class OutputMixin {
   }
 
   public enum OutputFormat {
-    JSON(JsonOutputFormatter::new),
-    HUMAN(HumanOutputFormatter::new);
+    JSON(JsonOutputFormatter::new);
 
     private final Supplier<OutputFormatter> factory;
 

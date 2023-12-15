@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.zbctl;
 
+import io.camunda.zeebe.zbctl.cmd.CreateCommand;
 import io.camunda.zeebe.zbctl.cmd.PublishCommand;
 import io.camunda.zeebe.zbctl.cmd.StatusCommand;
 import java.util.concurrent.Callable;
@@ -31,7 +32,12 @@ import picocli.CommandLine.HelpCommand;
       "\t* view cluster status"
     },
     usageHelpAutoWidth = true,
-    subcommands = {HelpCommand.class, StatusCommand.class, PublishCommand.class})
+    subcommands = {
+      HelpCommand.class,
+      CreateCommand.class,
+      PublishCommand.class,
+      StatusCommand.class
+    })
 public final class Application implements Callable<Integer> {
 
   public static void main(final String... args) {
