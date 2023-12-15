@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.zbctl.converters;
 
-import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep3;
+import com.google.errorprone.annotations.MustBeClosed;
 import io.camunda.zeebe.zbctl.converters.JsonInputConverter.JsonInput;
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import picocli.CommandLine.ITypeConverter;
@@ -28,22 +30,21 @@ public final class JsonInputConverter implements ITypeConverter<JsonInput> {
   private record JsonFileInput(Path path) implements JsonInput {
 
     @Override
-    public void setVariables(final PublishMessageCommandStep3 command) throws Exception {
-      try (final InputStream input = Files.newInputStream(path)) {
-        command.variables(input);
-      }
+    public InputStream open() throws Exception {
+      return Files.newInputStream(path);
     }
   }
 
   private record JsonStringInput(String json) implements JsonInput {
 
     @Override
-    public void setVariables(final PublishMessageCommandStep3 command) {
-      command.variables(json);
+    public InputStream open() {
+      return new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
     }
   }
 
   public interface JsonInput {
-    void setVariables(final PublishMessageCommandStep3 command) throws Exception;
+    @MustBeClosed
+    InputStream open() throws Exception;
   }
 }

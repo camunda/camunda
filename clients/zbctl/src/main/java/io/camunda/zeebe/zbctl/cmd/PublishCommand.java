@@ -78,7 +78,10 @@ public class PublishCommand {
         if (messageId != null && !messageId.isBlank()) {
           command.messageId(messageId);
         }
-        variables.setVariables(command);
+
+        try (final var variablesInput = variables.open()) {
+          command.variables(variablesInput);
+        }
 
         final var response = command.send().join(30, TimeUnit.SECONDS);
         outputMixin.formatter().write(output, response);
