@@ -32,7 +32,7 @@ elasticsearch:
 postgres:
   image:
     repository: postgres
-    tag: 16.1-alpine@sha256:1b7fabaccfb39d4f4c9fade867683697f24eb04ea9490831779b02a97349ac4a
+    tag: 16.1-alpine@sha256:dd437f95f1a1ea63d99c570cf126d34f5a5ece74463a08c5bb21f4fc03e1aaaf
 
 mailhog:
   image:
