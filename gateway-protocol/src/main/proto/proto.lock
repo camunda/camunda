@@ -925,6 +925,11 @@
                 "id": 6,
                 "name": "tenantId",
                 "type": "string"
+              },
+              {
+                "id": 7,
+                "name": "awaitCorrelation",
+                "type": "bool"
               }
             ]
           },

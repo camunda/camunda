@@ -57,4 +57,20 @@ public interface MessageRecordValue extends RecordValueWithVariables, TenantOwne
    *     set, it returns -1 instead.
    */
   long getDeadline();
+
+  /**
+   * @return true if the user requested to await the correlation of the message before receiving a
+   *     response
+   */
+  boolean getAwaitCorrelation();
+
+  /**
+   * @return the id of the request if {@link #getAwaitCorrelation()} is true, otherwise -1
+   */
+  long getRequestId();
+
+  /**
+   * @return the stream id of the request if {@link #getAwaitCorrelation()} is true, otherwise -1
+   */
+  int getRequestStreamId();
 }

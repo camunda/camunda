@@ -37,6 +37,15 @@
             "deadline": {
               "type": "long"
             },
+            "awaitCorrelation": {
+              "type": "boolean"
+            },
+            "requestId": {
+              "type": "long"
+            },
+            "requestStreamId": {
+              "type": "integer"
+            },
             "tenantId": {
               "type": "keyword"
             }

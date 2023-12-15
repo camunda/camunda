@@ -11,12 +11,15 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSen
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.MessageSubscription;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -29,8 +32,11 @@ public final class MessageSubscriptionCorrelateProcessor
           + "but no such message subscription exists";
 
   private final MessageSubscriptionState subscriptionState;
+  private final MessageState messageState;
   private final MessageCorrelator messageCorrelator;
   private final StateWriter stateWriter;
+  private final TypedResponseWriter responseWriter;
+
   private final TypedRejectionWriter rejectionWriter;
   private final int partitionId;
 
@@ -42,7 +48,9 @@ public final class MessageSubscriptionCorrelateProcessor
       final Writers writers) {
     this.partitionId = partitionId;
     this.subscriptionState = subscriptionState;
+    this.messageState = messageState;
     stateWriter = writers.state();
+    responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     messageCorrelator =
         new MessageCorrelator(
@@ -59,6 +67,17 @@ public final class MessageSubscriptionCorrelateProcessor
     if (subscription == null) {
       rejectCommand(record);
       return;
+    }
+
+    final var message = messageState.getMessage(command.getMessageKey());
+    if (message != null && message.getRequestId() != -1) {
+      responseWriter.writeResponse(
+          message.getMessageKey(),
+          MessageIntent.PUBLISHED,
+          message,
+          ValueType.MESSAGE,
+          message.getRequestId(),
+          message.getRequestStreamId());
     }
 
     final var messageSubscription = subscription.getRecord();

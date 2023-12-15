@@ -829,6 +829,9 @@ final class JsonSerializableToJsonTest {
                   .setTimeToLive(timeToLive)
                   .setDeadline(22L)
                   .setMessageId(wrapString(messageId))
+                  .setAwaitCorrelation(true)
+                  .setRequestId(2)
+                  .setRequestStreamId(6)
                   .setTenantId("foo");
             },
         """
@@ -841,7 +844,10 @@ final class JsonSerializableToJsonTest {
           "messageId": "test-id",
           "name": "test-message",
           "deadline": 22,
-          "tenantId": "foo"
+          "tenantId": "foo",
+          "awaitCorrelation": true,
+          "requestId": 2,
+          "requestStreamId": 6
         }
         """
       },
@@ -869,7 +875,10 @@ final class JsonSerializableToJsonTest {
           "messageId": "",
           "name": "test-message",
           "deadline": -1,
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "awaitCorrelation": false,
+          "requestId": -1,
+          "requestStreamId": -1
         }
         """
       },

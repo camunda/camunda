@@ -139,7 +139,7 @@ public class CommandApiRequestHandlerTest {
     scheduler.workUntilDone();
 
     final var request =
-        new BrokerPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
+        new BrokerPublishMessageRequest("test", "1", false).setMessageId("1").setTimeToLive(0);
     request.serializeValue();
 
     // when
@@ -163,7 +163,7 @@ public class CommandApiRequestHandlerTest {
     scheduler.workUntilDone();
 
     final var request =
-        new BrokerPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
+        new BrokerPublishMessageRequest("test", "1", false).setMessageId("1").setTimeToLive(0);
     request.serializeValue();
 
     // when
@@ -184,7 +184,7 @@ public class CommandApiRequestHandlerTest {
     scheduler.workUntilDone();
 
     final var request =
-        new BrokerPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
+        new BrokerPublishMessageRequest("test", "1", false).setMessageId("1").setTimeToLive(0);
     request.serializeValue();
 
     // when
@@ -204,7 +204,7 @@ public class CommandApiRequestHandlerTest {
     when(logStreamWriter.canWriteEvents(anyInt(), anyInt())).thenReturn(false);
 
     final var request =
-        new BrokerPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
+        new BrokerPublishMessageRequest("test", "1", false).setMessageId("1").setTimeToLive(0);
     request.serializeValue();
 
     // when

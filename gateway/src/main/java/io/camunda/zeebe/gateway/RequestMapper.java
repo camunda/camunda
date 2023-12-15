@@ -113,7 +113,10 @@ public final class RequestMapper {
   public static BrokerPublishMessageRequest toPublishMessageRequest(
       final PublishMessageRequest grpcRequest) {
     final BrokerPublishMessageRequest brokerRequest =
-        new BrokerPublishMessageRequest(grpcRequest.getName(), grpcRequest.getCorrelationKey());
+        new BrokerPublishMessageRequest(
+            grpcRequest.getName(),
+            grpcRequest.getCorrelationKey(),
+            grpcRequest.getAwaitCorrelation());
 
     brokerRequest
         .setMessageId(grpcRequest.getMessageId())

@@ -467,6 +467,7 @@ message PublishMessageRequest {
   string variables = 5;
   // the tenant id of the message
   string tenantId = 6;
+  bool awaitCorrelation = 7;
 }
 
 message PublishMessageResponse {

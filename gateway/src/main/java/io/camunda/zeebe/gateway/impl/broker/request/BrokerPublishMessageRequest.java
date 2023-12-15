@@ -16,9 +16,13 @@ public final class BrokerPublishMessageRequest extends BrokerExecuteCommand<Mess
 
   private final MessageRecord requestDto = new MessageRecord();
 
-  public BrokerPublishMessageRequest(final String messageName, final String correlationKey) {
+  public BrokerPublishMessageRequest(
+      final String messageName, final String correlationKey, final boolean awaitCorrelation) {
     super(ValueType.MESSAGE, MessageIntent.PUBLISH);
-    requestDto.setName(messageName).setCorrelationKey(correlationKey);
+    requestDto
+        .setName(messageName)
+        .setCorrelationKey(correlationKey)
+        .setAwaitCorrelation(awaitCorrelation);
   }
 
   public DirectBuffer getCorrelationKey() {

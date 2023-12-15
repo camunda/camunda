@@ -366,6 +366,7 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_ELEMENT_INSTANCE_KEY,
         DEFAULT_PROCESS_ID,
         DEFAULT_MESSAGE_NAME,
+        DEFAULT_MESSAGE_KEY,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     // then
@@ -384,6 +385,7 @@ public class SubscriptionCommandSenderTest {
         DEFAULT_ELEMENT_INSTANCE_KEY,
         DEFAULT_PROCESS_ID,
         DEFAULT_MESSAGE_NAME,
+        DEFAULT_MESSAGE_KEY,
         TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     // then

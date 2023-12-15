@@ -10,7 +10,9 @@ package io.camunda.zeebe.protocol.impl.record.value.message;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -32,6 +34,10 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
   private final StringProperty messageIdProp = new StringProperty("messageId", "");
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final BooleanProperty awaitCorrelationProp =
+      new BooleanProperty("awaitCorrelation", false);
+  private final LongProperty requestId = new LongProperty("requestId", -1);
+  private final IntegerProperty requestStreamId = new IntegerProperty("requestStreamId", -1);
 
   public MessageRecord() {
     declareProperty(nameProp)
@@ -40,7 +46,10 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
         .declareProperty(variablesProp)
         .declareProperty(messageIdProp)
         .declareProperty(deadlineProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(awaitCorrelationProp)
+        .declareProperty(requestId)
+        .declareProperty(requestStreamId);
   }
 
   public void wrap(final MessageRecord record) {
@@ -99,6 +108,36 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
 
   public MessageRecord setDeadline(final long deadline) {
     deadlineProp.setValue(deadline);
+    return this;
+  }
+
+  @Override
+  public boolean getAwaitCorrelation() {
+    return awaitCorrelationProp.getValue();
+  }
+
+  public MessageRecord setAwaitCorrelation(final boolean awaitCorrelation) {
+    awaitCorrelationProp.setValue(awaitCorrelation);
+    return this;
+  }
+
+  @Override
+  public long getRequestId() {
+    return requestId.getValue();
+  }
+
+  public MessageRecord setRequestId(final long requestId) {
+    this.requestId.setValue(requestId);
+    return this;
+  }
+
+  @Override
+  public int getRequestStreamId() {
+    return requestStreamId.getValue();
+  }
+
+  public MessageRecord setRequestStreamId(final int requestStreamId) {
+    this.requestStreamId.setValue(requestStreamId);
     return this;
   }
 

@@ -203,6 +203,7 @@ public class SubscriptionCommandSender {
       final long elementInstanceKey,
       final DirectBuffer bpmnProcessId,
       final DirectBuffer messageName,
+      final long messageKey,
       final String tenantId) {
     return handleFollowUpCommandBasedOnPartition(
         subscriptionPartitionId,
@@ -212,7 +213,7 @@ public class SubscriptionCommandSender {
             .setProcessInstanceKey(processInstanceKey)
             .setElementInstanceKey(elementInstanceKey)
             .setBpmnProcessId(bpmnProcessId)
-            .setMessageKey(-1)
+            .setMessageKey(messageKey)
             .setMessageName(messageName)
             .setTenantId(tenantId));
   }

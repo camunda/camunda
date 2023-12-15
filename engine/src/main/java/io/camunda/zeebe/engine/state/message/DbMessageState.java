@@ -224,7 +224,11 @@ public final class DbMessageState implements MutableMessageState {
   @Override
   public void put(final long key, final MessageRecord record) {
     messageKey.wrapLong(key);
-    message.setMessageKey(key).setMessage(record);
+    message
+        .setMessageKey(key)
+        .setMessage(record)
+        .setRequestId(record.getRequestId())
+        .setRequestStreamId(record.getRequestStreamId());
     messageColumnFamily.insert(messageKey, message);
 
     tenantIdKey.wrapString(record.getTenantId());

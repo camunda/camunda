@@ -109,9 +109,14 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     // calculate the deadline based on the command's timestamp
     messageRecord.setDeadline(command.getTimestamp() + messageRecord.getTimeToLive());
 
-    stateWriter.appendFollowUpEvent(messageKey, MessageIntent.PUBLISHED, command.getValue());
-    responseWriter.writeEventOnCommand(
-        messageKey, MessageIntent.PUBLISHED, command.getValue(), command);
+    final var message = command.getValue();
+    if (messageRecord.getAwaitCorrelation()) {
+      message.setRequestId(command.getRequestId());
+      message.setRequestStreamId(command.getRequestStreamId());
+    } else {
+      responseWriter.writeEventOnCommand(messageKey, MessageIntent.PUBLISHED, message, command);
+    }
+    stateWriter.appendFollowUpEvent(messageKey, MessageIntent.PUBLISHED, message);
 
     correlateToSubscriptions(messageKey, messageRecord);
     correlateToMessageStartEvents(messageRecord);
