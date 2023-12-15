@@ -1,4 +1,6 @@
-@Json.Import({Topology.class, BrokerInfo.class, PartitionInfo.class})
+@Json.Import(Topology.class)
+@Json.Import(BrokerInfo.class)
+@Json.Import(PartitionInfo.class)
 package io.camunda.zeebe.zbctl.serde;
 
 import io.avaje.jsonb.Json;
