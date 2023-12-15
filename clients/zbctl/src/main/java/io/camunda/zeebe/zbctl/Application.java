@@ -8,6 +8,7 @@
 package io.camunda.zeebe.zbctl;
 
 import io.camunda.zeebe.zbctl.cmd.CreateCommand;
+import io.camunda.zeebe.zbctl.cmd.DeployCommand;
 import io.camunda.zeebe.zbctl.cmd.PublishCommand;
 import io.camunda.zeebe.zbctl.cmd.StatusCommand;
 import picocli.CommandLine;
@@ -33,6 +34,7 @@ import picocli.CommandLine.HelpCommand;
     subcommands = {
       HelpCommand.class,
       CreateCommand.class,
+      DeployCommand.class,
       PublishCommand.class,
       StatusCommand.class
     })
