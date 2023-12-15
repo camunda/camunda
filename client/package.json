@@ -95,7 +95,7 @@
     "source-map-explorer": "2.5.3",
     "ts-toolbelt": "9.6.0",
     "typescript": "5.3.3",
-    "vite": "5.0.8",
+    "vite": "5.0.9",
     "vite-plugin-svgr": "4.2.0",
     "vite-tsconfig-paths": "4.2.2",
     "vitest": "1.0.4",
