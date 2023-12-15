@@ -249,22 +249,22 @@
     "@codemirror/language" "^6.8.0"
     lezer-feel "^1.2.0"
 
-"@bpmn-io/form-js-carbon-styles@1.5.0":
-  version "1.5.0"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.5.0.tgz#bab8b9285f58eeea8f27c912ded1c488dcea0f93"
-  integrity sha512-3/a31u65MhubAIDsBiZ7j0Y5Vbhi0DaDgS2rXajfUs6exyjOf7dX3ku/Atv9CIgjMd8ClPAT5rqXq7esSWBWlg==
+"@bpmn-io/form-js-carbon-styles@1.6.0":
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.6.0.tgz#de512fc52daa038e768a13806fdb328e9d113caf"
+  integrity sha512-gWJB5v09sRx1kbx9hyfTFx9khq2JwdrV1C94pboG61vsfQsGZfAuu+PtJFvWM+uyM+itVYfgLDLefoyi1HMyvg==
 
-"@bpmn-io/form-js-viewer@1.5.0":
-  version "1.5.0"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.5.0.tgz#1ea4329a3d486c64db159e302b2e46739ad6219a"
-  integrity sha512-hBM3fvP5Irr9IiDWjPlfjRViD+FXgY5DMOjic1jdt/ertXM+6SR/aQ90WxU6AZcDVIpCiX42GRkDI62rE020Rw==
+"@bpmn-io/form-js-viewer@1.6.0":
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.6.0.tgz#466725c9b952179e41adcb44455e80bf99f21fd3"
+  integrity sha512-YrnIOlvHAaTd+elyxFCu4mYErMLx+yLZcrGmHUhdfcHepSSZfI8LLDQ4gv3ipPqlAZcuBsK+IKn3fulQWXPL8Q==
   dependencies:
     "@carbon/grid" "^11.11.0"
     big.js "^6.2.1"
     classnames "^2.3.1"
-    didi "^9.0.0"
+    didi "^10.0.1"
     feelers "^1.2.0"
-    feelin "^2.3.0"
+    feelin "^3.0.0"
     flatpickr "^4.6.13"
     ids "^1.0.0"
     min-dash "^4.0.0"
@@ -2443,10 +2443,10 @@ dequal@^2.0.0, dequal@^2.0.3:
   resolved "https://registry.yarnpkg.com/dequal/-/dequal-2.0.3.tgz#2644214f1997d39ed0ee0ece72335490a7ac67be"
   integrity sha512-0je+qPKHEMohvfRTCEo3CrPG6cAzAYgmzKyxRiYSSDkS6eGJdyVJm7WaYA5ECaAD9wLB2T4EEeymA5aFVcYXCA==
 
-didi@^9.0.0:
-  version "9.0.2"
-  resolved "https://registry.yarnpkg.com/didi/-/didi-9.0.2.tgz#e49a80aa281b5672e45519ba1980d7fba2e32cfb"
-  integrity sha512-q2+aj+lnJcUweV7A9pdUrwFr4LHVmRPwTmQLtHPFz4aT7IBoryN6Iy+jmFku+oIzr5ebBkvtBCOb87+dJhb7bg==
+didi@^10.0.1:
+  version "10.0.1"
+  resolved "https://registry.yarnpkg.com/didi/-/didi-10.0.1.tgz#b995c7cd2d42232be081688512ecc4e67663e344"
+  integrity sha512-rddmyUjpIh8pIu9OVtqQjGkZB4jNOaaRMz9AClSH3WUEOoJctxpFmqjTButmI5na5sSIDpfjABe34wEvEhrjcg==
 
 diff-sequences@^29.6.3:
   version "29.6.3"
@@ -2941,6 +2941,15 @@ feelin@^2.3.0:
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/feelin/-/feelin-2.3.0.tgz#17f5a7e8982a73f0daf3678f51c452a51ff2b040"
   integrity sha512-QDXCQRIV6AeLYUZoSlCAM+LEIv5k0+G4UJ+hRvTG42nCsW9YWPeVFNDInJDMGC+NimA6wW+1PKKDY6X8FcKJqg==
+  dependencies:
+    "@lezer/lr" "^1.3.9"
+    lezer-feel "^1.2.0"
+    luxon "^3.1.0"
+
+feelin@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/feelin/-/feelin-3.0.0.tgz#7c827b039b2d89c32d63d3cd832ac929748697bd"
+  integrity sha512-6Sgn9GTr376o1R0Pnk+RB7PjMeVXCkt8JT+3eLYMjpkrBrrFcp6r9ip4/UMMr9701Dm+5gEFGfIPeA01eY427Q==
   dependencies:
     "@lezer/lr" "^1.3.9"
     lezer-feel "^1.2.0"

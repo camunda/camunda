@@ -9,7 +9,7 @@
     "name": "Camunda Web Modeler",
     "version": "a4c8582"
   },
-  "schemaVersion": 11,
+  "schemaVersion": 14,
   "components": [
     {
       "text": "# Title 1\n## Title 2\n### Title 3\n#### Title 4\n##### Title 5\n###### Title 6\n\n<br />\n\n- list\n- list\n\n1. foo\n2. foo\n\nFoo _italic_ **bold**\n\n> Multiline code\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus auctor sodales pretium. Donec id volutpat quam, sit amet elementum lectus. \n\nInline `code`\n\n```\nMultiline code\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus auctor sodales pretium. Donec id volutpat quam, sit amet elementum lectus. \n```\n\n[Link](https://camunda.com)\n",
@@ -542,6 +542,75 @@
         "row": "Row_0xojlc6",
         "columns": null
       }
+    },
+    {
+      "label": "iFrame",
+      "type": "iframe",
+      "id": "Field_1plwhnk",
+      "url": "https://camunda.com/"
+    },
+    {
+      "label": "Table",
+      "type": "table",
+      "rowCount": 10,
+      "columns": [
+        {
+          "label": "ID",
+          "key": "id"
+        },
+        {
+          "label": "Name",
+          "key": "name"
+        },
+        {
+          "label": "Date",
+          "key": "date"
+        }
+      ],
+      "id": "Field_1gjhaxl",
+      "dataSource": "=tableSource"
+    },
+    {
+      "components": [
+        {
+          "label": "Name",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_1xxhnwe",
+            "columns": null
+          },
+          "id": "Field_01g9r13",
+          "key": "name"
+        },
+        {
+          "label": "Last name",
+          "type": "textfield",
+          "layout": {
+            "row": "Row_1xxhnwe",
+            "columns": null
+          },
+          "id": "Field_0f7j4bm",
+          "key": "last_name"
+        },
+        {
+          "label": "Age",
+          "type": "number",
+          "layout": {
+            "row": "Row_1xxhnwe",
+            "columns": null
+          },
+          "id": "Field_07idmuc",
+          "key": "age"
+        }
+      ],
+      "showOutline": true,
+      "isRepeating": true,
+      "allowAddRemove": true,
+      "defaultRepetitions": 1,
+      "label": "Dynamic list",
+      "type": "dynamiclist",
+      "id": "Field_0t9k3qg",
+      "path": "user"
     },
     {
       "action": "reset",
