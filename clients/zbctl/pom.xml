@@ -28,6 +28,12 @@
       <artifactId>zeebe-client-java</artifactId>
     </dependency>
 
+    <!-- Utilities -->
+    <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
+    </dependency>
+
     <!-- CLI arguments/interface -->
     <dependency>
       <groupId>info.picocli</groupId>

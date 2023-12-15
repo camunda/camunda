@@ -8,8 +8,9 @@
 package io.camunda.zeebe.zbctl.serde;
 
 import java.io.IOException;
-import java.io.OutputStream;
 
 public interface OutputFormatter {
-  <T> void write(final OutputStream output, final T value, final Class<T> type) throws IOException;
+  <T> void write(final T value, final Class<T> type) throws IOException;
+
+  <T> String serialize(final T value, final Class<T> type) throws IOException;
 }

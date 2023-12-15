@@ -14,7 +14,6 @@ import io.camunda.zeebe.zbctl.converters.JsonInputConverter;
 import io.camunda.zeebe.zbctl.converters.JsonInputConverter.JsonInput;
 import io.camunda.zeebe.zbctl.mixin.ClientMixin;
 import io.camunda.zeebe.zbctl.mixin.OutputMixin;
-import java.io.BufferedOutputStream;
 import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -69,8 +68,7 @@ public class PublishCommand {
 
     @Override
     public Integer call() throws Exception {
-      try (final var client = clientMixin.client();
-          final var output = new BufferedOutputStream(System.out)) {
+      try (final var client = clientMixin.client()) {
         final var command =
             client
                 .newPublishMessageCommand()
@@ -86,7 +84,7 @@ public class PublishCommand {
         }
 
         final var response = command.send().join(30, TimeUnit.SECONDS);
-        outputMixin.formatter().write(output, response, PublishMessageResponse.class);
+        outputMixin.formatter().write(response, PublishMessageResponse.class);
       }
 
       return ExitCode.OK;

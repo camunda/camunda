@@ -10,7 +10,6 @@ package io.camunda.zeebe.zbctl.cmd;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.zbctl.mixin.ClientMixin;
 import io.camunda.zeebe.zbctl.mixin.OutputMixin;
-import java.io.BufferedOutputStream;
 import java.util.concurrent.Callable;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.ExitCode;
@@ -23,10 +22,9 @@ public final class StatusCommand implements Callable<Integer> {
 
   @Override
   public Integer call() throws Exception {
-    try (final var client = clientMixin.client();
-        final var output = new BufferedOutputStream(System.out)) {
+    try (final var client = clientMixin.client()) {
       final var topology = client.newTopologyRequest().send().join();
-      outputMixin.formatter().write(output, topology, Topology.class);
+      outputMixin.formatter().write(topology, Topology.class);
     }
 
     return ExitCode.OK;

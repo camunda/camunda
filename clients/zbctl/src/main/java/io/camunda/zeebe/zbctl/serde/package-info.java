@@ -16,9 +16,11 @@
 @Json.Import(Decision.class)
 @Json.Import(DecisionRequirements.class)
 @Json.Import(Form.class)
+@Json.Import(ActivatedJob.class)
 package io.camunda.zeebe.zbctl.serde;
 
 import io.avaje.jsonb.Json;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.response.BrokerInfo;
 import io.camunda.zeebe.client.api.response.Decision;
 import io.camunda.zeebe.client.api.response.DecisionRequirements;

@@ -8,16 +8,28 @@
 package io.camunda.zeebe.zbctl.serde;
 
 import io.avaje.jsonb.Jsonb;
+import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.Writer;
 
 public final class JsonOutputFormatter implements OutputFormatter {
 
   private final Jsonb jsonb = Jsonb.builder().build();
+  private final BufferedWriter writer;
+
+  public JsonOutputFormatter(final Writer writer) {
+    this.writer = new BufferedWriter(writer);
+  }
 
   @Override
-  public <T> void write(final OutputStream output, final T value, final Class<T> type)
-      throws IOException {
-    jsonb.type(type).toJson(value, output);
+  public <T> void write(final T value, final Class<T> type) throws IOException {
+    final var serialized = jsonb.type(type).toJson(value);
+    writer.write(serialized);
+    writer.newLine();
+  }
+
+  @Override
+  public <T> String serialize(final T value, final Class<T> type) {
+    return jsonb.type(type).toJson(value);
   }
 }

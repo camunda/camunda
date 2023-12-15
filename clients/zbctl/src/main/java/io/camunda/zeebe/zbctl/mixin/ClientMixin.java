@@ -9,6 +9,10 @@ package io.camunda.zeebe.zbctl.mixin;
 
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.zeebe.zbctl.converters.DurationConverter;
+import java.time.Duration;
+import java.util.function.UnaryOperator;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ScopeType;
 
@@ -88,8 +92,23 @@ public final class ClientMixin {
       scope = ScopeType.INHERIT)
   private boolean insecure;
 
+  @Option(
+      names = "--requestTimeout",
+      description = "Specify a default request timeout for all commands.",
+      defaultValue = "30s",
+      scope = ScopeType.INHERIT,
+      converter = DurationConverter.class)
+  private Duration requestTimeout;
+
   public ZeebeClient client() {
-    var builder = ZeebeClient.newClientBuilder().gatewayAddress(address());
+    return client(UnaryOperator.identity());
+  }
+
+  public ZeebeClient client(final UnaryOperator<ZeebeClientBuilder> configurator) {
+    var builder =
+        ZeebeClient.newClientBuilder()
+            .gatewayAddress(address())
+            .defaultRequestTimeout(requestTimeout);
 
     if (insecure) {
       builder = builder.usePlaintext();
@@ -120,7 +139,7 @@ public final class ClientMixin {
       builder = builder.credentialsProvider(credentialsProvider.build());
     }
 
-    return builder.build();
+    return configurator.apply(builder).build();
   }
 
   public String address() {
