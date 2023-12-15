@@ -46,7 +46,7 @@ starter:
   # Starter.replicas defines how many replicas of the application should be deployed
   replicas: 1
   # Starter.rate defines with which rate process instances should be created by the starter
-  rate: 150
+  rate: 500
 
 # Publisher configuration for the to be deployed publisher application
 publisher:
@@ -87,7 +87,7 @@ camunda-platform:
   enabled: true
   global:
     image:
-      tag: SNAPSHOT
+      tag: 8.3.4
       pullPolicy: Always
 
   zeebe:
@@ -95,14 +95,28 @@ camunda-platform:
     image:
       # Image.repository defines which image repository to use
       repository: camunda/zeebe
+      tag: 8.3.4
   operate:
     enabled: true
+    image:
+      tag: 8.3.4
     env:
       - name: CAMUNDA_OPERATE_MIGRATION_MIGRATIONENABLED
         value: "false"
       - name: CAMUNDA_OPERATE_ARCHIVER_WAITPERIODBEFOREARCHIVING
         value: "1m"
+      - name: CAMUNDA_OPERATE_ARCHIVER_THREADSCOUNT
+        value: "3"
+      - name: CAMUNDA_OPERATE_ARCHIVERENABLED
+        value: "false"
   elasticsearch:
+    resources:
+      requests:
+        cpu: 4
+        memory: 6Gi
+      limits:
+        cpu: 4
+        memory: 6Gi
     volumeClaimTemplate:
       resources:
         requests:
