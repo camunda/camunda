@@ -67,6 +67,13 @@
       <scope>provided</scope>
     </dependency>
 
+    <!-- General annotations -->
+    <dependency>
+      <groupId>com.google.errorprone</groupId>
+      <artifactId>error_prone_annotations</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
     <!-- Test dependencies -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
@@ -114,6 +121,9 @@
           <ignoredUnusedDeclaredDependencies>
             <!-- used at runtime as the logger binding -->
             <dependency>org.slf4j:slf4j-simple:jar</dependency>
+            <!-- used for annotations and runtime features -->
+            <dependency>io.avaje:avaje-jsonb-generator:jar</dependency>
+            <dependency>org.graalvm.sdk:graal-sdk:jar</dependency>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
