@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.ExitCode;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
@@ -85,7 +86,7 @@ public class CreateCommand {
         }
       }
 
-      return 0;
+      return ExitCode.OK;
     }
 
     private void sendCommandWithResult(
