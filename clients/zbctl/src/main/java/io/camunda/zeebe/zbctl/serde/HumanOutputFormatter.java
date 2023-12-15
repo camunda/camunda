@@ -9,6 +9,7 @@ package io.camunda.zeebe.zbctl.serde;
 
 import io.camunda.zeebe.client.api.response.BrokerInfo;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
+import io.camunda.zeebe.client.api.response.PublishMessageResponse;
 import io.camunda.zeebe.client.api.response.Topology;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -20,6 +21,15 @@ public final class HumanOutputFormatter implements OutputFormatter {
   public void write(final OutputStream output, final Topology topology) {
     try (final var writer = new PrintWriter(output)) {
       print(writer, topology);
+    }
+  }
+
+  @Override
+  public void write(final OutputStream output, final PublishMessageResponse response) {
+    try (final var writer = new PrintWriter(output)) {
+      writer
+          .format("Message key: %d%n", response.getMessageKey())
+          .format("Tenant ID: %s%n", response.getTenantId());
     }
   }
 
