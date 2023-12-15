@@ -8,7 +8,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.3.0-SNAPSHOT</version>
+    <version>8.4.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
@@ -21,6 +21,7 @@
     <version.picocli>4.7.3</version.picocli>
     <version.graalvm>0.9.21</version.graalvm>
     <version.graalsdk>22.3.2</version.graalsdk>
+    <version.jsonb>1.9</version.jsonb>
   </properties>
 
   <dependencies>
@@ -46,8 +47,18 @@
 
     <!-- JSON serialization -->
     <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
+      <groupId>io.avaje</groupId>
+      <artifactId>avaje-jsonb</artifactId>
+      <version>${version.jsonb}</version>
+    </dependency>
+
+    <!-- Annotation processors for JSON -->
+    <dependency>
+      <groupId>io.avaje</groupId>
+      <artifactId>avaje-jsonb-generator</artifactId>
+      <version>${version.jsonb}</version>
+      <scope>provided</scope>
+      <optional>true</optional>
     </dependency>
 
     <!-- GraalVM packages to add substitutions or build-time features -->
