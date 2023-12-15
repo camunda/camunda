@@ -101,9 +101,6 @@ public abstract class OpenSearchUtil {
       try {
         osClient.clearScroll(clearScrollRequest);
       } catch (Exception e) {
-        // Openseach scroll does not work properly in AWS
-        // cf https://github.com/camunda/tasklist/issues/3939
-        // we might need to use async client to solve it
         LOGGER.warn("Error occurred when clearing the scroll with id [{}]", scrollId, e);
       }
     }

@@ -138,10 +138,10 @@
 			<groupId>software.amazon.awssdk</groupId>
 			<artifactId>sts</artifactId>
 		</dependency>
+
 		<dependency>
 			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>apache-client</artifactId>
-			<version>2.20.8</version>
+			<artifactId>netty-nio-client</artifactId>
 		</dependency>
 
     </dependencies>
