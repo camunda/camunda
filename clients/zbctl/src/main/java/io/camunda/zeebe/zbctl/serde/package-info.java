@@ -9,10 +9,14 @@
 @Json.Import(BrokerInfo.class)
 @Json.Import(PartitionInfo.class)
 @Json.Import(PublishMessageResponse.class)
+@Json.Import(ProcessInstanceEvent.class)
+@Json.Import(ProcessInstanceResult.class)
 package io.camunda.zeebe.zbctl.serde;
 
 import io.avaje.jsonb.Json;
 import io.camunda.zeebe.client.api.response.BrokerInfo;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
+import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
 import io.camunda.zeebe.client.api.response.PublishMessageResponse;
 import io.camunda.zeebe.client.api.response.Topology;
