@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
 
@@ -151,6 +149,14 @@
             <artifactId>native-maven-plugin</artifactId>
             <version>${version.graalvm}</version>
             <extensions>true</extensions>
+            <configuration>
+              <skipNativeTests>${skipNativeTests}</skipNativeTests>
+              <mainClass>io.camunda.zeebe.zbctl.Application</mainClass>
+              <imageName>${build.finalName}</imageName>
+              <metadataRepository>
+                <enabled>true</enabled>
+              </metadataRepository>
+            </configuration>
             <executions>
               <execution>
                 <id>build-native</id>
@@ -167,14 +173,6 @@
                 <phase>test</phase>
               </execution>
             </executions>
-            <configuration>
-              <skipNativeTests>${skipNativeTests}</skipNativeTests>
-              <mainClass>io.camunda.zeebe.zbctl.Application</mainClass>
-              <imageName>${build.finalName}</imageName>
-              <metadataRepository>
-                <enabled>true</enabled>
-              </metadataRepository>
-            </configuration>
           </plugin>
 
           <!-- Compresses the final executable; this can easily cut down on executable size by
@@ -182,14 +180,6 @@
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>exec-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>exec</goal>
-                </goals>
-                <phase>package</phase>
-              </execution>
-            </executions>
             <configuration>
               <skip>${skipUpx}</skip>
               <executable>upx</executable>
@@ -200,6 +190,14 @@
                 <argument>${project.build.directory}/${build.finalName}</argument>
               </arguments>
             </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
+            </executions>
           </plugin>
         </plugins>
       </build>
