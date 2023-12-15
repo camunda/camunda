@@ -24,9 +24,9 @@ public interface UserTaskState {
     CREATED((byte) 2),
 
     COMPLETING((byte) 3),
-    COMPLETED((byte) 4),
+    CANCELING((byte) 4),
 
-    CANCELING((byte) 5);
+    ASSIGNING((byte) 5);
 
     final byte value;
 
