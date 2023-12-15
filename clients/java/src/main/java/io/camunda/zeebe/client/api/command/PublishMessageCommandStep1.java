@@ -116,5 +116,9 @@ public interface PublishMessageCommandStep1 {
      *     it to the broker.
      */
     PublishMessageCommandStep3 variable(String key, Object value);
+
+    PublishMessageCommandStep3 awaitCorrelation();
+
+    PublishMessageCommandStep3 awaitCorrelation(boolean awaitCorrelation);
   }
 }

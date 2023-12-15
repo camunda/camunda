@@ -74,6 +74,18 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
   }
 
   @Override
+  public PublishMessageCommandStep3 awaitCorrelation() {
+    builder.setAwaitCorrelation(true);
+    return this;
+  }
+
+  @Override
+  public PublishMessageCommandStep3 awaitCorrelation(final boolean awaitCorrelation) {
+    builder.setAwaitCorrelation(awaitCorrelation);
+    return this;
+  }
+
+  @Override
   public PublishMessageCommandStep3 correlationKey(final String correlationKey) {
     builder.setCorrelationKey(correlationKey);
     return this;
