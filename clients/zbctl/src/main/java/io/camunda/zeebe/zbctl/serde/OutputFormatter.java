@@ -7,10 +7,13 @@
  */
 package io.camunda.zeebe.zbctl.serde;
 
+import io.camunda.zeebe.client.api.response.PublishMessageResponse;
 import io.camunda.zeebe.client.api.response.Topology;
 import java.io.IOException;
 import java.io.OutputStream;
 
 public interface OutputFormatter {
   void write(final OutputStream output, final Topology topology) throws IOException;
+
+  void write(final OutputStream output, final PublishMessageResponse response) throws IOException;
 }

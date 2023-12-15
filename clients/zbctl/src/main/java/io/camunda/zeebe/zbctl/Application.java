@@ -1,5 +1,6 @@
 package io.camunda.zeebe.zbctl;
 
+import io.camunda.zeebe.zbctl.cmd.PublishCommand;
 import io.camunda.zeebe.zbctl.cmd.StatusCommand;
 import java.util.concurrent.Callable;
 import picocli.CommandLine;
@@ -14,7 +15,7 @@ import picocli.CommandLine.HelpCommand;
     mixinStandardHelpOptions = true,
     versionProvider = VersionProvider.class,
     description = {
-      "zbctl is a command line interface designed to create and read resources inside zeebe broker.",
+      "zbctl is a command line interface designed to create and read resources inside a zeebe broker.",
       "It is designed for regular maintenance jobs such as:",
       "\t* deploying processes",
       "\t* creating jobs and process instances",
@@ -23,11 +24,12 @@ import picocli.CommandLine.HelpCommand;
       "\t* view cluster status"
     },
     usageHelpAutoWidth = true,
-    subcommands = {HelpCommand.class, StatusCommand.class})
+    subcommands = {HelpCommand.class, StatusCommand.class, PublishCommand.class})
 public final class Application implements Callable<Integer> {
 
-  public static void main(String... args) {
-    final var exitCode = new CommandLine(new Application()).execute(args);
+  public static void main(final String... args) {
+    final var exitCode =
+        new CommandLine(new Application()).setCaseInsensitiveEnumValuesAllowed(true).execute(args);
     System.exit(exitCode);
   }
 
