@@ -540,12 +540,6 @@
       }
     },
     {
-      "label": "iFrame",
-      "type": "iframe",
-      "id": "Field_1plwhnk",
-      "url": "https://camunda.com/"
-    },
-    {
       "label": "Table",
       "type": "table",
       "rowCount": 10,
