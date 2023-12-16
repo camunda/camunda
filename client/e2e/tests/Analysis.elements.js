@@ -21,7 +21,7 @@ export const variablesTableRow = (text) => variablesTable.find('tr').withText(te
 export const outliersTable = Selector('.OutlierDetailsTable');
 export const outliersTableRow = (text) => outliersTable.find('tr').withText(text);
 export const outliersTableDetailsButton = (text) =>
-  outliersTableRow(text).find('button').withText('View Details');
+  outliersTableRow(text).find('button').withText('View details');
 export const filtersDropdown = Selector('.filterHeader .MenuDropdown');
 export const warningMessage = Selector('.MessageBox--warning').withText(
   'No data shown due to incompatible filters'

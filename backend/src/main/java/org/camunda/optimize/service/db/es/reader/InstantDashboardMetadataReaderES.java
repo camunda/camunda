@@ -35,7 +35,7 @@ public class InstantDashboardMetadataReaderES implements InstantDashboardMetadat
   @Override
   public Optional<String> getInstantDashboardIdFor(String processDefinitionKey, String template)
     throws OptimizeRuntimeException {
-    log.debug("Fetching Instant Preview Dashboard ID for [{}] with template [{}] ", processDefinitionKey, template);
+    log.debug("Fetching Instant preview dashboard ID for [{}] with template [{}] ", processDefinitionKey, template);
     InstantDashboardDataDto dashboardDataDto = new InstantDashboardDataDto();
     dashboardDataDto.setTemplateName(template);
     dashboardDataDto.setProcessDefinitionKey(processDefinitionKey);
@@ -47,7 +47,7 @@ public class InstantDashboardMetadataReaderES implements InstantDashboardMetadat
     try {
       getResponse = esClient.get(getRequest);
     } catch (IOException e) {
-      String reason = String.format("Could not fetch Instant Preview Dashboard with key [%s]", instantDashboardKey);
+      String reason = String.format("Could not fetch Instant preview dashboard with key [%s]", instantDashboardKey);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }

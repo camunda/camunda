@@ -456,8 +456,8 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
           new LocalizedReportData(
             "Started in the last 6 months",
             "This report provides insight into the overall adoption of process orchestration.",
-            "Process Instance Count",
-            "End Date"
+            "Process instance Count",
+            "End date"
           ),
           new LocalizedReportData(
             "Ended in the last 6 months",

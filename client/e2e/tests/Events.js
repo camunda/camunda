@@ -40,7 +40,7 @@ test('add sources, map and publish a process', async (t) => {
   await t.click(e.entity('Event Invoice process'));
   await t.click(Common.editButton);
 
-  await t.typeText(Common.nameEditField, 'Event invoice process', {replace: true});
+  await t.typeText(Common.nameEditField, 'Event Invoice process', {replace: true});
 
   await t.takeScreenshot('additional-features/img/editMode.png');
 
@@ -49,7 +49,7 @@ test('add sources, map and publish a process', async (t) => {
   await t.click(e.addSource);
 
   await t.typeText(e.processTypeahead, 'Invoice', {replace: true});
-  await t.click(Common.carbonOption('Invoice receipt with alternative correlation variable'));
+  await t.click(Common.carbonOption('Invoice Receipt with alternative correlation variable'));
   await t.expect(e.optionsButton(e.variableTypeahead).hasAttribute('disabled')).notOk();
   await t.click(e.optionsButton(e.variableTypeahead));
   await t.click(e.typeaheadOption(e.variableTypeahead, 'longVar'));

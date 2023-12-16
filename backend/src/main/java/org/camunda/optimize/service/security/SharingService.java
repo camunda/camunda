@@ -138,7 +138,7 @@ public class SharingService implements ReportReferencingService, DashboardRefere
       DashboardDefinitionRestDto dashboardDefinition =
         dashboardService.getDashboardDefinition(dashboardId, userId).getDefinitionDto();
       if (dashboardDefinition.isManagementDashboard() || dashboardDefinition.isInstantPreviewDashboard()) {
-        throw new OptimizeValidationException("Management Dashboards or Instant Preview Dashboards cannot be shared");
+        throw new OptimizeValidationException("Management Dashboards or Instant preview dashboards cannot be shared");
       }
 
       final Set<String> authorizedReportIdsOnDashboard = reportService.filterAuthorizedReportIds(
@@ -173,7 +173,7 @@ public class SharingService implements ReportReferencingService, DashboardRefere
         final ProcessReportDataDto reportData =
           ((SingleProcessReportDefinitionRequestDto) reportDefinition.getDefinitionDto()).getData();
         if (reportData.isManagementReport() || reportData.isInstantPreviewReport()) {
-          throw new OptimizeValidationException("Management Reports and Instant Preview Dashboard Reports cannot be shared");
+          throw new OptimizeValidationException("Management Reports and Instant preview dashboard Reports cannot be shared");
         }
       }
     } catch (OptimizeValidationException exception) {

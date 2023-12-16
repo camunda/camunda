@@ -1315,7 +1315,7 @@
       "stackedBar" : false,
       "horizontalBar" : false,
       "logScale" : false,
-      "yLabel" : "Process Instance Count",
+      "yLabel" : "Process instance Count",
       "xLabel" : "Start Date"
     },
     "definitions" : [ {

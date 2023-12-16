@@ -236,10 +236,10 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   private static Stream<Arguments> templatesAndExpectedLocalizedNames() {
     return Stream.of(
-      Arguments.of("template1.json", "en", "Instant Process Dashboard"),
+      Arguments.of("template1.json", "en", "Instant process dashboard"),
       Arguments.of("template1.json", "de", "Instant Prozessübersicht"),
-      Arguments.of("template2.json", "en", "KPI Dashboard"),
-      Arguments.of("template2.json", "de", "KPI Dashboard")
+      Arguments.of("template2.json", "en", "KPI dashboard"),
+      Arguments.of("template2.json", "de", "KPI dashboard")
     );
   }
 

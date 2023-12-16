@@ -217,7 +217,7 @@ public class EntityImportService {
         && ((DashboardDefinitionExportDto) exportDto).isInstantPreviewDashboard())
         || (SINGLE_PROCESS_REPORT.equals(exportDto.getExportEntityType())
         && ((SingleProcessReportDefinitionExportDto) exportDto).getData().isInstantPreviewReport()))) {
-      throw new OptimizeValidationException("Cannot import Instant Preview Dashboards and reports.");
+      throw new OptimizeValidationException("Cannot import Instant preview dashboards and reports.");
     }
   }
 

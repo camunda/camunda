@@ -26,7 +26,7 @@ jest.mock('services', () => {
         view: [
           {
             matcher: () => true,
-            label: () => 'Process Instance',
+            label: () => 'Process instance',
           },
         ],
       },
@@ -116,7 +116,7 @@ it('should not display a progress bar for multi measure/aggregation reports', ()
 
 it('should show the view label underneath the number', () => {
   const node = shallow(<Number report={report} />);
-  expect(node).toIncludeText('Process Instance Count');
+  expect(node).toIncludeText('Process instance Count');
 
   node.setProps({
     report: {
@@ -135,7 +135,7 @@ it('should show the view label underneath the number', () => {
     },
   });
 
-  expect(node).toIncludeText('Process Instance Duration - Avg');
+  expect(node).toIncludeText('Process instance Duration - Avg');
 });
 
 it('should show multiple measures', () => {

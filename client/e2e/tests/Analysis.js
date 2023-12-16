@@ -139,19 +139,19 @@ test('should filter task outliers', async (t) => {
   await u.selectDefinition(t, 'Analysis Testing Process', 'All');
 
   await t.click(Analysis.filtersDropdown);
-  await t.click(Common.menuOption('Instance State'));
-  await t.click(Common.radioButton('Non Suspended'));
+  await t.click(Common.menuOption('Instance state'));
+  await t.click(Common.radioButton('Non-suspended'));
   await t.click(Common.modalConfirmButton);
 
   await t.click(Analysis.filtersDropdown);
   await t.click(Common.menuOption('Incident'));
-  await t.click(Common.radioButton('Without Incidents'));
+  await t.click(Common.radioButton('Without incidents'));
   await t.click(Common.modalConfirmButton);
 
   await t.expect(Analysis.outliersTableRow('delay=true').visible).ok();
 
   await t.click(Analysis.filtersDropdown);
-  await t.click(Common.menuOption('Instance State'));
+  await t.click(Common.menuOption('Instance state'));
   await t.click(Common.radioButton('Canceled'));
   await t.click(Common.modalConfirmButton);
 
@@ -163,13 +163,13 @@ test('should show warning message when there are filter conflicts', async (t) =>
   await u.selectDefinition(t, 'Analysis Testing Process', 'All');
 
   await t.click(Analysis.filtersDropdown);
-  await t.click(Common.menuOption('Instance State'));
+  await t.click(Common.menuOption('Instance state'));
   await t.click(Common.radioButton('Canceled'));
   await t.click(Common.modalConfirmButton);
 
   await t.click(Analysis.filtersDropdown);
-  await t.click(Common.menuOption('Instance State'));
-  await t.click(Common.radioButton('Non Canceled'));
+  await t.click(Common.menuOption('Instance state'));
+  await t.click(Common.radioButton('Non-canceled'));
   await t.click(Common.modalConfirmButton);
 
   await t.expect(Analysis.warningMessage.visible).ok();

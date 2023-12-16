@@ -459,7 +459,7 @@ test('add a report from the dashboard', async (t) => {
 
   await t
     .click(Common.templateModalProcessField)
-    .click(Common.carbonOption('Invoice receipt with alternative correlation variable'))
+    .click(Common.carbonOption('Invoice Receipt with alternative correlation variable'))
     .click(e.blankReportButton)
     .click(Common.modalConfirmButton)
     .click('.DashboardRenderer');
@@ -473,7 +473,7 @@ test('add a report from the dashboard', async (t) => {
   await t.click(Common.templateModalProcessField);
 
   await t
-    .expect(Common.selectedOption('Invoice receipt with alternative correlation variable').exists)
+    .expect(Common.selectedOption('Invoice Receipt with alternative correlation variable').exists)
     .ok();
 
   await t.click(Common.modalConfirmButton).click('.DashboardRenderer');

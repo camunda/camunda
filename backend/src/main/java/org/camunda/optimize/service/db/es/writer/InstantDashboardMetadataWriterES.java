@@ -45,7 +45,7 @@ public class InstantDashboardMetadataWriterES implements InstantDashboardMetadat
 
   @Override
   public void saveInstantDashboard(InstantDashboardDataDto dashboardDataDto) {
-    log.debug("Writing new Instant Preview Dashboard to Elasticsearch");
+    log.debug("Writing new Instant preview dashboard to Elasticsearch");
     String id = dashboardDataDto.getInstantDashboardId();
     try {
       IndexRequest request = new IndexRequest(INSTANT_DASHBOARD_INDEX_NAME)
@@ -57,17 +57,17 @@ public class InstantDashboardMetadataWriterES implements InstantDashboardMetadat
 
       if (!indexResponse.getResult().equals(DocWriteResponse.Result.CREATED) &&
         !indexResponse.getResult().equals(DocWriteResponse.Result.UPDATED)) {
-        String message = "Could not write Instant Preview Dashboard data to Elasticsearch. " +
+        String message = "Could not write Instant preview dashboard data to Elasticsearch. " +
           "Maybe the connection to Elasticsearch got lost?";
         log.error(message);
         throw new OptimizeRuntimeException(message);
       }
     } catch (IOException e) {
-      String errorMessage = "Could not write Instant Preview Dashboard data to Elasticsearch.";
+      String errorMessage = "Could not write Instant preview dashboard data to Elasticsearch.";
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
-    log.debug("Instant Preview Dashboard information with id [{}] has been created", id);
+    log.debug("Instant preview dashboard information with id [{}] has been created", id);
   }
 
   @Override

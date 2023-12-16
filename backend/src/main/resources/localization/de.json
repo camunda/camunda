@@ -1686,8 +1686,8 @@
     }
   },
   "instantDashboard": {
-    "IP_DashboardName": "Instant Preview Dashboard",
-    "IP_KpiDashboardName": "KPI Dashboard",
+    "IP_DashboardName": "Instant preview dashboard",
+    "IP_KpiDashboardName": "KPI dashboard",
     "processDashboard": "Instant Prozessübersicht",
     "processDashboard-description": "Dieses Dashboard bietet eine Übersicht der Metriken und Anwendungsfälle, die mit Optimize abgedeckt werden können.",
     "processDashboard_text1_line1": "Melde Geschäftskennzahlen",

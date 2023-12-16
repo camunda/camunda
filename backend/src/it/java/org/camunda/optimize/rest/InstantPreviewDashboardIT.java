@@ -776,7 +776,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
         "Die Heatmap hebt die Prozessknoten hervor, die im Durchschnitt die meiste Zeit bis zur Fertigstellung benötigen."
       ),
       "en", List.of(
-        "Instant Process Dashboard",
+        "Instant process dashboard",
         "This dashboard provides a competitive overview of metrics and use cases that can be covered with Optimize. It is " +
           "available for any process as soon as a process is deployed.",
         "Report business metrics",
@@ -785,7 +785,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
         "Subscribe to an email digest to obtain a weekly summary of your process metrics and KPIs",
         "Investigate problems and find improvements",
         "Use all gathered process execution data to investigate problems or kick off new process improvements.",
-        "Use Optimize Outlier Analysis to find improvement potential in your process",
+        "Use Optimize outlier analysis to find improvement potential in your process",
         "Monitor process health in near real-time",
         "See process execution data of the last minutes, hours, and days in near real-time to take corrective actions if needed.",
         "Create a copy of this dashboard to be able to adjust it to your needs",
@@ -825,18 +825,18 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
       Arguments.of(
         TEMPLATE_3_FILENAME,
         "en",
-        "Instant Preview Dashboard",
+        "Instant preview dashboard",
         Set.of(
           "% SLA Met",
-          "Which process steps take too much time? (To Do: Add Target values for these process steps)",
+          "Which process steps take too much time? (To do: Add target values for these process steps)",
           "Is my process within control?",
           "Where are the active incidents?",
-          "Incident-Free Rate",
+          "Incident-free rate",
           "Where are the worst incidents?",
-          "99th Percentile Duration",
+          "99th percentile duration",
           "Are we improving incident handling?",
           "Throughput (30-day rolling)",
-          "75th Percentile Duration",
+          "75th percentile duration",
           "How frequently is this process run?",
           "How often is each process step run?"
         )
@@ -844,7 +844,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
       Arguments.of(
         TEMPLATE_3_FILENAME,
         "de",
-        "Instant Preview Dashboard",
+        "Instant preview dashboard",
         Set.of(
           "% SLA erfüllt",
           "Welche Prozessschritte benötigen zu viel Zeit? (To Do: Ziellaufzeit festlegen)",
@@ -863,19 +863,19 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
       Arguments.of(
         TEMPLATE_2_FILENAME,
         "en",
-        "KPI Dashboard",
+        "KPI dashboard",
         Set.of(
           "% SLA Met",
-          "Incident-Free Rate",
-          "99th Percentile Duration",
+          "Incident-free rate",
+          "99th percentile duration",
           "Throughput (30-day rolling)",
-          "75th Percentile Duration"
+          "75th percentile duration"
         )
       ),
       Arguments.of(
         TEMPLATE_2_FILENAME,
         "de",
-        "KPI Dashboard",
+        "KPI dashboard",
         Set.of(
           "% SLA erfüllt",
           "Prozent ohne Zwischenfälle",
@@ -892,43 +892,43 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     return Stream.of(
       Arguments.of(
         "en",
-        "Instant Process Dashboard",
+        "Instant process dashboard",
         List.of(
           new LocalizedReportData(
             "Currently in progress",
             "This report counts all currently running processes.",
-            "Process Instance Count",
+            "Process instance Count",
             "None"
           ),
           new LocalizedReportData(
             "Currently running processes",
             "This report provides an overview of the progress of all running processes. ",
-            "Flow Node Count",
-            "Flow Nodes"
+            "Flow node Count",
+            "Flow nodes"
           ),
           new LocalizedReportData(
             "Currently open incidents",
             "This report shows flow nodes with currently open incidents.",
             "Incident Count",
-            "Flow Nodes"
+            "Flow nodes"
           ),
           new LocalizedReportData(
             "Incoming in the last 7 days",
             "This report counts the number of incoming requests that started a process.",
-            "Process Instance Count",
+            "Process instance Count",
             "None"
           ),
           new LocalizedReportData(
             "Ended in the last 7 days",
             "This report counts all processes that ended in the last 7 days.",
-            "Process Instance Count",
+            "Process instance Count",
             "None"
           ),
           new LocalizedReportData(
             "Processes ended grouped by month",
             "This report provides an overview of the utilization of the process in the last months. ",
-            "Process Instance Count",
-            "End Date"
+            "Process instance Count",
+            "End date"
           ),
           new LocalizedReportData(
             "Open incidents",
@@ -939,8 +939,8 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
           new LocalizedReportData(
             "Bottlenecks in the process ended in the last 6 months",
             "The heatmap highlights the flow nodes that consume on average the most time to be completed.",
-            "Flow Node Duration",
-            "Flow Nodes"
+            "Flow node Duration",
+            "Flow nodes"
           )
         )
       ),

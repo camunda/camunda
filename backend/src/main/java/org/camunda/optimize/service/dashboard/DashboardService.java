@@ -170,7 +170,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     final AuthorizedDashboardDefinitionResponseDto authorizedDashboard = getDashboardDefinition(dashboardId, userId);
     final DashboardDefinitionRestDto dashboardDefinition = authorizedDashboard.getDefinitionDto();
     if (dashboardDefinition.isManagementDashboard() || dashboardDefinition.isInstantPreviewDashboard()) {
-      throw new OptimizeValidationException("Management and Instant Preview Dashboards cannot be copied");
+      throw new OptimizeValidationException("Management and Instant preview dashboards cannot be copied");
     }
 
     collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
@@ -340,7 +340,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     if (dashboardWithEditAuthorization.getDefinitionDto() != null) {
       if (dashboardWithEditAuthorization.getDefinitionDto().isManagementDashboard()
         || dashboardWithEditAuthorization.getDefinitionDto().isInstantPreviewDashboard()) {
-        throw new OptimizeValidationException("Management and Instant Preview Dashboards cannot be edited");
+        throw new OptimizeValidationException("Management and Instant preview dashboards cannot be edited");
       } else {
         validateEntityEditorAuthorization(dashboardWithEditAuthorization.getDefinitionDto().getCollectionId(), userId);
       }
