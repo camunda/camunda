@@ -6,6 +6,7 @@
 package org.camunda.optimize.service;
 
 import com.google.common.collect.Lists;
+import io.camunda.identity.sdk.Identity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
@@ -45,6 +46,7 @@ public class UIConfigurationService {
   private final Environment environment;
   // optional as it is only available conditionally, see implementations of the interface
   private final Optional<CloudSaasMetaInfoService> cloudSaasMetaInfoService;
+  private final Identity identity;
 
   public UIConfigurationResponseDto getUIConfiguration() {
     final UIConfigurationResponseDto uiConfigurationDto = new UIConfigurationResponseDto();
@@ -56,7 +58,7 @@ public class UIConfigurationService {
     uiConfigurationDto.setOptimizeDocsVersion(versionService.getDocsVersion());
     final OptimizeProfile optimizeProfile = ConfigurationService.getOptimizeProfile(environment);
     uiConfigurationDto.setEnterpriseMode(isEnterpriseMode(optimizeProfile));
-    uiConfigurationDto.setUserSearchAvailable(isUserSearchAvailable(optimizeProfile)); // TODO to be made dependent on identity flag with OPT-7412
+    uiConfigurationDto.setUserSearchAvailable(isUserSearchAvailable(optimizeProfile));
     uiConfigurationDto.setOptimizeProfile(optimizeProfile.getId());
     uiConfigurationDto.setWebappsEndpoints(getCamundaWebappsEndpoints());
     uiConfigurationDto.setWebhooks(getConfiguredWebhooks());
@@ -122,7 +124,7 @@ public class UIConfigurationService {
   }
 
   private boolean isUserSearchAvailable(final OptimizeProfile optimizeProfile) {
-    return !CCSM.equals(optimizeProfile);
+    return !CCSM.equals(optimizeProfile) || identity.users().isAvailable();
   }
 
 }
