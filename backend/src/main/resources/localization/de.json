@@ -949,7 +949,7 @@
     "apply": "Änderungen übernehmen",
     "create": "Alarm erstellen",
     "notCreated": "Es wurden noch keine Alarme erstellt",
-    "contactManager": "Bitte wenden Sie sich an den manager der Sammlung, um neue Alarme zu erstellen",
+    "contactManager": "Bitte wenden Sie sich an den Manager der Sammlung, um neue Alarme zu erstellen",
     "inactiveStatus": "Alarm inaktiv",
     "activateInfo": "Zum Aktivieren fügen Sie eine E-Mail oder ein Zielsystem hinzu",
     "updated": "\"{name}\" aktualisiert.",
