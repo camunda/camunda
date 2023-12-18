@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {useState, useCallback, useEffect} from 'react';
+import {useState, useCallback, useEffect, useRef} from 'react';
 import classnames from 'classnames';
 
 import {t} from 'translation';
@@ -39,6 +39,7 @@ export default function TaskAnalysis() {
   const [outlierVariables, setOutlierVariables] = useState({});
   const [loading, setLoading] = useState(false);
   const {mightFail} = useErrorHandling();
+  const dataRef = useRef();
 
   const loadFlowNodeNames = useCallback(
     (config) => {
@@ -115,6 +116,7 @@ export default function TaskAnalysis() {
           const outlierVariables = await loadOutlierVariables(heatData, data, config);
 
           setData(data);
+          dataRef.current = data;
           setHeatData(heatData);
           setOutlierVariables(outlierVariables);
         },
@@ -126,7 +128,8 @@ export default function TaskAnalysis() {
   );
 
   function onNodeClick({element: {id}}) {
-    const nodeData = data[id];
+    // we need to use a ref here because this will create a closure
+    const nodeData = dataRef.current[id];
     if (!nodeData?.higherOutlier) {
       return;
     }
