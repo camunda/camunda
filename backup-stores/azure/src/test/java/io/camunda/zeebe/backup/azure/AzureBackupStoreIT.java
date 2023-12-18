@@ -13,7 +13,6 @@ import io.camunda.zeebe.backup.azure.util.AzuriteContainer;
 import io.camunda.zeebe.backup.testkit.SavingBackup;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -45,7 +44,6 @@ public class AzureBackupStoreIT implements SavingBackup {
   }
 
   @Override
-  @Disabled
   public void shouldNotOverwriteCompletedBackup(final Backup backup) {
     // requires get status (which is not yet implemented
   }
