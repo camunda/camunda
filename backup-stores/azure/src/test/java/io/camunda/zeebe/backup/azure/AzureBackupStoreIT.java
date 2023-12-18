@@ -45,6 +45,6 @@ public class AzureBackupStoreIT implements SavingBackup {
 
   @Override
   public void shouldNotOverwriteCompletedBackup(final Backup backup) {
-    // requires get status (which is not yet implemented
+    // requires get status (which is not yet implemented)
   }
 }
