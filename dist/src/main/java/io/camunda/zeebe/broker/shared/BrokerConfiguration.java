@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
@@ -31,6 +32,7 @@ public final class BrokerConfiguration {
     properties.init(workingDirectory.path().toAbsolutePath().toString());
   }
 
+  @Bean
   public BrokerCfg config() {
     return properties;
   }
