@@ -30,41 +30,21 @@
     <dependency>
       <groupId>com.azure</groupId>
       <artifactId>azure-storage-blob</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>io.projectreactor.netty</groupId>
-          <artifactId>reactor-netty-http</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>testcontainers</artifactId>
-      <scope>test</scope>
+      <groupId>com.azure</groupId>
+      <artifactId>azure-core</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>junit-jupiter</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-backup-testkit</artifactId>
-      <scope>test</scope>
+      <groupId>com.azure</groupId>
+      <artifactId>azure-storage-common</artifactId>
     </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-jdk8</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-api</artifactId>
-      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -88,8 +68,9 @@
     </dependency>
 
     <dependency>
-      <groupId>com.azure</groupId>
-      <artifactId>azure-storage-common</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-backup-testkit</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -99,8 +80,21 @@
     </dependency>
 
     <dependency>
-      <groupId>com.azure</groupId>
-      <artifactId>azure-core</artifactId>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
     </dependency>
 
   </dependencies>
