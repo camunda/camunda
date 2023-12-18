@@ -4,7 +4,7 @@
 # We use the ubuntu release name only as otherwise renovate fails to update the tag & both digests
 # see https://github.com/camunda/zeebe/pull/14071#discussion_r1311176361
 ARG BASE_IMAGE="ubuntu:jammy"
-ARG BASE_DIGEST="sha256:8eab65df33a6de2844c9aefd19efe8ddb87b7df5e9185a4ab73af936225685bb"
+ARG BASE_DIGEST="sha256:6042500cf4b44023ea1894effe7890666b0c5c7871ed83a97c36c76ae560bb9b"
 ARG JDK_IMAGE="eclipse-temurin:17-jdk-jammy"
 ARG JDK_DIGEST="sha256:d87a5e63a3d0cc562a8c9207328311d72f9aaf8948b5ee082acf4c1e015835b5"
 
