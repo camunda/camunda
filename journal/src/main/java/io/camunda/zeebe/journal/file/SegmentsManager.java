@@ -12,11 +12,13 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalMetaStore;
+import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -41,6 +43,7 @@ final class SegmentsManager implements AutoCloseable {
   private static final long INITIAL_ASQN = SegmentedJournal.ASQN_IGNORE;
 
   private static final Logger LOG = LoggerFactory.getLogger(SegmentsManager.class);
+  private static final Logger THROTTLED_LOG = new ThrottledLogger(LOG, Duration.ofSeconds(5));
 
   private final NavigableMap<Long, Segment> segments = new ConcurrentSkipListMap<>();
   private CompletableFuture<UninitializedSegment> nextSegment = null;
@@ -178,7 +181,7 @@ final class SegmentsManager implements AutoCloseable {
     final SortedMap<Long, Segment> compactSegments =
         segments.headMap(segmentEntry.getValue().index());
     if (compactSegments.isEmpty()) {
-      LOG.debug(
+      THROTTLED_LOG.debug(
           "No segments can be deleted with index < {} (first log index: {})",
           index,
           getFirstIndex());
