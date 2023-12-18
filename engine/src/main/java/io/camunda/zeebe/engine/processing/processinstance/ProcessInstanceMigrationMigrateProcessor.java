@@ -112,10 +112,10 @@ public class ProcessInstanceMigrationMigrateProcessor
       throw new ChildProcessMigrationException(processInstanceKey);
     }
 
-    final DeployedProcess processDefinition =
+    final DeployedProcess targetProcessDefinition =
         processState.getProcessByKeyAndTenant(
             targetProcessDefinitionKey, processInstance.getValue().getTenantId());
-    if (processDefinition == null) {
+    if (targetProcessDefinition == null) {
       final String reason =
           String.format(ERROR_MESSAGE_PROCESS_DEFINITION_NOT_FOUND, targetProcessDefinitionKey);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
@@ -158,19 +158,19 @@ public class ProcessInstanceMigrationMigrateProcessor
           }
 
           final String targetElementId = instruction.getTargetElementId();
-          if (processDefinition.getProcess().getElementById(targetElementId) == null) {
+          if (targetProcessDefinition.getProcess().getElementById(targetElementId) == null) {
             throw new NonExistingElementException(processInstanceKey, targetElementId, "target");
           }
         });
 
     final Map<String, String> mappedElementIds =
-        mapElementIds(mappingInstructions, processInstance, processDefinition);
+        mapElementIds(mappingInstructions, processInstance, targetProcessDefinition);
 
     // avoid stackoverflow using a queue to iterate over the descendants instead of recursion
     final var elementInstances = new ArrayDeque<>(List.of(processInstance));
     while (!elementInstances.isEmpty()) {
       final var elementInstance = elementInstances.poll();
-      tryMigrateElementInstance(elementInstance, processDefinition, mappedElementIds);
+      tryMigrateElementInstance(elementInstance, targetProcessDefinition, mappedElementIds);
       final List<ElementInstance> children =
           elementInstanceState.getChildren(elementInstance.getKey());
       elementInstances.addAll(children);
@@ -469,11 +469,16 @@ public class ProcessInstanceMigrationMigrateProcessor
   /**
    * Exception that can be thrown during the migration of a process instance, in following cases:
    *
-   * <p>1) A mapping instruction contains a source element id that does not exist in the source
-   * process definition.
+   * <p>
    *
-   * <p>2) A mapping instruction contains a target element id that does not exist in the target
-   * process definition.
+   * <ul>
+   *   <li>A mapping instruction contains a source element id that does not exist in the source
+   *       process definition.
+   *   <li>A mapping instruction contains a target element id that does not exist in the target
+   *       process definition.
+   * </ul>
+   *
+   * <p>
    */
   private static final class NonExistingElementException extends RuntimeException {
     NonExistingElementException(
