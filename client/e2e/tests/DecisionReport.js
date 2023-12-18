@@ -12,6 +12,7 @@ import * as u from '../utils';
 import * as Common from './Common.elements.js';
 import * as Report from './DecisionReport.elements.js';
 import * as ProcessReport from './ProcessReport.elements.js';
+import * as Homepage from './Homepage.elements.js';
 
 fixture('Decision report')
   .page(config.endpoint)
@@ -28,9 +29,13 @@ test('create a dmn js table report', async (t) => {
   await t.hover(Common.newReportOption);
   await t.hover(Common.submenuOption('Decision report'));
 
-  await t.takeElementScreenshot(Common.entityList, 'decision-analysis/img/dmn_report_create.png', {
-    crop: {left: 1000, bottom: 300},
-  });
+  await t.takeElementScreenshot(
+    Homepage.emptyStateComponent.parent(),
+    'decision-analysis/img/dmn_report_create.png',
+    {
+      crop: {left: 780, right: -200, bottom: -50, top: 150},
+    }
+  );
 
   await t.click(Common.submenuOption('Decision report'));
 

@@ -66,7 +66,7 @@ test('combine two single number reports', async (t) => {
   await t.hover(Common.submenuOption('Combined process report'));
 
   await t.takeElementScreenshot(Common.entityList, 'img/combined-report-create.png', {
-    crop: {left: 1000, bottom: 300},
+    crop: {left: 900, bottom: 300},
   });
 
   await t.click(Common.submenuOption('Combined process report'));

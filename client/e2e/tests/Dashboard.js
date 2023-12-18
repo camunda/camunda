@@ -39,7 +39,7 @@ test('create a dashboard and reports from a template', async (t) => {
   await t.click(e.templateOption('Improve productivity'));
 
   await t.takeScreenshot('img/dashboardTemplate.png', {fullPage: true});
-  await t.resizeWindow(1200, 600);
+  await t.resizeWindow(1200, 700);
 
   await t.click(Common.modalConfirmButton);
 
@@ -48,27 +48,27 @@ test('create a dashboard and reports from a template', async (t) => {
   await t.takeScreenshot('img/dashboard-dashboardEditActions.png', {fullPage: true});
 
   await addAnnotation(
-    e.reportTile,
+    e.reportTile.nth(3),
     'Press and hold to\nmove your report\naround the\ndashboard area.'
   );
   await addAnnotation(
-    e.reportEditButton,
+    e.reportEditButton.nth(9),
     'Use the edit button to switch to\nthe Report Edit View',
     {x: 0, y: -50}
   );
   await addAnnotation(
-    e.reportDeleteButton,
+    e.reportDeleteButton.nth(9),
     'Use the delete button to remove\nthe report from the dashboard.',
     {x: 50, y: 0}
   );
   await addAnnotation(
-    e.reportResizeHandle,
+    e.reportResizeHandle.nth(9),
     'Use the resize handle to change the\nsize of the report.',
     {x: 50, y: 0}
   );
 
   await t.takeElementScreenshot(e.body, 'img/dashboard-reportEditActions.png', {
-    crop: {right: 750},
+    crop: {right: 850},
   });
 
   await clearAllAnnotations();

@@ -332,7 +332,7 @@ test('Limit the precision in number report', async (t) => {
   await t.typeText(e.limitPrecisionInput, '2', {replace: true});
 
   await t
-    .resizeWindow(1600, 800)
+    .resizeWindow(1600, 850)
     .takeScreenshot('process-analysis/report-analysis/img/NumberConfiguration.png', {
       fullPage: true,
     })
