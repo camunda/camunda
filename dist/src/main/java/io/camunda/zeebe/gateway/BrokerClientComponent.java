@@ -29,11 +29,11 @@ public final class BrokerClientComponent {
 
   @Autowired
   public BrokerClientComponent(
-      final GatewayCfg config,
+      final GatewayConfiguration config,
       final AtomixCluster atomixCluster,
       final ActorScheduler actorScheduler,
       final BrokerTopologyManager topologyManager) {
-    this.config = config;
+    this.config = config.config();
     this.atomixCluster = atomixCluster;
     this.actorScheduler = actorScheduler;
     this.topologyManager = topologyManager;

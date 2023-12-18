@@ -12,7 +12,6 @@ import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
@@ -27,7 +26,6 @@ public final class GatewayConfiguration {
     config.init();
   }
 
-  @Bean
   public GatewayProperties config() {
     return config;
   }

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker;
 
+import io.camunda.zeebe.broker.shared.BrokerConfiguration;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -23,8 +24,8 @@ public final class ActorSchedulerConfiguration {
 
   @Autowired
   public ActorSchedulerConfiguration(
-      final BrokerCfg brokerCfg, final ActorClockConfiguration actorClockConfiguration) {
-    this.brokerCfg = brokerCfg;
+      final BrokerConfiguration config, final ActorClockConfiguration actorClockConfiguration) {
+    brokerCfg = config.config();
     this.actorClockConfiguration = actorClockConfiguration;
   }
 
