@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
@@ -782,6 +783,102 @@ public class MigrateProcessInstanceConcurrentTest {
 
     ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
     ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("B_v2", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("end_v2", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(targetProcessId, ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .doesNotContain(
+            tuple("B_v1", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("end_v1", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldContinueMigratedInstanceWithElementActivateBefore() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask("A", a -> a.zeebeJobType("A"))
+                    .serviceTask("B_v1", s -> s.zeebeJobType("B"))
+                    .endEvent("end_v1")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .serviceTask("A", a -> a.zeebeJobType("A"))
+                    .serviceTask("B_v2", s -> s.zeebeJobType("B"))
+                    .endEvent("end_v2")
+                    .done())
+            .deploy();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    final Record<ProcessInstanceRecordValue> taskActivated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .getFirst();
+
+    // when
+    ENGINE.writeRecords(
+        RecordToWrite.command()
+            .processInstance(ProcessInstanceIntent.COMPLETE_ELEMENT, taskActivated.getValue())
+            .key(taskActivated.getKey()),
+        RecordToWrite.command()
+            .migration(
+                new ProcessInstanceMigrationRecord()
+                    .setProcessInstanceKey(processInstanceKey)
+                    .setTargetProcessDefinitionKey(targetProcessDefinitionKey)
+                    .addMappingInstruction(
+                        new ProcessInstanceMigrationMappingInstruction()
+                            .setSourceElementId("A")
+                            .setTargetElementId("A"))));
+
+    final var migrationRejection =
+        RecordingExporter.processInstanceMigrationRecords(ProcessInstanceMigrationIntent.MIGRATE)
+            .withProcessInstanceKey(processInstanceKey)
+            .onlyCommandRejections()
+            .getFirst();
+
+    assertThat(migrationRejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            """
+            Expected to migrate process instance '%d' but no mapping instruction defined for active element with id 'B_v1'. \
+            Elements cannot be migrated without a mapping."""
+                .formatted(processInstanceKey));
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("B_v1")
+        .await();
+
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("B_v1", "B_v2")
+        .migrate();
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
 
     // then
     assertThat(
