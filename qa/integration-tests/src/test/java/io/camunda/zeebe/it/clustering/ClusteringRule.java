@@ -333,7 +333,7 @@ public class ClusteringRule extends ExternalResource {
   private Broker createBroker(final int nodeId) {
     final var brokerBase = getBrokerBase(nodeId);
     final var brokerCfg = getBrokerCfg(nodeId);
-    final var brokerSpringConfig = getBrokerConfiguration(brokerCfg);
+    final var brokerSpringConfig = getBrokerConfiguration(brokerBase, brokerCfg);
     brokerCfg.init(brokerBase.getAbsolutePath());
 
     final var atomixCluster =
@@ -927,11 +927,10 @@ public class ClusteringRule extends ExternalResource {
   // Future tests should not use the clustering rule anymore, and should be migrated away, as it has
   // to replicate all the wiring Spring is doing
   @Deprecated(forRemoval = true)
-  private BrokerConfiguration getBrokerConfiguration(final BrokerProperties cfg) {
-
+  private BrokerConfiguration getBrokerConfiguration(
+      final File brokerBase, final BrokerProperties cfg) {
     final var workingDir =
-        new WorkingDirectoryConfiguration.WorkingDirectory(
-            Path.of(cfg.getData().getDirectory()), false);
+        new WorkingDirectoryConfiguration.WorkingDirectory(brokerBase.toPath(), false);
 
     return new BrokerConfiguration(workingDir, cfg);
   }
