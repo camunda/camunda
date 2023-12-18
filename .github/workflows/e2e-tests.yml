@@ -129,7 +129,7 @@ jobs:
       working-directory: ./client
       run: yarn run e2e:ci:headless
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4
       if: always()
       with:
         name: logs

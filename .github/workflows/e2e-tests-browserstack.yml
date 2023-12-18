@@ -130,7 +130,7 @@ jobs:
           BROWSERSTACK_ACCESS_KEY: "${{ steps.secrets.outputs.BROWSERSTACK_ACCESS_KEY }}"
         run: yarn run e2e:ci-browserstack
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4
         if: always()
         with:
           name: logs
