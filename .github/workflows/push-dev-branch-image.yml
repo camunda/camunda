@@ -86,7 +86,7 @@ jobs:
           push: true
           platforms: linux/amd64
           build-args: |
-            VERSION=3.12.0-SNAPSHOT
+            VERSION=3.12.0
             DATE= ${{ steps.get-date.outputs.result }}
             REVISION= ${{ github.sha }}
           tags: ${{ steps.meta.outputs.docker_image }}
