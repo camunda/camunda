@@ -1910,9 +1910,9 @@ camelize@^1.0.0:
   integrity sha512-dU+Tx2fsypxTgtLoE36npi3UqcjSSMNYfkqgmoEhtZrraP5VWq0K7FkWVTYa8eMPtnU/G2txVsfdCJTn9uzpuQ==
 
 caniuse-lite@^1.0.30001541:
-  version "1.0.30001568"
-  resolved "https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001568.tgz"
-  integrity sha512-vSUkH84HontZJ88MiNrOau1EBrCqEQYgkC5gIySiDlpsm8sGVrhU7Kx4V6h0tnqaHzIHZv08HlJIwPbL4XL9+A==
+  version "1.0.30001570"
+  resolved "https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001570.tgz"
+  integrity sha512-+3e0ASu4sw1SWaoCtvPeyXp+5PsjigkSt8OXZbF9StH5pQWbxEjLAZE3n8Aup5udop1uRiKA7a4utUk/uoSpUw==
 
 chai@^4.3.10:
   version "4.3.10"
