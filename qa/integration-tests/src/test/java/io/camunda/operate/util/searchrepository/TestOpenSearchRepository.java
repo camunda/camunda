@@ -12,6 +12,8 @@ import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
 import io.camunda.operate.store.opensearch.dsl.RequestDSL;
+import io.camunda.operate.util.Convertable;
+import io.camunda.operate.util.MapPath;
 import org.opensearch.client.opensearch._types.mapping.DynamicMapping;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,6 +84,17 @@ public class TestOpenSearchRepository implements TestSearchRepository {
       .mappings()
       .properties()
       .keySet();
+  }
+
+  @Override
+  public IndexSettings getIndexSettings(String indexName) throws IOException {
+    var settings = new MapPath(richOpenSearchClient.index().getIndexSettings(indexName));
+    String shards = settings.getByPath("settings", "index", "number_of_shards").flatMap(Convertable::<String>to).orElse(null);
+    String replicas = settings.getByPath("settings", "index", "number_of_replicas").flatMap(Convertable::<String>to).orElse(null);
+    return new IndexSettings(
+      shards == null ? null : Integer.parseInt(shards),
+      replicas == null ? null : Integer.parseInt(replicas)
+    );
   }
 
   @Override

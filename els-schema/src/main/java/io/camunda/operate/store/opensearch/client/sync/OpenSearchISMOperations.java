@@ -20,14 +20,6 @@ public class OpenSearchISMOperations extends OpenSearchRetryOperation {
     super(logger, openSearchClient);
   }
 
-  private <R> R withExtendedOpenSearchClient(Function<ExtendedOpenSearchClient, R> f) {
-    if (openSearchClient instanceof ExtendedOpenSearchClient extendedOpenSearchClient) {
-      return f.apply(extendedOpenSearchClient);
-    } else {
-      throw new UnsupportedOperationException("ExtendedOpenSearchClient is required! Provided: " + openSearchClient.getClass().getName());
-    }
-  }
-
   public Map<String, Object> addPolicyToIndex(String index, String policy) {
     var json = format("{\"policy_id\": \"%s\"}", policy);
     return withExtendedOpenSearchClient( extendedOpenSearchClient ->

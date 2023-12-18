@@ -23,6 +23,8 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static java.lang.String.format;
+
 public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
   public static final String NUMBERS_OF_REPLICA = "index.number_of_replicas";
   public static final String NO_REPLICA = "0";
@@ -175,6 +177,15 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
         final GetIndicesSettingsResponse response = openSearchClient.indices().getSettings(s -> s.index(List.of(indexName)));
         return response.result().get(indexName).settings();
       });
+  }
+
+  public Map<String, Object> getIndexSettings(String indexName) {
+    return withExtendedOpenSearchClient(extendedOpenSearchClient ->
+      safe(
+        () -> (Map<String, Object>) extendedOpenSearchClient.arbitraryRequest("GET", "/" + indexName, "{}").get(indexName),
+        e -> format("Failed to get index settings for %s", indexName)
+      )
+    );
   }
 
   public String getOrDefaultRefreshInterval(String indexName, String defaultValue) {

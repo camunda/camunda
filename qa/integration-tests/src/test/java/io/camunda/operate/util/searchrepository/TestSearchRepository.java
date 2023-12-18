@@ -19,6 +19,8 @@ public interface TestSearchRepository {
     True
   }
 
+  record IndexSettings(Integer shards, Integer replicas){}
+
   boolean isConnected();
 
   boolean isZeebeConnected();
@@ -52,4 +54,6 @@ public interface TestSearchRepository {
   void reindex(String srcIndex, String dstIndex, String script, Map<String, Object> scriptParams) throws IOException;
 
   boolean ilmPolicyExists(String policyName) throws IOException;
+
+  IndexSettings getIndexSettings(String indexName) throws IOException;
 }

@@ -216,4 +216,16 @@ public class TestElasticSearchRepository implements TestSearchRepository {
     var request = new GetLifecyclePolicyRequest(policyName);
     return esClient.indexLifecycle().getLifecyclePolicy(request, requestOptions).getPolicies().get(policyName) != null;
   }
+
+  @Override
+  public IndexSettings getIndexSettings(String indexName) throws IOException {
+    var settings = esClient.indices()
+      .get(new GetIndexRequest(indexName), RequestOptions.DEFAULT)
+      .getSettings()
+      .get(indexName);
+    return new IndexSettings(
+      settings.getAsInt("index.number_of_shards", null),
+      settings.getAsInt("index.number_of_replicas", null)
+    );
+  }
 }

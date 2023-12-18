@@ -9,12 +9,15 @@ package io.camunda.operate.elasticsearch;
 import io.camunda.operate.management.IndicesCheck;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
+import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.indices.MigrationRepositoryIndex;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
+import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.schema.migration.ProcessorStep;
 import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.schema.templates.IncidentTemplate;
+import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
@@ -25,6 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -32,6 +36,7 @@ import java.util.stream.Collectors;
 import static io.camunda.operate.schema.SchemaManager.OPERATE_DELETE_ARCHIVED_INDICES;
 import static io.camunda.operate.util.CollectionUtil.filter;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class SchemaCreationIT extends OperateAbstractIT {
@@ -47,6 +52,12 @@ public class SchemaCreationIT extends OperateAbstractIT {
   @Autowired
   private EventTemplate eventTemplate;
   @Autowired
+  private ListViewTemplate listViewTemplate;
+  @Autowired
+  private ProcessIndex processIndex;
+  @Autowired
+  private DecisionIndex decisionIndex;
+  @Autowired
   private List<IndexDescriptor> indexDescriptors;
   @Autowired
   private IndicesCheck indicesCheck;
@@ -54,6 +65,18 @@ public class SchemaCreationIT extends OperateAbstractIT {
   private static final Consumer<OperateProperties> operatePropertiesCustomizer = operateProperties -> {
     operateProperties.getArchiver().setIlmEnabled(true);
     operateProperties.getArchiver().setIlmMinAgeForDeleteArchivedIndices("5m");
+    var numberOfShardsForIndices = Map.of(
+      ListViewTemplate.INDEX_NAME, 3,
+      ProcessIndex.INDEX_NAME, 3
+    );
+    var numberOfReplicasForIndices = Map.of(
+      ListViewTemplate.INDEX_NAME, 2,
+      ProcessIndex.INDEX_NAME, 2
+    );
+    operateProperties.getOpensearch().setNumberOfShardsForIndices(numberOfShardsForIndices);
+    operateProperties.getOpensearch().setNumberOfReplicasForIndices(numberOfReplicasForIndices);
+    operateProperties.getElasticsearch().setNumberOfShardsForIndices(numberOfShardsForIndices);
+    operateProperties.getElasticsearch().setNumberOfReplicasForIndices(numberOfReplicasForIndices);
   };
 
   @Test
@@ -70,6 +93,34 @@ public class SchemaCreationIT extends OperateAbstractIT {
 
     //assert schema creation won't be performed for the second time
     assertThat(indicesCheck.indicesArePresent()).isTrue();
+  }
+
+  @Test
+  public void testIndexCreationWithCustomNumberOfShards() throws IOException {
+    var settings = testSearchRepository.getIndexSettings(processIndex.getFullQualifiedName());
+    assertEquals(Integer.valueOf(3), settings.shards());
+    assertEquals(Integer.valueOf(2), settings.replicas());
+  }
+
+  @Test
+  public void testTemplateIndexCreationWithCustomNumberOfShards() throws IOException {
+    var settings = testSearchRepository.getIndexSettings(listViewTemplate.getFullQualifiedName());
+    assertEquals(Integer.valueOf(3), settings.shards());
+    assertEquals(Integer.valueOf(2), settings.replicas());
+  }
+
+  @Test
+  public void testIndexCreationWithDefaultNumberOfShards() throws IOException {
+    var settings = testSearchRepository.getIndexSettings(decisionIndex.getFullQualifiedName());
+    assertEquals(Integer.valueOf(1), settings.shards());
+    assertEquals(Integer.valueOf(0), settings.replicas());
+  }
+
+  @Test
+  public void testTemplateIndexCreationWithDefaultNumberOfShards() throws IOException {
+    var settings = testSearchRepository.getIndexSettings(eventTemplate.getFullQualifiedName());
+    assertEquals(Integer.valueOf(1), settings.shards());
+    assertEquals(Integer.valueOf(0), settings.replicas());
   }
 
   @Test //OPE-1310

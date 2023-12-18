@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.property;
 
+import java.util.Map;
+
 public class OperateOpensearchProperties extends OpensearchProperties {
 
   public static final String DEFAULT_INDEX_PREFIX = "operate";
@@ -15,7 +17,9 @@ public class OperateOpensearchProperties extends OpensearchProperties {
 
   private String indexPrefix = DEFAULT_INDEX_PREFIX;
   private int numberOfShards = DEFAULT_NUMBER_OF_SHARDS;
+  private Map<String, Integer> numberOfShardsForIndices = Map.of();
   private int numberOfReplicas = DEFAULT_NUMBER_OF_REPLICAS;
+  private Map<String, Integer> numberOfReplicasForIndices = Map.of();
   private String refreshInterval = DEFAULT_REFRESH_INTERVAL;
 
   public String getIndexPrefix() {
@@ -51,5 +55,21 @@ public class OperateOpensearchProperties extends OpensearchProperties {
   }
   public String getRefreshInterval() {
     return refreshInterval;
+  }
+
+  public Map<String, Integer> getNumberOfShardsForIndices() {
+    return numberOfShardsForIndices;
+  }
+
+  public void setNumberOfShardsForIndices(Map<String, Integer> numberOfShardsForIndices) {
+    this.numberOfShardsForIndices = numberOfShardsForIndices;
+  }
+
+  public Map<String, Integer> getNumberOfReplicasForIndices() {
+    return numberOfReplicasForIndices;
+  }
+
+  public void setNumberOfReplicasForIndices(Map<String, Integer> numberOfReplicasForIndices) {
+    this.numberOfReplicasForIndices = numberOfReplicasForIndices;
   }
 }

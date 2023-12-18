@@ -15,7 +15,6 @@ import io.camunda.operate.schema.indices.AbstractIndexDescriptor;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
-import io.camunda.operate.util.MapPath;
 import jakarta.json.spi.JsonProvider;
 import jakarta.json.stream.JsonParser;
 import org.opensearch.client.json.ObjectDeserializer;
@@ -174,7 +173,7 @@ public class OpensearchSchemaManager implements SchemaManager {
         osConfig.getNumberOfShards(),
         osConfig.getNumberOfReplicas());
 
-    final IndexSettings settings = getIndexSettings();
+    final IndexSettings settings = getDefaultIndexSettings();
     richOpenSearchClient.template().createComponentTemplateWithRetries(
         new PutComponentTemplateRequest.Builder()
             .name(settingsTemplateName)
@@ -182,11 +181,23 @@ public class OpensearchSchemaManager implements SchemaManager {
             .build());
   }
 
-  private IndexSettings getIndexSettings() {
+
+  private IndexSettings getDefaultIndexSettings() {
     final OperateOpensearchProperties osConfig = operateProperties.getOpensearch();
     return new IndexSettings.Builder()
-        .numberOfShards(String.valueOf(osConfig.getNumberOfShards()))
-        .numberOfReplicas(String.valueOf(osConfig.getNumberOfReplicas()))
+      .numberOfShards(String.valueOf(osConfig.getNumberOfShards()))
+      .numberOfReplicas(String.valueOf(osConfig.getNumberOfReplicas()))
+      .build();
+  }
+
+  private IndexSettings getIndexSettings(String indexName) {
+    final OperateOpensearchProperties osConfig = operateProperties.getOpensearch();
+    var shards = osConfig.getNumberOfShardsForIndices().getOrDefault(indexName, osConfig.getNumberOfShards());
+    var replicas = osConfig.getNumberOfReplicasForIndices().getOrDefault(indexName, osConfig.getNumberOfReplicas());
+
+    return new IndexSettings.Builder()
+        .numberOfShards(String.valueOf(shards))
+        .numberOfReplicas(String.valueOf(replicas))
         .build();
   }
 
@@ -199,10 +210,42 @@ public class OpensearchSchemaManager implements SchemaManager {
     templateDescriptors.forEach(this::createTemplate);
   }
 
-  private void createTemplate(final TemplateDescriptor templateDescriptor) {
+  private IndexSettings templateSettings(final TemplateDescriptor templateDescriptor) {
+    var shards = operateProperties.getOpensearch()
+      .getNumberOfShardsForIndices()
+      .get(templateDescriptor.getIndexName());
 
-    final IndexTemplateMapping template = new IndexTemplateMapping.Builder()
-        .aliases(templateDescriptor.getAlias(), new Alias.Builder().build()).build();
+    var replicas = operateProperties.getOpensearch()
+      .getNumberOfReplicasForIndices()
+      .get(templateDescriptor.getIndexName());
+
+    if(shards != null || replicas != null) {
+      var indexSettingsBuilder = new IndexSettings.Builder();
+
+      if(shards != null) {
+        indexSettingsBuilder.numberOfShards(shards.toString());
+      }
+
+      if(replicas != null) {
+        indexSettingsBuilder.numberOfReplicas(replicas.toString());
+      }
+
+      return indexSettingsBuilder.build();
+    }
+
+    return null;
+  }
+
+  private void createTemplate(final TemplateDescriptor templateDescriptor) {
+    var templateSettings = templateSettings(templateDescriptor);
+    var templateBuilder = new IndexTemplateMapping.Builder()
+      .aliases(templateDescriptor.getAlias(), new Alias.Builder().build());
+
+    if(templateSettings != null) {
+      templateBuilder.settings(templateSettings);
+    }
+
+    final IndexTemplateMapping template = templateBuilder.build();
 
     putIndexTemplate(
         new PutIndexTemplateRequest.Builder()
@@ -221,7 +264,7 @@ public class OpensearchSchemaManager implements SchemaManager {
           StreamUtils.copyToString(description, Charset.defaultCharset()),
           templateDescriptor.getFullQualifiedName(),
           Map.of(templateDescriptor.getAlias(), new Alias.Builder().isWriteIndex(false).build()),
-          getIndexSettings()
+          getIndexSettings(templateDescriptor.getIndexName())
       );
       createIndex(request, indexName);
     }catch (Exception e){
@@ -255,7 +298,7 @@ public class OpensearchSchemaManager implements SchemaManager {
           StreamUtils.copyToString(description, Charset.defaultCharset()),
           indexDescriptor.getFullQualifiedName(),
           Map.of(indexDescriptor.getAlias(), new Alias.Builder().isWriteIndex(false).build()),
-          getIndexSettings()
+          getIndexSettings(indexDescriptor.getIndexName())
       );
       createIndex(request, indexDescriptor.getFullQualifiedName());
     }catch (Exception e){
