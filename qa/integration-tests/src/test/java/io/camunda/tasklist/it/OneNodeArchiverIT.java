@@ -31,8 +31,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
@@ -66,7 +66,7 @@ public class OneNodeArchiverIT extends TasklistZeebeIntegrationTest {
 
   private DateTimeFormatter dateTimeFormatter;
 
-  @Before
+  @BeforeEach
   public void before() {
     super.before();
     dateTimeFormatter =
@@ -100,11 +100,11 @@ public class OneNodeArchiverIT extends TasklistZeebeIntegrationTest {
                 .getNodeCount(); // we're archiving only part of the partitions
     assertThat(archiverJob.archiveNextBatch().join().getValue())
         .isGreaterThanOrEqualTo(expectedCount);
-    tasklistTestRule.refreshIndexesInElasticsearch();
+    databaseTestExtension.refreshIndexesInElasticsearch();
     assertThat(archiverJob.archiveNextBatch().join().getValue())
         .isLessThanOrEqualTo(expectedCount + 1);
 
-    tasklistTestRule.refreshIndexesInElasticsearch();
+    databaseTestExtension.refreshIndexesInElasticsearch();
 
     // then
     assertTasksInCorrectIndex(expectedCount, endDate);

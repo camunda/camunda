@@ -9,13 +9,22 @@ package io.camunda.tasklist.webapp.security.sso;
 import static io.camunda.tasklist.property.Auth0Properties.DEFAULT_ORGANIZATIONS_KEY;
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUTH_PROFILE;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.*;
+import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
+import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGOUT_RESOURCE;
+import static io.camunda.tasklist.webapp.security.TasklistURIs.NO_PERMISSION;
+import static io.camunda.tasklist.webapp.security.TasklistURIs.ROOT;
+import static io.camunda.tasklist.webapp.security.TasklistURIs.SSO_CALLBACK;
 import static io.camunda.tasklist.webapp.security.sso.AuthenticationIT.TASKLIST_TEST_ROLES;
 import static io.camunda.tasklist.webapp.security.sso.AuthenticationIT.TASKLIST_TEST_SALESPLAN;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNotNull;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 import com.auth0.AuthenticationController;
@@ -31,30 +40,32 @@ import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
 import io.camunda.tasklist.webapp.security.sso.model.ClusterInfo;
 import io.camunda.tasklist.webapp.security.sso.model.ClusterMetadata;
-import java.util.*;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import org.json.JSONObject;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.rules.SpringClassRule;
-import org.springframework.test.context.junit4.rules.SpringMethodRule;
 import org.springframework.web.client.RestTemplate;
 
-@RunWith(Parameterized.class)
 @SpringBootTest(
     classes = {
       AuthSSOApplication.class,
@@ -70,19 +81,18 @@ import org.springframework.web.client.RestTemplate;
       "camunda.tasklist.cloud.permissionurl=https://permissionurl",
       "camunda.tasklist.persistentSessionsEnabled = true",
       "camunda.tasklist.cloud.permissionurl=https://permissionurl",
-      "camunda.tasklist.cloud.consoleUrl=https://consoleUrl"
+      "camunda.tasklist.cloud.consoleUrl=https://consoleUrl",
+      "camunda.tasklist.importer.startLoadingDataOnStartup = false",
+      "camunda.tasklist.archiver.rolloverEnabled = false"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({SSO_AUTH_PROFILE, "test"})
 public class AuthenticationWithPersistentSessionsIT implements AuthenticationTestable {
 
-  @ClassRule public static final SpringClassRule SPRING_CLASS_RULE = new SpringClassRule();
-
   private static final String COOKIE_KEY = "Cookie";
   private static final String TASKLIST_TESTUSER = "tasklist-testuser";
   private static final String TASKLIST_TESTUSER_EMAIL = "testuser@tasklist.io";
-  @Rule public final SpringMethodRule springMethodRule = new SpringMethodRule();
-  private final BiFunction<String, String, Tokens> orgExtractor;
+
   @LocalServerPort private int randomServerPort;
   @Autowired private TestRestTemplate testRestTemplate;
   @Autowired private TasklistProperties tasklistProperties;
@@ -96,11 +106,6 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
 
   @Autowired private ObjectMapper objectMapper;
 
-  public AuthenticationWithPersistentSessionsIT(BiFunction<String, String, Tokens> orgExtractor) {
-    this.orgExtractor = orgExtractor;
-  }
-
-  @Parameters
   public static Collection<BiFunction<String, String, Tokens>> orgExtractors() {
     return List.of(AuthenticationWithPersistentSessionsIT::tokensWithOrgAsMapFrom);
   }
@@ -144,7 +149,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     return new JSONObject(map).toString();
   }
 
-  @Before
+  @BeforeEach
   public void setUp() {
     // mock AssigneeMigrator
     doNothing().when(assigneeMigrator).migrateUsageMetrics(any());
@@ -159,15 +164,18 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
             "https://domain/authorize?redirect_uri=http://localhost:58117/sso-callback&client_id=1&audience=https://domain/userinfo");
   }
 
-  @Test
-  public void testLoginSuccess() throws Exception {
-    final HttpEntity<?> cookies = loginWithSSO();
+  @ParameterizedTest
+  @MethodSource("orgExtractors")
+  public void testLoginSuccess(BiFunction<String, String, Tokens> orgExtractor) throws Exception {
+    final HttpEntity<?> cookies = loginWithSSO(orgExtractor);
     final ResponseEntity<String> response = get(ROOT, cookies);
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
   }
 
-  @Test
-  public void testLoginFailedWithNoPermissions() throws Exception {
+  @ParameterizedTest
+  @MethodSource("orgExtractors")
+  public void testLoginFailedWithNoPermissions(BiFunction<String, String, Tokens> orgExtractor)
+      throws Exception {
     // Step 1 try to access document root
     ResponseEntity<String> response = get(ROOT);
     final HttpEntity<?> cookies = httpEntityWithCookie(response);
@@ -221,10 +229,11 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     assertThatRequestIsRedirectedTo(response, urlFor(NO_PERMISSION));
   }
 
-  @Test
-  public void testLogout() throws Throwable {
+  @ParameterizedTest
+  @MethodSource("orgExtractors")
+  public void testLogout(BiFunction<String, String, Tokens> orgExtractor) throws Throwable {
     // Step 1 Login
-    final HttpEntity<?> cookies = loginWithSSO();
+    final HttpEntity<?> cookies = loginWithSSO(orgExtractor);
     // Step 3 Now we should have access to root
     ResponseEntity<String> response = get(ROOT, cookies);
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -245,8 +254,10 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
   }
 
-  @Test
-  public void testLoginToAPIResource() throws Exception {
+  @ParameterizedTest
+  @MethodSource("orgExtractors")
+  public void testLoginToAPIResource(BiFunction<String, String, Tokens> orgExtractor)
+      throws Exception {
     // Step 1: try to access current user
     ResponseEntity<String> response = getCurrentUserByGraphQL(new HttpEntity<>(new HttpHeaders()));
     final HttpEntity<?> cookies = httpEntityWithCookie(response);
@@ -273,7 +284,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     // Test no ClusterMetadata
     mockEmptyClusterMetadata();
 
-    final HttpEntity<?> loggedCookies = loginWithSSO();
+    final HttpEntity<?> loggedCookies = loginWithSSO(orgExtractor);
     ResponseEntity<String> responseEntity = getCurrentUserByGraphQL(loggedCookies);
     GraphQLResponse graphQLResponse = new GraphQLResponse(responseEntity, objectMapper);
     assertThat(graphQLResponse.get("$.data.currentUser.c8Links", List.class)).isEmpty();
@@ -323,7 +334,8 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     return "http://localhost:" + randomServerPort + path;
   }
 
-  private HttpEntity<?> loginWithSSO() throws Exception {
+  private HttpEntity<?> loginWithSSO(BiFunction<String, String, Tokens> orgExtractor)
+      throws Exception {
     // Step 1 try to access document root
     ResponseEntity<String> response = get(ROOT);
     final HttpEntity<?> cookies = httpEntityWithCookie(response);

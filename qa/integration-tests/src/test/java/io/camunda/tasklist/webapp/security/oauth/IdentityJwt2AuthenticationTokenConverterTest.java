@@ -10,6 +10,7 @@ import static io.camunda.tasklist.webapp.security.TasklistProfileService.IDENTIT
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -29,9 +30,9 @@ import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.tasklist.webapp.security.tenant.TenantAwareAuthentication;
 import java.io.IOException;
 import java.util.List;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -43,9 +44,9 @@ import org.springframework.security.authentication.InsufficientAuthenticationExc
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @SpringBootTest(
     classes = {
       TestApplicationWithNoBeans.class,
@@ -67,27 +68,27 @@ public class IdentityJwt2AuthenticationTokenConverterTest {
 
   @Autowired private ApplicationContext applicationContext;
 
-  @Before
+  @BeforeEach
   public void setup() {
     new SpringContextHolder().setApplicationContext(applicationContext);
   }
 
-  @Test(expected = InsufficientAuthenticationException.class)
+  @Test
   public void shouldFailIfClaimIsInvalid() {
     when(identity.authentication())
         .thenThrow(
             new InvalidClaimException(
                 "The Claim 'aud' value doesn't contain the required audience."));
     final Jwt token = createJwtTokenWith();
-    tokenConverter.convert(token);
+    assertThrows(InsufficientAuthenticationException.class, () -> tokenConverter.convert(token));
   }
 
-  @Test(expected = InsufficientAuthenticationException.class)
+  @Test
   public void shouldFailIfTokenVerificationFails() {
     when(identity.authentication())
         .thenThrow(new RuntimeException("Any exception during token verification"));
     final Jwt token = createJwtTokenWith();
-    tokenConverter.convert(token);
+    assertThrows(InsufficientAuthenticationException.class, () -> tokenConverter.convert(token));
   }
 
   @Test

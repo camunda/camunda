@@ -6,13 +6,14 @@
  */
 package io.camunda.tasklist.zeebeimport;
 
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.util.TestUtil;
 import io.camunda.tasklist.util.apps.retry_after_failure.RetryAfterFailureTestOpenSearchConfig;
-import org.junit.After;
-import org.junit.Assume;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -33,12 +34,12 @@ public class ZeebeImportRetryAfterFailureOpenSearchIT extends ZeebeImportIT {
   private RetryAfterFailureTestOpenSearchConfig.CustomOpenSearchBulkProcessor
       openSearchBulkProcessor;
 
-  @BeforeClass
+  @BeforeAll
   public static void beforeClass() {
-    Assume.assumeTrue(TestUtil.isOpenSearch());
+    assumeTrue(TestUtil.isOpenSearch());
   }
 
-  @After
+  @AfterEach
   public void after() {
     openSearchBulkProcessor.cancelAttempts();
     super.after();

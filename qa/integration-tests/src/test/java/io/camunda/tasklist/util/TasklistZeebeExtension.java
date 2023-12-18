@@ -15,8 +15,10 @@ import io.zeebe.containers.ZeebeContainer;
 import java.time.Duration;
 import java.time.Instant;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,10 +27,11 @@ import org.springframework.core.env.Environment;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-public abstract class TasklistZeebeRule extends TestWatcher {
+public abstract class TasklistZeebeExtension
+    implements BeforeEachCallback, AfterEachCallback, TestExecutionExceptionHandler {
 
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
-  private static final Logger LOGGER = LoggerFactory.getLogger(TasklistZeebeRule.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(TasklistZeebeExtension.class);
 
   @Autowired protected TasklistProperties tasklistProperties;
 
@@ -46,15 +49,22 @@ public abstract class TasklistZeebeRule extends TestWatcher {
   public abstract void refreshIndices(Instant instant);
 
   @Override
-  protected void failed(Throwable e, Description description) {
-    this.failed = true;
-  }
-
-  @Override
-  public void starting(Description description) {
+  public void beforeEach(ExtensionContext extensionContext) {
     this.prefix = TestUtil.createRandomString(10);
     setZeebeIndexesPrefix(prefix);
     startZeebe();
+  }
+
+  @Override
+  public void handleTestExecutionException(ExtensionContext context, Throwable throwable)
+      throws Throwable {
+    this.failed = true;
+    throw throwable;
+  }
+
+  @Override
+  public void afterEach(ExtensionContext extensionContext) {
+    stop();
   }
 
   protected abstract void setZeebeIndexesPrefix(String prefix);
@@ -118,9 +128,6 @@ public abstract class TasklistZeebeRule extends TestWatcher {
       }
     }
   }
-
-  @Override
-  public abstract void finished(Description description);
 
   /** Stops the broker and destroys the client. Does nothing if not started yet. */
   public void stop() {

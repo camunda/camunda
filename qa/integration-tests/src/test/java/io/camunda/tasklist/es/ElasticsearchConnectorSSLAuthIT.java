@@ -7,6 +7,7 @@
 package io.camunda.tasklist.es;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
@@ -15,23 +16,22 @@ import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import java.io.File;
 import java.util.Map;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.utility.MountableFile;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @SpringBootTest(
     classes = {
       TestApplicationWithNoBeans.class,
@@ -39,6 +39,7 @@ import org.testcontainers.utility.MountableFile;
       ElasticsearchConnector.class
     })
 @ContextConfiguration(initializers = {ElasticsearchConnectorSSLAuthIT.ElasticsearchStarter.class})
+@Disabled
 public class ElasticsearchConnectorSSLAuthIT extends TasklistIntegrationTest {
 
   static String certDir = new File("src/test/resources/certs").getAbsolutePath();
@@ -65,12 +66,12 @@ public class ElasticsearchConnectorSSLAuthIT extends TasklistIntegrationTest {
 
   @Autowired RestHighLevelClient zeebeEsClient;
 
-  @BeforeClass
+  @BeforeAll
   public static void beforeClass() {
-    Assume.assumeTrue(TestUtil.isElasticSearch());
+    assumeTrue(TestUtil.isElasticSearch());
   }
 
-  @Ignore("Can be tested manually")
+  @Disabled("Can be tested manually")
   @Test
   public void canConnect() {
     assertThat(esClient).isNotNull();

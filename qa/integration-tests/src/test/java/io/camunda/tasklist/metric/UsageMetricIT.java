@@ -22,9 +22,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
@@ -51,7 +51,7 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
         .setPermissions(List.of(Permission.WRITE));
   }
 
-  @Before
+  @BeforeEach
   public void before() {
     super.before();
   }
@@ -78,7 +78,7 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
     insertMetricForAssignee("Angela Merkel", now);
     insertMetricForAssignee("Angela Merkel", now);
 
-    tasklistTestRule.refreshTasklistIndices();
+    databaseTestExtension.refreshTasklistIndices();
 
     final Map<String, String> parameters = new HashMap<>();
     parameters.put("startTime", now.minusSeconds(1L).format(FORMATTER));
@@ -102,7 +102,7 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
     insertMetricForAssignee("Angela Merkel", now);
     insertMetricForAssignee("Angela Merkel", now);
 
-    tasklistTestRule.refreshTasklistIndices();
+    databaseTestExtension.refreshTasklistIndices();
 
     final Map<String, String> parameters = new HashMap<>();
     parameters.put("startTime", now.plusMinutes(5L).format(FORMATTER)); // out of range
@@ -117,14 +117,14 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
-  @Ignore(
+  @Disabled(
       "Ignoring this test for now as it is quite slow - we can remove this mark to verify at any time")
   public void shouldReturnOverTenThousandObjects() {
     final OffsetDateTime now = OffsetDateTime.now();
     for (int i = 0; i <= 10_000; i++) {
       insertMetricForAssignee("Assignee " + i, now); // 10_001 different assignees
     }
-    tasklistTestRule.refreshTasklistIndices();
+    databaseTestExtension.refreshTasklistIndices();
 
     final Map<String, String> parameters = new HashMap<>();
     parameters.put("startTime", now.minusSeconds(1L).format(FORMATTER));
@@ -175,7 +175,7 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
     tester.claimAndCompleteHumanTask(TaskIT.ELEMENT_ID);
 
     tester.waitFor(2000);
-    tasklistTestRule.refreshTasklistIndices();
+    databaseTestExtension.refreshTasklistIndices();
     // when
     final Map<String, String> parameters = new HashMap<>();
     parameters.put("startTime", now.minusMinutes(5L).format(FORMATTER));

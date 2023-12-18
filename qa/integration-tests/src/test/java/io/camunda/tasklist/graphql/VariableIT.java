@@ -9,17 +9,16 @@ package io.camunda.tasklist.graphql;
 import static io.camunda.tasklist.qa.util.VariablesUtil.createBigVariable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import com.graphql.spring.boot.test.GraphQLTestTemplate;
 import com.jayway.jsonpath.PathNotFoundException;
-import io.camunda.tasklist.util.SpringParametersRunnerFactory;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.graphql.mutation.TaskMutationResolver;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -31,33 +30,15 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
-@UseParametersRunnerFactory(SpringParametersRunnerFactory.class)
-@RunWith(Parameterized.class)
 public class VariableIT extends TasklistZeebeIntegrationTest {
 
   private static final String ELEMENT_ID = "taskA";
   private static final String BPMN_PROCESS_ID = "testProcess";
-
-  @Parameter(value = 0)
-  public String variableFragmentResource;
-
-  @Parameter(value = 1)
-  public boolean shouldContainPreview;
-
-  @Parameter(value = 2)
-  public boolean shouldContainFullValue;
-
-  @Parameter(value = 3)
-  public boolean shouldContainIsTruncatedFlag;
 
   @Autowired private GraphQLTestTemplate graphQLTestTemplate;
 
@@ -65,7 +46,6 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private ObjectMapper objectMapper;
 
-  @Parameters
   public static Collection<Object[]> data() {
     final Collection<Object[]> params = new ArrayList();
     params.add(
@@ -77,13 +57,19 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
     return params;
   }
 
-  @Before
+  @BeforeEach
   public void before() {
     super.before();
   }
 
-  @Test
-  public void shouldReturnOverwrittenVariable() throws IOException {
+  @ParameterizedTest
+  @MethodSource("data")
+  public void shouldReturnOverwrittenVariable(
+      String variableFragmentResource,
+      boolean shouldContainPreview,
+      boolean shouldContainFullValue,
+      boolean shouldContainIsTruncatedFlag)
+      throws IOException {
     // having
     final String bpmnProcessId = "testProcess";
     final String flowNodeBpmnId = "taskA";
@@ -186,8 +172,14 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
     }
   }
 
-  @Test
-  public void shouldReturnOverwrittenBigVariablesWithPreview() throws IOException {
+  @ParameterizedTest
+  @MethodSource("data")
+  public void shouldReturnOverwrittenBigVariablesWithPreview(
+      String variableFragmentResource,
+      boolean shouldContainPreview,
+      boolean shouldContainFullValue,
+      boolean shouldContainIsTruncatedFlag)
+      throws IOException {
     // having
     final int size =
         tasklistProperties.getImporter().getVariableSizeThreshold()
@@ -284,8 +276,14 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
         shouldContainIsTruncatedFlag);
   }
 
-  @Test
-  public void shouldReturnSubprocessVariable() throws IOException {
+  @ParameterizedTest
+  @MethodSource("data")
+  public void shouldReturnSubprocessVariable(
+      String variableFragmentResource,
+      boolean shouldContainPreview,
+      boolean shouldContainFullValue,
+      boolean shouldContainIsTruncatedFlag)
+      throws IOException {
     // having
     final String bpmnProcessId = "testProcess";
     final String flowNodeBpmnId = "taskA";
@@ -329,8 +327,14 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
     assertEquals("333", response.get("$.data.tasks[0].variables[2].value"));
   }
 
-  @Test
-  public void shouldReturnMultiInstanceVariables() throws IOException {
+  @ParameterizedTest
+  @MethodSource("data")
+  public void shouldReturnMultiInstanceVariables(
+      String variableFragmentResource,
+      boolean shouldContainPreview,
+      boolean shouldContainFullValue,
+      boolean shouldContainIsTruncatedFlag)
+      throws IOException {
     // having
     final String bpmnProcessId = "testProcess";
     final String flowNodeBpmnId = "taskA";
@@ -383,8 +387,14 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
     }
   }
 
-  @Test
-  public void shouldReturnOneTaskWithVariables() throws IOException {
+  @ParameterizedTest
+  @MethodSource("data")
+  public void shouldReturnOneTaskWithVariables(
+      String variableFragmentResource,
+      boolean shouldContainPreview,
+      boolean shouldContainFullValue,
+      boolean shouldContainIsTruncatedFlag)
+      throws IOException {
     // having
     final GraphQLResponse response =
         tester
@@ -418,8 +428,14 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
         shouldContainIsTruncatedFlag);
   }
 
-  @Test
-  public void shouldUpdateVariables() throws IOException {
+  @ParameterizedTest
+  @MethodSource("data")
+  public void shouldUpdateVariables(
+      String variableFragmentResource,
+      boolean shouldContainPreview,
+      boolean shouldContainFullValue,
+      boolean shouldContainIsTruncatedFlag)
+      throws IOException {
     final String taskAId = "taskA";
     final String varName = "var";
     final String var2Name = "var2";
@@ -498,8 +514,14 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
     }
   }
 
-  @Test
-  public void shouldReturnOneTaskWithBigVariablesWithPreview() throws IOException {
+  @ParameterizedTest
+  @MethodSource("data")
+  public void shouldReturnOneTaskWithBigVariablesWithPreview(
+      String variableFragmentResource,
+      boolean shouldContainPreview,
+      boolean shouldContainFullValue,
+      boolean shouldContainIsTruncatedFlag)
+      throws IOException {
     // having
     final int size =
         tasklistProperties.getImporter().getVariableSizeThreshold()
@@ -565,8 +587,14 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
         shouldContainIsTruncatedFlag);
   }
 
-  @Test
-  public void shouldReturnVariablesByNames() throws IOException {
+  @ParameterizedTest
+  @MethodSource("data")
+  public void shouldReturnVariablesByNames(
+      String variableFragmentResource,
+      boolean shouldContainPreview,
+      boolean shouldContainFullValue,
+      boolean shouldContainIsTruncatedFlag)
+      throws IOException {
     // having
     final String taskId =
         tester
@@ -597,8 +625,14 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
         "333", () -> response.get("$.data.variables[1].value"), shouldContainFullValue);
   }
 
-  @Test
-  public void shouldReturnVariablesByNamesForCompletedTask() throws IOException {
+  @ParameterizedTest
+  @MethodSource("data")
+  public void shouldReturnVariablesByNamesForCompletedTask(
+      String variableFragmentResource,
+      boolean shouldContainPreview,
+      boolean shouldContainFullValue,
+      boolean shouldContainIsTruncatedFlag)
+      throws IOException {
     // having
     final String taskId =
         tester
@@ -646,8 +680,14 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
         shouldContainIsTruncatedFlag);
   }
 
-  @Test
-  public void shouldReturnBigVariablesWithPreviewForCompletedTask() throws IOException {
+  @ParameterizedTest
+  @MethodSource("data")
+  public void shouldReturnBigVariablesWithPreviewForCompletedTask(
+      String variableFragmentResource,
+      boolean shouldContainPreview,
+      boolean shouldContainFullValue,
+      boolean shouldContainIsTruncatedFlag)
+      throws IOException {
     // having
     final int size =
         tasklistProperties.getImporter().getVariableSizeThreshold()
@@ -739,8 +779,14 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
         shouldContainIsTruncatedFlag);
   }
 
-  @Test
-  public void shouldReturnEventSubprocessVariable() throws IOException {
+  @ParameterizedTest
+  @MethodSource("data")
+  public void shouldReturnEventSubprocessVariable(
+      String variableFragmentResource,
+      boolean shouldContainPreview,
+      boolean shouldContainFullValue,
+      boolean shouldContainIsTruncatedFlag)
+      throws IOException {
     // having
     final GraphQLResponse response =
         tester

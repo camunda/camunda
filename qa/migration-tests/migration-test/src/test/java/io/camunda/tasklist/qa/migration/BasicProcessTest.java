@@ -24,15 +24,15 @@ import java.util.List;
 import java.util.Set;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class BasicProcessTest extends AbstractMigrationTest {
 
   private String bpmnProcessId = BasicProcessDataGenerator.PROCESS_BPMN_PROCESS_ID;
   private Set<String> taskIds;
 
-  @Before
+  @BeforeEach
   public void findTaskIds() {
     assumeThatProcessIsUnderTest(bpmnProcessId);
     if (taskIds == null) {

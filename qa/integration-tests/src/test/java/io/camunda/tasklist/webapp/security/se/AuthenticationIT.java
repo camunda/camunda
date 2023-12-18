@@ -20,8 +20,8 @@ import io.camunda.tasklist.webapp.security.se.store.UserStore;
 import java.util.List;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -52,7 +52,7 @@ public class AuthenticationIT extends TasklistIntegrationTest implements Authent
 
   @MockBean private UserStore userStore;
 
-  @Before
+  @BeforeEach
   public void setUp() {
     final UserEntity user =
         new UserEntity()

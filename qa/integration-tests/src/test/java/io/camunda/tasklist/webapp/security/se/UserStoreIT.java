@@ -10,6 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.tasklist.entities.UserEntity;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
 import io.camunda.tasklist.util.*;
 import io.camunda.tasklist.webapp.security.WebSecurityConfig;
@@ -18,8 +19,8 @@ import io.camunda.tasklist.webapp.security.se.store.UserStore;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -31,11 +32,15 @@ import org.springframework.boot.test.context.SpringBootTest;
       OAuth2WebConfigurer.class,
       RetryElasticsearchClient.class,
     },
-    properties = {"graphql.servlet.websocket.enabled=false"},
+    properties = {
+      "graphql.servlet.websocket.enabled=false",
+      TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+      TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false"
+    },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class UserStoreIT extends TasklistIntegrationTest {
 
-  @Rule public TasklistTestRule tasklistTestRule = TestUtil.getTasklistTestRule();
+  @RegisterExtension @Autowired public DatabaseTestExtension databaseTestExtension;
 
   @Autowired private SearchEngineUserDetailsService userDetailsService;
 
@@ -48,7 +53,7 @@ public class UserStoreIT extends TasklistIntegrationTest {
     userIds.forEach(
         userId ->
             userDetailsService.addUserWith(userId, userId, userId, List.of(Role.OPERATOR.name())));
-    tasklistTestRule.refreshIndexesInElasticsearch();
+    databaseTestExtension.refreshIndexesInElasticsearch();
     // when ( getting request of random ordered usernames )
     Collections.shuffle(userIds);
 

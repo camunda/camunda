@@ -13,9 +13,9 @@ import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import java.io.File;
 import java.util.Map;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,11 +26,11 @@ import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Profile;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.MountableFile;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @SpringBootTest(
     classes = {
       TestApplicationWithNoBeans.class,
@@ -39,6 +39,7 @@ import org.testcontainers.utility.MountableFile;
     })
 @ContextConfiguration(initializers = {OpenSearchConnectorSSLAuthIT.ElasticsearchStarter.class})
 @Profile("opensearch-test")
+@Disabled
 public class OpenSearchConnectorSSLAuthIT extends TasklistIntegrationTest {
 
   static String certDir = new File("src/test/resources/certs").getAbsolutePath();
@@ -66,7 +67,7 @@ public class OpenSearchConnectorSSLAuthIT extends TasklistIntegrationTest {
   @Qualifier("zeebeOsClient")
   OpenSearchClient zeebeOsClient;
 
-  @Ignore("Can be tested manually")
+  @Disabled("Can be tested manually")
   @Test
   public void canConnect() {
     assertThat(openSearchClient).isNotNull();

@@ -9,8 +9,9 @@ package io.camunda.tasklist.util;
 import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.property.TasklistOpenSearchProperties;
+import io.camunda.tasklist.property.TasklistElasticsearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.zeebe.ImportValueType;
@@ -20,23 +21,40 @@ import io.camunda.tasklist.zeebeimport.ZeebeImporter;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
-import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.client.opensearch.indices.GetIndexResponse;
-import org.opensearch.client.opensearch.nodes.Stats;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.support.IndicesOptions;
+import org.elasticsearch.client.Request;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.Response;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.client.indices.GetIndexResponse;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
 
-public class OpenSearchTestRule extends TestWatcher implements TasklistTestRule {
+@Component
+@ConditionalOnProperty(
+    name = "camunda.tasklist.database",
+    havingValue = "elasticsearch",
+    matchIfMissing = true)
+public class ElasticsearchTestExtension
+    implements DatabaseTestExtension,
+        BeforeEachCallback,
+        AfterEachCallback,
+        TestExecutionExceptionHandler {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchTestRule.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchTestExtension.class);
 
   /** Scroll contexts constants */
   private static final String OPEN_SCROLL_CONTEXT_FIELD = "open_contexts";
@@ -45,54 +63,51 @@ public class OpenSearchTestRule extends TestWatcher implements TasklistTestRule 
   private static final String PATH_SEARCH_STATISTICS =
       "/_nodes/stats/indices/search?filter_path=nodes.*.indices.search";
 
-  @Autowired
-  @Qualifier("openSearchClient")
-  protected OpenSearchClient osClient;
+  @Autowired protected RestHighLevelClient esClient;
 
   @Autowired
-  @Qualifier("zeebeOsClient")
-  protected OpenSearchClient zeebeOsClient;
+  @Qualifier("zeebeEsClient")
+  protected RestHighLevelClient zeebeEsClient;
 
   @Autowired protected TasklistProperties tasklistProperties;
   @Autowired protected ZeebeImporter zeebeImporter;
   @Autowired protected RecordsReaderHolder recordsReaderHolder;
   protected boolean failed = false;
-  @Autowired private SchemaManager schemaManager;
+  @Autowired private SchemaManager elasticsearchSchemaManager;
   @Autowired private ObjectMapper objectMapper;
   @Autowired private TestImportListener testImportListener;
   private String indexPrefix;
 
-  public OpenSearchTestRule() {}
-
   @Override
-  protected void failed(Throwable e, Description description) {
-    super.failed(e, description);
-    this.failed = true;
-  }
-
-  @Override
-  protected void starting(Description description) {
+  public void beforeEach(ExtensionContext extensionContext) {
     if (indexPrefix == null) {
       indexPrefix = TestUtil.createRandomString(10) + "-tasklist";
     }
-    tasklistProperties.getOpenSearch().setIndexPrefix(indexPrefix);
-    if (tasklistProperties.getOpenSearch().isCreateSchema()) {
-      schemaManager.createSchema();
+    tasklistProperties.getElasticsearch().setIndexPrefix(indexPrefix);
+    if (tasklistProperties.getElasticsearch().isCreateSchema()) {
+      elasticsearchSchemaManager.createSchema();
       assertThat(areIndicesCreatedAfterChecks(indexPrefix, 4, 5 * 60 /*sec*/))
-          .describedAs("OpenSearch %s (min %d) indices are created", indexPrefix, 5)
+          .describedAs("Elasticsearch %s (min %d) indices are created", indexPrefix, 5)
           .isTrue();
     }
   }
 
   @Override
-  protected void finished(Description description) {
+  public void handleTestExecutionException(ExtensionContext context, Throwable throwable)
+      throws Throwable {
+    this.failed = true;
+    throw throwable;
+  }
+
+  @Override
+  public void afterEach(ExtensionContext extensionContext) {
     if (!failed) {
-      final String indexPrefix = tasklistProperties.getOpenSearch().getIndexPrefix();
-      TestUtil.removeAllIndices(osClient, indexPrefix);
+      final String indexPrefix = tasklistProperties.getElasticsearch().getIndexPrefix();
+      TestUtil.removeAllIndices(esClient, indexPrefix);
     }
     tasklistProperties
-        .getOpenSearch()
-        .setIndexPrefix(TasklistOpenSearchProperties.DEFAULT_INDEX_PREFIX);
+        .getElasticsearch()
+        .setIndexPrefix(TasklistElasticsearchProperties.DEFAULT_INDEX_PREFIX);
     assertMaxOpenScrollContexts(10);
   }
 
@@ -109,23 +124,21 @@ public class OpenSearchTestRule extends TestWatcher implements TasklistTestRule 
 
   public void refreshZeebeIndices() {
     try {
-      zeebeOsClient
-          .indices()
-          .refresh(
-              r -> r.index(List.of(tasklistProperties.getZeebeOpenSearch().getPrefix() + "*")));
+      final RefreshRequest refreshRequest =
+          new RefreshRequest(tasklistProperties.getZeebeElasticsearch().getPrefix() + "*");
+      zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
     } catch (Exception t) {
-      LOGGER.error("Could not refresh Zeebe OpenSearch indices", t);
+      LOGGER.error("Could not refresh Zeebe Elasticsearch indices", t);
     }
   }
 
-  @Override
   public void refreshTasklistIndices() {
     try {
-      osClient
-          .indices()
-          .refresh(r -> r.index(tasklistProperties.getOpenSearch().getIndexPrefix() + "*"));
+      final RefreshRequest refreshRequest =
+          new RefreshRequest(tasklistProperties.getElasticsearch().getIndexPrefix() + "*");
+      esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
     } catch (Exception t) {
-      LOGGER.error("Could not refresh Tasklist OpenSearch indices", t);
+      LOGGER.error("Could not refresh Tasklist Elasticsearch indices", t);
     }
   }
 
@@ -218,30 +231,28 @@ public class OpenSearchTestRule extends TestWatcher implements TasklistTestRule 
         areCreated = areIndicesAreCreated(indexPrefix, minCountOfIndices);
       } catch (Exception t) {
         LOGGER.error(
-            "OpenSearch indices (min {}) are not created yet. Waiting {}/{}",
+            "Elasticsearch indices (min {}) are not created yet. Waiting {}/{}",
             minCountOfIndices,
             checks,
             maxChecks);
         sleepFor(200);
       }
     }
-    LOGGER.debug("OpenSearch indices are created after {} checks", checks);
+    LOGGER.debug("Elasticsearch indices are created after {} checks", checks);
     return areCreated;
   }
 
   private boolean areIndicesAreCreated(String indexPrefix, int minCountOfIndices)
       throws IOException {
     final GetIndexResponse response =
-        osClient
+        esClient
             .indices()
             .get(
-                g ->
-                    g.index(List.of(indexPrefix + "*"))
-                        .ignoreUnavailable(true)
-                        .allowNoIndices(false));
-
-    final Set<String> indices = response.result().keySet();
-    return indices != null && indices.size() >= minCountOfIndices;
+                new GetIndexRequest(indexPrefix + "*")
+                    .indicesOptions(IndicesOptions.fromOptions(true, false, true, false)),
+                RequestOptions.DEFAULT);
+    final String[] indices = response.getIndices();
+    return indices != null && indices.length >= minCountOfIndices;
   }
 
   public List<RecordsReader> getRecordsReaders(ImportValueType importValueType) {
@@ -251,15 +262,29 @@ public class OpenSearchTestRule extends TestWatcher implements TasklistTestRule 
   }
 
   public int getOpenScrollcontextSize() {
-    int openContext = 0;
-    try {
-      final Set<Map.Entry<String, Stats>> nodesResult = osClient.nodes().stats().nodes().entrySet();
-      for (Map.Entry<String, Stats> entryNodes : nodesResult) {
-        openContext += entryNodes.getValue().indices().search().openContexts().intValue();
+    return getIntValueForJSON(PATH_SEARCH_STATISTICS, OPEN_SCROLL_CONTEXT_FIELD, 0);
+  }
+
+  public int getIntValueForJSON(final String path, final String fieldname, final int defaultValue) {
+    final Optional<JsonNode> jsonNode = getJsonFor(path);
+    if (jsonNode.isPresent()) {
+      final JsonNode field = jsonNode.get().findValue(fieldname);
+      if (field != null) {
+        return field.asInt(defaultValue);
       }
-      return openContext;
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+    }
+    return defaultValue;
+  }
+
+  public Optional<JsonNode> getJsonFor(final String path) {
+    try {
+      final ObjectMapper objectMapper = new ObjectMapper();
+      final Response response =
+          esClient.getLowLevelClient().performRequest(new Request("GET", path));
+      return Optional.of(objectMapper.readTree(response.getEntity().getContent()));
+    } catch (Exception e) {
+      LOGGER.error("Couldn't retrieve json object from elasticsearch. Return Optional.Empty.", e);
+      return Optional.empty();
     }
   }
 }

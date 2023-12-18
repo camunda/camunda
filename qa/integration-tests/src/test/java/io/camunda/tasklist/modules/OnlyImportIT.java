@@ -7,12 +7,13 @@
 package io.camunda.tasklist.modules;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.camunda.tasklist.ArchiverModuleConfiguration;
 import io.camunda.tasklist.ImportModuleConfiguration;
 import io.camunda.tasklist.WebappModuleConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.test.context.TestPropertySource;
 
@@ -28,13 +29,17 @@ public class OnlyImportIT extends ModuleIntegrationTest {
     assertThat(applicationContext.getBean(ImportModuleConfiguration.class)).isNotNull();
   }
 
-  @Test(expected = NoSuchBeanDefinitionException.class)
+  @Test
   public void testWebappModuleIsNotPresent() {
-    applicationContext.getBean(WebappModuleConfiguration.class);
+    assertThrows(
+        NoSuchBeanDefinitionException.class,
+        () -> applicationContext.getBean(WebappModuleConfiguration.class));
   }
 
-  @Test(expected = NoSuchBeanDefinitionException.class)
+  @Test
   public void testArchiverModuleIsNotPresent() {
-    applicationContext.getBean(ArchiverModuleConfiguration.class);
+    assertThrows(
+        NoSuchBeanDefinitionException.class,
+        () -> applicationContext.getBean(ArchiverModuleConfiguration.class));
   }
 }

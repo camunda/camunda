@@ -8,7 +8,7 @@ package io.camunda.tasklist.graphql;
 
 import static io.camunda.tasklist.util.CollectionUtil.map;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.indices.ProcessInstanceDependant;
@@ -20,8 +20,8 @@ import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.graphql.mutation.TaskMutationResolver;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import java.util.List;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class ProcessInstanceMutationIT extends TasklistZeebeIntegrationTest {
@@ -37,7 +37,7 @@ public class ProcessInstanceMutationIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private NoSqlHelper noSqlHelper;
 
-  @Before
+  @BeforeEach
   public void before() {
     super.before();
   }
@@ -76,7 +76,7 @@ public class ProcessInstanceMutationIT extends TasklistZeebeIntegrationTest {
     // then
     assertThat(deleted).isTrue();
 
-    tasklistTestRule.refreshIndexesInElasticsearch();
+    databaseTestExtension.refreshIndexesInElasticsearch();
 
     assertWhoIsAProcessInstanceDependant();
     assertThatProcessDependantsAreDeleted(processInstanceId);

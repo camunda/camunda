@@ -13,16 +13,19 @@ import io.camunda.tasklist.management.SearchEngineHealthIndicator;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
 import io.camunda.tasklist.schema.indices.UserIndex;
-import io.camunda.tasklist.util.*;
+import io.camunda.tasklist.util.DatabaseTestExtension;
+import io.camunda.tasklist.util.NoSqlHelper;
+import io.camunda.tasklist.util.TasklistIntegrationTest;
+import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.webapp.security.WebSecurityConfig;
 import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -57,11 +60,7 @@ public class SearchEngineUserDetailsServiceIT extends TasklistIntegrationTest {
   private static final String TEST_FIRSTNAME = "Quentin";
   private static final String TEST_LASTNAME = "Tarantino ";
 
-  @Rule
-  public TasklistTestRule tasklistTestRule =
-      TasklistZeebeIntegrationTest.IS_ELASTIC
-          ? new ElasticsearchTestRule()
-          : new OpenSearchTestRule();
+  @RegisterExtension @Autowired public DatabaseTestExtension databaseTestExtension;
 
   @Autowired private SearchEngineUserDetailsService userDetailsService;
 
@@ -71,12 +70,13 @@ public class SearchEngineUserDetailsServiceIT extends TasklistIntegrationTest {
 
   @Autowired private NoSqlHelper noSqlHelper;
 
-  @Before
+  @BeforeEach
   public void setUp() {
-    tasklistTestRule.refreshTasklistIndices();
+    super.before();
+    databaseTestExtension.refreshTasklistIndices();
   }
 
-  @After
+  @AfterEach
   public void deleteUser() throws IOException {
     deleteById(TEST_USERNAME);
   }
@@ -85,7 +85,7 @@ public class SearchEngineUserDetailsServiceIT extends TasklistIntegrationTest {
   public void testCustomUserIsAdded() {
     // when
     userDetailsService.initializeUsers();
-    tasklistTestRule.refreshTasklistIndices();
+    databaseTestExtension.refreshTasklistIndices();
 
     // and
     updateUserRealName();
@@ -105,7 +105,7 @@ public class SearchEngineUserDetailsServiceIT extends TasklistIntegrationTest {
       final Map<String, Object> jsonMap = new HashMap<>();
       jsonMap.put(UserIndex.DISPLAY_NAME, String.format("%s %s", TEST_FIRSTNAME, TEST_LASTNAME));
       noSqlHelper.update(userIndex.getFullQualifiedName(), TEST_USERNAME, jsonMap);
-      tasklistTestRule.refreshTasklistIndices();
+      databaseTestExtension.refreshTasklistIndices();
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

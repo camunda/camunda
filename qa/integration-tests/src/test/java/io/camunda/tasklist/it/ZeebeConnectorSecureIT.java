@@ -18,13 +18,14 @@ import io.zeebe.containers.ZeebeContainer;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
@@ -34,7 +35,8 @@ import org.testcontainers.utility.MountableFile;
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
     })
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
+@Testcontainers
 public class ZeebeConnectorSecureIT {
 
   private static final String CERTIFICATE_FILE = "zeebe-test-chain.cert.pem";
@@ -48,7 +50,7 @@ public class ZeebeConnectorSecureIT {
   @Autowired ZeebeConnector zeebeConnector;
   private final MountableFile certsDir = MountableFile.forClasspathResource("certs");
 
-  @Rule
+  @Container
   public ZeebeContainer zeebeContainer =
       new ZeebeContainer(ZEEBE_DOCKER_IMAGE)
           .withFileSystemBind(certsDir.getFilesystemPath(), "/usr/local/zeebe/certs")

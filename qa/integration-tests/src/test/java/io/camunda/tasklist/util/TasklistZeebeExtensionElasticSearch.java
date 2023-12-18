@@ -14,12 +14,19 @@ import java.time.format.DateTimeFormatter;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.junit.runner.Description;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
 
-public class TasklistZeebeRuleElasticSearch extends TasklistZeebeRule {
+@Component
+@ConditionalOnProperty(
+    name = "camunda.tasklist.database",
+    havingValue = "elasticsearch",
+    matchIfMissing = true)
+public class TasklistZeebeExtensionElasticSearch extends TasklistZeebeExtension {
 
   @Autowired
   @Qualifier("zeebeEsClient")
@@ -56,8 +63,8 @@ public class TasklistZeebeRuleElasticSearch extends TasklistZeebeRule {
   }
 
   @Override
-  public void finished(Description description) {
-    stop();
+  public void afterEach(ExtensionContext extensionContext) {
+    super.afterEach(extensionContext);
     if (!failed) {
       TestUtil.removeAllIndices(zeebeEsClient, getPrefix());
     }

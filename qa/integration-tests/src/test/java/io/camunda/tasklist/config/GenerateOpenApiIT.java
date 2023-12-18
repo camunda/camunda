@@ -11,21 +11,21 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.util.MockMvcHelper;
-import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
-import org.junit.Before;
-import org.junit.Test;
+import io.camunda.tasklist.util.TasklistIntegrationTest;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-public class GenerateOpenApiIT extends TasklistZeebeIntegrationTest {
+public class GenerateOpenApiIT extends TasklistIntegrationTest {
   @Autowired private WebApplicationContext context;
 
   @Autowired private ObjectMapper objectMapper;
 
   private MockMvcHelper mockMvcHelper;
 
-  @Before
+  @BeforeEach
   public void setUp() {
     mockMvcHelper =
         new MockMvcHelper(MockMvcBuilders.webAppContextSetup(context).build(), objectMapper);

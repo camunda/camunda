@@ -6,9 +6,9 @@
  */
 package io.camunda.tasklist.zeebeimport;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertFalse;
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
@@ -26,8 +26,8 @@ import io.camunda.tasklist.zeebeimport.es.ImportJobElasticSearch;
 import io.camunda.tasklist.zeebeimport.v830.processors.es.BulkProcessorElasticSearch;
 import java.util.ArrayList;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -63,7 +63,7 @@ public class ImportListenerTestElasticSearch extends NoBeansTest {
 
   @Autowired private TestImportListener importListener;
 
-  @Before
+  @BeforeEach
   public void before() {
     importListener.cancel();
   }

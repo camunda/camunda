@@ -7,6 +7,7 @@
 package io.camunda.tasklist.os;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.tasklist.schema.migration.os.ReindexPlanOpenSearch;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
@@ -14,7 +15,10 @@ import io.camunda.tasklist.util.TestUtil;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,17 +40,17 @@ public class ReindexOpenSearchIT extends TasklistIntegrationTest {
 
   private String indexPrefix;
 
-  @BeforeClass
+  @BeforeAll
   public static void beforeClass() {
-    Assume.assumeTrue(TestUtil.isOpenSearch());
+    assumeTrue(TestUtil.isOpenSearch());
   }
 
-  @Before
+  @BeforeEach
   public void setUp() {
     indexPrefix = UUID.randomUUID().toString();
   }
 
-  @After
+  @AfterEach
   public void tearDown() {
     retryOpenSearchClient.deleteIndicesFor(idxName("index-*"));
   }

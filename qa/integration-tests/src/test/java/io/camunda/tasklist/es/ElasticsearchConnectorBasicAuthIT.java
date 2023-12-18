@@ -7,6 +7,7 @@
 package io.camunda.tasklist.es;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.tasklist.management.SearchEngineHealthIndicator;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -18,20 +19,19 @@ import io.camunda.tasklist.webapp.security.WebSecurityConfig;
 import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import java.util.Map;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @SpringBootTest(
     classes = {
       TestElasticsearchSchemaManager.class,
@@ -43,6 +43,8 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
     },
     properties = {
       TasklistProperties.PREFIX + ".elasticsearch.createSchema = false",
+      TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+      TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
       "graphql.servlet.websocket.enabled=false"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -69,9 +71,9 @@ public class ElasticsearchConnectorBasicAuthIT extends TasklistIntegrationTest {
 
   @Autowired RestHighLevelClient zeebeEsClient;
 
-  @BeforeClass
+  @BeforeAll
   public static void beforeClass() {
-    Assume.assumeTrue(TestUtil.isElasticSearch());
+    assumeTrue(TestUtil.isElasticSearch());
   }
 
   @Test

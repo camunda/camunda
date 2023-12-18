@@ -12,28 +12,28 @@ import com.github.dockerjava.api.command.CreateContainerCmd;
 import io.camunda.tasklist.qa.util.TestContainerUtil;
 import io.camunda.tasklist.qa.util.TestContext;
 import io.camunda.tasklist.util.ContainerVersionsUtil;
-import org.junit.After;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.annotation.IfProfileValue;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 
-@RunWith(SpringRunner.class)
-@IfProfileValue(name = "spring.profiles.active", value = "docker-test")
+@ExtendWith(SpringExtension.class)
+@EnabledIfSystemProperty(named = "spring.profiles.active", matches = "docker-test")
 public class StartupIT {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(StartupIT.class);
 
   //  values for local test:
-  //  private static final String TASKLIST_TEST_DOCKER_IMAGE = "camunda/tasklist";
+  // private static final String TASKLIST_TEST_DOCKER_IMAGE = "camunda/tasklist:SNAPSHOT";
   //  public static final String VERSION = "8.1.2";
   private static final String TASKLIST_TEST_DOCKER_IMAGE = "localhost:5000/camunda/tasklist";
   private static final String VERSION = "current-test";
@@ -94,7 +94,7 @@ public class StartupIT {
     assertThat(clientConfig.getBody()).isNotNull();
   }
 
-  @After
+  @AfterEach
   public void stopContainers() {
     if (tasklistContainer != null) {
       tasklistContainer.stop();

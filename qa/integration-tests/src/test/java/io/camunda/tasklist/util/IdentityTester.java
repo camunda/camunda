@@ -8,7 +8,10 @@ package io.camunda.tasklist.util;
 
 import static io.camunda.tasklist.Application.SPRING_THYMELEAF_PREFIX_KEY;
 import static io.camunda.tasklist.Application.SPRING_THYMELEAF_PREFIX_VALUE;
-import static io.camunda.tasklist.qa.util.TestContainerUtil.*;
+import static io.camunda.tasklist.qa.util.TestContainerUtil.KEYCLOAK_PASSWORD;
+import static io.camunda.tasklist.qa.util.TestContainerUtil.KEYCLOAK_PASSWORD_2;
+import static io.camunda.tasklist.qa.util.TestContainerUtil.KEYCLOAK_USERNAME;
+import static io.camunda.tasklist.qa.util.TestContainerUtil.KEYCLOAK_USERNAME_2;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.COOKIE_JSESSIONID;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -22,8 +25,8 @@ import io.camunda.zeebe.client.impl.util.Environment;
 import java.util.Collections;
 import java.util.Map;
 import org.json.JSONObject;
-import org.junit.AfterClass;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -74,12 +77,12 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
                 + "/auth/realms/camunda-platform/protocol/openid-connect/token");
   }
 
-  @Before
+  @BeforeEach
   public void before() {
     super.before();
     tester =
         beanFactory
-            .getBean(TasklistTester.class, zeebeClient, tasklistTestRule, jwtDecoder)
+            .getBean(TasklistTester.class, zeebeClient, databaseTestExtension, jwtDecoder)
             .withAuthenticationToken(generateCamundaIdentityToken());
   }
 
@@ -262,7 +265,7 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
         + CONTEXT_PATH;
   }
 
-  @AfterClass
+  @AfterAll
   public static void stopContainers() {
     Environment.system().remove("ZEEBE_CLIENT_ID");
     Environment.system().remove("ZEEBE_CLIENT_SECRET");

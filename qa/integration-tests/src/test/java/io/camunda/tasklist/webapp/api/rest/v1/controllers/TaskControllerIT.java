@@ -41,8 +41,8 @@ import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService
 import java.util.List;
 import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -62,7 +62,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
 
   private MockMvcHelper mockMvcHelper;
 
-  @Before
+  @BeforeEach
   public void setUp() {
     mockMvcHelper =
         new MockMvcHelper(MockMvcBuilders.webAppContextSetup(context).build(), objectMapper);

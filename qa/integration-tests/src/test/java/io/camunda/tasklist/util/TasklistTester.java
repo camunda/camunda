@@ -60,7 +60,7 @@ public class TasklistTester {
       "graphql/variableIT/full-variable-fragment.graphql";
 
   private ZeebeClient zeebeClient;
-  private TasklistTestRule tasklistTestRule;
+  private DatabaseTestExtension databaseTestExtension;
   private JwtDecoder jwtDecoder;
   //
   private String processDefinitionKey;
@@ -131,13 +131,13 @@ public class TasklistTester {
   //
   //  private Long jobKey;
   //
-  public TasklistTester(ZeebeClient zeebeClient, TasklistTestRule elasticsearchTestRule) {
+  public TasklistTester(ZeebeClient zeebeClient, DatabaseTestExtension elasticsearchTestRule) {
     this.zeebeClient = zeebeClient;
-    this.tasklistTestRule = elasticsearchTestRule;
+    this.databaseTestExtension = elasticsearchTestRule;
   }
 
   public TasklistTester(
-      ZeebeClient zeebeClient, TasklistTestRule elasticsearchTestRule, JwtDecoder jwtDecoder) {
+      ZeebeClient zeebeClient, DatabaseTestExtension elasticsearchTestRule, JwtDecoder jwtDecoder) {
     this(zeebeClient, elasticsearchTestRule);
     this.jwtDecoder = jwtDecoder;
   }
@@ -417,12 +417,12 @@ public class TasklistTester {
   }
 
   public TasklistTester processIsDeployed() {
-    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
+    databaseTestExtension.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
     return this;
   }
 
   public TasklistTester processIsDeleted() {
-    tasklistTestRule.processAllRecordsAndWait(processIsDeletedCheck, processDefinitionKey);
+    databaseTestExtension.processAllRecordsAndWait(processIsDeletedCheck, processDefinitionKey);
     return this;
   }
 
@@ -466,7 +466,7 @@ public class TasklistTester {
   //
 
   public TasklistTester taskIsCreated(String flowNodeBpmnId) {
-    tasklistTestRule.processAllRecordsAndWait(
+    databaseTestExtension.processAllRecordsAndWait(
         taskIsCreatedCheck, processInstanceId, flowNodeBpmnId);
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
@@ -474,14 +474,14 @@ public class TasklistTester {
   }
 
   public TasklistTester tasksAreCreated(String flowNodeBpmnId, int taskCount) {
-    tasklistTestRule.processAllRecordsAndWait(tasksAreCreatedCheck, flowNodeBpmnId, taskCount);
+    databaseTestExtension.processAllRecordsAndWait(tasksAreCreatedCheck, flowNodeBpmnId, taskCount);
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
     return this;
   }
 
   public TasklistTester taskIsCanceled(String flowNodeBpmnId) {
-    tasklistTestRule.processAllRecordsAndWait(
+    databaseTestExtension.processAllRecordsAndWait(
         taskIsCanceledCheck, processInstanceId, flowNodeBpmnId);
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.CANCELED);
@@ -489,12 +489,14 @@ public class TasklistTester {
   }
 
   public TasklistTester processInstanceIsCanceled() {
-    tasklistTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceId);
+    databaseTestExtension.processAllRecordsAndWait(
+        processInstanceIsCanceledCheck, processInstanceId);
     return this;
   }
 
   public TasklistTester processInstanceIsCompleted() {
-    tasklistTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceId);
+    databaseTestExtension.processAllRecordsAndWait(
+        processInstanceIsCompletedCheck, processInstanceId);
     return this;
   }
 
@@ -514,7 +516,7 @@ public class TasklistTester {
   }
 
   public TasklistTester taskIsCompleted(String flowNodeBpmnId) {
-    tasklistTestRule.processAllRecordsAndWait(
+    databaseTestExtension.processAllRecordsAndWait(
         taskIsCompletedCheck, processInstanceId, flowNodeBpmnId);
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.COMPLETED);
@@ -522,17 +524,17 @@ public class TasklistTester {
   }
 
   public TasklistTester taskIsAssigned(String taskId) {
-    tasklistTestRule.processAllRecordsAndWait(taskIsAssignedCheck, taskId);
+    databaseTestExtension.processAllRecordsAndWait(taskIsAssignedCheck, taskId);
     return this;
   }
 
   public TasklistTester taskVariableExists(String varName) {
-    tasklistTestRule.processAllRecordsAndWait(taskVariableExists, taskId, varName);
+    databaseTestExtension.processAllRecordsAndWait(taskVariableExists, taskId, varName);
     return this;
   }
 
   public TasklistTester variablesExist(String[] varNames) {
-    tasklistTestRule.processAllRecordsAndWait(variablesExist, varNames);
+    databaseTestExtension.processAllRecordsAndWait(variablesExist, varNames);
     return this;
   }
 

@@ -11,19 +11,17 @@ import static io.camunda.tasklist.Application.SPRING_THYMELEAF_PREFIX_VALUE;
 import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.qa.util.DependencyInjectionTestExecutionListener;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.zeebe.PartitionHolder;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.Before;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestExecutionListeners;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @SpringBootTest(
     classes = {TestApplication.class},
     properties = {
@@ -36,14 +34,11 @@ import org.springframework.test.context.junit4.SpringRunner;
       "server.servlet.session.cookie.name = " + TasklistURIs.COOKIE_JSESSIONID
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@TestExecutionListeners(
-    listeners = DependencyInjectionTestExecutionListener.class,
-    mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 public abstract class TasklistIntegrationTest {
 
   protected OffsetDateTime testStartTime;
 
-  @Before
+  @BeforeEach
   public void before() {
     testStartTime = OffsetDateTime.now();
   }

@@ -13,8 +13,8 @@ import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.UserReader;
 import java.util.List;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mockito;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -27,7 +27,7 @@ public abstract class TasklistZeebeIntegrationTest extends SessionlessTasklistZe
 
   @MockBean protected UserReader userReader;
 
-  @Before
+  @BeforeEach
   public void before() {
     super.before();
     setDefaultCurrentUser();
@@ -55,7 +55,7 @@ public abstract class TasklistZeebeIntegrationTest extends SessionlessTasklistZe
     Mockito.when(userReader.getCurrentOrganizationId()).thenReturn(organisation);
   }
 
-  @After
+  @AfterEach
   public void after() {
     setDefaultCurrentUser();
     super.after();

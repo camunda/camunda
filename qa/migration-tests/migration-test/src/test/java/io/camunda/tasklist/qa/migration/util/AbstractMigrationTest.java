@@ -8,27 +8,22 @@ package io.camunda.tasklist.qa.migration.util;
 
 import static org.junit.Assume.assumeTrue;
 
-import io.camunda.tasklist.qa.util.DependencyInjectionTestExecutionListener;
 import io.camunda.tasklist.qa.util.TestContext;
 import io.camunda.tasklist.schema.indices.ImportPositionIndex;
 import io.camunda.tasklist.schema.indices.UserIndex;
 import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.context.support.AnnotationConfigContextLoader;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = TestConfig.class, loader = AnnotationConfigContextLoader.class)
 @TestPropertySource(locations = "/test.properties")
-@TestExecutionListeners(
-    listeners = DependencyInjectionTestExecutionListener.class,
-    mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 public abstract class AbstractMigrationTest {
 
   @Autowired protected EntityReader entityReader;

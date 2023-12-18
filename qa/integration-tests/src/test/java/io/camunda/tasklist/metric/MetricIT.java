@@ -20,8 +20,8 @@ import io.camunda.tasklist.webapp.graphql.mutation.TaskMutationResolver;
 import io.camunda.tasklist.webapp.security.Permission;
 import java.io.IOException;
 import java.util.List;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.ResponseEntity;
@@ -45,7 +45,7 @@ public class MetricIT extends TasklistZeebeIntegrationTest {
         .setPermissions(List.of(Permission.WRITE));
   }
 
-  @Before
+  @BeforeEach
   public void before() {
     super.before();
     clearMetrics();

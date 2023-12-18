@@ -6,13 +6,14 @@
  */
 package io.camunda.tasklist.zeebeimport;
 
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.util.TestUtil;
 import io.camunda.tasklist.util.apps.retry_after_failure.RetryAfterFailureTestElasticSearchConfig;
-import org.junit.After;
-import org.junit.Assume;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -33,12 +34,12 @@ public class ZeebeImportRetryAfterFailureElasticSearchIT extends ZeebeImportIT {
   private RetryAfterFailureTestElasticSearchConfig.CustomElasticsearchBulkProcessor
       elasticsearchBulkProcessor;
 
-  @BeforeClass
+  @BeforeAll
   public static void beforeClass() {
-    Assume.assumeTrue(TestUtil.isElasticSearch());
+    assumeTrue(TestUtil.isElasticSearch());
   }
 
-  @After
+  @AfterEach
   public void after() {
     elasticsearchBulkProcessor.cancelAttempts();
     super.after();

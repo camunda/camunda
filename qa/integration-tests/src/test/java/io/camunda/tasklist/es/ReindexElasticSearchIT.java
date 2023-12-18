@@ -11,6 +11,7 @@ import static io.camunda.tasklist.es.RetryElasticsearchClient.NO_REPLICA;
 import static io.camunda.tasklist.es.RetryElasticsearchClient.NUMBERS_OF_REPLICA;
 import static io.camunda.tasklist.es.RetryElasticsearchClient.REFRESH_INTERVAL;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.tasklist.schema.migration.es.ReindexPlanElasticSearch;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
@@ -20,7 +21,10 @@ import java.util.Map;
 import java.util.UUID;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.common.settings.Settings;
-import org.junit.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class ReindexElasticSearchIT extends TasklistIntegrationTest {
@@ -39,17 +43,17 @@ public class ReindexElasticSearchIT extends TasklistIntegrationTest {
 
   private String indexPrefix;
 
-  @BeforeClass
+  @BeforeAll
   public static void beforeClass() {
-    Assume.assumeTrue(TestUtil.isElasticSearch());
+    assumeTrue(TestUtil.isElasticSearch());
   }
 
-  @Before
+  @BeforeEach
   public void setUp() {
     indexPrefix = UUID.randomUUID().toString();
   }
 
-  @After
+  @AfterEach
   public void tearDown() {
     retryElasticsearchClient.deleteIndicesFor(idxName("index-*"));
   }

@@ -25,8 +25,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import org.assertj.core.api.Assertions;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
@@ -47,7 +47,7 @@ public class ProcessExternalControllerIT extends TasklistZeebeIntegrationTest {
 
   private MockMvcHelper mockMvcHelper;
 
-  @Before
+  @BeforeEach
   public void setUp() {
     mockMvcHelper =
         new MockMvcHelper(MockMvcBuilders.webAppContextSetup(context).build(), objectMapper);
@@ -207,7 +207,7 @@ public class ProcessExternalControllerIT extends TasklistZeebeIntegrationTest {
 
     final String processId1 = ZeebeTestUtil.deployProcess(zeebeClient, pathProcess);
 
-    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+    databaseTestExtension.processAllRecordsAndWait(processIsDeployedCheck, processId1);
 
     // when
     return mockMvcHelper.doRequest(

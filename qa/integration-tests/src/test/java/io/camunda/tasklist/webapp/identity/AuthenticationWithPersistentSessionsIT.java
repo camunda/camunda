@@ -22,8 +22,8 @@ import io.camunda.tasklist.webapp.security.identity.IdentityAuthentication;
 import io.camunda.tasklist.webapp.security.identity.IdentityService;
 import java.util.HashMap;
 import org.assertj.core.util.DateUtil;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -36,9 +36,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @SpringBootTest(
     classes = {AuthIdentityApplication.class},
     properties = {
@@ -48,7 +48,9 @@ import org.springframework.test.context.junit4.SpringRunner;
       "camunda.tasklist.identity.clientSecret=the-cake-is-alive",
       "camunda.tasklist.identity.audience=tasklist-api",
       "server.servlet.session.cookie.name = " + COOKIE_JSESSIONID,
-      "camunda.tasklist.persistentSessionsEnabled = true"
+      "camunda.tasklist.persistentSessionsEnabled = true",
+      "camunda.tasklist.importer.startLoadingDataOnStartup = false",
+      "camunda.tasklist.archiver.rolloverEnabled = false",
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({TasklistProfileService.IDENTITY_AUTH_PROFILE, "test"})

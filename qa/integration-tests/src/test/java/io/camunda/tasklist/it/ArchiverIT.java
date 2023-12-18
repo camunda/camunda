@@ -33,9 +33,14 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
-import org.junit.Before;
-import org.junit.Test;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -73,7 +78,7 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
 
   private DateTimeFormatter dateTimeFormatter;
 
-  @Before
+  @BeforeEach
   public void before() {
     super.before();
     dateTimeFormatter =
@@ -122,11 +127,11 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     // when
     final Map.Entry<String, Integer> result1 = archiverJob.archiveNextBatch().join();
     assertThat(mapCount.get(result1.getKey())).isEqualTo(result1.getValue());
-    tasklistTestRule.refreshIndexesInElasticsearch();
+    databaseTestExtension.refreshIndexesInElasticsearch();
 
     final Map.Entry<String, Integer> result2 = archiverJob.archiveNextBatch().join();
     assertThat(mapCount.get(result2.getKey())).isEqualTo(result2.getValue());
-    tasklistTestRule.refreshIndexesInElasticsearch();
+    databaseTestExtension.refreshIndexesInElasticsearch();
 
     assertThat(archiverJob.archiveNextBatch().join())
         .isEqualTo(
@@ -134,7 +139,7 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
                 "NothingToArchive",
                 0)); // 3rd run should not move anything, as the rest of the tasks are not completed
 
-    tasklistTestRule.refreshIndexesInElasticsearch();
+    databaseTestExtension.refreshIndexesInElasticsearch();
 
     // then
     assertTasksInCorrectIndex(count1, ids1, endDate1);
@@ -177,11 +182,11 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
 
     // when
     assertThat(archiverJob.archiveNextBatch().join().getValue()).isEqualTo(count1);
-    tasklistTestRule.refreshIndexesInElasticsearch();
+    databaseTestExtension.refreshIndexesInElasticsearch();
     // 2rd run should not move anything, as the rest of the tasks are completed less then 1 hour ago
     assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(Map.entry("NothingToArchive", 0));
 
-    tasklistTestRule.refreshIndexesInElasticsearch();
+    databaseTestExtension.refreshIndexesInElasticsearch();
 
     // then
     assertTasksInCorrectIndex(count1, ids1, endDate1);
@@ -216,17 +221,17 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
         startAndCompleteInstances(processId, flowNodeBpmnId, count3, endDate2);
 
     resetZeebeTime();
-    tasklistTestRule.refreshIndexesInElasticsearch();
+    databaseTestExtension.refreshIndexesInElasticsearch();
 
     // when
     assertThat(processInstanceArchiverJob.archiveNextBatch().join().getValue())
         .isEqualTo(count1 + count2);
-    tasklistTestRule.refreshIndexesInElasticsearch();
+    databaseTestExtension.refreshIndexesInElasticsearch();
     // 2rd run should not move anything, as the rest of the tasks are completed less then 1 hour ago
     assertThat(processInstanceArchiverJob.archiveNextBatch().join())
         .isEqualTo(Map.entry("NothingToArchive", 0));
 
-    tasklistTestRule.refreshIndexesInElasticsearch();
+    databaseTestExtension.refreshIndexesInElasticsearch();
 
     // then
     assertProcessInstancesAreDeleted(ids1);

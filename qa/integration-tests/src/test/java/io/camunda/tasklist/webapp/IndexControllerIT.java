@@ -8,25 +8,28 @@ package io.camunda.tasklist.webapp;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.TestApplication;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@Ignore("Will be addressed in other issues")
-@RunWith(SpringRunner.class)
+@Disabled("Will be addressed in other issues")
+@ExtendWith(SpringExtension.class)
 @SpringBootTest(
     classes = {TestApplication.class},
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
       "spring.thymeleaf.prefix = classpath:/META-INF/resources/",
-      "server.servlet.context-path = " + IndexControllerIT.CONTEXT_PATH
+      "server.servlet.context-path = " + IndexControllerIT.CONTEXT_PATH,
+      TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+      TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false"
     })
 public class IndexControllerIT {
 

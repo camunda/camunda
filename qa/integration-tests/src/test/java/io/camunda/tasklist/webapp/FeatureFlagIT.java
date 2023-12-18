@@ -16,8 +16,8 @@ import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.util.TestCheck;
 import io.camunda.tasklist.util.ZeebeTestUtil;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
@@ -38,7 +38,7 @@ public class FeatureFlagIT extends TasklistZeebeIntegrationTest {
 
   private MockMvcHelper mockMvcHelper;
 
-  @Before
+  @BeforeEach
   public void setUp() {
     mockMvcHelper =
         new MockMvcHelper(MockMvcBuilders.webAppContextSetup(context).build(), objectMapper);
@@ -55,7 +55,7 @@ public class FeatureFlagIT extends TasklistZeebeIntegrationTest {
     final String bpmnProcessId = "startedByForm";
     final String formId = "testForm";
 
-    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+    databaseTestExtension.processAllRecordsAndWait(processIsDeployedCheck, processId1);
 
     // when
     final var result =

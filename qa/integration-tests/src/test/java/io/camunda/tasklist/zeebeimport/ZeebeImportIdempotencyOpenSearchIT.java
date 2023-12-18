@@ -6,13 +6,14 @@
  */
 package io.camunda.tasklist.zeebeimport;
 
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.util.TestCheck;
 import io.camunda.tasklist.util.TestUtil;
 import io.camunda.tasklist.util.apps.idempotency.ZeebeImportIdempotencyOpenSearchTestConfig;
-import org.junit.Assume;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -36,15 +37,15 @@ public class ZeebeImportIdempotencyOpenSearchIT extends ZeebeImportIT {
   private ZeebeImportIdempotencyOpenSearchTestConfig.CustomOpenSearchBulkProcessor
       customOpenSearchBulkProcessor;
 
-  @BeforeClass
+  @BeforeAll
   public static void beforeClass() {
-    Assume.assumeTrue(TestUtil.isOpenSearch());
+    assumeTrue(TestUtil.isOpenSearch());
   }
 
   @Override
   protected void processAllRecordsAndWait(TestCheck waitTill, Object... arguments) {
-    tasklistTestRule.processAllRecordsAndWait(waitTill, arguments);
-    tasklistTestRule.processAllRecordsAndWait(waitTill, arguments);
+    databaseTestExtension.processAllRecordsAndWait(waitTill, arguments);
+    databaseTestExtension.processAllRecordsAndWait(waitTill, arguments);
     customOpenSearchBulkProcessor.cancelAttempts();
   }
 }

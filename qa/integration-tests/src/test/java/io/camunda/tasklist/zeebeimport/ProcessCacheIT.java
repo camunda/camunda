@@ -16,8 +16,8 @@ import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.util.TestCheck;
 import io.camunda.tasklist.util.ZeebeTestUtil;
 import io.camunda.tasklist.webapp.es.cache.ProcessCache;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -30,7 +30,7 @@ public class ProcessCacheIT extends TasklistZeebeIntegrationTest {
   @Qualifier(PROCESS_IS_DEPLOYED_CHECK)
   private TestCheck processIsDeployedCheck;
 
-  @After
+  @AfterEach
   public void after() {
     super.after();
     // clean the cache
@@ -48,8 +48,8 @@ public class ProcessCacheIT extends TasklistZeebeIntegrationTest {
     final String processId1 = ZeebeTestUtil.deployProcess(zeebeClient, "simple_process.bpmn");
     final String processId2 = ZeebeTestUtil.deployProcess(zeebeClient, "simple_process_2.bpmn");
 
-    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId1);
-    tasklistTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId2);
+    databaseTestExtension.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+    databaseTestExtension.processAllRecordsAndWait(processIsDeployedCheck, processId2);
 
     String demoProcessName = processCache.getProcessName(processId1);
     assertThat(demoProcessName).isNotNull();

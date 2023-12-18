@@ -30,8 +30,8 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class BigVariableProcessTest extends AbstractMigrationTest {
 
@@ -40,7 +40,7 @@ public class BigVariableProcessTest extends AbstractMigrationTest {
   private List<String> processInstanceIds;
   private String processId;
 
-  @Before
+  @BeforeEach
   public void before() {
     assumeThatProcessIsUnderTest(bpmnProcessId);
     sleepFor(5_000);

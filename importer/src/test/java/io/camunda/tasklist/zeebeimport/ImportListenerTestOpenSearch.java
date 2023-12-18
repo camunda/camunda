@@ -6,9 +6,13 @@
  */
 package io.camunda.tasklist.zeebeimport;
 
-import static junit.framework.TestCase.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.meta.ImportPositionEntity;
@@ -20,8 +24,8 @@ import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.os.ImportBatchOpenSearch;
 import io.camunda.tasklist.zeebeimport.os.ImportJobOpenSearch;
 import java.util.ArrayList;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,7 +62,7 @@ public class ImportListenerTestOpenSearch extends NoBeansTest {
 
   @Autowired private TestImportListener importListener;
 
-  @Before
+  @BeforeEach
   public void before() {
     importListener.cancel();
   }

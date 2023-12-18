@@ -68,6 +68,17 @@
       <artifactId>spring-aspects</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <scope>compile</scope>
+    </dependency>
+
     <!-- TEST CONTAINERS -->
     <dependency>
       <groupId>io.zeebe</groupId>

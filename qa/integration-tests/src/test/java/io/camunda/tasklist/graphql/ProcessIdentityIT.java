@@ -8,30 +8,28 @@ package io.camunda.tasklist.graphql;
 
 import static io.camunda.tasklist.Application.SPRING_THYMELEAF_PREFIX_KEY;
 import static io.camunda.tasklist.Application.SPRING_THYMELEAF_PREFIX_VALUE;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.qa.util.DependencyInjectionTestExecutionListener;
 import io.camunda.tasklist.util.IdentityTester;
 import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import java.io.IOException;
 import org.json.JSONException;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.TestExecutionListeners;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @SpringBootTest(
     classes = {TestApplication.class},
     properties = {
@@ -44,14 +42,11 @@ import org.springframework.test.context.junit4.SpringRunner;
       "server.servlet.session.cookie.name = " + TasklistURIs.COOKIE_JSESSIONID
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@TestExecutionListeners(
-    listeners = DependencyInjectionTestExecutionListener.class,
-    mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 @DirtiesContext
 @ActiveProfiles({TasklistProfileService.IDENTITY_AUTH_PROFILE, "test"})
 public class ProcessIdentityIT extends IdentityTester {
 
-  @BeforeClass
+  @BeforeAll
   public static void beforeClass() {
     IdentityTester.beforeClass(false);
   }

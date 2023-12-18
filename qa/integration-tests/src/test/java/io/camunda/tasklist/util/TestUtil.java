@@ -80,12 +80,6 @@ public abstract class TestUtil {
     }
   }
 
-  public static TasklistTestRule getTasklistTestRule() {
-    return TasklistZeebeIntegrationTest.IS_ELASTIC
-        ? new ElasticsearchTestRule()
-        : new OpenSearchTestRule();
-  }
-
   public static boolean isElasticSearch() {
     return !TasklistPropertiesUtil.isOpenSearchDatabase();
   }

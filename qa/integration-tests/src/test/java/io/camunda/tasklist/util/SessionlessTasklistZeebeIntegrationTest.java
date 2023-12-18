@@ -28,22 +28,30 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.Instant;
-import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.core.annotation.Order;
 import org.springframework.test.util.ReflectionTestUtils;
 
 public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIntegrationTest {
   public static final Boolean IS_ELASTIC = !TasklistPropertiesUtil.isOpenSearchDatabase();
 
   @Autowired public BeanFactory beanFactory;
-  @Rule public final TasklistZeebeRule zeebeRule;
-  public ZeebeContainer zeebeContainer;
 
-  @Rule
-  public TasklistTestRule tasklistTestRule =
-      IS_ELASTIC ? new ElasticsearchTestRule() : new OpenSearchTestRule();
+  @RegisterExtension
+  @Autowired
+  @Order(1)
+  public DatabaseTestExtension databaseTestExtension;
+
+  @RegisterExtension
+  @Autowired
+  @Order(2)
+  public TasklistZeebeExtension zeebeExtension;
+
+  public ZeebeContainer zeebeContainer;
 
   @MockBean protected ZeebeClient mockedZeebeClient;
   // we don't want to create ZeebeClient, we will rather use the one from
@@ -62,21 +70,17 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
 
   private HttpClient httpClient = HttpClient.newHttpClient();
 
-  public SessionlessTasklistZeebeIntegrationTest() {
-    zeebeRule =
-        IS_ELASTIC ? new TasklistZeebeRuleElasticSearch() : new TasklistZeebeRuleOpenSearch();
-  }
-
+  @BeforeEach
   public void before() {
     super.before();
 
-    zeebeContainer = zeebeRule.getZeebeContainer();
+    zeebeContainer = zeebeExtension.getZeebeContainer();
     assertThat(zeebeContainer).as("zeebeContainer is not null").isNotNull();
 
     zeebeClient = getClient();
     workerName = TestUtil.createRandomString(10);
 
-    tester = beanFactory.getBean(TasklistTester.class, zeebeClient, tasklistTestRule);
+    tester = beanFactory.getBean(TasklistTester.class, zeebeClient, databaseTestExtension);
 
     processCache.clearCache();
     importPositionHolder.cancelScheduledImportPositionUpdateTask().join();
@@ -94,7 +98,7 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
   }
 
   public ZeebeClient getClient() {
-    return zeebeRule.getClient();
+    return zeebeExtension.getClient();
   }
 
   public String getWorkerName() {

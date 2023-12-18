@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.tasklist.ArchiverModuleConfiguration;
 import io.camunda.tasklist.ImportModuleConfiguration;
 import io.camunda.tasklist.WebappModuleConfiguration;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class FullAppIT extends ModuleIntegrationTest {
 

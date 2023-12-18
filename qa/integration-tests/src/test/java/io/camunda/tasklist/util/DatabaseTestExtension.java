@@ -11,9 +11,9 @@ import io.camunda.tasklist.zeebeimport.RecordsReader;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
-import org.junit.rules.TestRule;
+import org.junit.jupiter.api.extension.Extension;
 
-public interface TasklistTestRule extends TestRule {
+public interface DatabaseTestExtension extends Extension {
 
   public void assertMaxOpenScrollContexts(final int maxOpenScrollContexts);
 
