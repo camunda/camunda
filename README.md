@@ -75,7 +75,7 @@ To learn more about what we're currently working on, check the [GitHub issues](h
 
 ## Contributing
 
-Read the [Contributions Guide](/CONTRIBUTING.md).
+Read our [Contributions Guide](/CONTRIBUTING.md) to learn how you can contribute to Zeebe.
 
 ## Code of Conduct
 
