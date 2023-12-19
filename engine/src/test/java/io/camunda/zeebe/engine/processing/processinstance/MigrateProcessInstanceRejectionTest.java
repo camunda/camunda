@@ -490,6 +490,75 @@ public class MigrateProcessInstanceRejectionTest {
         .hasKey(processInstanceKey);
   }
 
+  @Test
+  public void shouldRejectCommandWhenTheMigratedProcessInstanceIsAChildProcessInstance() {
+    // given
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process")
+                    .startEvent()
+                    .callActivity("call", c -> c.zeebeProcessId("childProcess"))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess("childProcess")
+                    .startEvent()
+                    .serviceTask("A", t -> t.zeebeJobType("A"))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process2")
+                    .startEvent()
+                    .serviceTask("A", t -> t.zeebeJobType("A"))
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
+
+    RecordingExporter.processInstanceRecords()
+        .withParentProcessInstanceKey(processInstanceKey)
+        .withBpmnProcessId("childProcess")
+        .await();
+
+    final long childProcessInstanceKey =
+        RecordingExporter.processInstanceRecords()
+            .withParentProcessInstanceKey(processInstanceKey)
+            .withBpmnProcessId("childProcess")
+            .getFirst()
+            .getKey();
+
+    final long targetProcessDefinitionKey =
+        extractTargetProcessDefinitionKey(deployment, "process2");
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(childProcessInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "A")
+        .expectRejection()
+        .migrate();
+
+    // then
+    final var rejectionRecord =
+        RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst();
+
+    assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            String.format(
+                """
+              Expected to migrate process instance '%s' \
+              but process instance is a child process instance. \
+              Child process instances cannot be migrated.""",
+                childProcessInstanceKey))
+        .hasKey(childProcessInstanceKey);
+  }
+
   private static long extractTargetProcessDefinitionKey(
       final Record<DeploymentRecordValue> deployment, final String bpmnProcessId) {
     return deployment.getValue().getProcessesMetadata().stream()
