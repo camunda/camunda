@@ -165,10 +165,13 @@ type ContainerSuite struct {
 	Env map[string]string
 
 	suite.Suite
-	container testcontainers.Container
+	container   testcontainers.Container
+	logConsumer testLogConsumer
 }
 
 func (s *ContainerSuite) AfterTest(_, _ string) {
+	s.logConsumer.consumer = func(ignored string) {}
+
 	if s.T().Failed() {
 		s.PrintFailedContainerLogs()
 	}
@@ -178,6 +181,18 @@ func (s *ContainerSuite) PrintFailedContainerLogs() {
 	if err := printFailedContainerLogs(s.container); err != nil {
 		_, _ = fmt.Fprint(os.Stderr, err)
 	}
+}
+
+func (s *ContainerSuite) ConsumeLogs(consumer func(s string)) {
+	s.logConsumer.consumer = consumer
+}
+
+type testLogConsumer struct {
+	consumer func(s string)
+}
+
+func (t *testLogConsumer) Accept(log testcontainers.Log) {
+	t.consumer(string(log.Content))
 }
 
 func (s *ContainerSuite) SetupSuite() {
@@ -230,9 +245,14 @@ func (s *ContainerSuite) SetupSuite() {
 		s.T().Fatal(err)
 	}
 	s.MonitoringAddress = fmt.Sprintf("%s:%d", host, port.Int())
+
+	s.logConsumer = testLogConsumer{func(ignored string) {}}
+	s.container.FollowOutput(&s.logConsumer)
+	s.container.StartLogProducer(ctx)
 }
 
 func (s *ContainerSuite) TearDownSuite() {
+	s.container.StopLogProducer()
 	err := s.container.Terminate(context.Background())
 	if err != nil {
 		s.T().Fatal(err)
