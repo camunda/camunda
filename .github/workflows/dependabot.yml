@@ -3,6 +3,7 @@ name: Dependabot
 on:
   schedule:
     - cron: '0 11 * * 2'
+  workflow_dispatch:
 
 jobs:
   dependabot:
