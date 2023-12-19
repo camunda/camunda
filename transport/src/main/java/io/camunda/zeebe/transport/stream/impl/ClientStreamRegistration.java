@@ -39,7 +39,7 @@ final class ClientStreamRegistration<M extends BufferWriter> {
   }
 
   UUID streamId() {
-    return stream.getStreamId();
+    return stream.streamId();
   }
 
   LogicalId<? extends BufferWriter> logicalId() {
@@ -94,7 +94,7 @@ final class ClientStreamRegistration<M extends BufferWriter> {
     }
 
     state = target;
-    LOGGER.trace("{} remote client stream {} on server {}", target, stream.getStreamId(), serverId);
+    LOGGER.trace("{} remote client stream {} on server {}", target, stream.streamId(), serverId);
     return true;
   }
 
@@ -102,7 +102,7 @@ final class ClientStreamRegistration<M extends BufferWriter> {
     LOGGER.trace(
         "Skip {} transition of stream {} on {} as its state is {}",
         target,
-        stream.getStreamId(),
+        stream.streamId(),
         serverId,
         state);
   }

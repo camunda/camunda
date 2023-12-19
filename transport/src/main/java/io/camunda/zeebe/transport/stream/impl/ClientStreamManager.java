@@ -23,10 +23,11 @@ import org.slf4j.LoggerFactory;
 
 final class ClientStreamManager<M extends BufferWriter> {
   private static final Logger LOG = LoggerFactory.getLogger(ClientStreamManager.class);
+  private final Set<MemberId> servers = new HashSet<>();
   private final ClientStreamRegistry<M> registry;
   private final ClientStreamRequestManager<M> requestManager;
   private final ClientStreamMetrics metrics;
-  private final Set<MemberId> servers = new HashSet<>();
+  private final ClientStreamPusher streamPusher;
 
   ClientStreamManager(
       final ClientStreamRegistry<M> registry,
@@ -35,6 +36,7 @@ final class ClientStreamManager<M extends BufferWriter> {
     this.registry = registry;
     this.requestManager = requestManager;
     this.metrics = metrics;
+    streamPusher = new ClientStreamPusher(metrics);
   }
 
   /**
@@ -73,7 +75,7 @@ final class ClientStreamManager<M extends BufferWriter> {
     final var serverStream = registry.removeClient(streamId);
     serverStream.ifPresent(
         stream -> {
-          LOG.debug("Removing aggregated stream [{}]", stream.getStreamId());
+          LOG.debug("Removing aggregated stream [{}]", stream.streamId());
           stream.close();
           requestManager.remove(stream, servers);
         });
@@ -102,7 +104,7 @@ final class ClientStreamManager<M extends BufferWriter> {
     clientStream.ifPresentOrElse(
         stream -> {
           try {
-            stream.push(payload, responseFuture);
+            streamPusher.push(stream, payload, responseFuture);
           } catch (final Exception e) {
             responseFuture.completeExceptionally(e);
           }

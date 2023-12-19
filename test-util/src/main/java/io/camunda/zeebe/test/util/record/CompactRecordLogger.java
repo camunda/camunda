@@ -44,6 +44,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordVa
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
@@ -93,7 +94,8 @@ public class CompactRecordLogger {
           entry("EVALUATION", "EVAL"),
           entry("SIGNAL_SUBSCRIPTION", "SIG_SUBSCRIPTION"),
           entry("SIGNAL", "SIG"),
-          entry("COMMAND_DISTRIBUTION", "DSTR"));
+          entry("COMMAND_DISTRIBUTION", "DSTR"),
+          entry("USER_TASK", "UT"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -139,6 +141,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.DECISION_EVALUATION, this::summarizeDecisionEvaluation);
     valueLoggers.put(ValueType.SIGNAL, this::summarizeSignal);
     valueLoggers.put(ValueType.SIGNAL_SUBSCRIPTION, this::summarizeSignalSubscription);
+    valueLoggers.put(ValueType.USER_TASK, this::summarizeUserTask);
     valueLoggers.put(ValueType.COMMAND_DISTRIBUTION, this::summarizeCommandDistribution);
   }
 
@@ -765,6 +768,35 @@ public class CompactRecordLogger {
         .toString();
   }
 
+  private String summarizeUserTask(final Record<?> record) {
+    final var value = (UserTaskRecordValue) record.getValue();
+    final var result = new StringBuilder("task");
+
+    if (StringUtils.isNotEmpty(value.getElementId())) {
+      result.append(
+          summarizeElementInformation(value.getElementId(), value.getElementInstanceKey()));
+    }
+
+    addIfNotEmpty(result, value.getAssignee(), " assignee");
+    addIfNotEmpty(result, value.getCandidateUsers(), " candidateUsers");
+    addIfNotEmpty(result, value.getCandidateGroups(), " candidateGroups");
+    addIfNotEmpty(result, value.getDueDate(), " dueDate");
+    addIfNotEmpty(result, value.getFollowUpDate(), " followUpDate");
+
+    if (value.getFormKey() != -1) {
+      result.append(" with <form ").append(shortenKey(value.getFormKey())).append(">");
+    }
+
+    if (StringUtils.isNotEmpty(value.getBpmnProcessId())) {
+      result.append(
+          summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()));
+    }
+
+    result.append(summarizeVariables(value.getVariables()));
+
+    return result.toString();
+  }
+
   private String summarizeCommandDistribution(final Record<?> record) {
     final var value = (CommandDistributionRecordValue) record.getValue();
 
@@ -868,5 +900,12 @@ public class CompactRecordLogger {
 
     builder.append("T").append(DateTimeFormatter.ISO_LOCAL_TIME.format(time));
     return builder.toString();
+  }
+
+  // add non-empty String elements
+  private void addIfNotEmpty(final StringBuilder result, final String value, final String name) {
+    if (StringUtils.isNotEmpty(value)) {
+      result.append(name).append(" \"").append(value).append("\"");
+    }
   }
 }

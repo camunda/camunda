@@ -46,7 +46,7 @@ final class FaultToleranceIT {
                 .withTarget(9200, "opensearch")
                 .withNetwork(network)
                 .withNetworkAliases("proxy");
-        final OpensearchContainer container =
+        final OpensearchContainer<?> container =
             TestSupport.createDefaultContainer()
                 .withNetwork(network)
                 .withNetworkAliases("opensearch")) {

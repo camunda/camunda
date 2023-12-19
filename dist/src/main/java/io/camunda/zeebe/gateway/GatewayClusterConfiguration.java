@@ -29,7 +29,8 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 public final class GatewayClusterConfiguration {
   @Bean
-  public ClusterConfig clusterConfig(final GatewayCfg config) {
+  public ClusterConfig clusterConfig(final GatewayConfiguration gatewayConfig) {
+    final var config = gatewayConfig.config();
     final var cluster = config.getCluster();
     final var name = cluster.getClusterName();
     final var messaging = messagingConfig(config);
@@ -46,8 +47,8 @@ public final class GatewayClusterConfiguration {
   }
 
   @Bean(destroyMethod = "stop")
-  public AtomixCluster atomixCluster(final GatewayCfg config) {
-    return new AtomixCluster(clusterConfig(config), Version.from(VersionUtil.getVersion()));
+  public AtomixCluster atomixCluster(final ClusterConfig config) {
+    return new AtomixCluster(config, Version.from(VersionUtil.getVersion()));
   }
 
   private MemberConfig memberConfig(final ClusterCfg cluster) {

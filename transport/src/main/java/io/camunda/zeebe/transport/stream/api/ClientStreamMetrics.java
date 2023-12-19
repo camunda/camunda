@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.transport.stream.api;
 
+import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
+
 public interface ClientStreamMetrics {
   /** Invoked whenever the count of known servers in the registry changes */
   default void serverCount(final int count) {}
@@ -29,6 +31,14 @@ public interface ClientStreamMetrics {
 
   /** Invoked if pushing a payload to a stream failed */
   default void pushFailed() {}
+
+  /**
+   * Invoked when a push failed for a given client, regardless of whether it ultimately succeeded
+   * with another.
+   *
+   * @param code the error code for the given attempt
+   */
+  default void pushTryFailed(final ErrorCode code) {}
 
   static ClientStreamMetrics noop() {
     return new ClientStreamMetrics() {};

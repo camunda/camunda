@@ -115,10 +115,10 @@ public final class TopologyManagementRequestSender {
   }
 
   public CompletableFuture<Either<ErrorResponse, ClusterTopology>> cancelTopologyChange(
-      final long changeId) {
+      final TopologyManagementRequest.CancelChangeRequest request) {
     return communicationService.send(
         TopologyRequestTopics.CANCEL_CHANGE.topic(),
-        new TopologyManagementRequest.CancelChangeRequest(changeId),
+        request,
         serializer::encodeCancelChangeRequest,
         serializer::decodeClusterTopologyResponse,
         coordinator,

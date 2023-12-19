@@ -21,7 +21,7 @@
 
     <enum name="errorCode" encodingType="uint8" semanticType="String"
       description="The unique identifier of an error">
-      <validValue name="INTERNAL_ERROR">0</validValue>
+      <validValue name="INTERNAL">0</validValue>
       <validValue name="NOT_FOUND">1</validValue>
       <validValue name="INVALID">2</validValue>
       <validValue name="MALFORMED">3</validValue>
@@ -61,6 +61,10 @@
 
   <sbe:message name="ErrorResponse" id="406" description="Returned whenever a request fails">
     <field name="code" id="1" type="errorCode" description="The specific error code" />
-    <data name="message" id="2" type="varDataEncoding" />
+    <group name="details" id="2" description="Additional details for aggregated errors">
+      <field name="code" id="3" type="errorCode" description="Detail error code" />
+      <data name="message" id="4" type="varDataEncoding" description="Detail error message" />
+    </group>
+    <data name="message" id="5" type="varDataEncoding" description="The error message"/>
   </sbe:message>
 </sbe:messageSchema>

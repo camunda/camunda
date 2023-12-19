@@ -10,7 +10,6 @@ package io.camunda.zeebe.transport.stream.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamConsumer;
 import io.camunda.zeebe.transport.stream.impl.AggregatedRemoteStream.StreamId;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -20,8 +19,8 @@ import org.junit.jupiter.api.Test;
 
 final class RemoteStreamRegistryTest {
 
-  private final RemoteStreamRegistry<Integer> streamRegistry =
-      new RemoteStreamRegistry<>(RemoteStreamMetrics.noop());
+  private final TestRemoteStreamMetrics metrics = new TestRemoteStreamMetrics();
+  private final RemoteStreamRegistry<Integer> streamRegistry = new RemoteStreamRegistry<>(metrics);
   private final MemberId gateway = MemberId.from("gateway");
   private final MemberId otherGateway = MemberId.from("gateway-other");
   private final UnsafeBuffer typeBar = new UnsafeBuffer(BufferUtil.wrapString("bar"));
@@ -38,7 +37,6 @@ final class RemoteStreamRegistryTest {
     streamRegistry.add(typeBar, id2, gateway, 2);
 
     // then
-
     final AggregatedRemoteStream<Integer> streamFoo =
         streamRegistry.get(typeFoo).stream().findFirst().orElseThrow();
     assertThat(streamFoo.logicalId()).isEqualTo(new LogicalId<>(typeFoo, 1));
@@ -50,6 +48,21 @@ final class RemoteStreamRegistryTest {
     assertThat(streamBar.logicalId()).isEqualTo(new LogicalId<>(typeBar, 2));
     assertThat(streamBar.streamConsumers())
         .containsExactly(new StreamConsumer<>(new StreamId(id2, gateway), streamBar.logicalId()));
+  }
+
+  @Test
+  void shouldTrackAddedStreams() {
+    // given
+    final UUID removedId = UUID.randomUUID();
+
+    // when
+    streamRegistry.add(typeFoo, removedId, gateway, 1);
+    streamRegistry.add(typeBar, UUID.randomUUID(), gateway, 2);
+    streamRegistry.add(typeBar, UUID.randomUUID(), gateway, 3);
+    streamRegistry.remove(removedId, gateway);
+
+    // then
+    assertThat(metrics.getStreamCount()).isEqualTo(2);
   }
 
   @Test

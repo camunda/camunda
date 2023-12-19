@@ -34,7 +34,6 @@ import org.testcontainers.utility.DockerImageName;
 
 final class ContainerState implements CloseableResource {
 
-  private static final String ZEEBE_USER = "zeebe";
   private static final RetryPolicy<Void> CONTAINER_START_RETRY_POLICY =
       new RetryPolicy<Void>().withMaxRetries(5).withBackoff(3, 30, ChronoUnit.SECONDS);
   private static final Pattern DOUBLE_NEWLINE = Pattern.compile("\n\n");
@@ -78,14 +77,20 @@ final class ContainerState implements CloseableResource {
 
   ContainerState withOldBroker() {
     broker(PREVIOUS_VERSION);
-    // user needs to be set to allow a smooth update from zeebe 8.2 to 8.3
-    // as the default user changed to `zeebe` with 8.3 and was `root` with 8.2
-    // TODO remove after 8.3 release
-    withUser(ZEEBE_USER);
+    // user - needs to be set to `1001` to allow a smooth update from zeebe 8.3 to 8.4,
+    // as the default user changed to `1001` with 8.4 and was `1000` with 8.3
+    // TODO remove after 8.4 release
+    withUser("1001");
     return this;
   }
 
   ContainerState withNewBroker() {
+    // user - `1001` is the default in 8.4
+    // group - needs to be set to `0` as the data volume in 8.3 is owned by 1000:0
+    // thus zeebe 8.4 needs to run with group `0` to be able to create new files in
+    // the root of the data volume (in particular it creates a new `.topology.meta` file)
+    // TODO remove after 8.4 release
+    withUser("1001:0");
     return broker(CURRENT_VERSION);
   }
 

@@ -17,6 +17,11 @@ package containersuite
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/camunda/zeebe/clients/go/v8/internal/utils"
 	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
 	"github.com/camunda/zeebe/clients/go/v8/pkg/zbc"
@@ -27,10 +32,6 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"io"
-	"os"
-	"strings"
-	"time"
 )
 
 type zeebeWaitStrategy struct {
@@ -158,6 +159,8 @@ type ContainerSuite struct {
 	GatewayAddress string
 	GatewayHost    string
 	GatewayPort    int
+	// MonitoringAddress is the contact point of the spawned Zeebe container specified in the format 'host:port'
+	MonitoringAddress string
 	// Env will add additional environment variables when creating the container
 	Env map[string]string
 
@@ -182,7 +185,7 @@ func (s *ContainerSuite) SetupSuite() {
 	req := testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image:        s.ContainerImage,
-			ExposedPorts: []string{"26500"},
+			ExposedPorts: []string{"0.0.0.0::26500", "0.0.0.0::9600"},
 			WaitingFor:   zeebeWaitStrategy{waitTime: s.WaitTime},
 			Env: map[string]string{
 				"ZEEBE_BROKER_NETWORK_HOST":           "0.0.0.0",
@@ -221,6 +224,12 @@ func (s *ContainerSuite) SetupSuite() {
 	s.GatewayAddress = fmt.Sprintf("%s:%d", host, port.Int())
 	s.GatewayHost = host
 	s.GatewayPort = port.Int()
+
+	port, err = s.container.MappedPort(ctx, "9600")
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	s.MonitoringAddress = fmt.Sprintf("%s:%d", host, port.Int())
 }
 
 func (s *ContainerSuite) TearDownSuite() {

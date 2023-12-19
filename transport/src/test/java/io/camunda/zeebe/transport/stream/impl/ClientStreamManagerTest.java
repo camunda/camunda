@@ -104,8 +104,7 @@ class ClientStreamManagerTest {
     final var stream2 = registry.getClient(uuid2).orElseThrow();
 
     // then
-    assertThat(stream1.serverStream().getStreamId())
-        .isEqualTo(stream2.serverStream().getStreamId());
+    assertThat(stream1.serverStream().streamId()).isEqualTo(stream2.serverStream().streamId());
   }
 
   @Test
@@ -117,8 +116,7 @@ class ClientStreamManagerTest {
     final var stream2 = registry.getClient(uuid2).orElseThrow();
 
     // then
-    assertThat(stream1.serverStream().getStreamId())
-        .isNotEqualTo(stream2.serverStream().getStreamId());
+    assertThat(stream1.serverStream().streamId()).isNotEqualTo(stream2.serverStream().streamId());
   }
 
   @Test
@@ -132,8 +130,7 @@ class ClientStreamManagerTest {
     final var stream2 = registry.getClient(uuid2).orElseThrow();
 
     // then
-    assertThat(stream1.serverStream().getStreamId())
-        .isNotEqualTo(stream2.serverStream().getStreamId());
+    assertThat(stream1.serverStream().streamId()).isNotEqualTo(stream2.serverStream().streamId());
   }
 
   @Test
@@ -328,7 +325,7 @@ class ClientStreamManagerTest {
   }
 
   private UUID getServerStreamId(final ClientStreamId clientStreamId) {
-    return registry.getClient(clientStreamId).orElseThrow().serverStream().getStreamId();
+    return registry.getClient(clientStreamId).orElseThrow().serverStream().streamId();
   }
 
   private record TestMetadata(int data) implements BufferWriter {

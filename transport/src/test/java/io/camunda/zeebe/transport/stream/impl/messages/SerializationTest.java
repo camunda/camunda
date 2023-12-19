@@ -10,12 +10,14 @@ package io.camunda.zeebe.transport.stream.impl.messages;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import io.camunda.zeebe.transport.stream.api.StreamResponseException.ErrorDetail;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.util.UUID;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
 
 final class SerializationTest {
@@ -152,5 +154,28 @@ final class SerializationTest {
     // then
     assertThat(deserialized.code()).isEqualTo(ErrorCode.EXHAUSTED);
     assertThat(deserialized.message()).isEqualTo("Stream is exhausted");
+  }
+
+  @Test
+  void shouldSerializeErrorResponseDetails() {
+    // given
+    final var response =
+        new ErrorResponse()
+            .code(ErrorCode.EXHAUSTED)
+            .message("Stream is exhausted")
+            .addDetail(ErrorCode.BLOCKED, "Stream is blocked")
+            .addDetail(ErrorCode.INVALID, "Message is invalid");
+
+    // when
+    response.write(buffer, 0);
+    final var deserialized = new ErrorResponse();
+    deserialized.wrap(buffer, 0, response.getLength());
+
+    // then
+    assertThat(deserialized.details())
+        .extracting(ErrorDetail::code, ErrorDetail::message)
+        .containsExactlyInAnyOrder(
+            Tuple.tuple(ErrorCode.BLOCKED, "Stream is blocked"),
+            Tuple.tuple(ErrorCode.INVALID, "Message is invalid"));
   }
 }

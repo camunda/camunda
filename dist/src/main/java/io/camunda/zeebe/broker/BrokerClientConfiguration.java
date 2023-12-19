@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.zeebe.broker.shared.BrokerConfiguration;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
@@ -27,11 +28,11 @@ final class BrokerClientConfiguration {
 
   @Autowired
   BrokerClientConfiguration(
-      final BrokerCfg config,
+      final BrokerConfiguration config,
       final AtomixCluster cluster,
       final ActorScheduler scheduler,
       final BrokerTopologyManager topologyManager) {
-    this.config = config;
+    this.config = config.config();
     this.cluster = cluster;
     this.scheduler = scheduler;
     this.topologyManager = topologyManager;

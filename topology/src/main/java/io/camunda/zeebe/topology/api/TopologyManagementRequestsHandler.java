@@ -44,21 +44,22 @@ public final class TopologyManagementRequestsHandler implements TopologyManageme
   @Override
   public ActorFuture<TopologyChangeResponse> addMembers(final AddMembersRequest addMembersRequest) {
     return handleRequest(
-        coordinator::applyOperations, new AddMembersTransformer(addMembersRequest.members()));
+        addMembersRequest.dryRun(), new AddMembersTransformer(addMembersRequest.members()));
   }
 
   @Override
   public ActorFuture<TopologyChangeResponse> removeMembers(
       final RemoveMembersRequest removeMembersRequest) {
     return handleRequest(
-        coordinator::applyOperations, new RemoveMembersTransformer(removeMembersRequest.members()));
+        removeMembersRequest.dryRun(),
+        new RemoveMembersTransformer(removeMembersRequest.members()));
   }
 
   @Override
   public ActorFuture<TopologyChangeResponse> joinPartition(
       final JoinPartitionRequest joinPartitionRequest) {
     return handleRequest(
-        coordinator::applyOperations,
+        joinPartitionRequest.dryRun(),
         ignore ->
             Either.right(
                 List.of(
@@ -73,7 +74,7 @@ public final class TopologyManagementRequestsHandler implements TopologyManageme
       final LeavePartitionRequest leavePartitionRequest) {
 
     return handleRequest(
-        coordinator::applyOperations,
+        leavePartitionRequest.dryRun(),
         ignore ->
             Either.right(
                 List.of(
@@ -84,20 +85,15 @@ public final class TopologyManagementRequestsHandler implements TopologyManageme
   @Override
   public ActorFuture<TopologyChangeResponse> reassignPartitions(
       final ReassignPartitionsRequest reassignPartitionsRequest) {
-    final var transformer =
-        new PartitionReassignRequestTransformer(reassignPartitionsRequest.members());
-    return handleRequest(coordinator::applyOperations, transformer);
+    return handleRequest(
+        reassignPartitionsRequest.dryRun(),
+        new PartitionReassignRequestTransformer(reassignPartitionsRequest.members()));
   }
 
   @Override
   public ActorFuture<TopologyChangeResponse> scaleMembers(final ScaleRequest scaleRequest) {
-    final var transformer = new ScaleRequestTransformer(scaleRequest.members());
-
-    if (scaleRequest.dryRun()) {
-      return handleRequest(coordinator::simulateOperations, transformer);
-    } else {
-      return handleRequest(coordinator::applyOperations, transformer);
-    }
+    return handleRequest(
+        scaleRequest.dryRun(), new ScaleRequestTransformer(scaleRequest.members()));
   }
 
   @Override
@@ -112,9 +108,14 @@ public final class TopologyManagementRequestsHandler implements TopologyManageme
   }
 
   private ActorFuture<TopologyChangeResponse> handleRequest(
-      final Function<TopologyChangeRequest, ActorFuture<TopologyChangeResult>> handler,
-      final TopologyChangeRequest request) {
+      final boolean dryRun, final TopologyChangeRequest request) {
     final ActorFuture<TopologyChangeResponse> responseFuture = executor.createFuture();
+    final Function<TopologyChangeRequest, ActorFuture<TopologyChangeResult>> handler;
+    if (dryRun) {
+      handler = coordinator::simulateOperations;
+    } else {
+      handler = coordinator::applyOperations;
+    }
     executor.run(
         () ->
             handler

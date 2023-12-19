@@ -17,13 +17,14 @@ package worker
 
 import (
 	"context"
-	"github.com/camunda/zeebe/clients/go/v8/pkg/commands"
-	"github.com/camunda/zeebe/clients/go/v8/pkg/entities"
-	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
 	"log"
 	"math"
 	"sync"
 	"time"
+
+	"github.com/camunda/zeebe/clients/go/v8/pkg/commands"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/entities"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
 )
 
 const (
@@ -33,6 +34,7 @@ const (
 	DefaultJobWorkerPollThreshold = 0.3
 	RequestTimeoutOffset          = 10 * time.Second
 	DefaultRequestTimeout         = 10 * time.Second
+	DefaultStreamEnabled          = false
 )
 
 var defaultBackoffSupplier = NewExponentialBackoffBuilder().Build()
@@ -43,14 +45,16 @@ type JobWorkerBuilder struct {
 	request        *pb.ActivateJobsRequest
 	requestTimeout time.Duration
 
-	handler         JobHandler
-	maxJobsActive   int
-	concurrency     int
-	pollInterval    time.Duration
-	pollThreshold   float64
-	metrics         JobWorkerMetrics
-	shouldRetry     func(context.Context, error) bool
-	backoffSupplier BackoffSupplier
+	handler              JobHandler
+	maxJobsActive        int
+	concurrency          int
+	pollInterval         time.Duration
+	pollThreshold        float64
+	metrics              JobWorkerMetrics
+	shouldRetry          func(context.Context, error) bool
+	backoffSupplier      BackoffSupplier
+	streamEnabled        bool
+	streamRequestTimeout time.Duration
 }
 
 type JobWorkerBuilderStep1 interface {
@@ -86,6 +90,10 @@ type JobWorkerBuilderStep3 interface {
 	Metrics(metrics JobWorkerMetrics) JobWorkerBuilderStep3
 	// BackoffSupplier Set the backoffSupplier to back off polling on errors
 	BackoffSupplier(supplier BackoffSupplier) JobWorkerBuilderStep3
+	// StreamEnabled Enables the job worker to stream jobs. It will still poll for older jobs, but streaming is favored.
+	StreamEnabled(bool) JobWorkerBuilderStep3
+	// StreamRequestTimeout If streaming is enabled, this sets the timeout on the underlying job stream. It's useful to set a few hours to load-balance your streams over time.
+	StreamRequestTimeout(time.Duration) JobWorkerBuilderStep3
 	// Open the job worker and start polling and handling jobs
 	Open() JobWorker
 }
@@ -163,13 +171,24 @@ func (builder *JobWorkerBuilder) BackoffSupplier(backoffSupplier BackoffSupplier
 	return builder
 }
 
+func (builder *JobWorkerBuilder) StreamEnabled(streamEnabled bool) JobWorkerBuilderStep3 {
+	builder.streamEnabled = streamEnabled
+	return builder
+}
+
+func (builder *JobWorkerBuilder) StreamRequestTimeout(requestTimeout time.Duration) JobWorkerBuilderStep3 {
+	builder.streamRequestTimeout = requestTimeout
+	return builder
+}
+
 func (builder *JobWorkerBuilder) Open() JobWorker {
 	jobQueue := make(chan entities.Job, builder.maxJobsActive)
 	workerFinished := make(chan bool, builder.maxJobsActive)
 	closePoller := make(chan struct{})
 	closeDispatcher := make(chan struct{})
+	closeStreamer := make(chan struct{})
 	var closeWait sync.WaitGroup
-	closeWait.Add(2)
+	closeWait.Add(3)
 
 	poller := jobPoller{
 		client:              builder.gatewayClient,
@@ -195,12 +214,36 @@ func (builder *JobWorkerBuilder) Open() JobWorker {
 		closeSignal:    closeDispatcher,
 	}
 
-	go poller.poll(&closeWait)
 	go dispatcher.run(builder.jobClient, builder.handler, builder.concurrency, &closeWait)
+	go poller.poll(&closeWait)
+
+	if builder.streamEnabled {
+		streamRequest := commands.NewStreamJobsCommand(builder.gatewayClient, builder.shouldRetry).
+			JobType(builder.request.Type).
+			Consumer(jobQueue).
+			Timeout(time.Duration(builder.request.Timeout) * time.Millisecond).
+			FetchVariables(builder.request.FetchVariable...).
+			TenantIds(builder.request.TenantIds...).
+			WorkerName(builder.request.Worker).
+			RequestTimeout(builder.streamRequestTimeout)
+		streamer := jobStreamer{
+			workerFinished:  workerFinished,
+			closeSignal:     closeStreamer,
+			request:         streamRequest,
+			backoffSupplier: builder.backoffSupplier,
+			retryDelay:      0,
+		}
+
+		go streamer.stream(&closeWait)
+	} else {
+		// simulate streamer is already closed
+		closeWait.Done()
+	}
 
 	return jobWorkerController{
 		closePoller:     closePoller,
 		closeDispatcher: closeDispatcher,
+		closeStreamer:   closeStreamer,
 		closeWait:       &closeWait,
 	}
 }

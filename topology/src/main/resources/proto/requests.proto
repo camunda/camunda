@@ -7,21 +7,25 @@ option java_package = "io.camunda.zeebe.topology.protocol";
 
 message AddMembersRequest {
   repeated string memberIds = 1;
+  bool dryRun = 2;
 }
 
 message RemoveMembersRequest {
   repeated string memberIds = 1;
+  bool dryRun = 2;
 }
 
 message JoinPartitionRequest {
   string memberId = 1;
   int32 partitionId = 2;
   int32 priority = 3;
+  bool dryRun = 4;
 }
 
 message LeavePartitionRequest {
   string memberId = 1;
   int32 partitionId = 2;
+  bool dryRun = 3;
 }
 
 message ScaleRequest {
@@ -32,6 +36,7 @@ message ScaleRequest {
 message ReassignAllPartitionsRequest {
   // The ids of the brokers to which all partitions should be re-distributed
   repeated string memberIds = 1;
+  bool dryRun = 2;
 }
 
 message CancelTopologyChangeRequest {

@@ -233,13 +233,7 @@ public final class BpmnProcessors {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_MIGRATION,
         ProcessInstanceMigrationIntent.MIGRATE,
-        new ProcessInstanceMigrationMigrateProcessor(
-            writers,
-            processingState.getElementInstanceState(),
-            processingState.getProcessState(),
-            processingState.getJobState(),
-            processingState.getVariableState(),
-            bpmnBehaviors));
+        new ProcessInstanceMigrationMigrateProcessor(writers, processingState, bpmnBehaviors));
   }
 
   private static void addProcessInstanceBatchStreamProcessors(

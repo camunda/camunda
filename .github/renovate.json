@@ -38,6 +38,14 @@
       "enabled": false
     },
     {
+      "matchPackagePrefixes": ["co.elastic"],
+      "matchUpdateTypes": [
+        "minor",
+        "major"
+      ],
+      "enabled": false
+    },
+    {
       "matchManagers": [
         "dockerfile"
       ],
@@ -51,6 +59,14 @@
     {
       "matchPackagePrefixes": ["org.jacoco"],
       "allowedVersions": "!/0.8.9/"
+    },
+    {
+      "matchManagers": [
+        "maven"
+      ],
+      "description" : "Exclude SNAPSHOT versions, renovate may suggest them for pre-release values.",
+      "matchPackagePatterns": [".*"],
+      "allowedVersions": "!/-SNAPSHOT$/"
     }
   ],
   "dockerfile": {

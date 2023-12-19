@@ -16,11 +16,21 @@ package test
 
 import (
 	"context"
-	"github.com/camunda/zeebe/clients/go/v8/internal/containersuite"
-	"github.com/camunda/zeebe/clients/go/v8/pkg/zbc"
-	"github.com/stretchr/testify/suite"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/camunda/zeebe/clients/go/v8/internal/containersuite"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/entities"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/worker"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/zbc"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/suite"
 )
 
 type integrationTestSuite struct {
@@ -245,6 +255,68 @@ func (s *integrationTestSuite) TestActivateJobs() {
 	}
 }
 
+func (s *integrationTestSuite) TestStreamJobs() {
+	// given
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	taskType := uuid.NewString()
+	bpmn, err := s.readBpmnWithCustomJobType("testdata/service_task.bpmn", taskType)
+	s.NoError(err)
+
+	deployment, err := s.client.NewDeployResourceCommand().AddResource(bpmn, "service_task.bpmn").Send(ctx)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	deployedResource := deployment.GetDeployments()[0]
+	s.NotNil(deployedResource)
+
+	process := deployedResource.GetProcess()
+	s.NotNil(process)
+
+	// when
+	// the stream will be closed by the deferred context cancellation
+	ctx, cancel = context.WithCancel(context.Background())
+	defer cancel()
+
+	jobsChan := make(chan entities.Job)
+	defer close(jobsChan)
+
+	workerName := uuid.New().String()
+	go s.client.NewStreamJobsCommand().JobType(taskType).Consumer(jobsChan).Timeout(time.Minute * 5).
+		WorkerName(workerName).RequestTimeout(time.Duration(1) * time.Minute).Send(ctx)
+
+	// Await until the stream is created on the broker
+	streamExists := s.awaitJobStreamExists(workerName)
+	s.True(streamExists, "Expected remote stream to exist on broker after 5 seconds, but none yet exist")
+
+	// create two PIs and expect two jobs
+	_, err = s.client.NewCreateInstanceCommand().ProcessDefinitionKey(process.GetProcessDefinitionKey()).Send(ctx)
+	s.NoError(err)
+	_, err = s.client.NewCreateInstanceCommand().ProcessDefinitionKey(process.GetProcessDefinitionKey()).Send(ctx)
+	s.NoError(err)
+
+	// then - expect two jobs
+	jobs := make([]entities.Job, 0)
+	for i := 0; i < 2; i++ {
+		job, ok := <-jobsChan
+		if ok {
+			jobs = append(jobs, job)
+		} else {
+			break
+		}
+	}
+	s.Len(jobs, 2, "Expected to receive 2 jobs")
+
+	for _, job := range jobs {
+		s.EqualValues(process.GetProcessDefinitionKey(), job.GetProcessDefinitionKey())
+		s.EqualValues(process.GetBpmnProcessId(), job.GetBpmnProcessId())
+		s.EqualValues("service_task", job.GetElementId())
+		s.Greater(job.GetRetries(), int32(0))
+	}
+}
+
 func (s *integrationTestSuite) TestFailJob() {
 	// given
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -291,4 +363,142 @@ func (s *integrationTestSuite) TestFailJob() {
 			s.T().Fatal("Empty fail job response")
 		}
 	}
+}
+
+func (s *integrationTestSuite) TestStreamingJobWorker() {
+	// given
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	taskType := uuid.NewString()
+	bpmn, err := s.readBpmnWithCustomJobType("testdata/service_task.bpmn", taskType)
+	s.NoError(err)
+
+	deployment, err := s.client.NewDeployResourceCommand().AddResource(bpmn, "service_task.bpmn").Send(ctx)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	deployedResource := deployment.GetDeployments()[0]
+	s.NotNil(deployedResource)
+
+	process := deployedResource.GetProcess()
+	s.NotNil(process)
+
+	// when
+	// the stream will be closed by the deferred context cancellation
+	ctx, cancel = context.WithCancel(context.Background())
+	defer cancel()
+
+	jobsChan := make(chan entities.Job)
+	defer close(jobsChan)
+
+	workerName := uuid.New().String()
+	jobWorker := s.client.NewJobWorker().
+		JobType(taskType).
+		Handler(func(client worker.JobClient, job entities.Job) {
+			jobsChan <- job
+		}).
+		Timeout(time.Minute * 5).
+		PollInterval(1 * time.Hour). // poll very slowly to make sure we get our jobs from streaming
+		Name(workerName).
+		StreamEnabled(true).
+		RequestTimeout(time.Duration(1) * time.Second).
+		Open()
+	defer jobWorker.Close()
+
+	// Await until the stream is created on the broker
+	streamExists := s.awaitJobStreamExists(workerName)
+	s.True(streamExists, "Expected remote stream to exist on broker after 5 seconds, but none yet exist")
+
+	// create two PIs and expect two jobs
+	_, err = s.client.NewCreateInstanceCommand().ProcessDefinitionKey(process.GetProcessDefinitionKey()).Send(ctx)
+	s.NoError(err)
+	_, err = s.client.NewCreateInstanceCommand().ProcessDefinitionKey(process.GetProcessDefinitionKey()).Send(ctx)
+	s.NoError(err)
+
+	// then - expect two jobs
+	jobs := make([]entities.Job, 0)
+	for i := 0; i < 2; i++ {
+		job, ok := <-jobsChan
+		if ok {
+			jobs = append(jobs, job)
+		} else {
+			break
+		}
+	}
+	s.Len(jobs, 2, "Expected to receive 2 jobs")
+
+	jobKeys := make([]int64, 0)
+	for _, job := range jobs {
+		s.NotContains(jobKeys, job.Key)
+		s.EqualValues(process.GetProcessDefinitionKey(), job.GetProcessDefinitionKey())
+		s.EqualValues(process.GetBpmnProcessId(), job.GetBpmnProcessId())
+		s.EqualValues("service_task", job.GetElementId())
+		s.Greater(job.GetRetries(), int32(0))
+
+		jobKeys = append(jobKeys, job.Key)
+	}
+}
+
+// We use the worker name to differentiate which stream we await
+func (s integrationTestSuite) awaitJobStreamExists(workerName string) bool {
+	streamExists := false
+	for start := time.Now(); !streamExists && time.Since(start) < 5*time.Second; {
+		response, err := http.Get(fmt.Sprintf("http://%s/actuator/jobstreams/remote", s.MonitoringAddress))
+		if err != nil {
+			time.Sleep(time.Second)
+			continue
+		}
+
+		remoteStreams := make([]remoteJobStream, 1)
+		responseData, err := io.ReadAll(response.Body)
+		if err != nil {
+			time.Sleep(time.Second)
+			continue
+		}
+
+		err = json.Unmarshal(responseData, &remoteStreams)
+		if err != nil {
+			time.Sleep(time.Second)
+			continue
+		}
+
+		for _, remoteStream := range remoteStreams {
+			if remoteStream.Metadata.Worker == workerName {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+func (s integrationTestSuite) readBpmnWithCustomJobType(path string, jobType string) ([]byte, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	parsed := string(b)
+	bpmn := strings.ReplaceAll(parsed, "<zeebe:taskDefinition type=\"task\" />", fmt.Sprintf("<zeebe:taskDefinition type=\"%s\" />", jobType))
+
+	return []byte(bpmn), nil
+}
+
+type remoteJobStream struct {
+	JobType   string                    `json:"jobType"`
+	Metadata  remoteJobStreamMetadata   `json:"metadata"`
+	Consumers []remoteJobStreamConsumer `json:"consumers"`
+}
+
+type remoteJobStreamMetadata struct {
+	Worker         string   `json:"worker"`
+	Timeout        string   `json:"timeout"`
+	FetchVariables []string `json:"fetchVariables"`
+}
+
+type remoteJobStreamConsumer struct {
+	ID       string `json:"id"`
+	Receiver string `json:"receiver"`
 }
