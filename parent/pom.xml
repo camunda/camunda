@@ -1228,6 +1228,13 @@
         <version>${version.jakarta-activation}</version>
       </dependency>
 
+      <!-- required between me.dinowernli:java-grpc-prometheus and com.google.guava:guava -->
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>failureaccess</artifactId>
+        <version>1.0.2</version>
+      </dependency>
+
       <!-- needed for tests in elasticsearch-exporter -->
       <dependency>
         <groupId>jakarta.json</groupId>
