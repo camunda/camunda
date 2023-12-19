@@ -18,14 +18,15 @@ package worker
 import (
 	"context"
 	"fmt"
-	"github.com/camunda/zeebe/clients/go/v8/pkg/entities"
-	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"io"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/camunda/zeebe/clients/go/v8/pkg/entities"
+	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type jobPoller struct {
@@ -92,6 +93,11 @@ func (poller *jobPoller) activateJobs() {
 	for {
 		response, err := stream.Recv()
 		if err != nil {
+			// no need to retry if the error was simply that we reached the end of the stream
+			if err == io.EOF {
+				break
+			}
+
 			if poller.shouldRetry(ctx, err) {
 				// the headers are outdated and need to be rebuilt
 				stream, err = poller.openStream(ctx)
