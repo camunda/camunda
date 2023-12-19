@@ -9,10 +9,6 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCIDENT;
 
-import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -72,16 +68,12 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final JobState jobState;
   private final VariableState variableState;
   private final IncidentState incidentState;
-  private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
 
   public ProcessInstanceMigrationMigrateProcessor(
-      final Writers writers,
-      final ProcessingState processingState,
-      final BpmnBehaviors bpmnBehaviors) {
+      final Writers writers, final ProcessingState processingState) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
-    eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     elementInstanceState = processingState.getElementInstanceState();
     processState = processingState.getProcessState();
     jobState = processingState.getJobState();
@@ -252,8 +244,6 @@ public class ProcessInstanceMigrationMigrateProcessor
       }
     }
 
-    eventSubscriptionBehavior.unsubscribeFromEvents(elementInstance.getKey());
-
     stateWriter.appendFollowUpEvent(
         elementInstance.getKey(),
         ProcessInstanceIntent.ELEMENT_MIGRATED,
@@ -290,15 +280,6 @@ public class ProcessInstanceMigrationMigrateProcessor
                         .setProcessDefinitionKey(processDefinition.getKey())
                         .setBpmnProcessId(processDefinition.getBpmnProcessId())
                         .setTenantId(elementInstance.getValue().getTenantId())));
-
-    final var targetElement =
-        processDefinition
-            .getProcess()
-            .getElementById(targetElementId, ExecutableCatchEventSupplier.class);
-    final var bpmnElementContext = new BpmnElementContextImpl();
-    bpmnElementContext.init(
-        elementInstance.getKey(), elementInstance.getValue(), elementInstance.getState());
-    eventSubscriptionBehavior.subscribeToEvents(targetElement, bpmnElementContext);
   }
 
   /**
