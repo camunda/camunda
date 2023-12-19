@@ -29,8 +29,10 @@ import (
 	"time"
 
 	"github.com/camunda/zeebe/clients/go/v8/internal/containersuite"
+	"github.com/camunda/zeebe/clients/go/v8/internal/utils"
 	"github.com/camunda/zeebe/clients/go/v8/pkg/zbc"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -149,6 +151,15 @@ var tests = []testCase{
 		goldenFile: "testdata/create_worker.golden",
 	},
 	{
+		name: "create streaming worker",
+		setupCmds: [][]string{
+			strings.Fields("--insecure deploy testdata/job_model.bpmn"),
+			strings.Fields("--insecure create instance jobProcess"),
+		},
+		cmd:        strings.Fields("create --insecure worker jobType --streamEnabled --maxJobsHandle 1 --handler echo"),
+		goldenFile: "testdata/create_worker.golden",
+	},
+	{
 		name:       "empty activate job",
 		cmd:        strings.Fields("--insecure activate jobs jobType --maxJobsToActivate 0"),
 		goldenFile: "testdata/empty_activate_job.golden",
@@ -237,6 +248,39 @@ func (s *integrationTestSuite) AfterTest(_, _ string) {
 	// of code in case the test fails to print out the container logs using s.PrintFailedContainerLogs()
 }
 
+// TestStreamingJobWorker is separate from TestCommonCommands because it requires us to first create the
+// stream, await until it exists, and then create jobs to push them out. Otherwise we couldn't really
+// assert we're testing streaming and not polling.
+func (s *integrationTestSuite) TestStreamingJobWorker() {
+	// given
+	workerName := uuid.NewString()
+	deployCommand := "--insecure deploy testdata/job_model.bpmn"
+	workerCommand := fmt.Sprintf("create --insecure worker jobType --streamEnabled --maxJobsHandle 1 --name %s --handler echo", workerName)
+	jobCommand := "--insecure create instance jobProcess"
+
+	if cmdOut, err := s.runCommand(strings.Fields(deployCommand), false); err != nil {
+		s.FailNowf("Failed while executing deploy command '%s' (%v). Output: \n%s", deployCommand, err, cmdOut)
+	}
+
+	// when
+	go func() {
+		if !utils.AwaitJobStreamExists(workerName, s.MonitoringAddress) {
+			s.FailNow("Job stream does not exist after 10 seconds")
+			return
+		}
+
+		if cmdOut, err := s.runCommand(strings.Fields(jobCommand), false); err != nil {
+			s.FailNowf("Failed while creating a job to push with command '%s' (%v). Output: \n%s", jobCommand, err, cmdOut)
+		}
+	}()
+
+	cmdOut, err := s.runCommand(strings.Fields(workerCommand), false)
+	s.NoErrorf(err, "Failed while executing worker command '%s'. Output: \n%s", workerCommand, cmdOut)
+
+	// then
+	s.assertGoldenFileMatchesOutput("testdata/create_worker.golden", false, "TestStreamingJobWorker", cmdOut)
+}
+
 func (s *integrationTestSuite) TestCommonCommands() {
 	for _, test := range tests {
 		passed := s.T().Run(test.name, func(t *testing.T) {
@@ -264,26 +308,7 @@ func (s *integrationTestSuite) TestCommonCommands() {
 					strings.Join(test.cmd, " "), err, cmdOut)
 			}
 
-			goldenOut, err := os.ReadFile(test.goldenFile)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			if test.jsonOutput {
-				fmtJSON, err := reformatJSON(cmdOut)
-				if err != nil {
-					t.Fatalf("failed to reformat response JSON: %v\nErroneous JSON: %s", err, cmdOut)
-				}
-				cmdOut = fmtJSON
-
-				fmtGolden, err := reformatJSON(goldenOut)
-				if err != nil {
-					t.Fatalf("failed to reformat golden JSON: %v\nErroneous JSON: %s", err, goldenOut)
-				}
-				goldenOut = fmtGolden
-			}
-
-			assertEq(t, test, goldenOut, cmdOut)
+			s.assertGoldenFileMatchesOutput(test.goldenFile, test.jsonOutput, test.name, cmdOut)
 		})
 
 		if !passed {
@@ -292,6 +317,24 @@ func (s *integrationTestSuite) TestCommonCommands() {
 			s.PrintFailedContainerLogs()
 		}
 	}
+}
+
+func (s *integrationTestSuite) assertGoldenFileMatchesOutput(goldenFile string, isJson bool, testName string, cmdOut []byte) {
+	goldenOut, err := os.ReadFile(goldenFile)
+	s.Require().NoError(err)
+
+	if isJson {
+		fmtJSON, err := reformatJSON(cmdOut)
+		s.Require().NoErrorf(err, "failed to reformat response JSON: %v\nErroneous JSON: %s", err, cmdOut)
+
+		cmdOut = fmtJSON
+		fmtGolden, err := reformatJSON(goldenOut)
+		s.Require().NoErrorf(err, "failed to reformat golden JSON: %v\nErroneous JSON: %s", err, goldenOut)
+
+		goldenOut = fmtGolden
+	}
+
+	assertEq(s.T(), testName, goldenOut, cmdOut)
 }
 
 // reformatJSON formats the JSON files in the same way so that whitespace differences are ignored
@@ -315,13 +358,13 @@ func reformatJSON(in []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func assertEq(t *testing.T, test testCase, golden, cmdOut []byte) {
+func assertEq(t *testing.T, testName string, golden, cmdOut []byte) {
 	wantLines := strings.Split(string(golden), "\n")
 	gotLines := strings.Split(string(cmdOut), "\n")
 
 	opt := composeComparers(cmpIgnoreVersion, cmpIgnoreNums)
 	if diff := cmp.Diff(wantLines, gotLines, opt); diff != "" {
-		t.Fatalf("%s: diff (-want +got):\n%s", test.name, diff)
+		t.Fatalf("%s: diff (-want +got):\n%s", testName, diff)
 	}
 }
 
