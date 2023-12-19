@@ -176,7 +176,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: ${{ env.IS_FE_BRANCH == 'false' && (success() || failure()) }}
         with:
-          name: jacoco-report-${{ steps.sanitize.outputs.branch_name }}
+          name: jacoco-report-${{ steps.sanitize.outputs.branch_name }}-${{ inputs.database }}
           path: ${{ github.workspace }}/test-coverage/target/site/jacoco-aggregate/
           retention-days: 2
 
