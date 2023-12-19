@@ -205,9 +205,10 @@ final class RetryStrategyTest {
         case "recoverable" -> TestCase.of(RecoverableRetryStrategy::new);
         case "abortable" -> TestCase.of(AbortableRetryStrategy::new);
         case "backoff" -> TestCase.of(actor -> new BackOffRetryStrategy(actor, Duration.ZERO));
-        default -> throw new IllegalArgumentException(
-            "Expected one of ['endless', 'recoverable', 'abortable', or 'backoff'], but got "
-                + type);
+        default ->
+            throw new IllegalArgumentException(
+                "Expected one of ['endless', 'recoverable', 'abortable', or 'backoff'], but got "
+                    + type);
       };
     }
 
