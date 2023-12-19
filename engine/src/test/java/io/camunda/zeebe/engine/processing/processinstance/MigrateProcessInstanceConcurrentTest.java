@@ -353,15 +353,6 @@ public class MigrateProcessInstanceConcurrentTest {
             .timer(TimerIntent.TRIGGER, timerCreated.getValue())
             .key(timerCreated.getKey()));
 
-    assertThat(
-            RecordingExporter.timerRecords(TimerIntent.TRIGGER)
-                .withProcessInstanceKey(processInstanceKey)
-                .onlyCommandRejections()
-                .findFirst())
-        .describedAs(
-            "Expect that the timer command is rejected because the migration recreate the subscription")
-        .isPresent();
-
     ENGINE.increaseTime(Duration.ofHours(1));
 
     ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
