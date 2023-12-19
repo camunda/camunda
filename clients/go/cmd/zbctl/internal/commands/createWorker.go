@@ -40,6 +40,7 @@ var (
 	createWorkerPollIntervalFlag  time.Duration
 	createWorkerPollThresholdFlag float64
 	createWorkerMaxJobsHandleFlag int
+	createWorkerStreamEnabled     bool
 
 	createWorkerHandlerArgs []string
 )
@@ -70,6 +71,8 @@ If the handler exits with an none zero exit code the job will be failed, the han
 			Concurrency(createWorkerConcurrencyFlag).
 			PollInterval(createWorkerPollIntervalFlag).
 			PollThreshold(createWorkerPollThresholdFlag).
+			StreamEnabled(createWorkerStreamEnabled).
+			StreamRequestTimeout(1 * time.Hour).
 			Open()
 
 		<-workerDoneChannel
@@ -176,6 +179,7 @@ func init() {
 	createWorkerCmd.Flags().DurationVar(&createWorkerPollIntervalFlag, "pollInterval", worker.DefaultJobWorkerPollInterval, "Specify the maximal interval between polling for new jobs. Example values: 300ms, 50s or 1m")
 	createWorkerCmd.Flags().Float64Var(&createWorkerPollThresholdFlag, "pollThreshold", worker.DefaultJobWorkerPollThreshold, "Specify the threshold of buffered activated jobs before polling for new jobs, i.e. pollThreshold * maxJobsActive")
 	createWorkerCmd.Flags().IntVar(&createWorkerMaxJobsHandleFlag, "maxJobsHandle", 0, "Specify the maximum number of jobs the worker should handle before exiting; pass 0 to handle an unlimited amount")
+	createWorkerCmd.Flags().BoolVar(&createWorkerStreamEnabled, "streamEnabled", false, "Specify whether to use job streaming")
 
 	// maxJobsHandle is mostly used for testing; we can make it public and documented if it proves useful for users as well
 	_ = createWorkerCmd.Flags().MarkHidden("maxJobsHandle")

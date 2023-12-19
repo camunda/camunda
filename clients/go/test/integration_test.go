@@ -16,16 +16,14 @@ package test
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/camunda/zeebe/clients/go/v8/internal/containersuite"
+	"github.com/camunda/zeebe/clients/go/v8/internal/utils"
 	"github.com/camunda/zeebe/clients/go/v8/pkg/entities"
 	"github.com/camunda/zeebe/clients/go/v8/pkg/worker"
 	"github.com/camunda/zeebe/clients/go/v8/pkg/zbc"
@@ -288,7 +286,7 @@ func (s *integrationTestSuite) TestStreamJobs() {
 		WorkerName(workerName).RequestTimeout(time.Duration(1) * time.Minute).Send(ctx)
 
 	// Await until the stream is created on the broker
-	streamExists := s.awaitJobStreamExists(workerName)
+	streamExists := utils.AwaitJobStreamExists(workerName, s.MonitoringAddress)
 	s.True(streamExists, "Expected remote stream to exist on broker after 5 seconds, but none yet exist")
 
 	// create two PIs and expect two jobs
@@ -408,7 +406,7 @@ func (s *integrationTestSuite) TestStreamingJobWorker() {
 	defer jobWorker.Close()
 
 	// Await until the stream is created on the broker
-	streamExists := s.awaitJobStreamExists(workerName)
+	streamExists := utils.AwaitJobStreamExists(workerName, s.MonitoringAddress)
 	s.True(streamExists, "Expected remote stream to exist on broker after 5 seconds, but none yet exist")
 
 	// create two PIs and expect two jobs
@@ -441,39 +439,6 @@ func (s *integrationTestSuite) TestStreamingJobWorker() {
 	}
 }
 
-// We use the worker name to differentiate which stream we await
-func (s integrationTestSuite) awaitJobStreamExists(workerName string) bool {
-	streamExists := false
-	for start := time.Now(); !streamExists && time.Since(start) < 5*time.Second; {
-		response, err := http.Get(fmt.Sprintf("http://%s/actuator/jobstreams/remote", s.MonitoringAddress))
-		if err != nil {
-			time.Sleep(time.Second)
-			continue
-		}
-
-		remoteStreams := make([]remoteJobStream, 1)
-		responseData, err := io.ReadAll(response.Body)
-		if err != nil {
-			time.Sleep(time.Second)
-			continue
-		}
-
-		err = json.Unmarshal(responseData, &remoteStreams)
-		if err != nil {
-			time.Sleep(time.Second)
-			continue
-		}
-
-		for _, remoteStream := range remoteStreams {
-			if remoteStream.Metadata.Worker == workerName {
-				return true
-			}
-		}
-	}
-
-	return false
-}
-
 func (s integrationTestSuite) readBpmnWithCustomJobType(path string, jobType string) ([]byte, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
@@ -484,21 +449,4 @@ func (s integrationTestSuite) readBpmnWithCustomJobType(path string, jobType str
 	bpmn := strings.ReplaceAll(parsed, "<zeebe:taskDefinition type=\"task\" />", fmt.Sprintf("<zeebe:taskDefinition type=\"%s\" />", jobType))
 
 	return []byte(bpmn), nil
-}
-
-type remoteJobStream struct {
-	JobType   string                    `json:"jobType"`
-	Metadata  remoteJobStreamMetadata   `json:"metadata"`
-	Consumers []remoteJobStreamConsumer `json:"consumers"`
-}
-
-type remoteJobStreamMetadata struct {
-	Worker         string   `json:"worker"`
-	Timeout        string   `json:"timeout"`
-	FetchVariables []string `json:"fetchVariables"`
-}
-
-type remoteJobStreamConsumer struct {
-	ID       string `json:"id"`
-	Receiver string `json:"receiver"`
 }
