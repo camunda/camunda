@@ -149,7 +149,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4
         with:
-          name: trivy-test-results
+          name: trivy-test-results-${{ steps.pom-info.outputs.project_version }}
           path: |
             **/${{ steps.pom-info.outputs.project_version }}-amd64-trivy-log.txt
             **/${{ steps.pom-info.outputs.project_version }}-arm64-trivy-log.txt
