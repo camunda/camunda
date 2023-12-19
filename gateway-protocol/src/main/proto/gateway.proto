@@ -927,7 +927,7 @@ service Gateway {
         - a mapping instruction changes the type of an element or event
         - a mapping instruction refers to an unsupported element (i.e. some elements will be supported later on)
         - a mapping instruction refers to element in unsupported scenarios.
-          (i.e. migrating active elements with event subscriptions will be supported later on)
+          (i.e. migration is not supported when process instance or target process elements contains event subscriptions)
 
       INVALID_ARGUMENT:
         - A `sourceElementId` does not refer to an element in the process instance's process definition
