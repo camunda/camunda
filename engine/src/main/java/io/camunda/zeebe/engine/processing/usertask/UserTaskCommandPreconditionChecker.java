@@ -22,6 +22,8 @@ public class UserTaskCommandPreconditionChecker {
       "Expected to %s user task with key '%d', but no such user task was found";
   private static final String INVALID_USER_TASK_STATE_MESSAGE =
       "Expected to %s user task with key '%d', but it is in state '%s'";
+  private static final String INVALID_USER_TASK_ASSIGNEE_MESSAGE =
+      "Expected to %s user task with key '%d', but it has already been assigned";
 
   private final List<LifecycleState> validLifecycleStates;
   private final String intent;
@@ -52,13 +54,24 @@ public class UserTaskCommandPreconditionChecker {
 
     final LifecycleState lifecycleState = userTaskState.getLifecycleState(userTaskKey);
 
-    if (validLifecycleStates.contains(lifecycleState)) {
-      return Either.right(persistedRecord);
+    // TODO explain code refactoring
+    if (!validLifecycleStates.contains(lifecycleState)) {
+      return Either.left(
+          Tuple.of(
+              RejectionType.INVALID_STATE,
+              String.format(INVALID_USER_TASK_STATE_MESSAGE, intent, userTaskKey, lifecycleState)));
     }
 
-    return Either.left(
-        Tuple.of(
-            RejectionType.INVALID_STATE,
-            String.format(INVALID_USER_TASK_STATE_MESSAGE, intent, userTaskKey, lifecycleState)));
+    if (intent.contains("claim")) {
+      if (!(persistedRecord.getAssignee().isBlank())
+          && !persistedRecord.getAssignee().equals(command.getValue().getAssignee())) {
+        return Either.left(
+            Tuple.of(
+                RejectionType.INVALID_STATE,
+                String.format(INVALID_USER_TASK_ASSIGNEE_MESSAGE, intent, userTaskKey)));
+      }
+    }
+
+    return Either.right(persistedRecord);
   }
 }
