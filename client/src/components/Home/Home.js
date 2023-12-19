@@ -110,9 +110,6 @@ export function Home({mightFail, user}) {
 
   return (
     <div className="Home">
-      <div className="welcomeMessage">
-        {t('home.welcome')}, {user?.name}
-      </div>
       <div className="content">
         {isLoading && <LoadingIndicator />}
         {!isLoading && showEmptyStateComponent && (

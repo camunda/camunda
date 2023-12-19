@@ -54,12 +54,6 @@ it('should load entities', () => {
   expect(loadEntities).toHaveBeenCalled();
 });
 
-it('should display the user name', () => {
-  const node = shallow(<Home {...props} />);
-
-  expect(node.find('.welcomeMessage')).toIncludeText('John Doe');
-});
-
 it('should show a ReportTemplateModal', () => {
   const node = shallow(<Home {...props} />);
 
