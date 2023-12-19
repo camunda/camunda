@@ -97,6 +97,27 @@ public final class VariableMappingTransformerTest {
         .isEqualTo(ResultType.OBJECT);
   }
 
+  @Test
+  public void shouldNotEscapeCharactersInStaticExpression() {
+    // when
+    final var expression =
+        transformer.transformInputMappings(
+            List.of(
+                mapping("Hello\tWorld", "tab"),
+                mapping("Hello\nWorld", "newline"),
+                mapping("Hello\rWorld", "carriageReturn"),
+                mapping("My Name is &#34;Zeebe&#34;, nice to meet you", "encodedQuotes")),
+            expressionLanguage);
+
+    // then
+    assertThat(expression.isValid())
+        .describedAs("Expected valid expression: %s", expression.getFailureMessage())
+        .isTrue();
+    assertThat(expression.getExpression())
+        .isEqualTo(
+            "{tab:\"Hello\tWorld\",newline:\"Hello\nWorld\",carriageReturn:\"Hello\rWorld\",encodedQuotes:\"My Name is &#34;Zeebe&#34;, nice to meet you\"}");
+  }
+
   private static ZeebeMapping mapping(final String source, final String target) {
     return new ZeebeMapping() {
       @Override
