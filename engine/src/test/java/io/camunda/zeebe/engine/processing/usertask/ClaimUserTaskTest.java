@@ -128,6 +128,28 @@ public class ClaimUserTaskTest {
   }
 
   @Test
+  public void shouldClaimUserTaskWithAssigneeSelf() {
+    // given
+    ENGINE.deployment().withXmlResource(process(b -> b.zeebeAssignee("foo"))).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long userTaskKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
+
+    // when
+    final Record<UserTaskRecordValue> claimedRecord =
+        ENGINE.userTask().withKey(userTaskKey).withAssignee("foo").claim();
+
+    // then
+    Assertions.assertThat(claimedRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(UserTaskIntent.ASSIGNING);
+    Assertions.assertThat(claimedRecord.getValue()).hasAssignee("foo");
+  }
+
+  @Test
   public void shouldRejectClaimIfUserTaskIsCompleted() {
     // given
     ENGINE.deployment().withXmlResource(process()).deploy();
