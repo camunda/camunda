@@ -94,7 +94,7 @@ func (s *JobStreamerSuite) TestShouldRecreateStreamOnCompleted() {
 	var ctx context.Context
 	state := newTestState()
 	defer state.close(s)
-	// will block on the second send call
+	// will block on the first send call
 	state.command.setSendChanBuffer(0)
 
 	// when - should not hang because the stream is closed
@@ -129,7 +129,7 @@ func (s *JobStreamerSuite) TestShouldRecreateStreamOnErrorWithBackoff() {
 	defer state.close(s)
 	state.command.err = errors.New("Foo")
 	state.backoff.delaySequence = []time.Duration{1, 2 * time.Hour}
-	// will block on the second send call
+	// will block on the second third call
 	state.command.setSendChanBuffer(2)
 
 	// when - should not hang because the stream is closed
