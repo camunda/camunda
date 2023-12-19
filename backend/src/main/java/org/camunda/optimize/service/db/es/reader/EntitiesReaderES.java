@@ -16,16 +16,15 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRest
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.service.LocalizationService;
-import org.camunda.optimize.service.db.reader.EntitiesReader;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.db.schema.IndexMappingCreator;
-import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.es.schema.index.DashboardIndexES;
 import org.camunda.optimize.service.db.es.schema.index.report.CombinedReportIndexES;
 import org.camunda.optimize.service.db.es.schema.index.report.SingleDecisionReportIndexES;
 import org.camunda.optimize.service.db.es.schema.index.report.SingleProcessReportIndexES;
+import org.camunda.optimize.service.db.reader.EntitiesReader;
+import org.camunda.optimize.service.db.schema.IndexMappingCreator;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
@@ -53,14 +52,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.db.schema.index.DashboardIndex.INSTANT_PREVIEW_DASHBOARD;
-import static org.camunda.optimize.service.db.schema.index.DashboardIndex.MANAGEMENT_DASHBOARD;
-import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.COLLECTION_ID;
-import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.DATA;
-import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.OWNER;
-import static org.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.INSTANT_PREVIEW_REPORT;
-import static org.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.MANAGEMENT_REPORT;
-import static org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil.atLeastOneResponseExistsForMultiGet;
 import static org.camunda.optimize.service.db.DatabaseConstants.COLLECTION_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.COMBINED_REPORT_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
@@ -68,6 +59,14 @@ import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_MA
 import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil.atLeastOneResponseExistsForMultiGet;
+import static org.camunda.optimize.service.db.schema.index.DashboardIndex.INSTANT_PREVIEW_DASHBOARD;
+import static org.camunda.optimize.service.db.schema.index.DashboardIndex.MANAGEMENT_DASHBOARD;
+import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.COLLECTION_ID;
+import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.DATA;
+import static org.camunda.optimize.service.db.schema.index.report.AbstractReportIndex.OWNER;
+import static org.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.INSTANT_PREVIEW_REPORT;
+import static org.camunda.optimize.service.db.schema.index.report.SingleProcessReportIndex.MANAGEMENT_REPORT;
 import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -90,12 +89,12 @@ public class EntitiesReaderES implements EntitiesReader {
 
   @Override
   public List<CollectionEntity> getAllPrivateEntities() {
-    return getAllPrivateEntities(null);
+    return getAllPrivateEntitiesForOwnerId(null);
   }
 
   @Override
-  public List<CollectionEntity> getAllPrivateEntities(final String userId) {
-    log.debug("Fetching all available entities for user [{}]", userId);
+  public List<CollectionEntity> getAllPrivateEntitiesForOwnerId(final String ownerId) {
+    log.debug("Fetching all available entities for user [{}]", ownerId);
 
     final BoolQueryBuilder query = boolQuery()
       .mustNot(existsQuery(COLLECTION_ID))
@@ -116,8 +115,8 @@ public class EntitiesReaderES implements EntitiesReader {
                         .mustNot(existsQuery(DATA + "." + INSTANT_PREVIEW_REPORT)))
       );
 
-    if (userId != null) {
-      query.must(termQuery(OWNER, userId));
+    if (ownerId != null) {
+      query.must(termQuery(OWNER, ownerId));
     }
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
@@ -223,7 +222,7 @@ public class EntitiesReaderES implements EntitiesReader {
         if (entityId.equals(requestDto.getDashboardId())) { // no "else if" here in case request comes from a magic link
           result.setDashboardName(getLocalizedDashboardName((DashboardDefinitionRestDto) entity, locale));
         } else if (entityId.equals(requestDto.getReportId())) {
-          result.setReportName(getLocalizedReportName(entity, locale));
+          result.setReportName(getLocalizedReportName(localizationService, entity, locale));
         } else if (entityId.equals(requestDto.getEventBasedProcessId())) {
           result.setEventBasedProcessName(entity.getName());
         }
@@ -336,14 +335,4 @@ public class EntitiesReaderES implements EntitiesReader {
     return dashboardEntity.getName();
   }
 
-  private String getLocalizedReportName(final CollectionEntity reportEntity, final String locale) {
-    if (reportEntity instanceof SingleProcessReportDefinitionRequestDto) {
-      if (((SingleProcessReportDefinitionRequestDto) reportEntity).getData().isInstantPreviewReport()) {
-        return localizationService.getLocalizationForInstantPreviewReportCode(locale, reportEntity.getName());
-      } else if (((SingleProcessReportDefinitionRequestDto) reportEntity).getData().isManagementReport()) {
-        return localizationService.getLocalizationForManagementReportCode(locale, reportEntity.getName());
-      }
-    }
-    return reportEntity.getName();
-  }
 }

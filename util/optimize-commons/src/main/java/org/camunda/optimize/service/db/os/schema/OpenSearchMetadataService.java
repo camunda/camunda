@@ -9,12 +9,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
-import org.camunda.optimize.service.db.schema.DatabaseMetadataService;
-import org.camunda.optimize.service.db.schema.index.MetadataIndex;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
 import org.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL;
+import org.camunda.optimize.service.db.schema.DatabaseMetadataService;
+import org.camunda.optimize.service.db.schema.index.MetadataIndex;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Result;
@@ -24,7 +24,6 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
-import java.util.function.Function;
 
 import static org.camunda.optimize.service.db.DatabaseConstants.METADATA_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
@@ -63,11 +62,12 @@ public class OpenSearchMetadataService extends DatabaseMetadataService<OptimizeO
             .id(MetadataIndex.ID)
             .script(QueryDSL.script(updateScript.scriptString(), updateScript.params()))
             .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-        final Function<Exception, String> errorMessageSupplier = e -> "Error updating metadata information";
 
-        final UpdateResponse<Void> response = osClient.getRichOpenSearchClient().doc().update(
+        final String errorMessage =  "Error updating metadata information";
+
+        final UpdateResponse<Void> response = osClient.update(
           updateRequestBuilder,
-          errorMessageSupplier
+          errorMessage
         );
         if (!response.result().equals(Result.Updated)) {
           String errorMsg = "Error doing metadata update. " + ERROR_MESSAGE_REQUEST;
@@ -87,10 +87,13 @@ public class OpenSearchMetadataService extends DatabaseMetadataService<OptimizeO
         .refresh(Refresh.True)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
-      final Function<Exception, String> errorMessageSupplier = e -> "Error performing the metadata creation";
+      final String errorMessage =  "Error performing the metadata creation";
 
-      final UpdateResponse<Void> response = osClient.getRichOpenSearchClient().doc().update(requestBuilder,
-                                                                                            errorMessageSupplier);
+      final UpdateResponse<Void> response = osClient.update(
+        requestBuilder,
+        errorMessage
+      );
+
       if (!response.result().equals(Result.Created)) {
         String errorMsg = "Error doing metadata creation. " + ERROR_MESSAGE_REQUEST;
         log.error(errorMsg);

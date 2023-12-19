@@ -45,7 +45,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.camunda.optimize.service.db.DatabaseConstants.COMBINED_REPORT_INDEX_NAME;
@@ -77,7 +79,7 @@ public class ReportReaderOS implements ReportReader {
 
     for (MultiGetResponseItem<ReportDefinitionDto> itemResponse : multiGetItemResponses.docs()) {
       GetResult<ReportDefinitionDto> response = itemResponse.result();
-      Optional<ReportDefinitionDto> reportDefinitionDto = processGetReportResponse(response);
+      Optional<ReportDefinitionDto> reportDefinitionDto = OpensearchReaderUtil.processGetResponse(response);
       if (reportDefinitionDto.isPresent()) {
         result = reportDefinitionDto;
         break;
@@ -351,14 +353,6 @@ public class ReportReaderOS implements ReportReader {
       .toList();
   }
 
-  private Optional<ReportDefinitionDto> processGetReportResponse(GetResult<ReportDefinitionDto> getResponse) {
-    Optional<ReportDefinitionDto> result = Optional.empty();
-    if (getResponse != null && getResponse.found()) {
-      result = Optional.ofNullable(getResponse.source());
-    }
-    return result;
-  }
-
   private GetRequest.Builder getGetRequestOmitXml(final String index, final String reportId) {
     return new GetRequest.Builder()
       .index(index)
@@ -419,13 +413,23 @@ public class ReportReaderOS implements ReportReader {
   private MgetResponse<ReportDefinitionDto> performMultiGetReportRequest(String reportId) {
     String errorMessage = String.format("Could not fetch report with id [%s]", reportId);
 
+    Map<String, String> indexesToEntitiesId = new HashMap<>();
+    indexesToEntitiesId.put(
+      SINGLE_PROCESS_REPORT_INDEX_NAME,
+      reportId
+    );
+    indexesToEntitiesId.put(
+      SINGLE_DECISION_REPORT_INDEX_NAME,
+      reportId
+    );
+    indexesToEntitiesId.put(
+      COMBINED_REPORT_INDEX_NAME,
+      reportId
+    );
     return osClient.mget(
       ReportDefinitionDto.class,
       errorMessage,
-      reportId,
-      SINGLE_PROCESS_REPORT_INDEX_NAME,
-      SINGLE_DECISION_REPORT_INDEX_NAME,
-      COMBINED_REPORT_INDEX_NAME
+      indexesToEntitiesId
     );
   }
 

@@ -187,7 +187,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   public org.elasticsearch.client.core.CountResponse count(final org.elasticsearch.client.core.CountRequest unfilteredTotalInstanceCountRequest) throws
                                                                                                                                                  IOException {
     //todo will be handle in the OPT-7469
-    return null;
+    return new org.elasticsearch.client.core.CountResponse(0L, true, null);
   }
 
   //todo rename it in scope of OPT-7469
@@ -205,18 +205,19 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   @Override
   public org.elasticsearch.action.search.SearchResponse scroll(final SearchScrollRequest scrollRequest) throws IOException {
     //todo will be handle in the OPT-7469
-    return null;
+    return new org.elasticsearch.action.search.SearchResponse(null);
   }
 
-  public <T> MgetResponse<T> mget(Class<T> responseType, final String errorMessage, String param, String... indexes) {
-    return richOpenSearchClient.doc().mget(responseType, e -> errorMessage, param, indexes);
+  public <T> MgetResponse<T> mget(Class<T> responseType, final String errorMessage,
+                                  Map<String, String> indexesToEntitiesId) {
+    return richOpenSearchClient.doc().mget(responseType, e -> errorMessage, indexesToEntitiesId);
   }
 
   @Override
   public org.elasticsearch.action.search.SearchResponse search(final org.elasticsearch.action.search.SearchRequest searchRequest) throws
                                                                                                                                   IOException {
     //todo will be handle in the OPT-7469
-    return null;
+    return new org.elasticsearch.action.search.SearchResponse(null);
   }
 
   public <T> SearchResponse<T> search(final SearchRequest.Builder requestBuilder, Class<T> responseType) throws
@@ -227,7 +228,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   @Override
   public ClearScrollResponse clearScroll(final ClearScrollRequest clearScrollRequest) throws IOException {
     //todo will be handle in the OPT-7469
-    return null;
+    return new ClearScrollResponse(null);
   }
 
   @Override

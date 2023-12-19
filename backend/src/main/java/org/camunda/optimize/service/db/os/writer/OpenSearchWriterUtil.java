@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.db.os.writer;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -13,16 +14,21 @@ import org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.Script;
 
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static org.camunda.optimize.service.db.writer.DatabaseWriterUtil.createFieldUpdateScriptParams;
+import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.service.db.writer.DatabaseWriterUtil.createUpdateFieldsScript;
 import static org.camunda.optimize.service.db.writer.DatabaseWriterUtil.mapParamsForScriptCreation;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class OpenSearchWriterUtil {
+
+  public static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
 
   public static Script createFieldUpdateScript(final Set<String> fields,
                                                final Object entityDto,
@@ -40,6 +46,25 @@ public class OpenSearchWriterUtil {
                                                                 final Map<String, JsonData> params,
                                                                 final ObjectMapper objectMapper) {
     return QueryDSL.scriptFromJsonData(inlineUpdateScript, mapParamsForScriptCreation(params, objectMapper));
+  }
+
+  public static Map<String, JsonData> createFieldUpdateScriptParams(final Set<String> fields,
+                                                                      final Object entityDto,
+                                                                      final ObjectMapper objectMapper) {
+    Map<String, Object> entityAsMap =
+      objectMapper.convertValue(entityDto, new TypeReference<>() {
+      });
+    final Map<String, JsonData> params = new HashMap<>();
+    for (String fieldName : fields) {
+      Object fieldValue = entityAsMap.get(fieldName);
+      if (fieldValue != null) {
+        if (fieldValue instanceof TemporalAccessor temporalAccessor) {
+          fieldValue = dateTimeFormatter.format(temporalAccessor);
+        }
+        params.put(fieldName,  JsonData.of(fieldValue));
+      }
+    }
+    return params;
   }
 
 }

@@ -23,8 +23,6 @@ import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
-import org.opensearch.client.opensearch.core.search.Hit;
-import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -95,7 +93,7 @@ public class DashboardReaderOS implements DashboardReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    return extractResponseValues(searchResponse);
+    return OpensearchReaderUtil.extractResponseValues(searchResponse);
   }
 
   @Override
@@ -116,7 +114,7 @@ public class DashboardReaderOS implements DashboardReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    return extractResponseValues(searchResponse);
+    return OpensearchReaderUtil.extractResponseValues(searchResponse);
   }
 
   @Override
@@ -148,19 +146,7 @@ public class DashboardReaderOS implements DashboardReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    return extractResponseValues(searchResponse);
-  }
-
-  private <T> List<T> extractResponseValues(final SearchResponse<T> searchResponse) {
-    return Optional.ofNullable(searchResponse)
-      .map(SearchResponse::hits)
-      .map(HitsMetadata::hits)
-      .map(hits -> hits.stream().map(Hit::source).toList())
-      .orElseThrow(() -> {
-        String reason = "Was not able to parse response from Opensearch";
-        log.error(reason);
-        return new OptimizeRuntimeException(reason);
-      });
+    return OpensearchReaderUtil.extractResponseValues(searchResponse);
   }
 
 }

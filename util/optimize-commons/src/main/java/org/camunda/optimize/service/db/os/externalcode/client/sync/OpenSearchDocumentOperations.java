@@ -42,10 +42,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import static java.lang.String.format;
 import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.ids;
@@ -62,7 +62,6 @@ import static org.camunda.optimize.service.db.os.externalcode.client.dsl.Request
 public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
 
   // TODO check unused methods with OPT-7352
-
   public record AggregatedResult<R>(List<R> values, Map<String, Aggregate> aggregates) {
   }
 
@@ -386,8 +385,8 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     );
   }
 
-  public <A> UpdateResponse<Void> update(UpdateRequest.Builder<Void, A> requestBuilder,
-                                         Function<Exception, String> errorMessageSupplier) {
+  public <T> UpdateResponse<Void> update(final UpdateRequest.Builder<Void, T> requestBuilder,
+                                         final Function<Exception, String> errorMessageSupplier) {
     return safe(
       () -> openSearchClient.update(applyIndexPrefix(requestBuilder).build(), Void.class),
       errorMessageSupplier
@@ -417,11 +416,11 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   }
 
   public <T> MgetResponse<T> mget(final Class<T> responseClass, final Function<Exception,
-    String> errorMessageSupplier, String id, String... indexes) {
+    String> errorMessageSupplier, Map<String, String> indexesToEntitiesId) {
 
-    List<MultiGetOperation> operations = Stream.of(indexes)
-      .map(this::getIndexAliasFor)
-      .map(index -> getMultiGetOperation(index, id))
+    List<MultiGetOperation> operations = indexesToEntitiesId.entrySet().stream()
+      .filter(pair -> Objects.nonNull(pair.getKey()) && Objects.nonNull(pair.getValue()))
+      .map(idToIndex -> getMultiGetOperation(getIndexAliasFor(idToIndex.getKey()), idToIndex.getValue()))
       .toList();
 
     MgetRequest.Builder requestBuilder = new MgetRequest.Builder()

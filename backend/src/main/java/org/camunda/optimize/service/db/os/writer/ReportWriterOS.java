@@ -44,7 +44,6 @@ import org.opensearch.client.opensearch.core.UpdateResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Map;
@@ -317,8 +316,8 @@ public class ReportWriterOS implements ReportWriter {
   }
 
   private void updateReport(ReportDefinitionUpdateDto updatedReport, String indexName) {
-    log.debug("Updating report with id [{}] in Elasticsearch", updatedReport.getId());
-    final Map<String, JsonData> updateParams = DatabaseWriterUtil.createFieldUpdateScriptParams(
+    log.debug("Updating report with id [{}] in Opensearch", updatedReport.getId());
+    final Map<String, JsonData> updateParams = OpenSearchWriterUtil.createFieldUpdateScriptParams(
       UPDATABLE_FIELDS,
       updatedReport,
       objectMapper
@@ -332,7 +331,7 @@ public class ReportWriterOS implements ReportWriter {
     );
 
     final UpdateRequest.Builder request =
-      new UpdateRequest.Builder<>()
+      new UpdateRequest.Builder()
         .index(indexName)
         .id(updatedReport.getId())
         .script(updateScript)
@@ -345,7 +344,10 @@ public class ReportWriterOS implements ReportWriter {
       updatedReport.getName()
     );
 
-    final UpdateResponse updateResponse = osClient.update(request, errorMessage);
+    final UpdateResponse updateResponse = osClient.update(
+      request,
+      errorMessage
+    );
     if (updateResponse.shards().failed().intValue() > 0) {
       log.error(
         "Was not able to update report with id [{}] and name [{}].", updatedReport.getId(), updatedReport.getName()

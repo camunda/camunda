@@ -10,6 +10,8 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.service.LocalizationService;
 
 import java.util.List;
 import java.util.Map;
@@ -19,17 +21,30 @@ import static org.camunda.optimize.service.db.reader.ReportReader.REPORT_DATA_XM
 
 public interface EntitiesReader {
 
-   String AGG_BY_INDEX_COUNT = "byIndexCount";
+  String AGG_BY_INDEX_COUNT = "byIndexCount";
 
-   String[] ENTITY_LIST_EXCLUDES = {REPORT_DATA_XML_PROPERTY};
+  String[] ENTITY_LIST_EXCLUDES = {REPORT_DATA_XML_PROPERTY};
 
-   List<CollectionEntity> getAllPrivateEntities();
+  List<CollectionEntity> getAllPrivateEntities();
 
-   List<CollectionEntity> getAllPrivateEntities(final String userId);
+  List<CollectionEntity> getAllPrivateEntitiesForOwnerId(final String ownerId);
 
-   Map<String, Map<EntityType, Long>> countEntitiesForCollections(final List<? extends BaseCollectionDefinitionDto> collections);
+  Map<String, Map<EntityType, Long>> countEntitiesForCollections(final List<? extends BaseCollectionDefinitionDto> collections);
 
-   List<CollectionEntity> getAllEntitiesForCollection(final String collectionId);
+  List<CollectionEntity> getAllEntitiesForCollection(final String collectionId);
 
-   Optional<EntityNameResponseDto> getEntityNames(final EntityNameRequestDto requestDto, final String locale);
+  Optional<EntityNameResponseDto> getEntityNames(final EntityNameRequestDto requestDto, final String locale);
+
+  default String getLocalizedReportName(final LocalizationService localizationService,
+                                        final CollectionEntity reportEntity,
+                                        final String locale) {
+    if (reportEntity instanceof SingleProcessReportDefinitionRequestDto) {
+      if (((SingleProcessReportDefinitionRequestDto) reportEntity).getData().isInstantPreviewReport()) {
+        return localizationService.getLocalizationForInstantPreviewReportCode(locale, reportEntity.getName());
+      } else if (((SingleProcessReportDefinitionRequestDto) reportEntity).getData().isManagementReport()) {
+        return localizationService.getLocalizationForManagementReportCode(locale, reportEntity.getName());
+      }
+    }
+    return reportEntity.getName();
+  }
 }
