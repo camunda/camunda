@@ -14,7 +14,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.26.0
 	golang.org/x/net v0.19.0
 	golang.org/x/oauth2 v0.15.0
-	google.golang.org/grpc v1.60.0
+	google.golang.org/grpc v1.60.1
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/yaml.v3 v3.0.1
 )
