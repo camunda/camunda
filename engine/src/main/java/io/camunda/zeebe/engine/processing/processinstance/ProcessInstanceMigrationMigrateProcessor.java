@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCIDENT;
 
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -58,6 +59,8 @@ public class ProcessInstanceMigrationMigrateProcessor
       "Expected to migrate process instance to process definition but no process definition found with key '%d'";
   private static final String ERROR_MESSAGE_DUPLICATE_SOURCE_ELEMENT_IDS =
       "Expected to migrate process instance '%s' but the mapping instructions contain duplicate source element ids '%s'.";
+  private static final String ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED =
+      "Expected to migrate process instance but process instance has an event subprocess. Process instances with event subprocesses cannot be migrated yet.";
 
   private static final long NO_PARENT = -1L;
   private static final UnsafeBuffer NIL_VALUE = new UnsafeBuffer(MsgPackHelper.NIL);
@@ -155,6 +158,16 @@ public class ProcessInstanceMigrationMigrateProcessor
           }
         });
 
+    final boolean processInstanceHasEventSubprocess =
+        !sourceProcessDefinition.getProcess().getEventSubprocesses().isEmpty();
+
+    if (processInstanceHasEventSubprocess) {
+      responseWriter.writeRejectionOnCommand(
+          command, RejectionType.INVALID_STATE, ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED);
+      rejectionWriter.appendRejection(
+          command, RejectionType.INVALID_STATE, ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED);
+    }
+
     final Map<String, String> mappedElementIds =
         mapElementIds(mappingInstructions, processInstance, targetProcessDefinition);
 
@@ -162,7 +175,8 @@ public class ProcessInstanceMigrationMigrateProcessor
     final var elementInstances = new ArrayDeque<>(List.of(processInstance));
     while (!elementInstances.isEmpty()) {
       final var elementInstance = elementInstances.poll();
-      tryMigrateElementInstance(elementInstance, targetProcessDefinition, mappedElementIds);
+      tryMigrateElementInstance(
+          elementInstance, sourceProcessDefinition, targetProcessDefinition, mappedElementIds);
       final List<ElementInstance> children =
           elementInstanceState.getChildren(elementInstance.getKey());
       elementInstances.addAll(children);
@@ -213,6 +227,11 @@ public class ProcessInstanceMigrationMigrateProcessor
           command, RejectionType.INVALID_ARGUMENT, e.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }
+    if (error instanceof final EventSubscriptionMigrationNotSupportedException e) {
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, e.getMessage());
+      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
+      return ProcessingError.EXPECTED_ERROR;
+    }
 
     return ProcessingError.UNEXPECTED_ERROR;
   }
@@ -236,7 +255,8 @@ public class ProcessInstanceMigrationMigrateProcessor
 
   private void tryMigrateElementInstance(
       final ElementInstance elementInstance,
-      final DeployedProcess processDefinition,
+      final DeployedProcess sourceProcessDefinition,
+      final DeployedProcess targetProcessDefinition,
       final Map<String, String> sourceElementIdToTargetElementId) {
 
     final var elementInstanceRecord = elementInstance.getValue();
@@ -266,7 +286,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     }
 
     final BpmnElementType targetElementType =
-        processDefinition.getProcess().getElementById(targetElementId).getElementType();
+        targetProcessDefinition.getProcess().getElementById(targetElementId).getElementType();
     if (elementInstanceRecord.getBpmnElementType() != targetElementType) {
       throw new ElementTypeChangedException(
           elementInstanceRecord.getProcessInstanceKey(),
@@ -282,7 +302,11 @@ public class ProcessInstanceMigrationMigrateProcessor
       final DirectBuffer expectedFlowScopeId =
           sourceFlowScopeElement.getValue().getElementIdBuffer();
       final DirectBuffer actualFlowScopeId =
-          processDefinition.getProcess().getElementById(targetElementId).getFlowScope().getId();
+          targetProcessDefinition
+              .getProcess()
+              .getElementById(targetElementId)
+              .getFlowScope()
+              .getId();
 
       if (!expectedFlowScopeId.equals(actualFlowScopeId)) {
         throw new ChangedElementFlowScopeException(
@@ -293,13 +317,27 @@ public class ProcessInstanceMigrationMigrateProcessor
       }
     }
 
+    final boolean hasBoundaryEvent =
+        !sourceProcessDefinition
+            .getProcess()
+            .getElementById(elementInstanceRecord.getElementId(), ExecutableActivity.class)
+            .getBoundaryEvents()
+            .isEmpty();
+
+    if (hasBoundaryEvent) {
+      throw new EventSubscriptionMigrationNotSupportedException(
+          elementInstanceRecord.getProcessInstanceKey(),
+          elementInstanceRecord.getElementId(),
+          "active");
+    }
+
     stateWriter.appendFollowUpEvent(
         elementInstance.getKey(),
         ProcessInstanceIntent.ELEMENT_MIGRATED,
         elementInstanceRecord
-            .setProcessDefinitionKey(processDefinition.getKey())
-            .setBpmnProcessId(processDefinition.getBpmnProcessId())
-            .setVersion(processDefinition.getVersion())
+            .setProcessDefinitionKey(targetProcessDefinition.getKey())
+            .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+            .setVersion(targetProcessDefinition.getVersion())
             .setElementId(targetElementId));
 
     if (elementInstance.getJobKey() > 0) {
@@ -308,9 +346,9 @@ public class ProcessInstanceMigrationMigrateProcessor
         stateWriter.appendFollowUpEvent(
             elementInstance.getJobKey(),
             JobIntent.MIGRATED,
-            job.setProcessDefinitionKey(processDefinition.getKey())
-                .setProcessDefinitionVersion(processDefinition.getVersion())
-                .setBpmnProcessId(processDefinition.getBpmnProcessId())
+            job.setProcessDefinitionKey(targetProcessDefinition.getKey())
+                .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
+                .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
                 .setElementId(targetElementId));
       }
     }
@@ -326,8 +364,8 @@ public class ProcessInstanceMigrationMigrateProcessor
                         .setScopeKey(elementInstance.getKey())
                         .setName(variable.name())
                         .setProcessInstanceKey(elementInstance.getValue().getProcessInstanceKey())
-                        .setProcessDefinitionKey(processDefinition.getKey())
-                        .setBpmnProcessId(processDefinition.getBpmnProcessId())
+                        .setProcessDefinitionKey(targetProcessDefinition.getKey())
+                        .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
                         .setTenantId(elementInstance.getValue().getTenantId())));
   }
 
@@ -472,6 +510,31 @@ public class ProcessInstanceMigrationMigrateProcessor
               Elements provided in mapping instructions must exist \
               in the %s process definition.""",
               processInstanceKey, elementSource, elementId, elementSource));
+    }
+  }
+
+  /**
+   * Exception that can be thrown during the migration of a process instance, in following cases:
+   *
+   * <p>
+   *
+   * <ul>
+   *   <li>Process instance has an active element with a boundary event
+   * </ul>
+   *
+   * <p>
+   */
+  private static final class EventSubscriptionMigrationNotSupportedException
+      extends RuntimeException {
+    EventSubscriptionMigrationNotSupportedException(
+        final long processInstanceKey, final String elementId, final String source) {
+      super(
+          String.format(
+              """
+              Expected to migrate process instance '%s' \
+              but %s element with id '%s' has a boundary event. \
+              Migrating %s elements with boundary events is not possible yet.""",
+              processInstanceKey, source, elementId, source));
     }
   }
 }
