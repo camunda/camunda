@@ -584,6 +584,31 @@ public final class NativeUserTaskTest {
   }
 
   @Test
+  public void shouldClaimUserTask() {
+    // given
+    ENGINE.deployment().withXmlResource(process()).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("foo").claim();
+
+    // then
+    assertThat(RecordingExporter.userTaskRecords().withProcessInstanceKey(processInstanceKey))
+        .extracting(Record::getValueType, Record::getIntent)
+        .containsSubsequence(
+            tuple(ValueType.USER_TASK, UserTaskIntent.ASSIGNING),
+            tuple(ValueType.USER_TASK, UserTaskIntent.ASSIGNED));
+
+    Assertions.assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasAssignee("foo");
+  }
+
+  @Test
   public void shouldCompleteUserTask() {
     // given
     ENGINE.deployment().withXmlResource(process()).deploy();
