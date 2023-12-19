@@ -59,8 +59,10 @@ public class ProcessInstanceMigrationMigrateProcessor
       "Expected to migrate process instance to process definition but no process definition found with key '%d'";
   private static final String ERROR_MESSAGE_DUPLICATE_SOURCE_ELEMENT_IDS =
       "Expected to migrate process instance '%s' but the mapping instructions contain duplicate source element ids '%s'.";
-  private static final String ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED =
+  private static final String ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_PROCESS_INSTANCE =
       "Expected to migrate process instance but process instance has an event subprocess. Process instances with event subprocesses cannot be migrated yet.";
+  private static final String ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_TARGET_PROCESS =
+      "Expected to migrate process instance but target process has an event subprocess. Target processes with event subprocesses cannot be migrated yet.";
 
   private static final long NO_PARENT = -1L;
   private static final UnsafeBuffer NIL_VALUE = new UnsafeBuffer(MsgPackHelper.NIL);
@@ -163,9 +165,27 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     if (processInstanceHasEventSubprocess) {
       responseWriter.writeRejectionOnCommand(
-          command, RejectionType.INVALID_STATE, ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED);
+          command,
+          RejectionType.INVALID_STATE,
+          ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_PROCESS_INSTANCE);
       rejectionWriter.appendRejection(
-          command, RejectionType.INVALID_STATE, ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED);
+          command,
+          RejectionType.INVALID_STATE,
+          ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_PROCESS_INSTANCE);
+    }
+
+    final boolean targetProcessHasEventSubprocess =
+        !targetProcessDefinition.getProcess().getEventSubprocesses().isEmpty();
+
+    if (targetProcessHasEventSubprocess) {
+      responseWriter.writeRejectionOnCommand(
+          command,
+          RejectionType.INVALID_STATE,
+          ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_TARGET_PROCESS);
+      rejectionWriter.appendRejection(
+          command,
+          RejectionType.INVALID_STATE,
+          ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_TARGET_PROCESS);
     }
 
     final Map<String, String> mappedElementIds =
@@ -317,18 +337,32 @@ public class ProcessInstanceMigrationMigrateProcessor
       }
     }
 
-    final boolean hasBoundaryEvent =
+    final boolean hasBoundaryEventInSource =
         !sourceProcessDefinition
             .getProcess()
             .getElementById(elementInstanceRecord.getElementId(), ExecutableActivity.class)
             .getBoundaryEvents()
             .isEmpty();
 
-    if (hasBoundaryEvent) {
+    if (hasBoundaryEventInSource) {
       throw new EventSubscriptionMigrationNotSupportedException(
           elementInstanceRecord.getProcessInstanceKey(),
           elementInstanceRecord.getElementId(),
           "active");
+    }
+
+    final boolean hasBoundaryEventInTarget =
+        !targetProcessDefinition
+            .getProcess()
+            .getElementById(targetElementId, ExecutableActivity.class)
+            .getBoundaryEvents()
+            .isEmpty();
+
+    if (hasBoundaryEventInTarget) {
+      throw new EventSubscriptionMigrationNotSupportedException(
+          elementInstanceRecord.getProcessInstanceKey(),
+          elementInstanceRecord.getElementId(),
+          "target");
     }
 
     stateWriter.appendFollowUpEvent(
@@ -520,6 +554,7 @@ public class ProcessInstanceMigrationMigrateProcessor
    *
    * <ul>
    *   <li>Process instance has an active element with a boundary event
+   *   <li>Target process definition has an element with a boundary event
    * </ul>
    *
    * <p>
