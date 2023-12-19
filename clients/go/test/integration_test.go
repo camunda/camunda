@@ -429,11 +429,15 @@ func (s *integrationTestSuite) TestStreamingJobWorker() {
 	}
 	s.Len(jobs, 2, "Expected to receive 2 jobs")
 
+	jobKeys := make([]int64, 0)
 	for _, job := range jobs {
+		s.NotContains(jobKeys, job.Key)
 		s.EqualValues(process.GetProcessDefinitionKey(), job.GetProcessDefinitionKey())
 		s.EqualValues(process.GetBpmnProcessId(), job.GetBpmnProcessId())
 		s.EqualValues("service_task", job.GetElementId())
 		s.Greater(job.GetRetries(), int32(0))
+
+		jobKeys = append(jobKeys, job.Key)
 	}
 }
 
