@@ -319,11 +319,11 @@ func (s *integrationTestSuite) TestCommonCommands() {
 	}
 }
 
-func (s *integrationTestSuite) assertGoldenFileMatchesOutput(goldenFile string, isJson bool, testName string, cmdOut []byte) {
+func (s *integrationTestSuite) assertGoldenFileMatchesOutput(goldenFile string, isJSON bool, testName string, cmdOut []byte) {
 	goldenOut, err := os.ReadFile(goldenFile)
 	s.Require().NoError(err)
 
-	if isJson {
+	if isJSON {
 		fmtJSON, err := reformatJSON(cmdOut)
 		s.Require().NoErrorf(err, "failed to reformat response JSON: %v\nErroneous JSON: %s", err, cmdOut)
 
