@@ -403,7 +403,7 @@
       <dependency>
         <groupId>com.amazonaws</groupId>
         <artifactId>aws-java-sdk-sts</artifactId>
-        <version>1.12.610</version>
+        <version>1.12.621</version>
       </dependency>
 
       <dependency>
@@ -507,7 +507,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.2.2</version>
+          <version>3.2.3</version>
           <configuration>
             <forkCount>${env.LIMITS_CPU}</forkCount>
             <reuseForks>true</reuseForks>
@@ -521,7 +521,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-failsafe-plugin</artifactId>
-          <version>3.2.2</version>
+          <version>3.2.3</version>
           <configuration>
             <forkCount>${env.LIMITS_CPU}</forkCount>
             <reuseForks>true</reuseForks>
