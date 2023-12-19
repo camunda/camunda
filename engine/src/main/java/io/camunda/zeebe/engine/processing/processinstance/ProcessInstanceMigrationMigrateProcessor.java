@@ -112,10 +112,10 @@ public class ProcessInstanceMigrationMigrateProcessor
       throw new ChildProcessMigrationException(processInstanceKey);
     }
 
-    final DeployedProcess processDefinition =
+    final DeployedProcess targetProcessDefinition =
         processState.getProcessByKeyAndTenant(
             targetProcessDefinitionKey, processInstance.getValue().getTenantId());
-    if (processDefinition == null) {
+    if (targetProcessDefinition == null) {
       final String reason =
           String.format(ERROR_MESSAGE_PROCESS_DEFINITION_NOT_FOUND, targetProcessDefinitionKey);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
@@ -146,14 +146,31 @@ public class ProcessInstanceMigrationMigrateProcessor
       return;
     }
 
+    final DeployedProcess sourceProcessDefinition =
+        processState.getProcessByKeyAndTenant(
+            processInstance.getValue().getProcessDefinitionKey(),
+            processInstance.getValue().getTenantId());
+    mappingInstructions.forEach(
+        instruction -> {
+          final String sourceElementId = instruction.getSourceElementId();
+          if (sourceProcessDefinition.getProcess().getElementById(sourceElementId) == null) {
+            throw new NonExistingElementException(processInstanceKey, sourceElementId, "source");
+          }
+
+          final String targetElementId = instruction.getTargetElementId();
+          if (targetProcessDefinition.getProcess().getElementById(targetElementId) == null) {
+            throw new NonExistingElementException(processInstanceKey, targetElementId, "target");
+          }
+        });
+
     final Map<String, String> mappedElementIds =
-        mapElementIds(mappingInstructions, processInstance, processDefinition);
+        mapElementIds(mappingInstructions, processInstance, targetProcessDefinition);
 
     // avoid stackoverflow using a queue to iterate over the descendants instead of recursion
     final var elementInstances = new ArrayDeque<>(List.of(processInstance));
     while (!elementInstances.isEmpty()) {
       final var elementInstance = elementInstances.poll();
-      tryMigrateElementInstance(elementInstance, processDefinition, mappedElementIds);
+      tryMigrateElementInstance(elementInstance, targetProcessDefinition, mappedElementIds);
       final List<ElementInstance> children =
           elementInstanceState.getChildren(elementInstance.getKey());
       elementInstances.addAll(children);
@@ -178,7 +195,7 @@ public class ProcessInstanceMigrationMigrateProcessor
       responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }
-    if (error instanceof final IncorrectMappingException e) {
+    if (error instanceof final ElementTypeChangedException e) {
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, e.getMessage());
       responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
       return ProcessingError.EXPECTED_ERROR;
@@ -196,6 +213,12 @@ public class ProcessInstanceMigrationMigrateProcessor
     if (error instanceof final ChildProcessMigrationException e) {
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, e.getMessage());
       responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, e.getMessage());
+      return ProcessingError.EXPECTED_ERROR;
+    }
+    if (error instanceof final NonExistingElementException e) {
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, e.getMessage());
+      responseWriter.writeRejectionOnCommand(
+          command, RejectionType.INVALID_ARGUMENT, e.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }
 
@@ -253,7 +276,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     final BpmnElementType targetElementType =
         processDefinition.getProcess().getElementById(targetElementId).getElementType();
     if (elementInstanceRecord.getBpmnElementType() != targetElementType) {
-      throw new IncorrectMappingException(
+      throw new ElementTypeChangedException(
           elementInstanceRecord.getProcessInstanceKey(),
           elementInstanceRecord.getElementId(),
           elementInstanceRecord.getBpmnElementType(),
@@ -367,8 +390,8 @@ public class ProcessInstanceMigrationMigrateProcessor
    * mapping instructions of the command refer to a source and a target element with different
    * element type, or different event type.
    */
-  private static final class IncorrectMappingException extends RuntimeException {
-    IncorrectMappingException(
+  private static final class ElementTypeChangedException extends RuntimeException {
+    ElementTypeChangedException(
         final long processInstanceKey,
         final String elementId,
         final BpmnElementType bpmnElementType,
@@ -380,7 +403,7 @@ public class ProcessInstanceMigrationMigrateProcessor
               Expected to migrate process instance '%s' \
               but active element with id '%s' and type '%s' is mapped to \
               an element with id '%s' and different type '%s'. \
-              Active elements must be mapped to the same type.""",
+              Elements must be mapped to elements of the same type.""",
               processInstanceKey,
               elementId,
               bpmnElementType,
@@ -440,6 +463,34 @@ public class ProcessInstanceMigrationMigrateProcessor
               but process instance is a child process instance. \
               Child process instances cannot be migrated.""",
               processInstanceKey));
+    }
+  }
+
+  /**
+   * Exception that can be thrown during the migration of a process instance, in following cases:
+   *
+   * <p>
+   *
+   * <ul>
+   *   <li>A mapping instruction contains a source element id that does not exist in the source
+   *       process definition.
+   *   <li>A mapping instruction contains a target element id that does not exist in the target
+   *       process definition.
+   * </ul>
+   *
+   * <p>
+   */
+  private static final class NonExistingElementException extends RuntimeException {
+    NonExistingElementException(
+        final long processInstanceKey, final String elementId, final String elementSource) {
+      super(
+          String.format(
+              """
+              Expected to migrate process instance '%s' \
+              but mapping instructions contain a non-existing %s element id '%s'. \
+              Elements provided in mapping instructions must exist \
+              in the %s process definition.""",
+              processInstanceKey, elementSource, elementId, elementSource));
     }
   }
 }
