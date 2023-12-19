@@ -248,11 +248,11 @@ func (s *ContainerSuite) SetupSuite() {
 
 	s.logConsumer = testLogConsumer{func(ignored string) {}}
 	s.container.FollowOutput(&s.logConsumer)
-	s.container.StartLogProducer(ctx)
+	s.Require().NoError(s.container.StartLogProducer(ctx))
 }
 
 func (s *ContainerSuite) TearDownSuite() {
-	s.container.StopLogProducer()
+	_ = s.container.StopLogProducer() // safe to ignore
 	err := s.container.Terminate(context.Background())
 	if err != nil {
 		s.T().Fatal(err)
