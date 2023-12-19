@@ -14,6 +14,8 @@ import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import java.time.Instant;
 
+// This class is a copy from the manifest class in GCS, and eventually it will be refactored,
+// or the code will be reused here.
 @JsonSerialize(as = ManifestImpl.class)
 @JsonDeserialize(as = ManifestImpl.class)
 public sealed interface Manifest {

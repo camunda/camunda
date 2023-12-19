@@ -12,12 +12,16 @@ import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.specialized.BlockBlobClient;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.NamedFileSet;
+import java.io.UncheckedIOException;
 import java.nio.file.NoSuchFileException;
 
 final class FileSetManager {
 
-  private static final String PATH_FORMAT = "contents/%s/%s/%s/%s/";
+  // The path format is constructed by partitionId/checkpointId/nodeId/nameOfFile
+  private static final String PATH_FORMAT = "%s/%s/%s/%s/";
   private final BlobContainerClient containerClient;
+  private boolean containerCreated = false;
+  private String fileSetPath;
 
   FileSetManager(final BlobContainerClient containerClient) {
     this.containerClient = containerClient;
@@ -29,17 +33,21 @@ final class FileSetManager {
       final var fileName = namedFile.getKey();
       final var filePath = namedFile.getValue();
 
-      if (!filePath.toFile().isFile()) {
+      if (!containerCreated) {
+        containerClient.createIfNotExists();
+        fileSetPath = fileSetPath(id, fileSetName);
+        containerCreated = true;
+      }
+
+      final BlockBlobClient blobClient =
+          containerClient.getBlobClient(fileSetPath + fileName).getBlockBlobClient();
+
+      try {
+        final BinaryData binaryData = BinaryData.fromFile(filePath);
+        blobClient.upload(binaryData);
+      } catch (final UncheckedIOException e) {
         throw new NoSuchFileException(String.format("File %s does not exist.", filePath));
       }
-      containerClient.createIfNotExists();
-      final BlockBlobClient blobClient =
-          containerClient
-              .getBlobClient(fileSetPath(id, fileSetName) + fileName)
-              .getBlockBlobClient();
-
-      final BinaryData binaryData = BinaryData.fromFile(filePath);
-      blobClient.upload(binaryData);
     }
   }
 

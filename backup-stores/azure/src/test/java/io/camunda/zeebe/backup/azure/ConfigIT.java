@@ -10,9 +10,7 @@ package io.camunda.zeebe.backup.azure;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
 public class ConfigIT {
 
   @Test

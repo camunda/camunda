@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.backup.azure;
 
-import com.azure.storage.blob.models.BlobStorageException;
 import io.camunda.zeebe.backup.api.Backup;
+import io.camunda.zeebe.backup.azure.AzureBackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.azure.util.AzuriteContainer;
 import io.camunda.zeebe.backup.testkit.SavingBackup;
 import java.util.UUID;
@@ -27,7 +27,7 @@ public class AzureBackupStoreIT implements SavingBackup {
   public void setUpBlobClient() {
     azureBackupConfig =
         new AzureBackupConfig.Builder()
-            .withConnectionString(AZURITE_CONTAINER.getConnectStr())
+            .withConnectionString(AZURITE_CONTAINER.getConnectString())
             .withContainerName(UUID.randomUUID().toString())
             .build();
     azureBackupStore = new AzureBackupStore(azureBackupConfig);
@@ -40,7 +40,7 @@ public class AzureBackupStoreIT implements SavingBackup {
 
   @Override
   public Class<? extends Exception> getBackupInInvalidStateExceptionClass() {
-    return BlobStorageException.class;
+    return UnexpectedManifestState.class;
   }
 
   @Override

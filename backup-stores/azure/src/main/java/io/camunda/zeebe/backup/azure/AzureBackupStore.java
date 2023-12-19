@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * {@link BackupStore} for Azure. Stores all backups in a given bucket.
@@ -36,17 +37,21 @@ public final class AzureBackupStore implements BackupStore {
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
+  private final BlobContainerClient blobContainerClientManifests;
+  private final BlobContainerClient blobContainerClientContents;
 
   public AzureBackupStore(final AzureBackupConfig config) {
     this(config, buildClient(config));
   }
 
   public AzureBackupStore(final AzureBackupConfig config, final BlobServiceClient client) {
-    executor = Executors.newWorkStealingPool(4);
-    final BlobContainerClient blobContainerClient =
-        client.getBlobContainerClient(config.containerName());
-    fileSetManager = new FileSetManager(blobContainerClient);
-    manifestManager = new ManifestManager(blobContainerClient);
+    executor = Executors.newVirtualThreadPerTaskExecutor();
+    blobContainerClientManifests =
+        client.getBlobContainerClient(config.containerName() + "-manifests");
+    blobContainerClientContents =
+        client.getBlobContainerClient(config.containerName() + "-contents");
+    fileSetManager = new FileSetManager(blobContainerClientManifests);
+    manifestManager = new ManifestManager(blobContainerClientContents);
   }
 
   public static BlobServiceClient buildClient(final AzureBackupConfig config) {
@@ -113,7 +118,20 @@ public final class AzureBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> closeAsync() {
-    return CompletableFuture.completedFuture(null);
+    return CompletableFuture.runAsync(
+        () -> {
+          try {
+            executor.shutdown();
+            final var closed = executor.awaitTermination(1, TimeUnit.MINUTES);
+            if (!closed) {
+              executor.shutdownNow();
+            }
+            blobContainerClientManifests.delete();
+            blobContainerClientContents.delete();
+          } catch (final Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   public static void validateConfig(final AzureBackupConfig config) {

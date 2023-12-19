@@ -12,6 +12,8 @@ import org.testcontainers.containers.wait.strategy.Wait;
 
 public class AzuriteContainer extends GenericContainer<AzuriteContainer> {
 
+  //  Explanation on how to connect with the azurite container:
+  // https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite?tabs=visual-studio%2Cblob-storage#well-known-storage-account-and-key
   public static String connectStr;
   private static final String CONNECTION_STRING_PREFIX =
       "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;"
@@ -21,16 +23,18 @@ public class AzuriteContainer extends GenericContainer<AzuriteContainer> {
   private static final GenericContainer AZURITE_CONTAINER =
       new GenericContainer("mcr.microsoft.com/azure-storage/azurite")
           .withExposedPorts(10000)
+          .waitingFor(
+              Wait.forLogMessage(
+                  ".*Azurite Blob service successfully listens on http://0.0.0.0:10000*\n", 1))
           .withCommand("azurite-blob --blobHost 0.0.0.0");
 
   public AzuriteContainer() {
     AZURITE_CONTAINER.start();
-    AZURITE_CONTAINER.waitingFor(Wait.forHttp("/"));
     final int actualPort = AZURITE_CONTAINER.getMappedPort(10000);
     connectStr = CONNECTION_STRING_PREFIX + actualPort + CONNECTION_STRING_SUFIX;
   }
 
-  public String getConnectStr() {
+  public String getConnectString() {
     return connectStr;
   }
 }
