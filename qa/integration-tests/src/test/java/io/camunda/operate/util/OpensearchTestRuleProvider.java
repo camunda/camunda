@@ -6,9 +6,7 @@
  */
 package io.camunda.operate.util;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.connect.OpensearchConnector;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.OperateEntity;
@@ -119,16 +117,10 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   protected ZeebePostImporter zeebePostImporter;
 
   @Autowired
-  private ObjectMapper objectMapper;
-
-  @Autowired
   protected RecordsReaderHolder recordsReaderHolder;
 
   @Autowired
   private TestImportListener testImportListener;
-
-  @Autowired
-  OpensearchConnector osConnector;
 
   Map<Class<? extends OperateEntity>, String> entityToAliasMap;
 
@@ -386,9 +378,5 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
       logger.error("Failed to retrieve open contexts from opensearch! Returning 0.", e);
       return 0;
     }
-  }
-
-  public String getIndexPrefix() {
-    return indexPrefix;
   }
 }

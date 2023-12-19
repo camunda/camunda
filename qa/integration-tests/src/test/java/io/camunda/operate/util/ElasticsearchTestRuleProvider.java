@@ -9,8 +9,12 @@ package io.camunda.operate.util;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.connect.ElasticsearchConnector;
-import io.camunda.operate.entities.*;
+import io.camunda.operate.entities.BatchOperationEntity;
+import io.camunda.operate.entities.IncidentEntity;
+import io.camunda.operate.entities.OperateEntity;
+import io.camunda.operate.entities.OperationEntity;
+import io.camunda.operate.entities.ProcessEntity;
+import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.entities.dmn.definition.DecisionRequirementsEntity;
@@ -24,7 +28,12 @@ import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.schema.indices.ProcessIndex;
-import io.camunda.operate.schema.templates.*;
+import io.camunda.operate.schema.templates.BatchOperationTemplate;
+import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
+import io.camunda.operate.schema.templates.IncidentTemplate;
+import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.schema.templates.OperationTemplate;
+import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.RecordsReader;
 import io.camunda.operate.zeebeimport.RecordsReaderHolder;
@@ -51,7 +60,12 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -124,9 +138,6 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
 
   @Autowired
   private TestImportListener testImportListener;
-
-  @Autowired
-  ElasticsearchConnector esConnector;
 
   Map<Class<? extends OperateEntity>, String> entityToESAliasMap;
 
@@ -410,9 +421,5 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
       logger.error("Couldn't retrieve json object from elasticsearch. Return Optional.Empty.",e);
       return Optional.empty();
     }
-  }
-
-  public String getIndexPrefix() {
-    return indexPrefix;
   }
 }

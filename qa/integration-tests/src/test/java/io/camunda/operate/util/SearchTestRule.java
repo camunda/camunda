@@ -10,7 +10,6 @@ import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.zeebe.ImportValueType;
-import io.camunda.operate.zeebeimport.RecordsReader;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
@@ -18,7 +17,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -65,10 +63,6 @@ public class SearchTestRule extends TestWatcher {
       searchTestRuleProvider.finished(description);
   }
 
-  public void assertMaxOpenScrollContexts(final int maxOpenScrollContexts) {
-    searchTestRuleProvider.assertMaxOpenScrollContexts(maxOpenScrollContexts);
-  }
-
   public void refreshSerchIndexes() {
     searchTestRuleProvider.refreshSearchIndices();
   }
@@ -103,23 +97,6 @@ public class SearchTestRule extends TestWatcher {
     searchTestRuleProvider.processRecordsWithTypeAndWait(importValueType, runPostImport, predicate, arguments);
   }
 
-  public void processRecordsAndWaitFor(Collection<RecordsReader> readers, Integer maxWaitingRounds, boolean runPostImport,
-      Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
-    searchTestRuleProvider.processRecordsAndWaitFor(readers, maxWaitingRounds, runPostImport, predicate, supplier, arguments);
-  }
-
-  public void runPostImportActions() {
-    searchTestRuleProvider.runPostImportActions();
-  }
-
-  public boolean areIndicesCreatedAfterChecks(String indexPrefix, int minCountOfIndices,int maxChecks) {
-    return searchTestRuleProvider.areIndicesCreatedAfterChecks(indexPrefix, minCountOfIndices, maxChecks);
-  }
-
-  public List<RecordsReader> getRecordsReaders(ImportValueType importValueType) {
-    return searchTestRuleProvider.getRecordsReaders(importValueType);
-  }
-
   public void persistNew(OperateEntity... entitiesToPersist) {
     searchTestRuleProvider.persistNew(entitiesToPersist);
   }
@@ -130,10 +107,6 @@ public class SearchTestRule extends TestWatcher {
 
   public Map<Class<? extends OperateEntity>, String> getEntityToAliasMap(){
     return searchTestRuleProvider.getEntityToAliasMap();
-  }
-
-  public int getOpenScrollcontextSize() {
-    return searchTestRuleProvider.getOpenScrollcontextSize();
   }
 
   public boolean indexExists(String index) throws IOException {

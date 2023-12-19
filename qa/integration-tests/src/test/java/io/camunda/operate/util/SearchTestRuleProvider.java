@@ -63,8 +63,6 @@ public interface SearchTestRuleProvider {
 
   int getOpenScrollcontextSize();
 
-  String getIndexPrefix();
-
   void setIndexPrefix(String indexPrefix);
 
   boolean indexExists(String index) throws IOException;
