@@ -255,7 +255,7 @@ func (s *integrationTestSuite) TestStreamingJobWorker() {
 	// given
 	workerName := uuid.NewString()
 	deployCommand := "--insecure deploy testdata/job_model.bpmn"
-	workerCommand := fmt.Sprintf("create --insecure worker jobType --streamEnabled --maxJobsHandle 1 --name %s --handler echo", workerName)
+	workerCommand := fmt.Sprintf("create --insecure worker jobType --streamEnabled --pollInterval 24h --maxJobsHandle 1 --name %s --handler echo", workerName)
 	jobCommand := "--insecure create instance jobProcess"
 
 	if cmdOut, err := s.runCommand(strings.Fields(deployCommand), false); err != nil {
