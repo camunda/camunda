@@ -54,7 +54,6 @@ public class UserTaskCommandPreconditionChecker {
 
     final LifecycleState lifecycleState = userTaskState.getLifecycleState(userTaskKey);
 
-    // TODO explain code refactoring
     if (!validLifecycleStates.contains(lifecycleState)) {
       return Either.left(
           Tuple.of(
@@ -62,9 +61,11 @@ public class UserTaskCommandPreconditionChecker {
               String.format(INVALID_USER_TASK_STATE_MESSAGE, intent, userTaskKey, lifecycleState)));
     }
 
-    if (intent.contains("claim")) {
-      if (!(persistedRecord.getAssignee().isBlank())
-          && !persistedRecord.getAssignee().equals(command.getValue().getAssignee())) {
+    if (intent.equals("claim")) {
+      final String assignee = persistedRecord.getAssignee();
+      final boolean canClaim =
+          assignee.isBlank() || assignee.equals(command.getValue().getAssignee());
+      if (!canClaim) {
         return Either.left(
             Tuple.of(
                 RejectionType.INVALID_STATE,
