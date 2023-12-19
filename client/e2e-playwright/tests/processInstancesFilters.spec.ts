@@ -140,18 +140,12 @@ test.describe('Process Instances Filters', () => {
     ).toBeVisible();
 
     // select another flow node from the diagram
-    await page
-      .getByTestId('diagram')
-      .getByText(/always fails/i)
-      .click();
+    await processesPage.diagram.clickFlowNode('always fails');
 
     await expect(processesPage.flowNodeFilter).toHaveValue('Always fails');
 
     // select same flow node again and see filter is removed
-    await page
-      .getByTestId('diagram')
-      .getByText(/always fails/i)
-      .click();
+    await processesPage.diagram.clickFlowNode('always fails');
 
     await expect(
       page.getByText('There are no Instances matching this filter set'),

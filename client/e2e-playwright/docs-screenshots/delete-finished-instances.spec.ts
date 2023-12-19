@@ -11,17 +11,17 @@ import {expect} from '@playwright/test';
 import {
   mockBatchOperations,
   mockGroupedProcesses,
-  mockFinishedProcessInstances,
   mockStatistics,
   mockResponses as mockProcessesResponses,
-  mockProcessXml,
   mockNewDeleteOperation,
   mockProcessInstances,
+  mockFinishedOrderProcessInstances,
 } from '../mocks/processes.mocks';
 import {
   mockResponses as mockProcessDetailResponses,
-  completedInstance,
+  completedOrderProcessInstance,
 } from '../mocks/processInstance.mocks';
+import {open} from 'modules/mocks/diagrams';
 
 test.beforeEach(async ({page, commonPage, context}) => {
   await commonPage.mockClientConfig(context);
@@ -39,25 +39,32 @@ test.describe('delete finished instances', () => {
       mockProcessesResponses({
         groupedProcesses: mockGroupedProcesses,
         batchOperations: mockBatchOperations,
-        processInstances: mockFinishedProcessInstances,
+        processInstances: mockFinishedOrderProcessInstances,
         statistics: mockStatistics,
-        processXml: mockProcessXml,
+        processXml: open('orderProcess.bpmn'),
       }),
     );
 
     await processesPage.navigateToProcesses({
-      searchParams: {completed: 'true', canceled: 'true'},
+      searchParams: {
+        completed: 'true',
+        canceled: 'true',
+      },
       options: {waitUntil: 'networkidle'},
     });
+
+    await processesPage.selectProcess('Order process');
+    await processesPage.selectVersion('1');
+    await processesPage.processVersionFilter.blur();
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/delete-finished-instances/operate-instances-finished-instances.png',
     });
 
-    const deleteInstanceButton = await page
+    const deleteInstanceButton = page
       .getByRole('row', {
         name: new RegExp(
-          `view instance ${mockFinishedProcessInstances.processInstances[0]?.id}`,
+          `view instance ${mockFinishedOrderProcessInstances.processInstances[0]?.id}`,
           'i',
         ),
       })
@@ -83,8 +90,9 @@ test.describe('delete finished instances', () => {
     processesPage,
   }) => {
     const processInstancesMock = {
-      totalCount: mockFinishedProcessInstances.totalCount - 1,
-      processInstances: mockFinishedProcessInstances.processInstances.slice(1),
+      totalCount: mockFinishedOrderProcessInstances.totalCount - 1,
+      processInstances:
+        mockFinishedOrderProcessInstances.processInstances.slice(1),
     };
 
     await page.route(
@@ -94,16 +102,25 @@ test.describe('delete finished instances', () => {
         batchOperations: [mockNewDeleteOperation, ...mockBatchOperations],
         processInstances: processInstancesMock,
         statistics: mockStatistics,
-        processXml: mockProcessXml,
+        processXml: open('orderProcess.bpmn'),
       }),
     );
 
     await processesPage.navigateToProcesses({
-      searchParams: {completed: 'true', canceled: 'true'},
+      searchParams: {
+        completed: 'true',
+        canceled: 'true',
+      },
       options: {waitUntil: 'networkidle'},
     });
 
+    await processesPage.selectProcess('Order process');
+    await processesPage.selectVersion('1');
+    await processesPage.processVersionFilter.blur();
+
     await commonPage.expandOperationsPanel();
+
+    await processesPage.diagram.moveCanvasHorizontally(-200);
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/delete-finished-instances/operate-operations-panel-delete-operation.png',
@@ -111,11 +128,13 @@ test.describe('delete finished instances', () => {
 
     await commonPage.collapseOperationsPanel();
 
+    await processesPage.diagram.moveCanvasHorizontally(200);
+
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/delete-finished-instances/operate-instance-detail-finished-instances.png',
     });
 
-    const processInstanceKeyCell = await page
+    const processInstanceKeyCell = page
       .getByRole('row', {
         name: new RegExp(
           `view instance ${processInstancesMock.processInstances[0]?.id}`,
@@ -138,12 +157,12 @@ test.describe('delete finished instances', () => {
     await page.route(
       /^.*\/api.*$/i,
       mockProcessDetailResponses({
-        processInstanceDetail: completedInstance.detail,
-        flowNodeInstances: completedInstance.flowNodeInstances,
-        statistics: completedInstance.statistics,
-        sequenceFlows: completedInstance.sequenceFlows,
-        variables: completedInstance.variables,
-        xml: completedInstance.xml,
+        processInstanceDetail: completedOrderProcessInstance.detail,
+        flowNodeInstances: completedOrderProcessInstance.flowNodeInstances,
+        statistics: completedOrderProcessInstance.statistics,
+        sequenceFlows: completedOrderProcessInstance.sequenceFlows,
+        variables: completedOrderProcessInstance.variables,
+        xml: completedOrderProcessInstance.xml,
       }),
     );
 
@@ -166,7 +185,9 @@ test.describe('delete finished instances', () => {
 
     await deleteInstanceButton.click();
 
-    expect(page.getByRole('button', {name: /danger delete/i})).toBeVisible();
+    await expect(
+      page.getByRole('button', {name: /danger delete/i}),
+    ).toBeVisible();
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/delete-finished-instances/operate-instance-detail-delete-operation-confirm.png',
@@ -216,7 +237,7 @@ test.describe('delete finished instances', () => {
       }
     });
 
-    await expect(page.getByText('Instance deleted')).toBeVisible();
+    await expect(page.getByText('Instance deleted')).toBeInViewport();
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/delete-finished-instances/operate-instance-deleted-notification.png',

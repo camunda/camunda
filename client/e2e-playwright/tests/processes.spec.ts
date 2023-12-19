@@ -155,7 +155,7 @@ test.describe('Processes', () => {
     const shipArticlesTaskId = 'shipArticles';
     await expect(page.getByTestId('diagram')).toBeInViewport();
 
-    await page.getByTestId('diagram').getByText('Ship Articles').click();
+    await processesPage.diagram.clickFlowNode('Ship Articles');
     await expect(processesPage.flowNodeFilter).toHaveValue('Ship Articles');
 
     await expect(
@@ -176,7 +176,7 @@ test.describe('Processes', () => {
     // Select "Check Payment" flow node
     const checkPaymentTaskId = 'checkPayment';
 
-    await page.getByTestId('diagram').getByText('Check payment').click();
+    await processesPage.diagram.clickFlowNode('Check payment');
     await expect(processesPage.flowNodeFilter).toHaveValue('Check payment');
 
     await expect(page.getByRole('table').getByRole('row')).toHaveCount(2);

@@ -10,12 +10,11 @@ import {test} from '../test-fixtures';
 import {
   mockBatchOperations,
   mockGroupedProcesses,
-  mockProcessInstances,
   mockStatistics,
   mockResponses as mockProcessesResponses,
-  mockProcessXml,
-  mockProcessInstancesAfterResolvingIncident,
+  mockOrderProcessInstances,
 } from '../mocks/processes.mocks';
+import {open} from 'modules/mocks/diagrams';
 
 test.beforeEach(async ({page, commonPage, context}) => {
   await commonPage.mockClientConfig(context);
@@ -33,16 +32,23 @@ test.describe('selections and operations', () => {
       mockProcessesResponses({
         groupedProcesses: mockGroupedProcesses,
         batchOperations: mockBatchOperations,
-        processInstances: mockProcessInstances,
+        processInstances: mockOrderProcessInstances,
         statistics: mockStatistics,
-        processXml: mockProcessXml,
+        processXml: open('orderProcess.bpmn'),
       }),
     );
 
     await processesPage.navigateToProcesses({
-      searchParams: {active: 'true', incidents: 'true'},
+      searchParams: {
+        active: 'true',
+        incidents: 'true',
+      },
       options: {waitUntil: 'networkidle'},
     });
+
+    await processesPage.selectProcess('Order process');
+    await processesPage.selectVersion('1');
+    await processesPage.processVersionFilter.blur();
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/selections-and-operations/operate-many-instances-with-incident.png',
@@ -74,19 +80,27 @@ test.describe('selections and operations', () => {
       mockProcessesResponses({
         groupedProcesses: mockGroupedProcesses,
         batchOperations: mockBatchOperations,
-        processInstances: mockProcessInstancesAfterResolvingIncident,
+        processInstances: mockOrderProcessInstances,
         statistics: mockStatistics,
-        processXml: mockProcessXml,
+        processXml: open('orderProcess.bpmn'),
       }),
     );
 
     await processesPage.navigateToProcesses({
-      searchParams: {active: 'true', incidents: 'true'},
+      searchParams: {
+        active: 'true',
+        incidents: 'true',
+      },
       options: {waitUntil: 'networkidle'},
     });
 
+    await processesPage.selectProcess('Order process');
+    await processesPage.selectVersion('1');
+    await processesPage.processVersionFilter.blur();
+
     await commonPage.expandOperationsPanel();
 
+    await processesPage.diagram.moveCanvasHorizontally(-200);
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/selections-and-operations/operate-operations-panel.png',
     });

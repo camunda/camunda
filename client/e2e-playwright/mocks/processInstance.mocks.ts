@@ -14,6 +14,7 @@ import {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 import {ProcessInstanceDetailStatisticsDto} from 'modules/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {ProcessInstanceIncidentsDto} from 'modules/api/processInstances/fetchProcessInstanceIncidents';
 import {SequenceFlowsDto} from 'modules/api/processInstances/sequenceFlows';
+import {open} from 'modules/mocks/diagrams';
 
 type InstanceMock = {
   xml: string;
@@ -172,6 +173,70 @@ const runningInstance: InstanceMock = {
     },
     incidentCount: 0,
     incident: null,
+  },
+};
+
+const runningOrderProcessInstance: InstanceMock = {
+  ...runningInstance,
+  detail: {
+    ...runningInstance.detail,
+    id: '225179981395430',
+    processName: 'Order process',
+    bpmnProcessId: 'orderProcess',
+  },
+  xml: open('orderProcess.bpmn'),
+  statistics: [
+    {
+      activityId: 'checkPayment',
+      active: 1,
+      canceled: 0,
+      incidents: 0,
+      completed: 0,
+    },
+  ],
+  variables: [
+    {
+      id: '2251799813687144-signalNumber',
+      name: 'orderNumber',
+      value: '47',
+      isPreview: false,
+      hasActiveOperation: false,
+      isFirst: true,
+      sortValues: [''],
+    },
+  ],
+  sequenceFlows: [
+    {
+      processInstanceId: '225179981395430',
+      activityId: 'SequenceFlow_0j6tsnn',
+    },
+  ],
+  flowNodeInstances: {
+    '225179981395430': {
+      children: [
+        {
+          id: '2251799813687146',
+          type: 'START_EVENT',
+          state: 'COMPLETED',
+          flowNodeId: 'StartEvent_1',
+          startDate: '2023-08-14T05:45:17.331+0000',
+          endDate: '2023-08-14T05:45:17.331+0000',
+          treePath: '225179981395430/2251799813687146',
+          sortValues: ['', ''],
+        },
+        {
+          id: '2251799813687150',
+          type: 'SERVICE_TASK',
+          state: 'ACTIVE',
+          flowNodeId: 'checkPayment',
+          startDate: '2023-08-14T05:45:17.331+0000',
+          endDate: null,
+          treePath: '225179981395430/2251799813687150',
+          sortValues: ['', ''],
+        },
+      ],
+      running: null,
+    },
   },
 };
 
@@ -723,6 +788,103 @@ const completedInstance: InstanceMock = {
     },
   ],
   variables: [],
+};
+
+const completedOrderProcessInstance: InstanceMock = {
+  ...completedInstance,
+  detail: {
+    ...completedInstance.detail,
+    id: '225179981395430',
+    processName: 'Order process',
+    bpmnProcessId: 'orderProcess',
+    processVersion: 1,
+  },
+  xml: open('orderProcess.bpmn'),
+  statistics: [
+    {
+      activityId: 'EndEvent_042s0oc',
+      active: 0,
+      canceled: 0,
+      incidents: 0,
+      completed: 1,
+    },
+  ],
+  variables: [
+    {
+      id: '2251799813687144-signalNumber',
+      name: 'orderNumber',
+      value: '47',
+      isPreview: false,
+      hasActiveOperation: false,
+      isFirst: true,
+      sortValues: [''],
+    },
+  ],
+  sequenceFlows: [
+    {
+      processInstanceId: '225179981395430',
+      activityId: 'SequenceFlow_0j6tsnn',
+    },
+    {
+      processInstanceId: '225179981395430',
+      activityId: 'SequenceFlow_1s6g17c',
+    },
+    {
+      processInstanceId: '225179981395430',
+      activityId: 'SequenceFlow_1dq2rqw',
+    },
+    {
+      processInstanceId: '225179981395430',
+      activityId: 'SequenceFlow_19klrd3',
+    },
+  ],
+  flowNodeInstances: {
+    '225179981395430': {
+      children: [
+        {
+          id: '2251799813687146',
+          type: 'START_EVENT',
+          state: 'COMPLETED',
+          flowNodeId: 'StartEvent_1',
+          startDate: '2023-08-14T05:45:17.331+0000',
+          endDate: '2023-08-14T05:45:17.331+0000',
+          treePath: '225179981395430/2251799813687146',
+          sortValues: ['', ''],
+        },
+        {
+          id: '2251799813687150',
+          type: 'SERVICE_TASK',
+          state: 'COMPLETED',
+          flowNodeId: 'checkPayment',
+          startDate: '2023-08-14T05:45:17.331+0000',
+          endDate: '2023-08-14T05:45:17.331+0000',
+          treePath: '225179981395430/2251799813687150',
+          sortValues: ['', ''],
+        },
+        {
+          id: '2251799813687150',
+          type: 'EXCLUSIVE_GATEWAY',
+          state: 'COMPLETED',
+          flowNodeId: 'ExclusiveGateway_1qqmrb8',
+          startDate: '2023-08-14T05:45:17.331+0000',
+          endDate: '2023-08-14T05:45:17.331+0000',
+          treePath: '225179981395430/2251799813687151',
+          sortValues: ['', ''],
+        },
+        {
+          id: '2251799813687150',
+          type: 'END_EVENT',
+          state: 'COMPLETED',
+          flowNodeId: 'EndEvent_042s0oc',
+          startDate: '2023-08-14T05:45:17.331+0000',
+          endDate: '2023-08-14T05:45:17.331+0000',
+          treePath: '225179981395430/2251799813687153',
+          sortValues: ['', ''],
+        },
+      ],
+      running: null,
+    },
+  },
 };
 
 const eventBasedGatewayProcessInstance: InstanceMock = {
@@ -2074,8 +2236,10 @@ function mockResponses({
 
 export {
   runningInstance,
+  runningOrderProcessInstance,
   instanceWithIncident,
   completedInstance,
+  completedOrderProcessInstance,
   eventBasedGatewayProcessInstance,
   orderProcessInstance,
   mockResponses,

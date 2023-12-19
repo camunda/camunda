@@ -139,7 +139,7 @@ test.describe('modifications', () => {
         })
         .click();
 
-      await processInstancePage.diagram.getByText(/check payment/i).click();
+      await processInstancePage.diagram.clickFlowNode('check payment');
 
       await expect(page.getByTestId('dropdown-spinner')).not.toBeVisible();
 
@@ -149,8 +149,8 @@ test.describe('modifications', () => {
         )
         .click();
 
-      await processInstancePage.diagram.getByText(/check order items/i).click();
-      await processInstancePage.diagram.getByText(/check payment/i).click();
+      await processInstancePage.diagram.clickFlowNode('check order items');
+      await processInstancePage.diagram.clickFlowNode('check payment');
       await page
         .getByRole('button', {
           name: /add single flow node instance/i,
@@ -200,7 +200,7 @@ test.describe('modifications', () => {
         })
         .click();
 
-      await processInstancePage.diagram.getByText(/check payment/i).click();
+      await processInstancePage.diagram.clickFlowNode('check payment');
 
       await expect(page.getByTestId('dropdown-spinner')).not.toBeVisible();
 
@@ -210,7 +210,7 @@ test.describe('modifications', () => {
         )
         .click();
 
-      await processInstancePage.diagram.getByText(/check order items/i).click();
+      await processInstancePage.diagram.clickFlowNode('check order items');
 
       const firstVariableValueInput = page
         .getByRole('textbox', {

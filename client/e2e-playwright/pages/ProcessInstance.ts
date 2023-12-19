@@ -7,6 +7,7 @@
 
 import {Page, Locator} from '@playwright/test';
 import {Paths} from 'modules/Routes';
+import {Diagram} from './components/Diagram';
 
 export class ProcessInstance {
   private page: Page;
@@ -15,8 +16,7 @@ export class ProcessInstance {
   readonly variablesList: Locator;
   readonly incidentsTable: Locator;
   readonly incidentsBanner: Locator;
-  readonly diagram: Locator;
-  readonly popover: Locator;
+  readonly diagram: InstanceType<typeof Diagram>;
   readonly variablePanelEmptyText: Locator;
   readonly addVariableButton: Locator;
   readonly saveVariableButton: Locator;
@@ -33,8 +33,7 @@ export class ProcessInstance {
     this.variablesList = page.getByTestId('variables-list');
     this.incidentsTable = page.getByTestId('data-list');
     this.incidentsBanner = page.getByTestId('incidents-banner');
-    this.diagram = page.getByTestId('diagram');
-    this.popover = page.getByTestId('popover');
+    this.diagram = new Diagram(page);
     this.variablePanelEmptyText = page.getByText(
       /to view the variables, select a single flow node instance in the instance history./i,
     );
@@ -83,10 +82,6 @@ export class ProcessInstance {
     options?: Parameters<Page['goto']>[1];
   }) {
     await this.page.goto(Paths.processInstance(id), options);
-  }
-
-  async selectFlowNode(flowNodeName: string) {
-    await this.diagram.getByText(flowNodeName).click();
   }
 
   async getNthTreeNodeTestId(n: number) {

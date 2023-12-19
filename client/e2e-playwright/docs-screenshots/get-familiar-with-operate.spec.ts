@@ -16,16 +16,16 @@ import {
 import {
   mockBatchOperations,
   mockGroupedProcesses,
-  mockProcessInstances,
+  mockOrderProcessInstances,
   mockStatistics,
   mockResponses as mockProcessesResponses,
-  mockProcessXml,
 } from '../mocks/processes.mocks';
 
 import {
   mockResponses as mockProcessInstanceDetailResponses,
-  runningInstance,
+  runningOrderProcessInstance,
 } from '../mocks/processInstance.mocks';
+import {open} from 'modules/mocks/diagrams';
 
 test.beforeEach(async ({page, commonPage, context}) => {
   await commonPage.mockClientConfig(context);
@@ -56,30 +56,36 @@ test.describe('get familiar with operate', () => {
       mockProcessesResponses({
         groupedProcesses: mockGroupedProcesses,
         batchOperations: mockBatchOperations,
-        processInstances: mockProcessInstances,
+        processInstances: mockOrderProcessInstances,
         statistics: mockStatistics,
-        processXml: mockProcessXml,
+        processXml: open('orderProcess.bpmn'),
       }),
     );
 
     await processesPage.navigateToProcesses({
-      searchParams: {active: 'true', incidents: 'true'},
+      searchParams: {
+        active: 'true',
+        incidents: 'true',
+      },
       options: {waitUntil: 'networkidle'},
     });
+
+    await processesPage.selectProcess('Order process');
+    await processesPage.selectVersion('1');
+    await processesPage.processVersionFilter.blur();
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/get-familiar-with-operate/operate-view-process.png',
     });
 
-    const firstRow = await page.getByRole('row', {
+    const firstRow = page.getByRole('row', {
       name: new RegExp(
-        `view instance ${mockProcessInstances.processInstances[0]?.id}`,
+        `view instance ${mockOrderProcessInstances.processInstances[0]?.id}`,
         'i',
       ),
     });
 
-    const cancelOperationButton =
-      await firstRow.getByTestId('cancel-operation');
+    const cancelOperationButton = firstRow.getByTestId('cancel-operation');
 
     await commonPage.addRightArrow(cancelOperationButton);
 
@@ -89,7 +95,7 @@ test.describe('get familiar with operate', () => {
 
     await commonPage.deleteArrows();
 
-    const processInstanceKeyCell = await firstRow.getByTestId(
+    const processInstanceKeyCell = firstRow.getByTestId(
       'cell-processInstanceKey',
     );
 
@@ -104,19 +110,20 @@ test.describe('get familiar with operate', () => {
     await page.route(
       /^.*\/api.*$/i,
       mockProcessInstanceDetailResponses({
-        processInstanceDetail: runningInstance.detail,
-        flowNodeInstances: runningInstance.flowNodeInstances,
-        statistics: runningInstance.statistics,
-        sequenceFlows: runningInstance.sequenceFlows,
-        variables: runningInstance.variables,
-        xml: runningInstance.xml,
+        processInstanceDetail: runningOrderProcessInstance.detail,
+        flowNodeInstances: runningOrderProcessInstance.flowNodeInstances,
+        statistics: runningOrderProcessInstance.statistics,
+        sequenceFlows: runningOrderProcessInstance.sequenceFlows,
+        variables: runningOrderProcessInstance.variables,
+        xml: runningOrderProcessInstance.xml,
       }),
     );
 
     await processInstancePage.navigateToProcessInstance({
-      id: '2251799813687144',
-      options: {waitUntil: 'networkidle'},
+      id: '225179981395430',
     });
+
+    await page.waitForTimeout(2000);
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/get-familiar-with-operate/operate-view-instance-detail.png',

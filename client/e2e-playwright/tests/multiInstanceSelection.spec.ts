@@ -83,10 +83,13 @@ test.describe('Multi Instance Flow Node Selection', () => {
   });
 
   test('select flow node in diagram', async ({page, processInstancePage}) => {
-    const {instanceHistory, popover, variablePanelEmptyText} =
-      processInstancePage;
+    const {
+      instanceHistory,
+      variablePanelEmptyText,
+      diagram: {popover},
+    } = processInstancePage;
 
-    await processInstancePage.selectFlowNode('Task B');
+    await processInstancePage.diagram.clickFlowNode('Task B');
 
     // Check instance history
     await expect(
@@ -122,8 +125,11 @@ test.describe('Multi Instance Flow Node Selection', () => {
   });
 
   test('select single task', async ({page, processInstancePage}) => {
-    const {instanceHistory, variablePanelEmptyText, popover} =
-      processInstancePage;
+    const {
+      instanceHistory,
+      variablePanelEmptyText,
+      diagram: {popover},
+    } = processInstancePage;
 
     // Select a single Task B
     await instanceHistory

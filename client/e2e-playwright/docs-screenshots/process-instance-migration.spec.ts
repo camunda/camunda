@@ -230,22 +230,7 @@ test.describe('process instance migration', () => {
 
     await migrationView.confirmButton.click();
 
-    const taskBoundingBox = await page
-      .getByTestId('diagram')
-      .getByText('Ship Articles', {exact: true})
-      .boundingBox();
-
-    if (taskBoundingBox === null) {
-      throw new Error(
-        'An error occured when dragging the diagram: task bounding box is null',
-      );
-    }
-
-    // move diagram into viewport to be fully visible
-    await page.mouse.move(taskBoundingBox.x, taskBoundingBox.y - 50);
-    await page.mouse.down();
-    await page.mouse.move(taskBoundingBox.x - 200, taskBoundingBox.y - 50);
-    await page.mouse.up();
+    await processesPage.diagram.moveCanvasHorizontally(-200);
 
     await expect(page.getByTestId('state-overlay')).toBeVisible();
     await expect(page.getByText(mockMigrationOperation.id)).toHaveCount(1);

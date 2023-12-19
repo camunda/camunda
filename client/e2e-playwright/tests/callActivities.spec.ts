@@ -94,12 +94,10 @@ test.describe('Call Activities', () => {
 
     // Expect correct diagram
 
-    await expect(
-      diagram.getByText('Call Activity', {exact: true}),
-    ).toBeVisible();
+    await expect(diagram.getFlowNode('call activity')).toBeVisible();
 
     // Navigate to called process instance
-    await diagram.getByText('Call Activity', {exact: true}).click();
+    await diagram.clickFlowNode('call Activity');
 
     const popover = page.getByTestId('popover');
 
@@ -131,7 +129,7 @@ test.describe('Call Activities', () => {
     await expect(instanceHistory.getByText('Event_0y6k56d')).toBeVisible();
 
     // Expect correct diagram
-    await expect(diagram.getByText('Process started')).toBeVisible();
+    await expect(diagram.getFlowNode('Process started')).toBeVisible();
 
     // Navigate to parent instance
     await instanceHeader
@@ -159,8 +157,6 @@ test.describe('Call Activities', () => {
     ).toBeVisible();
     await expect(instanceHistory.getByText('Event_1p0nsc7')).toBeVisible();
 
-    await expect(
-      diagram.getByText('Call Activity', {exact: true}),
-    ).toBeVisible();
+    await expect(diagram.getFlowNode('Call Activity')).toBeVisible();
   });
 });
