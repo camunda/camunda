@@ -584,11 +584,9 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
     assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
     Assertions.assertThat(rejection.getRejectionReason())
         .contains(
-            String.format(
-                """
-                Expected to migrate process instance '%s' but active element with id '%s' \
-                has an unsupported type. The migration of a %s is not supported""",
-                processInstanceKey, "SUB", "EVENT_SUB_PROCESS"));
+            """
+                Expected to migrate process instance but process instance has an event subprocess. \
+                Process instances with event subprocesses cannot be migrated yet.""");
   }
 
   @Test
