@@ -921,6 +921,7 @@ service Gateway {
       NOT_FOUND:
         - no process instance exists with the given key, or it is not active
         - no process definition exists with the given target definition key
+        - no process instance exists with the given key for the tenants the user is authorized to work with.
 
       FAILED_PRECONDITION:
         - not all active elements in the given process instance are mapped to the elements in the target process definition
