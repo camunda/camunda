@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.ClassRule;
@@ -150,11 +151,30 @@ public class CompensationEventExecutionTest {
     // then
     assertThat(
             RecordingExporter.compensationSubscriptionRecords()
-                .withProcessInstanceKey(processInstanceKey))
-        .extracting(Record::getValueType, Record::getIntent)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(2))
+        .extracting(
+            Record::getValueType,
+            Record::getIntent,
+            r -> r.getValue().getTenantId(),
+            r -> r.getValue().getProcessInstanceKey(),
+            r -> r.getValue().getCompensableActivityId(),
+            r -> r.getValue().getThrowEventId())
         .containsSequence(
-            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.CREATED),
-            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.TRIGGERED));
+            tuple(
+                ValueType.COMPENSATION_SUBSCRIPTION,
+                CompensationSubscriptionIntent.CREATED,
+                TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+                processInstanceKey,
+                "ActivityToCompensate",
+                ""),
+            tuple(
+                ValueType.COMPENSATION_SUBSCRIPTION,
+                CompensationSubscriptionIntent.TRIGGERED,
+                TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+                processInstanceKey,
+                "",
+                "CompensationThrowEvent"));
   }
 
   @Test
@@ -182,12 +202,40 @@ public class CompensationEventExecutionTest {
         .containsSubsequence(
             tuple(
                 BpmnElementType.USER_TASK,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                "ActivityToCompensate"),
+            tuple(
+                BpmnElementType.USER_TASK,
+                ProcessInstanceIntent.ELEMENT_COMPLETED,
+                "ActivityToCompensate"),
+            tuple(
+                BpmnElementType.INTERMEDIATE_THROW_EVENT,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                "CompensationThrowEvent"),
+            tuple(
+                BpmnElementType.BOUNDARY_EVENT,
                 ProcessInstanceIntent.ELEMENT_ACTIVATING,
-                "Activity_1epoz0g"),
+                "CompensationBoundaryEvent"),
+            tuple(
+                BpmnElementType.BOUNDARY_EVENT,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                "CompensationBoundaryEvent"),
+            tuple(
+                BpmnElementType.BOUNDARY_EVENT,
+                ProcessInstanceIntent.ELEMENT_COMPLETING,
+                "CompensationBoundaryEvent"),
+            tuple(
+                BpmnElementType.BOUNDARY_EVENT,
+                ProcessInstanceIntent.ELEMENT_COMPLETED,
+                "CompensationBoundaryEvent"),
+            tuple(
+                BpmnElementType.USER_TASK,
+                ProcessInstanceIntent.ELEMENT_ACTIVATING,
+                "CompensationHandler"),
             tuple(
                 BpmnElementType.USER_TASK,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                "Activity_1epoz0g"));
+                "CompensationHandler"));
   }
 
   @Test
@@ -215,12 +263,40 @@ public class CompensationEventExecutionTest {
         .containsSubsequence(
             tuple(
                 BpmnElementType.USER_TASK,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                "ActivityToCompensate"),
+            tuple(
+                BpmnElementType.USER_TASK,
+                ProcessInstanceIntent.ELEMENT_COMPLETED,
+                "ActivityToCompensate"),
+            tuple(
+                BpmnElementType.END_EVENT,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                "CompensationEndEvent"),
+            tuple(
+                BpmnElementType.BOUNDARY_EVENT,
                 ProcessInstanceIntent.ELEMENT_ACTIVATING,
-                "Activity_1epoz0g"),
+                "CompensationBoundaryEvent"),
+            tuple(
+                BpmnElementType.BOUNDARY_EVENT,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                "CompensationBoundaryEvent"),
+            tuple(
+                BpmnElementType.BOUNDARY_EVENT,
+                ProcessInstanceIntent.ELEMENT_COMPLETING,
+                "CompensationBoundaryEvent"),
+            tuple(
+                BpmnElementType.BOUNDARY_EVENT,
+                ProcessInstanceIntent.ELEMENT_COMPLETED,
+                "CompensationBoundaryEvent"),
+            tuple(
+                BpmnElementType.USER_TASK,
+                ProcessInstanceIntent.ELEMENT_ACTIVATING,
+                "CompensationHandler"),
             tuple(
                 BpmnElementType.USER_TASK,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                "Activity_1epoz0g"));
+                "CompensationHandler"));
   }
 
   private BpmnModelInstance createModelFromClasspathResource(final String classpath) {

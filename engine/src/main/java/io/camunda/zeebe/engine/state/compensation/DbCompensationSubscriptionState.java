@@ -61,7 +61,8 @@ public class DbCompensationSubscriptionState implements MutableCompensationSubsc
   }
 
   @Override
-  public Set<String> getCompletedActivitiesToCompensate(final String tenantId, final long piKey) {
+  public Set<String> findSubscriptionsByProcessInstanceKey(
+      final String tenantId, final long piKey) {
     tenantIdKey.wrapString(tenantId);
     processInstanceKey.wrapLong(piKey);
 
