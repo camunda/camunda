@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/camunda/zeebe/clients/go/v8/pkg/zbc"
 	"os"
 	"os/exec"
 	"regexp"
@@ -234,7 +233,7 @@ var tests = []testCase{
 			strings.Fields("--insecure create instance jobProcess"),
 			strings.Fields("--insecure activate jobs jobType --maxJobsToActivate 1"),
 		},
-		cmd:        strings.Fields("--insecure update timeout 2251799813685360 --timeout 10000"),
+		cmd:        strings.Fields("--insecure update timeout 2251799813685371 --timeout 10000"),
 		goldenFile: "testdata/update_job_timeout.golden",
 	},
 }
