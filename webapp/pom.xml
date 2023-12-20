@@ -13,7 +13,7 @@
 
 
   <properties>
-    <springdoc-openapi-starter.version>2.1.0</springdoc-openapi-starter.version>
+    <springdoc-openapi-starter.version>2.3.0</springdoc-openapi-starter.version>
   </properties>
   <dependencies>
 
