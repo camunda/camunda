@@ -24,46 +24,46 @@ import (
 )
 
 var (
-	updateRetriesKey  int64
-	updateRetriesFlag int32
+	updateTimeoutKey  int64
+	updateTimeoutFlag int64
 )
 
-type UpdateJobRetriesResponseWrapper struct {
-	response *pb.UpdateJobRetriesResponse
+type UpdateJobTimeoutResponseWrapper struct {
+	response *pb.UpdateJobTimeoutResponse
 }
 
-func (u UpdateJobRetriesResponseWrapper) human() (string, error) {
-	return fmt.Sprint("Updated the retries of job with key '", updateRetriesKey, "' to '", updateRetriesFlag, "'"), nil
+func (u UpdateJobTimeoutResponseWrapper) human() (string, error) {
+	return fmt.Sprint("Updated the timeout of job with key '", updateTimeoutKey, "' to '", updateTimeoutFlag, "'"), nil
 }
 
-func (u UpdateJobRetriesResponseWrapper) json() (string, error) {
+func (u UpdateJobTimeoutResponseWrapper) json() (string, error) {
 	return toJSON(u.response)
 }
 
-var updateRetriesCmd = &cobra.Command{
-	Use:     "retries <key>",
-	Short:   "Update retries of a job",
-	Args:    keyArg(&updateRetriesKey),
+var updateTimeoutCmd = &cobra.Command{
+	Use:     "timeout <key>",
+	Short:   "Update timeout of a job",
+	Args:    keyArg(&updateTimeoutKey),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
+		ctx, cancel := context.WithTimeout(cmd.Context(), timeoutFlag)
 		defer cancel()
 
-		resp, err := client.NewUpdateJobRetriesCommand().JobKey(updateRetriesKey).Retries(updateRetriesFlag).Send(ctx)
+		resp, err := client.NewUpdateJobTimeoutCommand().JobKey(updateTimeoutKey).Timeout(updateTimeoutFlag).Send(ctx)
 		if err != nil {
 			return err
 		}
-		err = printOutput(UpdateJobRetriesResponseWrapper{resp})
+		err = printOutput(UpdateJobTimeoutResponseWrapper{resp})
 
 		return err
 	},
 }
 
 func init() {
-	addOutputFlag(updateRetriesCmd)
-	updateCmd.AddCommand(updateRetriesCmd)
-	updateRetriesCmd.Flags().Int32Var(&updateRetriesFlag, "retries", commands.DefaultJobRetries, "Specify retries of job")
-	if err := updateRetriesCmd.MarkFlagRequired("retries"); err != nil {
+	addOutputFlag(updateTimeoutCmd)
+	updateCmd.AddCommand(updateTimeoutCmd)
+	updateTimeoutCmd.Flags().Int64Var(&updateTimeoutFlag, "timeout", commands.DefaultJobTimeoutInMs, "Specify timeout of job")
+	if err := updateTimeoutCmd.MarkFlagRequired("timeout"); err != nil {
 		panic(err)
 	}
 }
