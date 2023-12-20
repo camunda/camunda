@@ -20,8 +20,8 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -89,22 +89,22 @@ public class AnalysisClient {
     return getProcessDefinitionCorrelation(dto);
   }
 
-  public HashMap<String, FindingsDto> getFlowNodeOutliers(String procDefKey, List<String> procDefVersions,
-                                                          List<String> tenants, long minimalDeviationInMs,
-                                                          boolean onlyHumanTasks) {
+  public Map<String, FindingsDto> getFlowNodeOutliers(String procDefKey, List<String> procDefVersions,
+                                                      List<String> tenants, long minimalDeviationInMs,
+                                                      boolean onlyHumanTasks) {
     return getRequestExecutor()
       .buildFlowNodeOutliersRequest(procDefKey, procDefVersions, tenants, minimalDeviationInMs, onlyHumanTasks)
       .execute(new TypeReference<>() {
       });
   }
 
-  public HashMap<String, FindingsDto> getFlowNodeOutliers(String procDefKey, List<String> procDefVersions,
-                                                          List<String> tenants) {
+  public Map<String, FindingsDto> getFlowNodeOutliers(String procDefKey, List<String> procDefVersions,
+                                                      List<String> tenants) {
     return getFlowNodeOutliers(procDefKey, procDefVersions, tenants, 0, false);
   }
 
-  public HashMap<String, FindingsDto> getFlowNodeOutliers(String procDefKey, List<String> procDefVersions,
-                                                          List<String> tenants, final List<ProcessFilterDto<?>> filters) {
+  public Map<String, FindingsDto> getFlowNodeOutliers(String procDefKey, List<String> procDefVersions,
+                                                      List<String> tenants, final List<ProcessFilterDto<?>> filters) {
     return getRequestExecutor()
       .buildFlowNodeOutliersRequest(procDefKey, procDefVersions, tenants, 0, false, filters)
       .execute(new TypeReference<>() {
