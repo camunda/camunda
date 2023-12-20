@@ -172,6 +172,7 @@ public class ProcessInstanceMigrationMigrateProcessor
           command,
           RejectionType.INVALID_STATE,
           ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_PROCESS_INSTANCE);
+      return;
     }
 
     final boolean targetProcessHasEventSubprocess =
@@ -186,6 +187,7 @@ public class ProcessInstanceMigrationMigrateProcessor
           command,
           RejectionType.INVALID_STATE,
           ERROR_MESSAGE_EVENT_SUBPROCESS_NOT_SUPPORTED_IN_TARGET_PROCESS);
+      return;
     }
 
     final Map<String, String> mappedElementIds =
