@@ -226,6 +226,9 @@ var tests = []testCase{
 		cmd:        strings.Fields("--insecure update timeout 2251799813685253 --timeout 10000"),
 		goldenFile: "testdata/update_unknown_job_timeout.golden",
 	},
+	// In order to determine the job id: strings.Fields("--insecure activate jobs jobType --maxJobsToActivate 1")
+	// command was run in the below test (in the "cmd" part instead of a setup part)
+	// to check it's output - the job key of the generated job was always the same
 	{
 		name: "update job timeout",
 		setupCmds: [][]string{
