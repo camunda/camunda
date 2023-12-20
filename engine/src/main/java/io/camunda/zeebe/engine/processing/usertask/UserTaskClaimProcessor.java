@@ -59,6 +59,7 @@ public class UserTaskClaimProcessor implements TypedRecordProcessor<UserTaskReco
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
-    responseWriter.writeEventOnCommand(userTaskKey, UserTaskIntent.CLAIM, userTaskRecord, command);
+    responseWriter.writeEventOnCommand(
+        userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord, command);
   }
 }

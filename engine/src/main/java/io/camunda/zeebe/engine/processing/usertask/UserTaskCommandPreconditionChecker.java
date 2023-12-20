@@ -25,6 +25,8 @@ public class UserTaskCommandPreconditionChecker {
   private static final String INVALID_USER_TASK_ASSIGNEE_MESSAGE =
       "Expected to %s user task with key '%d', but it has already been assigned";
 
+  private static final String CLAIM_INTENT = "claim";
+
   private final List<LifecycleState> validLifecycleStates;
   private final String intent;
 
@@ -61,7 +63,7 @@ public class UserTaskCommandPreconditionChecker {
               String.format(INVALID_USER_TASK_STATE_MESSAGE, intent, userTaskKey, lifecycleState)));
     }
 
-    if (intent.equals("claim")) {
+    if (intent.equals(CLAIM_INTENT)) {
       final String assignee = persistedRecord.getAssignee();
       final boolean canClaim =
           assignee.isBlank() || assignee.equals(command.getValue().getAssignee());
