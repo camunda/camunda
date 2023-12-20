@@ -40,9 +40,10 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class MigrateProcessInstanceConcurrentTest {
+public class MigrateProcessInstanceConcurrentNoBatchingTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @ClassRule
+  public static final EngineRule ENGINE = EngineRule.singlePartition().maxCommandsInBatch(1);
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
@@ -105,9 +106,15 @@ public class MigrateProcessInstanceConcurrentTest {
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
             """
-            Expected to migrate process instance '%d' but no mapping instruction defined for active element with id 'B_v1'. \
-            Elements cannot be migrated without a mapping."""
+            Expected to migrate process instance '%d' \
+            but a concurrent command was executed on the process instance. \
+            Please retry the migration."""
                 .formatted(processInstanceKey));
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("B_v1")
+        .await();
 
     ENGINE
         .processInstance()
@@ -270,9 +277,15 @@ public class MigrateProcessInstanceConcurrentTest {
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
             """
-            Expected to migrate process instance '%d' but no mapping instruction defined for active element with id 'B_v1'. \
-            Elements cannot be migrated without a mapping."""
+            Expected to migrate process instance '%d' \
+            but a concurrent command was executed on the process instance. \
+            Please retry the migration."""
                 .formatted(processInstanceKey));
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("B_v1")
+        .await();
 
     ENGINE
         .processInstance()
@@ -356,6 +369,15 @@ public class MigrateProcessInstanceConcurrentTest {
         RecordToWrite.command()
             .timer(TimerIntent.TRIGGER, timerCreated.getValue())
             .key(timerCreated.getKey()));
+
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.TRIGGER)
+                .withProcessInstanceKey(processInstanceKey)
+                .onlyCommandRejections()
+                .findFirst())
+        .describedAs(
+            "Expect that the timer command is rejected because the migration recreate the subscription")
+        .isPresent();
 
     ENGINE.increaseTime(Duration.ofHours(1));
 
@@ -448,27 +470,25 @@ public class MigrateProcessInstanceConcurrentTest {
                             .setSourceElementId("A")
                             .setTargetElementId("A"))));
 
-    final var migrationRejection =
-        RecordingExporter.processInstanceMigrationRecords(ProcessInstanceMigrationIntent.MIGRATE)
+    final var subscriptionRejection =
+        RecordingExporter.processMessageSubscriptionRecords(
+                ProcessMessageSubscriptionIntent.CORRELATE)
             .withProcessInstanceKey(processInstanceKey)
             .onlyCommandRejections()
             .getFirst();
 
-    assertThat(migrationRejection)
-        .hasRejectionType(RejectionType.INVALID_STATE)
-        .hasRejectionReason(
-            """
-            Expected to migrate process instance '%d' but no mapping instruction defined for active element with id 'B_v1'. \
-            Elements cannot be migrated without a mapping."""
-                .formatted(processInstanceKey));
+    assertThat(subscriptionRejection)
+        .describedAs(
+            "Expect that the correlation is rejected because the subscription is already closing.")
+        .hasRejectionType(RejectionType.INVALID_STATE);
 
+    // The new process waits for a message with a different name. Continue the process instance by
+    // publishing the message.
     ENGINE
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .migration()
-        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-        .addMappingInstruction("B_v1", "B_v2")
-        .migrate();
+        .message()
+        .withName("message2")
+        .withCorrelationKey(helper.getCorrelationValue())
+        .publish();
 
     ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
 
@@ -669,9 +689,15 @@ public class MigrateProcessInstanceConcurrentTest {
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
             """
-            Expected to migrate process instance '%d' but no mapping instruction defined for active element with id 'B_v1'. \
-            Elements cannot be migrated without a mapping."""
+            Expected to migrate process instance '%d' \
+            but a concurrent command was executed on the process instance. \
+            Please retry the migration."""
                 .formatted(processInstanceKey));
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("B_v1")
+        .await();
 
     ENGINE
         .processInstance()
@@ -768,9 +794,15 @@ public class MigrateProcessInstanceConcurrentTest {
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
             """
-            Expected to migrate process instance '%d' but no mapping instruction defined for active element with id 'B_v1'. \
-            Elements cannot be migrated without a mapping."""
+            Expected to migrate process instance '%d' \
+            but active element with id 'timer' has an unsupported type. \
+            The migration of a BOUNDARY_EVENT is not supported."""
                 .formatted(processInstanceKey));
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("B_v1")
+        .await();
 
     ENGINE
         .processInstance()
@@ -861,8 +893,9 @@ public class MigrateProcessInstanceConcurrentTest {
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
             """
-            Expected to migrate process instance '%d' but no mapping instruction defined for active element with id 'B_v1'. \
-            Elements cannot be migrated without a mapping."""
+            Expected to migrate process instance '%d' \
+            but a concurrent command was executed on the process instance. \
+            Please retry the migration."""
                 .formatted(processInstanceKey));
 
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
