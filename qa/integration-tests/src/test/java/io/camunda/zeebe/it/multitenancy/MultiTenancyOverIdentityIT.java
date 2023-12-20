@@ -19,6 +19,7 @@ import io.camunda.zeebe.client.api.response.CompleteJobResponse;
 import io.camunda.zeebe.client.api.response.DeleteResourceResponse;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
+import io.camunda.zeebe.client.api.response.MigrateProcessInstanceResponse;
 import io.camunda.zeebe.client.api.response.ModifyProcessInstanceResponse;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
@@ -192,7 +193,9 @@ public class MultiTenancyOverIdentityIT {
           () -> Map.of("postgres", POSTGRES, "keycloak", KEYCLOAK, "identity", IDENTITY));
 
   private String processId;
+  private String migratedProcessId;
   private BpmnModelInstance process;
+  private BpmnModelInstance migratedProcess;
 
   @BeforeAll
   static void init() throws Exception {
@@ -231,6 +234,14 @@ public class MultiTenancyOverIdentityIT {
         Bpmn.createExecutableProcess(processId)
             .startEvent()
             .serviceTask("task", b -> b.zeebeJobType("type"))
+            .endEvent()
+            .done();
+
+    migratedProcessId = Strings.newRandomValidBpmnId();
+    migratedProcess =
+        Bpmn.createExecutableProcess(migratedProcessId)
+            .startEvent()
+            .serviceTask("migrated-task", b -> b.zeebeJobType("type"))
             .endEvent()
             .done();
   }
@@ -1076,6 +1087,139 @@ public class MultiTenancyOverIdentityIT {
           .withMessageContaining("NOT_FOUND")
           .withMessageContaining(
               "Expected to modify process instance but no process instance found with key");
+    }
+  }
+
+  @Test
+  void shouldAllowMigrateProcessInstanceForDefaultTenant() {
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_DEFAULT)) {
+      // given
+      client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+      final var deploymentResponse =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(migratedProcess, "migrated-process.bpmn")
+              .send()
+              .join();
+      final long targetProcessDefinitionKey =
+          deploymentResponse.getProcesses().get(0).getProcessDefinitionKey();
+
+      final long processInstanceKey =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId(processId)
+              .latestVersion()
+              .send()
+              .join()
+              .getProcessInstanceKey();
+
+      // when
+      final Future<MigrateProcessInstanceResponse> response =
+          client
+              .newMigrateProcessInstanceCommand(processInstanceKey)
+              .migrationPlan(targetProcessDefinitionKey)
+              .addMappingInstruction("task", "migrated-task")
+              .send();
+
+      // then
+      assertThat(response).succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldAllowMigrateProcessInstanceForOtherTenant() {
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      final var deploymentResponse =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(migratedProcess, "migrated-process.bpmn")
+              .tenantId(TENANT_A)
+              .send()
+              .join();
+      final long targetProcessDefinitionKey =
+          deploymentResponse.getProcesses().get(0).getProcessDefinitionKey();
+
+      final long processInstanceKey =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId(processId)
+              .latestVersion()
+              .tenantId(TENANT_A)
+              .send()
+              .join()
+              .getProcessInstanceKey();
+
+      // when
+      final Future<MigrateProcessInstanceResponse> response =
+          client
+              .newMigrateProcessInstanceCommand(processInstanceKey)
+              .migrationPlan(targetProcessDefinitionKey)
+              .addMappingInstruction("task", "migrated-task")
+              .send();
+
+      // then
+      assertThat(response).succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldRejectMigrateProcessInstanceForUnauthorizedTenant() {
+    final long processInstanceKey;
+    final long targetProcessDefinitionKey;
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      final var deploymentResponse =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(migratedProcess, "process.bpmn")
+              .tenantId(TENANT_A)
+              .send()
+              .join();
+      targetProcessDefinitionKey =
+          deploymentResponse.getProcesses().get(0).getProcessDefinitionKey();
+
+      processInstanceKey =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId(processId)
+              .latestVersion()
+              .tenantId(TENANT_A)
+              .send()
+              .join()
+              .getProcessInstanceKey();
+    }
+
+    // when
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
+      final Future<MigrateProcessInstanceResponse> response =
+          client
+              .newMigrateProcessInstanceCommand(processInstanceKey)
+              .migrationPlan(targetProcessDefinitionKey)
+              .addMappingInstruction("task", "migrated-task")
+              .send();
+
+      // then
+      assertThat(response)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("NOT_FOUND")
+          .withMessageContaining(
+              String.format(
+                  "Expected to migrate process instance but no process instance found with key '%s'",
+                  processInstanceKey));
     }
   }
 
