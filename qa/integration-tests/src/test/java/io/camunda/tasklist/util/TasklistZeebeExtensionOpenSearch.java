@@ -6,11 +6,11 @@
  */
 package io.camunda.tasklist.util;
 
-import io.zeebe.containers.ZeebeContainer;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -43,17 +43,23 @@ public class TasklistZeebeExtensionOpenSearch extends TasklistZeebeExtension {
   }
 
   @Override
-  protected void setDatabaseEnvironmentVariables(ZeebeContainer zeebeContainer) {
-    zeebeContainer
-        .withEnv(
-            "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL",
-            "http://host.testcontainers.internal:9205")
-        .withEnv("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_BULK_DELAY", "1")
-        .withEnv("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_BULK_SIZE", "1")
-        .withEnv("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX", getPrefix())
-        .withEnv(
-            "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME",
-            "io.camunda.zeebe.exporter.opensearch.OpensearchExporter");
+  protected String getZeebeExporterIndexPrefixConfigParameterName() {
+    return "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX";
+  }
+
+  @Override
+  protected Map<String, String> getDatabaseEnvironmentVariables(String indexPrefix) {
+    return Map.of(
+        "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL",
+        "http://host.testcontainers.internal:9205",
+        "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_BULK_DELAY",
+        "1",
+        "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_BULK_SIZE",
+        "1",
+        "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX",
+        indexPrefix,
+        "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME",
+        "io.camunda.zeebe.exporter.opensearch.OpensearchExporter");
   }
 
   @Override

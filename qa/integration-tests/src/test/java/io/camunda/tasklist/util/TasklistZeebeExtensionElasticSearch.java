@@ -6,11 +6,11 @@
  */
 package io.camunda.tasklist.util;
 
-import io.zeebe.containers.ZeebeContainer;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -49,17 +49,23 @@ public class TasklistZeebeExtensionElasticSearch extends TasklistZeebeExtension 
   }
 
   @Override
-  protected void setDatabaseEnvironmentVariables(ZeebeContainer zeebeContainer) {
-    zeebeContainer
-        .withEnv(
-            "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL",
-            "http://host.testcontainers.internal:9200")
-        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY", "1")
-        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1")
-        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX", getPrefix())
-        .withEnv(
-            "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
-            "io.camunda.zeebe.exporter.ElasticsearchExporter");
+  protected String getZeebeExporterIndexPrefixConfigParameterName() {
+    return "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX";
+  }
+
+  @Override
+  protected Map<String, String> getDatabaseEnvironmentVariables(String indexPrefix) {
+    return Map.of(
+        "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL",
+        "http://host.testcontainers.internal:9200",
+        "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY",
+        "1",
+        "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE",
+        "1",
+        "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX",
+        indexPrefix,
+        "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
+        "io.camunda.zeebe.exporter.ElasticsearchExporter");
   }
 
   @Override
