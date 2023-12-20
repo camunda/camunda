@@ -15,25 +15,26 @@
   "packageRules": [
     {
       "groupName": "definitelyTyped",
-      "matchPackagePrefixes": ["@types/"],
-      "matchBaseBranches": ["master"]
+      "matchPackagePrefixes": ["@types/"]
     },
     {
       "extends": "monorepo:react",
-      "groupName": "react monorepo",
-      "matchBaseBranches": ["master"]
+      "groupName": "react monorepo"
     },
     {
       "extends": "monorepo:react-router",
-      "groupName": "react-router monorepo",
-      "matchBaseBranches": ["master"]
+      "groupName": "react-router monorepo"
     },
     {
       "matchPackagePatterns": ["*"],
       "matchUpdateTypes": ["patch"],
       "groupName": "all non-major dependencies",
-      "groupSlug": "all-minor-patch",
-      "matchBaseBranches": ["master"]
+      "groupSlug": "all-minor-patch"
+    },
+    {
+      "matchBaseBranches": ["/^stable\\/8\\..*/"],
+      "matchFileNames": ["client/**", ".github/**", ".ci/**"],
+      "enabled": false
     },
     {
       "matchManagers": "dockerfile",
