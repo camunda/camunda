@@ -7,13 +7,16 @@
 package io.camunda.operate.util.searchrepository;
 
 import io.camunda.operate.conditions.OpensearchCondition;
+import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.VariableEntity;
+import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
 import io.camunda.operate.store.opensearch.dsl.RequestDSL;
 import io.camunda.operate.util.Convertable;
 import io.camunda.operate.util.MapPath;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.mapping.DynamicMapping;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,23 +24,30 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.constantScore;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.ids;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.longTerms;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.matchAll;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.script;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.stringTerms;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.getIndexRequestBuilder;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.indexRequestBuilder;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.reindexRequestBuilder;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
+import static io.camunda.operate.util.CollectionUtil.toSafeArrayOfStrings;
 
 @Component
 @Conditional(OpensearchCondition.class)
@@ -213,5 +223,51 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   @Override
   public boolean ilmPolicyExists(String policyName) {
     return ! richOpenSearchClient.ism().getPolicy(policyName).isEmpty();
+  }
+
+  @Override
+  public List<BatchOperationEntity> getBatchOperationEntities(String indexName, List<String> ids) throws IOException {
+    var searchRequestBuilder = searchRequestBuilder(indexName)
+      .query(constantScore(ids(toSafeArrayOfStrings(ids))))
+      .size(100);
+
+    return richOpenSearchClient.doc().searchValues(searchRequestBuilder, BatchOperationEntity.class, true);
+  }
+
+  @Override
+  public List<ProcessInstanceForListViewEntity> getProcessInstances(String indexName, List<Long> ids) throws IOException {
+    var searchRequestBuilder = searchRequestBuilder(indexName)
+      .query(
+        constantScore(
+          and(
+            ids(toSafeArrayOfStrings(ids)),
+            term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION)
+          )
+        )
+      )
+      .size(100);
+
+    return richOpenSearchClient.doc().searchValues(searchRequestBuilder, ProcessInstanceForListViewEntity.class, true);
+  }
+
+  @Override
+  public Optional<List<Long>> getIds(String indexName, String idFieldName, List<Long> ids, boolean ignoreAbsentIndex) throws IOException {
+    try {
+      var searchRequestBuilder = searchRequestBuilder(indexName)
+        .query(stringTerms(idFieldName, Arrays.asList(toSafeArrayOfStrings(ids))))
+        .size(100);
+
+      List<Long> indexIds = richOpenSearchClient.doc().scrollValues(searchRequestBuilder, HashMap.class)
+        .stream()
+        .map(map -> (Long) map.get(idFieldName))
+        .toList();
+
+      return Optional.of(indexIds);
+    } catch (OpenSearchException ex) {
+      if (!ex.getMessage().contains("index_not_found_exception") || !ignoreAbsentIndex) {
+        throw ex;
+      }
+      return Optional.empty();
+    }
   }
 }

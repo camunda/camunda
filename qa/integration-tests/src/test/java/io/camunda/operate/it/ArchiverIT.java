@@ -13,7 +13,6 @@ import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.exceptions.ArchiverException;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
@@ -24,6 +23,7 @@ import io.camunda.operate.util.MetricAssert;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.ZeebeTestUtil;
+import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
@@ -52,7 +52,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -65,16 +64,10 @@ import static org.hamcrest.CoreMatchers.containsString;
 
 public class ArchiverIT extends OperateZeebeAbstractIT {
   @Rule
-  public SearchTestRule searchTestRule = new SearchTestRule(operatePropertiesCustomizer());
+  public SearchTestRule searchTestRule = new SearchTestRule();
 
-  public static Consumer<OperateProperties> operatePropertiesCustomizer() {
-    return operateProperties -> {
-      operateProperties.getArchiver().setIlmEnabled(true);
-      operateProperties.getArchiver().setIlmMinAgeForDeleteArchivedIndices("1m");
-    };
-  }
   @Autowired
-  private ArchiverITRepository archiverITRepository;
+  private TestSearchRepository testSearchRepository;
 
   @Autowired
   private ListViewReader listViewReader;
@@ -364,7 +357,7 @@ public class ArchiverIT extends OperateZeebeAbstractIT {
       destinationIndexName = archiver.getDestinationIndexName(batchOperationTemplate.getFullQualifiedName(), "");
     }
 
-    final List<BatchOperationEntity> bos = archiverITRepository.getBatchOperationEntities(destinationIndexName, ids);
+    final List<BatchOperationEntity> bos = testSearchRepository.getBatchOperationEntities(destinationIndexName, ids);
 
     assertThat(bos).hasSize(instancesCount);
     assertThat(bos).extracting(BatchOperationTemplate.ID).containsExactlyInAnyOrderElementsOf(ids);
@@ -391,7 +384,7 @@ public class ArchiverIT extends OperateZeebeAbstractIT {
       destinationIndexName = archiver.getDestinationIndexName(processInstanceTemplate.getFullQualifiedName(), "");
     }
 
-    final List<ProcessInstanceForListViewEntity> processInstances = archiverITRepository.getProcessInstances(destinationIndexName, ids);
+    final List<ProcessInstanceForListViewEntity> processInstances = testSearchRepository.getProcessInstances(destinationIndexName, ids);
     assertThat(processInstances).extracting(ListViewTemplate.PROCESS_INSTANCE_KEY).containsExactlyInAnyOrderElementsOf(ids);
     if (endDate != null) {
       assertThat(processInstances).extracting(ListViewTemplate.END_DATE).allMatch(ed -> ((OffsetDateTime) ed).toInstant().equals(endDate));
@@ -407,7 +400,7 @@ public class ArchiverIT extends OperateZeebeAbstractIT {
       destinationIndexName = archiver.getDestinationIndexName(mainIndexName, "");
     }
 
-    final Optional<List<Long>> maybeIdsFromDstIndex = archiverITRepository.getIds(destinationIndexName, idFieldName, ids, ignoreAbsentIndex);
+    final Optional<List<Long>> maybeIdsFromDstIndex = testSearchRepository.getIds(destinationIndexName, idFieldName, ids, ignoreAbsentIndex);
 
     maybeIdsFromDstIndex.ifPresent(idsFromDstIndex -> assertThat(idsFromDstIndex).as(mainIndexName).isSubsetOf(ids));
   }
@@ -464,44 +457,5 @@ public class ArchiverIT extends OperateZeebeAbstractIT {
       // 4. Enable the operation executor
       .then()
       .enableOperationExecutor();
-  }
-
-  @Test
-  @Ignore("Marking with ignore, as it runs for around 15 minutes and for some reason fails on CI")
-  public void testArchivedIndexIsDeletedByILM() throws Exception {
-    // given (set up) : disabled OperationExecutor
-    tester.disableOperationExecutor();
-    // and given processInstance
-    final String bpmnProcessId = "startEndProcess";
-    final String taskId = "task";
-    final BpmnModelInstance startEndProcess =
-      Bpmn.createExecutableProcess(bpmnProcessId)
-        .startEvent()
-        .serviceTask(taskId).zeebeJobType(taskId)
-        .endEvent()
-        .done();
-
-    var archivedIndex = archiver.getDestinationIndexName(processInstanceTemplate.getFullQualifiedName(), "_test_archived");
-
-    tester
-      .deployProcess(startEndProcess, "startEndProcess.bpmn")
-      .processIsDeployed()
-      .and()
-      .startProcessInstance(bpmnProcessId)
-      .waitUntil()
-      .processInstanceIsStarted()
-      .and()
-      .completeTask(taskId)
-      .waitUntil()
-      .processInstanceIsFinished()
-      .archive().waitUntil().archiveIsDone()
-      .then()
-      // Opensearch runs ISM-related operations on a schedule, which has something around 5 minutes run intervals.
-      // Moving from initial state to final requires at least 2 scheduled runs.
-      // Besides, index deletion itself seems to happen sort of asynchronous from the ISM scheduler runs.
-      // In tests overall time taken to delete index by ISM was varying from around 700 to 1000 seconds,
-      // so putting here a twice bigger timeout to cover all the corner cases.
-      // Elastic appears to take even more time (~1200 seconds) to accomplish deletion
-      .waitIndexDeletion(archivedIndex, 3600*1000);
   }
 }

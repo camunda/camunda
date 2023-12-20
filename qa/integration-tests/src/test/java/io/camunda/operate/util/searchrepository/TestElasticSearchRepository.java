@@ -8,11 +8,14 @@ package io.camunda.operate.util.searchrepository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
+import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.VariableEntity;
+import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
@@ -26,6 +29,7 @@ import org.elasticsearch.client.indexlifecycle.GetLifecyclePolicyRequest;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
+import org.elasticsearch.index.query.IdsQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
@@ -43,11 +47,15 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.requestOptions;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
+import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
@@ -227,5 +235,51 @@ public class TestElasticSearchRepository implements TestSearchRepository {
       settings.getAsInt("index.number_of_shards", null),
       settings.getAsInt("index.number_of_replicas", null)
     );
+  }
+
+  @Override
+  public List<BatchOperationEntity> getBatchOperationEntities(String indexName, List<String> ids) throws IOException {
+    final IdsQueryBuilder idsQ = idsQuery().addIds(CollectionUtil.toSafeArrayOfStrings(ids));
+
+    final SearchRequest searchRequest = new SearchRequest(indexName)
+      .source(new SearchSourceBuilder()
+        .query(constantScoreQuery(idsQ))
+        .size(100));
+
+    final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+
+    return ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper, BatchOperationEntity.class);
+  }
+
+  @Override
+  public List<ProcessInstanceForListViewEntity> getProcessInstances(String indexName, List<Long> ids) throws IOException {
+    final IdsQueryBuilder idsQ = idsQuery().addIds(CollectionUtil.toSafeArrayOfStrings(ids));
+    final TermQueryBuilder isProcessInstanceQuery = termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION);
+
+    final SearchRequest searchRequest = new SearchRequest(indexName)
+      .source(new SearchSourceBuilder()
+        .query(constantScoreQuery(joinWithAnd(idsQ, isProcessInstanceQuery)))
+        .size(100));
+
+    final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+
+    return ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper, ProcessInstanceForListViewEntity.class);
+  }
+
+  @Override
+  public Optional<List<Long>> getIds(String indexName, String idFieldName, List<Long> ids, boolean ignoreAbsentIndex) throws IOException {
+    try {
+      final TermsQueryBuilder q = termsQuery(idFieldName, CollectionUtil.toSafeArrayOfStrings(ids));
+      final SearchRequest request = new SearchRequest(indexName)
+        .source(new SearchSourceBuilder()
+          .query(q)
+          .size(100));
+      return Optional.of(ElasticsearchUtil.scrollFieldToList(request, idFieldName, esClient));
+    } catch (ElasticsearchStatusException ex) {
+      if (!ex.getMessage().contains("index_not_found_exception") || !ignoreAbsentIndex) {
+        throw ex;
+      }
+      return Optional.empty();
+    }
   }
 }
