@@ -48,6 +48,7 @@
   // Branches to be checked
   baseBranches: [
     "master",
+    "release/3.12.0",
     "maintenance/3.11",
     "maintenance/3.10",
     "maintenance/3.9"
