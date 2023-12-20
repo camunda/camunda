@@ -101,6 +101,9 @@ test.describe('decision instance page', () => {
         waitUntil: 'networkidle',
       });
 
+      // wait for monaco-editor to be fully rendered
+      await page.waitForTimeout(500);
+
       await expect(page).toHaveScreenshot();
     });
 

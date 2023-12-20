@@ -8,7 +8,7 @@
 import OriginalEditor, {
   useMonaco as originUseMonaco,
   DiffEditor as OriginalDiffEditor,
-} from '@monaco-editor/react';
+} from 'modules/components/MonacoEditor';
 import {editor} from 'monaco-editor';
 
 class MockModelContentChangedEvent implements editor.IModelContentChangedEvent {

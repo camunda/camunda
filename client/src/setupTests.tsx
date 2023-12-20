@@ -23,6 +23,8 @@ jest.mock('@devbookhq/splitter', () => {
 });
 jest.mock('modules/utils/date/formatDate');
 
+jest.mock('modules/components/MonacoEditor');
+
 jest.mock('modules/components/InfiniteScroller', () => {
   const InfiniteScroller: React.FC<{children?: React.ReactNode}> = ({
     children,

@@ -35,7 +35,7 @@ const config: PlaywrightTestConfig = {
   },
   forbidOnly: IS_CI,
   retries: 0,
-  workers: 1,
+  workers: IS_SCREENSHOT_GENERATOR ? 8 : 1,
   reporter: 'html',
   projects: [
     {

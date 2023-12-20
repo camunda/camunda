@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import Editor from '@monaco-editor/react';
+import Editor from 'modules/components/MonacoEditor';
 
 const options: React.ComponentProps<typeof Editor>['options'] = {
   minimap: {

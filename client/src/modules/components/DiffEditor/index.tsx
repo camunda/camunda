@@ -5,7 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import {useMonaco, DiffEditor as BaseDiffEditor} from '@monaco-editor/react';
+import {
+  useMonaco,
+  DiffEditor as BaseDiffEditor,
+} from 'modules/components/MonacoEditor';
 import {observer} from 'mobx-react-lite';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {options} from 'modules/utils/editor/options';

@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import Editor, {useMonaco} from '@monaco-editor/react';
+import Editor, {useMonaco} from 'modules/components/MonacoEditor';
 import {observer} from 'mobx-react-lite';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {useLayoutEffect} from 'react';
