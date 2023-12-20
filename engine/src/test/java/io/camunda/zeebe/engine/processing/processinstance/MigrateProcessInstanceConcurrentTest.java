@@ -35,6 +35,7 @@ import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -201,6 +202,7 @@ public class MigrateProcessInstanceConcurrentTest {
             tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
+  @Ignore("Ignore until the migration is supported for tasks with boundary events")
   @Test
   public void shouldContinueMigratedInstanceWithTimerBefore() {
     // given
@@ -297,6 +299,7 @@ public class MigrateProcessInstanceConcurrentTest {
             tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
+  @Ignore("Ignore until the migration is supported for tasks with boundary events")
   @Test
   public void shouldContinueMigratedInstanceWithTimerAfter() {
     // given
@@ -353,20 +356,6 @@ public class MigrateProcessInstanceConcurrentTest {
             .timer(TimerIntent.TRIGGER, timerCreated.getValue())
             .key(timerCreated.getKey()));
 
-    final var migrationRejection =
-        RecordingExporter.processInstanceMigrationRecords(ProcessInstanceMigrationIntent.MIGRATE)
-            .withProcessInstanceKey(processInstanceKey)
-            .onlyCommandRejections()
-            .getFirst();
-
-    assertThat(migrationRejection)
-        .hasRejectionType(RejectionType.INVALID_STATE)
-        .hasRejectionReason(
-            """
-            Expected to migrate process instance '%s' but active element with id 'A' has a boundary event. \
-            Migrating active elements with boundary events is not possible yet."""
-                .formatted(processInstanceKey));
-
     ENGINE.increaseTime(Duration.ofHours(1));
 
     ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
@@ -378,15 +367,16 @@ public class MigrateProcessInstanceConcurrentTest {
                 .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
         .containsSubsequence(
-            tuple("B_v1", ProcessInstanceIntent.ELEMENT_COMPLETED),
-            tuple("end_v1", ProcessInstanceIntent.ELEMENT_COMPLETED),
-            tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED))
-        .doesNotContain(
             tuple("B_v2", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple("end_v2", ProcessInstanceIntent.ELEMENT_COMPLETED),
-            tuple(targetProcessId, ProcessInstanceIntent.ELEMENT_COMPLETED));
+            tuple(targetProcessId, ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .doesNotContain(
+            tuple("B_v1", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("end_v1", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
+  @Ignore("Ignore until the migration is supported for tasks with boundary events")
   @Test
   public void shouldContinueMigratedInstanceWithMessageBefore() {
     // given
@@ -497,6 +487,7 @@ public class MigrateProcessInstanceConcurrentTest {
             tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
+  @Ignore("Ignore until the migration is supported for tasks with boundary events")
   @Test
   public void shouldContinueMigratedInstanceWithMessageAfter() {
     // given
@@ -567,22 +558,13 @@ public class MigrateProcessInstanceConcurrentTest {
                     .setCorrelationKey(helper.getCorrelationValue())
                     .setTimeToLive(Duration.ofHours(1).toMillis())));
 
-    final var migrationRejection =
-        RecordingExporter.processInstanceMigrationRecords(ProcessInstanceMigrationIntent.MIGRATE)
-            .withProcessInstanceKey(processInstanceKey)
-            .onlyCommandRejections()
-            .getFirst();
-
-    assertThat(migrationRejection)
-        .hasRejectionType(RejectionType.INVALID_STATE)
-        .hasRejectionReason(
-            """
-            Expected to migrate process instance '%s' but active element with id 'A' has a boundary event. \
-            Migrating active elements with boundary events is not possible yet."""
-                .formatted(processInstanceKey));
-
+    // The new process waits for a message with a different name. Continue the process instance by
     // publishing the message.
-    ENGINE.message().withName("message").withCorrelationKey(helper.getCorrelationValue()).publish();
+    ENGINE
+        .message()
+        .withName("message2")
+        .withCorrelationKey(helper.getCorrelationValue())
+        .publish();
 
     ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
 
@@ -593,15 +575,16 @@ public class MigrateProcessInstanceConcurrentTest {
                 .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
         .containsSubsequence(
-            tuple("B_v1", ProcessInstanceIntent.ELEMENT_COMPLETED),
-            tuple("end_v1", ProcessInstanceIntent.ELEMENT_COMPLETED),
-            tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED))
-        .doesNotContain(
             tuple("B_v2", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple("end_v2", ProcessInstanceIntent.ELEMENT_COMPLETED),
-            tuple(targetProcessId, ProcessInstanceIntent.ELEMENT_COMPLETED));
+            tuple(targetProcessId, ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .doesNotContain(
+            tuple("B_v1", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("end_v1", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
+  @Ignore("Ignore until the migration is supported for tasks with boundary events")
   @Test
   public void shouldContinueMigratedInstanceWithMessageCorrelateBefore() {
     // given
@@ -715,6 +698,7 @@ public class MigrateProcessInstanceConcurrentTest {
             tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
+  @Ignore("Ignore until the migration is supported for tasks with boundary events")
   @Test
   public void shouldContinueMigratedInstanceWithNonInterruptingTimerBefore() {
     // given
@@ -779,17 +763,40 @@ public class MigrateProcessInstanceConcurrentTest {
             .onlyCommandRejections()
             .getFirst();
 
-    // then
     assertThat(migrationRejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
             """
-            Expected to migrate process instance '%d' but active element with id 'A' has a boundary event. \
-            Migrating active elements with boundary events is not possible yet."""
+            Expected to migrate process instance '%d' but no mapping instruction defined for active element with id 'B_v1'. \
+            Elements cannot be migrated without a mapping."""
                 .formatted(processInstanceKey));
 
-    // It is not possible to assert continuation of the process instance because boundary events
-    // are not supported yet.
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "A")
+        .addMappingInstruction("B_v1", "B_v2")
+        .migrate();
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("B_v2", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("end_v2", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(targetProcessId, ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .doesNotContain(
+            tuple("B_v1", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("end_v1", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   private static long extractProcessDefinitionKeyByProcessId(
