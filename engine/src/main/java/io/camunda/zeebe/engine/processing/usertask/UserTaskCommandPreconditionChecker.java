@@ -24,6 +24,8 @@ public class UserTaskCommandPreconditionChecker {
       "Expected to %s user task with key '%d', but it is in state '%s'";
   private static final String INVALID_USER_TASK_ASSIGNEE_MESSAGE =
       "Expected to %s user task with key '%d', but it has already been assigned";
+  private static final String INVALID_USER_TASK_EMPTY_ASSIGNEE_MESSAGE =
+      "Expected to %s user task with key '%d', but the assignee is empty";
 
   private static final String CLAIM_INTENT = "claim";
 
@@ -64,9 +66,16 @@ public class UserTaskCommandPreconditionChecker {
     }
 
     if (intent.equals(CLAIM_INTENT)) {
-      final String assignee = persistedRecord.getAssignee();
-      final boolean canClaim =
-          assignee.isBlank() || assignee.equals(command.getValue().getAssignee());
+      final String assignee = command.getValue().getAssignee();
+      if (assignee.isBlank()) {
+        return Either.left(
+            Tuple.of(
+                RejectionType.INVALID_STATE,
+                String.format(INVALID_USER_TASK_EMPTY_ASSIGNEE_MESSAGE, intent, userTaskKey)));
+      }
+
+      final String currentAssignee = persistedRecord.getAssignee();
+      final boolean canClaim = currentAssignee.isBlank() || currentAssignee.equals(assignee);
       if (!canClaim) {
         return Either.left(
             Tuple.of(

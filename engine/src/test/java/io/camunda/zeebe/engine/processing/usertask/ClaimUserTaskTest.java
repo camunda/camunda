@@ -91,6 +91,20 @@ public class ClaimUserTaskTest {
   }
 
   @Test
+  public void shouldRejectClaimUserTaskForEmptyAssignee() {
+    // given
+    ENGINE.deployment().withXmlResource(process()).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    final Record<UserTaskRecordValue> claimedRecord =
+        ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("").expectRejection().claim();
+
+    // then
+    Assertions.assertThat(claimedRecord).hasRejectionType(RejectionType.INVALID_STATE);
+  }
+
+  @Test
   public void shouldRejectClaimIfUserTaskNotFound() {
     // given
     final int key = 123;
@@ -128,7 +142,7 @@ public class ClaimUserTaskTest {
   }
 
   @Test
-  public void shouldRejectUserTaskWithEmptyAssignee() {
+  public void shouldRejectUserTaskWithEmptyAssigneeWhenAlreadyAssigned() {
     // given
     ENGINE.deployment().withXmlResource(process(b -> b.zeebeAssignee("foo"))).deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
