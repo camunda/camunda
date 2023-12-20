@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.bpmn.task;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
@@ -36,6 +37,7 @@ public final class ScriptTaskProcessor
   private final ExpressionProcessor expressionProcessor;
 
   private final EventTriggerBehavior eventTriggerBehavior;
+  private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
 
   public ScriptTaskProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -48,6 +50,7 @@ public final class ScriptTaskProcessor
     stateBehavior = bpmnBehaviors.stateBehavior();
     expressionProcessor = bpmnBehaviors.expressionBehavior();
     eventTriggerBehavior = bpmnBehaviors.eventTriggerBehavior();
+    compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
   }
 
   @Override
@@ -88,7 +91,11 @@ public final class ScriptTaskProcessor
       final ExecutableScriptTask element, final BpmnElementContext context) {
     variableMappingBehavior
         .applyOutputMappings(context, element)
-        .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, context))
+        .flatMap(
+            ok -> {
+              compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
+              return stateTransitionBehavior.transitionToCompleted(element, context);
+            })
         .ifRightOrLeft(
             completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
             failure -> incidentBehavior.createIncident(failure, context));

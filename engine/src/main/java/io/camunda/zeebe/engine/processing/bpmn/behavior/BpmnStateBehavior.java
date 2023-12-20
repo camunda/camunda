@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEndEvent;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
-import io.camunda.zeebe.engine.state.immutable.CompensationSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -22,7 +21,6 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import org.agrona.DirectBuffer;
 
 public final class BpmnStateBehavior {
@@ -31,7 +29,6 @@ public final class BpmnStateBehavior {
   private final VariableState variablesState;
   private final JobState jobState;
   private final ProcessState processState;
-  private final CompensationSubscriptionState compensationSubscriptionState;
   private final VariableBehavior variableBehavior;
 
   public BpmnStateBehavior(
@@ -42,7 +39,6 @@ public final class BpmnStateBehavior {
     elementInstanceState = processingState.getElementInstanceState();
     variablesState = processingState.getVariableState();
     jobState = processingState.getJobState();
-    compensationSubscriptionState = processingState.getCompensationSubscriptionState();
   }
 
   public ElementInstance getElementInstance(final BpmnElementContext context) {
@@ -238,10 +234,5 @@ public final class BpmnStateBehavior {
   public int getNumberOfTakenSequenceFlows(
       final long flowScopeKey, final DirectBuffer gatewayElementId) {
     return elementInstanceState.getNumberOfTakenSequenceFlows(flowScopeKey, gatewayElementId);
-  }
-
-  public Set<String> getCompletedActivitiesToCompensate(final BpmnElementContext context) {
-    return compensationSubscriptionState.getCompletedActivitiesToCompensate(
-        context.getTenantId(), context.getProcessInstanceKey());
   }
 }

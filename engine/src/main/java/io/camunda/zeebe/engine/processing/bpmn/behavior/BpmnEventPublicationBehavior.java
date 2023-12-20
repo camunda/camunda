@@ -13,24 +13,16 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer.CatchEventTuple;
-import io.camunda.zeebe.engine.state.immutable.CompensationSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
-import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.escalation.EscalationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -44,9 +36,6 @@ public final class BpmnEventPublicationBehavior {
   private final CatchEventAnalyzer catchEventAnalyzer;
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
-  private final CompensationSubscriptionState compensationSubscriptionState;
-  private final ProcessState processState;
-  private final TypedCommandWriter commandWriter;
 
   public BpmnEventPublicationBehavior(
       final ProcessingState processingState,
@@ -67,9 +56,6 @@ public final class BpmnEventPublicationBehavior {
         new CatchEventAnalyzer(processingState.getProcessState(), elementInstanceState);
     stateWriter = writers.state();
     this.keyGenerator = keyGenerator;
-    compensationSubscriptionState = processingState.getCompensationSubscriptionState();
-    processState = processingState.getProcessState();
-    commandWriter = writers.command();
   }
 
   /**
@@ -193,36 +179,5 @@ public final class BpmnEventPublicationBehavior {
     }
 
     return canBeCompleted;
-  }
-
-  public void activateCompensationHandler(
-      final String elementId, final BpmnElementContext context) {
-
-    // find the boundary event
-    final var activityToCompensate =
-        processState.getFlowElement(
-            context.getProcessDefinitionKey(),
-            context.getTenantId(),
-            BufferUtil.wrapString(elementId),
-            ExecutableActivity.class);
-
-    final ExecutableBoundaryEvent boundaryEvent =
-        activityToCompensate.getBoundaryEvents().stream()
-            .filter(b -> b.getEventType() == BpmnEventType.COMPENSATION)
-            .findFirst()
-            .orElseThrow();
-
-    // activate the compensation handler
-    final ExecutableActivity compensationHandler =
-        boundaryEvent.getCompensation().getCompensationHandler();
-    final DirectBuffer compensationHandlerId = compensationHandler.getId();
-
-    final ProcessInstanceRecord compensationHandlerRecord = new ProcessInstanceRecord();
-    compensationHandlerRecord.wrap(context.getRecordValue());
-    compensationHandlerRecord.setBpmnElementType(compensationHandler.getElementType());
-    compensationHandlerRecord.setElementId(compensationHandlerId);
-
-    commandWriter.appendNewCommand(
-        ProcessInstanceIntent.ACTIVATE_ELEMENT, compensationHandlerRecord);
   }
 }

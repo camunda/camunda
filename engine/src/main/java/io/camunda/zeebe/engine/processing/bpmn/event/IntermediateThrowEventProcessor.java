@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.EnsureUtil.ensureNotNull;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
@@ -47,6 +48,7 @@ public class IntermediateThrowEventProcessor
   private final ExpressionProcessor expressionProcessor;
   private final BpmnSignalBehavior signalBehavior;
   private final BpmnStateBehavior stateBehavior;
+  private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
 
   public IntermediateThrowEventProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -59,6 +61,7 @@ public class IntermediateThrowEventProcessor
     expressionProcessor = bpmnBehaviors.expressionBehavior();
     signalBehavior = bpmnBehaviors.signalBehavior();
     stateBehavior = bpmnBehaviors.stateBehavior();
+    compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
   }
 
   @Override
@@ -312,12 +315,13 @@ public class IntermediateThrowEventProcessor
     @Override
     public void onActivate(
         final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating) {
+      compensationSubscriptionBehaviour.updateCompensationSubscription(activating);
       final BpmnElementContext activated =
           stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
 
       // check for activities that are completed and have compensation handlers
       final Set<String> completedActivities =
-          stateBehavior.getCompletedActivitiesToCompensate(activated);
+          compensationSubscriptionBehaviour.getCompletedActivitiesToCompensate(activated);
 
       if (completedActivities.isEmpty()) {
         stateTransitionBehavior.completeElement(activated);
@@ -325,7 +329,7 @@ public class IntermediateThrowEventProcessor
         // activate the compensation handler
         completedActivities.forEach(
             activity -> {
-              eventPublicationBehavior.activateCompensationHandler(activity, activated);
+              compensationSubscriptionBehaviour.activateCompensationHandler(activity, activated);
             });
       }
     }

@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.camunda.zeebe.engine.processing.common.Failure;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
@@ -23,17 +22,14 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
-import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
-import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
 import java.util.function.Function;
 
@@ -98,10 +94,6 @@ public final class BpmnStateTransitionBehavior {
       final var newElementInstanceKey = keyGenerator.nextKey();
       transitionContext =
           context.copy(newElementInstanceKey, context.getRecordValue(), context.getIntent());
-    }
-
-    if (isCompensationThrowEvent(context)) {
-      updateCompensationSubscription(context);
     }
 
     return transitionTo(transitionContext, ProcessInstanceIntent.ELEMENT_ACTIVATING);
@@ -188,9 +180,7 @@ public final class BpmnStateTransitionBehavior {
     }
 
     final var completed = transitionTo(context, ProcessInstanceIntent.ELEMENT_COMPLETED);
-    if (hasCompensationBoundaryEvent(element)) {
-      createCompensationSubscription(context);
-    }
+
     metrics.elementInstanceCompleted(context, element.getEventType());
 
     if (endOfExecutionPath) {
@@ -539,47 +529,6 @@ public final class BpmnStateTransitionBehavior {
             child ->
                 terminateElement(context.copy(child.getKey(), child.getValue(), child.getState())),
             () -> containerProcessor.onChildTerminated(element, context, null));
-  }
-
-  private boolean hasCompensationBoundaryEvent(final ExecutableFlowNode element) {
-    if (!(element instanceof ExecutableActivity)) {
-      return false;
-    }
-    final var compensationBoundaryEvent =
-        ((ExecutableActivity) element)
-            .getBoundaryEvents().stream()
-                .filter(boundaryEvent -> boundaryEvent.getEventType() == BpmnEventType.COMPENSATION)
-                .findFirst();
-    return compensationBoundaryEvent.isPresent();
-  }
-
-  private void createCompensationSubscription(final BpmnElementContext context) {
-    final var key = keyGenerator.nextKey();
-    final var compensation =
-        new CompensationSubscriptionRecord()
-            .setTenantId(context.getTenantId())
-            .setProcessInstanceKey(context.getProcessInstanceKey())
-            .setProcessDefinitionKey(context.getProcessDefinitionKey())
-            .setCompensableActivityId(BufferUtil.bufferAsString(context.getElementId()))
-            .setCompensableActivityScopeId(context.getFlowScopeKey());
-    stateWriter.appendFollowUpEvent(key, CompensationSubscriptionIntent.CREATED, compensation);
-  }
-
-  private boolean isCompensationThrowEvent(final BpmnElementContext context) {
-    return BpmnEventType.COMPENSATION.equals(context.getBpmnEventType())
-        && (BpmnElementType.INTERMEDIATE_THROW_EVENT.equals(context.getBpmnElementType())
-            || BpmnElementType.END_EVENT.equals(context.getBpmnElementType()));
-  }
-
-  private void updateCompensationSubscription(final BpmnElementContext context) {
-    final var key = keyGenerator.nextKey();
-    final var compensation =
-        new CompensationSubscriptionRecord()
-            .setTenantId(context.getTenantId())
-            .setProcessInstanceKey(context.getProcessInstanceKey())
-            .setThrowEventId(BufferUtil.bufferAsString(context.getElementId()))
-            .setThrowEventInstanceKey(context.getElementInstanceKey());
-    stateWriter.appendFollowUpEvent(key, CompensationSubscriptionIntent.TRIGGERED, compensation);
   }
 
   private static final class ChildTerminationStackOverflowException extends RuntimeException {
