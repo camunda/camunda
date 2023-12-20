@@ -99,10 +99,18 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     final ElementInstance processInstance = elementInstanceState.getInstance(processInstanceKey);
 
+    if (processInstance == null) {
+      final String reason =
+          String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, processInstanceKey);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
+      return;
+    }
+
     final boolean isTenantAuthorized =
         TenantAuthorizationCheckerImpl.fromAuthorizationMap(command.getAuthorizations())
             .isAuthorized(processInstance.getValue().getTenantId());
-    if (processInstance == null || !isTenantAuthorized) {
+    if (!isTenantAuthorized) {
       final String reason =
           String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, processInstanceKey);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
