@@ -14,10 +14,12 @@ import io.grpc.ServerCall;
 import io.grpc.ServerCall.Listener;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public final class ContextInspectingInterceptor implements ServerInterceptor {
   public static final AtomicReference<QueryApi> CONTEXT_QUERY_API = new AtomicReference<>();
+  public static final AtomicReference<List<String>> CONTEXT_TENANT_IDS = new AtomicReference<>();
 
   @Override
   public <ReqT, RespT> Listener<ReqT> interceptCall(
@@ -25,6 +27,7 @@ public final class ContextInspectingInterceptor implements ServerInterceptor {
       final Metadata headers,
       final ServerCallHandler<ReqT, RespT> next) {
     CONTEXT_QUERY_API.set(InterceptorUtil.getQueryApiKey().get());
+    CONTEXT_TENANT_IDS.set(InterceptorUtil.getAuthorizedTenantsKey().get());
     return next.startCall(call, headers);
   }
 }
