@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCIDENT;
 
+import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -97,7 +98,11 @@ public class ProcessInstanceMigrationMigrateProcessor
     final var mappingInstructions = value.getMappingInstructions();
 
     final ElementInstance processInstance = elementInstanceState.getInstance(processInstanceKey);
-    if (processInstance == null) {
+
+    final boolean isTenantAuthorized =
+        TenantAuthorizationCheckerImpl.fromAuthorizationMap(command.getAuthorizations())
+            .isAuthorized(processInstance.getValue().getTenantId());
+    if (processInstance == null || !isTenantAuthorized) {
       final String reason =
           String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, processInstanceKey);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
