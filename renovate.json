@@ -15,31 +15,39 @@
   "packageRules": [
     {
       "groupName": "definitelyTyped",
-      "matchPackagePrefixes": ["@types/"]
+      "matchPackagePrefixes": ["@types/"],
+      "matchBaseBranches": ["master"]
     },
     {
       "extends": "monorepo:react",
-      "groupName": "react monorepo"
+      "groupName": "react monorepo",
+      "matchBaseBranches": ["master"]
     },
     {
       "extends": "monorepo:react-router",
-      "groupName": "react-router monorepo"
+      "groupName": "react-router monorepo",
+      "matchBaseBranches": ["master"]
     },
     {
       "matchPackagePatterns": ["*"],
       "matchUpdateTypes": ["patch"],
       "groupName": "all non-major dependencies",
-      "groupSlug": "all-minor-patch"
+      "groupSlug": "all-minor-patch",
+      "matchBaseBranches": ["master"]
     },
     {
       "matchManagers": "dockerfile",
       "separateMajorMinor": true,
       "separateMinorPatch": true,
-      "labels": ["area/security", "docker", "dependencies"],
-      "matchBaseBranches": ["master", "/^stable\\/.*/"]
+      "addLabels": ["area/security", "docker"]
     }
   ],
   "branchPrefix": "renovate/",
   "additionalBranchPrefix": "{{parentDir}}/",
-  "ignoreDeps": ["docker.elastic.co/elasticsearch/elasticsearch"]
+  "ignoreDeps": ["docker.elastic.co/elasticsearch/elasticsearch"],
+  "baseBranches": [
+    "master",
+    "/^stable\\/8\\..*/"
+  ],
+  "labels": ["dependencies"]
 }
