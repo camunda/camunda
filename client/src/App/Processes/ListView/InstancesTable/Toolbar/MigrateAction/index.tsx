@@ -150,7 +150,7 @@ const MigrateAction: React.FC = observer(() => {
             <p>
               Questions or concerns? Check our{' '}
               <Link
-                href="https://docs.camunda.io/docs/components/operate/operate-introduction/"
+                href="https://docs.camunda.io/docs/components/operate/userguide/process-instance-migration/"
                 target="_blank"
                 inline
               >
