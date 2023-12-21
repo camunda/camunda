@@ -29,7 +29,7 @@ runs:
         find . -iname TEST-*.xml -print0 | xargs -0 -r ${SED_BIN:-sed} '/<system-out>/,/<\/system-out>/d' -i
 
     - name: Archive Test Results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Test results for ${{ inputs.name  }}
         path: |
