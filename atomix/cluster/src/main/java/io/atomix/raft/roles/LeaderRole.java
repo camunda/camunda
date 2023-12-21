@@ -187,28 +187,22 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
         .whenComplete(
             (jointConsensusIndex, jointConsensusError) -> {
               if (jointConsensusError == null) {
+                future.complete(
+                    logResponse(
+                        ReconfigureResponse.builder()
+                            .withStatus(RaftResponse.Status.OK)
+                            .withIndex(jointConsensusIndex)
+                            .withTerm(configuration.term())
+                            .withTime(configuration.time())
+                            .withMembers(updatedMembers)
+                            .build()));
                 configure(updatedMembers, List.of())
                     .whenComplete(
                         (leftJointConsensusIndex, leftJointConsensusError) -> {
-                          if (leftJointConsensusError == null) {
-                            future.complete(
-                                logResponse(
-                                    ReconfigureResponse.builder()
-                                        .withStatus(RaftResponse.Status.OK)
-                                        .withIndex(leftJointConsensusIndex)
-                                        .withTerm(configuration.term())
-                                        .withTime(configuration.time())
-                                        .withMembers(updatedMembers)
-                                        .build()));
+                          if (leftJointConsensusError != null) {
+                            log.error("Failed to leave joint consensus", leftJointConsensusError);
                           } else {
-                            future.complete(
-                                logResponse(
-                                    ReconfigureResponse.builder()
-                                        .withStatus(RaftResponse.Status.ERROR)
-                                        .withError(
-                                            RaftError.Type.PROTOCOL_ERROR,
-                                            leftJointConsensusError.getMessage())
-                                        .build()));
+                            log.debug("Left joint consensus at index {}", leftJointConsensusIndex);
                           }
                         });
               } else {
