@@ -24,8 +24,10 @@ import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.util.EnsureUtil;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import org.agrona.DirectBuffer;
@@ -274,6 +276,21 @@ public final class DbJobState implements JobState, MutableJobState {
     updateJobRecord(key, record);
   }
 
+  @Override
+  public void restoreBackoff() {
+    final var failedKeys = getFailedJobKeys();
+
+    failedKeys.removeAll(getBackoffJobKey());
+    failedKeys.forEach(
+        key -> {
+          jobKey.wrapLong(key);
+          final var jobRecord = jobsColumnFamily.get(jobKey);
+          if (jobRecord != null && jobRecord.getRecord().getRecurringTime() > -1) {
+            addJobBackoff(key, jobRecord.getRecord().getRecurringTime());
+          }
+        });
+  }
+
   private void createJob(final long key, final JobRecord record, final DirectBuffer type) {
     createJobRecord(key, record);
     initializeJobState();
@@ -498,5 +515,23 @@ public final class DbJobState implements JobState, MutableJobState {
 
   private List<String> getAuthorizedTenantIds(final Map<String, Object> authorizations) {
     return (List<String>) authorizations.get(Authorization.AUTHORIZED_TENANTS);
+  }
+
+  private Set<Long> getFailedJobKeys() {
+    final Set<Long> failedJobKeys = new HashSet<>();
+    statesJobColumnFamily.forEach(
+        (key, value) -> {
+          if ((State.FAILED).equals(value.getState())) {
+            failedJobKeys.add(key.inner().getValue());
+          }
+        });
+    return failedJobKeys;
+  }
+
+  private Set<Long> getBackoffJobKey() {
+    final Set<Long> backoffJobKeys = new HashSet<>();
+    backoffColumnFamily.forEach(
+        (key, value) -> backoffJobKeys.add(key.second().inner().getValue()));
+    return backoffJobKeys;
   }
 }

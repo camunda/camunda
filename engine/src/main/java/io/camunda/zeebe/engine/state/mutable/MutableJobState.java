@@ -45,4 +45,6 @@ public interface MutableJobState extends JobState {
   void updateJobDeadline(long jobKey, long newDeadline);
 
   void migrate(long key, JobRecord record);
+
+  void restoreBackoff();
 }
