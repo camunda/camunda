@@ -174,3 +174,11 @@ test('should show warning message when there are filter conflicts', async (t) =>
 
   await t.expect(Analysis.warningMessage.visible).ok();
 });
+
+test('should allow to change the definition without clearing the selected one first', async (t) => {
+  await u.selectDefinition(t, 'Analysis Testing Process', 'All');
+  await t.expect(Analysis.outliersTableRow('Shipment File Preparation').visible).ok();
+
+  await u.selectDefinition(t, 'Book Request One Tenant', 'All');
+  await t.expect(Analysis.outliersTableRow('Receive Book Request').visible).ok();
+});

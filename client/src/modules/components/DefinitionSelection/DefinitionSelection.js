@@ -358,8 +358,11 @@ export class DefinitionSelection extends React.Component {
                   }}
                   itemToString={(item) => (item ? item.name || item.key : '')}
                   titleText={processSelectLabel}
-                  shouldFilterItem={(data) => {
-                    const {inputValue, item} = data;
+                  shouldFilterItem={({inputValue, item}) => {
+                    // when definition is selected we dont want to filter the items, to show user the whole list of definitions
+                    if (inputValue && (def?.name || def?.key) === inputValue) {
+                      return true;
+                    }
                     return (
                       typeof inputValue !== 'undefined' &&
                       (item.name || item.key).toLowerCase().includes(inputValue?.toLowerCase())
