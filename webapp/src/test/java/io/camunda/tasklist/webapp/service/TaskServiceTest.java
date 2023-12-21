@@ -9,6 +9,8 @@ package io.camunda.tasklist.webapp.service;
 import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -20,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
+import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore.GetVariablesRequest;
@@ -91,6 +94,27 @@ class TaskServiceTest {
 
     // Then
     assertThat(result).containsExactly(expectedTask);
+  }
+
+  @Test
+  void searchTasksWhenSeveralSearchOptionsReturnsError() {
+    // Given
+    final var taskQuery =
+        new TaskQueryDTO()
+            .setState(TaskState.CREATED)
+            .setAssigned(true)
+            .setSearchAfter(new String[] {"123"})
+            .setSearchAfterOrEqual(new String[] {"456"});
+
+    // When and Then
+    // When / Then
+    final InvalidRequestException exception =
+        assertThrows(InvalidRequestException.class, () -> instance.getTasks(taskQuery));
+
+    // Validate the exception message if needed
+    assertEquals(
+        "Only one of [searchAfter, searchAfterOrEqual, searchBefore, searchBeforeOrEqual] must be present in request.",
+        exception.getMessage());
   }
 
   @Test
@@ -287,6 +311,48 @@ class TaskServiceTest {
     assertThatThrownBy(() -> instance.assignTask(taskId, "", true))
         .isInstanceOf(InvalidRequestException.class)
         .hasMessage("Assignee must be specified");
+  }
+
+  @Test
+  public void assignTaskToEmptyUser() {
+    // given
+    final var taskId = "123";
+    when(userReader.getCurrentUser()).thenReturn(new UserDTO().setUserId("userA").setApiUser(true));
+
+    // when - then
+    verifyNoInteractions(taskStore, taskValidator);
+    assertThatThrownBy(() -> instance.assignTask(taskId, "", true))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage("Assignee must be specified");
+  }
+
+  @Test
+  public void assignTaskToInvalidTask() {
+    // given
+    final var taskId = "123";
+    when(userReader.getCurrentUser()).thenReturn(new UserDTO().setUserId("userA").setApiUser(true));
+    when(taskStore.getTask(taskId))
+        .thenThrow(new NotFoundException("task with id " + taskId + " was not found "));
+
+    // when - then
+    verifyNoInteractions(taskStore, taskValidator);
+    assertThatThrownBy(() -> instance.assignTask(taskId, "userA", true))
+        .isInstanceOf(NotFoundException.class)
+        .hasMessage("task with id %s was not found ", taskId);
+  }
+
+  @Test
+  public void unassignTaskToInvalidTask() {
+    // given
+    final var taskId = "123";
+    when(taskStore.getTask(taskId))
+        .thenThrow(new NotFoundException("task with id " + taskId + " was not found "));
+
+    // when - then
+    verifyNoInteractions(taskStore, taskValidator);
+    assertThatThrownBy(() -> instance.unassignTask(taskId))
+        .isInstanceOf(NotFoundException.class)
+        .hasMessage("task with id %s was not found ", taskId);
   }
 
   @Test
