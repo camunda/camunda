@@ -7,27 +7,22 @@
 
 import {useEffect, useState} from 'react';
 
-import {Table, Icon, LoadingIndicator, DownloadButton, NoDataNotice} from 'components';
-import {withUser, WithUserProps} from 'HOC';
+import {Table, LoadingIndicator, NoDataNotice} from 'components';
 import {t} from 'translation';
 
 import {
   loadCommonOutliersVariables,
-  getInstancesDownloadUrl,
   OutliersVariable,
   AnalysisProcessDefinitionParameters,
   SelectedNode,
 } from './service';
 
-import './VariablesTable.scss';
-
-interface VariablesTableProps extends WithUserProps {
+interface VariablesTableProps {
   selectedNode: SelectedNode;
   config: AnalysisProcessDefinitionParameters;
-  totalCount: number;
 }
 
-export function VariablesTable({selectedNode, config, totalCount, user}: VariablesTableProps) {
+export default function VariablesTable({selectedNode, config}: VariablesTableProps) {
   const [data, setData] = useState<OutliersVariable[]>();
 
   useEffect(() => {
@@ -44,29 +39,11 @@ export function VariablesTable({selectedNode, config, totalCount, user}: Variabl
   }, [selectedNode, config]);
 
   const constructTableBody = (data: OutliersVariable[]): (string | JSX.Element)[][] => {
-    const {id, higherOutlier} = selectedNode;
     return data.map((row) => [
-      <div className="outliersCount">
-        {row.instanceCount} {t(`common.instance.label${row.instanceCount !== 1 ? '-plural' : ''}`)}
-        <DownloadButton
-          href={getInstancesDownloadUrl({
-            ...config,
-            flowNodeId: id,
-            higherOutlierBound: higherOutlier.boundValue,
-            variableName: row.variableName,
-            variableTerm: row.variableTerm,
-          })}
-          fileName={`${row.variableName}_Outliers.csv`}
-          totalCount={totalCount}
-          user={user}
-        >
-          <Icon type="save" />
-          {t('common.instanceIds')}
-        </DownloadButton>
-      </div>,
+      row.variableName + '=' + row.variableTerm,
+      row.instanceCount.toString(),
       (+(row.outlierToAllInstancesRatio * 100).toFixed(2)).toString(),
       (+(row.outlierRatio * 100).toFixed(2)).toString(),
-      row.variableName + '=' + row.variableTerm,
     ]);
   };
 
@@ -74,10 +51,10 @@ export function VariablesTable({selectedNode, config, totalCount, user}: Variabl
   if (data?.length) {
     tableData = {
       head: [
+        t('report.variables.default').toString(),
         t('analysis.task.detailsModal.table.outliersNumber').toString(),
         t('analysis.task.detailsModal.table.ofTotalPercentage').toString(),
         t('analysis.task.detailsModal.table.ofOutliersPercentage').toString(),
-        t('report.variables.default').toString(),
       ],
       body: constructTableBody(data),
     };
@@ -95,5 +72,3 @@ export function VariablesTable({selectedNode, config, totalCount, user}: Variabl
 
   return <Table {...tableData} disablePagination className="VariablesTable" />;
 }
-
-export default withUser(VariablesTable);

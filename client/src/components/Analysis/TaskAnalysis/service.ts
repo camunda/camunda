@@ -6,7 +6,7 @@
  */
 
 import {t} from 'translation';
-import {post, formatQuery} from 'request';
+import {post} from 'request';
 import {AnalysisDurationChartEntry} from 'types';
 
 export interface OutliersVariable {
@@ -48,12 +48,6 @@ export async function loadCommonOutliersVariables(
 ): Promise<OutliersVariable[]> {
   const response = await post('api/analysis/significantOutlierVariableTerms', params);
   return await response.json();
-}
-
-export function getInstancesDownloadUrl(query: AnalysisFlowNodeOutlierParameters): string {
-  return `api/analysis/significantOutlierVariableTerms/processInstanceIdsExport?${formatQuery(
-    query
-  )}`;
 }
 
 export async function loadDurationData(

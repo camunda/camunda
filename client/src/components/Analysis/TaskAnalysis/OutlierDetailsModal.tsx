@@ -7,11 +7,9 @@
 
 import {Modal, DurationChart} from 'components';
 import {t} from 'translation';
-import {useUser} from 'hooks';
 
 import {AnalysisProcessDefinitionParameters, SelectedNode, getOutlierSummary} from './service';
 import VariablesTable from './VariablesTable';
-import InstancesButton from './InstancesButton';
 
 import './OutlierDetailsModal.scss';
 
@@ -26,25 +24,16 @@ export default function OutlierDetailsModal({
   onClose,
   config,
 }: OutlierDetailsModalProps) {
-  const {id, name, higherOutlier, data, totalCount} = selectedNode;
+  const {name, higherOutlier, data, totalCount} = selectedNode;
   const {count, relation} = higherOutlier;
-  const {user} = useUser();
 
   return (
     <Modal open onClose={onClose} className="OutlierDetailsModal" size="lg">
       <Modal.Header>{t('analysis.task.detailsModal.title', {name})}</Modal.Header>
       <Modal.Content>
         <p className="description">
-          {t('analysis.task.totalTaskInstances', {count: totalCount})}
+          {t('analysis.task.totalFlowNodeInstances', {count: totalCount})}
           <span>{getOutlierSummary(count, relation)}</span>
-          <InstancesButton
-            id={id}
-            name={name}
-            value={higherOutlier.boundValue}
-            config={config}
-            totalCount={totalCount}
-            user={user}
-          />
         </p>
         <h2>{t('analysis.task.detailsModal.durationChart')}</h2>
         <DurationChart
@@ -52,7 +41,7 @@ export default function OutlierDetailsModal({
           colors={data.map(({outlier}) => (outlier ? '#1991c8' : '#eeeeee'))}
         />
         <h2>{t('analysis.task.detailsModal.variablesTable')}</h2>
-        <VariablesTable config={config} selectedNode={selectedNode} totalCount={totalCount} />
+        <VariablesTable config={config} selectedNode={selectedNode} />
       </Modal.Content>
     </Modal>
   );

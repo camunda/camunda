@@ -958,9 +958,9 @@
     "branchAnalysis": "Branch analysis",
     "task": {
       "label": "Task analysis",
-      "totalTaskInstances": "Total task instances: {count}",
-      "result": "Result: {count} process instances do match these criteria",
-      "totalInstances": "Total Instances",
+      "totalFlowNodeInstances": "Total flow node instances: {count}",
+      "result": "Number of flow node instances matching the filter: {count}",
+      "totalInstances": "Total number of flow node instances",
       "tooltip": {
         "outlier": {
           "label": "Outlier",
@@ -974,29 +974,29 @@
       },
       "notFound": "No outliers found for the selected process",
       "onlyCompletedHint": "Note: The task analysis is performed on completed flow nodes only",
-      "info": "Heatmap displays the incidence of higher outliers based on duration. Calculated by z-score.",
+      "info": "Heatmap displays the incidence of higher outliers based on duration.",
       "tooltipText": {
         "singular": "{count} instance took {percentage}% longer than average.",
         "plural": "{count} instances took {percentage}% longer than average."
       },
       "table": {
-        "heading": "Outlying tasks",
-        "taskName": "Task name",
-        "outliers": "Outliers"
+        "heading": "Outliers",
+        "flowNodeName": "Flow node name",
+        "outliers": "Flow node instances with outliers"
       },
       "detailsModal": {
-        "title": "Results for task \"{name}\"",
-        "durationChart": "Duration distribution chart",
-        "variablesTable": "Common significant variables table",
+        "title": "Results for flow node \"{name}\"",
+        "durationChart": "Duration distribution",
+        "variablesTable": "Common significant variables",
         "axisLabels": {
           "duration": "Duration",
           "instanceCount": "Instance count"
         },
         "table": {
           "emptyTableMessage": "No significant variable value occurrences found on outlier instances",
-          "outliersNumber": "Number of outlier instances",
+          "outliersNumber": "Flow node instances with outliers",
           "ofTotalPercentage": "% of total instances",
-          "ofOutliersPercentage": "% of dutlier instances"
+          "ofOutliersPercentage": "% of outlier instances"
         }
       }
     },

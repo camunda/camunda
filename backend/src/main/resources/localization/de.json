@@ -958,9 +958,9 @@
     "branchAnalysis": "Verlaufsanalyse",
     "task": {
       "label": "Aufgabeanalyse",
-      "totalTaskInstances": "Aufgabeninstanzen insgesamt: {count}",
-      "result": "Ergebnis: {count} Prozessinstanzen erfüllen diese Kriterien",
-      "totalInstances": "Instanzen insgesamt",
+      "totalFlowNodeInstances": "Gesamtanzahl von Prozesskonteninstanzen: {count}",
+      "result": "Anzahl der Prozessknoteninstanzen, die dem Filter entsprechen: {count}",
+      "totalInstances": "Gesamtanzahl der Prozessknoteninstanzen",
       "tooltip": {
         "outlier": {
           "label": "Ausreißer",
@@ -974,27 +974,27 @@
       },
       "notFound": "Keine Ausreißer für den ausgewählten Prozess gefunden",
       "onlyCompletedHint": "Hinweis: Die Aufgabeanalyse wird nur für abgeschlossene Knoten durchgeführt",
-      "info": "Die Heatmap zeigt die Häufigkeit nach oben abweichender Ausreißer basierend auf der Dauer an. Berechnet mit dem Z-Score.",
+      "info": "Die Heatmap zeigt die Häufigkeit nach oben abweichender Ausreißer basierend auf der Dauer an.",
       "tooltipText": {
         "singular": "{count} Instanz hat {percentage}% länger gedauert als der Durchschnitt.",
         "plural": "{count} Instanzen haben {percentage}% länger gedauert als der Durchschnitt."
       },
       "table": {
-        "heading": "Randaufgaben",
-        "taskName": "Aufgabennname",
-        "outliers": "Ausreißer"
+        "heading": "Ausreißer",
+        "flowNodeName": "Prozessknotenname",
+        "outliers": "Prozessknoteninstanzen mit Ausreißern"
       },
       "detailsModal": {
-        "title": "Ergebnisse für Aufgabe \"{name}\"",
-        "durationChart": "Laufzeitverteilungsdiagramm",
-        "variablesTable": "Tabelle der signifikanten Variablenwerte",
+        "title": "Ergebnisse für Prozessknoten \"{name}\"",
+        "durationChart": "Laufzeitverteilungs",
+        "variablesTable": "Signifikanten Variablenwerte",
         "axisLabels": {
           "duration": "Dauer",
           "instanceCount": "Instanzanzahl"
         },
         "table": {
           "emptyTableMessage": "Es wurden keine signifikanten Variablenwerte unter den Ausreißerinstanzen gefunden",
-          "outliersNumber": "Anzahl der Ausreißerinstanzen",
+          "outliersNumber": "Prozessknoteninstanzen mit Ausreißern",
           "ofTotalPercentage": "% aller Instanzen",
           "ofOutliersPercentage": "% der Ausreißerinstanzen"
         }

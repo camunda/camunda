@@ -12,9 +12,4 @@ export async function loadNodesOutliers(config) {
   return await response.json();
 }
 
-export {
-  loadDurationData,
-  loadCommonOutliersVariables,
-  getInstancesDownloadUrl,
-  getOutlierSummary,
-} from './service.ts';
+export {loadDurationData, loadCommonOutliersVariables, getOutlierSummary} from './service.ts';

@@ -10,7 +10,7 @@ import {shallow} from 'enzyme';
 
 import {LoadingIndicator} from 'components';
 
-import {VariablesTable} from './VariablesTable';
+import VariablesTable from './VariablesTable';
 import {SelectedNode, loadCommonOutliersVariables} from './service';
 
 const selectedNode = {
@@ -26,9 +26,6 @@ const props = {
     processDefinitionVersions: [],
     tenantIds: [],
   },
-  getUser: jest.fn(),
-  refreshUser: jest.fn(),
-  totalCount: 0,
   selectedNode: selectedNode,
 };
 
@@ -43,7 +40,6 @@ jest.mock('./service', () => ({
       outlierToAllInstancesRatio: 0.01,
     },
   ]),
-  getInstancesDownloadUrl: jest.fn(),
 }));
 
 it('should Load common outliers variables on mount', async () => {
@@ -61,11 +57,10 @@ it('should render a table with correct data', async () => {
   const tableBody = node.find('Table').prop<(string | JSX.Element)[][]>('body');
 
   expect(tableBody.length).toBe(1);
-  const outlierCount = shallow(tableBody[0]?.[0] as JSX.Element);
-  expect(outlierCount.text()).toContain('50 instances');
-  expect(tableBody[0]?.[1]).toEqual('1');
-  expect(tableBody[0]?.[2]).toEqual('10');
-  expect(tableBody[0]?.[3]).toEqual('department=engineering');
+  expect(tableBody[0]?.[0]).toEqual('department=engineering');
+  expect(tableBody[0]?.[1]).toContain('50');
+  expect(tableBody[0]?.[2]).toEqual('1');
+  expect(tableBody[0]?.[3]).toEqual('10');
 });
 
 it('should render a loading indicator while loading the data', async () => {
