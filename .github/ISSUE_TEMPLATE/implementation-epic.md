@@ -15,9 +15,9 @@ assignees: ''
 -->
 
 ```[tasklist]
-### Pull Requests
+### Issues
 ```
 
 
 ### Links
-<!-- Add links to support tickets -->
+<!-- Add links to support tickets or other issues  -->

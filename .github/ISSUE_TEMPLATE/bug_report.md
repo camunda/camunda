@@ -26,7 +26,6 @@ assignees: ''
 ### Environment:
 - Optimize version : 
 - ES version :
-- OS + Browser version : 
 
 
 ### Additional information
@@ -34,7 +33,7 @@ assignees: ''
 
 
 ### Links
-<!-- Add links to support tickets -->
+<!-- Add links to support tickets or other issues  -->
 
 ### Breakdown
 
