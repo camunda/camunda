@@ -315,7 +315,6 @@ public class IntermediateThrowEventProcessor
     @Override
     public void onActivate(
         final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating) {
-      compensationSubscriptionBehaviour.updateCompensationSubscription(activating);
       final BpmnElementContext activated =
           stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
 
@@ -329,6 +328,7 @@ public class IntermediateThrowEventProcessor
         // activate the compensation handler
         completedActivities.forEach(
             activity -> {
+              compensationSubscriptionBehaviour.triggerCompensationSubscription(activating);
               compensationSubscriptionBehaviour.activateCompensationHandler(activity, activated);
             });
       }

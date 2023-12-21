@@ -328,7 +328,6 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
 
     @Override
     public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
-      compensationSubscriptionBehaviour.updateCompensationSubscription(activating);
       final var activated =
           stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
       // check for activities that are completed and have compensation handlers
@@ -342,6 +341,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
         // activate the compensation handler
         completedActivities.forEach(
             activity -> {
+              compensationSubscriptionBehaviour.triggerCompensationSubscription(activating);
               compensationSubscriptionBehaviour.activateCompensationHandler(activity, activated);
             });
       }
