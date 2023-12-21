@@ -333,6 +333,19 @@ final class ReconfigurationTest {
           .join();
 
       m4.join(id1, id2, id3).join();
+      Awaitility.await("All members have committed the entry")
+          .untilAsserted(
+              () ->
+                  assertThat(List.of(m1, m2, m3, m4))
+                      .allSatisfy(
+                          server ->
+                              assertThat(
+                                      server
+                                          .getContext()
+                                          .getCluster()
+                                          .getConfiguration()
+                                          .requiresJointConsensus())
+                                  .isFalse()));
       m5.join(id1, id2, id3).join();
 
       // when - no quorum possible because three out of five members are down
@@ -366,6 +379,19 @@ final class ReconfigurationTest {
           .join();
 
       m4.join(id1, id2, id3).join();
+      Awaitility.await("All members have committed the entry")
+          .untilAsserted(
+              () ->
+                  assertThat(List.of(m1, m2, m3, m4))
+                      .allSatisfy(
+                          server ->
+                              assertThat(
+                                      server
+                                          .getContext()
+                                          .getCluster()
+                                          .getConfiguration()
+                                          .requiresJointConsensus())
+                                  .isFalse()));
       m5.join(id1, id2, id3).join();
 
       // when - original members fail so that quorum depends on new members
@@ -438,11 +464,14 @@ final class ReconfigurationTest {
       // then - all members show a configuration with 2 active members
       final var expected =
           others.stream().map(server -> server.cluster().getLocalMember()).toList();
-      assertThat(others)
-          .allSatisfy(
-              member ->
-                  assertThat(member.cluster().getMembers())
-                      .containsExactlyInAnyOrderElementsOf(expected));
+      Awaitility.await()
+          .untilAsserted(
+              () ->
+                  assertThat(others)
+                      .allSatisfy(
+                          member ->
+                              assertThat(member.cluster().getMembers())
+                                  .containsExactlyInAnyOrderElementsOf(expected)));
     }
 
     @Test
@@ -508,8 +537,11 @@ final class ReconfigurationTest {
 
       // then - all members show a configuration with 1 active member
       final var expected = List.of(new DefaultRaftMember(id1, Type.ACTIVE, Instant.now()));
-
-      assertThat(m1.cluster().getMembers()).containsExactlyInAnyOrderElementsOf(expected);
+      Awaitility.await("All members have configuration with 1 active member")
+          .untilAsserted(
+              () ->
+                  assertThat(m1.cluster().getMembers())
+                      .containsExactlyInAnyOrderElementsOf(expected));
     }
 
     @Test
