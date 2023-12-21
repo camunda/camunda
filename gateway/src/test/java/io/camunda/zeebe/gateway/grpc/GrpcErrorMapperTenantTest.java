@@ -11,12 +11,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.zeebe.gateway.RequestMapper;
+import io.camunda.zeebe.gateway.cmd.IllegalTenantRequestException;
 import io.camunda.zeebe.gateway.cmd.InvalidTenantRequestException;
 import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.logging.RecordingAppender;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -28,11 +30,18 @@ import org.apache.logging.slf4j.Log4jLogger;
 import org.apache.logging.slf4j.Log4jMarkerFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class GrpcErrorMapperTenantTest {
+
+  private static final String INVALID_TENANT_REQUEST_EXCEPTION_REASON =
+      "tenant could not be retrieved from the request context";
+
+  private static final String ILLEGAL_TENANT_REQUEST_EXCEPTION_REASON =
+      "tenant is not authorized to perform this request";
 
   private final RecordingAppender recorder = new RecordingAppender();
   private final GrpcErrorMapper errorMapper = new GrpcErrorMapper();
@@ -103,6 +112,64 @@ public class GrpcErrorMapperTenantTest {
 
     // then
     assertThat(recorder.getAppendedEvents()).hasSize(0);
+  }
+
+  @Test
+  public void shouldLogErrorForNullAuthorizedTenants() {
+    // given
+    final String requestName = "DeployResource";
+    InterceptorUtil.setAuthorizedTenants(null).attach();
+
+    try {
+      RequestMapper.setMultiTenancyEnabled(true);
+      RequestMapper.ensureTenantIdSet(requestName, "Test-1");
+    } catch (final RuntimeException exception) {
+      assertThat(exception)
+          .isInstanceOf(InvalidTenantRequestException.class)
+          .hasMessageContaining(INVALID_TENANT_REQUEST_EXCEPTION_REASON);
+
+      // when
+      log.setLevel(Level.DEBUG);
+      final StatusRuntimeException statusException = errorMapper.mapError(exception, logger);
+
+      // then
+      assertThat(statusException.getStatus().getCode()).isEqualTo(Code.INVALID_ARGUMENT);
+      assertThat(recorder.getAppendedEvents()).hasSize(1);
+      final LogEvent event = recorder.getAppendedEvents().get(0);
+      assertThat(event.getLevel()).isEqualTo(Level.DEBUG);
+      assertThat(event.getMessage().getFormattedMessage())
+          .contains("Test-1")
+          .contains(INVALID_TENANT_REQUEST_EXCEPTION_REASON);
+    }
+  }
+
+  @Test
+  public void shouldLogErrorForEmptyAuthorizedTenants() {
+    // given
+    final String requestName = "DeployResource";
+    InterceptorUtil.setAuthorizedTenants(Arrays.asList()).attach();
+
+    try {
+      RequestMapper.setMultiTenancyEnabled(true);
+      RequestMapper.ensureTenantIdSet(requestName, "Test-1");
+    } catch (final RuntimeException exception) {
+      assertThat(exception)
+          .isInstanceOf(IllegalTenantRequestException.class)
+          .hasMessageContaining(ILLEGAL_TENANT_REQUEST_EXCEPTION_REASON);
+
+      // when
+      log.setLevel(Level.DEBUG);
+      final StatusRuntimeException statusException = errorMapper.mapError(exception, logger);
+
+      // then
+      assertThat(statusException.getStatus().getCode()).isEqualTo(Code.PERMISSION_DENIED);
+      assertThat(recorder.getAppendedEvents()).hasSize(1);
+      final LogEvent event = recorder.getAppendedEvents().get(0);
+      assertThat(event.getLevel()).isEqualTo(Level.DEBUG);
+      assertThat(event.getMessage().getFormattedMessage())
+          .contains("Test-1")
+          .contains(ILLEGAL_TENANT_REQUEST_EXCEPTION_REASON);
+    }
   }
 
   @ParameterizedTest
