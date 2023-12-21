@@ -18,6 +18,7 @@ import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
 import io.camunda.identity.sdk.tenants.dto.Tenant;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
+import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
 import io.grpc.Context;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
@@ -205,7 +206,7 @@ public class IdentityInterceptorTest {
   private static ListAssert<String> assertAuthorizedTenants() {
     try {
       return assertThat(
-          Context.current().call(() -> IdentityInterceptor.AUTHORIZED_TENANTS_KEY.get()));
+          Context.current().call(() -> InterceptorUtil.getAuthorizedTenantsKey().get()));
     } catch (final Exception e) {
       throw new RuntimeException("Unable to retrieve authorized tenants from context", e);
     }
