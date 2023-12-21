@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -84,7 +83,7 @@ public class BpmnCompensationSubscriptionBehaviour {
   }
 
   public void createCompensationSubscription(
-      final ExecutableFlowNode element, final BpmnElementContext context) {
+      final ExecutableActivity element, final BpmnElementContext context) {
     if (hasCompensationBoundaryEvent(element)) {
       final var key = keyGenerator.nextKey();
       final var compensation =
@@ -93,41 +92,30 @@ public class BpmnCompensationSubscriptionBehaviour {
               .setProcessInstanceKey(context.getProcessInstanceKey())
               .setProcessDefinitionKey(context.getProcessDefinitionKey())
               .setCompensableActivityId(BufferUtil.bufferAsString(context.getElementId()))
-              .setCompensableActivityScopeId(context.getFlowScopeKey());
+              .setCompensableActivityScopeId(
+                  BufferUtil.bufferAsString(element.getFlowScope().getId()));
       stateWriter.appendFollowUpEvent(key, CompensationSubscriptionIntent.CREATED, compensation);
     }
   }
 
-  public void updateCompensationSubscription(final BpmnElementContext context) {
-    if (isCompensationThrowEvent(context)) {
-      final var key = keyGenerator.nextKey();
-      final var compensation =
-          new CompensationSubscriptionRecord()
-              .setTenantId(context.getTenantId())
-              .setProcessInstanceKey(context.getProcessInstanceKey())
-              .setProcessDefinitionKey(context.getProcessDefinitionKey())
-              .setThrowEventId(BufferUtil.bufferAsString(context.getElementId()))
-              .setThrowEventInstanceKey(context.getElementInstanceKey());
-      stateWriter.appendFollowUpEvent(key, CompensationSubscriptionIntent.TRIGGERED, compensation);
-    }
+  public void triggerCompensationSubscription(final BpmnElementContext context) {
+    final var key = keyGenerator.nextKey();
+    final var compensation =
+        new CompensationSubscriptionRecord()
+            .setTenantId(context.getTenantId())
+            .setProcessInstanceKey(context.getProcessInstanceKey())
+            .setProcessDefinitionKey(context.getProcessDefinitionKey())
+            .setThrowEventId(BufferUtil.bufferAsString(context.getElementId()))
+            .setThrowEventInstanceKey(context.getElementInstanceKey());
+    stateWriter.appendFollowUpEvent(key, CompensationSubscriptionIntent.TRIGGERED, compensation);
   }
 
-  private boolean hasCompensationBoundaryEvent(final ExecutableFlowNode element) {
-    if (!(element instanceof ExecutableActivity)) {
-      return false;
-    }
+  private boolean hasCompensationBoundaryEvent(final ExecutableActivity element) {
     final var compensationBoundaryEvent =
-        ((ExecutableActivity) element)
-            .getBoundaryEvents().stream()
-                .filter(boundaryEvent -> boundaryEvent.getEventType() == BpmnEventType.COMPENSATION)
-                .findFirst();
+        element.getBoundaryEvents().stream()
+            .filter(boundaryEvent -> boundaryEvent.getEventType() == BpmnEventType.COMPENSATION)
+            .findFirst();
     return compensationBoundaryEvent.isPresent();
-  }
-
-  private boolean isCompensationThrowEvent(final BpmnElementContext context) {
-    return BpmnEventType.COMPENSATION.equals(context.getBpmnEventType())
-        && (BpmnElementType.INTERMEDIATE_THROW_EVENT.equals(context.getBpmnElementType())
-            || BpmnElementType.END_EVENT.equals(context.getBpmnElementType()));
   }
 
   private void activateAndCompleteCompensationBoundaryEvent(
@@ -138,6 +126,7 @@ public class BpmnCompensationSubscriptionBehaviour {
     boundaryEventRecord.wrap(context.getRecordValue());
     boundaryEventRecord.setBpmnElementType(BpmnElementType.BOUNDARY_EVENT);
     boundaryEventRecord.setElementId(boundaryEvent.getId());
+    boundaryEventRecord.setBpmnEventType(BpmnEventType.COMPENSATION);
 
     stateWriter.appendFollowUpEvent(
         boundaryEventKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, boundaryEventRecord);
