@@ -194,46 +194,56 @@ public class CompensationEventExecutionTest {
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .limitToProcessInstanceCompleted())
+                .limit("CompensationHandler", ProcessInstanceIntent.ELEMENT_ACTIVATED))
         .extracting(
             r -> r.getValue().getBpmnElementType(),
+            r -> r.getValue().getBpmnEventType(),
             Record::getIntent,
             r -> r.getValue().getElementId())
         .containsSubsequence(
             tuple(
                 BpmnElementType.USER_TASK,
+                BpmnEventType.UNSPECIFIED,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED,
                 "ActivityToCompensate"),
             tuple(
                 BpmnElementType.USER_TASK,
+                BpmnEventType.UNSPECIFIED,
                 ProcessInstanceIntent.ELEMENT_COMPLETED,
                 "ActivityToCompensate"),
             tuple(
                 BpmnElementType.INTERMEDIATE_THROW_EVENT,
+                BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED,
                 "CompensationThrowEvent"),
             tuple(
                 BpmnElementType.BOUNDARY_EVENT,
+                BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_ACTIVATING,
                 "CompensationBoundaryEvent"),
             tuple(
                 BpmnElementType.BOUNDARY_EVENT,
+                BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED,
                 "CompensationBoundaryEvent"),
             tuple(
                 BpmnElementType.BOUNDARY_EVENT,
+                BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_COMPLETING,
                 "CompensationBoundaryEvent"),
             tuple(
                 BpmnElementType.BOUNDARY_EVENT,
+                BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_COMPLETED,
                 "CompensationBoundaryEvent"),
             tuple(
                 BpmnElementType.USER_TASK,
+                BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_ACTIVATING,
                 "CompensationHandler"),
             tuple(
                 BpmnElementType.USER_TASK,
+                BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED,
                 "CompensationHandler"));
   }
@@ -255,46 +265,56 @@ public class CompensationEventExecutionTest {
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .limitToProcessInstanceCompleted())
+                .limit("CompensationHandler", ProcessInstanceIntent.ELEMENT_ACTIVATED))
         .extracting(
             r -> r.getValue().getBpmnElementType(),
+            r -> r.getValue().getBpmnEventType(),
             Record::getIntent,
             r -> r.getValue().getElementId())
         .containsSubsequence(
             tuple(
                 BpmnElementType.USER_TASK,
+                BpmnEventType.UNSPECIFIED,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED,
                 "ActivityToCompensate"),
             tuple(
                 BpmnElementType.USER_TASK,
+                BpmnEventType.UNSPECIFIED,
                 ProcessInstanceIntent.ELEMENT_COMPLETED,
                 "ActivityToCompensate"),
             tuple(
                 BpmnElementType.END_EVENT,
+                BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED,
                 "CompensationEndEvent"),
             tuple(
                 BpmnElementType.BOUNDARY_EVENT,
+                BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_ACTIVATING,
                 "CompensationBoundaryEvent"),
             tuple(
                 BpmnElementType.BOUNDARY_EVENT,
+                BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED,
                 "CompensationBoundaryEvent"),
             tuple(
                 BpmnElementType.BOUNDARY_EVENT,
+                BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_COMPLETING,
                 "CompensationBoundaryEvent"),
             tuple(
                 BpmnElementType.BOUNDARY_EVENT,
+                BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_COMPLETED,
                 "CompensationBoundaryEvent"),
             tuple(
                 BpmnElementType.USER_TASK,
+                BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_ACTIVATING,
                 "CompensationHandler"),
             tuple(
                 BpmnElementType.USER_TASK,
+                BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED,
                 "CompensationHandler"));
   }
