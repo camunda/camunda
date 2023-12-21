@@ -65,23 +65,35 @@ public class UserTaskCommandPreconditionChecker {
               String.format(INVALID_USER_TASK_STATE_MESSAGE, intent, userTaskKey, lifecycleState)));
     }
 
-    if (intent.equals(CLAIM_INTENT)) {
-      final String assignee = command.getValue().getAssignee();
-      if (assignee.isBlank()) {
-        return Either.left(
-            Tuple.of(
-                RejectionType.INVALID_STATE,
-                String.format(INVALID_USER_TASK_EMPTY_ASSIGNEE_MESSAGE, intent, userTaskKey)));
+    if (CLAIM_INTENT.equals(intent)) {
+      final var checkResult = checkClaim(command, persistedRecord);
+      if (checkResult.isLeft()) {
+        return checkResult;
       }
+    }
 
-      final String currentAssignee = persistedRecord.getAssignee();
-      final boolean canClaim = currentAssignee.isBlank() || currentAssignee.equals(assignee);
-      if (!canClaim) {
-        return Either.left(
-            Tuple.of(
-                RejectionType.INVALID_STATE,
-                String.format(INVALID_USER_TASK_ASSIGNEE_MESSAGE, intent, userTaskKey)));
-      }
+    return Either.right(persistedRecord);
+  }
+
+  private Either<Tuple<RejectionType, String>, UserTaskRecord> checkClaim(
+      final TypedRecord<UserTaskRecord> command, final UserTaskRecord persistedRecord) {
+
+    final long userTaskKey = command.getKey();
+    final String assignee = command.getValue().getAssignee();
+    if (assignee.isBlank()) {
+      return Either.left(
+          Tuple.of(
+              RejectionType.INVALID_STATE,
+              String.format(INVALID_USER_TASK_EMPTY_ASSIGNEE_MESSAGE, intent, userTaskKey)));
+    }
+
+    final String currentAssignee = persistedRecord.getAssignee();
+    final boolean canClaim = currentAssignee.isBlank() || currentAssignee.equals(assignee);
+    if (!canClaim) {
+      return Either.left(
+          Tuple.of(
+              RejectionType.INVALID_STATE,
+              String.format(INVALID_USER_TASK_ASSIGNEE_MESSAGE, intent, userTaskKey)));
     }
 
     return Either.right(persistedRecord);
