@@ -225,4 +225,13 @@ public class ExpressionLanguageTest {
     assertThat(evaluationResult).isNotNull();
     assertThat(evaluationResult.getString()).isEqualTo("Hello\nWorld");
   }
+
+  @Test
+  public void shouldNotEscapedDoubleQuotesInString() {
+    final var expression = expressionLanguage.parseExpression("=\"Hello \\\"Zee\\\"!\"");
+    final var evaluationResult = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
+
+    assertThat(evaluationResult).isNotNull();
+    assertThat(evaluationResult.getString()).isEqualTo("Hello \"Zee\"!");
+  }
 }
