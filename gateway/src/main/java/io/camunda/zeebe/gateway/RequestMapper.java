@@ -350,6 +350,10 @@ public final class RequestMapper {
       throw new InvalidTenantRequestException(
           commandName, tenantId, "tenant could not be retrieved from the request context", e);
     }
+    if (authorizedTenants == null) {
+      throw new InvalidTenantRequestException(
+          commandName, tenantId, "tenant could not be retrieved from the request context");
+    }
     if (!authorizedTenants.contains(tenantId)) {
       throw new IllegalTenantRequestException(
           commandName, tenantId, "tenant is not authorized to perform this request");
