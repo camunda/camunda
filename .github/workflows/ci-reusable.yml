@@ -50,7 +50,7 @@ env:
   JAVA_VERSION: ${{ inputs.javaVersion }}
   BRANCH_NAME: ${{ inputs.branch }}
   IS_MASTER_BRANCH: ${{ inputs.branch == 'master' }}
-  IS_FE_BRANCH: ${{ startsWith(inputs.branch, 'fe-') || startsWith(inputs.branch, 'renovate/client/') }}
+  RUN_BE_TESTS: ${{ !startsWith(inputs.branch, 'fe-') && !startsWith(inputs.branch, 'renovate/') }}
   LIMITS_CPU: ${{ inputs.forkCount }} # consumed by `maven-surefire-plugin` & `maven-failsafe-plugin` plugins defined in main `pom.xml` file
 
 jobs:
@@ -151,7 +151,7 @@ jobs:
       #########################################################################
       # Tests: run tests for all Maven modules
       - name: Run Tests
-        if: ${{ env.IS_FE_BRANCH == 'false' }}
+        if: ${{ env.RUN_BE_TESTS == 'false' }}
         run: |
           mvn -T4 verify -P ${{ inputs.testProfile }},skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2 -Dcamunda.tasklist.database=${{ inputs.database }}
 
@@ -159,7 +159,7 @@ jobs:
       # Reports: publish test metrics results
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2.11.0
-        if: ${{ env.IS_FE_BRANCH == 'false' && (success() || failure()) }} # Publish results for non-FE branch even if the build step was failed
+        if: ${{ env.RUN_BE_TESTS == 'false' && (success() || failure()) }} # Publish results for non-FE branch even if the build step was failed
         with:
           files: |
             **/target/surefire-reports/*.xml
@@ -174,7 +174,7 @@ jobs:
 
       - name: Upload JaCoCo report
         uses: actions/upload-artifact@v4
-        if: ${{ env.IS_FE_BRANCH == 'false' && (success() || failure()) }}
+        if: ${{ env.RUN_BE_TESTS == 'false' && (success() || failure()) }}
         with:
           name: jacoco-report-${{ steps.sanitize.outputs.branch_name }}-${{ inputs.database }}
           path: ${{ github.workspace }}/test-coverage/target/site/jacoco-aggregate/

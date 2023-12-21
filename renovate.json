@@ -44,7 +44,6 @@
     }
   ],
   "branchPrefix": "renovate/",
-  "additionalBranchPrefix": "{{parentDir}}/",
   "ignoreDeps": ["docker.elastic.co/elasticsearch/elasticsearch"],
   "baseBranches": [
     "master",
