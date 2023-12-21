@@ -25,7 +25,7 @@ public class UserTaskCommandPreconditionChecker {
   private static final String INVALID_USER_TASK_ASSIGNEE_MESSAGE =
       "Expected to %s user task with key '%d', but it has already been assigned";
   private static final String INVALID_USER_TASK_EMPTY_ASSIGNEE_MESSAGE =
-      "Expected to %s user task with key '%d', but the assignee is empty";
+      "Expected to %s user task with key '%d', but provided assignee is empty";
 
   private static final String CLAIM_INTENT = "claim";
 
