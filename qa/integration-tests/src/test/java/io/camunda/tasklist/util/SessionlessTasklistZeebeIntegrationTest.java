@@ -28,6 +28,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.Instant;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.BeanFactory;
@@ -91,6 +92,7 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
     ReflectionTestUtils.setField(processService, "zeebeClient", getClient());
   }
 
+  @AfterEach
   public void after() {
     processCache.clearCache();
     importPositionHolder.cancelScheduledImportPositionUpdateTask().join();
