@@ -144,7 +144,7 @@ public final class ActivityTest {
             entry("urlStatic", "\"https://github.com/{{orgId}}/{{repoId}}\""),
             entry("urlExpression", "\"https://github.com/{{orgId}}/{{repoId}}\""),
             entry("quotesStatic", "\"My Name is &#34;Zeebe&#34;, nice to meet you\""),
-            entry("quotesExpression", "\"My Name is \\\\\\\"Zeebe\\\\\\\", nice to meet you\""));
+            entry("quotesExpression", "\"My Name is \\\"Zeebe\\\", nice to meet you\""));
   }
 
   @Test
