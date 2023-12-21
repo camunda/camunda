@@ -27,7 +27,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,8 +52,7 @@ public final class ClusterTopologyGossiper
   private List<MemberId> membersToSync = new LinkedList<>();
 
   // The handler which can merge topology updates and reacts to the changes.
-  private final Function<ClusterTopology, ActorFuture<ClusterTopology>>
-      clusterTopologyUpdateHandler;
+  private final Consumer<ClusterTopology> clusterTopologyUpdateHandler;
 
   public ClusterTopologyGossiper(
       final ConcurrencyControl executor,
@@ -61,7 +60,7 @@ public final class ClusterTopologyGossiper
       final ClusterMembershipService membershipService,
       final ClusterTopologySerializer serializer,
       final ClusterTopologyGossiperConfig config,
-      final Function<ClusterTopology, ActorFuture<ClusterTopology>> clusterTopologyUpdateHandler) {
+      final Consumer<ClusterTopology> clusterTopologyUpdateHandler) {
     this.executor = executor;
     this.communicationService = communicationService;
     this.membershipService = membershipService;
@@ -173,15 +172,7 @@ public final class ClusterTopologyGossiper
     if (!receivedGossipState.equals(gossipState)) {
       final ClusterTopology topology = receivedGossipState.getClusterTopology();
       if (topology != null) {
-        final var topologyUpdateFuture = clusterTopologyUpdateHandler.apply(topology);
-        topologyUpdateFuture.onComplete(
-            (updatedTopology, error) -> {
-              if (error != null) {
-                LOGGER.warn("Failed to process cluster topology received via gossip", error);
-              } else if (!updatedTopology.equals(gossipState.getClusterTopology())) {
-                onTopologyUpdated(updatedTopology);
-              }
-            });
+        clusterTopologyUpdateHandler.accept(topology);
       }
     }
   }

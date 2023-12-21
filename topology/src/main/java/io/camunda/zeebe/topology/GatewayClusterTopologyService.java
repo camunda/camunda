@@ -10,12 +10,12 @@ package io.camunda.zeebe.topology;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.Actor;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiper;
 import io.camunda.zeebe.topology.gossip.ClusterTopologyGossiperConfig;
 import io.camunda.zeebe.topology.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.topology.state.ClusterTopology;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The GatewayClusterTopologyService contains minimal functionality required for the Gateway. The
@@ -23,7 +23,7 @@ import io.camunda.zeebe.topology.state.ClusterTopology;
  * service does not run ClusterTopologyManager, but only contains the ClusterTopologyGossiper.
  */
 public class GatewayClusterTopologyService extends Actor implements TopologyUpdateNotifier {
-
+  private static final Logger LOG = LoggerFactory.getLogger(GatewayClusterTopologyService.class);
   private final ClusterTopologyGossiper clusterTopologyGossiper;
 
   // Keep an in memory copy of the topology. No need to persist it.
@@ -43,20 +43,22 @@ public class GatewayClusterTopologyService extends Actor implements TopologyUpda
             this::updateClusterTopology);
   }
 
-  private ActorFuture<ClusterTopology> updateClusterTopology(
-      final ClusterTopology clusterTopology) {
-    final CompletableActorFuture<ClusterTopology> updated = new CompletableActorFuture<>();
+  private void updateClusterTopology(final ClusterTopology clusterTopology) {
+
     actor.run(
         () -> {
+          if (clusterTopology == null || clusterTopology.isUninitialized()) {
+            return;
+          }
+
           try {
             this.clusterTopology = this.clusterTopology.merge(clusterTopology);
-            updated.complete(clusterTopology);
+            clusterTopologyGossiper.updateClusterTopology(this.clusterTopology);
           } catch (final Exception updateFailed) {
-            updated.completeExceptionally(updateFailed);
+            LOG.warn(
+                "Failed to process received topology update {}", clusterTopology, updateFailed);
           }
         });
-
-    return updated;
   }
 
   @Override

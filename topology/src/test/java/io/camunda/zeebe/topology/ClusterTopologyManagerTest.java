@@ -152,13 +152,13 @@ final class ClusterTopologyManagerTest {
             .getClusterTopology()
             .join()
             .addMember(MemberId.from("10"), MemberState.initializeAsActive(Map.of()));
-    final var gossipedTopology =
-        clusterTopologyManager.onGossipReceived(topologyFromOtherMember).join();
+
+    clusterTopologyManager.onGossipReceived(topologyFromOtherMember);
 
     // then
     final ClusterTopology clusterTopology = clusterTopologyManager.getClusterTopology().join();
     assertThatClusterTopology(clusterTopology).hasOnlyMembers(Set.of(1, 10));
-    assertThat(gossipedTopology)
+    assertThat(gossipState.get())
         .describedAs("Gossip state contains same topology in topology manager")
         .isEqualTo(clusterTopology);
     assertThat(persistedClusterTopology.getTopology())
@@ -177,7 +177,7 @@ final class ClusterTopologyManagerTest {
             .getClusterTopology()
             .join()
             .addMember(MemberId.from("10"), MemberState.initializeAsActive(Map.of()));
-    clusterTopologyManager.onGossipReceived(topologyFromOtherMember).join();
+    clusterTopologyManager.onGossipReceived(topologyFromOtherMember);
 
     // then
     assertThat(persistedClusterTopology.getTopology().isUninitialized()).isTrue();
@@ -192,7 +192,7 @@ final class ClusterTopologyManagerTest {
     // when
     final ClusterTopology topologyFromOtherMember =
         initialTopology.startTopologyChange(List.of(new PartitionLeaveOperation(localMemberId, 1)));
-    clusterTopologyManager.onGossipReceived(topologyFromOtherMember).join();
+    clusterTopologyManager.onGossipReceived(topologyFromOtherMember);
 
     // then
     Awaitility.await("ClusterTopology is updated after applying topology change operation.")
@@ -242,7 +242,7 @@ final class ClusterTopologyManagerTest {
     // when
     final ClusterTopology topologyFromOtherMember =
         initialTopology.startTopologyChange(List.of(new PartitionLeaveOperation(localMemberId, 1)));
-    clusterTopologyManager.onGossipReceived(topologyFromOtherMember).join();
+    clusterTopologyManager.onGossipReceived(topologyFromOtherMember);
 
     // then
     Awaitility.await("ClusterTopology is updated after applying topology change operation.")
