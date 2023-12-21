@@ -71,7 +71,7 @@ jobs:
 
       - name: Import secrets
         id: secrets
-        uses: hashicorp/vault-action@2fb925f14cae8d86a835e7f5c14065e98fad63d8
+        uses: hashicorp/vault-action@45dc5344f1158c3cafbf0dd70a07632b41ad0a17
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -167,7 +167,7 @@ jobs:
 
       - name: Import secrets
         id: secrets
-        uses: hashicorp/vault-action@2fb925f14cae8d86a835e7f5c14065e98fad63d8
+        uses: hashicorp/vault-action@45dc5344f1158c3cafbf0dd70a07632b41ad0a17
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
