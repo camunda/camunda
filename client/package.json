@@ -14,7 +14,7 @@
     "@monaco-editor/react": "4.6.0",
     "@types/loadable__component": "5.13.7",
     "bpmn-js": "15.2.2",
-    "bpmn-moddle": "8.0.1",
+    "bpmn-moddle": "8.1.0",
     "date-fns": "2.30.0",
     "dmn-js": "14.5.0",
     "final-form": "4.20.10",
