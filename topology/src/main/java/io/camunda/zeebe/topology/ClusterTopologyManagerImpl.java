@@ -150,6 +150,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
                   // merge in case there was a concurrent update via gossip
                   persistedClusterTopology.update(
                       topology.merge(persistedClusterTopology.getTopology()));
+                  LOG.debug("Initialized topology '{}'", persistedClusterTopology.getTopology());
                   topologyGossiper.accept(persistedClusterTopology.getTopology());
                   setStarted();
                 } catch (final IOException e) {
@@ -166,14 +167,16 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
     }
   }
 
-  ActorFuture<ClusterTopology> onGossipReceived(final ClusterTopology receivedTopology) {
-    final ActorFuture<ClusterTopology> result = executor.createFuture();
+  void onGossipReceived(final ClusterTopology receivedTopology) {
     executor.run(
         () -> {
           if (!initialized) {
+            LOG.trace(
+                "Received topology {} before ClusterTopologyManager is initialized.",
+                receivedTopology);
             // When not started, do not update the local topology. This is to avoid any race
             // condition between FileInitializer and concurrently received topology via gossip.
-            result.complete(receivedTopology);
+            topologyGossiper.accept(receivedTopology);
             return;
           }
           try {
@@ -188,16 +191,17 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
                     receivedTopology,
                     mergedTopology);
                 persistedClusterTopology.update(mergedTopology);
+                topologyGossiper.accept(mergedTopology);
                 applyTopologyChangeOperation(mergedTopology);
               }
             }
-            result.complete(persistedClusterTopology.getTopology());
           } catch (final IOException error) {
-            result.completeExceptionally(error);
+            LOG.warn(
+                "Failed to process cluster topology received via gossip. '{}'",
+                receivedTopology,
+                error);
           }
         });
-
-    return result;
   }
 
   private boolean shouldApplyTopologyChangeOperation(final ClusterTopology mergedTopology) {
