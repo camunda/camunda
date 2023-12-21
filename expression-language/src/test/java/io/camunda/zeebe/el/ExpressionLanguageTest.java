@@ -219,7 +219,7 @@ public class ExpressionLanguageTest {
 
   @Test
   public void shouldNotEscapeSpecialCharactersInString() {
-    final var expression = expressionLanguage.parseExpression("Hello\nWorld");
+    final var expression = expressionLanguage.parseExpression("=\"Hello\nWorld\"");
     final var evaluationResult = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
 
     assertThat(evaluationResult).isNotNull();
