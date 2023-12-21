@@ -59,8 +59,8 @@ const ColumnHeader: React.FC<Props> = ({
     existingSortParams?.sortOrder === undefined && isDefault
       ? INITIAL_SORT_ORDER
       : existingSortParams?.sortBy === sortKey
-      ? existingSortParams?.sortOrder
-      : undefined;
+        ? existingSortParams?.sortOrder
+        : undefined;
 
   return (
     <TableHeader
@@ -79,8 +79,8 @@ const ColumnHeader: React.FC<Props> = ({
           ? currentSortOrder === 'asc'
             ? 'ASC'
             : currentSortOrder === 'desc'
-            ? 'DESC'
-            : 'NONE'
+              ? 'DESC'
+              : 'NONE'
           : 'NONE'
       }
       isSortable={!isDisabled}

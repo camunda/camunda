@@ -53,9 +53,8 @@ class ProcessesBase extends NetworkReconnectionHandler {
   fetchProcesses = this.retryOnConnectionLost(async (tenantId?: string) => {
     this.startFetching();
 
-    const {process, tenant: tenantFromURL} = getProcessInstanceFilters(
-      getSearchString(),
-    );
+    const {process, tenant: tenantFromURL} =
+      getProcessInstanceFilters(getSearchString());
 
     const tenant = tenantId ?? tenantFromURL;
 
@@ -218,9 +217,8 @@ class ProcessesBase extends NetworkReconnectionHandler {
 
   // This can't be a computed value, because it depends on window.location
   getSelectedProcessDetails = () => {
-    const {process, tenant, version} = getProcessInstanceFilters(
-      getSearchString(),
-    );
+    const {process, tenant, version} =
+      getProcessInstanceFilters(getSearchString());
 
     const selectedProcess = this.getProcess({
       bpmnProcessId: process,

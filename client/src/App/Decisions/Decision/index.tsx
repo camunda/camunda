@@ -108,9 +108,8 @@ const Decision: React.FC = observer(() => {
   const panelHeaderRef = useRef<HTMLDivElement>(null);
 
   useOperationsPanelResize(panelHeaderRef, (target, width) => {
-    target.style[
-      'marginRight'
-    ] = `calc(${width}px - ${COLLAPSABLE_PANEL_MIN_WIDTH})`;
+    target.style['marginRight'] =
+      `calc(${width}px - ${COLLAPSABLE_PANEL_MIN_WIDTH})`;
   });
 
   const getStatus = () => {

@@ -118,20 +118,20 @@ const getAdditionalContentStyles = (
                         top: 5px;
                     `
                     : direction === 'down'
-                    ? `
+                      ? `
                         left: 5px;
                     `
-                    : direction === 'left'
-                    ? `
+                      : direction === 'left'
+                        ? `
                         top: 5px;
                         right: 0px;
                     `
-                    : direction === 'up'
-                    ? `                 
+                        : direction === 'up'
+                          ? `                 
                         bottom: 0;
                         right: 5px;
                     `
-                    : ''
+                          : ''
                 }
 
             }
