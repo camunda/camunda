@@ -35,6 +35,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public IncidentRecord() {
+    super(10);
     declareProperty(errorTypeProp)
         .declareProperty(errorMessageProp)
         .declareProperty(bpmnProcessIdProp)

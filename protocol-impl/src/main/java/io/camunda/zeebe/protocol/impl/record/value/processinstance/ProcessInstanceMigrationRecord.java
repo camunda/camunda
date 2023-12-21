@@ -26,6 +26,7 @@ public final class ProcessInstanceMigrationRecord extends UnifiedRecordValue
               "mappingInstructions", ProcessInstanceMigrationMappingInstruction::new);
 
   public ProcessInstanceMigrationRecord() {
+    super(3);
     declareProperty(processInstanceKeyProperty)
         .declareProperty(targetProcessDefinitionKeyProperty)
         .declareProperty(mappingInstructionsProperty);

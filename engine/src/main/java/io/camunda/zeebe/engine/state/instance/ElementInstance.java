@@ -42,6 +42,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   private final LongProperty userTaskKeyProp = new LongProperty("userTaskKey", -1L);
 
   public ElementInstance() {
+    super(12);
     declareProperty(parentKeyProp)
         .declareProperty(childCountProp)
         .declareProperty(childActivatedCountProp)

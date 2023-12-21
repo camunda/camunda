@@ -26,6 +26,7 @@ public final class EventTrigger extends UnpackedObject implements DbValue {
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
 
   public EventTrigger() {
+    super(4);
     declareProperty(elementIdProp)
         .declareProperty(variablesProp)
         .declareProperty(eventKeyProp)

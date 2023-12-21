@@ -20,6 +20,7 @@ public class ResourceDeletionRecord extends UnifiedRecordValue
   private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
 
   public ResourceDeletionRecord() {
+    super(2);
     declareProperty(resourceKeyProp).declareProperty(tenantIdProp);
   }
 

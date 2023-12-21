@@ -18,6 +18,7 @@ public class UserTaskLifecycleStateValue extends UnpackedObject implements DbVal
       new EnumProperty<>("userTaskLifecycleState", LifecycleState.class);
 
   public UserTaskLifecycleStateValue() {
+    super(1);
     declareProperty(lifecycleStateProp);
   }
 

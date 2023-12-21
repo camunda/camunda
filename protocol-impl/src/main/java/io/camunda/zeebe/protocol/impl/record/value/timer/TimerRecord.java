@@ -31,6 +31,7 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public TimerRecord() {
+    super(7);
     declareProperty(elementInstanceKeyProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(dueDateProp)

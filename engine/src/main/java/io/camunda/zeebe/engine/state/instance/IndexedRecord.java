@@ -26,6 +26,7 @@ public final class IndexedRecord extends UnpackedObject implements DbValue {
       new ObjectProperty<>("processInstanceRecord", new ProcessInstanceRecord());
 
   IndexedRecord() {
+    super(3);
     declareProperty(keyProp).declareProperty(stateProp).declareProperty(valueProp);
   }
 
@@ -77,7 +78,7 @@ public final class IndexedRecord extends UnpackedObject implements DbValue {
   }
 
   @Override
-  public void wrap(final DirectBuffer buffer, int offset, final int length) {
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     final byte[] bytes = new byte[length];
     final UnsafeBuffer mutableBuffer = new UnsafeBuffer(bytes);
     buffer.getBytes(offset, bytes, 0, length);

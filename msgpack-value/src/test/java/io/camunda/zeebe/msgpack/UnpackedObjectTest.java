@@ -29,7 +29,7 @@ public class UnpackedObjectTest {
     public void shouldResetObjectBeforeReadingValue() {
       // given
       final var property = new StringProperty("property", "default");
-      final var unpackedObject = new UnpackedObject();
+      final var unpackedObject = new UnpackedObject(1);
 
       unpackedObject.declareProperty(property);
 
@@ -53,10 +53,10 @@ public class UnpackedObjectTest {
   public class SchemaEvolution {
     private final StringProperty sharedProperty = new StringProperty("shared", "default");
 
-    private final UnpackedObject oldSchemaObject = new UnpackedObject();
+    private final UnpackedObject oldSchemaObject = new UnpackedObject(2);
     private final IntegerProperty removedProperty = new IntegerProperty("removedProperty", 42);
 
-    private final UnpackedObject newSchemaObject = new UnpackedObject();
+    private final UnpackedObject newSchemaObject = new UnpackedObject(2);
     private final BooleanProperty addedProperty = new BooleanProperty("addedProperty", false);
 
     private final MutableDirectBuffer bufferSerializedWithOldSchema =

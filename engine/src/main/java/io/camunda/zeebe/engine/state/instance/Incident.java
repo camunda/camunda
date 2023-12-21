@@ -17,6 +17,7 @@ public class Incident extends UnpackedObject implements DbValue {
       new ObjectProperty<>("incidentRecord", new IncidentRecord());
 
   public Incident() {
+    super(1);
     declareProperty(recordProp);
   }
 

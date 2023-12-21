@@ -34,6 +34,7 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public MessageRecord() {
+    super(7);
     declareProperty(nameProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(timeToLiveProp)

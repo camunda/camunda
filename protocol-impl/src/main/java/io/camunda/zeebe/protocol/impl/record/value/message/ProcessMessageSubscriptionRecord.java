@@ -41,6 +41,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public ProcessMessageSubscriptionRecord() {
+    super(11);
     declareProperty(subscriptionPartitionIdProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)

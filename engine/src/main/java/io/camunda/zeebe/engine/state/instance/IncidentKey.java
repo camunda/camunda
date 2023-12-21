@@ -16,6 +16,7 @@ public class IncidentKey extends UnpackedObject implements DbValue {
   private final LongProperty keyProp = new LongProperty("key");
 
   public IncidentKey() {
+    super(1);
     declareProperty(keyProp);
   }
 

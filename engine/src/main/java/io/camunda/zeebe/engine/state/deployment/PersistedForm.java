@@ -32,6 +32,7 @@ public final class PersistedForm extends UnpackedObject implements DbValue {
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public PersistedForm() {
+    super(7);
     declareProperty(formIdProp)
         .declareProperty(versionProp)
         .declareProperty(formKeyProp)

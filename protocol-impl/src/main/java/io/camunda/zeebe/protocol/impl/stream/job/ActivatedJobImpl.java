@@ -19,6 +19,7 @@ public class ActivatedJobImpl extends UnpackedObject implements ActivatedJob {
       new ObjectProperty<>("record", new JobRecord());
 
   public ActivatedJobImpl() {
+    super(2);
     declareProperty(jobKey).declareProperty(jobRecord);
   }
 

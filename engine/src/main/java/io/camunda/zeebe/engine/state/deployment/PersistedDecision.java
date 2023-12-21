@@ -34,6 +34,7 @@ public final class PersistedDecision extends UnpackedObject implements DbValue {
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public PersistedDecision() {
+    super(7);
     declareProperty(decisionIdProp)
         .declareProperty(decisionNameProp)
         .declareProperty(versionProp)

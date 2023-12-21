@@ -27,6 +27,7 @@ public class ProcessInstanceMigrationMappingInstruction extends ObjectValue
   private final StringProperty targetElementIdProperty = new StringProperty("targetElementId", "");
 
   public ProcessInstanceMigrationMappingInstruction() {
+    super(2);
     declareProperty(sourceElementIdProperty).declareProperty(targetElementIdProperty);
   }
 

@@ -32,6 +32,7 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public PersistedProcess() {
+    super(7);
     declareProperty(versionProp)
         .declareProperty(keyProp)
         .declareProperty(bpmnProcessIdProp)

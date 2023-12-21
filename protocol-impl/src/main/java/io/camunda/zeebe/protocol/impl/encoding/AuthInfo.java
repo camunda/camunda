@@ -27,6 +27,7 @@ public class AuthInfo extends UnpackedObject {
   private final StringProperty authDataProp = new StringProperty("authData", "");
 
   public AuthInfo() {
+    super(2);
     declareProperty(formatProp).declareProperty(authDataProp);
   }
 
