@@ -28,11 +28,11 @@
       <bpmn:outgoing>SequenceFlow_1fcsq3j</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:sequenceFlow id="SequenceFlow_19e406m" sourceRef="task2" targetRef="task3" />
-    <bpmn:intermediateCatchEvent id="timer1" name="20 minutes">
+    <bpmn:intermediateCatchEvent id="timer1" name="1 minute">
       <bpmn:incoming>Flow_0z2tud8</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1izpkmf</bpmn:outgoing>
       <bpmn:timerEventDefinition>
-        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT20M</bpmn:timeDuration>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1M</bpmn:timeDuration>
       </bpmn:timerEventDefinition>
     </bpmn:intermediateCatchEvent>
     <bpmn:sequenceFlow id="SequenceFlow_1fcsq3j" sourceRef="task3" targetRef="Gateway_09jrxib" />
@@ -60,11 +60,11 @@
       <bpmn:outgoing>SequenceFlow_0pvrpnr</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:sequenceFlow id="SequenceFlow_0h8p3qy" sourceRef="task5" targetRef="task6" />
-    <bpmn:intermediateCatchEvent id="timer2" name="20 minutes">
+    <bpmn:intermediateCatchEvent id="timer2" name="1 minute">
       <bpmn:incoming>SequenceFlow_0pvrpnr</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0momtrt</bpmn:outgoing>
       <bpmn:timerEventDefinition>
-        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT20M</bpmn:timeDuration>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1M</bpmn:timeDuration>
       </bpmn:timerEventDefinition>
     </bpmn:intermediateCatchEvent>
     <bpmn:sequenceFlow id="SequenceFlow_0pvrpnr" sourceRef="task6" targetRef="timer2" />
