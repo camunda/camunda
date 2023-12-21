@@ -22,11 +22,11 @@ public class CompensationSubscriptionStateTest {
 
   private static final String TENANT_ID = "tenantId";
   private static final long PROCESS_INSTANCE_KEY = 1L;
-  private static final long PROCESS_DEFINITION_KEY = 1L;
+  private static final long PROCESS_DEFINITION_KEY = 2L;
   private static final String COMPENSABLE_ACTIVITY_ID = "compensableActivityId";
-  private static final long COMPENSABLE_ACTIVITY_SCOPE_ID = 1L;
+  private static final String COMPENSABLE_ACTIVITY_SCOPE_ID = "compensableActivityScopeId";
   private static final String THROW_EVENT_ID = "throwEventId";
-  private static final long THROW_EVENT_INSTANCE_KEY = 1L;
+  private static final long THROW_EVENT_INSTANCE_KEY = 4L;
 
   private MutableCompensationSubscriptionState state;
   private MutableProcessingState processingState;
@@ -99,7 +99,8 @@ public class CompensationSubscriptionStateTest {
     assertThat(notUpdatedCompensation.getCompensableActivityId())
         .isEqualTo(COMPENSABLE_ACTIVITY_ID);
     assertThat(notUpdatedCompensation.getThrowEventId()).isEqualTo(THROW_EVENT_ID);
-    assertThat(notUpdatedCompensation.getThrowEventInstanceKey()).isEqualTo(PROCESS_INSTANCE_KEY);
+    assertThat(notUpdatedCompensation.getThrowEventInstanceKey())
+        .isEqualTo(THROW_EVENT_INSTANCE_KEY);
   }
 
   @Test

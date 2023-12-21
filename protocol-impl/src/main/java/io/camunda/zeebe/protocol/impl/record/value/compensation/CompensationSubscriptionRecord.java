@@ -32,8 +32,8 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
       new LongProperty("processDefinitionKey", -1);
   private final StringProperty compensableActivityIdProperty =
       new StringProperty("compensableActivityId", EMPTY_STRING);
-  private final LongProperty compensableActivityScopeIdProperty =
-      new LongProperty("compensableActivityScopeId", -1);
+  private final StringProperty compensableActivityScopeIdProperty =
+      new StringProperty("compensableActivityScopeId", EMPTY_STRING);
   private final StringProperty throwEventIdProperty =
       new StringProperty("throwEventId", EMPTY_STRING);
   private final LongProperty throwEventInstanceKeyProperty =
@@ -99,8 +99,8 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
   }
 
   @Override
-  public long getCompensableActivityScopeId() {
-    return compensableActivityScopeIdProperty.getValue();
+  public String getCompensableActivityScopeId() {
+    return BufferUtil.bufferAsString(compensableActivityScopeIdProperty.getValue());
   }
 
   @Override
@@ -134,7 +134,7 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
   }
 
   public CompensationSubscriptionRecord setCompensableActivityScopeId(
-      final long compensableActivityScopeId) {
+      final String compensableActivityScopeId) {
     compensableActivityScopeIdProperty.setValue(compensableActivityScopeId);
     return this;
   }
