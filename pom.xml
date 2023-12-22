@@ -21,7 +21,7 @@
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 
     <!-- maven plugins -->
-    <surefire-plugin.version>3.2.2</surefire-plugin.version>
+    <surefire-plugin.version>3.2.3</surefire-plugin.version>
     <plugin.version.sonar>3.10.0.2594</plugin.version.sonar>
 
     <!-- database config -->
@@ -42,11 +42,11 @@
     <apache.http5-core.version>5.2.4</apache.http5-core.version>
     <guava.version>33.0.0-jre</guava.version>
     <spring.boot.version>3.1.6</spring.boot.version>
-    <spring.version>6.1.1</spring.version>
+    <spring.version>6.1.2</spring.version>
     <httpclient.version>4.5.14</httpclient.version>
     <quartz.version>2.3.2</quartz.version>
     <jakarta.rs-api.version>3.1.0</jakarta.rs-api.version>
-    <netty.version>4.1.101.Final</netty.version>
+    <netty.version>4.1.104.Final</netty.version>
     <lombok.version>1.18.30</lombok.version>
     <logback.version>1.4.14</logback.version>
     <slf4j.version>2.0.9</slf4j.version>
