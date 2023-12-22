@@ -14,7 +14,6 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.topology.TopologyUpdateNotifier;
@@ -33,7 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class ClusterTopologyGossiper
-    implements TopologyUpdateNotifier, ClusterMembershipEventListener, AsyncClosable {
+    implements TopologyUpdateNotifier, ClusterMembershipEventListener, AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(ClusterTopologyGossiper.class);
   private static final String SYNC_REQUEST_TOPIC = "cluster-topology-sync";
   private static final String GOSSIP_REQUEST_TOPIC = "cluster-topology-gossip";
@@ -84,12 +83,6 @@ public final class ClusterTopologyGossiper
     registerSyncHandler();
     registerGossipHandler();
     registerMemberAddedListener();
-  }
-
-  private void internalStop() {
-    unregisterMemberListener();
-    unregisterSyncHandler();
-    unregisterGossipHandler();
   }
 
   private void registerMemberAddedListener() {
@@ -303,13 +296,9 @@ public final class ClusterTopologyGossiper
   }
 
   @Override
-  public ActorFuture<Void> closeAsync() {
-    final ActorFuture<Void> future = executor.createFuture();
-    executor.run(
-        () -> {
-          internalStop();
-          future.complete(null);
-        });
-    return future;
+  public void close() {
+    unregisterMemberListener();
+    unregisterSyncHandler();
+    unregisterGossipHandler();
   }
 }
