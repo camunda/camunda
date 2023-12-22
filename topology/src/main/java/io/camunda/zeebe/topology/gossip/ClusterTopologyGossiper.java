@@ -16,6 +16,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.topology.TopologyUpdateNotifier;
 import io.camunda.zeebe.topology.metrics.TopologyMetrics;
 import io.camunda.zeebe.topology.serializer.ClusterTopologySerializer;
@@ -68,8 +69,8 @@ public final class ClusterTopologyGossiper
     this.clusterTopologyUpdateHandler = clusterTopologyUpdateHandler;
   }
 
-  public ActorFuture<Void> start() {
-    final ActorFuture<Void> startedFuture = executor.createFuture();
+  public CompletableActorFuture<Void> start() {
+    final var startedFuture = new CompletableActorFuture<Void>();
     executor.run(
         () -> {
           internalStart();
