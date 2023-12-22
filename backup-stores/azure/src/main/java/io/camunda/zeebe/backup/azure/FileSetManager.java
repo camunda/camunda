@@ -14,12 +14,10 @@ import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.models.BlobRequestConditions;
 import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.options.BlobParallelUploadOptions;
-import com.azure.storage.blob.specialized.BlobLeaseClient;
-import com.azure.storage.blob.specialized.BlobLeaseClientBuilder;
-import com.azure.storage.common.implementation.Constants;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException.UnexpectedManifestState;
+import io.camunda.zeebe.backup.azure.shared.BlobRequestsOptionsManagement;
 import java.io.FileNotFoundException;
 import java.nio.file.NoSuchFileException;
 
@@ -51,14 +49,15 @@ final class FileSetManager {
 
       try {
         final BinaryData binaryData = BinaryData.fromFile(filePath);
-        final BlobRequestConditions blobRequestConditions = acquireBlobLease(blobClient);
-        disableOverWrite(blobRequestConditions);
+        final BlobRequestConditions blobRequestConditions =
+            BlobRequestsOptionsManagement.acquireBlobLease(blobClient);
+        BlobRequestsOptionsManagement.disableOverwrite(blobRequestConditions);
         blobClient.uploadWithResponse(
             new BlobParallelUploadOptions(binaryData).setRequestConditions(blobRequestConditions),
             null,
             Context.NONE);
         blobClient.upload(binaryData, true);
-        releaseLease(blobClient);
+        BlobRequestsOptionsManagement.releaseLease(blobClient);
       } catch (final BlobStorageException e) {
         if (e.getStatusCode() == PRECONDITION_FAILED) {
           // blob might be currently blocked, which is not expected, as this is
@@ -79,32 +78,5 @@ final class FileSetManager {
 
   private String fileSetPath(final BackupIdentifier id, final String fileSetName) {
     return PATH_FORMAT.formatted(id.partitionId(), id.checkpointId(), id.nodeId(), fileSetName);
-  }
-
-  public BlobRequestConditions acquireBlobLease(final BlobClient blobClient) {
-    final BlobLeaseClient leaseClient =
-        new BlobLeaseClientBuilder().blobClient(blobClient).buildClient();
-    try {
-      return new BlobRequestConditions().setLeaseId(leaseClient.acquireLease(-1));
-    } catch (final Exception e) {
-      // Blob client might not exist
-      return new BlobRequestConditions();
-    }
-  }
-
-  public void releaseLease(final BlobClient blobClient) {
-    final BlobLeaseClient leaseClient =
-        new BlobLeaseClientBuilder().blobClient(blobClient).buildClient();
-    try {
-      leaseClient.releaseLease();
-    } catch (final Exception e) {
-      // Blob client might not exist
-    }
-  }
-
-  private void disableOverWrite(final BlobRequestConditions blobRequestConditions) {
-    // Optionally limit requests to resources that do not match the passed ETag.
-    // None will match therefore it will not overwrite.
-    blobRequestConditions.setIfNoneMatch(Constants.HeaderConstants.ETAG_WILDCARD);
   }
 }

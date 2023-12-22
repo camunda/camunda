@@ -17,9 +17,6 @@ import com.azure.storage.blob.models.BlobErrorCode;
 import com.azure.storage.blob.models.BlobRequestConditions;
 import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.options.BlobParallelUploadOptions;
-import com.azure.storage.blob.specialized.BlobLeaseClient;
-import com.azure.storage.blob.specialized.BlobLeaseClientBuilder;
-import com.azure.storage.common.implementation.Constants;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,6 +28,7 @@ import io.camunda.zeebe.backup.azure.AzureBackupStoreException.UnexpectedManifes
 import io.camunda.zeebe.backup.azure.manifest.Manifest;
 import io.camunda.zeebe.backup.azure.manifest.Manifest.InProgressManifest;
 import io.camunda.zeebe.backup.azure.manifest.Manifest.StatusCode;
+import io.camunda.zeebe.backup.azure.shared.BlobRequestsOptionsManagement;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
@@ -78,14 +76,15 @@ public final class ManifestManager {
     final BlobClient blobClient = blobContainerClient.getBlobClient(manifestPath((manifest)));
 
     try {
-      final BlobRequestConditions blobRequestConditions = acquireBlobLease(blobClient);
-      disableOverWrite(blobRequestConditions);
+      final BlobRequestConditions blobRequestConditions =
+          BlobRequestsOptionsManagement.acquireBlobLease(blobClient);
+      BlobRequestsOptionsManagement.disableOverwrite(blobRequestConditions);
       blobClient.uploadWithResponse(
           new BlobParallelUploadOptions(BinaryData.fromBytes(serializedManifest))
               .setRequestConditions(blobRequestConditions),
           null,
           Context.NONE);
-      releaseLease(blobClient);
+      BlobRequestsOptionsManagement.releaseLease(blobClient);
       return manifest;
     } catch (final BlobStorageException e) {
       if (e.getStatusCode() == PRECONDITION_FAILED
@@ -93,7 +92,7 @@ public final class ManifestManager {
         // if resource is locked throws PRECONDITION_FAILED, so must already exist and in use.
         // upload() can also throw BlobStorageException with BLOB_ALREADY_EXISTS,
         // since upload does not overwrite by default, both are unexpected states.
-        releaseLease(blobClient);
+        BlobRequestsOptionsManagement.releaseLease(blobClient);
         throw new UnexpectedManifestState(e.getMessage());
       }
       throw new RuntimeException(e);
@@ -113,14 +112,15 @@ public final class ManifestManager {
     final BlobClient blobClient = blobContainerClient.getBlobClient(manifestPath(completed));
     try {
 
-      final BlobRequestConditions blobRequestConditions = acquireBlobLease(blobClient);
+      final BlobRequestConditions blobRequestConditions =
+          BlobRequestsOptionsManagement.acquireBlobLease(blobClient);
       final Manifest manifest = getManifest(inProgressManifest.id());
 
       if (manifest == null) {
-        releaseLease(blobClient);
+        BlobRequestsOptionsManagement.releaseLease(blobClient);
         throw new UnexpectedManifestState("Manifest does not exist.");
       } else if (manifest.statusCode() != StatusCode.IN_PROGRESS) {
-        releaseLease(blobClient);
+        BlobRequestsOptionsManagement.releaseLease(blobClient);
         throw new UnexpectedManifestState(
             "Expected manifest to be in progress but was in %s"
                 .formatted(manifest.statusCode().name()));
@@ -132,9 +132,9 @@ public final class ManifestManager {
               .setRequestConditions(blobRequestConditions),
           null,
           Context.NONE);
-      releaseLease(blobClient);
+      BlobRequestsOptionsManagement.releaseLease(blobClient);
     } catch (final BlobStorageException e) {
-      releaseLease(blobClient);
+      BlobRequestsOptionsManagement.releaseLease(blobClient);
       throw new RuntimeException(e);
     }
   }
@@ -185,32 +185,5 @@ public final class ManifestManager {
       blobContainerClient.createIfNotExists();
       containerCreated = true;
     }
-  }
-
-  public BlobRequestConditions acquireBlobLease(final BlobClient blobClient) {
-    final BlobLeaseClient leaseClient =
-        new BlobLeaseClientBuilder().blobClient(blobClient).buildClient();
-    try {
-      return new BlobRequestConditions().setLeaseId(leaseClient.acquireLease(-1));
-    } catch (final Exception e) {
-      // Blob client might not exist
-      return new BlobRequestConditions();
-    }
-  }
-
-  public void releaseLease(final BlobClient blobClient) {
-    final BlobLeaseClient leaseClient =
-        new BlobLeaseClientBuilder().blobClient(blobClient).buildClient();
-    try {
-      leaseClient.releaseLease();
-    } catch (final Exception e) {
-      // Blob client might not exist
-    }
-  }
-
-  private void disableOverWrite(final BlobRequestConditions blobRequestConditions) {
-    // Optionally limit requests to resources that do not match the passed ETag.
-    // None will match therefore it will not overwrite.
-    blobRequestConditions.setIfNoneMatch(Constants.HeaderConstants.ETAG_WILDCARD);
   }
 }
