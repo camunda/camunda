@@ -17,9 +17,12 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.azure.manifest.Manifest;
+import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -37,8 +40,6 @@ public final class AzureBackupStore implements BackupStore {
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
-  private final BlobContainerClient blobContainerClientManifests;
-  private final BlobContainerClient blobContainerClientContents;
 
   public AzureBackupStore(final AzureBackupConfig config) {
     this(config, buildClient(config));
@@ -46,9 +47,9 @@ public final class AzureBackupStore implements BackupStore {
 
   public AzureBackupStore(final AzureBackupConfig config, final BlobServiceClient client) {
     executor = Executors.newVirtualThreadPerTaskExecutor();
-    blobContainerClientManifests =
+    final BlobContainerClient blobContainerClientManifests =
         client.getBlobContainerClient(config.containerName() + "-manifests");
-    blobContainerClientContents =
+    final BlobContainerClient blobContainerClientContents =
         client.getBlobContainerClient(config.containerName() + "-contents");
     fileSetManager = new FileSetManager(blobContainerClientManifests);
     manifestManager = new ManifestManager(blobContainerClientContents);
@@ -92,7 +93,15 @@ public final class AzureBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<BackupStatus> getStatus(final BackupIdentifier id) {
-    throw new UnsupportedOperationException();
+    return CompletableFuture.supplyAsync(
+        () -> {
+          final var manifest = manifestManager.getManifest(id);
+          if (manifest == null) {
+            return BackupStatusImpl.doesNotExist(id);
+          }
+          return toStatus(manifest);
+        },
+        executor);
   }
 
   @Override
@@ -126,8 +135,6 @@ public final class AzureBackupStore implements BackupStore {
             if (!closed) {
               executor.shutdownNow();
             }
-            blobContainerClientManifests.delete();
-            blobContainerClientContents.delete();
           } catch (final Exception e) {
             throw new RuntimeException(e);
           }
@@ -142,5 +149,31 @@ public final class AzureBackupStore implements BackupStore {
       throw new IllegalArgumentException(
           "Connection string, or all of connection information (account name, account key, and endpoint) must be provided.");
     }
+  }
+
+  private static BackupStatus toStatus(final Manifest manifest) {
+    return switch (manifest.statusCode()) {
+      case IN_PROGRESS -> new BackupStatusImpl(
+          manifest.id(),
+          Optional.ofNullable(manifest.descriptor()),
+          BackupStatusCode.IN_PROGRESS,
+          Optional.empty(),
+          Optional.ofNullable(manifest.createdAt()),
+          Optional.ofNullable(manifest.modifiedAt()));
+      case COMPLETED -> new BackupStatusImpl(
+          manifest.id(),
+          Optional.ofNullable(manifest.descriptor()),
+          BackupStatusCode.COMPLETED,
+          Optional.empty(),
+          Optional.ofNullable(manifest.createdAt()),
+          Optional.ofNullable(manifest.modifiedAt()));
+      case FAILED -> new BackupStatusImpl(
+          manifest.id(),
+          Optional.ofNullable(manifest.descriptor()),
+          BackupStatusCode.FAILED,
+          Optional.ofNullable(manifest.asFailed().failureReason()),
+          Optional.ofNullable(manifest.createdAt()),
+          Optional.ofNullable(manifest.modifiedAt()));
+    };
   }
 }

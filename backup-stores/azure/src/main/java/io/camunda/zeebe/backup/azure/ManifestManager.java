@@ -10,21 +10,33 @@ package io.camunda.zeebe.backup.azure;
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 
 import com.azure.core.util.BinaryData;
+import com.azure.core.util.Context;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.models.BlobErrorCode;
+import com.azure.storage.blob.models.BlobRequestConditions;
 import com.azure.storage.blob.models.BlobStorageException;
-import com.azure.storage.blob.specialized.BlockBlobClient;
+import com.azure.storage.blob.options.BlobParallelUploadOptions;
+import com.azure.storage.blob.specialized.BlobLeaseClient;
+import com.azure.storage.blob.specialized.BlobLeaseClientBuilder;
+import com.azure.storage.common.implementation.Constants;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.backup.api.Backup;
+import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.azure.manifest.Manifest;
 import io.camunda.zeebe.backup.azure.manifest.Manifest.InProgressManifest;
+import io.camunda.zeebe.backup.azure.manifest.Manifest.StatusCode;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 
 public final class ManifestManager {
+  public static final int PRECONDITION_FAILED = 412;
+
   /**
    * The path format consists of the following elements:
    *
@@ -54,40 +66,81 @@ public final class ManifestManager {
   }
 
   InProgressManifest createInitialManifest(final Backup backup) {
+
+    final var manifest = Manifest.createInProgress(backup);
+    final byte[] serializedManifest;
+    assureContainerCreated();
     try {
-      final var manifest = Manifest.createInProgress(backup);
-      final byte[] serializedManifest;
-      if (!containerCreated) {
-        blobContainerClient.createIfNotExists();
-        containerCreated = true;
-      }
       serializedManifest = MAPPER.writeValueAsBytes(manifest);
-      final BlockBlobClient blobClient =
-          blobContainerClient.getBlobClient(manifestPath((manifest))).getBlockBlobClient();
-      blobClient.upload(BinaryData.fromBytes(serializedManifest));
-      return manifest;
     } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);
+    }
+    final BlobClient blobClient = blobContainerClient.getBlobClient(manifestPath((manifest)));
+
+    try {
+      final BlobRequestConditions blobRequestConditions = acquireBlobLease(blobClient);
+      disableOverWrite(blobRequestConditions);
+      blobClient.uploadWithResponse(
+          new BlobParallelUploadOptions(BinaryData.fromBytes(serializedManifest))
+              .setRequestConditions(blobRequestConditions),
+          null,
+          Context.NONE);
+      releaseLease(blobClient);
+      return manifest;
     } catch (final BlobStorageException e) {
-      throw new UnexpectedManifestState(e.getMessage());
+      if (e.getStatusCode() == PRECONDITION_FAILED
+          || e.getErrorCode() == BlobErrorCode.BLOB_ALREADY_EXISTS) {
+        // if resource is locked throws PRECONDITION_FAILED, so must already exist and in use.
+        // upload() can also throw BlobStorageException with BLOB_ALREADY_EXISTS,
+        // since upload does not overwrite by default, both are unexpected states.
+        releaseLease(blobClient);
+        throw new UnexpectedManifestState(e.getMessage());
+      }
+      throw new RuntimeException(e);
     }
   }
 
   void completeManifest(final InProgressManifest inProgressManifest) {
+    final byte[] serializedManifest;
+    final var completed = inProgressManifest.complete();
+    assureContainerCreated();
     try {
-      final byte[] serializedManifest;
-      final var completed = inProgressManifest.complete();
       serializedManifest = MAPPER.writeValueAsBytes(completed);
-      final BlobClient blobClient = blobContainerClient.getBlobClient(manifestPath(completed));
-      blobClient.upload(BinaryData.fromBytes(serializedManifest), true);
     } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);
+    }
+
+    final BlobClient blobClient = blobContainerClient.getBlobClient(manifestPath(completed));
+    try {
+
+      final BlobRequestConditions blobRequestConditions = acquireBlobLease(blobClient);
+      final Manifest manifest = getManifest(inProgressManifest.id());
+
+      if (manifest == null) {
+        releaseLease(blobClient);
+        throw new UnexpectedManifestState("Manifest does not exist.");
+      } else if (manifest.statusCode() != StatusCode.IN_PROGRESS) {
+        releaseLease(blobClient);
+        throw new UnexpectedManifestState(
+            "Expected manifest to be in progress but was in %s"
+                .formatted(manifest.statusCode().name()));
+      }
+
+      // uploadWithResponse() will overwrite by default
+      blobClient.uploadWithResponse(
+          new BlobParallelUploadOptions(BinaryData.fromBytes(serializedManifest))
+              .setRequestConditions(blobRequestConditions),
+          null,
+          Context.NONE);
+      releaseLease(blobClient);
     } catch (final BlobStorageException e) {
-      throw new UnexpectedManifestState(e.getMessage());
+      releaseLease(blobClient);
+      throw new RuntimeException(e);
     }
   }
 
   void markAsFailed(final Manifest existingManifest, final String failureReason) {
+    assureContainerCreated();
     final BlobClient blobClient = blobContainerClient.getBlobClient(manifestPath(existingManifest));
     final var updatedManifest =
         switch (existingManifest.statusCode()) {
@@ -105,8 +158,59 @@ public final class ManifestManager {
     }
   }
 
+  Manifest getManifest(final BackupIdentifier id) {
+    assureContainerCreated();
+    final BlobClient blobClient =
+        blobContainerClient.getBlobClient(
+            MANIFEST_PATH_FORMAT.formatted(id.partitionId(), id.checkpointId(), id.nodeId()));
+    if (!blobClient.exists()) {
+      return null;
+    }
+    final BinaryData binaryData = blobClient.downloadContent();
+
+    try {
+      return MAPPER.readValue(binaryData.toStream(), Manifest.class);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
   private String manifestPath(final Manifest manifest) {
     return MANIFEST_PATH_FORMAT.formatted(
         manifest.id().partitionId(), manifest.id().checkpointId(), manifest.id().nodeId());
+  }
+
+  void assureContainerCreated() {
+    if (!containerCreated) {
+      blobContainerClient.createIfNotExists();
+      containerCreated = true;
+    }
+  }
+
+  public BlobRequestConditions acquireBlobLease(final BlobClient blobClient) {
+    final BlobLeaseClient leaseClient =
+        new BlobLeaseClientBuilder().blobClient(blobClient).buildClient();
+    try {
+      return new BlobRequestConditions().setLeaseId(leaseClient.acquireLease(-1));
+    } catch (final Exception e) {
+      // Blob client might not exist
+      return new BlobRequestConditions();
+    }
+  }
+
+  public void releaseLease(final BlobClient blobClient) {
+    final BlobLeaseClient leaseClient =
+        new BlobLeaseClientBuilder().blobClient(blobClient).buildClient();
+    try {
+      leaseClient.releaseLease();
+    } catch (final Exception e) {
+      // Blob client might not exist
+    }
+  }
+
+  private void disableOverWrite(final BlobRequestConditions blobRequestConditions) {
+    // Optionally limit requests to resources that do not match the passed ETag.
+    // None will match therefore it will not overwrite.
+    blobRequestConditions.setIfNoneMatch(Constants.HeaderConstants.ETAG_WILDCARD);
   }
 }
