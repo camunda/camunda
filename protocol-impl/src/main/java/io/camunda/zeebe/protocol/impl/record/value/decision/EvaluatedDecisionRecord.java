@@ -43,6 +43,7 @@ public final class EvaluatedDecisionRecord extends UnifiedRecordValue
       new ArrayProperty<>("matchedRules", new MatchedRuleRecord());
 
   public EvaluatedDecisionRecord() {
+    super(8);
     declareProperty(decisionIdProp)
         .declareProperty(decisionNameProp)
         .declareProperty(decisionKeyProp)

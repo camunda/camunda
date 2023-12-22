@@ -33,6 +33,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   private final LongProperty variableScopeKeyProp = new LongProperty("variableScopeKey", -1L);
 
   public IncidentRecord() {
+    super(9);
     declareProperty(errorTypeProp)
         .declareProperty(errorMessageProp)
         .declareProperty(bpmnProcessIdProp)
@@ -104,6 +105,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return this;
   }
 
+  @Override
   public long getProcessDefinitionKey() {
     return processDefinitionKeyProp.getValue();
   }
@@ -111,6 +113,11 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   public IncidentRecord setProcessDefinitionKey(final long processDefinitionKey) {
     processDefinitionKeyProp.setValue(processDefinitionKey);
     return this;
+  }
+
+  @Override
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
   }
 
   @Override
@@ -123,6 +130,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return this;
   }
 
+  @Override
   public long getElementInstanceKey() {
     return elementInstanceKeyProp.getValue();
   }
@@ -132,10 +140,12 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return this;
   }
 
+  @Override
   public long getJobKey() {
     return jobKeyProp.getValue();
   }
 
+  @Override
   public long getVariableScopeKey() {
     return variableScopeKeyProp.getValue();
   }
@@ -147,6 +157,11 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
 
   public IncidentRecord setJobKey(final long jobKey) {
     jobKeyProp.setValue(jobKey);
+    return this;
+  }
+
+  public IncidentRecord setProcessInstanceKey(final long processInstanceKey) {
+    processInstanceKeyProp.setValue(processInstanceKey);
     return this;
   }
 
@@ -162,15 +177,6 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
 
   public IncidentRecord setErrorType(final ErrorType errorType) {
     errorTypeProp.setValue(errorType);
-    return this;
-  }
-
-  public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
-  }
-
-  public IncidentRecord setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProp.setValue(processInstanceKey);
     return this;
   }
 }

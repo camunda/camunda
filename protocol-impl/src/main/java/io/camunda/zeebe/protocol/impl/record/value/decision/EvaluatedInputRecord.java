@@ -24,6 +24,7 @@ public final class EvaluatedInputRecord extends UnifiedRecordValue implements Ev
   private final BinaryProperty inputValueProp = new BinaryProperty("inputValue");
 
   public EvaluatedInputRecord() {
+    super(3);
     declareProperty(inputIdProp).declareProperty(inputNameProp).declareProperty(inputValueProp);
   }
 

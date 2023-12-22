@@ -15,6 +15,7 @@ public class ExporterPosition extends UnpackedObject implements DbValue {
   private final LongProperty positionProp = new LongProperty("exporterPosition");
 
   public ExporterPosition() {
+    super(1);
     declareProperty(positionProp);
   }
 

@@ -24,6 +24,7 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
   private final BinaryProperty resourceProp = new BinaryProperty("resource");
 
   public PersistedProcess() {
+    super(5);
     declareProperty(versionProp)
         .declareProperty(keyProp)
         .declareProperty(bpmnProcessIdProp)

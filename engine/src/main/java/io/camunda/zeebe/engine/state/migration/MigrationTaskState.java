@@ -17,6 +17,7 @@ public final class MigrationTaskState extends UnpackedObject implements DbValue 
       new EnumProperty<>("state", State.class, State.NOT_STARTED);
 
   public MigrationTaskState() {
+    super(1);
     declareProperty(stateProp);
   }
 

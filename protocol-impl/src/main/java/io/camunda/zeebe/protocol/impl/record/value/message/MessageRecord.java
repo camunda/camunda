@@ -30,6 +30,7 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
   private final StringProperty messageIdProp = new StringProperty("messageId", "");
 
   public MessageRecord() {
+    super(6);
     declareProperty(nameProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(timeToLiveProp)
@@ -86,6 +87,16 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
     return this;
   }
 
+  @Override
+  public long getDeadline() {
+    return deadlineProp.getValue();
+  }
+
+  public MessageRecord setDeadline(final long deadline) {
+    deadlineProp.setValue(deadline);
+    return this;
+  }
+
   public MessageRecord setMessageId(final String messageId) {
     messageIdProp.setValue(messageId);
     return this;
@@ -134,15 +145,5 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
     return variablesProp.getValue();
-  }
-
-  @Override
-  public long getDeadline() {
-    return deadlineProp.getValue();
-  }
-
-  public MessageRecord setDeadline(final long deadline) {
-    deadlineProp.setValue(deadline);
-    return this;
   }
 }

@@ -30,6 +30,7 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
   private final BinaryProperty resourceProp = new BinaryProperty("resource");
 
   public ProcessRecord() {
+    super(6);
     declareProperty(bpmnProcessIdProp)
         .declareProperty(versionProp)
         .declareProperty(keyProp)

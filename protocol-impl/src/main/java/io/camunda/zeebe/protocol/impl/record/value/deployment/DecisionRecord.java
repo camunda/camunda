@@ -33,6 +33,7 @@ public final class DecisionRecord extends UnifiedRecordValue implements Decision
   private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
 
   public DecisionRecord() {
+    super(7);
     declareProperty(decisionIdProp)
         .declareProperty(decisionNameProp)
         .declareProperty(versionProp)
@@ -77,33 +78,33 @@ public final class DecisionRecord extends UnifiedRecordValue implements Decision
     return isDuplicateProp.getValue();
   }
 
-  public DecisionRecord setDecisionId(String decisionId) {
-    decisionIdProp.setValue(decisionId);
+  public DecisionRecord setDecisionRequirementsKey(final long decisionRequirementsKey) {
+    decisionRequirementsKeyProp.setValue(decisionRequirementsKey);
     return this;
   }
 
-  public DecisionRecord setDecisionName(String decisionName) {
-    decisionNameProp.setValue(decisionName);
-    return this;
-  }
-
-  public DecisionRecord setVersion(int version) {
-    versionProp.setValue(version);
-    return this;
-  }
-
-  public DecisionRecord setDecisionKey(long decisionKey) {
-    decisionKeyProp.setValue(decisionKey);
-    return this;
-  }
-
-  public DecisionRecord setDecisionRequirementsId(String decisionRequirementsId) {
+  public DecisionRecord setDecisionRequirementsId(final String decisionRequirementsId) {
     decisionRequirementsIdProp.setValue(decisionRequirementsId);
     return this;
   }
 
-  public DecisionRecord setDecisionRequirementsKey(long decisionRequirementsKey) {
-    decisionRequirementsKeyProp.setValue(decisionRequirementsKey);
+  public DecisionRecord setDecisionKey(final long decisionKey) {
+    decisionKeyProp.setValue(decisionKey);
+    return this;
+  }
+
+  public DecisionRecord setVersion(final int version) {
+    versionProp.setValue(version);
+    return this;
+  }
+
+  public DecisionRecord setDecisionName(final String decisionName) {
+    decisionNameProp.setValue(decisionName);
+    return this;
+  }
+
+  public DecisionRecord setDecisionId(final String decisionId) {
+    decisionIdProp.setValue(decisionId);
     return this;
   }
 

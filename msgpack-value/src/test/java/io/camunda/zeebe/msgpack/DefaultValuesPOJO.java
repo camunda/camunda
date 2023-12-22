@@ -15,6 +15,7 @@ public final class DefaultValuesPOJO extends UnpackedObject {
   protected final LongProperty noDefaultValueProperty = new LongProperty("noDefaultValueProp");
 
   public DefaultValuesPOJO(final long defaultValue) {
+    super(2);
     defaultValueProperty = new LongProperty("defaultValueProp", defaultValue);
 
     declareProperty(defaultValueProperty).declareProperty(noDefaultValueProperty);

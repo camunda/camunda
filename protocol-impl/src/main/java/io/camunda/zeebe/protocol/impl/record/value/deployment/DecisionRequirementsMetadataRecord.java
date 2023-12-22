@@ -39,6 +39,7 @@ public class DecisionRequirementsMetadataRecord extends UnifiedRecordValue
   private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
 
   public DecisionRequirementsMetadataRecord() {
+    super(8);
     declareProperty(decisionRequirementsIdProp)
         .declareProperty(decisionRequirementsNameProp)
         .declareProperty(decisionRequirementsVersionProp)
@@ -89,42 +90,42 @@ public class DecisionRequirementsMetadataRecord extends UnifiedRecordValue
     return isDuplicateProp.getValue();
   }
 
-  public DecisionRequirementsMetadataRecord setDecisionRequirementsId(
-      String decisionRequirementsId) {
-    decisionRequirementsIdProp.setValue(decisionRequirementsId);
+  public DecisionRequirementsMetadataRecord setChecksum(final DirectBuffer checksum) {
+    checksumProp.setValue(checksum);
     return this;
   }
 
-  public DecisionRequirementsMetadataRecord setDecisionRequirementsName(
-      String decisionRequirementsName) {
-    decisionRequirementsNameProp.setValue(decisionRequirementsName);
-    return this;
-  }
-
-  public DecisionRequirementsMetadataRecord setDecisionRequirementsVersion(
-      int decisionRequirementsVersion) {
-    decisionRequirementsVersionProp.setValue(decisionRequirementsVersion);
-    return this;
-  }
-
-  public DecisionRequirementsMetadataRecord setDecisionRequirementsKey(
-      long decisionRequirementsKey) {
-    decisionRequirementsKeyProp.setValue(decisionRequirementsKey);
-    return this;
-  }
-
-  public DecisionRequirementsMetadataRecord setNamespace(String namespace) {
-    namespaceProp.setValue(namespace);
-    return this;
-  }
-
-  public DecisionRequirementsMetadataRecord setResourceName(String resourceName) {
+  public DecisionRequirementsMetadataRecord setResourceName(final String resourceName) {
     resourceNameProp.setValue(resourceName);
     return this;
   }
 
-  public DecisionRequirementsMetadataRecord setChecksum(DirectBuffer checksum) {
-    checksumProp.setValue(checksum);
+  public DecisionRequirementsMetadataRecord setNamespace(final String namespace) {
+    namespaceProp.setValue(namespace);
+    return this;
+  }
+
+  public DecisionRequirementsMetadataRecord setDecisionRequirementsKey(
+      final long decisionRequirementsKey) {
+    decisionRequirementsKeyProp.setValue(decisionRequirementsKey);
+    return this;
+  }
+
+  public DecisionRequirementsMetadataRecord setDecisionRequirementsVersion(
+      final int decisionRequirementsVersion) {
+    decisionRequirementsVersionProp.setValue(decisionRequirementsVersion);
+    return this;
+  }
+
+  public DecisionRequirementsMetadataRecord setDecisionRequirementsName(
+      final String decisionRequirementsName) {
+    decisionRequirementsNameProp.setValue(decisionRequirementsName);
+    return this;
+  }
+
+  public DecisionRequirementsMetadataRecord setDecisionRequirementsId(
+      final String decisionRequirementsId) {
+    decisionRequirementsIdProp.setValue(decisionRequirementsId);
     return this;
   }
 

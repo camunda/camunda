@@ -28,6 +28,7 @@ public final class POJO extends UnpackedObject {
       new ObjectProperty<>("objectProp", new POJONested());
 
   public POJO() {
+    super(7);
     declareProperty(enumProp)
         .declareProperty(longProp)
         .declareProperty(intProp)

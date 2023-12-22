@@ -51,6 +51,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
       new LongProperty("parentElementInstanceKey", -1L);
 
   public ProcessInstanceRecord() {
+    super(9);
     declareProperty(bpmnProcessIdProp)
         .declareProperty(versionProp)
         .declareProperty(processDefinitionKeyProp)
