@@ -182,9 +182,9 @@ final class ElasticsearchClientIT {
     assertThat(lifecycle.policy().phases().delete().minAge()).isNotNull();
     assertThat(lifecycle.policy().phases().delete().minAge().time()).isEqualTo("30d");
     assertThat(lifecycle.policy().phases().delete().actions()).isNotNull();
-    assertThat(lifecycle.policy().phases().delete().actions().toString())
+    assertThat(lifecycle.policy().phases().delete().actions().toJson())
         .describedAs("Expect that the policy's action is to delete")
-        .contains("delete");
+        .hasFieldOrProperty("delete");
   }
 
   private void assertIndexTemplate(final Template actualTemplate, final Template expectedTemplate) {
