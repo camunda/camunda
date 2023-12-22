@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.bpmn.task;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
@@ -26,6 +27,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnUserTaskBehavior userTaskBehavior;
   private final BpmnStateBehavior stateBehavior;
+  private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
 
   public UserTaskProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -37,6 +39,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
     userTaskBehavior = bpmnBehaviors.userTaskBehavior();
     stateBehavior = bpmnBehaviors.stateBehavior();
+    compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
   }
 
   @Override
@@ -82,6 +85,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
         .flatMap(
             ok -> {
               eventSubscriptionBehavior.unsubscribeFromEvents(context);
+              compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
               return stateTransitionBehavior.transitionToCompleted(element, context);
             })
         .ifRightOrLeft(

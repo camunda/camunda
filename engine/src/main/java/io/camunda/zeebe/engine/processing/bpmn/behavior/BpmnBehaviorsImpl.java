@@ -46,6 +46,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final BpmnSignalBehavior signalBehavior;
   private final BpmnUserTaskBehavior userTaskBehavior;
+  private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
 
   public BpmnBehaviorsImpl(
       final MutableProcessingState processingState,
@@ -169,6 +170,9 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             jobActivationBehavior,
             jobMetrics,
             userTaskBehavior);
+
+    compensationSubscriptionBehaviour =
+        new BpmnCompensationSubscriptionBehaviour(processingState, writers);
   }
 
   @Override
@@ -264,5 +268,10 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnUserTaskBehavior userTaskBehavior() {
     return userTaskBehavior;
+  }
+
+  @Override
+  public BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour() {
+    return compensationSubscriptionBehaviour;
   }
 }

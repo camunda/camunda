@@ -32,7 +32,7 @@
               "type": "keyword"
             },
             "compensableActivityScopeId": {
-              "type": "long"
+              "type": "keyword"
             },
             "throwEventId": {
               "type": "keyword"

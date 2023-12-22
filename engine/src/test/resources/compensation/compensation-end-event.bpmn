@@ -4,38 +4,38 @@
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:outgoing>Flow_1evmw69</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:sequenceFlow id="Flow_1evmw69" sourceRef="StartEvent_1" targetRef="Activity_05iamly" />
-    <bpmn:userTask id="Activity_05iamly" name="A">
+    <bpmn:sequenceFlow id="Flow_1evmw69" sourceRef="StartEvent_1" targetRef="ActivityToCompensate" />
+    <bpmn:userTask id="ActivityToCompensate" name="A">
       <bpmn:incoming>Flow_1evmw69</bpmn:incoming>
       <bpmn:outgoing>Flow_13spwoi</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:sequenceFlow id="Flow_13spwoi" sourceRef="Activity_05iamly" targetRef="Event_0iasuoa" />
-    <bpmn:boundaryEvent id="Event_14k1uqy" attachedToRef="Activity_05iamly">
+    <bpmn:sequenceFlow id="Flow_13spwoi" sourceRef="ActivityToCompensate" targetRef="CompensationEndEvent" />
+    <bpmn:boundaryEvent id="CompensationBoundaryEvent" attachedToRef="ActivityToCompensate">
       <bpmn:compensateEventDefinition id="CompensateEventDefinition_0o178oi" />
     </bpmn:boundaryEvent>
-    <bpmn:userTask id="Activity_1epoz0g" name="undo A" isForCompensation="true" />
-    <bpmn:endEvent id="Event_0iasuoa">
+    <bpmn:userTask id="CompensationHandler" name="undo A" isForCompensation="true" />
+    <bpmn:endEvent id="CompensationEndEvent">
       <bpmn:incoming>Flow_13spwoi</bpmn:incoming>
       <bpmn:compensateEventDefinition id="CompensateEventDefinition_1n06ebt" />
     </bpmn:endEvent>
-    <bpmn:association id="Association_1jwpcsv" associationDirection="One" sourceRef="Event_14k1uqy" targetRef="Activity_1epoz0g" />
+    <bpmn:association id="Association_1jwpcsv" associationDirection="One" sourceRef="CompensationBoundaryEvent" targetRef="CompensationHandler" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="compensation-process">
       <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
         <dc:Bounds x="179" y="99" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1761rwu_di" bpmnElement="Activity_05iamly">
+      <bpmndi:BPMNShape id="Activity_1761rwu_di" bpmnElement="ActivityToCompensate">
         <dc:Bounds x="270" y="77" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1en6ywx_di" bpmnElement="Activity_1epoz0g">
+      <bpmndi:BPMNShape id="Activity_1en6ywx_di" bpmnElement="CompensationHandler">
         <dc:Bounds x="440" y="200" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_00v7ezm_di" bpmnElement="Event_0iasuoa">
+      <bpmndi:BPMNShape id="Event_00v7ezm_di" bpmnElement="CompensationEndEvent">
         <dc:Bounds x="632" y="99" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1n78lze_di" bpmnElement="Event_14k1uqy">
+      <bpmndi:BPMNShape id="Event_1n78lze_di" bpmnElement="CompensationBoundaryEvent">
         <dc:Bounds x="352" y="139" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_1evmw69_di" bpmnElement="Flow_1evmw69">

@@ -69,5 +69,8 @@ public interface MutableProcessingState extends ProcessingState {
   @Override
   MutableUserTaskState getUserTaskState();
 
+  @Override
+  MutableCompensationSubscriptionState getCompensationSubscriptionState();
+
   KeyGenerator getKeyGenerator();
 }

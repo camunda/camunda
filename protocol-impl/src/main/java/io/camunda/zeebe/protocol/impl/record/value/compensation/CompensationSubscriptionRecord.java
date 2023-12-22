@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.compensation;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
@@ -31,8 +32,8 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
       new LongProperty("processDefinitionKey", -1);
   private final StringProperty compensableActivityIdProperty =
       new StringProperty("compensableActivityId", EMPTY_STRING);
-  private final LongProperty compensableActivityScopeIdProperty =
-      new LongProperty("compensableActivityScopeId", -1);
+  private final StringProperty compensableActivityScopeIdProperty =
+      new StringProperty("compensableActivityScopeId", EMPTY_STRING);
   private final StringProperty throwEventIdProperty =
       new StringProperty("throwEventId", EMPTY_STRING);
   private final LongProperty throwEventInstanceKeyProperty =
@@ -49,6 +50,17 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(throwEventIdProperty)
         .declareProperty(throwEventInstanceKeyProperty)
         .declareProperty(variablesProperty);
+  }
+
+  public void wrap(final CompensationSubscriptionRecord record) {
+    tenantIdProperty.setValue(record.getTenantId());
+    processInstanceKeyProperty.setValue(record.getProcessInstanceKey());
+    processDefinitionKeyProperty.setValue(record.getProcessDefinitionKey());
+    compensableActivityIdProperty.setValue(record.getCompensableActivityId());
+    compensableActivityScopeIdProperty.setValue(record.getCompensableActivityScopeId());
+    throwEventIdProperty.setValue(record.getThrowEventId());
+    throwEventInstanceKeyProperty.setValue(record.getThrowEventInstanceKey());
+    variablesProperty.setValue(record.getVariablesBuffer());
   }
 
   @Override
@@ -87,8 +99,8 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
   }
 
   @Override
-  public long getCompensableActivityScopeId() {
-    return compensableActivityScopeIdProperty.getValue();
+  public String getCompensableActivityScopeId() {
+    return BufferUtil.bufferAsString(compensableActivityScopeIdProperty.getValue());
   }
 
   @Override
@@ -122,7 +134,7 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
   }
 
   public CompensationSubscriptionRecord setCompensableActivityScopeId(
-      final long compensableActivityScopeId) {
+      final String compensableActivityScopeId) {
     compensableActivityScopeIdProperty.setValue(compensableActivityScopeId);
     return this;
   }
@@ -131,5 +143,10 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
       final String compensableActivityId) {
     compensableActivityIdProperty.setValue(compensableActivityId);
     return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getVariablesBuffer() {
+    return variablesProperty.getValue();
   }
 }

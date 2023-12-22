@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
@@ -82,6 +83,8 @@ public final class EventAppliers implements EventApplier {
     registerUserTaskAppliers(state);
 
     registerSignalSubscriptionAppliers(state);
+
+    registerCompensationSubscriptionApplier(state);
 
     registerCommandDistributionAppliers(state);
     return this;
@@ -312,6 +315,18 @@ public final class EventAppliers implements EventApplier {
     register(UserTaskIntent.COMPLETED, new UserTaskCompletedApplier(state));
     register(UserTaskIntent.ASSIGNING, new UserTaskAssigningApplier(state));
     register(UserTaskIntent.ASSIGNED, new UserTaskAssignedApplier(state));
+  }
+
+  private void registerCompensationSubscriptionApplier(
+      final MutableProcessingState processingState) {
+    register(
+        CompensationSubscriptionIntent.CREATED,
+        new CompensationSubscriptionCreatedApplier(
+            processingState.getCompensationSubscriptionState()));
+    register(
+        CompensationSubscriptionIntent.TRIGGERED,
+        new CompensationSubscriptionTriggeredApplier(
+            processingState.getCompensationSubscriptionState()));
   }
 
   private void registerCommandDistributionAppliers(final MutableProcessingState state) {

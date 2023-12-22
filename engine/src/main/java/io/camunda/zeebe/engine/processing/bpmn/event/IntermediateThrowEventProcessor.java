@@ -12,10 +12,12 @@ import static io.camunda.zeebe.util.EnsureUtil.ensureNotNull;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnSignalBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -44,6 +46,8 @@ public class IntermediateThrowEventProcessor
   private final BpmnEventPublicationBehavior eventPublicationBehavior;
   private final ExpressionProcessor expressionProcessor;
   private final BpmnSignalBehavior signalBehavior;
+  private final BpmnStateBehavior stateBehavior;
+  private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
 
   public IntermediateThrowEventProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -55,6 +59,8 @@ public class IntermediateThrowEventProcessor
     eventPublicationBehavior = bpmnBehaviors.eventPublicationBehavior();
     expressionProcessor = bpmnBehaviors.expressionBehavior();
     signalBehavior = bpmnBehaviors.signalBehavior();
+    stateBehavior = bpmnBehaviors.stateBehavior();
+    compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
   }
 
   @Override
@@ -310,7 +316,14 @@ public class IntermediateThrowEventProcessor
         final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating) {
       final BpmnElementContext activated =
           stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
-      stateTransitionBehavior.completeElement(activated);
+
+      final var isCompensationTriggered =
+          compensationSubscriptionBehaviour.triggerCompensation(activating);
+
+      if (!isCompensationTriggered) {
+        final var completing = stateTransitionBehavior.transitionToCompleting(activated);
+        onComplete(element, completing);
+      }
     }
 
     @Override

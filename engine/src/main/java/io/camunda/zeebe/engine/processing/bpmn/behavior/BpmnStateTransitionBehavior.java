@@ -180,6 +180,7 @@ public final class BpmnStateTransitionBehavior {
     }
 
     final var completed = transitionTo(context, ProcessInstanceIntent.ELEMENT_COMPLETED);
+
     metrics.elementInstanceCompleted(context, element.getEventType());
 
     if (endOfExecutionPath) {

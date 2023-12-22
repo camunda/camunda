@@ -10,7 +10,9 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCompensation;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableError;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEscalation;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableLink;
@@ -20,6 +22,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSig
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.engine.processing.timer.CronTimer;
+import io.camunda.zeebe.model.bpmn.instance.Association;
 import io.camunda.zeebe.model.bpmn.instance.CatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
@@ -38,6 +41,8 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.format.DateTimeParseException;
+import java.util.Collection;
+import java.util.Optional;
 
 public final class CatchEventTransformer implements ModelElementTransformer<CatchEvent> {
 
@@ -83,7 +88,8 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
       transformSignalEventDefinition(
           context, executableElement, (SignalEventDefinition) eventDefinition);
     } else if (eventDefinition instanceof CompensateEventDefinition) {
-      transformCompensationEventDefinition(executableElement);
+      transformCompensationEventDefinition(
+          context, element, executableElement, (CompensateEventDefinition) eventDefinition);
     }
   }
 
@@ -214,9 +220,31 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
   }
 
   private void transformCompensationEventDefinition(
-      final ExecutableCatchEventElement executableElement) {
+      final TransformContext context,
+      final CatchEvent element,
+      final ExecutableCatchEventElement executableElement,
+      final CompensateEventDefinition eventDefinition) {
 
-    executableElement.setCompensation(true);
+    final Collection<Association> associations =
+        element.getParentElement().getChildElementsByType(Association.class);
+
+    final Optional<String> compensationHandlerId =
+        associations.stream()
+            .filter(association -> association.getSource().getId().equals(element.getId()))
+            .findFirst()
+            .map(association -> association.getTarget().getId());
+
+    compensationHandlerId.ifPresent(
+        id -> {
+          final ExecutableActivity compensationHandler =
+              context.getCurrentProcess().getElementById(id, ExecutableActivity.class);
+
+          final var compensation = new ExecutableCompensation(eventDefinition.getId());
+          compensation.setCompensationHandler(compensationHandler);
+
+          executableElement.setCompensation(compensation);
+        });
+
     executableElement.setEventType(BpmnEventType.COMPENSATION);
   }
 }

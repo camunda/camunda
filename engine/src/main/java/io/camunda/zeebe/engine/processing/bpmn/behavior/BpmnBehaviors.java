@@ -53,4 +53,6 @@ public interface BpmnBehaviors {
   BpmnJobActivationBehavior jobActivationBehavior();
 
   BpmnUserTaskBehavior userTaskBehavior();
+
+  BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour();
 }

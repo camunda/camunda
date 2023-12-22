@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
+import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -404,6 +405,11 @@ public final class RecordingExporter implements Exporter {
 
   public static UserTaskRecordStream userTaskRecords(final UserTaskIntent intent) {
     return userTaskRecords().withIntent(intent);
+  }
+
+  public static CompensationSubscriptionRecordStream compensationSubscriptionRecords() {
+    return new CompensationSubscriptionRecordStream(
+        records(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionRecordValue.class));
   }
 
   public static void autoAcknowledge(final boolean shouldAcknowledgeRecords) {

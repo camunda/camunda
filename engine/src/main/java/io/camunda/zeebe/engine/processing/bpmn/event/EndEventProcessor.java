@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.EnsureUtil.ensureNotNull;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
@@ -45,6 +46,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
   private final BpmnJobBehavior jobBehavior;
   private final BpmnSignalBehavior signalBehavior;
   private final BpmnStateBehavior stateBehavior;
+  private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
 
   public EndEventProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -57,6 +59,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     jobBehavior = bpmnBehaviors.jobBehavior();
     stateBehavior = bpmnBehaviors.stateBehavior();
     signalBehavior = bpmnBehaviors.signalBehavior();
+    compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
   }
 
   @Override
@@ -326,8 +329,14 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
       final var activated =
           stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
-      final var completing = stateTransitionBehavior.transitionToCompleting(activated);
-      onComplete(element, completing);
+
+      final var isCompensationTriggered =
+          compensationSubscriptionBehaviour.triggerCompensation(activating);
+
+      if (!isCompensationTriggered) {
+        final var completing = stateTransitionBehavior.transitionToCompleting(activated);
+        onComplete(element, completing);
+      }
     }
 
     @Override
