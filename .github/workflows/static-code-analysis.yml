@@ -22,7 +22,7 @@ jobs:
         fetch-depth: 0
     - name: Import secrets
       id: secrets
-      uses: hashicorp/vault-action@45dc5344f1158c3cafbf0dd70a07632b41ad0a17
+      uses: hashicorp/vault-action@6853090cd99ab382c4830a1ae8966b5a906315b6
       with:
         url: ${{ secrets.VAULT_ADDR }}
         method: approle
