@@ -18,6 +18,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import org.agrona.LangUtil;
 
 /**
@@ -103,6 +105,16 @@ public final class TestActorFuture<V> implements ActorFuture<V> {
   @Override
   public Throwable getException() {
     return result != null && result.isLeft() ? result.getLeft() : null;
+  }
+
+  @Override
+  public ActorFuture<V> andThen(final Supplier<ActorFuture<V>> next, final Executor executor) {
+    throw new UnsupportedOperationException("Not yet implemented");
+  }
+
+  @Override
+  public ActorFuture<V> andThen(final Function<V, ActorFuture<V>> next, final Executor executor) {
+    throw new UnsupportedOperationException("Not yet implemented");
   }
 
   private void triggerOnCompleteListeners() {

@@ -22,6 +22,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 /** Completable future implementation that is garbage free and reusable */
@@ -276,6 +278,35 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
     }
 
     return failureCause;
+  }
+
+  @Override
+  public ActorFuture<V> andThen(final Supplier<ActorFuture<V>> next, final Executor executor) {
+    return andThen(ignored -> next.get(), executor);
+  }
+
+  @Override
+  public ActorFuture<V> andThen(final Function<V, ActorFuture<V>> next, final Executor executor) {
+    final var nextFuture = new CompletableActorFuture<V>();
+    onComplete(
+        (thisResult, thisError) -> {
+          if (thisError != null) {
+            nextFuture.completeExceptionally(thisError);
+          } else {
+            next.apply(thisResult)
+                .onComplete(
+                    (nextResult, nextError) -> {
+                      if (nextError != null) {
+                        nextFuture.completeExceptionally(nextError);
+                      } else {
+                        nextFuture.complete(nextResult);
+                      }
+                    },
+                    executor);
+          }
+        },
+        executor);
+    return nextFuture;
   }
 
   private void notifyAllBlocked() {
