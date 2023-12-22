@@ -105,7 +105,7 @@ public final class ClusterActuatorAssert
             b ->
                 b.getPartitions().stream()
                     .anyMatch(p -> p.getId() == partitionId && p.getState().equals(state)),
-            "Broker %d has partition %d".formatted(brokerId, partitionId));
+            "Broker %d has partition %d with state %s".formatted(brokerId, partitionId, state));
     return this;
   }
 }
