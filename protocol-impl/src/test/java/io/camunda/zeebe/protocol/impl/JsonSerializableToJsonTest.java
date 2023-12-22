@@ -2271,7 +2271,7 @@ final class JsonSerializableToJsonTest {
           "processInstanceKey": -1,
           "processDefinitionKey": -1,
           "compensableActivityId": "",
-          "compensableActivityScopeId": -1,
+          "compensableActivityScopeId": "",
           "throwEventId": "",
           "throwEventInstanceKey": -1,
           "variables": {}

@@ -25,7 +25,6 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEndEvent;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
-import java.util.Set;
 import org.agrona.DirectBuffer;
 
 public final class EndEventProcessor implements BpmnElementProcessor<ExecutableEndEvent> {
@@ -330,20 +329,13 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
       final var activated =
           stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
-      // check for activities that are completed and have compensation handlers
-      final Set<String> completedActivities =
-          compensationSubscriptionBehaviour.getCompletedActivitiesToCompensate(activated);
 
-      if (completedActivities.isEmpty()) {
+      final var isCompensationTriggered =
+          compensationSubscriptionBehaviour.triggerCompensation(activating);
+
+      if (!isCompensationTriggered) {
         final var completing = stateTransitionBehavior.transitionToCompleting(activated);
         onComplete(element, completing);
-      } else {
-        // activate the compensation handler
-        completedActivities.forEach(
-            activity -> {
-              compensationSubscriptionBehaviour.triggerCompensationSubscription(activating);
-              compensationSubscriptionBehaviour.activateCompensationHandler(activity, activated);
-            });
       }
     }
 

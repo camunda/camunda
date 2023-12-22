@@ -24,6 +24,6 @@ public class CompensationSubscriptionTriggeredApplier
 
   @Override
   public void applyState(final long key, final CompensationSubscriptionRecord value) {
-    compensationState.update(value);
+    compensationState.update(key, value);
   }
 }

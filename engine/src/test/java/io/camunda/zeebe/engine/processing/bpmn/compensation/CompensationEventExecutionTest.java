@@ -173,7 +173,7 @@ public class CompensationEventExecutionTest {
                 CompensationSubscriptionIntent.TRIGGERED,
                 TenantOwned.DEFAULT_TENANT_IDENTIFIER,
                 processInstanceKey,
-                "",
+                "ActivityToCompensate",
                 "CompensationThrowEvent"));
   }
 

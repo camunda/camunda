@@ -61,16 +61,16 @@ public class DbCompensationSubscriptionState implements MutableCompensationSubsc
   }
 
   @Override
-  public Set<String> findSubscriptionsByProcessInstanceKey(
+  public Set<CompensationSubscription> findSubscriptionsByProcessInstanceKey(
       final String tenantId, final long piKey) {
     tenantIdKey.wrapString(tenantId);
     processInstanceKey.wrapLong(piKey);
 
-    final Set<String> completedActivities = new HashSet<>();
+    final Set<CompensationSubscription> completedActivities = new HashSet<>();
     compensationSubscriptionColumnFamily.whileEqualPrefix(
         new DbCompositeKey<>(tenantIdKey, processInstanceKey),
         ((key, value) -> {
-          completedActivities.add(value.getRecord().getCompensableActivityId());
+          completedActivities.add(value.copy());
         }));
     return completedActivities;
   }
@@ -89,19 +89,14 @@ public class DbCompensationSubscriptionState implements MutableCompensationSubsc
   }
 
   @Override
-  public void update(final CompensationSubscriptionRecord compensation) {
-    tenantIdKey.wrapString(compensation.getTenantId());
-    processInstanceKey.wrapLong(compensation.getProcessInstanceKey());
-
-    compensationSubscriptionColumnFamily.whileEqualPrefix(
-        new DbCompositeKey<>(tenantIdKey, processInstanceKey),
-        ((key, value) -> {
-          value
-              .getRecord()
-              .setThrowEventId(compensation.getThrowEventId())
-              .setThrowEventInstanceKey(compensation.getThrowEventInstanceKey());
-          compensationSubscriptionColumnFamily.upsert(key, value);
-        }));
+  public void update(final long key, final CompensationSubscriptionRecord compensation) {
+    compensationSubscription.setKey(key).setRecord(compensation);
+    wrapCompensationKeys(
+        compensation.getProcessInstanceKey(),
+        compensation.getCompensableActivityId(),
+        compensation.getTenantId());
+    compensationSubscriptionColumnFamily.update(
+        tenantAwareProcessInstanceKeyCompensableActivityId, compensationSubscription);
   }
 
   private void wrapCompensationKeys(

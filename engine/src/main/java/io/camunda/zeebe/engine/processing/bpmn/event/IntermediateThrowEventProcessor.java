@@ -25,7 +25,6 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableIntermediateThrowEvent;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
-import java.util.Set;
 import org.agrona.DirectBuffer;
 
 public class IntermediateThrowEventProcessor
@@ -318,19 +317,12 @@ public class IntermediateThrowEventProcessor
       final BpmnElementContext activated =
           stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
 
-      // check for activities that are completed and have compensation handlers
-      final Set<String> completedActivities =
-          compensationSubscriptionBehaviour.getCompletedActivitiesToCompensate(activated);
+      final var isCompensationTriggered =
+          compensationSubscriptionBehaviour.triggerCompensation(activating);
 
-      if (completedActivities.isEmpty()) {
-        stateTransitionBehavior.completeElement(activated);
-      } else {
-        // activate the compensation handler
-        completedActivities.forEach(
-            activity -> {
-              compensationSubscriptionBehaviour.triggerCompensationSubscription(activating);
-              compensationSubscriptionBehaviour.activateCompensationHandler(activity, activated);
-            });
+      if (!isCompensationTriggered) {
+        final var completing = stateTransitionBehavior.transitionToCompleting(activated);
+        onComplete(element, completing);
       }
     }
 

@@ -14,5 +14,5 @@ public interface MutableCompensationSubscriptionState extends CompensationSubscr
 
   void put(final long key, CompensationSubscriptionRecord compensation);
 
-  void update(CompensationSubscriptionRecord compensation);
+  void update(final long key, CompensationSubscriptionRecord compensation);
 }

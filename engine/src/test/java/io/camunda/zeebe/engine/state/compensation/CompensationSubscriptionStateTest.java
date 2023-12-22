@@ -71,10 +71,13 @@ public class CompensationSubscriptionStateTest {
         new CompensationSubscriptionRecord()
             .setTenantId(TENANT_ID)
             .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
+            .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
+            .setCompensableActivityId(COMPENSABLE_ACTIVITY_ID)
+            .setCompensableActivityScopeId(COMPENSABLE_ACTIVITY_SCOPE_ID)
             .setThrowEventId("updateThrowEventId")
             .setThrowEventInstanceKey(2L);
 
-    state.update(updatedCompensationInfo);
+    state.update(1L, updatedCompensationInfo);
 
     final var updatedCompensation =
         state
@@ -117,7 +120,9 @@ public class CompensationSubscriptionStateTest {
     final var subscriptions =
         state.findSubscriptionsByProcessInstanceKey(TENANT_ID, PROCESS_INSTANCE_KEY);
     assertThat(subscriptions.size()).isEqualTo(2);
-    assertThat(subscriptions).contains(COMPENSABLE_ACTIVITY_ID, "anotherCompensableActivityId");
+    assertThat(subscriptions)
+        .extracting(c -> c.getRecord().getCompensableActivityId())
+        .contains(COMPENSABLE_ACTIVITY_ID, "anotherCompensableActivityId");
   }
 
   private CompensationSubscriptionRecord createCompensation(final long key) {

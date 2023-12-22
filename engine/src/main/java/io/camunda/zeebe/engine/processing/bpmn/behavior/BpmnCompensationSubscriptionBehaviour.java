@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBou
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.compensation.CompensationSubscription;
 import io.camunda.zeebe.engine.state.immutable.CompensationSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -44,12 +45,61 @@ public class BpmnCompensationSubscriptionBehaviour {
     commandWriter = writers.command();
   }
 
-  public Set<String> getCompletedActivitiesToCompensate(final BpmnElementContext context) {
+  public void createCompensationSubscription(
+      final ExecutableActivity element, final BpmnElementContext context) {
+    if (hasCompensationBoundaryEvent(element)) {
+      final var key = keyGenerator.nextKey();
+      final var compensation =
+          new CompensationSubscriptionRecord()
+              .setTenantId(context.getTenantId())
+              .setProcessInstanceKey(context.getProcessInstanceKey())
+              .setProcessDefinitionKey(context.getProcessDefinitionKey())
+              .setCompensableActivityId(BufferUtil.bufferAsString(context.getElementId()))
+              .setCompensableActivityScopeId(
+                  BufferUtil.bufferAsString(element.getFlowScope().getId()));
+      stateWriter.appendFollowUpEvent(key, CompensationSubscriptionIntent.CREATED, compensation);
+    }
+  }
+
+  public boolean triggerCompensation(final BpmnElementContext context) {
+
+    final Set<CompensationSubscription> completedCompensationSubscription =
+        getCompensationSubscriptionForCompletedActivities(context);
+
+    if (completedCompensationSubscription.isEmpty()) {
+      return false;
+    }
+    // activate the compensation handler
+    completedCompensationSubscription.forEach(
+        compensation -> {
+          final var key = compensation.getKey();
+          final var compensationRecord = compensation.getRecord();
+          compensationRecord
+              .setThrowEventId(BufferUtil.bufferAsString(context.getElementId()))
+              .setThrowEventInstanceKey(context.getElementInstanceKey());
+          stateWriter.appendFollowUpEvent(
+              key, CompensationSubscriptionIntent.TRIGGERED, compensationRecord);
+
+          activateCompensationHandler(compensationRecord.getCompensableActivityId(), context);
+        });
+    return true;
+  }
+
+  private Set<CompensationSubscription> getCompensationSubscriptionForCompletedActivities(
+      final BpmnElementContext context) {
     return compensationSubscriptionState.findSubscriptionsByProcessInstanceKey(
         context.getTenantId(), context.getProcessInstanceKey());
   }
 
-  public void activateCompensationHandler(
+  private boolean hasCompensationBoundaryEvent(final ExecutableActivity element) {
+    final var compensationBoundaryEvent =
+        element.getBoundaryEvents().stream()
+            .filter(boundaryEvent -> boundaryEvent.getEventType() == BpmnEventType.COMPENSATION)
+            .findFirst();
+    return compensationBoundaryEvent.isPresent();
+  }
+
+  private void activateCompensationHandler(
       final String elementId, final BpmnElementContext context) {
 
     // find the boundary event
@@ -80,42 +130,6 @@ public class BpmnCompensationSubscriptionBehaviour {
 
     commandWriter.appendNewCommand(
         ProcessInstanceIntent.ACTIVATE_ELEMENT, compensationHandlerRecord);
-  }
-
-  public void createCompensationSubscription(
-      final ExecutableActivity element, final BpmnElementContext context) {
-    if (hasCompensationBoundaryEvent(element)) {
-      final var key = keyGenerator.nextKey();
-      final var compensation =
-          new CompensationSubscriptionRecord()
-              .setTenantId(context.getTenantId())
-              .setProcessInstanceKey(context.getProcessInstanceKey())
-              .setProcessDefinitionKey(context.getProcessDefinitionKey())
-              .setCompensableActivityId(BufferUtil.bufferAsString(context.getElementId()))
-              .setCompensableActivityScopeId(
-                  BufferUtil.bufferAsString(element.getFlowScope().getId()));
-      stateWriter.appendFollowUpEvent(key, CompensationSubscriptionIntent.CREATED, compensation);
-    }
-  }
-
-  public void triggerCompensationSubscription(final BpmnElementContext context) {
-    final var key = keyGenerator.nextKey();
-    final var compensation =
-        new CompensationSubscriptionRecord()
-            .setTenantId(context.getTenantId())
-            .setProcessInstanceKey(context.getProcessInstanceKey())
-            .setProcessDefinitionKey(context.getProcessDefinitionKey())
-            .setThrowEventId(BufferUtil.bufferAsString(context.getElementId()))
-            .setThrowEventInstanceKey(context.getElementInstanceKey());
-    stateWriter.appendFollowUpEvent(key, CompensationSubscriptionIntent.TRIGGERED, compensation);
-  }
-
-  private boolean hasCompensationBoundaryEvent(final ExecutableActivity element) {
-    final var compensationBoundaryEvent =
-        element.getBoundaryEvents().stream()
-            .filter(boundaryEvent -> boundaryEvent.getEventType() == BpmnEventType.COMPENSATION)
-            .findFirst();
-    return compensationBoundaryEvent.isPresent();
   }
 
   private void activateAndCompleteCompensationBoundaryEvent(
