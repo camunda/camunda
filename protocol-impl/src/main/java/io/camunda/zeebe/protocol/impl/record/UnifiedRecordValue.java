@@ -14,6 +14,16 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 
 public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
 
+  /**
+   * Creates a new {@link UnifiedRecordValue}.
+   *
+   * @param expectedDeclaredProperties the expected number of declared properties. Providing the
+   *     correct number helps to avoid allocations and memory copies.
+   */
+  public UnifiedRecordValue(final int expectedDeclaredProperties) {
+    super(expectedDeclaredProperties);
+  }
+
   @Override
   @JsonIgnore
   public int getLength() {

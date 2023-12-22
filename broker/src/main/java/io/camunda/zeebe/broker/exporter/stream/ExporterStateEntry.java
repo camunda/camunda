@@ -24,6 +24,7 @@ public class ExporterStateEntry extends UnpackedObject implements DbValue {
       new BinaryProperty("exporterMetadata", EMPTY_METADATA);
 
   public ExporterStateEntry() {
+    super(2);
     declareProperty(positionProp).declareProperty(metadataProp);
   }
 

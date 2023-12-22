@@ -38,6 +38,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
   private final StringProperty elementIdProp = new StringProperty("elementId", "");
 
   public ProcessMessageSubscriptionRecord() {
+    super(10);
     declareProperty(subscriptionPartitionIdProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)

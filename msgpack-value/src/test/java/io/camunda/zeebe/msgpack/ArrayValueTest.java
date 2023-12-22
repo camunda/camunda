@@ -453,6 +453,7 @@ public final class ArrayValueTest {
     private final StringProperty barProp = new StringProperty("bar");
 
     Foo() {
+      super(2);
       declareProperty(fooProp).declareProperty(barProp);
     }
 
@@ -480,6 +481,7 @@ public final class ArrayValueTest {
     private final StringProperty barProp = new StringProperty("bar");
 
     Bar() {
+      super(1);
       declareProperty(barProp);
     }
 

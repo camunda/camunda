@@ -23,6 +23,7 @@ public final class DeploymentResource extends UnpackedObject
   private final StringProperty resourceNameProp = new StringProperty("resourceName", "resource");
 
   public DeploymentResource() {
+    super(2);
     declareProperty(resourceNameProp).declareProperty(resourceProp);
   }
 

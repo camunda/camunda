@@ -25,6 +25,7 @@ public final class EvaluatedOutputRecord extends UnifiedRecordValue
   private final BinaryProperty outputValueProp = new BinaryProperty("outputValue");
 
   public EvaluatedOutputRecord() {
+    super(3);
     declareProperty(outputIdProp).declareProperty(outputNameProp).declareProperty(outputValueProp);
   }
 

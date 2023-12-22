@@ -16,11 +16,21 @@ import java.util.List;
 import java.util.Objects;
 
 public class ObjectValue extends BaseValue {
-  private final List<BaseProperty<? extends BaseValue>> declaredProperties = new ArrayList<>();
-  private final List<UndeclaredProperty> undeclaredProperties = new ArrayList<>();
-  private final List<UndeclaredProperty> recycledProperties = new ArrayList<>();
+  private final List<BaseProperty<? extends BaseValue>> declaredProperties;
+  private final List<UndeclaredProperty> undeclaredProperties = new ArrayList<>(0);
+  private final List<UndeclaredProperty> recycledProperties = new ArrayList<>(0);
 
   private final StringValue decodedKey = new StringValue();
+
+  /**
+   * Creates a new ObjectValue
+   *
+   * @param expectedDeclaredProperties a size hint for the number of declared properties. Providing
+   *     the correct number helps to avoid allocations and memory copies.
+   */
+  public ObjectValue(final int expectedDeclaredProperties) {
+    declaredProperties = new ArrayList<>(expectedDeclaredProperties);
+  }
 
   public ObjectValue declareProperty(final BaseProperty<? extends BaseValue> prop) {
     declaredProperties.add(prop);

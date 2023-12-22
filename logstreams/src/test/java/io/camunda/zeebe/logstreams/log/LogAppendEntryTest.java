@@ -18,7 +18,7 @@ public class LogAppendEntryTest {
   public void shouldWrapValues() {
     // given
     final var recordMetadata = new RecordMetadata();
-    final var unifiedRecordValue = new UnifiedRecordValue();
+    final var unifiedRecordValue = new UnifiedRecordValue(0);
 
     // when
     final var logAppendEntry = LogAppendEntry.of(recordMetadata, unifiedRecordValue);
@@ -32,7 +32,7 @@ public class LogAppendEntryTest {
   public void shouldNotBeProcessedPerDefault() {
     // given
     final var recordMetadata = new RecordMetadata();
-    final var unifiedRecordValue = new UnifiedRecordValue();
+    final var unifiedRecordValue = new UnifiedRecordValue(0);
 
     // when
     final var logAppendEntry = LogAppendEntry.of(recordMetadata, unifiedRecordValue);
@@ -47,7 +47,7 @@ public class LogAppendEntryTest {
   public void shouldMarkEntryAsProcessed() {
     // given
     final var recordMetadata = new RecordMetadata();
-    final var unifiedRecordValue = new UnifiedRecordValue();
+    final var unifiedRecordValue = new UnifiedRecordValue(0);
     final var logAppendEntry = LogAppendEntry.of(recordMetadata, unifiedRecordValue);
 
     // when

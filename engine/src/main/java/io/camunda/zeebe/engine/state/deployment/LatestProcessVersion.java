@@ -15,6 +15,7 @@ public class LatestProcessVersion extends UnpackedObject implements DbValue {
   private final LongProperty latestProcessVersionProp = new LongProperty("latestProcessVersion");
 
   public LatestProcessVersion() {
+    super(1);
     declareProperty(latestProcessVersionProp);
   }
 

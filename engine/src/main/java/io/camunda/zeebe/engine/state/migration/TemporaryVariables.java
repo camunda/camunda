@@ -16,6 +16,7 @@ public class TemporaryVariables extends UnpackedObject implements DbValue {
   private final BinaryProperty valueProp = new BinaryProperty("temporaryVariables");
 
   public TemporaryVariables() {
+    super(1);
     declareProperty(valueProp);
   }
 

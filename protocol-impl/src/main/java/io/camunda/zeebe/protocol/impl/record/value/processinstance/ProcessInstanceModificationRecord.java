@@ -36,6 +36,7 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
       new ArrayProperty<>("activatedElementInstanceKeys", new LongValue());
 
   public ProcessInstanceModificationRecord() {
+    super(4);
     declareProperty(processInstanceKeyProperty)
         .declareProperty(terminateInstructionsProperty)
         .declareProperty(activateInstructionsProperty)

@@ -18,6 +18,7 @@ public class JobRecordValue extends UnpackedObject implements DbValue {
       new ObjectProperty<>("jobRecord", new JobRecord());
 
   public JobRecordValue() {
+    super(1);
     declareProperty(recordProp);
   }
 

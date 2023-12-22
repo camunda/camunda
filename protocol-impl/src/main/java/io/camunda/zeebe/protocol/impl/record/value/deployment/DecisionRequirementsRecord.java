@@ -37,6 +37,7 @@ public final class DecisionRequirementsRecord extends UnifiedRecordValue
   private final BinaryProperty resourceProp = new BinaryProperty("resource");
 
   public DecisionRequirementsRecord() {
+    super(8);
     declareProperty(decisionRequirementsIdProp)
         .declareProperty(decisionRequirementsNameProp)
         .declareProperty(decisionRequirementsVersionProp)

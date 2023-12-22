@@ -24,6 +24,7 @@ public final class AwaitProcessInstanceResultMetadata extends UnpackedObject imp
       new ArrayProperty<>("fetchVariables", new StringValue());
 
   public AwaitProcessInstanceResultMetadata() {
+    super(3);
     declareProperty(requestIdProperty)
         .declareProperty(requestStreamIdProperty)
         .declareProperty(fetchVariablesProperty);

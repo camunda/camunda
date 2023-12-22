@@ -21,6 +21,7 @@ public class ProcessMetadata extends UnpackedObject {
   private final StringProperty resourceNameProp = new StringProperty("resourceName");
 
   public ProcessMetadata() {
+    super(4);
     declareProperty(processDefinitionKeyProp)
         .declareProperty(versionProp)
         .declareProperty(bpmnProcessIdProp)

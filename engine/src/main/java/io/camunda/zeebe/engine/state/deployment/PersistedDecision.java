@@ -28,6 +28,7 @@ public final class PersistedDecision extends UnpackedObject implements DbValue {
       new LongProperty("decisionRequirementsKey");
 
   public PersistedDecision() {
+    super(6);
     declareProperty(decisionIdProp)
         .declareProperty(decisionNameProp)
         .declareProperty(versionProp)
@@ -36,7 +37,7 @@ public final class PersistedDecision extends UnpackedObject implements DbValue {
         .declareProperty(decisionRequirementsKeyProp);
   }
 
-  public void wrap(DecisionRecord record) {
+  public void wrap(final DecisionRecord record) {
     decisionIdProp.setValue(record.getDecisionId());
     decisionNameProp.setValue(record.getDecisionName());
     versionProp.setValue(record.getVersion());
