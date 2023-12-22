@@ -152,38 +152,19 @@ public final class ClusterTopologyManagerService implements TopologyUpdateNotifi
   public ActorFuture<Void> start(
       final ActorSchedulingService actorSchedulingService,
       final StaticConfiguration staticConfiguration) {
-    final var startFuture = new CompletableActorFuture<Void>();
-
-    startGossiper(actorSchedulingService)
-        .onComplete(
-            (ok, error) -> {
-              if (error != null) {
-                startFuture.completeExceptionally(error);
-              } else {
-                startClusterTopologyServices(actorSchedulingService, staticConfiguration)
-                    .onComplete(startFuture);
-              }
-            });
-
-    return startFuture;
+    return startGossiper(actorSchedulingService)
+        .andThen(
+            () -> startClusterTopologyServices(actorSchedulingService, staticConfiguration),
+            Runnable::run);
   }
 
   private ActorFuture<Void> startGossiper(final ActorSchedulingService actorSchedulingService) {
-    final var result = new CompletableActorFuture<Void>();
-    actorSchedulingService
+    return actorSchedulingService
         .submitActor(gossipActor)
-        .onComplete(
-            (ok, error) -> {
-              if (error != null) {
-                result.completeExceptionally(error);
-              } else {
-                clusterTopologyGossiper.start().onComplete(result);
-              }
-            });
-    return result;
+        .andThen(clusterTopologyGossiper::start, Runnable::run);
   }
 
-  private ActorFuture<Void> startClusterTopologyServices(
+  private CompletableActorFuture<Void> startClusterTopologyServices(
       final ActorSchedulingService actorSchedulingService,
       final StaticConfiguration staticConfiguration) {
     final var result = new CompletableActorFuture<Void>();
@@ -224,20 +205,8 @@ public final class ClusterTopologyManagerService implements TopologyUpdateNotifi
     if (topologyRequestServer != null) {
       topologyRequestServer.close();
     }
-
-    final var result = new CompletableActorFuture<Void>();
     clusterTopologyGossiper.close();
-    managerActor
-        .closeAsync()
-        .onComplete(
-            (ok, error) -> {
-              if (error != null) {
-                result.completeExceptionally(error);
-              } else {
-                gossipActor.closeAsync().onComplete(result);
-              }
-            });
-    return result;
+    return managerActor.closeAsync().andThen(gossipActor::closeAsync, Runnable::run);
   }
 
   public void registerPartitionChangeExecutor(
