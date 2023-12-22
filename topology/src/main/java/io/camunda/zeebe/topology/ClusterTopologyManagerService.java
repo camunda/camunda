@@ -12,6 +12,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.topology.TopologyInitializer.FileInitializer;
@@ -37,7 +38,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Optional;
 
-public final class ClusterTopologyManagerService extends Actor implements TopologyUpdateNotifier {
+public final class ClusterTopologyManagerService implements TopologyUpdateNotifier, AsyncClosable {
   // Use a node 0 as always the coordinator. Later we can make it configurable or allow changing it
   // dynamically.
   private static final String COORDINATOR_ID = "0";
@@ -50,6 +51,8 @@ public final class ClusterTopologyManagerService extends Actor implements Topolo
   private final Path topologyFile;
   private TopologyChangeCoordinator topologyChangeCoordinator;
   private TopologyRequestServer topologyRequestServer;
+  private final Actor gossipActor;
+  private final Actor managerActor;
 
   public ClusterTopologyManagerService(
       final Path dataRootDirectory,
@@ -67,11 +70,13 @@ public final class ClusterTopologyManagerService extends Actor implements Topolo
     topologyFile = dataRootDirectory.resolve(TOPOLOGY_FILE_NAME);
     persistedClusterTopology =
         PersistedClusterTopology.ofFile(topologyFile, new ProtoBufSerializer());
+    gossipActor = new Actor() {};
+    managerActor = new Actor() {};
     clusterTopologyManager =
-        new ClusterTopologyManagerImpl(this, localMemberId, persistedClusterTopology);
+        new ClusterTopologyManagerImpl(managerActor, localMemberId, persistedClusterTopology);
     clusterTopologyGossiper =
         new ClusterTopologyGossiper(
-            this,
+            gossipActor,
             communicationService,
             memberShipService,
             new ProtoBufSerializer(),
@@ -80,13 +85,14 @@ public final class ClusterTopologyManagerService extends Actor implements Topolo
     isCoordinator = localMemberId.id().equals(COORDINATOR_ID);
     if (isCoordinator) {
       // Only a coordinator can start topology change
-      topologyChangeCoordinator = new TopologyChangeCoordinatorImpl(clusterTopologyManager, this);
+      topologyChangeCoordinator =
+          new TopologyChangeCoordinatorImpl(clusterTopologyManager, managerActor);
       topologyRequestServer =
           new TopologyRequestServer(
               communicationService,
               new ProtoBufSerializer(),
-              new TopologyManagementRequestsHandler(topologyChangeCoordinator, this),
-              this);
+              new TopologyManagementRequestsHandler(topologyChangeCoordinator, managerActor),
+              managerActor);
     }
     clusterTopologyManager.setTopologyGossiper(clusterTopologyGossiper::updateClusterTopology);
   }
@@ -108,17 +114,18 @@ public final class ClusterTopologyManagerService extends Actor implements Topolo
             new SyncInitializer(
                 clusterTopologyGossiper,
                 otherKnownMembers,
-                this,
+                managerActor,
                 clusterTopologyGossiper::queryClusterTopology))
         // Only to support rolling update from 8.3 to 8.4. Should be removed after 8.4 release
         .orThen(
-            new RollingUpdateAwareInitializerV83ToV84(membershipService, staticConfiguration, this))
+            new RollingUpdateAwareInitializerV83ToV84(
+                membershipService, staticConfiguration, managerActor))
         .orThen(
             new GossipInitializer(
                 clusterTopologyGossiper,
                 persistedClusterTopology,
                 clusterTopologyGossiper::updateClusterTopology,
-                this));
+                managerActor));
   }
 
   private TopologyInitializer getCoordinatorInitializer(
@@ -130,12 +137,13 @@ public final class ClusterTopologyManagerService extends Actor implements Topolo
     return new FileInitializer(topologyFile, new ProtoBufSerializer())
         // Only to support rolling update from 8.3 to 8.4. Should be removed after 8.4 release
         .orThen(
-            new RollingUpdateAwareInitializerV83ToV84(memberShipService, staticConfiguration, this))
+            new RollingUpdateAwareInitializerV83ToV84(
+                memberShipService, staticConfiguration, managerActor))
         .orThen(
             new SyncInitializer(
                 clusterTopologyGossiper,
                 otherKnownMembers,
-                this,
+                managerActor,
                 clusterTopologyGossiper::queryClusterTopology))
         .orThen(new StaticInitializer(staticConfiguration));
   }
@@ -145,23 +153,40 @@ public final class ClusterTopologyManagerService extends Actor implements Topolo
       final ActorSchedulingService actorSchedulingService,
       final StaticConfiguration staticConfiguration) {
     final var startFuture = new CompletableActorFuture<Void>();
-    actorSchedulingService
-        .submitActor(this)
+
+    startGossiper(actorSchedulingService)
         .onComplete(
-            (ignore, error) -> {
-              if (error == null) {
-                actor.run(() -> startClusterTopologyServices(staticConfiguration, startFuture));
-              } else {
+            (ok, error) -> {
+              if (error != null) {
                 startFuture.completeExceptionally(error);
+              } else {
+                startClusterTopologyServices(actorSchedulingService, staticConfiguration)
+                    .onComplete(startFuture);
               }
             });
 
     return startFuture;
   }
 
-  private void startClusterTopologyServices(
-      final StaticConfiguration staticConfiguration,
-      final CompletableActorFuture<Void> startFuture) {
+  private ActorFuture<Void> startGossiper(final ActorSchedulingService actorSchedulingService) {
+    final var result = new CompletableActorFuture<Void>();
+    actorSchedulingService
+        .submitActor(gossipActor)
+        .onComplete(
+            (ok, error) -> {
+              if (error != null) {
+                result.completeExceptionally(error);
+              } else {
+                clusterTopologyGossiper.start().onComplete(result);
+              }
+            });
+    return result;
+  }
+
+  private ActorFuture<Void> startClusterTopologyServices(
+      final ActorSchedulingService actorSchedulingService,
+      final StaticConfiguration staticConfiguration) {
+    final var result = new CompletableActorFuture<Void>();
     final TopologyInitializer topologyInitializer =
         isCoordinator
             ? getCoordinatorInitializer(staticConfiguration)
@@ -173,16 +198,17 @@ public final class ClusterTopologyManagerService extends Actor implements Topolo
 
     // Start gossiper first so that when ClusterTopologyManager initializes the topology, it can
     // immediately gossip it.
-    clusterTopologyGossiper
-        .start()
+    actorSchedulingService
+        .submitActor(managerActor)
         .onComplete(
-            (ignore, error) -> {
+            (ok, error) -> {
               if (error != null) {
-                startFuture.completeExceptionally(error);
+                result.completeExceptionally(error);
               } else {
-                clusterTopologyManager.start(topologyInitializer).onComplete(startFuture);
+                clusterTopologyManager.start(topologyInitializer).onComplete(result);
               }
             });
+    return result;
   }
 
   public ActorFuture<ClusterTopology> getClusterTopology() {
@@ -194,11 +220,24 @@ public final class ClusterTopologyManagerService extends Actor implements Topolo
   }
 
   @Override
-  protected void onActorClosing() {
-    clusterTopologyGossiper.closeAsync();
+  public ActorFuture<Void> closeAsync() {
     if (topologyRequestServer != null) {
       topologyRequestServer.close();
     }
+
+    final var result = new CompletableActorFuture<Void>();
+    clusterTopologyGossiper.close();
+    managerActor
+        .closeAsync()
+        .onComplete(
+            (ok, error) -> {
+              if (error != null) {
+                result.completeExceptionally(error);
+              } else {
+                gossipActor.closeAsync().onComplete(result);
+              }
+            });
+    return result;
   }
 
   public void registerPartitionChangeExecutor(
