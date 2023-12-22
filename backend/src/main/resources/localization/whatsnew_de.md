@@ -7,3 +7,7 @@ Die Migration erfolgt schrittweise mit kommenden Releases von Optimize. Aktuell 
 ## Verbesserte Aufgabenanalyse (auch bekannt als Ausreißeranalysen)
 
 Die aktualisierte Ausreißeranalyse wird in Aufgabenanalyse umbenannt, da die Ausreißeranalysen eine Möglichkeit zur Verbesserung der Aufgabenausführung darstellt. Es ist nun möglich, die Menge der ausgewerteten Prozessinstanzen zu filtern. Die resultierenden Ausreißer mit aufgelisteten signifikanten Variablen werden in einer Tabelle unter dem Diagramm angezeigt. Die Tabelle ermöglicht dem Benutzer auch einen Drilldown, um die Details des Ausreißers zu analysieren.
+
+## Alarme and E-Mail Digest für Camunda 8 - Optimize self-managed
+
+Durch die neue Integration von Optimize mit Identity profitiert nun auch Camunda 8 - Optimize self-managed Nutzer von den für Prozess-KPIs definierten Alarmen und dem wöchentlichen Process Digest, der alle Prozess-KPIs in einer E-Mail zusammenfasst.
