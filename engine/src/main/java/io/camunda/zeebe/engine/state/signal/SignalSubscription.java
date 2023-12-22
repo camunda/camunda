@@ -20,6 +20,7 @@ public class SignalSubscription extends UnpackedObject implements DbValue {
   private final LongProperty keyProp = new LongProperty("key");
 
   public SignalSubscription() {
+    super(2);
     declareProperty(recordProp).declareProperty(keyProp);
   }
 

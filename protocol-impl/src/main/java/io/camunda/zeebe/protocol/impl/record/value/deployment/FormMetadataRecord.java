@@ -33,6 +33,7 @@ public class FormMetadataRecord extends UnifiedRecordValue implements FormMetada
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public FormMetadataRecord() {
+    super(7);
     declareProperty(formIdProp)
         .declareProperty(versionProp)
         .declareProperty(formKeyProp)

@@ -45,6 +45,7 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
       new ArrayProperty<>("startInstructions", ProcessInstanceCreationStartInstruction::new);
 
   public ProcessInstanceCreationRecord() {
+    super(8);
     declareProperty(bpmnProcessIdProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)

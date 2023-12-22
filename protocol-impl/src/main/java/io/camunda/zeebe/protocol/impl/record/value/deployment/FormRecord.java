@@ -32,6 +32,7 @@ public final class FormRecord extends UnifiedRecordValue implements Form {
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public FormRecord() {
+    super(7);
     declareProperty(formIdProp)
         .declareProperty(versionProp)
         .declareProperty(formKeyProp)

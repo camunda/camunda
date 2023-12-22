@@ -24,9 +24,10 @@ public class PersistedCommandDistribution extends UnpackedObject implements DbVa
       new EnumProperty<>("valueType", ValueType.class);
   private final IntegerProperty intentProperty = new IntegerProperty("intent", Intent.NULL_VAL);
   private final ObjectProperty<UnifiedRecordValue> commandValueProperty =
-      new ObjectProperty<>("commandValue", new UnifiedRecordValue());
+      new ObjectProperty<>("commandValue", new UnifiedRecordValue(10));
 
   public PersistedCommandDistribution() {
+    super(3);
     declareProperty(valueTypeProperty)
         .declareProperty(intentProperty)
         .declareProperty(commandValueProperty);

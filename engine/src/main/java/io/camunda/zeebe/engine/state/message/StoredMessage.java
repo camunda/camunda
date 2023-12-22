@@ -21,6 +21,7 @@ public class StoredMessage extends UnpackedObject implements DbValue {
       new ObjectProperty<>("message", new MessageRecord());
 
   public StoredMessage() {
+    super(2);
     declareProperty(messageKeyProp).declareProperty(messageProp);
   }
 

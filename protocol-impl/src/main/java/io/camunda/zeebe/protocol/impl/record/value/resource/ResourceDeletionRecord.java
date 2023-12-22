@@ -18,6 +18,7 @@ public class ResourceDeletionRecord extends UnifiedRecordValue
   private final LongProperty resourceKeyProp = new LongProperty("resourceKey");
 
   public ResourceDeletionRecord() {
+    super(1);
     declareProperty(resourceKeyProp);
   }
 

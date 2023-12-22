@@ -36,6 +36,7 @@ public final class DecisionRecord extends UnifiedRecordValue implements Decision
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public DecisionRecord() {
+    super(8);
     declareProperty(decisionIdProp)
         .declareProperty(decisionNameProp)
         .declareProperty(versionProp)

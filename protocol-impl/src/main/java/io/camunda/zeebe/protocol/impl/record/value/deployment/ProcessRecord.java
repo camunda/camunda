@@ -34,6 +34,7 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public ProcessRecord() {
+    super(7);
     declareProperty(bpmnProcessIdProp)
         .declareProperty(versionProp)
         .declareProperty(keyProp)

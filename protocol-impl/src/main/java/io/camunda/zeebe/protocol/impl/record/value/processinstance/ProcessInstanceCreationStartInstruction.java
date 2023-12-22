@@ -26,6 +26,7 @@ public final class ProcessInstanceCreationStartInstruction extends ObjectValue
   private final StringProperty elementIdProp = new StringProperty("elementId");
 
   public ProcessInstanceCreationStartInstruction() {
+    super(1);
     declareProperty(elementIdProp);
   }
 

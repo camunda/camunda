@@ -40,6 +40,7 @@ public final class DecisionRequirementsRecord extends UnifiedRecordValue
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public DecisionRequirementsRecord() {
+    super(9);
     declareProperty(decisionRequirementsIdProp)
         .declareProperty(decisionRequirementsNameProp)
         .declareProperty(decisionRequirementsVersionProp)

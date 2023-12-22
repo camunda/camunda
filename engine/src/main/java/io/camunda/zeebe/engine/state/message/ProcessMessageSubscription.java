@@ -23,6 +23,7 @@ public final class ProcessMessageSubscription extends UnpackedObject implements 
   private final LongProperty keyProp = new LongProperty("key");
 
   public ProcessMessageSubscription() {
+    super(3);
     declareProperty(recordProp).declareProperty(stateProp).declareProperty(keyProp);
   }
 

@@ -26,6 +26,7 @@ public final class VersionInfo extends UnpackedObject implements DbValue {
       new ArrayProperty<>("knownVersions", LongValue::new);
 
   public VersionInfo() {
+    super(2);
     declareProperty(highestVersionProp).declareProperty(knownVersions);
   }
 

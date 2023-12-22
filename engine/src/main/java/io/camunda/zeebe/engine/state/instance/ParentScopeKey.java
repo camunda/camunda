@@ -15,6 +15,7 @@ public class ParentScopeKey extends UnpackedObject implements DbValue {
   private final LongProperty keyProp = new LongProperty("parentScopeKey", -1L);
 
   public ParentScopeKey() {
+    super(1);
     declareProperty(keyProp);
   }
 

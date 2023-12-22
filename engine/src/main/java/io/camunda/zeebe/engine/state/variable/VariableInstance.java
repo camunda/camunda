@@ -19,6 +19,7 @@ public final class VariableInstance extends UnpackedObject implements DbValue {
   private final BinaryProperty valueProp = new BinaryProperty("value");
 
   public VariableInstance() {
+    super(2);
     declareProperty(keyProp).declareProperty(valueProp);
   }
 

@@ -24,6 +24,7 @@ public class DeploymentDistributionRecord extends UnifiedRecordValue
   private final IntegerProperty partitionIdProperty = new IntegerProperty("partitionId");
 
   public DeploymentDistributionRecord() {
+    super(1);
     declareProperty(partitionIdProperty);
   }
 

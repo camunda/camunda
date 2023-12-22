@@ -31,6 +31,7 @@ public final class MatchedRuleRecord extends UnifiedRecordValue implements Match
       new ArrayProperty<>("evaluatedOutputs", EvaluatedOutputRecord::new);
 
   public MatchedRuleRecord() {
+    super(3);
     declareProperty(ruleIdProp)
         .declareProperty(ruleIndexProp)
         .declareProperty(evaluatedOutputsProp);

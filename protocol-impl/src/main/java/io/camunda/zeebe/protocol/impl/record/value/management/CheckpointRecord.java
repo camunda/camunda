@@ -21,6 +21,7 @@ public class CheckpointRecord extends UnifiedRecordValue implements CheckpointRe
       new LongProperty(CHECKPOINT_POSITION_KEY, -1L);
 
   public CheckpointRecord() {
+    super(2);
     declareProperty(checkpointIdProperty).declareProperty(checkpointPositionProperty);
   }
 

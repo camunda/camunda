@@ -47,6 +47,7 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public DeploymentRecord() {
+    super(6);
     declareProperty(resourcesProp)
         .declareProperty(processesMetadataProp)
         .declareProperty(decisionRequirementsMetadataProp)

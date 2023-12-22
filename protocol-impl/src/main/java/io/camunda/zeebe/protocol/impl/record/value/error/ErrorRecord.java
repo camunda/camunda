@@ -29,6 +29,7 @@ public final class ErrorRecord extends UnifiedRecordValue implements ErrorRecord
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
 
   public ErrorRecord() {
+    super(4);
     declareProperty(exceptionMessageProp)
         .declareProperty(stacktraceProp)
         .declareProperty(errorEventPositionProp)
@@ -69,10 +70,12 @@ public final class ErrorRecord extends UnifiedRecordValue implements ErrorRecord
     return BufferUtil.bufferAsString(stacktraceProp.getValue());
   }
 
+  @Override
   public long getErrorEventPosition() {
     return errorEventPositionProp.getValue();
   }
 
+  @Override
   public long getProcessInstanceKey() {
     return processInstanceKeyProp.getValue();
   }

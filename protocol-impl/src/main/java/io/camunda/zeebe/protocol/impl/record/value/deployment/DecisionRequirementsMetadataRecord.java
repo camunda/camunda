@@ -42,6 +42,7 @@ public class DecisionRequirementsMetadataRecord extends UnifiedRecordValue
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public DecisionRequirementsMetadataRecord() {
+    super(9);
     declareProperty(decisionRequirementsIdProp)
         .declareProperty(decisionRequirementsNameProp)
         .declareProperty(decisionRequirementsVersionProp)
