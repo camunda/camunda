@@ -102,6 +102,7 @@
         "org.camunda.bpm:camunda-engine",
         "org.camunda.bpm:camunda-license-check",
         "io.camunda:identity-sdk",
+        "io.camunda:identity-spring-boot-starter",
         "io.camunda:zeebe-client-java",
         "io.camunda:zeebe-protocol",
         "ant-contrib:ant-contrib",
