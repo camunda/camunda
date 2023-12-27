@@ -7,7 +7,7 @@ name: sync-issues
 
 on:
   issues:
-    types: [created, opened, closed, deleted, edited, labeled, reopened, unlabeled]
+    types: [created, closed, deleted, edited, labeled, reopened, unlabeled]
   issue_comment:
     types: [created, edited, deleted]
 
