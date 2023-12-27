@@ -15,6 +15,7 @@ import io.camunda.zeebe.scheduler.ActorThread;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -710,6 +711,70 @@ public final class ActorFutureTest {
         .isInstanceOf(RuntimeException.class)
         .hasMessageContaining("Expected");
     assertThat(executorCount).hasValue(1);
+  }
+
+  @Test
+  public void shouldChainWithAndThen() {
+    // given
+    final AtomicInteger executorCount = new AtomicInteger(0);
+    final Executor decoratedExecutor =
+        runnable -> {
+          executorCount.getAndIncrement();
+          runnable.run();
+        };
+
+    final var future1 = new CompletableActorFuture<>();
+    final var future2 = new CompletableActorFuture<>();
+
+    // when -- chain on uncompleted future
+    final var chainedFuture = future1.andThen(r -> future2, decoratedExecutor);
+
+    // then -- nothing ran yet
+    assertThat(chainedFuture).isNotDone();
+    assertThat(executorCount).hasValue(0);
+
+    // when -- complete initial future
+    future1.complete(null);
+
+    // then -- chained future is still not completed
+    assertThat(chainedFuture).isNotDone();
+    assertThat(executorCount).hasValue(1);
+
+    // when -- complete next future
+    future2.complete(null);
+
+    // then -- chained future is completed
+    assertThat(chainedFuture).isDone();
+    assertThat(executorCount).hasValue(2);
+  }
+
+  @Test
+  public void andThenChainPropagatesInitialException() {
+    // given
+    final var future1 = new CompletableActorFuture<>();
+    final var future2 = new CompletableActorFuture<>();
+    final var chained = future1.andThen(r -> future2, Runnable::run);
+    final var expectedException = new RuntimeException("expected");
+
+    // when
+    future1.completeExceptionally(expectedException);
+
+    // then
+    assertThat(chained)
+        .failsWithin(1, TimeUnit.SECONDS)
+        .withThrowableThat()
+        .withCause(expectedException);
+  }
+
+  @Test
+  public void andThenChainPropagatesValue() {
+    // given
+    final var chained =
+        CompletableActorFuture.completed("expected")
+            .andThen(CompletableActorFuture::completed, Runnable::run);
+
+    // then
+    assertThat(chained).succeedsWithin(Duration.ofSeconds(1)).isEqualTo("expected");
   }
 
   private static final class BlockedCallActor extends Actor {
