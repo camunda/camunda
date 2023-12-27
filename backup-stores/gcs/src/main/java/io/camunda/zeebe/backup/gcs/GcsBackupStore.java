@@ -113,8 +113,9 @@ public final class GcsBackupStore implements BackupStore {
             throw new RuntimeException(ERROR_MSG_BACKUP_NOT_FOUND.formatted(id));
           }
           return switch (manifest.statusCode()) {
-            case FAILED, IN_PROGRESS -> throw new RuntimeException(
-                ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE.formatted(id, manifest.statusCode()));
+            case FAILED, IN_PROGRESS ->
+                throw new RuntimeException(
+                    ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE.formatted(id, manifest.statusCode()));
             case COMPLETED -> {
               final var completed = manifest.asCompleted();
               final var snapshot =
@@ -160,27 +161,30 @@ public final class GcsBackupStore implements BackupStore {
 
   private static BackupStatus toStatus(final Manifest manifest) {
     return switch (manifest.statusCode()) {
-      case IN_PROGRESS -> new BackupStatusImpl(
-          manifest.id(),
-          Optional.ofNullable(manifest.descriptor()),
-          BackupStatusCode.IN_PROGRESS,
-          Optional.empty(),
-          Optional.ofNullable(manifest.createdAt()),
-          Optional.ofNullable(manifest.modifiedAt()));
-      case COMPLETED -> new BackupStatusImpl(
-          manifest.id(),
-          Optional.ofNullable(manifest.descriptor()),
-          BackupStatusCode.COMPLETED,
-          Optional.empty(),
-          Optional.ofNullable(manifest.createdAt()),
-          Optional.ofNullable(manifest.modifiedAt()));
-      case FAILED -> new BackupStatusImpl(
-          manifest.id(),
-          Optional.ofNullable(manifest.descriptor()),
-          BackupStatusCode.FAILED,
-          Optional.ofNullable(manifest.asFailed().failureReason()),
-          Optional.ofNullable(manifest.createdAt()),
-          Optional.ofNullable(manifest.modifiedAt()));
+      case IN_PROGRESS ->
+          new BackupStatusImpl(
+              manifest.id(),
+              Optional.ofNullable(manifest.descriptor()),
+              BackupStatusCode.IN_PROGRESS,
+              Optional.empty(),
+              Optional.ofNullable(manifest.createdAt()),
+              Optional.ofNullable(manifest.modifiedAt()));
+      case COMPLETED ->
+          new BackupStatusImpl(
+              manifest.id(),
+              Optional.ofNullable(manifest.descriptor()),
+              BackupStatusCode.COMPLETED,
+              Optional.empty(),
+              Optional.ofNullable(manifest.createdAt()),
+              Optional.ofNullable(manifest.modifiedAt()));
+      case FAILED ->
+          new BackupStatusImpl(
+              manifest.id(),
+              Optional.ofNullable(manifest.descriptor()),
+              BackupStatusCode.FAILED,
+              Optional.ofNullable(manifest.asFailed().failureReason()),
+              Optional.ofNullable(manifest.createdAt()),
+              Optional.ofNullable(manifest.modifiedAt()));
     };
   }
 

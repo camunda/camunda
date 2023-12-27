@@ -127,12 +127,13 @@ public final class ErrorResponseWriter implements BufferWriter {
 
   public ErrorResponseWriter mapWriteError(final int partitionId, final WriteFailure error) {
     return switch (error) {
-      case CLOSED -> errorCode(ErrorCode.PARTITION_LEADER_MISMATCH)
-          .errorMessage(
-              ("Expected to handle client message on the leader of partition '%d',"
-                      + " but the writer is closed. Most likely, this node is not the"
-                      + " leader for this partition.")
-                  .formatted(partitionId));
+      case CLOSED ->
+          errorCode(ErrorCode.PARTITION_LEADER_MISMATCH)
+              .errorMessage(
+                  ("Expected to handle client message on the leader of partition '%d',"
+                          + " but the writer is closed. Most likely, this node is not the"
+                          + " leader for this partition.")
+                      .formatted(partitionId));
       case FULL -> raiseInternalError("because the writer is full.", partitionId);
       case INVALID_ARGUMENT -> raiseInternalError("due to invalid entry.", partitionId);
     };

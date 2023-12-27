@@ -84,14 +84,16 @@ public final class BackupApiRequestHandler
     }
 
     return switch (requestReader.type()) {
-      case TAKE_BACKUP -> CompletableActorFuture.completed(
-          handleTakeBackupRequest(
-              requestStreamId, requestId, requestReader, responseWriter, errorWriter));
+      case TAKE_BACKUP ->
+          CompletableActorFuture.completed(
+              handleTakeBackupRequest(
+                  requestStreamId, requestId, requestReader, responseWriter, errorWriter));
       case QUERY_STATUS -> handleQueryStatusRequest(requestReader, responseWriter, errorWriter);
       case LIST -> handleListBackupRequest(responseWriter, errorWriter);
       case DELETE -> handleDeleteBackupRequest(requestReader, responseWriter, errorWriter);
-      default -> CompletableActorFuture.completed(
-          unknownRequest(errorWriter, requestReader.getMessageDecoder().type()));
+      default ->
+          CompletableActorFuture.completed(
+              unknownRequest(errorWriter, requestReader.getMessageDecoder().type()));
     };
   }
 
