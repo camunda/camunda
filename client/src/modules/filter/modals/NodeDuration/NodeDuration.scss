@@ -17,8 +17,13 @@
       flex: 1;
     }
 
-    .Message {
-      text-align: right;
+    .cds--inline-notification {
+      margin-top: 1rem;
+      max-width: 100%;
+    }
+
+    .cds--loading {
+      margin: auto;
     }
   }
 }

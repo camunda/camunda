@@ -25,12 +25,12 @@ it('should display a list of flow nodes in a table', async () => {
   expect(body[0]?.[0]).toBe('Element A');
 });
 
-it('should set isInvalid property for input if value is invalid', async () => {
+it('should set invalid property for input if value is invalid', async () => {
   const node = shallow(
     <NodesTable {...props} values={{a: {unit: 'days', value: 'a', operator: '>'}}} />
   );
 
-  expect(node.prop('body')[0][1].props.children[1].props).toHaveProperty('isInvalid', true);
+  expect(node.prop('body')[0][1].props.children[1].props).toHaveProperty('invalid', true);
 });
 
 it('should invoke update focus when changing a value of a flownode', async () => {

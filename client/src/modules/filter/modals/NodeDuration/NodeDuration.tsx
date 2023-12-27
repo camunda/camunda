@@ -7,17 +7,9 @@
 
 import {Component} from 'react';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
-import {Button} from '@carbon/react';
+import {Button, InlineNotification, Loading} from '@carbon/react';
 
-import {
-  Modal,
-  BPMNDiagram,
-  TargetValueBadge,
-  Message,
-  LoadingIndicator,
-  ClickBehavior,
-  RegistryElement,
-} from 'components';
+import {Modal, BPMNDiagram, TargetValueBadge, ClickBehavior, RegistryElement} from 'components';
 import {t} from 'translation';
 import {loadProcessDefinitionXml} from 'services';
 import {WithErrorHandlingProps, withErrorHandling} from 'HOC';
@@ -209,7 +201,7 @@ export class NodeDuration extends Component<NodeDurationProps, NodeDurationState
             applyTo={applyTo}
             setApplyTo={(applyTo) => this.setState({applyTo})}
           />
-          {loading && <LoadingIndicator />}
+          {loading && <Loading withOverlay={false} />}
           {!loading && (
             <>
               <div className="diagramContainer">
@@ -231,7 +223,9 @@ export class NodeDuration extends Component<NodeDurationProps, NodeDurationState
             </>
           )}
           {!this.areAllFieldsNumbers() && !loading && (
-            <Message error>{t('report.heatTarget.invalidValue')}</Message>
+            <InlineNotification kind="error" hideCloseButton>
+              {t('report.heatTarget.invalidValue')}
+            </InlineNotification>
           )}
         </Modal.Content>
         <Modal.Footer>

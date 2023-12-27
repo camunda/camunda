@@ -264,7 +264,7 @@ test('add flow node duration filter', async (t) => {
   await t.typeText(Report.targetValueInput('Approve Invoice'), '1');
   await t.typeText(Report.targetValueInput('Prepare Bank Transfer'), '5');
   await t.click(Report.nodeFilterOperator('Prepare Bank Transfer'));
-  await t.click(Report.dropdownOption('less than'));
+  await t.click(Common.menuOption('less than'));
   await t.typeText(Report.targetValueInput('Review Invoice'), '15');
 
   await t.resizeWindow(1650, 850);

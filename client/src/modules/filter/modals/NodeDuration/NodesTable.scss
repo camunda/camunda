@@ -17,7 +17,7 @@
       flex-grow: 1;
     }
 
-    .Dropdown {
+    .CarbonSelect {
       min-width: 0;
       width: 130px;
 
@@ -27,10 +27,6 @@
 
       &.unit {
         margin-left: 10px;
-        .menu {
-          right: 50px;
-          height: 250px;
-        }
       }
     }
   }

@@ -45,7 +45,7 @@ export const badge = (id) =>
 export const targetValueButton = Selector('.toggleButton');
 export const targetValueInput = (name) => Selector('.Modal tbody tr').withText(name).find('input');
 export const nodeFilterOperator = (name) =>
-  Selector('.Modal tbody tr').withText(name).find('.Dropdown:first-child');
+  Selector('.Modal tbody tr').withText(name).find('.CarbonSelect:first-child');
 export const warning = Selector('.Message--warning');
 export const processPartButton = Selector('.ReportControlPanel button').withText(
   'Process instance part'
