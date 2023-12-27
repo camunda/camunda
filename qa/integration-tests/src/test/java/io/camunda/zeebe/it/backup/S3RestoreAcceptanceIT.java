@@ -26,6 +26,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.testcontainers.MinioContainer;
 import io.camunda.zeebe.restore.BackupNotFoundException;
 import java.time.Duration;
+import java.util.concurrent.CompletionException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
@@ -145,7 +146,7 @@ final class S3RestoreAcceptanceIT {
       restore.withBackupId(1234).withBrokerConfig(this::configureBackupStore);
 
       // then
-      assertThatExceptionOfType(IllegalStateException.class)
+      assertThatExceptionOfType(CompletionException.class)
           .isThrownBy(() -> restore.start())
           .havingRootCause()
           .isInstanceOf(BackupNotFoundException.class);
