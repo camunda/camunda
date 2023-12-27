@@ -13,6 +13,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /** interface for actor futures */
 public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
@@ -101,4 +103,25 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
         Runnable::run);
     return future;
   }
+
+  /**
+   * Convenience wrapper over {@link #andThen(Function, Executor)} for the case where the next step
+   * does not require the result of this future.
+   */
+  ActorFuture<V> andThen(Supplier<ActorFuture<V>> next, Executor executor);
+
+  /**
+   * Similar to {@link CompletableFuture#thenCompose(Function)} in that it applies a function to the
+   * result of this future, supporting chaining of futures while propagating exceptions.
+   * Implementations may be somewhat inefficient and create intermediate futures, schedule
+   * completion callbacks on the provided executor etc. As such, it should be used for orchestrating
+   * futures in a non-performance critical context, for example for startup and shutdown sequences.
+   *
+   * @param next function to apply to the result of this future.
+   * @param executor The executor used to handle completion callbacks.
+   * @return a new future that completes with the result of applying the function to the result of
+   *     this future or exceptionally if this future completes exceptionally. This future can be
+   *     used for further chaining.
+   */
+  ActorFuture<V> andThen(Function<V, ActorFuture<V>> next, Executor executor);
 }
