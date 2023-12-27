@@ -6,17 +6,15 @@
  */
 
 import {ChangeEventHandler, Component} from 'react';
-import {Button} from '@carbon/react';
+import {Button, Form, Stack, TextInput} from '@carbon/react';
 
-import {Modal, Input, Select, Message, Form} from 'components';
+import {Modal, CarbonSelect} from 'components';
 import {numberParser} from 'services';
 import {Definition, FilterData} from 'types';
 import {t} from 'translation';
 
 import FilterDefinitionSelection from '../FilterDefinitionSelection';
 import {FilterProps} from '../types';
-
-import './DurationFilter.scss';
 
 interface DurationFilterProps extends FilterProps {
   filterType: 'processInstanceDuration';
@@ -87,46 +85,44 @@ export default class DurationFilter extends Component<DurationFilterProps, Durat
             setApplyTo={(applyTo) => this.setState({applyTo})}
           />
           <p className="description">{t('common.filter.durationModal.includeInstance')} </p>
-          <Form horizontal>
-            <Form.Group noSpacing>
-              <div>
-                <Select value={operator} onChange={this.setOperator}>
-                  <Select.Option value=">">
-                    {t('common.filter.durationModal.moreThan')}
-                  </Select.Option>
-                  <Select.Option value="<">
-                    {t('common.filter.durationModal.lessThan')}
-                  </Select.Option>
-                </Select>
-              </div>
-              <Form.InputGroup>
-                <Input
-                  isInvalid={!isValidInput}
-                  value={value}
-                  onChange={this.setValue}
-                  maxLength={8}
-                />
-                <Select value={unit} onChange={this.setUnit}>
-                  <Select.Option value="millis">
-                    {t('common.unit.milli.label-plural')}
-                  </Select.Option>
-                  <Select.Option value="seconds">
-                    {t('common.unit.second.label-plural')}
-                  </Select.Option>
-                  <Select.Option value="minutes">
-                    {t('common.unit.minute.label-plural')}
-                  </Select.Option>
-                  <Select.Option value="hours">{t('common.unit.hour.label-plural')}</Select.Option>
-                  <Select.Option value="days">{t('common.unit.day.label-plural')}</Select.Option>
-                  <Select.Option value="weeks">{t('common.unit.week.label-plural')}</Select.Option>
-                  <Select.Option value="months">
-                    {t('common.unit.month.label-plural')}
-                  </Select.Option>
-                  <Select.Option value="years">{t('common.unit.year.label-plural')}</Select.Option>
-                </Select>
-              </Form.InputGroup>
-              {!isValidInput && <Message error>{t('common.errors.positiveInt')}</Message>}
-            </Form.Group>
+          <Form>
+            <Stack gap={4} orientation="horizontal">
+              <CarbonSelect
+                size="md"
+                id="more-less-selector"
+                value={operator}
+                onChange={this.setOperator}
+              >
+                <CarbonSelect.Option value=">" label={t('common.filter.durationModal.moreThan')} />
+                <CarbonSelect.Option value="<" label={t('common.filter.durationModal.lessThan')} />
+              </CarbonSelect>
+              <TextInput
+                size="md"
+                labelText={t('common.value')}
+                hideLabel
+                id="duration-value-input"
+                invalid={!isValidInput}
+                value={value}
+                onChange={this.setValue}
+                maxLength={8}
+                invalidText={t('common.errors.positiveInt')}
+              />
+              <CarbonSelect
+                size="md"
+                id="duration-units-selector"
+                value={unit}
+                onChange={this.setUnit}
+              >
+                <CarbonSelect.Option value="millis" label={t('common.unit.milli.label-plural')} />
+                <CarbonSelect.Option value="seconds" label={t('common.unit.second.label-plural')} />
+                <CarbonSelect.Option value="minutes" label={t('common.unit.minute.label-plural')} />
+                <CarbonSelect.Option value="hours" label={t('common.unit.hour.label-plural')} />
+                <CarbonSelect.Option value="days" label={t('common.unit.day.label-plural')} />
+                <CarbonSelect.Option value="weeks" label={t('common.unit.week.label-plural')} />
+                <CarbonSelect.Option value="months" label={t('common.unit.month.label-plural')} />
+                <CarbonSelect.Option value="years" label={t('common.unit.year.label-plural')} />
+              </CarbonSelect>
+            </Stack>
           </Form>
         </Modal.Content>
         <Modal.Footer>

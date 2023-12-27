@@ -242,7 +242,7 @@ test('add process instance duration filter', async (t) => {
   await t.hover(Common.menuOption('Instance duration'));
   await t.click(Common.submenuOption('Process instance'));
   await t.click(Filter.durationFilterOperator);
-  await t.click(Common.option('less than'));
+  await t.click(Common.menuOption('less than'));
 
   await t.typeText(Filter.durationFilterInput, '30', {replace: true});
 

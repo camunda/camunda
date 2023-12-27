@@ -7,8 +7,7 @@
 
 import {ComponentProps} from 'react';
 import {shallow} from 'enzyme';
-
-import {Input} from 'components';
+import {TextInput} from '@carbon/react';
 
 import DurationFilter from './DurationFilter';
 
@@ -43,7 +42,7 @@ it('should have isInvalid prop on the input if value is invalid', async () => {
     value: 'NaN',
   });
 
-  expect(node.find(Input).props()).toHaveProperty('isInvalid', true);
+  expect(node.find(TextInput).prop('invalid')).toBe(true);
 });
 
 it('should have a create filter button', () => {

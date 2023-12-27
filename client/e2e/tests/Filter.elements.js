@@ -31,7 +31,7 @@ export const infoText = Selector('.Modal .tip');
 export const dateTypeSelect = Selector('.selectGroup > .Select');
 export const unitSelect = Selector('.unitSelection .Select');
 export const customDateInput = Selector('.unitSelection').find('input');
-export const durationFilterOperator = Selector('.DurationFilter .Select');
+export const durationFilterOperator = Selector('.DurationFilter .CarbonSelect');
 export const durationFilterInput = Selector('.DurationFilter input[type="text"]');
 export const modalCancel = Selector('.Modal .cancel');
 export const stringValues = Selector('.Modal .Checklist tbody');
