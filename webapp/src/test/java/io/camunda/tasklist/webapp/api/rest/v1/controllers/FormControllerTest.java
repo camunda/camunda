@@ -22,6 +22,7 @@ import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -45,175 +46,185 @@ class FormControllerTest {
     mockMvc = MockMvcBuilders.standaloneSetup(instance).build();
   }
 
-  @Test
-  void getEmbeededForm() throws Exception {
-    // Given
-    final var formId = "userTaskForm_111";
-    final var processDefinitionKey = "100001";
-    final var formEntity =
-        new FormEntity()
-            .setId(processDefinitionKey.concat("_").concat(formId))
-            .setBpmnId(formId)
-            .setProcessDefinitionId(processDefinitionKey)
-            .setSchema("{}")
-            .setTenantId(DEFAULT_TENANT_IDENTIFIER);
-    final var expectedFormResponse =
-        new FormResponse()
-            .setId(formId)
-            .setProcessDefinitionKey(processDefinitionKey)
-            .setSchema("{}")
-            .setTenantId(DEFAULT_TENANT_IDENTIFIER);
-    when(formStore.getForm(formId, processDefinitionKey, null)).thenReturn(formEntity);
+  @Nested
+  class EmbeddedFormTests {
+    @Test
+    void getEmbeededForm() throws Exception {
+      // Given
+      final var formId = "userTaskForm_111";
+      final var processDefinitionKey = "100001";
+      final var formEntity =
+          new FormEntity()
+              .setId(processDefinitionKey.concat("_").concat(formId))
+              .setBpmnId(formId)
+              .setProcessDefinitionId(processDefinitionKey)
+              .setSchema("{}")
+              .setTenantId(DEFAULT_TENANT_IDENTIFIER);
+      final var expectedFormResponse =
+          new FormResponse()
+              .setId(formId)
+              .setProcessDefinitionKey(processDefinitionKey)
+              .setSchema("{}")
+              .setTenantId(DEFAULT_TENANT_IDENTIFIER);
+      when(formStore.getForm(formId, processDefinitionKey, null)).thenReturn(formEntity);
 
-    // When
-    final var responseAsString =
-        mockMvc
-            .perform(
-                get(TasklistURIs.FORMS_URL_V1.concat("/{formId}"), formId)
-                    .param("processDefinitionKey", processDefinitionKey))
-            .andDo(print())
-            .andExpect(status().isOk())
-            .andReturn()
-            .getResponse()
-            .getContentAsString();
-    final var result = CommonUtils.OBJECT_MAPPER.readValue(responseAsString, FormResponse.class);
+      // When
+      final var responseAsString =
+          mockMvc
+              .perform(
+                  get(TasklistURIs.FORMS_URL_V1.concat("/{formId}"), formId)
+                      .param("processDefinitionKey", processDefinitionKey))
+              .andDo(print())
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+      final var result = CommonUtils.OBJECT_MAPPER.readValue(responseAsString, FormResponse.class);
 
-    // Then
-    assertThat(result).isEqualTo(expectedFormResponse);
+      // Then
+      assertThat(result).isEqualTo(expectedFormResponse);
+    }
+
+    @Test
+    void getEmbeededFormReturnsNotFoundWhenVersionIsPassed() throws Exception {
+      // Given
+      final var formId = "userTaskForm_111";
+      final var processDefinitionKey = "100001";
+
+      when(formStore.getForm(formId, processDefinitionKey, null))
+          .thenThrow(NotFoundApiException.class);
+
+      // Then
+      mockMvc
+          .perform(
+              get(TasklistURIs.FORMS_URL_V1.concat("/{formId}"), formId)
+                  .param("processDefinitionKey", processDefinitionKey)
+                  .param("version", ""))
+          .andDo(print())
+          .andExpect(status().isNotFound())
+          .andReturn();
+    }
   }
 
-  @Test
-  void getEmbeededFormReturnsNotFoundWhenVersionIsPassed() throws Exception {
-    // Given
-    final var formId = "userTaskForm_111";
-    final var processDefinitionKey = "100001";
+  @Nested
+  class LinkedFormTests {
+    @Test
+    void getLinkedFormWhenVersionIsPassed() throws Exception {
+      // Given
+      final var formId = "form";
+      final var formKey = "232323323";
+      final var processDefinitionKey = "1234";
+      final long version = 1;
+      final var formEntity =
+          new FormEntity()
+              .setId(formKey)
+              .setBpmnId(formId)
+              .setProcessDefinitionId(null)
+              .setEmbedded(false)
+              .setVersion(version)
+              .setSchema("{}")
+              .setTenantId(DEFAULT_TENANT_IDENTIFIER);
+      final var expectedFormResponse =
+          new FormResponse()
+              .setId(formId)
+              .setProcessDefinitionKey(processDefinitionKey)
+              .setVersion(version)
+              .setSchema("{}")
+              .setTenantId(DEFAULT_TENANT_IDENTIFIER);
+      when(formStore.getForm(formId, processDefinitionKey, version)).thenReturn(formEntity);
 
-    when(formStore.getForm(formId, processDefinitionKey, null))
-        .thenThrow(NotFoundApiException.class);
+      // When
+      final var responseAsString =
+          mockMvc
+              .perform(
+                  get(TasklistURIs.FORMS_URL_V1.concat("/{formId}"), formId)
+                      .param("processDefinitionKey", processDefinitionKey)
+                      .param("version", String.valueOf(version)))
+              .andDo(print())
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+      final var result = CommonUtils.OBJECT_MAPPER.readValue(responseAsString, FormResponse.class);
 
-    // Then
-    mockMvc
-        .perform(
-            get(TasklistURIs.FORMS_URL_V1.concat("/{formId}"), formId)
-                .param("processDefinitionKey", processDefinitionKey)
-                .param("version", ""))
-        .andDo(print())
-        .andExpect(status().isNotFound())
-        .andReturn();
+      // Then
+      assertThat(result).isEqualTo(expectedFormResponse);
+    }
+
+    @Test
+    void getLinkedFormWhenVersionIsNotPassed() throws Exception {
+      // Given
+      final var formId = "form";
+      final var formKey = "232323323";
+      final var processDefinitionKey = "1234";
+      final long version = 2;
+      final var formEntity =
+          new FormEntity()
+              .setId(formKey)
+              .setBpmnId(formId)
+              .setProcessDefinitionId(null)
+              .setEmbedded(false)
+              .setVersion(version)
+              .setSchema("{}")
+              .setTenantId(DEFAULT_TENANT_IDENTIFIER);
+      final var expectedFormResponse =
+          new FormResponse()
+              .setId(formId)
+              .setProcessDefinitionKey(processDefinitionKey)
+              .setVersion(version)
+              .setSchema("{}")
+              .setTenantId(DEFAULT_TENANT_IDENTIFIER);
+      when(formStore.getForm(formId, processDefinitionKey, null)).thenReturn(formEntity);
+
+      // When
+      final var responseAsString =
+          mockMvc
+              .perform(
+                  get(TasklistURIs.FORMS_URL_V1.concat("/{formId}"), formId)
+                      .param("processDefinitionKey", processDefinitionKey)
+                      .param("version", ""))
+              .andDo(print())
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+      final var result = CommonUtils.OBJECT_MAPPER.readValue(responseAsString, FormResponse.class);
+
+      // Then
+      assertThat(result).isEqualTo(expectedFormResponse);
+    }
   }
 
-  @Test
-  void getLinkedFormWhenVersionIsPassed() throws Exception {
-    // Given
-    final var formId = "form";
-    final var formKey = "232323323";
-    final var processDefinitionKey = "1234";
-    final long version = 1;
-    final var formEntity =
-        new FormEntity()
-            .setId(formKey)
-            .setBpmnId(formId)
-            .setProcessDefinitionId(null)
-            .setEmbedded(false)
-            .setVersion(version)
-            .setSchema("{}")
-            .setTenantId(DEFAULT_TENANT_IDENTIFIER);
-    final var expectedFormResponse =
-        new FormResponse()
-            .setId(formId)
-            .setProcessDefinitionKey(processDefinitionKey)
-            .setVersion(version)
-            .setSchema("{}")
-            .setTenantId(DEFAULT_TENANT_IDENTIFIER);
-    when(formStore.getForm(formId, processDefinitionKey, version)).thenReturn(formEntity);
+  @Nested
+  class ExceptionPathTest {
+    @Test
+    void getFormWhenRequiredProcessDefinitionKeyNotProvided() throws Exception {
+      // Given
+      final var formId = "userTaskForm_222";
 
-    // When
-    final var responseAsString =
-        mockMvc
-            .perform(
-                get(TasklistURIs.FORMS_URL_V1.concat("/{formId}"), formId)
-                    .param("processDefinitionKey", processDefinitionKey)
-                    .param("version", String.valueOf(version)))
-            .andDo(print())
-            .andExpect(status().isOk())
-            .andReturn()
-            .getResponse()
-            .getContentAsString();
-    final var result = CommonUtils.OBJECT_MAPPER.readValue(responseAsString, FormResponse.class);
+      // When
+      final var errorResponseAsString =
+          mockMvc
+              .perform(get(TasklistURIs.FORMS_URL_V1.concat("/{formId}"), formId))
+              .andDo(print())
+              .andExpect(status().isBadRequest())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+      final var errorResult =
+          CommonUtils.OBJECT_MAPPER.readValue(errorResponseAsString, Error.class);
 
-    // Then
-    assertThat(result).isEqualTo(expectedFormResponse);
-  }
-
-  @Test
-  void getLinkedFormWhenVersionIsNotPassed() throws Exception {
-    // Given
-    final var formId = "form";
-    final var formKey = "232323323";
-    final var processDefinitionKey = "1234";
-    final long version = 2;
-    final var formEntity =
-        new FormEntity()
-            .setId(formKey)
-            .setBpmnId(formId)
-            .setProcessDefinitionId(null)
-            .setEmbedded(false)
-            .setVersion(version)
-            .setSchema("{}")
-            .setTenantId(DEFAULT_TENANT_IDENTIFIER);
-    final var expectedFormResponse =
-        new FormResponse()
-            .setId(formId)
-            .setProcessDefinitionKey(processDefinitionKey)
-            .setVersion(version)
-            .setSchema("{}")
-            .setTenantId(DEFAULT_TENANT_IDENTIFIER);
-    when(formStore.getForm(formId, processDefinitionKey, null)).thenReturn(formEntity);
-
-    // When
-    final var responseAsString =
-        mockMvc
-            .perform(
-                get(TasklistURIs.FORMS_URL_V1.concat("/{formId}"), formId)
-                    .param("processDefinitionKey", processDefinitionKey)
-                    .param("version", ""))
-            .andDo(print())
-            .andExpect(status().isOk())
-            .andReturn()
-            .getResponse()
-            .getContentAsString();
-    final var result = CommonUtils.OBJECT_MAPPER.readValue(responseAsString, FormResponse.class);
-
-    // Then
-    assertThat(result).isEqualTo(expectedFormResponse);
-  }
-
-  @Test
-  void getFormWhenRequiredProcessDefinitionKeyNotProvided() throws Exception {
-    // Given
-    final var formId = "userTaskForm_222";
-
-    // When
-    final var errorResponseAsString =
-        mockMvc
-            .perform(get(TasklistURIs.FORMS_URL_V1.concat("/{formId}"), formId))
-            .andDo(print())
-            .andExpect(status().isBadRequest())
-            .andReturn()
-            .getResponse()
-            .getContentAsString();
-    final var errorResult = CommonUtils.OBJECT_MAPPER.readValue(errorResponseAsString, Error.class);
-
-    // Then
-    verifyNoInteractions(formStore);
-    assertThat(errorResult)
-        .satisfies(
-            err -> {
-              assertThat(err.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-              assertThat(err.getInstance()).isNotBlank();
-              assertThat(err.getMessage())
-                  .isEqualTo(
-                      "Required request parameter 'processDefinitionKey' for method parameter type String is not present");
-            });
+      // Then
+      verifyNoInteractions(formStore);
+      assertThat(errorResult)
+          .satisfies(
+              err -> {
+                assertThat(err.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+                assertThat(err.getInstance()).isNotBlank();
+                assertThat(err.getMessage())
+                    .isEqualTo(
+                        "Required request parameter 'processDefinitionKey' for method parameter type String is not present");
+              });
+    }
   }
 }
