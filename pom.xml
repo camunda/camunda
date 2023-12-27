@@ -52,7 +52,7 @@
     <version.failsafe>2.4.4</version.failsafe>
     <version.guava>32.1.3-jre</version.guava>
     <version.apache.http5>5.2.3</version.apache.http5>
-    <version.aws-sdk>2.21.38</version.aws-sdk>
+    <version.aws-sdk>2.22.5</version.aws-sdk>
 
     <version.node>v20.10.0</version.node>
     <version.yarn>v1.22.21</version.yarn>
