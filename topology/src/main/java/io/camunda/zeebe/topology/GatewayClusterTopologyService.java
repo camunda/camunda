@@ -68,7 +68,7 @@ public class GatewayClusterTopologyService extends Actor implements TopologyUpda
 
   @Override
   protected void onActorClosing() {
-    clusterTopologyGossiper.closeAsync();
+    clusterTopologyGossiper.close();
   }
 
   @Override
