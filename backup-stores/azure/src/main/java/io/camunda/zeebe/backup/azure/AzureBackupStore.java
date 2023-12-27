@@ -47,12 +47,11 @@ public final class AzureBackupStore implements BackupStore {
 
   public AzureBackupStore(final AzureBackupConfig config, final BlobServiceClient client) {
     executor = Executors.newVirtualThreadPerTaskExecutor();
-    final BlobContainerClient blobContainerClientManifests =
-        client.getBlobContainerClient(config.containerName() + "-manifests");
-    final BlobContainerClient blobContainerClientContents =
-        client.getBlobContainerClient(config.containerName() + "-contents");
-    fileSetManager = new FileSetManager(blobContainerClientManifests);
-    manifestManager = new ManifestManager(blobContainerClientContents);
+    final BlobContainerClient blobContainerClient =
+        client.getBlobContainerClient(config.containerName());
+
+    fileSetManager = new FileSetManager(blobContainerClient);
+    manifestManager = new ManifestManager(blobContainerClient);
   }
 
   public static BlobServiceClient buildClient(final AzureBackupConfig config) {
@@ -148,6 +147,9 @@ public final class AzureBackupStore implements BackupStore {
             || config.endpoint() == null)) {
       throw new IllegalArgumentException(
           "Connection string, or all of connection information (account name, account key, and endpoint) must be provided.");
+    }
+    if (config.containerName() == null) {
+      throw new IllegalArgumentException("Container name cannot be null.");
     }
   }
 

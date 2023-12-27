@@ -13,6 +13,11 @@ import org.junit.jupiter.api.Test;
 
 public class ConfigIT {
 
+  private static final String VALID_CONNECTION_STRING =
+      "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;"
+          + "AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;"
+          + "BlobEndpoint=http://127.0.0.1:";
+
   @Test
   void shouldSuccessfullyValidateCredentialsConfig() {
     final AzureBackupConfig azureBackupConfig =
@@ -32,15 +37,10 @@ public class ConfigIT {
 
   @Test
   void shouldValidateConnectionStringConfig() {
-    // given a valid connection string
-    final String connectionString =
-        "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;"
-            + "AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;"
-            + "BlobEndpoint=http://127.0.0.1:";
 
     final AzureBackupConfig azureBackupConfig =
         new AzureBackupConfig.Builder()
-            .withConnectionString(connectionString)
+            .withConnectionString(VALID_CONNECTION_STRING)
             .withContainerName(UUID.randomUUID().toString())
             .build();
 
@@ -82,5 +82,18 @@ public class ConfigIT {
     Assertions.assertThatCode(() -> AzureBackupStore.validateConfig(azureBackupConfig))
         .hasMessage(
             "Connection string, or all of connection information (account name, account key, and endpoint) must be provided.");
+  }
+
+  @Test
+  void containerNameCannotBeMissing() {
+    // given
+    final AzureBackupConfig azureBackupConfig =
+        new AzureBackupConfig.Builder()
+            .withConnectionString(VALID_CONNECTION_STRING)
+            .withContainerName(null)
+            .build();
+
+    Assertions.assertThatCode(() -> AzureBackupStore.validateConfig(azureBackupConfig))
+        .hasMessage("Container name cannot be null.");
   }
 }
