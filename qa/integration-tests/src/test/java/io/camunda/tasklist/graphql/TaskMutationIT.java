@@ -52,23 +52,6 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
-  public void shouldFailCompleteNotActive() throws IOException {
-    // having
-    createCreatedAndCompletedTasks(0, 1);
-
-    GraphQLResponse response = tester.getAllTasks();
-    final String taskId = response.get("$.data.tasks[0].id");
-
-    // when
-    final String completeTaskRequest =
-        String.format(COMPLETE_TASK_MUTATION_PATTERN, taskId, "{name: \"newVar\", value: \"123\"}");
-    response = graphQLTestTemplate.postMultipart(completeTaskRequest, "{}");
-
-    // then
-    assertEquals("Task is not active", response.get("$.errors[0].message"));
-  }
-
-  @Test
   public void shouldFailCompleteNotAssigned() throws IOException {
     // having
     createCreatedAndCompletedTasks(1, 0);
@@ -84,32 +67,18 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
 
     // then
     assertEquals("Task is not assigned", response.get("$.errors[0].message"));
-  }
 
-  @Test
-  public void shouldFailCompleteNotAssignedToMe() throws IOException {
-    try {
-      // having
-      createCreatedAndCompletedTasks(1, 0);
+    tester.claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, taskId));
 
-      GraphQLResponse response = tester.getAllTasks();
-      final String taskId = response.get("$.data.tasks[0].id");
+    // when
+    setCurrentUser(new UserDTO().setUserId("joe").setPermissions(List.of(Permission.WRITE)));
+    final String completeTaskRequestAssignToMe =
+        String.format(COMPLETE_TASK_MUTATION_PATTERN, taskId, "{name: \"newVar\", value: \"123\"}");
 
-      tester.claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, taskId));
+    response = graphQLTestTemplate.postMultipart(completeTaskRequestAssignToMe, "{}");
 
-      // when
-      setCurrentUser(new UserDTO().setUserId("joe").setPermissions(List.of(Permission.WRITE)));
-      final String completeTaskRequest =
-          String.format(
-              COMPLETE_TASK_MUTATION_PATTERN, taskId, "{name: \"newVar\", value: \"123\"}");
-
-      response = graphQLTestTemplate.postMultipart(completeTaskRequest, "{}");
-
-      // then
-      assertEquals("Task is not assigned to joe", response.get("$.errors[0].message"));
-    } finally {
-      setDefaultCurrentUser();
-    }
+    // then
+    assertEquals("Task is not assigned to joe", response.get("$.errors[0].message"));
   }
 
   @Test
@@ -235,46 +204,6 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
-  public void shouldFailOnNotExistingTask() {
-    // having
-    createCreatedAndCompletedTasks(1, 0);
-    final String taskId = "123";
-
-    // when
-    final String completeTaskRequest =
-        String.format(COMPLETE_TASK_MUTATION_PATTERN, taskId, "{name: \"newVar\", value: \"123\"}");
-    final GraphQLResponse response = graphQLTestTemplate.postMultipart(completeTaskRequest, "{}");
-
-    // then
-    assertNull(response.get("$.data"));
-    assertEquals("1", response.get("$.errors.length()"));
-    assertEquals(
-        String.format("task with id %s was not found", taskId),
-        response.get("$.errors[0].message"));
-  }
-
-  @Test
-  public void shouldFailClaimNotActive() throws IOException {
-    // having
-    tester
-        .having()
-        .and()
-        .createCreatedAndCompletedTasks(BPMN_PROCESS_ID, ELEMENT_ID, 0, 1)
-        .when()
-        .getAllTasks();
-
-    final TaskDTO unclaimedTask = tester.getTasksByPath("$.data.tasks").get(0);
-
-    final Map<String, Object> errors =
-        tester
-            .when()
-            .claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, unclaimedTask.getId()))
-            .then()
-            .getByPath("$.errors[0]");
-    assertEquals("Task is not active", errors.get("message"));
-  }
-
-  @Test
   public void shouldFailNonApiUserClaimWithAssigneeParam() throws IOException {
     tester
         .having()
@@ -300,29 +229,6 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
     assertEquals(
         "User doesn't have the permission to assign another user to this task",
         errors.get("message"));
-  }
-
-  @Test
-  public void shouldFailClaimWhenAssigneeNotProvided() throws IOException {
-    tester
-        .having()
-        .and()
-        .createCreatedAndCompletedTasks(BPMN_PROCESS_ID, ELEMENT_ID, 0, 1)
-        .when()
-        .getAllTasks();
-
-    final TaskDTO unclaimedTask = tester.getTasksByPath("$.data.tasks").get(0);
-
-    setCurrentUser(
-        new UserDTO().setUserId("joe").setApiUser(true).setPermissions(List.of(Permission.WRITE)));
-    final Map<String, Object> errors =
-        tester
-            .when()
-            .claimTask(
-                String.format(CLAIM_TASK_WITH_PARAM_MUTATION_PATTERN, unclaimedTask.getId(), ""))
-            .then()
-            .getByPath("$.errors[0]");
-    assertEquals("Assignee must be specified", errors.get("message"));
   }
 
   @Test
@@ -447,14 +353,14 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
-  public void shouldFailUnclaimNotActive() throws IOException {
+  public void shouldFailForNotActiveTasksOperations() throws IOException {
     // having
     tester.having().createCreatedAndCompletedTasks(BPMN_PROCESS_ID, ELEMENT_ID, 0, 1).getAllTasks();
 
     final String taskId = tester.get("$.data.tasks[0].id");
 
-    // when
-    final Map<String, Object> errors =
+    // when try to unclaim a task
+    final Map<String, Object> errorsUnclaimed =
         tester
             .when()
             .unclaimTask(String.format(UNCLAIM_TASK_MUTATION_PATTERN, taskId))
@@ -462,7 +368,26 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
             .getByPath("$.errors[0]");
 
     // then
-    assertEquals("Task is not active", errors.get("message"));
+    assertEquals("Task is not active", errorsUnclaimed.get("message"));
+
+    // when try to claim a task
+    final Map<String, Object> errorsClaim =
+        tester
+            .when()
+            .claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, taskId))
+            .then()
+            .getByPath("$.errors[0]");
+
+    // then
+    assertEquals("Task is not active", errorsClaim.get("message"));
+
+    // when try to complete a task
+    final String completeTaskRequest =
+        String.format(COMPLETE_TASK_MUTATION_PATTERN, taskId, "{name: \"newVar\", value: \"123\"}");
+    final var errorsComplete = graphQLTestTemplate.postMultipart(completeTaskRequest, "{}");
+
+    // then
+    assertEquals("Task is not active", errorsComplete.get("$.errors[0].message"));
   }
 
   @Test

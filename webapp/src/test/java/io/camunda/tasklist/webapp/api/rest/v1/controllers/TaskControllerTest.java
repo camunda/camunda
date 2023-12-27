@@ -656,6 +656,7 @@ class TaskControllerTest {
           .andExpect(status().isNotFound());
     }
 
+    @Test
     void assignTaskWithoutTenantAccess() throws Exception {
       // Given
       final var taskId = "3333333";
