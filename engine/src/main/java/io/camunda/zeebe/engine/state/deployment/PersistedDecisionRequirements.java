@@ -17,6 +17,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public final class PersistedDecisionRequirements extends UnpackedObject implements DbValue {
@@ -61,13 +62,14 @@ public final class PersistedDecisionRequirements extends UnpackedObject implemen
 
   public PersistedDecisionRequirements copy() {
     final var copy = new PersistedDecisionRequirements();
-    copy.decisionRequirementsIdProp.setValue(getDecisionRequirementsId());
-    copy.decisionRequirementsNameProp.setValue(getDecisionRequirementsName());
+    copy.decisionRequirementsIdProp.setValue(BufferUtil.cloneBuffer(getDecisionRequirementsId()));
+    copy.decisionRequirementsNameProp.setValue(
+        BufferUtil.cloneBuffer(getDecisionRequirementsName()));
     copy.decisionRequirementsVersionProp.setValue(getDecisionRequirementsVersion());
     copy.decisionRequirementsKeyProp.setValue(getDecisionRequirementsKey());
-    copy.resourceNameProp.setValue(getResourceName());
-    copy.checksumProp.setValue(getChecksum());
-    copy.resourceProp.setValue(getResource());
+    copy.resourceNameProp.setValue(BufferUtil.cloneBuffer(getResourceName()));
+    copy.checksumProp.setValue(BufferUtil.cloneBuffer(getChecksum()));
+    copy.resourceProp.setValue(BufferUtil.cloneBuffer(getResource()));
     copy.tenantIdProp.setValue(getTenantId());
     return copy;
   }
