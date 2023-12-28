@@ -62,7 +62,7 @@
     <opensearch-testcontainers.version>2.0.1</opensearch-testcontainers.version>
     <postgres-test-container.version>1.17.6</postgres-test-container.version>
     <testcontainers.version>1.19.3</testcontainers.version>
-    <keycloak-client.version>22.0.1</keycloak-client.version>
+    <keycloak-client.version>23.0.3</keycloak-client.version>
 
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.source>17</maven.compiler.source>
