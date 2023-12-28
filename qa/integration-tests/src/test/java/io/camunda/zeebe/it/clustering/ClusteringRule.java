@@ -628,12 +628,12 @@ public class ClusteringRule extends ExternalResource {
 
   public void disconnect(final Broker broker) {
     final var cluster = broker.getSystemContext().getCluster();
-
     LOGGER.debug(
         "Disconnecting node {} to cluster",
         broker.getSystemContext().getBrokerConfiguration().getCluster().getNodeId());
     ((NettyUnicastService) cluster.getUnicastService()).stop().join();
     ((NettyMessagingService) cluster.getMessagingService()).stop().join();
+    broker.getBrokerContext().getApiMessagingService().stop().join();
   }
 
   public void connect(final Broker broker) {
