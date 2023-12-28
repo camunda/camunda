@@ -69,7 +69,7 @@
 
     <skip.fe.build>false</skip.fe.build>
 
-    <plugin.version.license>4.1</plugin.version.license>
+    <plugin.version.license>4.3</plugin.version.license>
     <plugin.version.checkstyle>3.3.1</plugin.version.checkstyle>
     <plugin.version.fmt>2.13</plugin.version.fmt>
     <license.header>${project.baseUri}/../license/license-header</license.header>
