@@ -5,7 +5,7 @@
     ":rebaseStalePrs",
     ":semanticCommitTypeAll(chore)"
   ],
-  "includePaths": ["client/**", ".github/**", ".ci/**", "Dockerfile", "/"],
+  "includePaths": ["client/**", ".github/**", ".ci/**", "Dockerfile", "pom.xml"],
   "ignorePaths": ["client/pom.xml"],
   "helmv3": {
     "registryAliases": {
