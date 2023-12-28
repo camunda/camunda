@@ -4,6 +4,10 @@ on:
   pull_request:
     branches:
       - master
+    types:
+      - opened
+      - synchronize
+  workflow_dispatch:
 
 jobs:
   pipeline-checks:
@@ -26,21 +30,15 @@ jobs:
           git config --global user.email "ci@tasklist.camunda.cloud"
           git config --global user.name "github-tasklist-app"
 
-      # Setup: import secrets from vault
-      - name: Import Secrets
-        id: secrets # important to refer to it in later steps
-        uses: hashicorp/vault-action@2fb925f14cae8d86a835e7f5c14065e98fad63d8
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false # we rely on step outputs, no need for environment variables
-          secrets: |
-            secret/data/github.com/organizations/camunda NEXUS_USR;
-            secret/data/github.com/organizations/camunda NEXUS_PSW;
-            secret/data/products/tasklist/ci/tasklist REGISTRY_HUB_DOCKER_COM_USR;
-            secret/data/products/tasklist/ci/tasklist REGISTRY_HUB_DOCKER_COM_PSW;
-            secret/data/products/tasklist/ci/tasklist TASKLIST_RELEASE_ALERT_WEBHOOK_URL;
-            secret/data/products/tasklist/ci/tasklist GITHUB_TASKLIST_APP_ID;
-            secret/data/products/tasklist/ci/tasklist GITHUB_TASKLIST_APP_PRIVATE_KEY;
+      # Creates an empty commit in order to update dependabot request
+      - name: Create Empty Commit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: git commit --allow-empty -m "Trigger Dependabot update"
+
+      - name: Utilize secret for Dependabot PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Placeholder step to indicate that the secret is being utilized
+          echo "Using secret for Dependabot PR."
