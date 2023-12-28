@@ -45,7 +45,7 @@
     <version.jackson>2.15.2</version.jackson>
     <version.graphql>15.1.0</version.graphql>
     <version.graphql.tools>13.0.3</version.graphql.tools>
-    <version.graphql-java>21.2</version.graphql-java>
+    <version.graphql-java>21.3</version.graphql-java>
     <version.graphql-java.scalars>21.0</version.graphql-java.scalars>
     <version.snakeyaml>2.2</version.snakeyaml>
     <version.commons-text>1.11.0</version.commons-text>
