@@ -8,22 +8,15 @@ on:
 jobs:
   dependabot:
     runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Maven
-        uses: actions/setup-java@v4
+      - name: Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v1
         with:
-          java-version: '17'
-          distribution: 'adopt'
-
-      - name: Set up Environment Variables
-        run: |
-          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
-
-      - name: Run Dependabot
-        run: |
-          curl -O https://dependabot.com/dependabot.sh
-          sh dependabot.sh
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Add a label for all production dependencies
+        run: gh pr edit "$PR_URL" --add-label "dependencies"
+        env:
+          PR_URL: ${{github.event.pull_request.html_url}}
 
