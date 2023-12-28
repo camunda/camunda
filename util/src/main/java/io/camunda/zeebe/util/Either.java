@@ -11,7 +11,6 @@ import io.camunda.zeebe.util.collection.Tuple;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -59,7 +58,7 @@ import java.util.stream.Collector;
  * @param <L> The left type
  * @param <R> The right type
  */
-public interface Either<L, R> {
+public sealed interface Either<L, R> {
 
   /**
    * Returns a {@link Right} describing the given value.
@@ -317,14 +316,7 @@ public interface Either<L, R> {
    * @param <R> The right type
    */
   @SuppressWarnings("java:S2972")
-  final class Right<L, R> implements Either<L, R> {
-
-    private final R value;
-
-    private Right(final R value) {
-      this.value = value;
-    }
-
+  record Right<L, R>(R value) implements Either<L, R> {
     @Override
     public boolean isRight() {
       return true;
@@ -380,28 +372,6 @@ public interface Either<L, R> {
     public void ifRightOrLeft(final Consumer<R> rightAction, final Consumer<L> leftAction) {
       rightAction.accept(value);
     }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(value);
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      final Right<?, ?> right = (Right<?, ?>) o;
-      return Objects.equals(value, right.value);
-    }
-
-    @Override
-    public String toString() {
-      return "Right[" + value + ']';
-    }
   }
 
   /**
@@ -411,13 +381,7 @@ public interface Either<L, R> {
    * @param <R> The right type
    */
   @SuppressWarnings("java:S2972")
-  final class Left<L, R> implements Either<L, R> {
-
-    private final L value;
-
-    private Left(final L value) {
-      this.value = value;
-    }
+  record Left<L, R>(L value) implements Either<L, R> {
 
     @Override
     public boolean isRight() {
@@ -475,39 +439,9 @@ public interface Either<L, R> {
     public void ifRightOrLeft(final Consumer<R> rightAction, final Consumer<L> leftAction) {
       leftAction.accept(value);
     }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(value);
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      final Left<?, ?> left = (Left<?, ?>) o;
-      return Objects.equals(value, left.value);
-    }
-
-    @Override
-    public String toString() {
-      return "Left[" + value + ']';
-    }
   }
 
-  @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-  final class EitherOptional<R> {
-
-    private final Optional<R> right;
-
-    private EitherOptional(final Optional<R> right) {
-      this.right = right;
-    }
-
+  record EitherOptional<R>(Optional<R> right) {
     public <L> Either<L, R> orElse(final L left) {
       return right.<Either<L, R>>map(Either::right).orElse(Either.left(left));
     }
