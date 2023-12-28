@@ -1,6 +1,7 @@
 name: Pipeline Checks for Dependabot PRs
 
 on:
+  pull_request_target:
   pull_request:
     branches:
       - master
@@ -9,9 +10,13 @@ on:
       - synchronize
   workflow_dispatch:
 
+permissions:
+  pull-requests: write
+  contents: write
+
 jobs:
   pipeline-checks:
-    if: github.event.sender.login == 'dependabot[bot]'
+    if: ${{ github.actor == 'dependabot[bot]' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
