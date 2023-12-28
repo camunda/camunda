@@ -47,14 +47,8 @@ jobs:
         run: |
           git commit --allow-empty -m "Trigger Dependabot update"
 
-      - name: Push Commit
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: git push
-
-      - name: Utilize secret for Dependabot PR
+      - name: Push origin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Placeholder step to indicate that the secret is being utilized
-          echo "Using secret for Dependabot PR."
+          git push origin HEAD:${{ github.base_ref }}
