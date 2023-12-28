@@ -33,7 +33,7 @@
     },
     {
       "matchBaseBranches": ["/^stable\\/8\\..*/"],
-      "matchFileNames": ["client/**", ".github/**", ".ci/**"],
+      "matchFileNames": ["client/**", ".github/**", ".ci/**", "pom.xml", "Dockerfile"],
       "enabled": false
     },
     {
