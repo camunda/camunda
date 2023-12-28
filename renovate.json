@@ -5,7 +5,7 @@
     ":rebaseStalePrs",
     ":semanticCommitTypeAll(chore)"
   ],
-  "includePaths": ["client/**", ".github/**", ".ci/**", "Dockerfile"],
+  "includePaths": ["client/**", ".github/**", ".ci/**", "Dockerfile", "/"],
   "ignorePaths": ["client/pom.xml"],
   "helmv3": {
     "registryAliases": {
@@ -41,6 +41,12 @@
       "separateMajorMinor": true,
       "separateMinorPatch": true,
       "addLabels": ["area/security", "docker"]
+    },
+    {
+      "matchManagers": "maven",
+      "separateMajorMinor": true,
+      "separateMinorPatch": true,
+      "addLabels": ["area/backend", "dependency"]
     }
   ],
   "branchPrefix": "renovate/",
