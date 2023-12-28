@@ -61,9 +61,10 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
         case S3 -> installS3Store(context, backupCfg, installed);
         case GCS -> installGcsStore(context, backupCfg, installed);
         case AZURE -> installAzureStore(context, backupCfg, installed);
-        default -> installed.completeExceptionally(
-            new IllegalArgumentException(
-                "Unknown backup store type %s".formatted(backupCfg.getStore())));
+        default ->
+            installed.completeExceptionally(
+                new IllegalArgumentException(
+                    "Unknown backup store type %s".formatted(backupCfg.getStore())));
       }
     } else {
       installed.complete(null);

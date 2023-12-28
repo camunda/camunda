@@ -41,8 +41,9 @@ final class BackupStoreComponent {
       case S3 -> buildS3BackupStore(backupCfg);
       case GCS -> buildGcsBackupStore(backupCfg);
       case AZURE -> buildAzureBackupStore(backupCfg);
-      case NONE -> throw new IllegalArgumentException(
-          "No backup store configured, cannot restore from backup.");
+      case NONE ->
+          throw new IllegalArgumentException(
+              "No backup store configured, cannot restore from backup.");
     };
   }
 

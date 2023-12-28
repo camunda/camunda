@@ -114,14 +114,17 @@ public class ClusterEndpoint {
       @PathVariable final int id,
       @RequestParam(defaultValue = "false") final boolean dryRun) {
     return switch (resource) {
-      case brokers -> mapOperationResponse(
-          requestSender
-              .addMembers(new AddMembersRequest(Set.of(new MemberId(String.valueOf(id))), dryRun))
-              .join());
+      case brokers ->
+          mapOperationResponse(
+              requestSender
+                  .addMembers(
+                      new AddMembersRequest(Set.of(new MemberId(String.valueOf(id))), dryRun))
+                  .join());
       case partitions -> ResponseEntity.status(501).body("Adding partitions is not supported");
-      case changes -> ResponseEntity.status(501)
-          .body(
-              "Changing cluster directly is not supported. Use POST /cluster/brokers for scaling the cluster");
+      case changes ->
+          ResponseEntity.status(501)
+              .body(
+                  "Changing cluster directly is not supported. Use POST /cluster/brokers for scaling the cluster");
     };
   }
 
@@ -131,10 +134,11 @@ public class ClusterEndpoint {
       @PathVariable final String id,
       @RequestParam(defaultValue = "false") final boolean dryRun) {
     return switch (resource) {
-      case brokers -> mapOperationResponse(
-          requestSender
-              .removeMembers(new RemoveMembersRequest(Set.of(new MemberId(id)), dryRun))
-              .join());
+      case brokers ->
+          mapOperationResponse(
+              requestSender
+                  .removeMembers(new RemoveMembersRequest(Set.of(new MemberId(id)), dryRun))
+                  .join());
       case partitions -> ResponseEntity.status(501).body("Removing partitions is not supported");
       case changes -> {
         if (dryRun) {
@@ -175,11 +179,12 @@ public class ClusterEndpoint {
       @RequestParam(defaultValue = "false") final boolean dryRun) {
     return switch (resource) {
       case brokers -> scaleBrokers(ids, dryRun);
-      case partitions -> new ResponseEntity<>(
-          "Scaling partitions is not supported", HttpStatusCode.valueOf(501));
-      case changes -> ResponseEntity.status(501)
-          .body(
-              "Changing cluster directly is not supported. Use POST /cluster/brokers for scaling the cluster");
+      case partitions ->
+          new ResponseEntity<>("Scaling partitions is not supported", HttpStatusCode.valueOf(501));
+      case changes ->
+          ResponseEntity.status(501)
+              .body(
+                  "Changing cluster directly is not supported. Use POST /cluster/brokers for scaling the cluster");
     };
   }
 
@@ -213,26 +218,36 @@ public class ClusterEndpoint {
       @RequestParam(defaultValue = "false") final boolean dryRun) {
     final int priority = request.priority();
     return switch (resource) {
-      case brokers -> switch (subResource) {
-          // POST /cluster/brokers/1/partitions/2
-        case partitions -> mapOperationResponse(
-            requestSender
-                .joinPartition(
-                    new JoinPartitionRequest(
-                        MemberId.from(String.valueOf(resourceId)), subResourceId, priority, dryRun))
-                .join());
-        case brokers, changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
-      };
-      case partitions -> switch (subResource) {
-          // POST /cluster/partitions/2/brokers/1
-        case brokers -> mapOperationResponse(
-            requestSender
-                .joinPartition(
-                    new JoinPartitionRequest(
-                        MemberId.from(String.valueOf(subResourceId)), resourceId, priority, dryRun))
-                .join());
-        case partitions, changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
-      };
+      case brokers ->
+          switch (subResource) {
+              // POST /cluster/brokers/1/partitions/2
+            case partitions ->
+                mapOperationResponse(
+                    requestSender
+                        .joinPartition(
+                            new JoinPartitionRequest(
+                                MemberId.from(String.valueOf(resourceId)),
+                                subResourceId,
+                                priority,
+                                dryRun))
+                        .join());
+            case brokers, changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
+          };
+      case partitions ->
+          switch (subResource) {
+              // POST /cluster/partitions/2/brokers/1
+            case brokers ->
+                mapOperationResponse(
+                    requestSender
+                        .joinPartition(
+                            new JoinPartitionRequest(
+                                MemberId.from(String.valueOf(subResourceId)),
+                                resourceId,
+                                priority,
+                                dryRun))
+                        .join());
+            case partitions, changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
+          };
       case changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
     };
   }
@@ -247,24 +262,28 @@ public class ClusterEndpoint {
       @PathVariable final int subResourceId,
       @RequestParam(defaultValue = "false") final boolean dryRun) {
     return switch (resource) {
-      case brokers -> switch (subResource) {
-        case partitions -> mapOperationResponse(
-            requestSender
-                .leavePartition(
-                    new LeavePartitionRequest(
-                        MemberId.from(String.valueOf(resourceId)), subResourceId, dryRun))
-                .join());
-        case brokers, changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
-      };
-      case partitions -> switch (subResource) {
-        case brokers -> mapOperationResponse(
-            requestSender
-                .leavePartition(
-                    new LeavePartitionRequest(
-                        MemberId.from(String.valueOf(subResourceId)), resourceId, dryRun))
-                .join());
-        case partitions, changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
-      };
+      case brokers ->
+          switch (subResource) {
+            case partitions ->
+                mapOperationResponse(
+                    requestSender
+                        .leavePartition(
+                            new LeavePartitionRequest(
+                                MemberId.from(String.valueOf(resourceId)), subResourceId, dryRun))
+                        .join());
+            case brokers, changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
+          };
+      case partitions ->
+          switch (subResource) {
+            case brokers ->
+                mapOperationResponse(
+                    requestSender
+                        .leavePartition(
+                            new LeavePartitionRequest(
+                                MemberId.from(String.valueOf(subResourceId)), resourceId, dryRun))
+                        .join());
+            case partitions, changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
+          };
       case changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
     };
   }
@@ -313,26 +332,31 @@ public class ClusterEndpoint {
 
   private static Operation mapOperation(final TopologyChangeOperation operation) {
     return switch (operation) {
-      case final MemberJoinOperation join -> new Operation()
-          .operation(OperationEnum.BROKER_ADD)
-          .brokerId(Integer.parseInt(join.memberId().id()));
-      case final MemberLeaveOperation leave -> new Operation()
-          .operation(OperationEnum.BROKER_REMOVE)
-          .brokerId(Integer.parseInt(leave.memberId().id()));
-      case final PartitionJoinOperation join -> new Operation()
-          .operation(OperationEnum.PARTITION_JOIN)
-          .brokerId(Integer.parseInt(join.memberId().id()))
-          .partitionId(join.partitionId())
-          .priority(join.priority());
-      case final PartitionLeaveOperation leave -> new Operation()
-          .operation(OperationEnum.PARTITION_LEAVE)
-          .brokerId(Integer.parseInt(leave.memberId().id()))
-          .partitionId(leave.partitionId());
-      case final PartitionReconfigurePriorityOperation reconfigure -> new Operation()
-          .operation(OperationEnum.PARTITION_RECONFIGURE_PRIORITY)
-          .brokerId(Integer.parseInt(reconfigure.memberId().id()))
-          .partitionId(reconfigure.partitionId())
-          .priority(reconfigure.priority());
+      case final MemberJoinOperation join ->
+          new Operation()
+              .operation(OperationEnum.BROKER_ADD)
+              .brokerId(Integer.parseInt(join.memberId().id()));
+      case final MemberLeaveOperation leave ->
+          new Operation()
+              .operation(OperationEnum.BROKER_REMOVE)
+              .brokerId(Integer.parseInt(leave.memberId().id()));
+      case final PartitionJoinOperation join ->
+          new Operation()
+              .operation(OperationEnum.PARTITION_JOIN)
+              .brokerId(Integer.parseInt(join.memberId().id()))
+              .partitionId(join.partitionId())
+              .priority(join.priority());
+      case final PartitionLeaveOperation leave ->
+          new Operation()
+              .operation(OperationEnum.PARTITION_LEAVE)
+              .brokerId(Integer.parseInt(leave.memberId().id()))
+              .partitionId(leave.partitionId());
+      case final PartitionReconfigurePriorityOperation reconfigure ->
+          new Operation()
+              .operation(OperationEnum.PARTITION_RECONFIGURE_PRIORITY)
+              .brokerId(Integer.parseInt(reconfigure.memberId().id()))
+              .partitionId(reconfigure.partitionId())
+              .priority(reconfigure.priority());
     };
   }
 
@@ -440,27 +464,32 @@ public class ClusterEndpoint {
       final CompletedOperation operation) {
     final var mappedOperation =
         switch (operation.operation()) {
-          case final MemberJoinOperation join -> new TopologyChangeCompletedInner()
-              .operation(TopologyChangeCompletedInner.OperationEnum.BROKER_ADD)
-              .brokerId(Integer.parseInt(join.memberId().id()));
-          case final MemberLeaveOperation leave -> new TopologyChangeCompletedInner()
-              .operation(TopologyChangeCompletedInner.OperationEnum.BROKER_REMOVE)
-              .brokerId(Integer.parseInt(leave.memberId().id()));
-          case final PartitionJoinOperation join -> new TopologyChangeCompletedInner()
-              .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_JOIN)
-              .brokerId(Integer.parseInt(join.memberId().id()))
-              .partitionId(join.partitionId())
-              .priority(join.priority());
-          case final PartitionLeaveOperation leave -> new TopologyChangeCompletedInner()
-              .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_LEAVE)
-              .brokerId(Integer.parseInt(leave.memberId().id()))
-              .partitionId(leave.partitionId());
-          case final PartitionReconfigurePriorityOperation
-          reconfigure -> new TopologyChangeCompletedInner()
-              .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_RECONFIGURE_PRIORITY)
-              .brokerId(Integer.parseInt(reconfigure.memberId().id()))
-              .partitionId(reconfigure.partitionId())
-              .priority(reconfigure.priority());
+          case final MemberJoinOperation join ->
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.BROKER_ADD)
+                  .brokerId(Integer.parseInt(join.memberId().id()));
+          case final MemberLeaveOperation leave ->
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.BROKER_REMOVE)
+                  .brokerId(Integer.parseInt(leave.memberId().id()));
+          case final PartitionJoinOperation join ->
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_JOIN)
+                  .brokerId(Integer.parseInt(join.memberId().id()))
+                  .partitionId(join.partitionId())
+                  .priority(join.priority());
+          case final PartitionLeaveOperation leave ->
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_LEAVE)
+                  .brokerId(Integer.parseInt(leave.memberId().id()))
+                  .partitionId(leave.partitionId());
+          case final PartitionReconfigurePriorityOperation reconfigure ->
+              new TopologyChangeCompletedInner()
+                  .operation(
+                      TopologyChangeCompletedInner.OperationEnum.PARTITION_RECONFIGURE_PRIORITY)
+                  .brokerId(Integer.parseInt(reconfigure.memberId().id()))
+                  .partitionId(reconfigure.partitionId())
+                  .priority(reconfigure.priority());
         };
 
     mappedOperation.completedAt(mapInstantToDateTime(operation.completedAt()));

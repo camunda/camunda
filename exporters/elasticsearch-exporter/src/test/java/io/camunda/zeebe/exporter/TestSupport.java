@@ -93,8 +93,9 @@ final class TestSupport {
       case FORM -> config.form = value;
       case USER_TASK -> config.userTask = value;
       case COMPENSATION_SUBSCRIPTION -> config.compensationSubscription = value;
-      default -> throw new IllegalArgumentException(
-          "No known indexing configuration option for value type " + valueType);
+      default ->
+          throw new IllegalArgumentException(
+              "No known indexing configuration option for value type " + valueType);
     }
   }
 
@@ -109,8 +110,9 @@ final class TestSupport {
       case EVENT -> config.event = value;
       case COMMAND -> config.command = value;
       case COMMAND_REJECTION -> config.rejection = value;
-      default -> throw new IllegalArgumentException(
-          "No known indexing configuration option for record type " + recordType);
+      default ->
+          throw new IllegalArgumentException(
+              "No known indexing configuration option for record type " + recordType);
     }
   }
 

@@ -139,13 +139,15 @@ public final class SystemContext {
       switch (backup.getStore()) {
         case NONE -> LOG.warn("No backup store is configured. Backups will not be taken");
         case S3 -> S3BackupStore.validateConfig(S3BackupStoreConfig.toStoreConfig(backup.getS3()));
-        case GCS -> GcsBackupStore.validateConfig(
-            GcsBackupStoreConfig.toStoreConfig(backup.getGcs()));
-        case AZURE -> AzureBackupStore.validateConfig(
-            AzureBackupStoreConfig.toStoreConfig(backup.getAzure()));
-        default -> throw new UnsupportedOperationException(
-            "Does not support validating configuration of backup store %s"
-                .formatted(backup.getStore()));
+        case GCS ->
+            GcsBackupStore.validateConfig(GcsBackupStoreConfig.toStoreConfig(backup.getGcs()));
+        case AZURE ->
+            AzureBackupStore.validateConfig(
+                AzureBackupStoreConfig.toStoreConfig(backup.getAzure()));
+        default ->
+            throw new UnsupportedOperationException(
+                "Does not support validating configuration of backup store %s"
+                    .formatted(backup.getStore()));
       }
     } catch (final Exception e) {
       throw new InvalidConfigurationException(

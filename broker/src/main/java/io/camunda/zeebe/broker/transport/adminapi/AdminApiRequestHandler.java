@@ -54,8 +54,9 @@ public class AdminApiRequestHandler
       final ApiResponseWriter responseWriter,
       final ErrorResponseWriter errorWriter) {
     return switch (requestReader.getMessageDecoder().type()) {
-      case STEP_DOWN_IF_NOT_PRIMARY -> CompletableActorFuture.completed(
-          stepDownIfNotPrimary(responseWriter, partitionId, errorWriter));
+      case STEP_DOWN_IF_NOT_PRIMARY ->
+          CompletableActorFuture.completed(
+              stepDownIfNotPrimary(responseWriter, partitionId, errorWriter));
       case PAUSE_EXPORTING -> pauseExporting(responseWriter, partitionId, errorWriter);
       case RESUME_EXPORTING -> resumeExporting(responseWriter, partitionId, errorWriter);
       case BAN_INSTANCE -> banInstance(requestReader, responseWriter, partitionId, errorWriter);

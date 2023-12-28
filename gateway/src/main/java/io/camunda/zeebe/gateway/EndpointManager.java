@@ -132,8 +132,9 @@ public final class EndpointManager {
                 case HEALTHY -> partitionBuilder.setHealth(PartitionBrokerHealth.HEALTHY);
                 case UNHEALTHY -> partitionBuilder.setHealth(PartitionBrokerHealth.UNHEALTHY);
                 case DEAD -> partitionBuilder.setHealth(PartitionBrokerHealth.DEAD);
-                default -> Loggers.GATEWAY_LOGGER.debug(
-                    "Unsupported partition broker health status '{}'", status.name());
+                default ->
+                    Loggers.GATEWAY_LOGGER.debug(
+                        "Unsupported partition broker health status '{}'", status.name());
               }
               brokerInfo.addPartitions(partitionBuilder);
             });

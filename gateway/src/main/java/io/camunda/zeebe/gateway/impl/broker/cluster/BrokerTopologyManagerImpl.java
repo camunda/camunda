@@ -143,8 +143,8 @@ public final class BrokerTopologyManagerImpl extends Actor
         LOG.debug("Received broker was removed {}.", brokerInfo);
         updateTopology(topology -> removeBroker(topology, subject, brokerInfo));
       }
-      default -> LOG.debug(
-          "Received {} for broker {}, do nothing.", eventType, brokerInfo.getNodeId());
+      default ->
+          LOG.debug("Received {} for broker {}, do nothing.", eventType, brokerInfo.getNodeId());
     }
   }
 

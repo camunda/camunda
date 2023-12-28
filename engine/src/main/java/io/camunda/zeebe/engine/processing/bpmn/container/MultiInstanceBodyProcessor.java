@@ -396,11 +396,11 @@ public final class MultiInstanceBodyProcessor
 
       case "numberOfActiveInstances" -> getNumberOfActiveInstancesVariable(elementInstanceKey);
 
-      case "numberOfCompletedInstances" -> getNumberOfCompletedInstancesVariable(
-          elementInstanceKey);
+      case "numberOfCompletedInstances" ->
+          getNumberOfCompletedInstancesVariable(elementInstanceKey);
 
-      case "numberOfTerminatedInstances" -> getNumberOfTerminatedInstancesVariable(
-          elementInstanceKey);
+      case "numberOfTerminatedInstances" ->
+          getNumberOfTerminatedInstancesVariable(elementInstanceKey);
 
       default -> null;
     };

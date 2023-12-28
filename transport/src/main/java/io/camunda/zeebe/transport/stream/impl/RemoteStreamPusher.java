@@ -85,18 +85,21 @@ final class RemoteStreamPusher<P extends BufferWriter> {
   private void logResponseError(
       final StreamId streamId, final P payload, final StreamResponseException e) {
     switch (e.code()) {
-      case INVALID, MALFORMED -> pushErrorLogger.error(
-          "Failed to push (size = {}) to stream {}, request could not be parsed",
-          payload.getLength(),
-          streamId,
-          e);
-      case EXHAUSTED -> LOG.trace(
-          "Failed to push (size = {}) to stream {} after trying all clients",
-          payload.getLength(),
-          streamId,
-          e);
-      default -> pushWarnLogger.warn(
-          "Failed to push (size = {}) to stream {}", payload.getLength(), streamId, e);
+      case INVALID, MALFORMED ->
+          pushErrorLogger.error(
+              "Failed to push (size = {}) to stream {}, request could not be parsed",
+              payload.getLength(),
+              streamId,
+              e);
+      case EXHAUSTED ->
+          LOG.trace(
+              "Failed to push (size = {}) to stream {} after trying all clients",
+              payload.getLength(),
+              streamId,
+              e);
+      default ->
+          pushWarnLogger.warn(
+              "Failed to push (size = {}) to stream {}", payload.getLength(), streamId, e);
     }
   }
 

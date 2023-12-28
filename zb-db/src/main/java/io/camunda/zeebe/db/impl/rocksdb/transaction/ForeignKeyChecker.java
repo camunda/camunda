@@ -55,10 +55,10 @@ public final class ForeignKeyChecker {
 
     switch (foreignKey.match()) {
       case Full -> assertKeyExists(transaction, foreignKey, keyBuffer.byteArray(), keyBufferLength);
-      case Prefix -> assertPrefixExists(
-          transaction, foreignKey, keyBuffer.byteArray(), keyBufferLength);
-      default -> throw new IllegalStateException(
-          "Unknown foreign key match type: " + foreignKey.match());
+      case Prefix ->
+          assertPrefixExists(transaction, foreignKey, keyBuffer.byteArray(), keyBufferLength);
+      default ->
+          throw new IllegalStateException("Unknown foreign key match type: " + foreignKey.match());
     }
   }
 

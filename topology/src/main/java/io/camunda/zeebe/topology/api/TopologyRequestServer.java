@@ -155,14 +155,15 @@ public final class TopologyRequestServer implements AutoCloseable {
   private static <T> Either<ErrorResponse, T> mapError(final Throwable throwable) {
     // throwable is always CompletionException
     return switch (throwable.getCause()) {
-      case final TopologyRequestFailedException.OperationNotAllowed operationNotAllowed -> Either
-          .left(
+      case final TopologyRequestFailedException.OperationNotAllowed operationNotAllowed ->
+          Either.left(
               new ErrorResponse(ErrorCode.OPERATION_NOT_ALLOWED, operationNotAllowed.getMessage()));
-      case final TopologyRequestFailedException.InvalidRequest invalidRequest -> Either.left(
-          new ErrorResponse(ErrorCode.INVALID_REQUEST, invalidRequest.getMessage()));
-      case final ConcurrentModificationException concurrentModificationException -> Either.left(
-          new ErrorResponse(
-              ErrorCode.CONCURRENT_MODIFICATION, concurrentModificationException.getMessage()));
+      case final TopologyRequestFailedException.InvalidRequest invalidRequest ->
+          Either.left(new ErrorResponse(ErrorCode.INVALID_REQUEST, invalidRequest.getMessage()));
+      case final ConcurrentModificationException concurrentModificationException ->
+          Either.left(
+              new ErrorResponse(
+                  ErrorCode.CONCURRENT_MODIFICATION, concurrentModificationException.getMessage()));
       default -> Either.left(new ErrorResponse(ErrorCode.INTERNAL_ERROR, throwable.getMessage()));
     };
   }
