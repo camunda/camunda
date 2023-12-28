@@ -1,0 +1,21 @@
+name: Pipeline Checks for Dependabot PRs
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  pipeline-checks:
+    if: github.event.sender.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Utilize secret for Dependabot PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Placeholder step to indicate that the secret is being utilized
+          echo "Using secret for Dependabot PR."
