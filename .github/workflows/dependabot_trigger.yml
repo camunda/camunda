@@ -36,12 +36,11 @@ jobs:
         run: gh pr checkout ${{ github.event.pull_request.number }}
 
       # Creates an empty commit in order to update dependabot request
-      - name: Create Empty Commit & Push
+      - name: Create Empty Commit
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git commit --allow-empty -m "Trigger Dependabot update"
-          git push origin ${{ github.ref }}
 
       - name: Push Commit
         env:
