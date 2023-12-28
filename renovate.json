@@ -5,7 +5,8 @@
     ":rebaseStalePrs",
     ":semanticCommitTypeAll(chore)"
   ],
-  "includePaths": ["/**"],
+  "includePaths": ["client/**", ".github/**", ".ci/**", "Dockerfile", "/"],
+  "ignorePaths": ["client/pom.xml"],
   "helmv3": {
     "registryAliases": {
       "helm-camunda-io": "https://helm.camunda.io"
@@ -32,7 +33,7 @@
     },
     {
       "matchBaseBranches": ["/^stable\\/8\\..*/"],
-      "matchFileNames": ["/**"],
+      "matchFileNames": ["client/**", ".github/**", ".ci/**"],
       "enabled": false
     },
     {
