@@ -5,6 +5,8 @@
     ":rebaseStalePrs",
     ":semanticCommitTypeAll(chore)"
   ],
+  "includePaths": ["client/**", ".github/**", ".ci/**", "Dockerfile"],
+  "ignorePaths": ["client/pom.xml"],
   "helmv3": {
     "registryAliases": {
       "helm-camunda-io": "https://helm.camunda.io"
@@ -14,16 +16,6 @@
     {
       "groupName": "definitelyTyped",
       "matchPackagePrefixes": ["@types/"]
-    },
-    {
-      "matchPaths": [
-        "client/**"
-      ],
-      "assignees": [
-        "vsgoulart",
-        "Skairr"
-      ],
-      "assigneesSampleSize": 1
     },
     {
       "extends": "monorepo:react",
@@ -41,6 +33,7 @@
     },
     {
       "matchBaseBranches": ["/^stable\\/8\\..*/"],
+      "matchFileNames": ["client/**", ".github/**", ".ci/**"],
       "enabled": false
     },
     {
@@ -48,12 +41,6 @@
       "separateMajorMinor": true,
       "separateMinorPatch": true,
       "addLabels": ["area/security", "docker"]
-    },
-    {
-      "matchManagers": "maven",
-      "separateMajorMinor": true,
-      "separateMinorPatch": true,
-      "addLabels": ["area/backend", "java"]
     }
   ],
   "branchPrefix": "renovate/",
