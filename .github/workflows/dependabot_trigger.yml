@@ -19,3 +19,28 @@ jobs:
         run: |
           # Placeholder step to indicate that the secret is being utilized
           echo "Using secret for Dependabot PR."
+
+      # Setup: configure GitHub user
+      - name: Configure GitHub user
+        run: |
+          git config --global user.email "ci@tasklist.camunda.cloud"
+          git config --global user.name "github-tasklist-app"
+
+      # Setup: import secrets from vault
+      - name: Import Secrets
+        id: secrets # important to refer to it in later steps
+        uses: hashicorp/vault-action@2fb925f14cae8d86a835e7f5c14065e98fad63d8
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/github.com/organizations/camunda NEXUS_PSW;
+            secret/data/products/tasklist/ci/tasklist REGISTRY_HUB_DOCKER_COM_USR;
+            secret/data/products/tasklist/ci/tasklist REGISTRY_HUB_DOCKER_COM_PSW;
+            secret/data/products/tasklist/ci/tasklist TASKLIST_RELEASE_ALERT_WEBHOOK_URL;
+            secret/data/products/tasklist/ci/tasklist GITHUB_TASKLIST_APP_ID;
+            secret/data/products/tasklist/ci/tasklist GITHUB_TASKLIST_APP_PRIVATE_KEY;
