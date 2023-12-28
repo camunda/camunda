@@ -54,6 +54,25 @@ final class PartitionLeaveApplierTest {
   }
 
   @Test
+  void shouldRejectLeaveWhenPartitionHasOnlyOneReplica() {
+    // given
+    final ClusterTopology topologyWithOneReplica =
+        initialClusterTopology.updateMember(
+            localMemberId, m -> m.addPartition(1, PartitionState.active(1)));
+
+    // when
+    final Either<Exception, UnaryOperator<MemberState>> result =
+        partitionLeaveApplier.init(topologyWithOneReplica);
+
+    // then
+    assertThat(result).isLeft();
+
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("partition 1 has only one replica");
+  }
+
+  @Test
   void shouldUpdateStateToLeavingOnInit() {
     // given
     final ClusterTopology topologyWithPartition =
