@@ -76,7 +76,9 @@ final class TopologyChangeCoordinatorImplTest {
     clusterTopologyManager.setClusterTopology(
         ClusterTopology.init()
             .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
-            .updateMember(MemberId.from("1"), m -> m.addPartition(1, PartitionState.active(1))));
+            .updateMember(MemberId.from("1"), m -> m.addPartition(1, PartitionState.active(1)))
+            .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()))
+            .updateMember(MemberId.from("2"), m -> m.addPartition(1, PartitionState.active(1))));
     final var coordinator =
         new TopologyChangeCoordinatorImpl(clusterTopologyManager, new TestConcurrencyControl());
 

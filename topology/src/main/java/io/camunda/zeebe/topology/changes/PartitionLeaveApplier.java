@@ -55,6 +55,17 @@ record PartitionLeaveApplier(
       // topology change can make progress, we do not treat this as an error.
       return Either.right(m -> m);
     } else {
+      final var partitionReplicaCount =
+          currentClusterTopology.members().values().stream()
+              .filter(m -> m.hasPartition(partitionId))
+              .count();
+      if (partitionReplicaCount <= 1) {
+        return Either.left(
+            new IllegalStateException(
+                String.format(
+                    "Expected to leave partition, but the partition %s has only one replica",
+                    partitionId)));
+      }
       return Either.right(
           memberState -> memberState.updatePartition(partitionId, PartitionState::toLeaving));
     }
