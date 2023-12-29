@@ -142,6 +142,15 @@
         </configuration>
       </plugin>
 
+      <!-- enforce backwards compatibility -->
+      <plugin>
+        <groupId>com.salesforce.servicelibs</groupId>
+        <artifactId>proto-backwards-compatibility</artifactId>
+        <configuration>
+          <protoSourceRoot>${proto.dir}</protoSourceRoot>
+        </configuration>
+      </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
