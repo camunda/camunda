@@ -47,7 +47,9 @@
       "separateMajorMinor": true,
       "separateMinorPatch": true,
       "addLabels": ["area/backend", "java"],
-      "branchPrefix": "backend/"
+      "branchPrefix": "backend/",
+      "schedule": ["after 9pm on monday"],
+      "ignoreDeps": ["identity-spring-boot-starter", "identity-sdk", "zeebe", "zeebe-bom"]
     }
   ],
   "branchPrefix": "renovate/",
