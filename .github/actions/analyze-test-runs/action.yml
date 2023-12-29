@@ -1,5 +1,5 @@
 ---
-name: Check for duplicated test runs
+name: Analyze test runs
 
 description: Check for duplicated test runs from a maven build output file and fail if found.
 
@@ -11,8 +11,8 @@ inputs:
 runs:
   using: composite
   steps:
-
-  - name: Parse the build log output and write duplicate tests to the output file
+  - name: Duplicate test runs
+    if: always()
     shell: bash
     env:
       BUILD_OUTPUT_FILE_PATH: ${{ inputs.buildOutputFilePath }}
