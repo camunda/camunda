@@ -42,7 +42,7 @@ runs:
       echo "No test execution found in build output, thus nothing to check."
       exit 0
   - name: Unfinished tests
-    if: always()
+    if: failure() || cancelled()
     shell: bash
     env:
       BUILD_OUTPUT_FILE_PATH: ${{ inputs.buildOutputFilePath }}
