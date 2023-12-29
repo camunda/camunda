@@ -76,8 +76,10 @@ final class PartitionLeaveApplierTest {
   void shouldUpdateStateToLeavingOnInit() {
     // given
     final ClusterTopology topologyWithPartition =
-        initialClusterTopology.updateMember(
-            localMemberId, m -> m.addPartition(1, PartitionState.active(1)));
+        initialClusterTopology
+            .updateMember(localMemberId, m -> m.addPartition(1, PartitionState.active(1)))
+            .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()))
+            .updateMember(MemberId.from("2"), m -> m.addPartition(1, PartitionState.active(1)));
 
     // when
     final var resultingTopology =
@@ -94,8 +96,11 @@ final class PartitionLeaveApplierTest {
   void shouldExecuteLeaveOnApply() {
     // given
     final var topologyWithPartition =
-        initialClusterTopology.updateMember(
-            localMemberId, m -> m.addPartition(1, PartitionState.active(1)));
+        initialClusterTopology
+            .updateMember(localMemberId, m -> m.addPartition(1, PartitionState.active(1)))
+            .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()))
+            .updateMember(MemberId.from("2"), m -> m.addPartition(1, PartitionState.active(1)));
+
     final var topologyAfterInit =
         topologyWithPartition.updateMember(
             localMemberId, partitionLeaveApplier.init(topologyWithPartition).get());
