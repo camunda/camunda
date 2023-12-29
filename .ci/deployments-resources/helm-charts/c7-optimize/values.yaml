@@ -51,7 +51,7 @@ mailhog:
 elasticsearch:
   image:
     repository: docker.elastic.co/elasticsearch/elasticsearch
-    tag: latest
+    tag: 8.9.0
   resources:
     limits:
       cpu: 4
