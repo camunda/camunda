@@ -12,7 +12,6 @@ runs:
   using: composite
   steps:
   - name: Duplicate test runs
-    if: always()
     shell: bash
     env:
       BUILD_OUTPUT_FILE_PATH: ${{ inputs.buildOutputFilePath }}
