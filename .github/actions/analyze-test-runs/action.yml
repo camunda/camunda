@@ -1,5 +1,5 @@
 ---
-name: Check for duplicated test runs
+name: Analyze test runs
 
 description: Check for duplicated test runs from a maven build output file and fail if found.
 
@@ -11,8 +11,7 @@ inputs:
 runs:
   using: composite
   steps:
-
-  - name: Parse the build log output and write duplicate tests to the output file
+  - name: Duplicate test runs
     shell: bash
     env:
       BUILD_OUTPUT_FILE_PATH: ${{ inputs.buildOutputFilePath }}
@@ -29,6 +28,8 @@ runs:
           sort "$tmpFile" | uniq -d | tee "$outputFile"
           if [ -s "$outputFile" ]; then
             echo "::error::Found duplicate test runs!"
+            echo "### ⚠️ Duplicate test runs" >> $GITHUB_STEP_SUMMARY
+            cat $outputFile >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
           echo "No duplicate test runs found, all good!"
@@ -38,4 +39,25 @@ runs:
         exit 1
       fi
       echo "No test execution found in build output, thus nothing to check."
+      exit 0
+  - name: Unfinished tests
+    if: failure() || cancelled()
+    shell: bash
+    env:
+      BUILD_OUTPUT_FILE_PATH: ${{ inputs.buildOutputFilePath }}
+    run: |
+      if [ ! -s "$BUILD_OUTPUT_FILE_PATH" ]; then
+        echo "::error::Build output file does not exist or is empty!"
+        exit 1
+      fi
+      running=$(mktemp)
+      finished=$(mktemp)
+      unfinished=$(mktemp)
+      grep -oP "\[INFO\] Running \K(.*)$" "$BUILD_OUTPUT_FILE_PATH" > "$running"
+      grep -oP 'Tests run.*?-- in \K(.*)$' "$BUILD_OUTPUT_FILE_PATH" > "$finished"
+      sort $running $finished | uniq -u > "$unfinished"
+      if [ -s "$unfinished" ]; then
+        echo "### ⚠️ Unfinished test runs" >> $GITHUB_STEP_SUMMARY
+        cat $unfinished >> $GITHUB_STEP_SUMMARY
+      fi
       exit 0
