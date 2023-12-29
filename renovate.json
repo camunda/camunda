@@ -46,7 +46,8 @@
       "matchManagers": "maven",
       "separateMajorMinor": true,
       "separateMinorPatch": true,
-      "addLabels": ["area/backend", "dependency"]
+      "addLabels": ["area/backend", "java"],
+      "branchPrefix": "backend/"
     }
   ],
   "branchPrefix": "renovate/",
