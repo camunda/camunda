@@ -23,7 +23,7 @@ jobs:
           ignore: DL3018 # redundant when pinning the base image
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@2fb925f14cae8d86a835e7f5c14065e98fad63d8
+        uses: hashicorp/vault-action@6853090cd99ab382c4830a1ae8966b5a906315b6
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
