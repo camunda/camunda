@@ -15,7 +15,7 @@ business processes.
 
 [![Main Pipeline - 3.9](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml/badge.svg?branch=maintenance%2F3.9)](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml?query=branch%3Amaintenance%2F3.9)
 
-[![Main Pipeline - 3.7](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml/badge.svg?branch=maintenance%2F3.7)](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml?query=branch%3Amaintenance%2F3.7))
+[![Main Pipeline - 3.7](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml/badge.svg?branch=maintenance%2F3.7)](https://github.com/camunda/camunda-optimize/actions/workflows/ci.yml?query=branch%3Amaintenance%2F3.7)
 
 [![Connect to secured Elasticsearch](https://github.com/camunda/camunda-optimize/actions/workflows/connect-to-secured-es.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/connect-to-secured-es.yml)
 
@@ -25,7 +25,7 @@ business processes.
 
 [![Optimize Cluster Test](https://github.com/camunda/camunda-optimize/actions/workflows/cluster-test.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/cluster-test.yml)
 
-[![Java Compatibility](https://github.com/camunda/camunda-optimize/actions/workflows/java-compatibility.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/java-compatibility-mode.yml)
+[![Java Compatibility](https://github.com/camunda/camunda-optimize/actions/workflows/java-compatibility.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/java-compatibility.yml)
 
 [![Import Static Dataset Performance Test](https://github.com/camunda/camunda-optimize/actions/workflows/import-static-data-performance.yml/badge.svg)](https://github.com/camunda/camunda-optimize/actions/workflows/import-static-data-performance.yml)
 
