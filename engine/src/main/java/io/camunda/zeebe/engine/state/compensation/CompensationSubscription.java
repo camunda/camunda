@@ -12,6 +12,7 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public class CompensationSubscription extends UnpackedObject implements DbValue {
 
@@ -37,7 +38,9 @@ public class CompensationSubscription extends UnpackedObject implements DbValue 
         .setCompensableActivityScopeId(getRecord().getCompensableActivityScopeId());
     copy.recordProp.getValue().setThrowEventId(getRecord().getThrowEventId());
     copy.recordProp.getValue().setThrowEventInstanceKey(getRecord().getThrowEventInstanceKey());
-    copy.recordProp.getValue().setVariables(getRecord().getVariablesBuffer());
+    copy.recordProp
+        .getValue()
+        .setVariables(BufferUtil.cloneBuffer(getRecord().getVariablesBuffer()));
     return copy;
   }
 
