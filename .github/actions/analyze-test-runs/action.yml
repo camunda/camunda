@@ -41,3 +41,24 @@ runs:
       fi
       echo "No test execution found in build output, thus nothing to check."
       exit 0
+  - name: Unfinished tests
+    if: always()
+    shell: bash
+    env:
+      BUILD_OUTPUT_FILE_PATH: ${{ inputs.buildOutputFilePath }}
+    run: |
+      if [ ! -s "$BUILD_OUTPUT_FILE_PATH" ]; then
+        echo "::error::Build output file does not exist or is empty!"
+        exit 1
+      fi
+      running=$(mktemp)
+      finished=$(mktemp)
+      unfinished=$(mktemp)
+      grep -oP "\[INFO\] Running \K(.*)$" "$BUILD_OUTPUT_FILE_PATH" > "$running"
+      grep -oP 'Tests run.*?-- in \K(.*)$' "$BUILD_OUTPUT_FILE_PATH" > "$finished"
+      sort $running $finished | uniq -u > "$unfinished"
+      if [ -s "$unfinished" ]; then
+        echo "### ⚠️ Unfinished test runs" >> $GITHUB_STEP_SUMMARY
+        cat $unfinished >> $GITHUB_STEP_SUMMARY
+      fi
+      exit 0
