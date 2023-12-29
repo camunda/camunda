@@ -234,7 +234,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
         operationApplier
             .init(mergedTopology)
             .map(transformer -> mergedTopology.updateMember(localMemberId, transformer))
-            .map(this::updateLocalTopology);
+            .flatMap(this::updateLocalTopology);
 
     if (initialized.isLeft()) {
       // TODO: What should we do here? Retry?
@@ -245,10 +245,12 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
       return;
     }
 
+    final var initializedTopology = initialized.get();
     operationApplier
         .apply()
         .onComplete(
-            (transformer, error) -> onOperationApplied(operation, transformer, error, observer));
+            (transformer, error) ->
+                onOperationApplied(initializedTopology, operation, transformer, error, observer));
   }
 
   private void logAndScheduleRetry(final TopologyChangeOperation operation, final Throwable error) {
@@ -268,6 +270,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
   }
 
   private void onOperationApplied(
+      final ClusterTopology topologyOnWhichOperationIsApplied,
       final TopologyChangeOperation operation,
       final UnaryOperator<MemberState> transformer,
       final Throwable error,
@@ -276,6 +279,15 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
     if (error == null) {
       observer.applied();
       backoffRetry.reset();
+      if (persistedClusterTopology.getTopology().version()
+          != topologyOnWhichOperationIsApplied.version()) {
+        LOG.debug(
+            "Topology changed while applying operation {}. Expected topology is {}. Current topology is {}. Most likely the change operation was cancelled.",
+            operation,
+            topologyOnWhichOperationIsApplied,
+            persistedClusterTopology.getTopology());
+        return;
+      }
       updateLocalTopology(
           persistedClusterTopology.getTopology().advanceTopologyChange(localMemberId, transformer));
       LOG.info(
