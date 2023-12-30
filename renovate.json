@@ -49,7 +49,7 @@
       "addLabels": ["area/backend", "java"],
       "branchPrefix": "backend/",
       "schedule": ["after 9pm on monday"],
-      "ignoreDeps": ["identity-spring-boot-starter", "identity-sdk", "zeebe", "zeebe-bom"]
+      "ignoreDeps": ["io.camunda:identity-sdk", "io.camunda:identity-spring-boot-starter", "io.camunda:zeebe-bom"]
     }
   ],
   "branchPrefix": "renovate/",
