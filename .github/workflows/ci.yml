@@ -542,7 +542,7 @@ jobs:
           java-version: '21'
       # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
       - name: 'Create settings.xml'
-        uses: s4u/maven-settings-action@v2.8.0
+        uses: s4u/maven-settings-action@v3.0.0
         with:
           githubServer: false
           servers: |

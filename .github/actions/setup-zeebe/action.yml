@@ -91,7 +91,7 @@ runs:
         password: ${{ steps.secrets.outputs[inputs.docker-token] }}
     # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
     - name: 'Create settings.xml'
-      uses: s4u/maven-settings-action@v2.8.0
+      uses: s4u/maven-settings-action@v3.0.0
       if: |
         inputs.java == 'true'
         && inputs.secret_vault_address != ''
