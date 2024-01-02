@@ -327,13 +327,13 @@ public final class EventAppliers implements EventApplier {
         CompensationSubscriptionIntent.TRIGGERED,
         new CompensationSubscriptionTriggeredApplier(
             processingState.getCompensationSubscriptionState()));
-  }
-
-  private void registerCompensationSubscriptionApplier(
-      final MutableProcessingState processingState) {
     register(
-        CompensationSubscriptionIntent.CREATED,
-        new CompensationSubscriptionCreatedApplier(
+        CompensationSubscriptionIntent.COMPLETED,
+        new CompensationSubscriptionCompletedApplier(
+            processingState.getCompensationSubscriptionState()));
+    register(
+        CompensationSubscriptionIntent.DELETED,
+        new CompensationSubscriptionDeletedApplier(
             processingState.getCompensationSubscriptionState()));
   }
 
