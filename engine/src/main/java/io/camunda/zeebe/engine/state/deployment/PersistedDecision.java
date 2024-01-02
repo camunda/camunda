@@ -16,6 +16,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public final class PersistedDecision extends UnpackedObject implements DbValue {
@@ -56,11 +57,11 @@ public final class PersistedDecision extends UnpackedObject implements DbValue {
 
   public PersistedDecision copy() {
     final var copy = new PersistedDecision();
-    copy.decisionIdProp.setValue(getDecisionId());
-    copy.decisionNameProp.setValue(getDecisionName());
+    copy.decisionIdProp.setValue(BufferUtil.cloneBuffer(getDecisionId()));
+    copy.decisionNameProp.setValue(BufferUtil.cloneBuffer(getDecisionName()));
     copy.decisionKeyProp.setValue(getDecisionKey());
     copy.versionProp.setValue(getVersion());
-    copy.decisionRequirementsIdProp.setValue(getDecisionRequirementsId());
+    copy.decisionRequirementsIdProp.setValue(BufferUtil.cloneBuffer(getDecisionRequirementsId()));
     copy.decisionRequirementsKeyProp.setValue(getDecisionRequirementsKey());
     copy.tenantIdProp.setValue(getTenantId());
     return copy;
