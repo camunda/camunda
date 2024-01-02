@@ -13,10 +13,14 @@ import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 public class ProcessSaasIT extends TasklistZeebeIntegrationTest {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(ProcessSaasIT.class);
 
   @DynamicPropertySource
   static void registerProperties(DynamicPropertyRegistry registry) {
@@ -25,101 +29,59 @@ public class ProcessSaasIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
-  public void shouldReturnOnlyMostRecentVersionBasedOnQuery() throws IOException {
+  public void shouldReturnOnlyMostRecentVersion() throws IOException {
     final String querySimpleProcess = "multipleVersions";
     tester.deployProcess("multipleVersions.bpmn").waitUntil().processIsDeployed();
     tester.deployProcess("multipleVersions-v2.bpmn").waitUntil().processIsDeployed();
 
-    final GraphQLResponse response = tester.getAllProcesses(querySimpleProcess);
-    assertTrue(response.isOk());
-    assertEquals("1", response.get("$.data.processes.length()"));
-    assertEquals(querySimpleProcess, response.get("$.data.processes[0].name"));
-    assertEquals("2", response.get("$.data.processes[0].version"));
-  }
+    LOGGER.info("Test query with a simple process");
+    final GraphQLResponse responseQuery = tester.getAllProcesses(querySimpleProcess);
+    assertTrue(responseQuery.isOk());
+    assertEquals("1", responseQuery.get("$.data.processes.length()"));
+    assertEquals(querySimpleProcess, responseQuery.get("$.data.processes[0].name"));
+    assertEquals("2", responseQuery.get("$.data.processes[0].version"));
 
-  @Test
-  public void shouldReturnOnlyMostRecentVersionEmptyQuery() throws IOException {
+    LOGGER.info("Test with empty query");
     final String emptyQuery = "";
-    tester.deployProcess("multipleVersions.bpmn").waitUntil().processIsDeployed();
-    tester.deployProcess("multipleVersions-v2.bpmn").waitUntil().processIsDeployed();
-
-    final GraphQLResponse response = tester.getAllProcesses(emptyQuery);
-    assertTrue(response.isOk());
-    assertEquals("1", response.get("$.data.processes.length()"));
-    assertEquals("2", response.get("$.data.processes[0].version"));
+    final GraphQLResponse responseEmptyQuery = tester.getAllProcesses(emptyQuery);
+    assertTrue(responseEmptyQuery.isOk());
+    assertEquals("1", responseEmptyQuery.get("$.data.processes.length()"));
+    assertEquals("2", responseEmptyQuery.get("$.data.processes[0].version"));
   }
 
   @Test
-  public void shouldReturnAllProcessesBasedOnEmptySearchQuery() throws IOException {
-    final String searchEmpty = "";
+  public void shouldReturnAllProcessesBasedOnQueries() throws IOException {
     tester.deployProcess("simple_process.bpmn").waitUntil().processIsDeployed();
     tester.deployProcess("simple_process_2.bpmn").waitUntil().processIsDeployed();
     tester.deployProcess("userTaskForm.bpmn").waitUntil().processIsDeployed();
 
-    final GraphQLResponse response = tester.getAllProcesses(searchEmpty);
-    assertTrue(response.isOk());
-    assertEquals("3", response.get("$.data.processes.length()"));
+    LOGGER.info("Should return all processes based on empty search query");
+    testProcessRetrieval("", 3);
+
+    LOGGER.info("Should return all process based on Process named query");
+    final GraphQLResponse responseProcessNamed = testProcessRetrieval("iMpLe", 1);
+    assertEquals("Simple process", responseProcessNamed.get("$.data.processes[0].name"));
+
+    LOGGER.info("Should return all process based on Process definition id query");
+    final GraphQLResponse responseProcessDefinition = testProcessRetrieval("FoRm", 1);
+    assertEquals(
+        "userTaskFormProcess",
+        responseProcessDefinition.get("$.data.processes[0].processDefinitionId"));
+
+    LOGGER.info("Should return all process based on Process id query");
+    testProcessRetrieval("2251799813685249", 1);
+
+    LOGGER.info("Should return all process based on partial Process id query");
+    testProcessRetrieval("799813685", 0);
+
+    LOGGER.info("Should not return");
+    testProcessRetrieval("shouldNotReturn", 0);
   }
 
-  @Test
-  public void shouldReturnProcessBasedOnProcessNameQuery() throws IOException {
-    final String queryProcessId = "iMpLe";
-    tester.deployProcess("simple_process.bpmn").waitUntil().processIsDeployed();
-    tester.deployProcess("simple_process_2.bpmn").waitUntil().processIsDeployed();
-    tester.deployProcess("userTaskForm.bpmn").waitUntil().processIsDeployed();
-
-    final GraphQLResponse response = tester.getAllProcesses(queryProcessId);
+  private GraphQLResponse testProcessRetrieval(String query, int expectedCount) throws IOException {
+    final GraphQLResponse response = tester.getAllProcesses(query);
     assertTrue(response.isOk());
-    assertEquals("1", response.get("$.data.processes.length()"));
-    assertEquals("Simple process", response.get("$.data.processes[0].name"));
-  }
-
-  @Test
-  public void shouldReturnProcessBasedOnProcessDefinitionIdQuery() throws IOException {
-    final String queryProcessId = "FoRm";
-    tester.deployProcess("simple_process.bpmn").waitUntil().processIsDeployed();
-    tester.deployProcess("simple_process_2.bpmn").waitUntil().processIsDeployed();
-    tester.deployProcess("userTaskForm.bpmn").waitUntil().processIsDeployed();
-
-    final GraphQLResponse response = tester.getAllProcesses(queryProcessId);
-    assertTrue(response.isOk());
-    assertEquals("1", response.get("$.data.processes.length()"));
-    assertEquals("userTaskFormProcess", response.get("$.data.processes[0].processDefinitionId"));
-  }
-
-  @Test
-  public void shouldReturnProcessBasedOnProcessIdQuery() throws IOException {
-    final String queryProcessId = "2251799813685249";
-    tester.deployProcess("simple_process.bpmn").waitUntil().processIsDeployed();
-    tester.deployProcess("simple_process_2.bpmn").waitUntil().processIsDeployed();
-    tester.deployProcess("userTaskForm.bpmn").waitUntil().processIsDeployed();
-
-    final GraphQLResponse response = tester.getAllProcesses(queryProcessId);
-    assertTrue(response.isOk());
-    assertEquals("1", response.get("$.data.processes.length()"));
-  }
-
-  @Test
-  public void shouldNotReturnProcessBasedOnPartialProcessIdQuery() throws IOException {
-    final String queryProcessId = "799813685";
-    tester.deployProcess("simple_process.bpmn").waitUntil().processIsDeployed();
-    tester.deployProcess("simple_process_2.bpmn").waitUntil().processIsDeployed();
-    tester.deployProcess("userTaskForm.bpmn").waitUntil().processIsDeployed();
-
-    final GraphQLResponse response = tester.getAllProcesses(queryProcessId);
-    assertTrue(response.isOk());
-    assertEquals("0", response.get("$.data.processes.length()"));
-  }
-
-  @Test
-  public void shouldNotReturnProcessBasedOnSearchQuery() throws IOException {
-    final String queryProcessId = "shouldNotReturn";
-    tester.deployProcess("simple_process.bpmn").waitUntil().processIsDeployed();
-    tester.deployProcess("simple_process_2.bpmn").waitUntil().processIsDeployed();
-    tester.deployProcess("userTaskForm.bpmn").waitUntil().processIsDeployed();
-
-    final GraphQLResponse response = tester.getAllProcesses(queryProcessId);
-    assertTrue(response.isOk());
-    assertEquals("0", response.get("$.data.processes.length()"));
+    assertEquals(String.valueOf(expectedCount), response.get("$.data.processes.length()"));
+    return response;
   }
 }
