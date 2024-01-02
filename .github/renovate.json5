@@ -112,17 +112,17 @@
     },
     // Frontend deps
     {
-      addLabels: ["frontend"],
+      addLabels: ["component:frontend"],
       languages: ["js"],
     },
     // Backend deps
     {
-      addLabels: ["backend"],
+      addLabels: ["component:backend"],
       languages: ["java"],
     },
     // Infra deps
     {
-      addLabels: ["infra"],
+      addLabels: ["component:infra"],
       managers: ["docker-compose", "dockerfile", "github-actions"],
     },
     // Docker deps
