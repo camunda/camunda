@@ -121,7 +121,7 @@
     <dependency>
       <groupId>com.ethlo.time</groupId>
       <artifactId>itu</artifactId>
-      <version>1.7.3</version>
+      <version>1.7.5</version>
     </dependency>
     <dependency>
       <groupId>net.jodah</groupId>

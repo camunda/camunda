@@ -49,7 +49,7 @@
     <netty.version>4.1.104.Final</netty.version>
     <lombok.version>1.18.30</lombok.version>
     <logback.version>1.4.14</logback.version>
-    <slf4j.version>2.0.9</slf4j.version>
+    <slf4j.version>2.0.10</slf4j.version>
     <commons.io.version>2.15.1</commons.io.version>
 
     <version.node>v20.9.0</version.node>
