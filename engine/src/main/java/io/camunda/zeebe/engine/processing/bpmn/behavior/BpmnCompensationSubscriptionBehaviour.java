@@ -121,6 +121,24 @@ public class BpmnCompensationSubscriptionBehaviour {
     }
   }
 
+  public void terminateCompensationHandler(
+      final BpmnElementContext context, final ExecutableActivity element) {
+    if (BpmnEventType.COMPENSATION.equals(context.getBpmnEventType())) {
+      final var tenantId = context.getTenantId();
+      final var processInstanceKey = context.getProcessInstanceKey();
+      final var compensationOpt =
+          compensationSubscriptionState.findCompensationByCompensationHandlerId(
+              tenantId, processInstanceKey, BufferUtil.bufferAsString(element.getId()));
+      if (compensationOpt.isPresent()) {
+        final var compensation = compensationOpt.get();
+        stateWriter.appendFollowUpEvent(
+            compensation.getKey(),
+            CompensationSubscriptionIntent.DELETED,
+            compensation.getRecord());
+      }
+    }
+  }
+
   private Set<CompensationSubscription> getCompensationSubscriptionForCompletedActivities(
       final BpmnElementContext context) {
     return compensationSubscriptionState.findSubscriptionsByProcessInstanceKey(
