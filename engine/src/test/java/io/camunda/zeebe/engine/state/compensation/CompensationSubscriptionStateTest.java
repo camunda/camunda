@@ -59,7 +59,8 @@ public class CompensationSubscriptionStateTest {
         .isEqualTo(COMPENSABLE_ACTIVITY_SCOPE_ID);
     assertThat(storedCompensation.getThrowEventId()).isEqualTo(THROW_EVENT_ID);
     assertThat(storedCompensation.getThrowEventInstanceKey()).isEqualTo(THROW_EVENT_INSTANCE_KEY);
-    assertThat(storedCompensation.getCompensationActivityElementId()).isEqualTo(COMPENSATION_ACTIVITY_ELEMENT_ID);
+    assertThat(storedCompensation.getCompensationActivityElementId())
+        .isEqualTo(COMPENSATION_ACTIVITY_ELEMENT_ID);
   }
 
   @Test
@@ -166,9 +167,12 @@ public class CompensationSubscriptionStateTest {
     state.put(1L, compensation);
     state.put(2L, notValidCompensation);
 
-    final var retrievedCompensation = state.findCompensationByCompensationHandlerId(TENANT_ID, PROCESS_INSTANCE_KEY, COMPENSATION_ACTIVITY_ELEMENT_ID);
+    final var retrievedCompensation =
+        state.findCompensationByCompensationHandlerId(
+            TENANT_ID, PROCESS_INSTANCE_KEY, COMPENSATION_ACTIVITY_ELEMENT_ID);
     assertThat(retrievedCompensation.isPresent()).isTrue();
-    assertThat(retrievedCompensation.get().getRecord().getCompensationActivityElementId()).isEqualTo(COMPENSATION_ACTIVITY_ELEMENT_ID);
+    assertThat(retrievedCompensation.get().getRecord().getCompensationActivityElementId())
+        .isEqualTo(COMPENSATION_ACTIVITY_ELEMENT_ID);
   }
 
   private CompensationSubscriptionRecord createCompensation(final long key) {
