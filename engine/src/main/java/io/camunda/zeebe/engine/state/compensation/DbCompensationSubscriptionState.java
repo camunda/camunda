@@ -18,7 +18,10 @@ import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.state.mutable.MutableCompensationSubscriptionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public class DbCompensationSubscriptionState implements MutableCompensationSubscriptionState {
@@ -76,6 +79,27 @@ public class DbCompensationSubscriptionState implements MutableCompensationSubsc
   }
 
   @Override
+  public Optional<CompensationSubscription> findCompensationByCompensationHandlerId(
+      final String tenantId, final long piKey, final String compensationHandlerId) {
+    tenantIdKey.wrapString(tenantId);
+    processInstanceKey.wrapLong(piKey);
+
+    final List<CompensationSubscription> compensationSubscription = new ArrayList<>();
+    compensationSubscriptionColumnFamily.whileEqualPrefix(
+        new DbCompositeKey<>(tenantIdKey, processInstanceKey),
+        ((key, value) -> {
+          if (value.getRecord().getCompensationActivityElementId().equals(compensationHandlerId)) {
+            compensationSubscription.add(value.copy());
+          }
+        }));
+
+    if (compensationSubscription.isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.of(compensationSubscription.getFirst());
+  }
+
+  @Override
   public void put(final long key, final CompensationSubscriptionRecord compensation) {
     compensationSubscription.setKey(key).setRecord(compensation);
 
@@ -97,6 +121,15 @@ public class DbCompensationSubscriptionState implements MutableCompensationSubsc
         compensation.getTenantId());
     compensationSubscriptionColumnFamily.update(
         tenantAwareProcessInstanceKeyCompensableActivityId, compensationSubscription);
+  }
+
+  @Override
+  public void remove(
+      final String tenantId, final long processInstanceKey, final String compensableActivityId) {
+    wrapCompensationKeys(processInstanceKey, compensableActivityId, tenantId);
+
+    compensationSubscriptionColumnFamily.deleteExisting(
+        tenantAwareProcessInstanceKeyCompensableActivityId);
   }
 
   private void wrapCompensationKeys(

@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableCompensationSubscriptionStat
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +28,7 @@ public class CompensationSubscriptionStateTest {
   private static final String COMPENSABLE_ACTIVITY_SCOPE_ID = "compensableActivityScopeId";
   private static final String THROW_EVENT_ID = "throwEventId";
   private static final long THROW_EVENT_INSTANCE_KEY = 4L;
+  private static final String COMPENSATION_ACTIVITY_ELEMENT_ID = "compensationActivityElementId";
 
   private MutableCompensationSubscriptionState state;
   private MutableProcessingState processingState;
@@ -57,6 +59,7 @@ public class CompensationSubscriptionStateTest {
         .isEqualTo(COMPENSABLE_ACTIVITY_SCOPE_ID);
     assertThat(storedCompensation.getThrowEventId()).isEqualTo(THROW_EVENT_ID);
     assertThat(storedCompensation.getThrowEventInstanceKey()).isEqualTo(THROW_EVENT_INSTANCE_KEY);
+    assertThat(storedCompensation.getCompensationActivityElementId()).isEqualTo(COMPENSATION_ACTIVITY_ELEMENT_ID);
   }
 
   @Test
@@ -125,6 +128,49 @@ public class CompensationSubscriptionStateTest {
         .contains(COMPENSABLE_ACTIVITY_ID, "anotherCompensableActivityId");
   }
 
+  @Test
+  public void shouldRemoveCompensationSubscription() {
+    final var compensation = createCompensation(PROCESS_INSTANCE_KEY);
+    state.put(1L, compensation);
+
+    state.remove(TENANT_ID, PROCESS_INSTANCE_KEY, COMPENSABLE_ACTIVITY_ID);
+
+    final var compensations =
+        state.findSubscriptionsByProcessInstanceKey(TENANT_ID, PROCESS_INSTANCE_KEY);
+    assertThat(compensations).isEmpty();
+  }
+
+  @Test
+  public void shouldRemoveOneCompensationSubscription() {
+    final var compensation = createCompensation(PROCESS_INSTANCE_KEY);
+    final var compensationToRemove = createCompensation(PROCESS_INSTANCE_KEY);
+    compensationToRemove.setCompensableActivityId("anotherCompensableActivityId");
+    state.put(1L, compensation);
+    state.put(2L, compensationToRemove);
+
+    state.remove(TENANT_ID, PROCESS_INSTANCE_KEY, "anotherCompensableActivityId");
+
+    final Set<CompensationSubscription> compensations =
+        state.findSubscriptionsByProcessInstanceKey(TENANT_ID, PROCESS_INSTANCE_KEY);
+    assertThat(compensations.size()).isEqualTo(1);
+    assertThat(compensations.stream().findFirst().get().getRecord().getCompensableActivityId())
+        .isEqualTo(COMPENSABLE_ACTIVITY_ID);
+  }
+
+  @Test
+  public void shouldFindCompensationByHandlerId() {
+    final var compensation = createCompensation(PROCESS_INSTANCE_KEY);
+    final var notValidCompensation = createCompensation(PROCESS_INSTANCE_KEY);
+    notValidCompensation.setCompensableActivityId("anotherCompensableActivityId");
+    notValidCompensation.setCompensationActivityElementId("anotherCompensationActivityElementId");
+    state.put(1L, compensation);
+    state.put(2L, notValidCompensation);
+
+    final var retrievedCompensation = state.findCompensationByCompensationHandlerId(TENANT_ID, PROCESS_INSTANCE_KEY, COMPENSATION_ACTIVITY_ELEMENT_ID);
+    assertThat(retrievedCompensation.isPresent()).isTrue();
+    assertThat(retrievedCompensation.get().getRecord().getCompensationActivityElementId()).isEqualTo(COMPENSATION_ACTIVITY_ELEMENT_ID);
+  }
+
   private CompensationSubscriptionRecord createCompensation(final long key) {
     return new CompensationSubscriptionRecord()
         .setTenantId(TENANT_ID)
@@ -133,6 +179,7 @@ public class CompensationSubscriptionStateTest {
         .setCompensableActivityId(COMPENSABLE_ACTIVITY_ID)
         .setCompensableActivityScopeId(COMPENSABLE_ACTIVITY_SCOPE_ID)
         .setThrowEventId(THROW_EVENT_ID)
-        .setThrowEventInstanceKey(THROW_EVENT_INSTANCE_KEY);
+        .setThrowEventInstanceKey(THROW_EVENT_INSTANCE_KEY)
+        .setCompensationActivityElementId(COMPENSATION_ACTIVITY_ELEMENT_ID);
   }
 }
