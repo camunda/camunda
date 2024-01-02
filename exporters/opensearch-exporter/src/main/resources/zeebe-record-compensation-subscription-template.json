@@ -40,6 +40,9 @@
             "throwEventInstanceKey": {
               "type": "long"
             },
+            "compensationActivityElementId": {
+              "type": "keyword"
+            },
             "variables": {
               "enabled": false
             }

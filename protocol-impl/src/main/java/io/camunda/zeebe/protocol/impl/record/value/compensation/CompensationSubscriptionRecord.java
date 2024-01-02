@@ -38,6 +38,8 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
       new StringProperty("throwEventId", EMPTY_STRING);
   private final LongProperty throwEventInstanceKeyProperty =
       new LongProperty("throwEventInstanceKey", -1);
+  private final StringProperty compensationActivityElementIdProperty =
+      new StringProperty("compensationActivityElementId", EMPTY_STRING);
   private final DocumentProperty variablesProperty = new DocumentProperty("variables");
 
   public CompensationSubscriptionRecord() {
@@ -49,6 +51,7 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(compensableActivityScopeIdProperty)
         .declareProperty(throwEventIdProperty)
         .declareProperty(throwEventInstanceKeyProperty)
+        .declareProperty(compensationActivityElementIdProperty)
         .declareProperty(variablesProperty);
   }
 
@@ -60,6 +63,7 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
     compensableActivityScopeIdProperty.setValue(record.getCompensableActivityScopeId());
     throwEventIdProperty.setValue(record.getThrowEventId());
     throwEventInstanceKeyProperty.setValue(record.getThrowEventInstanceKey());
+    compensationActivityElementIdProperty.setValue(record.getCompensationActivityElementId());
     variablesProperty.setValue(record.getVariablesBuffer());
   }
 
@@ -114,12 +118,23 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
   }
 
   @Override
+  public String getCompensationActivityElementId() {
+    return BufferUtil.bufferAsString(compensationActivityElementIdProperty.getValue());
+  }
+
+  @Override
   public Map<String, Object> getVariables() {
     return MsgPackConverter.convertToMap(variablesProperty.getValue());
   }
 
   public CompensationSubscriptionRecord setVariables(final DirectBuffer variables) {
     variablesProperty.setValue(variables);
+    return this;
+  }
+
+  public CompensationSubscriptionRecord setCompensationActivityElementId(
+      final String compensationActivityElementId) {
+    compensationActivityElementIdProperty.setValue(compensationActivityElementId);
     return this;
   }
 
