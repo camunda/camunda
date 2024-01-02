@@ -70,7 +70,7 @@ jobs:
 
       # SET UP MAVEN XML
       - name: Create settings.xml
-        uses: s4u/maven-settings-action@v2.8.0
+        uses: s4u/maven-settings-action@7802f6aec16c9098b4798ad1f1d8ac75198194bd # v3.0.0
         with:
           githubServer: false
           servers: |
