@@ -44,12 +44,12 @@ public final class PersistedForm extends UnpackedObject implements DbValue {
 
   public PersistedForm copy() {
     final var copy = new PersistedForm();
-    copy.formIdProp.setValue(getFormId());
+    copy.formIdProp.setValue(BufferUtil.cloneBuffer(getFormId()));
     copy.versionProp.setValue(getVersion());
     copy.formKeyProp.setValue(getFormKey());
-    copy.resourceNameProp.setValue(getResourceName());
-    copy.resourceProp.setValue(getResource());
-    copy.checksumProp.setValue(getChecksum());
+    copy.resourceNameProp.setValue(BufferUtil.cloneBuffer(getResourceName()));
+    copy.resourceProp.setValue(BufferUtil.cloneBuffer(getResource()));
+    copy.checksumProp.setValue(BufferUtil.cloneBuffer(getChecksum()));
     copy.tenantIdProp.setValue(getTenantId());
     return copy;
   }
