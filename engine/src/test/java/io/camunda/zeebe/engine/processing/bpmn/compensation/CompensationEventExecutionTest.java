@@ -532,6 +532,172 @@ public class CompensationEventExecutionTest {
                 PROCESS_ID));
   }
 
+  @Test
+  public void shouldActivateAndTerminateCompensationHandlerForIntermediateThrowEvent() {
+    // given
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-throw-event.bpmn");
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType(Protocol.USER_TASK_JOB_TYPE).complete();
+
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated())
+        .extracting(
+            r -> r.getValue().getBpmnElementType(),
+            r -> r.getValue().getBpmnEventType(),
+            Record::getIntent,
+            r -> r.getValue().getElementId())
+        .containsSubsequence(
+            tuple(
+                BpmnElementType.USER_TASK,
+                BpmnEventType.UNSPECIFIED,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                "ActivityToCompensate"),
+            tuple(
+                BpmnElementType.USER_TASK,
+                BpmnEventType.UNSPECIFIED,
+                ProcessInstanceIntent.ELEMENT_COMPLETED,
+                "ActivityToCompensate"),
+            tuple(
+                BpmnElementType.INTERMEDIATE_THROW_EVENT,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                "CompensationThrowEvent"),
+            tuple(
+                BpmnElementType.BOUNDARY_EVENT,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_ACTIVATING,
+                "CompensationBoundaryEvent"),
+            tuple(
+                BpmnElementType.BOUNDARY_EVENT,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                "CompensationBoundaryEvent"),
+            tuple(
+                BpmnElementType.BOUNDARY_EVENT,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_COMPLETING,
+                "CompensationBoundaryEvent"),
+            tuple(
+                BpmnElementType.BOUNDARY_EVENT,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_COMPLETED,
+                "CompensationBoundaryEvent"),
+            tuple(
+                BpmnElementType.USER_TASK,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_ACTIVATING,
+                "CompensationHandler"),
+            tuple(
+                BpmnElementType.USER_TASK,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                "CompensationHandler"),
+            tuple(
+                BpmnElementType.INTERMEDIATE_THROW_EVENT,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_TERMINATED,
+                "CompensationThrowEvent"),
+            tuple(
+                BpmnElementType.USER_TASK,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_TERMINATED,
+                "CompensationHandler"));
+  }
+
+  @Test
+  public void shouldActivateAndTerminateCompensationHandlerForEndEvent() {
+    // given
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-end-event.bpmn");
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType(Protocol.USER_TASK_JOB_TYPE).complete();
+
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated())
+        .extracting(
+            r -> r.getValue().getBpmnElementType(),
+            r -> r.getValue().getBpmnEventType(),
+            Record::getIntent,
+            r -> r.getValue().getElementId())
+        .containsSubsequence(
+            tuple(
+                BpmnElementType.USER_TASK,
+                BpmnEventType.UNSPECIFIED,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                "ActivityToCompensate"),
+            tuple(
+                BpmnElementType.USER_TASK,
+                BpmnEventType.UNSPECIFIED,
+                ProcessInstanceIntent.ELEMENT_COMPLETED,
+                "ActivityToCompensate"),
+            tuple(
+                BpmnElementType.END_EVENT,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                "CompensationEndEvent"),
+            tuple(
+                BpmnElementType.BOUNDARY_EVENT,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_ACTIVATING,
+                "CompensationBoundaryEvent"),
+            tuple(
+                BpmnElementType.BOUNDARY_EVENT,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                "CompensationBoundaryEvent"),
+            tuple(
+                BpmnElementType.BOUNDARY_EVENT,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_COMPLETING,
+                "CompensationBoundaryEvent"),
+            tuple(
+                BpmnElementType.BOUNDARY_EVENT,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_COMPLETED,
+                "CompensationBoundaryEvent"),
+            tuple(
+                BpmnElementType.USER_TASK,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_ACTIVATING,
+                "CompensationHandler"),
+            tuple(
+                BpmnElementType.USER_TASK,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                "CompensationHandler"),
+            tuple(
+                BpmnElementType.END_EVENT,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_TERMINATED,
+                "CompensationEndEvent"),
+            tuple(
+                BpmnElementType.USER_TASK,
+                BpmnEventType.COMPENSATION,
+                ProcessInstanceIntent.ELEMENT_TERMINATED,
+                "CompensationHandler"));
+  }
+
   private BpmnModelInstance createModelFromClasspathResource(final String classpath) {
     final var resourceAsStream = getClass().getResourceAsStream(classpath);
     return Bpmn.readModelFromStream(resourceAsStream);
