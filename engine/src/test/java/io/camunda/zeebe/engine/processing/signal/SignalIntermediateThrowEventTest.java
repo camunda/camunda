@@ -10,6 +10,8 @@ package io.camunda.zeebe.engine.processing.signal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -168,5 +170,48 @@ public class SignalIntermediateThrowEventTest {
 
     final var signalRecord = RecordingExporter.signalRecords(SignalIntent.BROADCASTED).getFirst();
     Assertions.assertThat(signalRecord.getValue()).hasSignalName(SIGNAL_NAME_1);
+  }
+
+  @Test
+  public void shouldNotSendResponseWhenPartOfBatch() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS)
+            .startEvent()
+            .intermediateCatchEvent(
+                "start", b -> b.message(m -> m.name("start").zeebeCorrelationKey("=businessKey")))
+            .intermediateThrowEvent("signal", b -> b.signal(SIGNAL_NAME_1))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS)
+            .withVariables(Map.of("businessKey", "42"))
+            .create();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("start")
+                .limit(1)
+                .exists())
+        .isTrue();
+
+    // when
+    ENGINE.message().withName("start").withCorrelationKey("42").publish();
+
+    assertThat(
+            RecordingExporter.signalRecords(SignalIntent.BROADCASTED)
+                .withSignalName(SIGNAL_NAME_1)
+                .limit(1)
+                .exists())
+        .isTrue();
+
+    // then
+    verify(ENGINE.getCommandResponseWriter(), never()).intent(SignalIntent.BROADCASTED);
   }
 }
