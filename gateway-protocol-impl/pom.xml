@@ -24,6 +24,7 @@
     <version.java>8</version.java>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
     <proto.dir>${maven.multiModuleProjectDirectory}/gateway-protocol/src/main/proto</proto.dir>
+    <openapi.dir>${maven.multiModuleProjectDirectory}/gateway-protocol/src/main/openapi</openapi.dir>
   </properties>
 
   <dependencies>
@@ -59,6 +60,38 @@
       <artifactId>protobuf-java</artifactId>
     </dependency>
 
+    <!-- Following are used for generating models from open api spec   -->
+    <dependency>
+      <groupId>jakarta.validation</groupId>
+      <artifactId>jakarta.validation-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.openapitools</groupId>
+      <artifactId>jackson-databind-nullable</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.swagger.core.v3</groupId>
+      <artifactId>swagger-annotations</artifactId>
+    </dependency>
+
+    <!-- Following are test dependencies -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
@@ -93,6 +126,23 @@
         <configuration>
           <protoSourceRoot>${proto.dir}</protoSourceRoot>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <version>7.1.0</version>
+        <executions>
+          <execution>
+            <id>rest</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
+              <modelPackage>io.camunda.zeebe.gateway.protocol.rest</modelPackage>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
