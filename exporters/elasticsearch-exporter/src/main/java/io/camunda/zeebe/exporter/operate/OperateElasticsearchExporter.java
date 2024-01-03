@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter.operate;
 
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.SoftHashMap;
+import io.camunda.zeebe.exporter.ElasticsearchMetrics;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -43,6 +44,7 @@ import io.camunda.zeebe.exporter.operate.schema.templates.PostImporterQueueTempl
 import io.camunda.zeebe.exporter.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.zeebe.exporter.operate.schema.templates.VariableTemplate;
 import io.camunda.zeebe.protocol.record.Record;
+import io.prometheus.client.Histogram;
 import java.io.IOException;
 import java.time.Duration;
 import org.apache.http.HttpHost;
@@ -73,6 +75,7 @@ public class OperateElasticsearchExporter implements Exporter {
   private long lastExportedPosition = -1;
   private OperateElasticsearchManager schemaManager;
   private ExportBatchWriter writer;
+  private ElasticsearchMetrics metrics;
 
   @Override
   public void configure(Context context) throws Exception {
@@ -109,6 +112,11 @@ public class OperateElasticsearchExporter implements Exporter {
    */
   @Override
   public void export(Record<?> record) {
+    if (metrics == null) {
+      // we only know the partition id here
+      metrics = new ElasticsearchMetrics(record.getPartitionId());
+    }
+
     writer.addRecord(record);
 
     this.lastExportedPosition = record.getPosition();
@@ -158,10 +166,15 @@ public class OperateElasticsearchExporter implements Exporter {
    */
   public void flush() throws PersistenceException {
 
-    NoSpringElasticsearchBatchRequest request = new NoSpringElasticsearchBatchRequest(esClient);
-    writer.flush(request);
-    request.execute();
-    // TODO: handle the elasticsearch response here; handle OperatePersistenceException
+    try (final Histogram.Timer ignored = metrics.measureFlushDuration()) {
+      final NoSpringElasticsearchBatchRequest request =
+          new NoSpringElasticsearchBatchRequest(esClient);
+      writer.flush(request);
+
+      metrics.recordBulkMemorySize(request.sizeInBytes());
+      request.execute();
+      // TODO: handle the elasticsearch response here; handle OperatePersistenceException
+    }
   }
 
   @Override

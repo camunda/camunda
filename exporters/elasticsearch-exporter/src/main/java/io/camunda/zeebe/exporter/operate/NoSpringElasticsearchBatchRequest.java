@@ -237,4 +237,8 @@ public class NoSpringElasticsearchBatchRequest implements BatchRequest {
         true,
         ElasticsearchProperties.BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT);
   }
+
+  public int sizeInBytes() {
+    return (int) bulkRequest.estimatedSizeInBytes();
+  }
 }
