@@ -463,12 +463,14 @@ public class TestContainerUtil {
               .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true");
       if (testContext.getZeebeDataFolder() != null) {
         broker.withCreateContainerCmdModifier(
-            cmd ->
-                cmd.getHostConfig()
-                    .withBinds(
-                        Bind.parse(
-                            testContext.getZeebeDataFolder().getPath()
-                                + ":/usr/local/zeebe/data:rw")));
+            cmd -> {
+              final String zeebeDataFolderPath = testContext.getZeebeDataFolder().getPath();
+              final String bindVolume = zeebeDataFolderPath + ":/usr/local/zeebe/data";
+              cmd.withUser("1001:0")
+                  .getHostConfig()
+                  .withBinds(Bind.parse(bindVolume))
+                  .withPrivileged(true);
+            });
       }
       broker.setWaitStrategy(
           new HostPortWaitStrategy().withStartupTimeout(Duration.ofSeconds(240L)));
