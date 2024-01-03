@@ -1,0 +1,87 @@
+openapi: "3.0.2"
+info:
+  title: Zeebe REST API
+  version: "1.0"
+  description: API for communicating with the Zeebe cluster.
+
+servers:
+  - url: "{schema}://{host}:{port}/api/v1"
+    variables:
+      host:
+        default: localhost
+        description: The hostname of a Zeebe Gateway
+      port:
+        default: "9600"
+        description: Zeebe REST API server port
+      schema:
+        default: http
+        description: Zeebe REST API server schema
+
+paths:
+
+  /userTasks/{userTaskKey}/complete:
+    post:
+      summary: Complete a user task.
+      description: Complete a user task with userTaskKey and optional variables.
+      parameters:
+        - $ref: '#/components/parameters/userTaskKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VariablesRequest"
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContentResponse'
+        '404':
+          $ref: '#/components/responses/NoUserTaskFoundError'
+
+components:
+
+  parameters:
+
+    userTaskKey:
+      name: userTaskKey
+      required: true
+      in: path
+      description: The key of a user task.
+      schema:
+        $ref: '#/components/schemas/UserTaskKey'
+
+  responses:
+
+    NoContentResponse:
+      description: Request to complete a user task is accepted.
+
+    NoUserTaskFoundError:
+      description: Failed to accept request. No user task was found.
+      content:
+        application.json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+
+    UserTaskKey:
+      title: UserTaskKey
+      description: The key of a user task.
+      type: integer
+      format: int64
+      example: 0
+
+    Error:
+      title: Error response
+      description: Generic response for all errors
+      type: object
+      properties:
+        message:
+          description: Error message
+          type: string
+          example: something failed
+
+    VariablesRequest:
+      title: VariablesRequest
+      description: Request body for providing a set of variables in a key-value format.
+      type: object
+      additionalProperties: true
