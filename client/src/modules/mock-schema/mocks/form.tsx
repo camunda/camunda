@@ -144,4 +144,24 @@ const nestedForm: Form = {
   }),
 };
 
-export {form, invalidForm, dynamicForm, nestedForm};
+const noInputForm: Form = {
+  id: 'camunda-forms:bpmn:form-0',
+  processDefinitionKey: 'process',
+  title: 'A form',
+  version: null,
+  schema: JSON.stringify({
+    components: [
+      {
+        text: 'foo',
+        type: 'text',
+        id: 'Field_16zrrtg',
+        layout: {
+          row: 'Row_0m33bd6',
+        },
+      },
+    ],
+    type: 'default',
+  }),
+};
+
+export {form, invalidForm, dynamicForm, nestedForm, noInputForm};

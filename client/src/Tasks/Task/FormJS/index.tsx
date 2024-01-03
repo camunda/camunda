@@ -101,11 +101,13 @@ const FormJS: React.FC<Props> = ({
     },
   );
   const variables = useMemo(() => variablesData ?? [], [variablesData]);
+  const hasFetchedVariables =
+    extractedVariables.length === 0 || status === 'success';
   const canCompleteTask =
     user.userId === assignee &&
     taskState === 'CREATED' &&
     hasPermission &&
-    status === 'success';
+    hasFetchedVariables;
   const {removeFormReference} = useRemoveFormReference(task);
 
   return (

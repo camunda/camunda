@@ -410,4 +410,40 @@ describe('<FormJS />', () => {
       ),
     ).toBeInTheDocument();
   });
+
+  it('should enable completion buttton when form has no inputs', async () => {
+    nodeMockServer.use(
+      rest.get('/v1/forms/:formId', (_, res, ctx) => {
+        return res.once(ctx.json(formMocks.noInputForm));
+      }),
+      rest.post('/v1/tasks/:taskId/variables/search', async (_, res, ctx) => {
+        return res.once(ctx.json([]));
+      }),
+    );
+
+    render(
+      <FormJS
+        id={MOCK_FORM_ID}
+        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
+        task={assignedTaskWithForm(MOCK_TASK_ID)}
+        user={userMocks.currentUser}
+        onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    expect(await screen.findByText('foo')).toBeInTheDocument();
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', {
+          name: /complete task/i,
+        }),
+      ).toBeEnabled(),
+    );
+  });
 });
