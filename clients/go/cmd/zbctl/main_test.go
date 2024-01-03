@@ -308,13 +308,11 @@ func (s *integrationTestSuite) TestCommonCommands() {
 					t.Fatalf("failed while executing set up command '%s' (%v). Output: \n%s",
 						strings.Join(cmd, " "), err, cmdOut)
 				}
-			}
 
-			setupCmdsCount := len(test.setupCmds)
-			if setupCmdsCount > 0 {
-				// mitigates race condition between setup commands and test command, wait 1 second
-				// per setup command
-				<-time.After(time.Duration(setupCmdsCount) * time.Second)
+				// to mitigate race conditions between setup commands,
+				// and between setup command and the test command,
+				// wait 1 second after each setup command
+				<-time.After(time.Duration(1) * time.Second)
 			}
 
 			cmdOut, err := s.runCommand(test.cmd, test.useHostAndPort, test.envVars...)
