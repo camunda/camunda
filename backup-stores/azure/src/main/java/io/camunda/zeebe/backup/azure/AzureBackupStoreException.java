@@ -14,6 +14,10 @@ public abstract class AzureBackupStoreException extends RuntimeException {
     super(message);
   }
 
+  protected AzureBackupStoreException(final String message, final Throwable cause) {
+    super(message, cause);
+  }
+
   public static class UnexpectedManifestState extends AzureBackupStoreException {
     public UnexpectedManifestState(final StatusCode expected, final StatusCode actual) {
       super("Expected manifest in state '%s', but was in '%s'".formatted(expected, actual));
@@ -21,6 +25,22 @@ public abstract class AzureBackupStoreException extends RuntimeException {
 
     public UnexpectedManifestState(final String message) {
       super(message);
+    }
+
+    public UnexpectedManifestState(final String message, final Throwable cause) {
+      super(message, cause);
+    }
+  }
+
+  public static final class ContainerNotFound extends AzureBackupStoreException {
+    public ContainerNotFound(final String message) {
+      super(message);
+    }
+  }
+
+  public static final class BlobAlreadyExists extends AzureBackupStoreException {
+    public BlobAlreadyExists(final String message, final Throwable cause) {
+      super(message, cause);
     }
   }
 }

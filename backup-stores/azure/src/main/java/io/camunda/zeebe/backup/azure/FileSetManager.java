@@ -14,9 +14,7 @@ import com.azure.storage.blob.models.BlobErrorCode;
 import com.azure.storage.blob.models.BlobStorageException;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.NamedFileSet;
-import io.camunda.zeebe.backup.azure.AzureBackupStoreException.UnexpectedManifestState;
-import java.io.FileNotFoundException;
-import java.nio.file.NoSuchFileException;
+import io.camunda.zeebe.backup.azure.AzureBackupStoreException.BlobAlreadyExists;
 
 final class FileSetManager {
   // The path format is constructed by partitionId/checkpointId/nodeId/nameOfFile
@@ -28,8 +26,7 @@ final class FileSetManager {
     this.containerClient = containerClient;
   }
 
-  void save(final BackupIdentifier id, final String fileSetName, final NamedFileSet fileSet)
-      throws NoSuchFileException {
+  void save(final BackupIdentifier id, final String fileSetName, final NamedFileSet fileSet) {
     if (!containerCreated) {
       containerClient.createIfNotExists();
       containerCreated = true;
@@ -46,14 +43,7 @@ final class FileSetManager {
         blobClient.upload(binaryData, false);
       } catch (final BlobStorageException e) {
         if (e.getErrorCode() == BlobErrorCode.BLOB_ALREADY_EXISTS) {
-          throw new UnexpectedManifestState(e.getMessage());
-        }
-        throw e;
-      } catch (final Exception e) {
-        // When file does not exist fromFile() throws a UncheckedIOException
-        // with cause java.io.FileNotFoundException
-        if (e.getCause() != null && e.getCause().getClass().equals(FileNotFoundException.class)) {
-          throw new NoSuchFileException(String.format("File %s does not exist.", filePath));
+          throw new BlobAlreadyExists("File already exists.", e.getCause());
         }
         throw e;
       }

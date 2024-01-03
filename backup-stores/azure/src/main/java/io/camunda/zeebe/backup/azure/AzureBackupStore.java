@@ -19,7 +19,6 @@ import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.azure.manifest.Manifest;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Optional;
@@ -27,6 +26,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * {@link BackupStore} for Azure. Stores all backups in a given bucket.
@@ -37,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 public final class AzureBackupStore implements BackupStore {
   public static final String SNAPSHOT_FILESET_NAME = "snapshot";
   public static final String SEGMENTS_FILESET_NAME = "segments";
+  private static final Logger LOG = LoggerFactory.getLogger(AzureBackupStore.class);
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
@@ -80,11 +82,7 @@ public final class AzureBackupStore implements BackupStore {
             manifestManager.completeManifest(persistedManifest);
           } catch (final Exception e) {
             manifestManager.markAsFailed(persistedManifest.manifest(), e.getMessage());
-            try {
-              throw e;
-            } catch (final NoSuchFileException ex) {
-              throw new RuntimeException(ex);
-            }
+            throw e;
           }
         },
         executor);
@@ -132,9 +130,11 @@ public final class AzureBackupStore implements BackupStore {
             executor.shutdown();
             final var closed = executor.awaitTermination(1, TimeUnit.MINUTES);
             if (!closed) {
+              LOG.warn("Failed to orderly shutdown Azure Store Executor within one minute.");
               executor.shutdownNow();
             }
           } catch (final Exception e) {
+            LOG.error("Failed to shutdown of Azure Store Executor.");
             throw new RuntimeException(e);
           }
         });

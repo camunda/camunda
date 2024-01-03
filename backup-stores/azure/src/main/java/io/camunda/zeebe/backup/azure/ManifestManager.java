@@ -27,6 +27,7 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
+import io.camunda.zeebe.backup.azure.AzureBackupStoreException.ContainerNotFound;
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.azure.manifest.Manifest;
 import io.camunda.zeebe.backup.azure.manifest.Manifest.InProgressManifest;
@@ -75,7 +76,7 @@ public final class ManifestManager {
     } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);
     }
-    final BlobClient blobClient = blobContainerClient.getBlobClient(manifestPath((manifest)));
+    final BlobClient blobClient = blobContainerClient.getBlobClient(manifestPath(manifest));
 
     try {
       final BlobRequestConditions blobRequestConditions = new BlobRequestConditions();
@@ -90,7 +91,7 @@ public final class ManifestManager {
       return new PersistedManifest(blockBlobItemResponse.getValue().getETag(), manifest);
     } catch (final BlobStorageException e) {
       if (e.getErrorCode() == BlobErrorCode.BLOB_ALREADY_EXISTS) {
-        throw new UnexpectedManifestState(e.getMessage());
+        throw new UnexpectedManifestState("Manifest already exists.", e.getCause());
       }
       throw new RuntimeException(e);
     }
@@ -156,13 +157,20 @@ public final class ManifestManager {
   }
 
   Manifest getManifest(final BackupIdentifier id) {
-    assureContainerCreated();
-    final BlobClient blobClient =
-        blobContainerClient.getBlobClient(
-            MANIFEST_PATH_FORMAT.formatted(id.partitionId(), id.checkpointId(), id.nodeId()));
-    if (!blobClient.exists()) {
-      return null;
+    final BlobClient blobClient;
+    try {
+      blobClient =
+          blobContainerClient.getBlobClient(
+              MANIFEST_PATH_FORMAT.formatted(id.partitionId(), id.checkpointId(), id.nodeId()));
+    } catch (final BlobStorageException e) {
+      if (e.getErrorCode() == BlobErrorCode.CONTAINER_NOT_FOUND) {
+        throw new ContainerNotFound(e.getMessage());
+      } else if (e.getErrorCode() == BlobErrorCode.BLOB_NOT_FOUND) {
+        return null;
+      }
+      throw new RuntimeException(e);
     }
+
     final BinaryData binaryData = blobClient.downloadContent();
 
     try {

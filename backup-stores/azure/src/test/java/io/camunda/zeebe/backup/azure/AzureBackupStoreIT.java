@@ -15,6 +15,7 @@ import io.camunda.zeebe.backup.azure.AzureBackupStoreException.UnexpectedManifes
 import io.camunda.zeebe.backup.azure.util.AzuriteContainer;
 import io.camunda.zeebe.backup.testkit.SavingBackup;
 import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
+import java.io.FileNotFoundException;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,6 +50,11 @@ public class AzureBackupStoreIT implements SavingBackup {
   @Override
   public Class<? extends Exception> getBackupInInvalidStateExceptionClass() {
     return UnexpectedManifestState.class;
+  }
+
+  @Override
+  public Class<? extends Exception> getFileNotFoundExceptionClass() {
+    return FileNotFoundException.class;
   }
 
   @ParameterizedTest
