@@ -108,7 +108,7 @@ jobs:
         uses: ./.github/actions/build-zeebe
         with:
           maven-extra-args: -T1C
-      - uses: s4u/maven-settings-action@v2.8.0
+      - uses: s4u/maven-settings-action@v3.0.0
         with:
           servers: |
             [{
