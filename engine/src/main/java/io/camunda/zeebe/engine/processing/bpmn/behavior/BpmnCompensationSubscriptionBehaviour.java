@@ -126,16 +126,15 @@ public class BpmnCompensationSubscriptionBehaviour {
     if (BpmnEventType.COMPENSATION.equals(context.getBpmnEventType())) {
       final var tenantId = context.getTenantId();
       final var processInstanceKey = context.getProcessInstanceKey();
-      final var compensationOpt =
-          compensationSubscriptionState.findCompensationByCompensationHandlerId(
-              tenantId, processInstanceKey, BufferUtil.bufferAsString(element.getId()));
-      if (compensationOpt.isPresent()) {
-        final var compensation = compensationOpt.get();
-        stateWriter.appendFollowUpEvent(
-            compensation.getKey(),
-            CompensationSubscriptionIntent.DELETED,
-            compensation.getRecord());
-      }
+      compensationSubscriptionState
+          .findSubscriptionByCompensationHandlerId(
+              tenantId, processInstanceKey, BufferUtil.bufferAsString(element.getId()))
+          .ifPresent(
+              compensation ->
+                  stateWriter.appendFollowUpEvent(
+                      compensation.getKey(),
+                      CompensationSubscriptionIntent.DELETED,
+                      compensation.getRecord()));
     }
   }
 

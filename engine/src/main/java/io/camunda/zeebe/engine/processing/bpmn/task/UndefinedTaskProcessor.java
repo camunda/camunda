@@ -58,6 +58,7 @@ public class UndefinedTaskProcessor implements BpmnElementProcessor<ExecutableAc
   public void onTerminate(final ExecutableActivity element, final BpmnElementContext context) {
     final var terminated =
         stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
+    compensationSubscriptionBehaviour.terminateCompensationHandler(context, element);
     incidentBehavior.resolveIncidents(context);
     stateTransitionBehavior.onElementTerminated(element, terminated);
   }

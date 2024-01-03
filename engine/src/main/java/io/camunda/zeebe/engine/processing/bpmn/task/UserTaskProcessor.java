@@ -104,6 +104,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
     userTaskBehavior.cancelUserTask(context);
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     incidentBehavior.resolveIncidents(context);
+    compensationSubscriptionBehaviour.terminateCompensationHandler(context, element);
 
     eventSubscriptionBehavior
         .findEventTrigger(context)

@@ -10,7 +10,9 @@ package io.camunda.zeebe.engine.processing.bpmn.compensation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.camunda.zeebe.engine.state.immutable.CompensationSubscriptionState;
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
@@ -24,6 +26,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,6 +39,16 @@ public class CompensationEventExecutionTest {
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+
+  @Rule public final ProcessingStateRule processingState = new ProcessingStateRule();
+
+  private CompensationSubscriptionState compensationSubscriptionState;
+
+  @Before
+  public void setUp() {
+    compensationSubscriptionState =
+        processingState.getProcessingState().getCompensationSubscriptionState();
+  }
 
   @Test
   public void shouldExecuteAProcessWithCompensationIntermediateEvent() {
@@ -270,6 +283,12 @@ public class CompensationEventExecutionTest {
                 BpmnEventType.UNSPECIFIED,
                 ProcessInstanceIntent.ELEMENT_COMPLETED,
                 PROCESS_ID));
+
+    // verify compensation subscription are removed from the state
+    final var compensations =
+        compensationSubscriptionState.findSubscriptionsByProcessInstanceKey(
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER, processInstanceKey);
+    assertThat(compensations).isEmpty();
   }
 
   @Test
@@ -364,6 +383,12 @@ public class CompensationEventExecutionTest {
                 BpmnEventType.UNSPECIFIED,
                 ProcessInstanceIntent.ELEMENT_COMPLETED,
                 PROCESS_ID));
+
+    // verify compensation subscription are removed from the state
+    final var compensations =
+        compensationSubscriptionState.findSubscriptionsByProcessInstanceKey(
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER, processInstanceKey);
+    assertThat(compensations).isEmpty();
   }
 
   @Test
@@ -447,6 +472,12 @@ public class CompensationEventExecutionTest {
                 BpmnEventType.UNSPECIFIED,
                 ProcessInstanceIntent.ELEMENT_COMPLETED,
                 PROCESS_ID));
+
+    // verify compensation subscription are removed from the state
+    final var compensations =
+        compensationSubscriptionState.findSubscriptionsByProcessInstanceKey(
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER, processInstanceKey);
+    assertThat(compensations).isEmpty();
   }
 
   @Test
@@ -530,6 +561,12 @@ public class CompensationEventExecutionTest {
                 BpmnEventType.UNSPECIFIED,
                 ProcessInstanceIntent.ELEMENT_COMPLETED,
                 PROCESS_ID));
+
+    // verify compensation subscription are removed from the state
+    final var compensations =
+        compensationSubscriptionState.findSubscriptionsByProcessInstanceKey(
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER, processInstanceKey);
+    assertThat(compensations).isEmpty();
   }
 
   @Test
@@ -559,50 +596,10 @@ public class CompensationEventExecutionTest {
             r -> r.getValue().getElementId())
         .containsSubsequence(
             tuple(
-                BpmnElementType.USER_TASK,
-                BpmnEventType.UNSPECIFIED,
-                ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                "ActivityToCompensate"),
-            tuple(
-                BpmnElementType.USER_TASK,
-                BpmnEventType.UNSPECIFIED,
-                ProcessInstanceIntent.ELEMENT_COMPLETED,
-                "ActivityToCompensate"),
-            tuple(
                 BpmnElementType.INTERMEDIATE_THROW_EVENT,
                 BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED,
                 "CompensationThrowEvent"),
-            tuple(
-                BpmnElementType.BOUNDARY_EVENT,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATING,
-                "CompensationBoundaryEvent"),
-            tuple(
-                BpmnElementType.BOUNDARY_EVENT,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                "CompensationBoundaryEvent"),
-            tuple(
-                BpmnElementType.BOUNDARY_EVENT,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_COMPLETING,
-                "CompensationBoundaryEvent"),
-            tuple(
-                BpmnElementType.BOUNDARY_EVENT,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_COMPLETED,
-                "CompensationBoundaryEvent"),
-            tuple(
-                BpmnElementType.USER_TASK,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATING,
-                "CompensationHandler"),
-            tuple(
-                BpmnElementType.USER_TASK,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                "CompensationHandler"),
             tuple(
                 BpmnElementType.INTERMEDIATE_THROW_EVENT,
                 BpmnEventType.COMPENSATION,
@@ -612,7 +609,18 @@ public class CompensationEventExecutionTest {
                 BpmnElementType.USER_TASK,
                 BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_TERMINATED,
-                "CompensationHandler"));
+                "CompensationHandler"),
+            tuple(
+                BpmnElementType.PROCESS,
+                BpmnEventType.UNSPECIFIED,
+                ProcessInstanceIntent.ELEMENT_TERMINATED,
+                PROCESS_ID));
+
+    // verify compensation subscription are removed from the state
+    final var compensations =
+        compensationSubscriptionState.findSubscriptionsByProcessInstanceKey(
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER, processInstanceKey);
+    assertThat(compensations).isEmpty();
   }
 
   @Test
@@ -642,50 +650,10 @@ public class CompensationEventExecutionTest {
             r -> r.getValue().getElementId())
         .containsSubsequence(
             tuple(
-                BpmnElementType.USER_TASK,
-                BpmnEventType.UNSPECIFIED,
-                ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                "ActivityToCompensate"),
-            tuple(
-                BpmnElementType.USER_TASK,
-                BpmnEventType.UNSPECIFIED,
-                ProcessInstanceIntent.ELEMENT_COMPLETED,
-                "ActivityToCompensate"),
-            tuple(
                 BpmnElementType.END_EVENT,
                 BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED,
                 "CompensationEndEvent"),
-            tuple(
-                BpmnElementType.BOUNDARY_EVENT,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATING,
-                "CompensationBoundaryEvent"),
-            tuple(
-                BpmnElementType.BOUNDARY_EVENT,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                "CompensationBoundaryEvent"),
-            tuple(
-                BpmnElementType.BOUNDARY_EVENT,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_COMPLETING,
-                "CompensationBoundaryEvent"),
-            tuple(
-                BpmnElementType.BOUNDARY_EVENT,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_COMPLETED,
-                "CompensationBoundaryEvent"),
-            tuple(
-                BpmnElementType.USER_TASK,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATING,
-                "CompensationHandler"),
-            tuple(
-                BpmnElementType.USER_TASK,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                "CompensationHandler"),
             tuple(
                 BpmnElementType.END_EVENT,
                 BpmnEventType.COMPENSATION,
@@ -695,7 +663,18 @@ public class CompensationEventExecutionTest {
                 BpmnElementType.USER_TASK,
                 BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_TERMINATED,
-                "CompensationHandler"));
+                "CompensationHandler"),
+            tuple(
+                BpmnElementType.PROCESS,
+                BpmnEventType.UNSPECIFIED,
+                ProcessInstanceIntent.ELEMENT_TERMINATED,
+                PROCESS_ID));
+
+    // verify compensation subscription are removed from the state
+    final var compensations =
+        compensationSubscriptionState.findSubscriptionsByProcessInstanceKey(
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER, processInstanceKey);
+    assertThat(compensations).isEmpty();
   }
 
   private BpmnModelInstance createModelFromClasspathResource(final String classpath) {
