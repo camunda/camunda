@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.qa.util;
 
+import com.github.dockerjava.api.model.Bind;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.util.RetryOperation;
 import io.camunda.tasklist.util.TasklistPropertiesUtil;
@@ -461,8 +462,13 @@ public class TestContainerUtil {
               .withNetwork(testContext.getNetwork())
               .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true");
       if (testContext.getZeebeDataFolder() != null) {
-        broker.withFileSystemBind(
-            testContext.getZeebeDataFolder().getPath(), "/usr/local/zeebe/data");
+        broker.withCreateContainerCmdModifier(
+            cmd ->
+                cmd.getHostConfig()
+                    .withBinds(
+                        Bind.parse(
+                            testContext.getZeebeDataFolder().getPath()
+                                + ":/usr/local/zeebe/data:rw")));
       }
       broker.setWaitStrategy(
           new HostPortWaitStrategy().withStartupTimeout(Duration.ofSeconds(240L)));
