@@ -38,9 +38,7 @@ paths:
           $ref: '#/components/responses/NoUserTaskFoundError'
 
 components:
-
   parameters:
-
     userTaskKey:
       name: userTaskKey
       required: true
@@ -50,10 +48,8 @@ components:
         $ref: '#/components/schemas/UserTaskKey'
 
   responses:
-
     NoContentResponse:
       description: Request to complete a user task is accepted.
-
     NoUserTaskFoundError:
       description: Failed to accept request. No user task was found.
       content:
@@ -62,14 +58,12 @@ components:
             $ref: "#/components/schemas/Error"
 
   schemas:
-
     UserTaskKey:
       title: UserTaskKey
       description: The key of a user task.
       type: integer
       format: int64
       example: 0
-
     Error:
       title: Error response
       description: Generic response for all errors
@@ -79,7 +73,6 @@ components:
           description: Error message
           type: string
           example: something failed
-
     VariablesRequest:
       title: VariablesRequest
       description: Request body for providing a set of variables in a key-value format.
