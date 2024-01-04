@@ -69,6 +69,8 @@ public class ZeebeConstants {
   public static final String ELEMENT_TASK_DEFINITION = "taskDefinition";
   public static final String ELEMENT_TASK_HEADERS = "taskHeaders";
 
+  public static final String ELEMENT_EXECUTION_LISTENERS = "executionListeners";
+
   public static final String ELEMENT_FORM_DEFINITION = "formDefinition";
   public static final String ELEMENT_USER_TASK_FORM = "userTaskForm";
 
