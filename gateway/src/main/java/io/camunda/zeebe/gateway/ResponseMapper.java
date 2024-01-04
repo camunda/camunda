@@ -55,7 +55,9 @@ import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionReco
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import org.agrona.DirectBuffer;
 
 public final class ResponseMapper {
@@ -276,22 +278,30 @@ public final class ResponseMapper {
     return SetVariablesResponse.newBuilder().setKey(key).build();
   }
 
-  public static ActivateJobsResponse toActivateJobsResponse(
-      final long key, final JobBatchRecord brokerResponse) {
+  public static JobActivationResult toActivateJobsResponse(
+      final long key, final JobBatchRecord brokerResponse, final int maxMessageSize) {
     final ActivateJobsResponse.Builder responseBuilder = ActivateJobsResponse.newBuilder();
 
     final Iterator<LongValue> jobKeys = brokerResponse.jobKeys().iterator();
     final Iterator<JobRecord> jobs = brokerResponse.jobs().iterator();
+
+    int currentResponseSize = 0;
+    final List<ActivatedJob> jobsToDefer = new ArrayList<>();
 
     while (jobKeys.hasNext() && jobs.hasNext()) {
       final LongValue jobKey = jobKeys.next();
       final JobRecord job = jobs.next();
       final ActivatedJob activatedJob = toActivatedJob(jobKey.getValue(), job);
 
-      responseBuilder.addJobs(activatedJob);
+      currentResponseSize += activatedJob.getSerializedSize();
+      if (currentResponseSize <= maxMessageSize) {
+        responseBuilder.addJobs(activatedJob);
+      } else {
+        jobsToDefer.add(activatedJob);
+      }
     }
 
-    return responseBuilder.build();
+    return new JobActivationResult(responseBuilder.build(), jobsToDefer);
   }
 
   public static ActivatedJob toActivatedJob(
@@ -352,6 +362,9 @@ public final class ResponseMapper {
   private static String bufferAsJson(final DirectBuffer customHeaders) {
     return MsgPackConverter.convertToJson(bufferAsArray(customHeaders));
   }
+
+  public record JobActivationResult(
+      ActivateJobsResponse activateJobsResponse, List<ActivatedJob> jobsToDefer) {}
 
   @FunctionalInterface
   public interface BrokerResponseMapper<BrokerResponseDto, GrpcResponseT> {
