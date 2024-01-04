@@ -297,11 +297,13 @@ export class AlertModal extends React.Component {
                       }
                     }}
                     helperText={
-                      report
-                        ? t('alert.form.value', {
-                            value: reportId === report.id ? getReportValue(report) : '...',
-                          })
-                        : t('alert.form.reportInfo')
+                      <span className="reportValue">
+                        {report
+                          ? t('alert.form.value', {
+                              value: reportId === report.id ? getReportValue(report) : '...',
+                            })
+                          : t('alert.form.reportInfo')}
+                      </span>
                     }
                   />
                   <Stack gap={6} orientation="horizontal">
@@ -490,7 +492,8 @@ export class AlertModal extends React.Component {
 }
 
 function getReportValue(report) {
-  const reportType = report?.data?.view?.properties?.[0];
+  const viewType = report?.data?.view.entity;
+  const reportType = viewType === 'variable' ? 'frequency' : report?.data?.view?.properties?.[0];
   return formatters[reportType](getReportResult(report).data);
 }
 

@@ -22,7 +22,7 @@ jobs:
       # that is being administrated by infra.
       - name: Import secrets
         id: secrets
-        uses: hashicorp/vault-action@2fb925f14cae8d86a835e7f5c14065e98fad63d8
+        uses: hashicorp/vault-action@00bce0da9c4b8be526718f7f5f20a88966f31022
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -40,7 +40,7 @@ jobs:
       # Configure the registry where we can push the GH IMAGE
       - name: Configure Google tools
         id: auth
-        uses: camunda-cloud/action-setup-gcloud@63665d4f8a36f9761bfc092087f7585960a1c7fe # v3
+        uses: camunda-cloud/action-setup-gcloud@c71cc322659cc39518d359fcd5c5d8818aa9bca5 # v3
         with:
           account-alias: registry
 
@@ -53,7 +53,7 @@ jobs:
 
       # SET UP MAVEN XML
       - name: 'Create settings.xml'
-        uses: s4u/maven-settings-action@v2.8.0
+        uses: s4u/maven-settings-action@7802f6aec16c9098b4798ad1f1d8ac75198194bd # v3.0.0
         with:
           githubServer: false
           servers: |

@@ -43,6 +43,7 @@ export default function TaskAnalysis() {
 
   const loadFlowNodeNames = useCallback(
     (config) => {
+      setLoading(true);
       mightFail(
         getFlowNodeNames(
           config.processDefinitionKey,
@@ -50,7 +51,8 @@ export default function TaskAnalysis() {
           config.tenantIds[0]
         ),
         (flowNodeNames) => setFlowNodeNames(flowNodeNames),
-        showError
+        showError,
+        () => setLoading(false)
       );
     },
     [mightFail]
@@ -100,7 +102,6 @@ export default function TaskAnalysis() {
   const loadOutlierData = useCallback(
     (config) => {
       setLoading(true);
-      setHeatData({});
       loadFlowNodeNames(config);
       mightFail(
         loadNodesOutliers(config),
@@ -166,8 +167,8 @@ export default function TaskAnalysis() {
 
   const empty = xml && !loading && Object.keys(heatData).length === 0;
   const matchingInstancesCount = Object.values(data).reduce((result, data) => {
-    if (data?.higherOutlier?.count) {
-      result += data.higherOutlier.count;
+    if (data?.totalCount) {
+      result += data.totalCount;
     }
     return result;
   }, 0);

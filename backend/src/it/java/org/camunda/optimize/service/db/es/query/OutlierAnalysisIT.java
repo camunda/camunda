@@ -77,7 +77,7 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
+    Map<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
       PROCESS_DEFINITION_KEY,
       Collections.singletonList("1"),
       Collections.singletonList(null)
@@ -133,7 +133,7 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
+    Map<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
       PROCESS_DEFINITION_KEY,
       Collections.singletonList("1"),
       Collections.singletonList(null)
@@ -166,13 +166,12 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
+    Map<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
       PROCESS_DEFINITION_KEY, Collections.singletonList("1"), Collections.singletonList(null)
     );
 
     // then
-    assertThat(outlierTest)
-      .isEmpty();
+    assertThat(outlierTest).isEmpty();
     // FLOW_NODE_ID_TEST is not part of the result as there are no outliers and start and end event are not
     // computed in the outlier analysis
   }
@@ -195,7 +194,7 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
+    Map<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
       PROCESS_DEFINITION_KEY,
       Collections.singletonList("1"),
       Collections.singletonList(null)
@@ -234,7 +233,7 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
+    Map<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
       PROCESS_DEFINITION_KEY,
       Collections.singletonList("1"),
       Collections.singletonList(null)
@@ -255,7 +254,7 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
+    Map<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
       PROCESS_DEFINITION_KEY,
       Collections.singletonList("1"),
       Collections.singletonList(null)
@@ -287,7 +286,7 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
+    Map<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
       PROCESS_DEFINITION_KEY,
       Collections.singletonList("1"),
       Collections.singletonList(null)
@@ -429,13 +428,12 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
       engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
     outlierDistributionClient.createNormalDistributionAnd3Outliers(processDefinition, VARIABLE_VALUE_NORMAL);
     // this particular value is obtained from precalculation, given the distribution and outlier setup
-    final long activityHigherOutlierBound = SAMPLE_OUTLIERS_HIGHER_OUTLIER_BOUND;
 
     importAllEngineEntitiesFromScratch();
 
     // when
     List<VariableTermDto> variableTermDtosActivity = analysisClient.getVariableTermDtos(
-      activityHigherOutlierBound,
+      SAMPLE_OUTLIERS_HIGHER_OUTLIER_BOUND,
       processDefinition.getKey(),
       Collections.singletonList("1"),
       Collections.singletonList(null),
@@ -549,7 +547,7 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
+    Map<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
       PROCESS_DEFINITION_KEY,
       Collections.singletonList("1"),
       Collections.singletonList(null)
@@ -597,7 +595,7 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
+    Map<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
       PROCESS_DEFINITION_KEY,
       Collections.singletonList("1"),
       Collections.singletonList(null),
@@ -645,7 +643,7 @@ public class OutlierAnalysisIT extends AbstractPlatformIT {
 
     // when
     // Setting a really high minimum deviation
-    HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
+    Map<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
       PROCESS_DEFINITION_KEY,
       Collections.singletonList("1"),
       Collections.singletonList(null),

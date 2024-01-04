@@ -34,6 +34,8 @@ import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 
 import java.time.ZoneId;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -68,7 +70,23 @@ public class AnalysisRestService {
     validateProvidedFilters(parameters.getFilters());
     final OutlierAnalysisServiceParameters<ProcessDefinitionParametersDto> outlierAnalysisParams =
       new OutlierAnalysisServiceParameters<>(parameters, extractTimezone(requestContext), userId);
-    return outlierAnalysisService.getFlowNodeOutlierMap(outlierAnalysisParams);
+    final Map<String, FindingsDto> flowNodeOutlierMap = outlierAnalysisService.getFlowNodeOutlierMap(outlierAnalysisParams);
+    final List<Map.Entry<String, FindingsDto>> sortedFindings = flowNodeOutlierMap
+      .entrySet()
+      .stream()
+      .sorted(
+        Comparator.comparing(
+          entry -> entry.getValue()
+          .getHigherOutlier()
+          .map(FindingsDto.Finding::getCount)
+          .orElse(0L),
+          Comparator.reverseOrder()))
+      .toList();
+    final LinkedHashMap<String, FindingsDto> descendingFindings = new LinkedHashMap<>();
+    for (Map.Entry<String, FindingsDto> finding : sortedFindings) {
+      descendingFindings.put(finding.getKey(), finding.getValue());
+    }
+    return descendingFindings;
   }
 
   @POST

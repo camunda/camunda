@@ -54,6 +54,8 @@ camunda-platform:
         value: "mailhog"
       - name: CAMUNDA_OPTIMIZE_EMAIL_PORT
         value: "1025"
+      - name: CAMUNDA_OPTIMIZE_IMPORT_DATA_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED
+        value: "true"
 
   identity:
     fullnameOverride: identity
@@ -170,7 +172,7 @@ camunda-platform:
   # Feel free to enable persistence and adjust storage on a per-branch level whenever needed.
   elasticsearch:
     # Defines the version of ElasticSearch to use
-    imageTag: 7.16.2
+    imageTag: 8.9.0
     replicas: 1
     # This is needed to disable the creation of poddisruptionbudget resource coming from ES chart (supported in k8s 1.21)
     maxUnavailable: ""

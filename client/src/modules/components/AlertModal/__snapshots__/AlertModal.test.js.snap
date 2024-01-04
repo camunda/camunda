@@ -19,6 +19,7 @@ Object {
   "report": Object {
     "data": Object {
       "view": Object {
+        "entity": "process instance",
         "properties": Array [
           "duration",
         ],

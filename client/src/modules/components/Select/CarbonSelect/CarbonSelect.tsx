@@ -20,6 +20,7 @@ export interface CarbonSelectProps<T extends object | string | number = string>
   onChange?: (value: T) => void;
   labelText?: string | JSX.Element[];
   helperText?: string | JSX.Element[];
+  placeholder?: string;
 }
 
 export default function CarbonSelect<T extends object | string | number>(

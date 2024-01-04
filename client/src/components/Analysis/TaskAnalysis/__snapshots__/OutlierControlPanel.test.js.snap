@@ -27,7 +27,7 @@ exports[`show display a definition selection and an info message 1`] = `
     <li
       className="item"
     >
-      Heatmap displays the incidence of higher outliers based on duration. Calculated by z-score.
+      Heatmap displays the incidence of higher outliers based on duration.
       <Tooltip
         align="bottom"
         className="zScoreTooltip"

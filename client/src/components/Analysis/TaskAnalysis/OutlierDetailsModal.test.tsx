@@ -13,12 +13,6 @@ import VariablesTable from './VariablesTable';
 import OutlierDetailsModal from './OutlierDetailsModal';
 import {SelectedNode, AnalysisProcessDefinitionParameters} from './service';
 
-jest.mock('hooks', () => ({
-  useUser: jest.fn().mockImplementation(() => ({
-    user: null,
-  })),
-}));
-
 const selectedNode = {
   name: 'test',
   higherOutlier: {
