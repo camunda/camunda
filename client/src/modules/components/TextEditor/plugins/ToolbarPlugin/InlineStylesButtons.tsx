@@ -16,13 +16,8 @@ import {
   SELECTION_CHANGE_COMMAND,
   TextFormatType,
 } from 'lexical';
-import {
-  TextBold,
-  TextItalic,
-  TextStrikethrough,
-  TextUnderline,
-  CarbonIconType,
-} from '@carbon/icons-react';
+import {TextBold, TextItalic, TextStrikethrough, TextUnderline} from '@carbon/icons-react';
+import {CarbonIconType} from '@carbon/icons-react/lib/CarbonIcon';
 import {mergeRegister} from '@lexical/utils';
 
 import {t} from 'translation';
