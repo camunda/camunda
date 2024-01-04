@@ -30,7 +30,7 @@ exports[`should render a user task duration selection for user task duration rep
     >
       <FormGroup
         invalid={false}
-        legendText="User Task Duration"
+        legendText="User task duration"
         message={false}
         messageText=""
       >

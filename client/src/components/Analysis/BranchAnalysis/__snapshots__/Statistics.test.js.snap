@@ -11,7 +11,7 @@ exports[`should create two Charts 1`] = `
     >
       3 instances
     </b>
-     that passed the Gateway 
+     that passed the gateway 
     <i
       class="gatewayName"
       key="3"
@@ -72,7 +72,7 @@ exports[`should create two Charts 1`] = `
     </li>
   </ul>
   <p>
-    Distribution of Instances at the Gateway 
+    Distribution of instances at the gateway 
     <i
       class="gatewayName"
       key="1"
@@ -115,7 +115,7 @@ exports[`should show a message if no instances passed the gateway 1`] = `
   <div
     className="placeholder"
   >
-    No Instances in the current filter passed the selected Gateway.
+    No instances in the current filter passed the selected gateway.
   </div>
 </div>
 `;
@@ -127,7 +127,7 @@ exports[`should show a placeholder text initially 1`] = `
   <div
     className="placeholder"
   >
-    Please select a Process Definition, a Gateway and an End Event to perform the Analysis.
+    Please select a process definition, a gateway, and an end event to perform the analysis.
   </div>
 </div>
 `;
@@ -143,7 +143,7 @@ exports[`should show a summary after loading is complete 1`] = `
     >
       3 instances
     </b>
-     that passed the Gateway 
+     that passed the gateway 
     <i
       class="gatewayName"
       key="3"
@@ -204,7 +204,7 @@ exports[`should show a summary after loading is complete 1`] = `
     </li>
   </ul>
   <p>
-    Distribution of Instances at the Gateway 
+    Distribution of instances at the gateway 
     <i
       class="gatewayName"
       key="1"

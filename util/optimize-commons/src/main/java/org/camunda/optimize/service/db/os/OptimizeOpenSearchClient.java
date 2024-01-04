@@ -11,23 +11,30 @@ import org.camunda.optimize.dto.optimize.DataImportSourceType;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.service.db.DatabaseClient;
-import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
+import org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations;
+import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.ClearScrollResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
-import org.elasticsearch.client.core.CountRequest;
-import org.elasticsearch.client.core.CountResponse;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.CountRequest;
+import org.opensearch.client.opensearch.core.CountResponse;
+import org.opensearch.client.opensearch.core.DeleteRequest;
+import org.opensearch.client.opensearch.core.DeleteResponse;
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.IndexResponse;
+import org.opensearch.client.opensearch.core.MgetResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.UpdateRequest;
+import org.opensearch.client.opensearch.core.UpdateResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.SourceConfig;
 import org.opensearch.client.opensearch.core.search.SourceFilter;
@@ -87,18 +94,26 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     this.requestOptionsProvider = new RequestOptionsProvider(List.of(), configurationService);
   }
 
-  public final <T> GetResponse<T> get(final GetRequest getRequest,
-                                      final Class<T> responseClass) throws IOException {
-    return openSearchClient.get(getRequest, responseClass);
+  public final <T> GetResponse<T> get(final GetRequest.Builder requestBuilder,
+                                      final Class<T> responseClass,
+                                      final String errorMessage) {
+    return richOpenSearchClient.doc().get(requestBuilder, responseClass, e -> errorMessage);
   }
 
-  public final <T> SearchResponse<T> search(final SearchRequest searchRequest,
-                                            final Class<T> responseClass) throws IOException {
-    return openSearchClient.search(searchRequest, responseClass);
+  public DeleteResponse delete(final DeleteRequest.Builder requestBuilder, final String errorMessage) {
+    return richOpenSearchClient.doc().delete(requestBuilder, e -> errorMessage);
   }
 
-  public long deleteByQuery(final String index, final Query query) {
-    return richOpenSearchClient.doc().deleteByQuery(index, query);
+  public UpdateResponse update(final UpdateRequest.Builder requestBuilder, final String errorMessage) {
+    return richOpenSearchClient.doc().update(requestBuilder, e -> errorMessage);
+  }
+
+  public long deleteByQuery(final Query query, final String... index) {
+    return richOpenSearchClient.doc().deleteByQuery(query, index);
+  }
+
+  public long updateByQuery(final String index, final Query query, final Script script) {
+    return richOpenSearchClient.doc().updateByQuery(index, query, script);
   }
 
   public final <T> IndexResponse index(final IndexRequest.Builder<T> indexRequest) {
@@ -169,9 +184,22 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   }
 
   @Override
-  public CountResponse count(final CountRequest unfilteredTotalInstanceCountRequest) throws IOException {
+  public org.elasticsearch.client.core.CountResponse count(final org.elasticsearch.client.core.CountRequest unfilteredTotalInstanceCountRequest) throws
+                                                                                                                                                 IOException {
     //todo will be handle in the OPT-7469
     return null;
+  }
+
+  //todo rename it in scope of OPT-7469
+  public CountResponse countOs(final CountRequest.Builder requestBuilder, final String errorMessage) {
+    return richOpenSearchClient.doc().count(requestBuilder, e -> errorMessage);
+  }
+
+  //todo rename it in scope of OPT-7469
+  public <T> OpenSearchDocumentOperations.AggregatedResult<Hit<T>> scrollOs(final SearchRequest.Builder requestBuilder,
+                                                                            Class<T> responseType) throws
+                                                                                                   IOException {
+    return richOpenSearchClient.doc().scrollHits(requestBuilder, responseType);
   }
 
   @Override
@@ -180,11 +208,20 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return null;
   }
 
+  public <T> MgetResponse<T> mget(Class<T> responseType, final String errorMessage, String param, String... indexes) {
+    return richOpenSearchClient.doc().mget(responseType, e -> errorMessage, param, indexes);
+  }
+
   @Override
   public org.elasticsearch.action.search.SearchResponse search(final org.elasticsearch.action.search.SearchRequest searchRequest) throws
                                                                                                                                   IOException {
     //todo will be handle in the OPT-7469
     return null;
+  }
+
+  public <T> SearchResponse<T> search(final SearchRequest.Builder requestBuilder, Class<T> responseType) throws
+                                                                                                         IOException {
+    return richOpenSearchClient.doc().search(requestBuilder, responseType);
   }
 
   @Override
@@ -212,11 +249,10 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       .filter(filter)
       .build();
 
-    SearchRequest searchRequest = new SearchRequest
+    SearchRequest.Builder searchRequest = new SearchRequest
       .Builder()
       .index(indexName)
-      .source(sourceConfig)
-      .build();
+      .source(sourceConfig);
 
     SearchResponse<DefinitionOptimizeResponseDto> searchResponse;
     try {

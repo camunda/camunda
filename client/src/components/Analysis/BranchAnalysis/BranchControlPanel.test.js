@@ -48,8 +48,8 @@ it('should contain a gateway and end Event field', () => {
 it('should show a please select message if an entity is not selected', () => {
   const node = shallow(<BranchControlPanel {...data} onChange={spy} />);
 
-  expect(node.find('SelectionPreview').at(0).dive()).toIncludeText('Select Gateway');
-  expect(node.find('SelectionPreview').at(1).dive()).toIncludeText('Select End Event');
+  expect(node.find('SelectionPreview').at(0).dive()).toIncludeText('Select gateway');
+  expect(node.find('SelectionPreview').at(1).dive()).toIncludeText('Select end event');
 });
 
 it('should show the element name if an element is selected', () => {

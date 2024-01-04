@@ -71,7 +71,7 @@ jobs:
 
       - name: Import secrets
         id: secrets
-        uses: hashicorp/vault-action@2fb925f14cae8d86a835e7f5c14065e98fad63d8
+        uses: hashicorp/vault-action@00bce0da9c4b8be526718f7f5f20a88966f31022
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -147,9 +147,9 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4
         with:
-          name: trivy-test-results
+          name: trivy-test-results-${{ steps.pom-info.outputs.project_version }}
           path: |
             **/${{ steps.pom-info.outputs.project_version }}-amd64-trivy-log.txt
             **/${{ steps.pom-info.outputs.project_version }}-arm64-trivy-log.txt
@@ -167,7 +167,7 @@ jobs:
 
       - name: Import secrets
         id: secrets
-        uses: hashicorp/vault-action@2fb925f14cae8d86a835e7f5c14065e98fad63d8
+        uses: hashicorp/vault-action@00bce0da9c4b8be526718f7f5f20a88966f31022
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle

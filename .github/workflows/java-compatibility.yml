@@ -29,7 +29,7 @@ jobs:
           parameters: test -Dskip.fe.build -Dskip.docker
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4
         with:
           name: unit-tests-backend-${{ matrix.javaVersion}}-junit
           path: |
@@ -102,7 +102,7 @@ jobs:
           parameters: verify -Dit.test.excludedGroups=${{ matrix.excludedGroups }} -Dit.test.includedGroups=${{ matrix.includedGroups }} -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }} -pl backend -am
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4
         with:
           name: integration-test-${{ matrix.javaVersion}}-${{ matrix.includedGroups }}-junit
           path: |
@@ -173,7 +173,7 @@ jobs:
           parameters: verify -Dskip.docker -Dskip.fe.build -f qa/upgrade-tests -Pupgrade-optimize-data
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4
         with:
           name: data-upgrade-test-junit-${{ matrix.javaVersion }}
           path: |

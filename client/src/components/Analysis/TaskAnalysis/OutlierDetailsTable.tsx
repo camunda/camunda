@@ -76,7 +76,7 @@ export default function OutlierDetailsTable({
     <Table
       className="OutlierDetailsTable"
       head={[
-        t('analysis.task.table.taskName').toString(),
+        t('analysis.task.table.flowNodeName').toString(),
         t('analysis.task.totalInstances').toString(),
         t('analysis.task.table.outliers').toString(),
         t('report.variables.default').toString(),

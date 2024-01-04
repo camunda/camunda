@@ -80,7 +80,7 @@ describe('Process table', () => {
     };
     expect(processRawData({report: {reportType: 'process', data, result}})).toEqual({
       body: [['foo'], ['xyz']],
-      head: [{id: 'processInstanceId', label: 'Process Instance Id', title: 'Process Instance Id'}],
+      head: [{id: 'processInstanceId', label: 'Process instance Id', title: 'Process instance Id'}],
     });
   });
 

@@ -92,7 +92,7 @@ public class BpmnModelUtil {
         .flatMap(subProcess -> subProcess.getFlowElements().stream())
         .filter(element -> StartEvent.class.isAssignableFrom(element.getClass()) ||
           EndEvent.class.isAssignableFrom(element.getClass()))
-        .collect(Collectors.toList());
+        .toList();
 
     return modelInstance.getModelElementsByType(eventClass)
       .stream()

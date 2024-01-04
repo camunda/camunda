@@ -1,7 +1,7 @@
 pipelineJob('event-import-performance') {
 
-  displayName 'Optimize Event Based Process Import performance'
-  description 'Test Optimize Event Based Process Import performance.'
+  displayName 'Optimize event-based process import performance'
+  description 'Test Optimize event-based process import performance.'
 
   // By default, this job is disabled in non-prod envs.
   if (ENVIRONMENT != "prod") {

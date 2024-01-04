@@ -173,16 +173,16 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
       .measure(ViewProperty.FREQUENCY)
         .groupByContains(USER_TASK_1)
           .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalizedUnassignedLabel())
         .groupByContains(USER_TASK_2)
           .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 1., getLocalisedUnassignedLabel())
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 1., getLocalizedUnassignedLabel())
         .groupByContains(USER_TASK_A)
           .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalizedUnassignedLabel())
         .groupByContains(USER_TASK_B)
           .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 1., getLocalisedUnassignedLabel())
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 1., getLocalizedUnassignedLabel())
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -215,19 +215,19 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
         .groupByContains(USER_TASK_1)
           .distributedByContains(DEFAULT_USERNAME, 2., DEFAULT_FULLNAME)
           .distributedByContains(SECOND_USER, null, SECOND_USER_FULL_NAME)
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalizedUnassignedLabel())
         .groupByContains(USER_TASK_2)
           .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
           .distributedByContains(SECOND_USER, 1., SECOND_USER_FULL_NAME)
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 1., getLocalisedUnassignedLabel())
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 1., getLocalizedUnassignedLabel())
         .groupByContains(USER_TASK_A)
           .distributedByContains(DEFAULT_USERNAME, 2., DEFAULT_FULLNAME)
           .distributedByContains(SECOND_USER, null, SECOND_USER_FULL_NAME)
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalizedUnassignedLabel())
         .groupByContains(USER_TASK_B)
           .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
           .distributedByContains(SECOND_USER, 1., SECOND_USER_FULL_NAME)
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 1., getLocalisedUnassignedLabel())
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 1., getLocalizedUnassignedLabel())
       .doAssert(actualResult);
     // @formatter:on
   }
@@ -441,10 +441,10 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
       .measure(ViewProperty.FREQUENCY)
         .groupByContains(USER_TASK_1)
           .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalizedUnassignedLabel())
         .groupByContains(USER_TASK_2)
           .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 1., getLocalisedUnassignedLabel())
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 1., getLocalizedUnassignedLabel())
       .doAssert(actualResult2);
     // @formatter:on
   }
@@ -871,7 +871,7 @@ public class UserTaskFrequencyByUserTaskByAssigneeReportEvaluationIT extends Abs
     );
   }
 
-  private String getLocalisedUnassignedLabel() {
+  private String getLocalizedUnassignedLabel() {
     return embeddedOptimizeExtension.getLocalizationService()
       .getDefaultLocaleMessageForMissingAssigneeLabel();
   }

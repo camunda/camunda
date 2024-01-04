@@ -131,7 +131,7 @@ public class UserTaskFrequencyByAssigneeByProcessReportEvaluationIT extends Abst
         ),
         createHyperMapResult(
           DISTRIBUTE_BY_IDENTITY_MISSING_KEY,
-          getLocalisedUnassignedLabel(),
+          getLocalizedUnassignedLabel(),
           new MapResultEntryDto(processIdentifier, 2.0, processDisplayName)
         )
       ));
@@ -301,7 +301,7 @@ public class UserTaskFrequencyByAssigneeByProcessReportEvaluationIT extends Abst
     return reportData;
   }
 
-  private String getLocalisedUnassignedLabel() {
+  private String getLocalizedUnassignedLabel() {
     return embeddedOptimizeExtension.getLocalizationService()
       .getDefaultLocaleMessageForMissingAssigneeLabel();
   }

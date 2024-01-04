@@ -542,6 +542,14 @@ public class ReportClient {
       .execute(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
+  public ReportDefinitionDto<?> getReportById(final String id, final String locale) {
+    final OptimizeRequestExecutor requestExecutor = getRequestExecutor();
+    Optional.ofNullable(locale).ifPresent(loc -> requestExecutor.addSingleHeader(X_OPTIMIZE_CLIENT_LOCALE, locale));
+    return requestExecutor
+      .buildGetReportRequest(id)
+      .execute(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
+  }
+
   public Response getReportByIdAsUserRawResponse(final String id, final String username, final String password) {
     return getRequestExecutor()
       .withUserAuthentication(username, password)

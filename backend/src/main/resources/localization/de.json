@@ -27,8 +27,7 @@
     "termsOfUse": "Nutzungsbedingungen",
     "imprint": "Impressum",
     "academy": "Camunda Academy",
-    "feedback": "Feedback und Support",
-    "slack": "Slack-Community-Kanal"
+    "feedback": "Feedback und Support"
   },
   "login": {
     "label": "Einloggen",
@@ -182,7 +181,6 @@
     "empty": "Es wurde noch nichts erstellt",
     "contactEditor": "Bitte wenden Sie sich an einen Optimize editor, um neue Artikel zu erstellen",
     "contactManager": "Bitte wenden Sie sich an den Sammelmanager, um neue Artikel zu erstellen",
-    "welcome": "Willkommen",
     "emptyState": {
       "title": "Beginnen Sie mit der Erstellung eines Dashboards",
       "description": "Klicken Sie auf Neues Dashboard Erstellen, um Einblicke in Geschäftsprozesse zu erhalten"
@@ -950,7 +948,7 @@
     "apply": "Änderungen übernehmen",
     "create": "Alarm erstellen",
     "notCreated": "Es wurden noch keine Alarme erstellt",
-    "contactManager": "Bitte wenden Sie sich an den manager der Sammlung, um neue Alarme zu erstellen",
+    "contactManager": "Bitte wenden Sie sich an den Manager der Sammlung, um neue Alarme zu erstellen",
     "inactiveStatus": "Alarm inaktiv",
     "activateInfo": "Zum Aktivieren fügen Sie eine E-Mail oder ein Zielsystem hinzu",
     "updated": "\"{name}\" aktualisiert.",
@@ -960,9 +958,9 @@
     "branchAnalysis": "Verlaufsanalyse",
     "task": {
       "label": "Aufgabeanalyse",
-      "totalTaskInstances": "Aufgabeninstanzen insgesamt: {count}",
-      "result": "Ergebnis: {count} Prozessinstanzen erfüllen diese Kriterien",
-      "totalInstances": "Instanzen insgesamt",
+      "totalFlowNodeInstances": "Gesamtanzahl von Prozesskonteninstanzen: {count}",
+      "result": "Anzahl der Prozessknoteninstanzen, die dem Filter entsprechen: {count}",
+      "totalInstances": "Gesamtanzahl der Prozessknoteninstanzen",
       "tooltip": {
         "outlier": {
           "label": "Ausreißer",
@@ -976,27 +974,27 @@
       },
       "notFound": "Keine Ausreißer für den ausgewählten Prozess gefunden",
       "onlyCompletedHint": "Hinweis: Die Aufgabeanalyse wird nur für abgeschlossene Knoten durchgeführt",
-      "info": "Die Heatmap zeigt die Häufigkeit nach oben abweichender Ausreißer basierend auf der Dauer an. Berechnet mit dem Z-Score.",
+      "info": "Die Heatmap zeigt die Häufigkeit nach oben abweichender Ausreißer basierend auf der Dauer an.",
       "tooltipText": {
         "singular": "{count} Instanz hat {percentage}% länger gedauert als der Durchschnitt.",
         "plural": "{count} Instanzen haben {percentage}% länger gedauert als der Durchschnitt."
       },
       "table": {
-        "heading": "Randaufgaben",
-        "taskName": "Aufgabennname",
-        "outliers": "Ausreißer"
+        "heading": "Ausreißer",
+        "flowNodeName": "Prozessknotenname",
+        "outliers": "Prozessknoteninstanzen mit Ausreißern"
       },
       "detailsModal": {
-        "title": "Ergebnisse für Aufgabe \"{name}\"",
-        "durationChart": "Laufzeitverteilungsdiagramm",
-        "variablesTable": "Tabelle der signifikanten Variablenwerte",
+        "title": "Ergebnisse für Prozessknoten \"{name}\"",
+        "durationChart": "Laufzeitverteilungs",
+        "variablesTable": "Signifikanten Variablenwerte",
         "axisLabels": {
           "duration": "Dauer",
           "instanceCount": "Instanzanzahl"
         },
         "table": {
           "emptyTableMessage": "Es wurden keine signifikanten Variablenwerte unter den Ausreißerinstanzen gefunden",
-          "outliersNumber": "Anzahl der Ausreißerinstanzen",
+          "outliersNumber": "Prozessknoteninstanzen mit Ausreißern",
           "ofTotalPercentage": "% aller Instanzen",
           "ofOutliersPercentage": "% der Ausreißerinstanzen"
         }
@@ -1687,9 +1685,9 @@
     }
   },
   "instantDashboard": {
-    "IP_DashboardName": "Instant Preview Dashboard",
-    "IP_KpiDashboardName": "KPI Dashboard",
-    "processDashboard": "Instant Prozess Übersicht",
+    "IP_DashboardName": "Instant preview dashboard",
+    "IP_KpiDashboardName": "KPI dashboard",
+    "processDashboard": "Instant Prozessübersicht",
     "processDashboard-description": "Dieses Dashboard bietet eine Übersicht der Metriken und Anwendungsfälle, die mit Optimize abgedeckt werden können.",
     "processDashboard_text1_line1": "Melde Geschäftskennzahlen",
     "processDashboard_text1_line2": "Aggregiere und gruppiere Prozessausführungsdaten in Tagen, Wochen und Monaten um Metriken und Key Performance Indikatoren (KPI) zu überwachen und zu melden.",

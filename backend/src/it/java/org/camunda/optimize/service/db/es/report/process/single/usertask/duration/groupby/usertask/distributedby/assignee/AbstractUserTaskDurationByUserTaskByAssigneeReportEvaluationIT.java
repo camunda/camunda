@@ -199,16 +199,16 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
       .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
         .groupByContains(USER_TASK_1)
           .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]), DEFAULT_FULLNAME)
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalizedUnassignedLabel())
         .groupByContains(USER_TASK_2)
           .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalizedUnassignedLabel())
         .groupByContains(USER_TASK_A)
           .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(SET_DURATIONS[1]), DEFAULT_FULLNAME)
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalizedUnassignedLabel())
         .groupByContains(USER_TASK_B)
           .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalizedUnassignedLabel())
       .doAssert(result);
     // @formatter:on
   }
@@ -263,19 +263,19 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
             .groupByContains(USER_TASK_1)
               .distributedByContains(DEFAULT_USERNAME, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), DEFAULT_FULLNAME)
               .distributedByContains(SECOND_USER, null, SECOND_USER_FULL_NAME)
-              .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+              .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalizedUnassignedLabel())
             .groupByContains(USER_TASK_2)
               .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
               .distributedByContains(SECOND_USER, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType), SECOND_USER_FULL_NAME)
-              .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
+              .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalizedUnassignedLabel())
             .groupByContains(USER_TASK_A)
               .distributedByContains(DEFAULT_USERNAME, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS).get(aggType), DEFAULT_FULLNAME)
               .distributedByContains(SECOND_USER, null, SECOND_USER_FULL_NAME)
-              .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalisedUnassignedLabel())
+              .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, null, getLocalizedUnassignedLabel())
             .groupByContains(USER_TASK_B)
               .distributedByContains(DEFAULT_USERNAME, null, DEFAULT_FULLNAME)
               .distributedByContains(SECOND_USER, databaseIntegrationTestExtension.calculateExpectedValueGivenDurations(SET_DURATIONS[0]).get(aggType), SECOND_USER_FULL_NAME)
-              .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
+              .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalizedUnassignedLabel())
             .add()
           .add();
         // @formatter:on
@@ -679,7 +679,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
       .measure(ViewProperty.DURATION, AggregationType.AVERAGE, getUserTaskDurationTime())
         .groupByContains(USER_TASK_1)
           .distributedByContains(DEFAULT_USERNAME, calculateExpectedValueGivenDurationsDefaultAggr(setDurations2[0]), DEFAULT_FULLNAME)
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalisedUnassignedLabel())
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, UNASSIGNED_TASK_DURATION, getLocalizedUnassignedLabel())
       .doAssert(result2);
     // @formatter:on
   }
@@ -1311,7 +1311,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
-  protected String getLocalisedUnassignedLabel() {
+  protected String getLocalizedUnassignedLabel() {
     return embeddedOptimizeExtension.getLocalizationService()
       .getDefaultLocaleMessageForMissingAssigneeLabel();
   }

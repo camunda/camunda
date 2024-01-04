@@ -108,7 +108,11 @@ public class ManagementDashboardService {
                 .start(6L, DateUnit.MONTHS)
                 .add()
                 .buildList())
-      .configuration(SingleReportConfigurationDto.builder().stackedBar(true).build())
+      .configuration(SingleReportConfigurationDto.builder()
+                       .stackedBar(true)
+                       .yLabel("pi")
+                       .xLabel("endDate")
+                       .build())
       .managementReport(true)
       .build();
     final String reportId = createReportAndGetId(

@@ -226,8 +226,6 @@ public class VariableAggregationByNoneReportEvaluationIT extends AbstractProcess
       new AggregationDto(MAX),
       new AggregationDto(AVERAGE),
       new AggregationDto(SUM),
-      new AggregationDto(PERCENTILE, 99.),
-      new AggregationDto(PERCENTILE, 95.),
       new AggregationDto(PERCENTILE, 50.),
       new AggregationDto(PERCENTILE, 25.)
     );

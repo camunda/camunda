@@ -163,7 +163,7 @@ public class EventBasedProcessRestService {
 
     if (!wasFoundAndDeleted) {
       final String errorMessage = String.format(
-        "Could not delete event based process with id [%s]. Event based process does not exist." +
+        "Could not delete event-based process with id [%s]. Event-based process does not exist." +
           "Maybe it was already deleted by someone else?",
         eventProcessId
       );

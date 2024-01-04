@@ -149,7 +149,13 @@ export default class Configuration extends Component {
           align="bottom-right"
           floating
         >
-          <Form onSubmit={(e) => e.preventDefault()} className="content">
+          <Form
+            onSubmit={(e) => {
+              // We do this to prevent any of the form inputs or enter key from triggering the form submission
+              e.preventDefault();
+            }}
+            className="content"
+          >
             <Stack gap={4}>
               {!combined && (
                 <ShowInstanceCount

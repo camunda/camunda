@@ -151,11 +151,11 @@ public class BackupRestService {
       errorCode = GENERIC_ERROR_CODE;
     }
 
-    final String localisedMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
+    final String localizedMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
 
     return new ErrorResponseDto(
       errorCode,
-      localisedMessage,
+      localizedMessage,
       e.getMessage()
     );
   }

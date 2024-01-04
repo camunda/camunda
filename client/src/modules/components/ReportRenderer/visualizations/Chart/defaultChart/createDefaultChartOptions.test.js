@@ -135,10 +135,10 @@ it('should create multi-axis chart for multi-measure reports', () => {
 
   expect(Object.keys(chartConfig.scales).length).toBe(3);
 
-  expect(chartConfig.scales['axis-0'].title.text).toBe('Flow Node Count');
+  expect(chartConfig.scales['axis-0'].title.text).toBe('Flow node Count');
   expect(chartConfig.scales['axis-0'].position).toBe('left');
 
-  expect(chartConfig.scales['axis-1'].title.text).toBe('Flow Node Duration');
+  expect(chartConfig.scales['axis-1'].title.text).toBe('Flow node Duration');
   expect(chartConfig.scales['axis-1'].position).toBe('right');
 
   expect(chartConfig.scales['x'].title.text).toBe('Flow Nodes');

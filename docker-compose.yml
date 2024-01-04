@@ -2,7 +2,7 @@ version: '2.4'
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.8.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.9.0}
 #    profiles: ["elasticsearch"] TODO leaving this commented out for now so that elastic search boots by default.
 #   This needs to be commented in with ticket OPT-7311
     container_name: elasticsearch
@@ -29,7 +29,7 @@ services:
       timeout: 5s
       retries: 3
   opensearch:
-    image: opensearchproject/opensearch:2.11.0@sha256:2f49c399988df5c9a3b25a05ec78ea75ac4b39ae76e1d2609f94a653224bb24b
+    image: opensearchproject/opensearch:2.11.1@sha256:68039e76c8c60c0488b8906945b2efd5179bb29a9ae8d71ec64981ab5772b796
     profiles: ["opensearch"]
     container_name: opensearch
     environment:

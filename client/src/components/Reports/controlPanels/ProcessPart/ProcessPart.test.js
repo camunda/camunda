@@ -14,14 +14,14 @@ import ProcessPart from './ProcessPart';
 it('should display a button if no process part is set', () => {
   const node = shallow(<ProcessPart />);
 
-  expect(node.find('Button').filterWhere((n) => n.text() === 'Process Instance Part')).toExist();
+  expect(node.find('Button').filterWhere((n) => n.text() === 'Process instance part')).toExist();
 });
 
 it('should not display the button if process part is set', () => {
   const node = shallow(<ProcessPart processPart={{start: 'a', end: 'b'}} />);
 
   expect(
-    node.find('Button').filterWhere((n) => n.text() === 'Process Instance Part')
+    node.find('Button').filterWhere((n) => n.text() === 'Process instance part')
   ).not.toExist();
 });
 

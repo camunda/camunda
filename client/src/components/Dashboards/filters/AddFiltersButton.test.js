@@ -219,7 +219,7 @@ it('should not show assignee/group options in cloud environment', async () => {
   expect(
     node
       .find(MenuItem)
-      .findWhere((n) => n.prop('label') === 'Assignee' || n.prop('label') === 'Candidate Group')
+      .findWhere((n) => n.prop('label') === 'Assignee' || n.prop('label') === 'Candidate group')
       .length
   ).toBe(0);
 });

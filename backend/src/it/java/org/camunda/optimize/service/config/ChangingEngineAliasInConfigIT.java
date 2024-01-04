@@ -20,16 +20,16 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisu
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
-import org.camunda.optimize.test.engine.OutlierDistributionClient;
 import org.camunda.optimize.service.util.ProcessReportDataBuilderHelper;
+import org.camunda.optimize.test.engine.OutlierDistributionClient;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
@@ -151,7 +151,7 @@ public class ChangingEngineAliasInConfigIT extends AbstractMultiEngineIT {
 
 
     // then the analysis should be fine even if it would include a definition from a non existing engine alias
-    HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
+    Map<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
       PROCESS_KEY_1,
       Collections.singletonList(ALL_VERSIONS),
       DEFAULT_TENANT_IDS

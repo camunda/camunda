@@ -6,12 +6,17 @@
 package org.camunda.optimize.rest;
 
 import jakarta.ws.rs.core.Response;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
@@ -32,7 +37,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -68,6 +72,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
   public static final String TEMPLATE_2_FILENAME = "template2.json";
   public static final String TEMPLATE_3_FILENAME = "template3.json";
   public static final String PROCESS_DEF_KEY = "dummy";
+  private static final Map<String, List<String>> EXPECTED_TILE_STRINGS = createExpectedTileString();
 
   @Test
   public void instantPreviewDashboardCreatedAsExpected() {
@@ -432,7 +437,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
   }
 
   @ParameterizedTest
-  @MethodSource("templateAndExpectedLocalizedNames")
+  @MethodSource("templateAndExpectedLocalizedReportNames")
   public void instantPreviewDashboardAndReportNamesAreLocalized(final String template, final String locale,
                                                                 final String expectedDashboardName,
                                                                 final Set<String> expectedReportNames) {
@@ -461,6 +466,46 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     // then
     assertThat(localizedDashboard.getName()).isEqualTo(expectedDashboardName);
     assertThat(reportNames).containsExactlyInAnyOrderElementsOf(expectedReportNames);
+  }
+
+  @ParameterizedTest
+  @MethodSource("templateAndExpectedLocalizedReports")
+  public void instantPreviewDashboardAndReportsAreLocalized(final String locale,
+                                                            final String expectedDashboardName,
+                                                            final List<LocalizedReportData> expectedReports) {
+    // given
+    final InstantPreviewDashboardService instantPreviewDashboardService =
+      embeddedOptimizeExtension.getInstantPreviewDashboardService();
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_DEF_KEY));
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final Optional<InstantDashboardDataDto> instantPreviewDashboard =
+      instantPreviewDashboardService.createInstantPreviewDashboard(PROCESS_DEF_KEY, TEMPLATE_1_FILENAME);
+
+    // then
+    assertThat(instantPreviewDashboard).isPresent();
+
+    // when
+    final DashboardDefinitionRestDto localizedDashboard =
+      dashboardClient.getInstantPreviewDashboardLocalized(PROCESS_DEF_KEY, TEMPLATE_1_FILENAME, locale);
+    final List<LocalizedReportData> localizedReports = localizedDashboard.getTiles().stream()
+      .filter(tile -> tile.getType() == DashboardTileType.OPTIMIZE_REPORT)
+      .map(tile -> {
+        final ReportDefinitionDto<?> dashboardReport = reportClient.getReportById(tile.getId(), locale);
+        final SingleReportConfigurationDto reportConfig = ((SingleReportDataDto) dashboardReport.getData()).getConfiguration();
+        return new LocalizedReportData(
+          dashboardReport.getName(),
+          dashboardReport.getDescription(),
+          reportConfig.getYLabel(),
+          reportConfig.getXLabel()
+        );
+      })
+      .toList();
+
+    // then
+    assertThat(localizedDashboard.getName()).isEqualTo(expectedDashboardName);
+    assertThat(localizedReports).containsExactlyInAnyOrderElementsOf(expectedReports);
   }
 
   @ParameterizedTest
@@ -698,71 +743,75 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     assertThat(new File(filePath)).exists();
   }
 
+  private static Map<String, List<String>> createExpectedTileString() {
+    return Map.of(
+      "de", List.of(
+        "Instant Prozessübersicht",
+        "Dieses Dashboard bietet eine Übersicht der Metriken und Anwendungsfälle, die mit Optimize abgedeckt werden können.",
+        "Melde Geschäftskennzahlen",
+        "Aggregiere und gruppiere Prozessausführungsdaten in Tagen, Wochen und Monaten um Metriken und Key Performance " +
+          "Indikatoren (KPI) zu überwachen und zu melden.",
+        "Abonniere einen wöchentlichen E-Mail Digest der Prozessmetriken und KPIs",
+        "Analysiere Probleme und finde Verbesserungen",
+        "Nutze alle gesammelten Prozessausführungsdaten, um Probleme zu untersuchen oder neue Prozessverbesserungen einzuleiten.",
+        "Nutze die Optimize Ausreißeranalyse, um Verbesserungspotenzial im Prozess zu finden",
+        "Echtzeitnahe Überwachung der Prozess Gesundheit",
+        "Überwache Prozessausführungsdaten der letzten Minuten, Stunden und Tage echtzeitnah, um korrektiv eingreifen zu können.",
+        "Erstellen Sie eine Kopie dieses Dashboards und passen Sie es Ihren Bedürfnissen an",
+        "Aktuell laufend",
+        "Dieser Bericht zeigt den Fortschritt aller laufenden Prozesse an.",
+        "In den letzten 7 Tagen eingegangene",
+        "Dieser Bericht zeigt die in den letzten 7 Tagen eingegangenen Anfragen die einen Prozess gestartet haben.",
+        "Aktuell laufende Prozesse",
+        "Dieser Bericht zeigt die Anzahl der aktuell laufenden Prozesse.",
+        "In den letzten 7 Tagen beendete Prozesse",
+        "Dieser Bericht zeigt die Anzahl der in den letzten 7 Tagen beendeten Prozesse.",
+        "Offene Zwischenfälle",
+        "Dieser Bericht zeigt die Anzahl der offenen Zwischenfälle.",
+        "Anzahl der aktuell offenen Zwischenfälle",
+        "Dieser Bericht zeigt Prozessknoten mit aktuell offenen Zwischenfälle.",
+        "Beendete Prozesse gruppiert in Monaten",
+        "Dieser Bericht zeigt wie stark der Prozess in den letzten Monaten genutzt wurde.",
+        "Flaschenhälse der in den letzten 6 Monaten beendeten Prozesse",
+        "Die Heatmap hebt die Prozessknoten hervor, die im Durchschnitt die meiste Zeit bis zur Fertigstellung benötigen."
+      ),
+      "en", List.of(
+        "Instant process dashboard",
+        "This dashboard provides a competitive overview of metrics and use cases that can be covered with Optimize. It is " +
+          "available for any process as soon as a process is deployed.",
+        "Report business metrics",
+        "Aggregate and group the process execution data into days, weeks, and months to monitor and report business metrics and" +
+          " key performance indicators (KPI).",
+        "Subscribe to an email digest to obtain a weekly summary of your process metrics and KPIs",
+        "Investigate problems and find improvements",
+        "Use all gathered process execution data to investigate problems or kick off new process improvements.",
+        "Use Optimize outlier analysis to find improvement potential in your process",
+        "Monitor process health in near real-time",
+        "See process execution data of the last minutes, hours, and days in near real-time to take corrective actions if needed.",
+        "Create a copy of this dashboard to be able to adjust it to your needs",
+        "Currently running processes",
+        "This report provides an overview of the progress of all running processes. ",
+        "Incoming in the last 7 days",
+        "This report counts the number of incoming requests that started a process.",
+        "Currently in progress",
+        "This report counts all currently running processes.",
+        "Ended in the last 7 days",
+        "This report counts all processes that ended in the last 7 days.",
+        "Open incidents",
+        "This report shows the number of open incidents.",
+        "Currently open incidents",
+        "This report shows flow nodes with currently open incidents.",
+        "Processes ended grouped by month",
+        "This report provides an overview of the utilization of the process in the last months. ",
+        "Bottlenecks in the process ended in the last 6 months",
+        "The heatmap highlights the flow nodes that consume on average the most time to be completed."
+      )
+    );
+  }
+
   private void assertTileTranslation(Map<String, Object> textTileConfiguration, String locale) {
-    HashMap<String, List<String>> expectedStrings = new HashMap<>();
-    expectedStrings.put("de", List.of(
-      "Instant Prozess Übersicht",
-      "Dieses Dashboard bietet eine Übersicht der Metriken und Anwendungsfälle, die mit Optimize abgedeckt werden können.",
-      "Melde Geschäftskennzahlen",
-      "Aggregiere und gruppiere Prozessausführungsdaten in Tagen, Wochen und Monaten um Metriken und Key Performance " +
-        "Indikatoren (KPI) zu überwachen und zu melden.",
-      "Abonniere einen wöchentlichen E-Mail Digest der Prozessmetriken und KPIs",
-      "Analysiere Probleme und finde Verbesserungen",
-      "Nutze alle gesammelten Prozessausführungsdaten, um Probleme zu untersuchen oder neue Prozessverbesserungen einzuleiten.",
-      "Nutze die Optimize Ausreißeranalyse, um Verbesserungspotenzial im Prozess zu finden",
-      "Echtzeitnahe Überwachung der Prozess Gesundheit",
-      "Überwache Prozessausführungsdaten der letzten Minuten, Stunden und Tage echtzeitnah, um korrektiv eingreifen zu können.",
-      "Erstellen Sie eine Kopie dieses Dashboards und passen Sie es Ihren Bedürfnissen an",
-      "Aktuell laufend",
-      "Dieser Bericht zeigt den Fortschritt aller laufenden Prozesse an.",
-      "In den letzten 7 Tagen eingegangene",
-      "Dieser Bericht zeigt die in den letzten 7 Tagen eingegangenen Anfragen die einen Prozess gestartet haben.",
-      "Aktuell laufende Prozesse",
-      "Dieser Bericht zeigt die Anzahl der aktuell laufenden Prozesse.",
-      "In den letzten 7 Tagen beendete Prozesse",
-      "Dieser Bericht zeigt die Anzahl der in den letzten 7 Tagen beendeten Prozesse.",
-      "Offene Zwischenfälle",
-      "Dieser Bericht zeigt die Anzahl der offenen Zwischenfälle.",
-      "Anzahl der aktuell offenen Zwischenfälle",
-      "Dieser Bericht zeigt Prozessknoten mit aktuell offenen Zwischenfälle.",
-      "Beendete Prozesse gruppiert in Monaten",
-      "Dieser Bericht zeigt wie stark der Prozess in den letzten Monaten genutzt wurde.",
-      "Flaschenhälse der in den letzten 6 Monaten beendeten Prozesse",
-      "Die Heatmap hebt die Prozessknoten hervor, die im Durchschnitt die meiste Zeit bis zur Fertigstellung benötigen."
-    ));
-    expectedStrings.put("en", List.of(
-      "Instant Process Dashboard",
-      "This dashboard provides a competitive overview of metrics and use cases that can be covered with Optimize. It is " +
-        "available for any process as soon as a process is deployed.",
-      "Report business metrics",
-      "Aggregate and group the process execution data into days, weeks, and months to monitor and report business metrics and " +
-        "key performance indicators (KPI).",
-      "Subscribe to an email digest to obtain a weekly summary of your process metrics and KPIs",
-      "Investigate problems and find improvements",
-      "Use all gathered process execution data to investigate problems or kick off new process improvements.",
-      "Use Optimize Outlier Analysis to find improvement potential in your process",
-      "Monitor process health in near real-time",
-      "See process execution data of the last minutes, hours, and days in near real-time to take corrective actions if needed.",
-      "Create a copy of this dashboard to be able to adjust it to your needs",
-      "Currently running processes",
-      "This report provides an overview of the progress of all running processes. ",
-      "Incoming in the last 7 days",
-      "This report counts the number of incoming requests that started a process.",
-      "Currently in progress",
-      "This report counts all currently running processes.",
-      "Ended in the last 7 days",
-      "This report counts all processes that ended in the last 7 days.",
-      "Open incidents",
-      "This report shows the number of open incidents.",
-      "Currently open incidents",
-      "This report shows flow nodes with currently open incidents.",
-      "Processes ended grouped by month",
-      "This report provides an overview of the utilization of the process in the last months. ",
-      "Bottlenecks in the process ended in the last 6 months",
-      "The heatmap highlights the flow nodes that consume in average the most time to be completed."
-    ));
     String textContent = (String) textTileConfiguration.get(TEXT_FIELD);
-    assertThat(expectedStrings.get(locale)).contains(textContent);
+    assertThat(EXPECTED_TILE_STRINGS.get(locale)).contains(textContent);
   }
 
   @SuppressWarnings(UNUSED)
@@ -771,23 +820,23 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
   }
 
   @SuppressWarnings(UNUSED)
-  private static Stream<Arguments> templateAndExpectedLocalizedNames() {
+  private static Stream<Arguments> templateAndExpectedLocalizedReportNames() {
     return Stream.of(
       Arguments.of(
         TEMPLATE_3_FILENAME,
         "en",
-        "Instant Preview Dashboard",
+        "Instant preview dashboard",
         Set.of(
           "% SLA Met",
-          "Which process steps take too much time? (To Do: Add Target values for these process steps)",
+          "Which process steps take too much time? (To do: Add target values for these process steps)",
           "Is my process within control?",
           "Where are the active incidents?",
-          "Incident-Free Rate",
+          "Incident-free rate",
           "Where are the worst incidents?",
-          "99th Percentile Duration",
+          "99th percentile duration",
           "Are we improving incident handling?",
           "Throughput (30-day rolling)",
-          "75th Percentile Duration",
+          "75th percentile duration",
           "How frequently is this process run?",
           "How often is each process step run?"
         )
@@ -795,7 +844,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
       Arguments.of(
         TEMPLATE_3_FILENAME,
         "de",
-        "Instant Preview Dashboard",
+        "Instant preview dashboard",
         Set.of(
           "% SLA erfüllt",
           "Welche Prozessschritte benötigen zu viel Zeit? (To Do: Ziellaufzeit festlegen)",
@@ -814,19 +863,19 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
       Arguments.of(
         TEMPLATE_2_FILENAME,
         "en",
-        "KPI Dashboard",
+        "KPI dashboard",
         Set.of(
           "% SLA Met",
-          "Incident-Free Rate",
-          "99th Percentile Duration",
+          "Incident-free rate",
+          "99th percentile duration",
           "Throughput (30-day rolling)",
-          "75th Percentile Duration"
+          "75th percentile duration"
         )
       ),
       Arguments.of(
         TEMPLATE_2_FILENAME,
         "de",
-        "KPI Dashboard",
+        "KPI dashboard",
         Set.of(
           "% SLA erfüllt",
           "Prozent ohne Zwischenfälle",
@@ -836,6 +885,129 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
         )
       )
     );
+  }
+
+  @SuppressWarnings(UNUSED)
+  private static Stream<Arguments> templateAndExpectedLocalizedReports() {
+    return Stream.of(
+      Arguments.of(
+        "en",
+        "Instant process dashboard",
+        List.of(
+          new LocalizedReportData(
+            "Currently in progress",
+            "This report counts all currently running processes.",
+            "Process instance Count",
+            "None"
+          ),
+          new LocalizedReportData(
+            "Currently running processes",
+            "This report provides an overview of the progress of all running processes. ",
+            "Flow node Count",
+            "Flow nodes"
+          ),
+          new LocalizedReportData(
+            "Currently open incidents",
+            "This report shows flow nodes with currently open incidents.",
+            "Incident Count",
+            "Flow nodes"
+          ),
+          new LocalizedReportData(
+            "Incoming in the last 7 days",
+            "This report counts the number of incoming requests that started a process.",
+            "Process instance Count",
+            "None"
+          ),
+          new LocalizedReportData(
+            "Ended in the last 7 days",
+            "This report counts all processes that ended in the last 7 days.",
+            "Process instance Count",
+            "None"
+          ),
+          new LocalizedReportData(
+            "Processes ended grouped by month",
+            "This report provides an overview of the utilization of the process in the last months. ",
+            "Process instance Count",
+            "End date"
+          ),
+          new LocalizedReportData(
+            "Open incidents",
+            "This report shows the number of open incidents.",
+            "Incident Count",
+            "None"
+          ),
+          new LocalizedReportData(
+            "Bottlenecks in the process ended in the last 6 months",
+            "The heatmap highlights the flow nodes that consume on average the most time to be completed.",
+            "Flow node Duration",
+            "Flow nodes"
+          )
+        )
+      ),
+      Arguments.of(
+        "de",
+        "Instant Prozessübersicht",
+        List.of(
+          new LocalizedReportData(
+            "Aktuell laufende Prozesse",
+            "Dieser Bericht zeigt die Anzahl der aktuell laufenden Prozesse.",
+            "Prozessinstanz Anzahl",
+            "Keiner"
+          ),
+          new LocalizedReportData(
+            "Aktuell laufend",
+            "Dieser Bericht zeigt den Fortschritt aller laufenden Prozesse an.",
+            "Prozessknoten Anzahl",
+            "Prozessknoten"
+          ),
+          new LocalizedReportData(
+            "Anzahl der aktuell offenen Zwischenfälle",
+            "Dieser Bericht zeigt Prozessknoten mit aktuell offenen Zwischenfälle.",
+            "Zwischenfall Anzahl",
+            "Prozessknoten"
+          ),
+          new LocalizedReportData(
+            "In den letzten 7 Tagen eingegangene",
+            "Dieser Bericht zeigt die in den letzten 7 Tagen eingegangenen Anfragen die einen Prozess gestartet haben.",
+            "Prozessinstanz Anzahl",
+            "Keiner"
+          ),
+          new LocalizedReportData(
+            "In den letzten 7 Tagen beendete Prozesse",
+            "Dieser Bericht zeigt die Anzahl der in den letzten 7 Tagen beendeten Prozesse.",
+            "Prozessinstanz Anzahl",
+            "Keiner"
+          ),
+          new LocalizedReportData(
+            "Beendete Prozesse gruppiert in Monaten",
+            "Dieser Bericht zeigt wie stark der Prozess in den letzten Monaten genutzt wurde.",
+            "Prozessinstanz Anzahl",
+            "Enddatum"
+          ),
+          new LocalizedReportData(
+            "Offene Zwischenfälle",
+            "Dieser Bericht zeigt die Anzahl der offenen Zwischenfälle.",
+            "Zwischenfall Anzahl",
+            "Keiner"
+          ),
+          new LocalizedReportData(
+            "Flaschenhälse der in den letzten 6 Monaten beendeten Prozesse",
+            "Die Heatmap hebt die Prozessknoten hervor, die im Durchschnitt die meiste Zeit bis zur Fertigstellung benötigen.",
+            "Prozessknoten Dauer",
+            "Prozessknoten"
+          )
+        )
+      )
+    );
+  }
+
+  @AllArgsConstructor
+  @Data
+  public static final class LocalizedReportData {
+    private final String reportName;
+    private final String reportDescription;
+    private final String yLabel;
+    private final String xLabel;
   }
 
   @SuppressWarnings(UNUSED)

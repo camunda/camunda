@@ -19,7 +19,7 @@ jobs:
         parameters: test -Dskip.fe.build -Dskip.docker
     - name: Upload Test Results
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4
       with:
         name: unit-tests-backend-junit
         path: |
@@ -37,7 +37,7 @@ jobs:
       id: "pom_info"
       uses: YunaBraska/java-info-action@main
     - name: Set Node.js
-      uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65 # v4
+      uses: actions/setup-node@b39b52d1213e96004bfcb1c61a8a6fa8ab84f3e8 # v4
       with:
         node-version: ${{ steps.pom_info.outputs.x_version_node }}
         cache: yarn
@@ -52,7 +52,7 @@ jobs:
         yarn test:ci
     - name: Upload Test Results
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4
       with:
         name: unit-tests-frontend-junit
         path: |

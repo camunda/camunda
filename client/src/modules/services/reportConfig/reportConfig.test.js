@@ -113,7 +113,7 @@ it('should update y axis labels', () => {
     createReportUpdate('process', report, 'view', 'userTask', {
       view: {properties: {$set: ['duration']}},
     }).configuration.$set.yLabel
-  ).toBe('User Task Duration');
+  ).toBe('User task Duration');
 });
 
 it('should update x axis labels', () => {
@@ -121,7 +121,7 @@ it('should update x axis labels', () => {
     createReportUpdate('process', report, 'group', 'endDate', null, {
       variables: [],
     }).configuration.$set.xLabel
-  ).toBe('End Date');
+  ).toBe('End date');
 
   getVariableLabel.mockReturnValueOnce('boolVarLabel');
   expect(

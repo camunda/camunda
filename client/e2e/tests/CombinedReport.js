@@ -25,20 +25,20 @@ async function createReport(
   t,
   name,
   definition = 'Lead Qualification',
-  visualization = 'Line Chart',
+  visualization = 'Line chart',
   completed
 ) {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, definition);
 
-  await u.selectView(t, 'Flow Node', 'Count');
-  await u.selectGroupby(t, 'Flow Nodes');
+  await u.selectView(t, 'Flow node', 'Count');
+  await u.selectGroupby(t, 'Flow nodes');
   await u.selectVisualization(t, visualization);
 
   if (completed) {
     await t.click(Report.sectionToggle('Filters'));
     await t.click(Report.filterButton);
-    await t.click(Common.menuOption('Instance State'));
+    await t.click(Common.menuOption('Instance state'));
     await t.click(Report.modalOption('Completed'));
     await t.click(Common.modalConfirmButton);
   }
@@ -63,13 +63,13 @@ test('combine two single number reports', async (t) => {
 
   await t.click(Common.createNewButton);
   await t.hover(Common.newReportOption);
-  await t.hover(Common.submenuOption('Combined Process Report'));
+  await t.hover(Common.submenuOption('Combined process report'));
 
   await t.takeElementScreenshot(Common.entityList, 'img/combined-report-create.png', {
-    crop: {left: 1000, bottom: 300},
+    crop: {left: 900, bottom: 300},
   });
 
-  await t.click(Common.submenuOption('Combined Process Report'));
+  await t.click(Common.submenuOption('Combined process report'));
   await t.typeText(Common.nameEditField, 'Combined Report', {replace: true});
 
   await t
@@ -115,8 +115,8 @@ test('combine two single table reports and reorder them', async (t) => {
 });
 
 test('combine two single chart reports and change their colors', async (t) => {
-  await createReport(t, 'Line Report - 1', 'Lead Qualification', 'Line Chart');
-  await createReport(t, 'Line Report - 2', 'Lead Qualification', 'Line Chart', true);
+  await createReport(t, 'Line Report - 1', 'Lead Qualification', 'Line chart');
+  await createReport(t, 'Line Report - 2', 'Lead Qualification', 'Line chart', true);
 
   await u.createNewCombinedReport(t);
 
@@ -139,8 +139,8 @@ test('combine two single chart reports and change their colors', async (t) => {
 });
 
 test('open the configuration popover and add a goal line', async (t) => {
-  await createReport(t, 'Bar Report - 1', 'Lead Qualification', 'Bar Chart');
-  await createReport(t, 'Bar Report - 2', 'Lead Qualification', 'Bar Chart', true);
+  await createReport(t, 'Bar Report - 1', 'Lead Qualification', 'Bar chart');
+  await createReport(t, 'Bar Report - 2', 'Lead Qualification', 'Bar chart', true);
 
   await u.createNewCombinedReport(t);
 
@@ -152,7 +152,7 @@ test('open the configuration popover and add a goal line', async (t) => {
   await t.resizeWindow(1150, 700);
 
   await t.click(Report.configurationButton);
-  await t.click(Common.toggleElement('Set Target'));
+  await t.click(Common.toggleElement('Set target'));
   await t.typeText(Report.goalTargetInput, '300', {replace: true});
 
   await t.takeScreenshot('img/combined-config.png', {fullPage: true}).maximizeWindow();

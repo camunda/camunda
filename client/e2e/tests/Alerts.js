@@ -30,7 +30,7 @@ test('create, edit, copy and remove an alert', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Lead Qualification');
 
-  await u.selectView(t, 'Process Instance', 'Count');
+  await u.selectView(t, 'Process instance', 'Count');
 
   await t.typeText(Common.nameEditField, 'Number Report', {replace: true});
 
@@ -42,8 +42,8 @@ test('create, edit, copy and remove an alert', async (t) => {
   // CREATE
   await t.click(Alert.newAlertButton);
 
-  await t.typeText(Alert.inputWithLabel('Alert Name'), 'Test Alert', {replace: true});
-  await t.typeText(Alert.inputWithLabel('Send Email to'), 'test@email.com test2@email.com', {
+  await t.typeText(Alert.inputWithLabel('Alert name'), 'Test Alert', {replace: true});
+  await t.typeText(Alert.inputWithLabel('Send email to'), 'test@email.com test2@email.com', {
     replace: true,
   });
 
@@ -75,7 +75,7 @@ test('create, edit, copy and remove an alert', async (t) => {
   await t.click(Common.contextMenu(listItem));
   await t.click(Common.edit(listItem));
 
-  await t.typeText(Alert.inputWithLabel('Alert Name'), 'Edited Alert', {replace: true});
+  await t.typeText(Alert.inputWithLabel('Alert name'), 'Edited Alert', {replace: true});
 
   await t.click(Alert.cancelButton);
 
@@ -84,7 +84,7 @@ test('create, edit, copy and remove an alert', async (t) => {
   await t.hover(listItem);
   await t.click(Common.contextMenu(listItem));
   await t.click(Common.edit(listItem));
-  await t.typeText(Alert.inputWithLabel('Alert Name'), 'Saved Alert', {replace: true});
+  await t.typeText(Alert.inputWithLabel('Alert name'), 'Saved Alert', {replace: true});
 
   await t.click(Common.modalConfirmButton);
 

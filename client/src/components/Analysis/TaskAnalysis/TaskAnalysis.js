@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {useState, useCallback, useEffect} from 'react';
+import {useState, useCallback, useEffect, useRef} from 'react';
 import classnames from 'classnames';
 
 import {t} from 'translation';
@@ -39,9 +39,11 @@ export default function TaskAnalysis() {
   const [outlierVariables, setOutlierVariables] = useState({});
   const [loading, setLoading] = useState(false);
   const {mightFail} = useErrorHandling();
+  const dataRef = useRef();
 
   const loadFlowNodeNames = useCallback(
     (config) => {
+      setLoading(true);
       mightFail(
         getFlowNodeNames(
           config.processDefinitionKey,
@@ -49,7 +51,8 @@ export default function TaskAnalysis() {
           config.tenantIds[0]
         ),
         (flowNodeNames) => setFlowNodeNames(flowNodeNames),
-        showError
+        showError,
+        () => setLoading(false)
       );
     },
     [mightFail]
@@ -99,19 +102,22 @@ export default function TaskAnalysis() {
   const loadOutlierData = useCallback(
     (config) => {
       setLoading(true);
-      setHeatData({});
       loadFlowNodeNames(config);
       mightFail(
         loadNodesOutliers(config),
         async (data) => {
-          const heatData = Object.keys(data).reduce(
-            (acc, key) => ({...acc, [key]: data[key].higherOutlierHeat || undefined}),
-            {}
-          );
+          const heatData = Object.keys(data).reduce((acc, key) => {
+            // taking only high outliers into consideration
+            if (data[key].higherOutlierHeat && data[key].higherOutlier) {
+              return {...acc, [key]: data[key].higherOutlierHeat};
+            }
+            return acc;
+          }, {});
 
           const outlierVariables = await loadOutlierVariables(heatData, data, config);
 
           setData(data);
+          dataRef.current = data;
           setHeatData(heatData);
           setOutlierVariables(outlierVariables);
         },
@@ -123,7 +129,8 @@ export default function TaskAnalysis() {
   );
 
   function onNodeClick({element: {id}}) {
-    const nodeData = data[id];
+    // we need to use a ref here because this will create a closure
+    const nodeData = dataRef.current[id];
     if (!nodeData?.higherOutlier) {
       return;
     }
@@ -160,8 +167,8 @@ export default function TaskAnalysis() {
 
   const empty = xml && !loading && Object.keys(heatData).length === 0;
   const matchingInstancesCount = Object.values(data).reduce((result, data) => {
-    if (data?.higherOutlier?.count) {
-      result += data.higherOutlier.count;
+    if (data?.totalCount) {
+      result += data.totalCount;
     }
     return result;
   }, 0);

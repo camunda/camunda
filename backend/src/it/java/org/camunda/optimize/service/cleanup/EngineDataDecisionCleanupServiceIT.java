@@ -5,15 +5,17 @@
  */
 package org.camunda.optimize.service.cleanup;
 
+import io.github.netmikey.logunit.api.LogCapturer;
 import lombok.SneakyThrows;
-import org.apache.commons.collections.ListUtils;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.service.util.configuration.cleanup.DecisionDefinitionCleanupConfiguration;
+import org.camunda.optimize.util.DmnModels;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -21,11 +23,17 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.DECISION_INSTANCE_ID;
 import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
+import static org.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.DECISION_INSTANCE_ID;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 public class EngineDataDecisionCleanupServiceIT extends AbstractCleanupIT {
+
+  @RegisterExtension
+  LogCapturer cleanupServiceLogs = LogCapturer.create().captureForType(CleanupService.class);
+
+  @RegisterExtension
+  LogCapturer engineDataCleanupLogs = LogCapturer.create().captureForType(EngineDataDecisionCleanupService.class);
 
   @BeforeEach
   public void enableCamundaCleanup() {
@@ -73,7 +81,31 @@ public class EngineDataDecisionCleanupServiceIT extends AbstractCleanupIT {
 
   @Test
   @SneakyThrows
-  public void testFailCleanupOnSpecificKeyConfigWithNoMatchingDecisionDefinitionNoInstancesCleaned() {
+  public void testCleanupModeVariables_specificKeyCleanupMode_noInstanceDataExists() {
+    // given
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
+      engineIntegrationExtension.deployDecisionDefinition(DmnModels.createDefaultDmnModel());
+    getCleanupConfiguration().getDecisionCleanupConfiguration()
+      .getDecisionDefinitionSpecificConfiguration()
+      .put(
+        decisionDefinitionEngineDto.getKey(),
+        new DecisionDefinitionCleanupConfiguration(getCleanupConfiguration().getTtl())
+      );
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    engineDataCleanupLogs.assertContains(
+      "Finished cleanup on decision instances for decisionDefinitionKey: invoiceClassification, with ttl: P2Y");
+  }
+
+  @Test
+  @SneakyThrows
+  public void testCleanupOnSpecificKeyConfigWithNoMatchingDecisionDefinitionWorksWithLoggedWarning() {
     // given I have a key specific config
     final String configuredKey = "myMistypedKey";
     getCleanupConfiguration().getDecisionCleanupConfiguration()
@@ -83,8 +115,7 @@ public class EngineDataDecisionCleanupServiceIT extends AbstractCleanupIT {
         new DecisionDefinitionCleanupConfiguration(getCleanupConfiguration().getTtl())
       );
     // and deploy processes with different keys
-    final List<String> decisionDefinitionsWithEvaluationTimeLessThanTtl =
-      deployTwoDecisionInstancesWithEvaluationTimeLessThanTtl();
+    deployTwoDecisionInstancesWithEvaluationTimeLessThanTtl();
     final List<String> unaffectedDecisionDefinitionsIds =
       deployTwoDecisionInstancesWithEvaluationTime(OffsetDateTime.now());
 
@@ -95,10 +126,12 @@ public class EngineDataDecisionCleanupServiceIT extends AbstractCleanupIT {
 
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    // all data is still there
-    assertDecisionInstancesExistInEs(
-      ListUtils.union(decisionDefinitionsWithEvaluationTimeLessThanTtl, unaffectedDecisionDefinitionsIds)
-    );
+    // then data clear up has succeeded as expected
+    assertDecisionInstancesExistInEs(unaffectedDecisionDefinitionsIds);
+    // and the misconfigured process is logged
+    cleanupServiceLogs.assertContains(String.format(
+      "History Cleanup Configuration contains definition keys for which there is no "
+        + "definition imported yet. The keys without a match in the database are: [%s]", configuredKey));
   }
 
   @SneakyThrows

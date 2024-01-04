@@ -185,7 +185,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
           .distributedByContains(USER_TASK_2, null)
           .distributedByContains(USER_TASK_A, 1.)
           .distributedByContains(USER_TASK_B, null)
-        .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
+        .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalizedUnassignedLabel())
           .distributedByContains(USER_TASK_1, null)
           .distributedByContains(USER_TASK_2, 1.)
           .distributedByContains(USER_TASK_A, null)
@@ -266,7 +266,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
           .distributedByContains(USER_TASK_2, 1.)
           .distributedByContains(USER_TASK_A, null)
           .distributedByContains(USER_TASK_B, 1.)
-        .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
+        .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalizedUnassignedLabel())
           .distributedByContains(USER_TASK_1, null)
           .distributedByContains(USER_TASK_2, 1.)
           .distributedByContains(USER_TASK_A, null)
@@ -389,7 +389,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .measure(ViewProperty.FREQUENCY)
-        .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
+        .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalizedUnassignedLabel())
           .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
           .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
         .groupByContains(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME)
@@ -434,7 +434,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .measure(ViewProperty.FREQUENCY)
-        .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
+        .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalizedUnassignedLabel())
           .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
           .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
         .groupByContains(SECOND_CANDIDATE_GROUP_ID, SECOND_CANDIDATE_GROUP_NAME)
@@ -489,7 +489,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
         .groupByContains(FIRST_CANDIDATE_GROUP_ID, FIRST_CANDIDATE_GROUP_NAME)
           .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
           .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
+        .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalizedUnassignedLabel())
           .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
           .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
       .doAssert(actualResult2);
@@ -858,7 +858,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getFourUserTaskDiagram("aProcess"));
   }
 
-  private String getLocalisedUnassignedLabel() {
+  private String getLocalizedUnassignedLabel() {
     return embeddedOptimizeExtension.getLocalizationService()
       .getDefaultLocaleMessageForMissingAssigneeLabel();
   }

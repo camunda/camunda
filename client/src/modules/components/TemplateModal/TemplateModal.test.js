@@ -128,7 +128,7 @@ it('should include the selected parameters in the link state when creating a rep
   expect(confirmButton.prop('to')).toMatchSnapshot();
   confirmButton.simulate('click');
   expect(track).toHaveBeenCalledWith('useReportTemplate', {
-    templateName: 'Locate bottlenecks on a Heatmap',
+    templateName: 'Locate bottlenecks on a heatmap',
   });
 });
 
@@ -149,8 +149,8 @@ it('should call the templateToState prop to determine link state', async () => {
   await flushPromises();
 
   expect(spy).toHaveBeenCalledWith({
-    description: 'Locate duration or count bottlenecks visualized as Heatmap for Flow Nodes.',
-    name: 'Locate bottlenecks on a Heatmap',
+    description: 'Locate duration or count bottlenecks visualized as heatmap for flow nodes.',
+    name: 'Locate bottlenecks on a heatmap',
     definitions: [
       {
         key: 'processDefinition',
@@ -200,14 +200,14 @@ it('should update the selected template if it is disabled for the selected defin
   runAllEffects();
   await flushPromises();
 
-  expect(node.find('.active')).toIncludeText('Heatmap');
+  expect(node.find('.active')).toIncludeText('heatmap');
 
   node.find(DefinitionSelection).simulate('change', [testDef, testDef]);
   runAllEffects();
   await flushPromises();
 
   expect(node.find('.active')).not.toIncludeText('Heatmap');
-  expect(node.find('.active')).toIncludeText('Analyze or export raw data from a Table');
+  expect(node.find('.active')).toIncludeText('Analyze or export raw data from a table');
 });
 
 it('should invoke the onConfirm when when clicking the create button', async () => {
@@ -225,7 +225,7 @@ it('should invoke the onConfirm when when clicking the create button', async () 
 
   expect(spy).toHaveBeenCalled();
   expect(track).toHaveBeenCalledWith('useReportTemplate', {
-    templateName: 'Locate bottlenecks on a Heatmap',
+    templateName: 'Locate bottlenecks on a heatmap',
   });
   expect(node.find('.confirm')).not.toBeDisabled();
 });
@@ -248,6 +248,6 @@ it('should override the track event name if trackingEventName is passed', async 
   node.find('.confirm').simulate('click');
 
   expect(track).toHaveBeenCalledWith('useInstantPreviewDashboardTemplate', {
-    templateName: 'Locate bottlenecks on a Heatmap',
+    templateName: 'Locate bottlenecks on a heatmap',
   });
 });

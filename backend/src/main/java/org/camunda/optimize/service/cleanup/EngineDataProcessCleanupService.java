@@ -26,12 +26,11 @@ import java.util.List;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
-import static org.camunda.optimize.service.cleanup.CleanupService.enforceAllSpecificDefinitionKeyConfigurationsHaveMatchInKnown;
 
 @AllArgsConstructor
 @Component
 @Slf4j
-public class EngineDataProcessCleanupService implements CleanupService {
+public class EngineDataProcessCleanupService extends CleanupService {
 
   private final ConfigurationService configurationService;
   private final ProcessDefinitionReader processDefinitionReader;
@@ -51,7 +50,7 @@ public class EngineDataProcessCleanupService implements CleanupService {
   public void doCleanup(final OffsetDateTime startTime) {
     final Set<String> allOptimizeProcessDefinitionKeys = getAllCamundaEngineProcessDefinitionKeys();
 
-    enforceAllSpecificDefinitionKeyConfigurationsHaveMatchInKnown(
+    verifyConfiguredKeysAreKnownDefinitionKeys(
       allOptimizeProcessDefinitionKeys,
       getCleanupConfiguration().getProcessDataCleanupConfiguration().getAllProcessSpecificConfigurationKeys()
     );

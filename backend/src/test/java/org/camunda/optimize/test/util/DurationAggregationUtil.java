@@ -93,11 +93,11 @@ public class DurationAggregationUtil {
       new AggregationDto(MAX), Precision.round(statistics.getMax(), 0),
       new AggregationDto(AVERAGE), Precision.round(statistics.getMean(), 0),
       new AggregationDto(SUM), Precision.round(statistics.getSum(), 0),
-      new AggregationDto(PERCENTILE, 99.), percentileFunction.apply(0.99),
-      new AggregationDto(PERCENTILE, 95.), percentileFunction.apply(0.95),
-      new AggregationDto(PERCENTILE, 75.), percentileFunction.apply(0.75),
-      new AggregationDto(PERCENTILE, 50.), percentileFunction.apply(0.50),
-      new AggregationDto(PERCENTILE, 25.), percentileFunction.apply(0.25)
+      new AggregationDto(PERCENTILE, 99.), Precision.round(percentileFunction.apply(0.99), 0),
+      new AggregationDto(PERCENTILE, 95.), Precision.round(percentileFunction.apply(0.95), 0),
+      new AggregationDto(PERCENTILE, 75.), Precision.round(percentileFunction.apply(0.75), 0),
+      new AggregationDto(PERCENTILE, 50.), Precision.round(percentileFunction.apply(0.50), 0),
+      new AggregationDto(PERCENTILE, 25.), Precision.round(percentileFunction.apply(0.25), 0)
     );
   }
 

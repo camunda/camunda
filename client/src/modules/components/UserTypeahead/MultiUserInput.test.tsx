@@ -81,7 +81,7 @@ it('should format user list information correctly', async () => {
   const items = node.find(FilterableMultiSelect).prop('items');
 
   const content = node.find(FilterableMultiSelect).renderProp('itemToElement')?.(items[0]);
-  expect(content).toIncludeText('groupName (User Group)');
+  expect(content).toIncludeText('groupName (User group)');
   expect(content.find('.subText')).toIncludeText('groupId');
 
   const item2Content = node.find(FilterableMultiSelect).renderProp('itemToElement')?.(items[1]);

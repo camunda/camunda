@@ -4,7 +4,7 @@ exports[`should display empty state with link to docs 1`] = `
 <div
   className="ExternalSource empty"
 >
-  No Events available. To add events, see 
+  No events available. To add events, see 
   <DocsLink
     location="apis-clients/optimize-api/event-ingestion/"
   >

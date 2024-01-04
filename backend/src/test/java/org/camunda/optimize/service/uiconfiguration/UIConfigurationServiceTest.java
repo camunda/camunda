@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.uiconfiguration;
 
+import io.camunda.identity.sdk.Identity;
+import io.camunda.identity.sdk.users.Users;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
 import org.camunda.optimize.rest.cloud.CloudSaasMetaInfoService;
 import org.camunda.optimize.service.SettingsService;
@@ -22,6 +24,8 @@ import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.core.env.Environment;
 
 import java.util.Collections;
@@ -36,6 +40,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class UIConfigurationServiceTest {
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
@@ -50,6 +55,10 @@ public class UIConfigurationServiceTest {
   private Environment environment;
   @Mock
   private Optional<CloudSaasMetaInfoService> metaInfoService = Optional.empty();
+  @Mock
+  private Identity identity;
+  @Mock
+  private Users identityUsers;
 
   @InjectMocks
   UIConfigurationService underTest;
@@ -139,6 +148,8 @@ public class UIConfigurationServiceTest {
 
   private void initializeMocks() {
     when(configurationService.getConfiguredWebhooks()).thenReturn(Collections.emptyMap());
+    when(identity.users()).thenReturn(identityUsers);
+    when(identityUsers.isAvailable()).thenReturn(true);
   }
 
 }

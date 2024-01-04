@@ -285,7 +285,7 @@ public class InstantPreviewDashboardService {
       // Whichever error occurred in the code above the details of it are contained in the exception message. Catching
       // all possible exceptions here so that Optimize doesn't crash if anything goes wrong with the template checks,
       // since any error is not critical and would not hinder optimize in functioning properly
-      log.error("There was an error deleting data from an outdated Instant Preview Dashboard", e);
+      log.error("There was an error deleting data from an outdated Instant preview dashboard", e);
     }
   }
 

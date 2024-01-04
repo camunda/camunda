@@ -7,7 +7,8 @@ package org.camunda.optimize.service.cleanup;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.service.db.reader.DecisionInstanceReader;
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.service.db.reader.DecisionDefinitionReader;
 import org.camunda.optimize.service.db.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
@@ -17,15 +18,15 @@ import org.springframework.stereotype.Component;
 import java.time.OffsetDateTime;
 import java.util.Set;
 
-import static org.camunda.optimize.service.cleanup.CleanupService.enforceAllSpecificDefinitionKeyConfigurationsHaveMatchInKnown;
+import static java.util.stream.Collectors.toSet;
 
 @AllArgsConstructor
 @Component
 @Slf4j
-public class EngineDataDecisionCleanupService implements CleanupService {
+public class EngineDataDecisionCleanupService extends CleanupService {
 
   private final ConfigurationService configurationService;
-  private final DecisionInstanceReader decisionInstanceReader;
+  private final DecisionDefinitionReader decisionDefinitionReader;
   private final DecisionInstanceWriter decisionInstanceWriter;
 
   @Override
@@ -37,7 +38,7 @@ public class EngineDataDecisionCleanupService implements CleanupService {
   public void doCleanup(final OffsetDateTime startTime) {
     final Set<String> allOptimizeProcessDefinitionKeys = getAllOptimizeDecisionDefinitionKeys();
 
-    enforceAllSpecificDefinitionKeyConfigurationsHaveMatchInKnown(
+    verifyConfiguredKeysAreKnownDefinitionKeys(
       allOptimizeProcessDefinitionKeys,
       getCleanupConfiguration().getDecisionCleanupConfiguration().getAllDecisionSpecificConfigurationKeys()
     );
@@ -64,7 +65,6 @@ public class EngineDataDecisionCleanupService implements CleanupService {
       decisionDefinitionKey, endDateFilter
     );
 
-
     log.info(
       "Finished cleanup on decision instances for decisionDefinitionKey: {}, with ttl: {}",
       decisionDefinitionKey, cleanupConfigurationForKey.getTtl()
@@ -72,7 +72,10 @@ public class EngineDataDecisionCleanupService implements CleanupService {
   }
 
   private Set<String> getAllOptimizeDecisionDefinitionKeys() {
-    return decisionInstanceReader.getExistingDecisionDefinitionKeysFromInstances();
+    return decisionDefinitionReader.getAllDecisionDefinitions()
+      .stream()
+      .map(DecisionDefinitionOptimizeDto::getKey)
+      .collect(toSet());
   }
 
   private CleanupConfiguration getCleanupConfiguration() {

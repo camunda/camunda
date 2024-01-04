@@ -6,23 +6,23 @@ Object {
   "head": Array [
     Object {
       "id": "decisionDefinitionKey",
-      "label": "Decision Definition Key",
-      "title": "Decision Definition Key",
+      "label": "Decision definition key",
+      "title": "Decision definition key",
     },
     Object {
       "id": "decisionDefinitionId",
-      "label": "Decision Definition Id",
-      "title": "Decision Definition Id",
+      "label": "Decision definition Id",
+      "title": "Decision definition Id",
     },
     Object {
       "id": "decisionInstanceId",
-      "label": "Decision Instance Id",
-      "title": "Decision Instance Id",
+      "label": "Decision instance Id",
+      "title": "Decision instance Id",
     },
     Object {
       "id": "evaluationDateTime",
-      "label": "Evaluation Date",
-      "title": "Evaluation Date",
+      "label": "Evaluation date",
+      "title": "Evaluation date",
     },
   ],
 }
@@ -55,23 +55,23 @@ Object {
   "head": Array [
     Object {
       "id": "decisionDefinitionId",
-      "label": "Decision Definition Id",
-      "title": "Decision Definition Id",
+      "label": "Decision definition Id",
+      "title": "Decision definition Id",
     },
     Object {
       "id": "decisionInstanceId",
-      "label": "Decision Instance Id",
-      "title": "Decision Instance Id",
+      "label": "Decision instance Id",
+      "title": "Decision instance Id",
     },
     Object {
       "id": "processInstanceId",
-      "label": "Process Instance Id",
-      "title": "Process Instance Id",
+      "label": "Process instance Id",
+      "title": "Process instance Id",
     },
     Object {
       "id": "engineName",
-      "label": "Engine Name",
-      "title": "Engine Name",
+      "label": "Engine name",
+      "title": "Engine name",
     },
     Object {
       "id": "inputVariable:var1",
@@ -163,13 +163,13 @@ Object {
   "head": Array [
     Object {
       "id": "processDefinitionId",
-      "label": "Process Definition Id",
-      "title": "Process Definition Id",
+      "label": "Process definition Id",
+      "title": "Process definition Id",
     },
     Object {
       "id": "processInstanceId",
-      "label": "Process Instance Id",
-      "title": "Process Instance Id",
+      "label": "Process instance Id",
+      "title": "Process instance Id",
     },
     Object {
       "id": "variable:var1",
@@ -220,13 +220,13 @@ Object {
   "head": Array [
     Object {
       "id": "processDefinitionId",
-      "label": "Process Definition Id",
-      "title": "Process Definition Id",
+      "label": "Process definition Id",
+      "title": "Process definition Id",
     },
     Object {
       "id": "processInstanceId",
-      "label": "Process Instance Id",
-      "title": "Process Instance Id",
+      "label": "Process instance Id",
+      "title": "Process instance Id",
     },
     Object {
       "id": "variable:var1",

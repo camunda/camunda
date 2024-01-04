@@ -31,7 +31,7 @@ jest.mock('services', () => {
           view: {foo: {data: 'foo', label: 'viewfoo'}},
           groupBy: {
             foo: {data: 'foo', label: 'groupbyfoo'},
-            inputVariable: {data: {value: []}, label: 'Input Variable'},
+            inputVariable: {data: {value: []}, label: 'Input variable'},
           },
           visualization: {foo: {data: 'foo', label: 'visualizationfoo'}},
         },

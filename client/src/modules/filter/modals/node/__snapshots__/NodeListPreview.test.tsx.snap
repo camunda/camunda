@@ -7,7 +7,7 @@ exports[`should create preview of nodes 1`] = `
       <span
         className="parameterName"
       >
-        Running, Canceled or Completed Flow Nodes
+        Running, canceled, or completed flow nodes
       </span>
     }
     overflowOnly={true}
@@ -15,7 +15,7 @@ exports[`should create preview of nodes 1`] = `
     <span
       className="parameterName"
     >
-      Running, Canceled or Completed Flow Nodes
+      Running, canceled, or completed flow nodes
     </span>
   </Tooltip>
   <ul
@@ -43,7 +43,7 @@ exports[`should create preview of selected nodes linked by nor 1`] = `
       <span
         className="parameterName"
       >
-        Not executed Flow Nodes
+        Not executed flow nodes
       </span>
     }
     overflowOnly={true}
@@ -51,7 +51,7 @@ exports[`should create preview of selected nodes linked by nor 1`] = `
     <span
       className="parameterName"
     >
-      Not executed Flow Nodes
+      Not executed flow nodes
     </span>
   </Tooltip>
   <ul
@@ -97,7 +97,7 @@ exports[`should create preview of selected nodes linked by or 1`] = `
       <span
         className="parameterName"
       >
-        Running, Canceled or Completed Flow Nodes
+        Running, canceled, or completed flow nodes
       </span>
     }
     overflowOnly={true}
@@ -105,7 +105,7 @@ exports[`should create preview of selected nodes linked by or 1`] = `
     <span
       className="parameterName"
     >
-      Running, Canceled or Completed Flow Nodes
+      Running, canceled, or completed flow nodes
     </span>
   </Tooltip>
   <ul

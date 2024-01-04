@@ -182,7 +182,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
       DISTRIBUTE_BY_IDENTITY_MISSING_KEY
     )).isPresent().get()
       .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
-      .containsExactly(1., getLocalisedUnassignedLabel());
+      .containsExactly(1., getLocalizedUnassignedLabel());
     assertThat(result.getInstanceCount()).isEqualTo(1L);
   }
 
@@ -222,7 +222,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
       DISTRIBUTE_BY_IDENTITY_MISSING_KEY
     )).isPresent().get()
       .extracting(MapResultEntryDto::getValue, MapResultEntryDto::getLabel)
-      .containsExactly(1., getLocalisedUnassignedLabel());
+      .containsExactly(1., getLocalizedUnassignedLabel());
     assertThat(result.getInstanceCount()).isEqualTo(2L);
   }
 
@@ -987,7 +987,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     }
   }
 
-  private String getLocalisedUnassignedLabel() {
+  private String getLocalizedUnassignedLabel() {
     return embeddedOptimizeExtension.getLocalizationService()
       .getDefaultLocaleMessageForMissingAssigneeLabel();
   }

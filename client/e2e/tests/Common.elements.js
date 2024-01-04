@@ -40,7 +40,8 @@ export const dashboardItem = listItem.filter(
   (node) => node.querySelector('.name .type').textContent.indexOf('Dashboard') !== -1
 );
 export const reportItem = listItem.filter(
-  (node) => node.querySelector('.name .type').textContent.indexOf('Report') !== -1
+  (node) =>
+    node.querySelector('.name .type').textContent.toLocaleLowerCase().indexOf('report') !== -1
 );
 export const collectionItem = listItem.filter(
   (node) => node.querySelector('.name .type').textContent.indexOf('Collection') !== -1
@@ -74,3 +75,4 @@ export const comboBox = Selector('.cds--combo-box input');
 export const overflowMenuOptions = Selector('.cds--overflow-menu-options');
 export const overflowMenuOption = (text) => overflowMenuOptions.find('button').withText(text);
 export const toggleElement = (text) => Selector('.cds--toggle__label').withText(text);
+export const radioButton = (text) => Selector('.cds--radio-button-wrapper').withText(text);

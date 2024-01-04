@@ -66,7 +66,7 @@ public class DashboardRestService {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     if (dashboardDefinitionDto != null) {
       if (dashboardDefinitionDto.isManagementDashboard() || dashboardDefinitionDto.isInstantPreviewDashboard()) {
-        throw new OptimizeValidationException("Management and Instant Preview Dashboards cannot be created");
+        throw new OptimizeValidationException("Management and Instant preview dashboards cannot be created");
       }
       validateDashboard(dashboardDefinitionDto);
     }

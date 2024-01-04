@@ -57,7 +57,7 @@ public class UserTaskFrequencyByUserTaskStartDateByAssigneeReportEvaluationIT
       .measure(ViewProperty.FREQUENCY)
         .groupByContains(groupedByDayDateAsString(referenceDate))
           .distributedByContains(DEFAULT_USERNAME, 1., DEFAULT_FULLNAME)
-          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 1., getLocalisedUnassignedLabel())
+          .distributedByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, 1., getLocalizedUnassignedLabel())
       .doAssert(result);
     // @formatter:on
   }
@@ -146,7 +146,7 @@ public class UserTaskFrequencyByUserTaskStartDateByAssigneeReportEvaluationIT
     );
   }
 
-  private String getLocalisedUnassignedLabel() {
+  private String getLocalizedUnassignedLabel() {
     return embeddedOptimizeExtension.getLocalizationService()
       .getDefaultLocaleMessageForMissingAssigneeLabel();
   }

@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>parent</artifactId>
-    <version>3.12.0</version>
+    <version>3.13.0</version>
   </parent>
 
   <artifactId>camunda-optimize</artifactId>
@@ -14,7 +14,7 @@
   <properties>
     <exclude.from.config>OptimizeLicense.txt</exclude.from.config>
     <sonar.skip>true</sonar.skip>
-    <elasticsearch.demo.version>8.8.0</elasticsearch.demo.version>
+    <elasticsearch.demo.version>8.9.0</elasticsearch.demo.version>
   </properties>
 
   <dependencies>
@@ -111,7 +111,7 @@
       <plugin>
         <groupId>com.googlecode.maven-download-plugin</groupId>
         <artifactId>download-maven-plugin</artifactId>
-        <version>1.7.1</version>
+        <version>1.8.0</version>
         <executions>
           <execution>
             <phase>process-resources</phase>

@@ -1,3 +1,5 @@
+@import 'shared-styles/shared-styles.scss';
+
 .TaskAnalysis {
   display: flex;
   flex-direction: column;
@@ -36,4 +38,8 @@
   .OutlierDetailsTable {
     max-height: 30%;
   }
+}
+
+.DownloadButtonConfirmationModal {
+  z-index: calc(var(--z-modal) + 1);
 }

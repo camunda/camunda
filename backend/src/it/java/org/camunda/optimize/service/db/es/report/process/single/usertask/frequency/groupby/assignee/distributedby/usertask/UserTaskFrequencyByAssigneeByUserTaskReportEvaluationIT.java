@@ -173,7 +173,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
           .distributedByContains(USER_TASK_2, null)
           .distributedByContains(USER_TASK_A, 1.)
           .distributedByContains(USER_TASK_B, null)
-        .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
+        .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalizedUnassignedLabel())
           .distributedByContains(USER_TASK_1, null)
           .distributedByContains(USER_TASK_2, 1.)
           .distributedByContains(USER_TASK_A, null)
@@ -217,7 +217,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
           .distributedByContains(USER_TASK_2, 1.)
           .distributedByContains(USER_TASK_A, null)
           .distributedByContains(USER_TASK_B, 1.)
-        .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
+        .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalizedUnassignedLabel())
           .distributedByContains(USER_TASK_1, null)
           .distributedByContains(USER_TASK_2, 1.)
           .distributedByContains(USER_TASK_A, null)
@@ -465,7 +465,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
         .groupByContains(DEFAULT_USERNAME, DEFAULT_FULLNAME)
           .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
           .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalisedUnassignedLabel())
+        .groupByContains(DISTRIBUTE_BY_IDENTITY_MISSING_KEY, getLocalizedUnassignedLabel())
           .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
           .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
       .doAssert(actualResult2);
@@ -843,7 +843,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
-  private String getLocalisedUnassignedLabel() {
+  private String getLocalizedUnassignedLabel() {
     return embeddedOptimizeExtension.getLocalizationService()
       .getDefaultLocaleMessageForMissingAssigneeLabel();
   }

@@ -14,35 +14,43 @@ import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.util.ObjectBuilderBase;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Function;
 
 @AllArgsConstructor
 @Slf4j
 public class OpenSearchOperation {
-  private static final String INDEX_METHOD = "index";
+
+  private static final String INDEX_FIELD = "index";
   protected OptimizeIndexNameService indexNameService;
 
-
-  protected  <T extends ObjectBuilderBase> T applyIndexPrefix(T request) {
-    Field indexField;
+  protected <T extends ObjectBuilderBase> T applyIndexPrefix(T request) {
     try {
-      indexField = request.getClass().getDeclaredField(INDEX_METHOD);
+      Field indexField = request.getClass().getDeclaredField(INDEX_FIELD);
       indexField.setAccessible(true);
-      String currentIndex = (String) indexField.get(request);
-      String fullyQualifiedIndexName = indexNameService.getOptimizeIndexAliasForIndex(currentIndex);
-      Method setIndexMethod = request.getClass().getMethod(INDEX_METHOD, String.class);
-      setIndexMethod.invoke(request, fullyQualifiedIndexName);
+      Object indexFieldContent = indexField.get(request);
+      if (indexFieldContent instanceof final String currentIndex) {
+        indexField.set(request, getIndexAliasFor(currentIndex));
+      } else if (indexFieldContent instanceof List<?> currentIndexes) {
+        List<String> fullyQualifiedIndexNames = currentIndexes.stream()
+          .map(currentIndex -> indexNameService.getOptimizeIndexAliasForIndex((String) currentIndex))
+          .toList();
+        indexField.set(request, fullyQualifiedIndexNames);
+      } else {
+        throw new IllegalArgumentException(String.format("Cannot apply index prefix to request. It contains an " +
+                                                           "unsupported type: %s ", indexFieldContent.getClass().getName()));
+      }
       return request;
     } catch (NoSuchFieldException e) {
       throw new OptimizeRuntimeException("Could not apply prefix to index of type " + request.getClass());
-    } catch (NoSuchMethodException e) {
-      throw new OptimizeRuntimeException(String.format("The object does not have an %s() method.", INDEX_METHOD));
-    } catch (IllegalAccessException | InvocationTargetException e) {
-      throw new OptimizeRuntimeException(String.format("Failed to invoke the %s() method.", INDEX_METHOD));
+    } catch (IllegalAccessException e) {
+      throw new OptimizeRuntimeException(String.format("Failed to set value for the %s field.", INDEX_FIELD));
     }
+  }
 
+  protected List<String> applyIndexPrefix(String... indexes) {
+    return Arrays.stream(indexes).map(this::getIndexAliasFor).toList();
   }
 
   protected String getIndexAliasFor(String indexName) {
@@ -50,12 +58,13 @@ public class OpenSearchOperation {
   }
 
   protected String getIndex(ObjectBuilderBase builder) {
+    //todo will be refactored in the OPT-7352
     try {
-      Field indexField = builder.getClass().getDeclaredField(INDEX_METHOD);
+      Field indexField = builder.getClass().getDeclaredField(INDEX_FIELD);
       indexField.setAccessible(true);
       return indexField.get(builder).toString();
     } catch (Exception e) {
-      log.error(String.format("Failed to get the method %s from %s", INDEX_METHOD, builder.getClass().getName()));
+      log.error(String.format("Failed to get the method %s from %s", INDEX_FIELD, builder.getClass().getName()));
       return "FAILED_INDEX";
     }
   }
@@ -64,12 +73,14 @@ public class OpenSearchOperation {
     try {
       return supplier.get();
     } catch (OpenSearchException e) {
-      throw e;
+      final String message = "An exception has occurred when trying to execute an OpenSearch operation";
+      log.error(message, e);
+      throw new OptimizeRuntimeException(message, e);
     } catch (Exception e) {
       final String message = errorMessage.apply(e);
       log.error(message, e);
-      // TODO throw Optimize Exception - fix with OPT-7352
-      return null;
+      throw new OptimizeRuntimeException(message, e);
     }
   }
+
 }

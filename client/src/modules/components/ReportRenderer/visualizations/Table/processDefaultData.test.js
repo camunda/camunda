@@ -175,7 +175,7 @@ it('should handle undefined processVariables for variable reports', () => {
       ['b', 2],
       ['c', 3],
     ],
-    head: ['Process Instance Var: variable1', {id: 'Count', label: 'Count', sortable: true}],
+    head: ['Process instance Var: variable1', {id: 'Count', label: 'Count', sortable: true}],
   });
 });
 
@@ -201,6 +201,6 @@ it('should handle processVariables with a matching variable', () => {
       ['b', 2],
       ['c', 3],
     ],
-    head: ['Process Instance Var: Variable One', {id: 'Count', label: 'Count', sortable: true}],
+    head: ['Process instance Var: Variable One', {id: 'Count', label: 'Count', sortable: true}],
   });
 });

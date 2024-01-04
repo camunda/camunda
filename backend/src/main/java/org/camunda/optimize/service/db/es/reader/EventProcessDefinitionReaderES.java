@@ -48,7 +48,7 @@ public class EventProcessDefinitionReaderES implements EventProcessDefinitionRea
 
   @Override
   public Optional<EventProcessDefinitionDto> getEventProcessDefinitionByKeyOmitXml(final String eventProcessDefinitionKey) {
-    log.debug("Fetching event based process definition with key [{}].", eventProcessDefinitionKey);
+    log.debug("Fetching event-based process definition with key [{}].", eventProcessDefinitionKey);
     final BoolQueryBuilder query = QueryBuilders.boolQuery()
       .must(termQuery(DEFINITION_KEY, eventProcessDefinitionKey));
 
@@ -65,7 +65,7 @@ public class EventProcessDefinitionReaderES implements EventProcessDefinitionRea
       searchResponse = esClient.search(searchRequest);
     } catch (IOException e) {
       final String reason = String.format(
-        "Could not fetch event based process definition with key [%s].", eventProcessDefinitionKey
+        "Could not fetch event-based process definition with key [%s].", eventProcessDefinitionKey
       );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
@@ -93,7 +93,7 @@ public class EventProcessDefinitionReaderES implements EventProcessDefinitionRea
 
   @Override
   public List<EventProcessDefinitionDto> getAllEventProcessDefinitionsOmitXml() {
-    log.debug("Fetching all available event based processes definitions.");
+    log.debug("Fetching all available event-based processes definitions.");
     String[] fieldsToExclude = new String[]{EsEventProcessMappingDto.Fields.xml};
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .size(LIST_FETCH_LIMIT)
@@ -106,7 +106,7 @@ public class EventProcessDefinitionReaderES implements EventProcessDefinitionRea
     try {
       scrollResp = esClient.search(searchRequest);
     } catch (IOException e) {
-      throw new OptimizeRuntimeException("Was not able to retrieve event based processes!", e);
+      throw new OptimizeRuntimeException("Was not able to retrieve event-based processes!", e);
     }
 
     return ElasticsearchReaderUtil.retrieveAllScrollResults(

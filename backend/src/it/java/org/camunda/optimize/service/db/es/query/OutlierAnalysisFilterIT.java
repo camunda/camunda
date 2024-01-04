@@ -19,8 +19,8 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
@@ -54,7 +54,7 @@ public class OutlierAnalysisFilterIT extends AbstractPlatformIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
+    Map<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
       processDefinition.getKey(),
       Collections.singletonList("1"),
       Collections.singletonList(null),

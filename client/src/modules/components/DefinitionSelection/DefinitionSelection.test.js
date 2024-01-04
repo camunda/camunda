@@ -298,7 +298,7 @@ it('should construct a popover title', async () => {
   const node = await shallow(<DefinitionSelection {...props} />);
   await flushPromises();
 
-  expect(node.find('.DefinitionSelection')).toHaveProp('title', 'Select Process');
+  expect(node.find('.DefinitionSelection')).toHaveProp('title', 'Select process');
 
   loadTenants.mockReturnValueOnce([
     {
@@ -364,7 +364,7 @@ describe('tenants', () => {
     let node = await shallow(<DefinitionSelection {...props} />);
     await flushPromises();
 
-    expect(node.find('.DefinitionSelection')).toHaveProp('title', 'Select Process');
+    expect(node.find('.DefinitionSelection')).toHaveProp('title', 'Select process');
 
     node = await shallow(
       <DefinitionSelection {...props} definitionKey="foo" versions={['3']} tenants={[]} />

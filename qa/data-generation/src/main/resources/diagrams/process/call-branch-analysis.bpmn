@@ -14,7 +14,7 @@
       <bpmn:incoming>SequenceFlow_1ogdhhl</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="SequenceFlow_1ogdhhl" sourceRef="Task_0koddw1" targetRef="EndEvent_0mkcy10" />
-    <bpmn:callActivity id="Task_0koddw1" name="Call Branch Analysis Process" calledElement="branch_analysis_process">
+    <bpmn:callActivity id="Task_0koddw1" name="Call branch analysis process" calledElement="branch_analysis_process">
       <bpmn:extensionElements>
         <camunda:in source="x" target="sleepTime" />
       </bpmn:extensionElements>

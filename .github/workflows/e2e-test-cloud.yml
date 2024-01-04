@@ -11,7 +11,7 @@ jobs:
       uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
     - name: Import secrets
       id: secrets
-      uses: hashicorp/vault-action@2fb925f14cae8d86a835e7f5c14065e98fad63d8
+      uses: hashicorp/vault-action@00bce0da9c4b8be526718f7f5f20a88966f31022
       with:
         url: ${{ secrets.VAULT_ADDR }}
         method: approle
@@ -40,7 +40,7 @@ jobs:
         ELASTIC_JVM_MEMORY: 1
         ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
     - name: Setup yarn cache
-      uses: actions/setup-node@8f152de45cc393bb48ce5d89d36b731f54556e65 # v4
+      uses: actions/setup-node@b39b52d1213e96004bfcb1c61a8a6fa8ab84f3e8 # v4
       with:
         node-version: ${{ steps.pom-info.outputs.x_version_node }}
         cache: "yarn"

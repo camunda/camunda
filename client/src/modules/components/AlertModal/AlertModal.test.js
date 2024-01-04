@@ -24,9 +24,11 @@ jest.mock('services', () => {
 
   return {
     ...rest,
-    evaluateReport: jest
-      .fn()
-      .mockReturnValue({id: '6', data: {view: {properties: ['duration']}}, result: {data: 123}}),
+    evaluateReport: jest.fn().mockReturnValue({
+      id: '6',
+      data: {view: {entity: 'process instance', properties: ['duration']}},
+      result: {data: 123},
+    }),
     formatters: {
       ...rest.formatters,
       convertDurationToSingleNumber: jest.fn().mockReturnValue(723),
@@ -252,7 +254,20 @@ it('should display report value', () => {
   node.find('#report').prop('onChange')({selectedItem: {id: '6'}});
 
   expect(evaluateReport).toHaveBeenCalledWith('6');
-  expect(node.find('#report').prop('helperText')).toContain('123');
+  expect(shallow(node.find('#report').prop('helperText'))).toIncludeText('123');
+});
+
+it('should display report value for variable reports', () => {
+  evaluateReport.mockReturnValueOnce({
+    id: '6',
+    data: {view: {entity: 'variable', properties: [{type: 'double', name: 'doubleVariable'}]}},
+    result: {data: 123.123},
+  });
+  const node = shallow(<AlertModal {...props} />);
+
+  node.find('#report').prop('onChange')({selectedItem: {id: '6'}});
+
+  expect(shallow(node.find('#report').prop('helperText'))).toIncludeText('123.123');
 });
 
 it('should load an initial report if specified', () => {

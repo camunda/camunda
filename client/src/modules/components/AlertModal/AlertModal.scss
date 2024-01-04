@@ -1,3 +1,5 @@
+@import 'shared-styles/shared-styles.scss';
+
 .AlertModal {
   .cds--modal-container {
     max-height: 90vh;
@@ -20,5 +22,9 @@
   .reset {
     align-self: flex-end;
     width: 100%;
+  }
+
+  .reportValue {
+    @include overflow-ellipsis(300px);
   }
 }

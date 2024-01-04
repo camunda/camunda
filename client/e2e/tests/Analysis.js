@@ -43,13 +43,13 @@ test('show end event statistics on hover', async (t) => {
   await t.hover(Analysis.flowNode('EndEvent_0kcx8gn'));
 
   await t.expect(Analysis.endEventOverlay.visible).ok();
-  await t.expect(Analysis.endEventOverlay.textContent).contains('Process Instances Total');
+  await t.expect(Analysis.endEventOverlay.textContent).contains('Process instances total');
   await t
     .expect(Analysis.endEventOverlay.textContent)
-    .contains('Process Instances reached this state');
+    .contains('Process instances reached this state');
   await t
     .expect(Analysis.endEventOverlay.textContent)
-    .contains('of Process Instances reached this state');
+    .contains('of process instances reached this state');
 
   await addAnnotation(Analysis.endEventOverlay, 'End Event Information', {x: 50, y: 0});
 
@@ -71,11 +71,11 @@ test('should deselect elements by clicking on the node or on the control panel',
 
   await t.click(Analysis.flowNode('msLeadIsOpp'));
 
-  await t.expect(Analysis.endEventInput.textContent).contains('Select End Event');
+  await t.expect(Analysis.endEventInput.textContent).contains('Select end event');
 
   await t.click(Analysis.gatewayCancelButton);
 
-  await t.expect(Analysis.gatewayInput.textContent).contains('Select Gateway');
+  await t.expect(Analysis.gatewayInput.textContent).contains('Select gateway');
 });
 
 test('should show outliers heatmap when selecting a process definition', async (t) => {
@@ -85,6 +85,7 @@ test('should show outliers heatmap when selecting a process definition', async (
   await t.hover(Analysis.flowNode('AE0010P0030'));
 
   await t
+    .resizeWindow(1600, 800)
     .takeScreenshot('process-analysis/img/outlierExample_1_heatMap.png', {
       fullPage: true,
     })
@@ -102,7 +103,7 @@ test('should show outlier details modal when clicking on a flow node', async (t)
     .resizeWindow(1600, 800)
     .takeElementScreenshot(
       Common.modalContainer,
-      'process-analysis/img/outlierExample_2_distribution.png'
+      'process-analysis/img/outlierExample_2_detailsModal.png'
     )
     .maximizeWindow();
 
@@ -114,13 +115,55 @@ test('should show common outliers variables as a table', async (t) => {
 
   await t.click(Analysis.flowNode('AE0010P0030'));
 
-  await t
-    .resizeWindow(1600, 800)
-    .takeElementScreenshot(
-      Common.modalContainer,
-      'process-analysis/img/outlierExample_3_Variables.png'
-    )
-    .maximizeWindow();
-
   await t.expect(Analysis.variablesTable.visible).ok();
+});
+
+test('should render outlier details table and allow to view more details modal', async (t) => {
+  await u.selectDefinition(t, 'Analysis Testing Process', 'All');
+  await t.expect(Analysis.outliersTableRow('Shipment File Preparation').visible).ok();
+
+  await t.click(Analysis.outliersTableDetailsButton('Shipment File Preparation'));
+
+  await t.expect(Analysis.chart.visible).ok();
+  await t.expect(Analysis.variablesTableRow('delay=true').visible).ok();
+});
+
+test('should filter task outliers', async (t) => {
+  await u.selectDefinition(t, 'Analysis Testing Process', 'All');
+
+  await t.click(Analysis.filtersDropdown);
+  await t.click(Common.menuOption('Instance state'));
+  await t.click(Common.radioButton('Non-suspended'));
+  await t.click(Common.modalConfirmButton);
+
+  await t.click(Analysis.filtersDropdown);
+  await t.click(Common.menuOption('Incident'));
+  await t.click(Common.radioButton('Without incidents'));
+  await t.click(Common.modalConfirmButton);
+
+  await t.expect(Analysis.outliersTableRow('delay=true').visible).ok();
+
+  await t.click(Analysis.filtersDropdown);
+  await t.click(Common.menuOption('Instance state'));
+  await t.click(Common.radioButton('Canceled'));
+  await t.click(Common.modalConfirmButton);
+
+  await t.expect(Analysis.chart.visible).notOk();
+  await t.expect(Analysis.outliersTable.visible).notOk();
+});
+
+test('should show warning message when there are filter conflicts', async (t) => {
+  await u.selectDefinition(t, 'Analysis Testing Process', 'All');
+
+  await t.click(Analysis.filtersDropdown);
+  await t.click(Common.menuOption('Instance state'));
+  await t.click(Common.radioButton('Canceled'));
+  await t.click(Common.modalConfirmButton);
+
+  await t.click(Analysis.filtersDropdown);
+  await t.click(Common.menuOption('Instance state'));
+  await t.click(Common.radioButton('Non-canceled'));
+  await t.click(Common.modalConfirmButton);
+
+  await t.expect(Analysis.warningMessage.visible).ok();
 });

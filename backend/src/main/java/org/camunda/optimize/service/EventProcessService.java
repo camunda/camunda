@@ -228,7 +228,7 @@ public class EventProcessService {
       });
     return eventProcessMapping.orElseThrow(() -> {
       final String message = String.format(
-        "Event based process does not exist! Tried to retrieve event based process with id: %s.", eventProcessMappingId
+        "Event-based process does not exist! Tried to retrieve event-based process with id: %s.", eventProcessMappingId
       );
       return new NotFoundException(message);
     });
@@ -264,11 +264,11 @@ public class EventProcessService {
 
     if (!PUBLISHABLE_STATES.contains(eventProcessMapping.getState())) {
       throw new InvalidEventProcessStateException(
-        "Cannot publish event based process from state: " + eventProcessMapping.getState()
+        "Cannot publish event-based process from state: " + eventProcessMapping.getState()
       );
     }
     if (eventProcessMapping.getEventSources().isEmpty()) {
-      throw new OptimizeValidationException("Cannot publish event based process with no data sources");
+      throw new OptimizeValidationException("Cannot publish event-based process with no data sources");
     }
 
     final EventProcessPublishStateDto processPublishState = EventProcessPublishStateDto
@@ -297,7 +297,7 @@ public class EventProcessService {
 
     if (!PUBLISH_CANCELABLE_STATES.contains(eventProcessMapping.getState())) {
       throw new InvalidEventProcessStateException(
-        "Cannot cancel publishing of event based process from state: " + eventProcessMapping.getState()
+        "Cannot cancel publishing of event-based process from state: " + eventProcessMapping.getState()
       );
     }
 
@@ -306,7 +306,7 @@ public class EventProcessService {
 
     if (!publishWasCanceledSuccessfully) {
       final String message = String.format(
-        "Cannot cancel publishing of an event based process with key [%s] as it is not published yet.",
+        "Cannot cancel publishing of an event-based process with key [%s] as it is not published yet.",
         eventProcessMappingId
       );
       throw new OptimizeValidationException(message);
@@ -315,7 +315,7 @@ public class EventProcessService {
 
   public void validateEventSources(final String userId, final List<EventSourceEntryDto<?>> eventSources) {
     if (eventSources == null || eventSources.contains(null)) {
-      throw new OptimizeValidationException("Sources for an event based process cannot be null");
+      throw new OptimizeValidationException("Sources for an event-based process cannot be null");
     }
     final Map<EventSourceType, List<EventSourceEntryDto<?>>> sourceByType = eventSources.stream()
       .collect(groupingBy(EventSourceEntryDto::getSourceType));

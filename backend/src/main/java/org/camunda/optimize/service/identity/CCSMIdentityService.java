@@ -47,20 +47,25 @@ public class CCSMIdentityService extends AbstractIdentityService {
 
   @Override
   public Optional<UserDto> getUserById(final String userId) {
-    final Optional<String> token = ccsmTokenService.getCurrentUserAuthToken();
-    if (token.isPresent()) {
-      try {
-        return identity.users()
-          .withAccessToken(token.get())
-          .get(Collections.singletonList(userId))
-          .stream().findFirst()
-          .map(this::mapToUserDto);
-      } catch (Exception e) {
-        log.warn("Failed retrieving user by ID.", e);
+    if (identity.users().isAvailable()) {
+      final Optional<String> token = ccsmTokenService.getCurrentUserAuthToken();
+      if (token.isPresent()) {
+        try {
+          return identity.users()
+            .withAccessToken(token.get())
+            .get(Collections.singletonList(userId))
+            .stream().findFirst()
+            .map(this::mapToUserDto);
+        } catch (Exception e) {
+          log.warn("Failed retrieving user by ID.", e);
+          return Optional.empty();
+        }
+      } else {
+        log.warn("Could not retrieve user because no user token present.");
         return Optional.empty();
       }
     } else {
-      log.warn("Could not retrieve identity because no user token present.");
+      log.debug("Cannot search for user by ID because user search not available in Camunda identity.");
       return Optional.empty();
     }
   }
@@ -87,7 +92,8 @@ public class CCSMIdentityService extends AbstractIdentityService {
 
   @Override
   public boolean isUserAuthorizedToAccessIdentity(final String userId, final IdentityDto identity) {
-    // Identity permissions are handled by identity on each users() request where we supply the access token of the current user.
+    // Identity permissions are handled by identity on each users() request where we supply the access token of the current
+    // user.
     // Note "accessing identity" here means "accessing info about the other user/group"
     return true;
   }
@@ -96,46 +102,62 @@ public class CCSMIdentityService extends AbstractIdentityService {
   public IdentitySearchResultResponseDto searchForIdentitiesAsUser(final String userId, final String searchString,
                                                                    final int maxResults,
                                                                    final boolean excludeUserGroups) {
-    final Optional<String> token = ccsmTokenService.getCurrentUserAuthToken();
-    if (token.isPresent()) {
-      return new IdentitySearchResultResponseDto(searchForIdentityAsUser(token.get(), searchString, maxResults));
+    if (identity.users().isAvailable()) {
+      final Optional<String> token = ccsmTokenService.getCurrentUserAuthToken();
+      if (token.isPresent()) {
+        return new IdentitySearchResultResponseDto(searchForIdentityUsingSearchTerm(token.get(), searchString, maxResults));
+      } else {
+        log.warn("Could not search for identities because no user token present.");
+        return new IdentitySearchResultResponseDto(Collections.emptyList());
+      }
     } else {
-      log.warn("Could not search for identities because no user token present.");
+      log.debug("Cannot search for identities because user search not available in Camunda identity.");
       return new IdentitySearchResultResponseDto(Collections.emptyList());
     }
   }
 
-  private List<IdentityWithMetadataResponseDto> searchForIdentityAsUser(final String token, final String searchString,
-                                                                        final int maxResults) {
-    try {
-      return identity.users()
-        .withAccessToken(token)
-        .search(searchString)
-        .stream()
-        .limit(maxResults)
-        .map(this::mapToUserDto)
-        .map(IdentityWithMetadataResponseDto.class::cast)
-        .toList();
-    } catch (Exception e) {
-      log.warn("Failed searching for users with searchString {}.", searchString, e);
+  public List<UserDto> getUsersByEmail(final List<String> emails) {
+    if (identity.users().isAvailable()) {
+      final Set<String> lowerCasedEmails = emails.stream().map(String::toLowerCase).collect(Collectors.toSet());
+      final Optional<String> token = ccsmTokenService.getCurrentUserAuthToken();
+      if (token.isPresent()) {
+        return lowerCasedEmails.stream()
+          .flatMap(email -> searchForIdentityUsingSearchTerm(
+            token.get(),
+            email,
+            1 // we are only expecting 1 matching user per email
+          ).stream())
+          .filter(UserDto.class::isInstance)
+          .map(UserDto.class::cast)
+          .toList();
+      } else {
+        log.warn("Could not retrieve users by email because no user token present.");
+        return Collections.emptyList();
+      }
+    } else {
+      log.debug("Cannot search for users by email because no user search available in Camunda identity.");
       return Collections.emptyList();
     }
   }
 
-  public List<UserDto> getUsersByEmail(final List<String> emails) {
-    final Set<String> lowerCasedEmails = emails.stream().map(String::toLowerCase).collect(Collectors.toSet());
-    final Optional<String> token = ccsmTokenService.getCurrentUserAuthToken();
-    if (token.isPresent()) {
-      return lowerCasedEmails.stream()
-        .flatMap(email -> searchForIdentityAsUser(
-          token.get(),
-          email,
-          1 // we are only expecting 1 matching user per email
-        ).stream())
-        .map(UserDto.class::cast)
-        .toList();
+  private List<IdentityWithMetadataResponseDto> searchForIdentityUsingSearchTerm(final String token, final String searchString,
+                                                                                 final int maxResults) {
+    if (identity.users().isAvailable()) {
+      try {
+        return identity.users()
+          .withAccessToken(token)
+          .search(searchString)
+          .stream()
+          .limit(maxResults)
+          .map(this::mapToUserDto)
+          .map(IdentityWithMetadataResponseDto.class::cast)
+          .toList();
+      } catch (Exception e) {
+        log.warn("Failed searching for users with searchString {}.", searchString, e);
+        return Collections.emptyList();
+      }
     } else {
-      log.warn("Could not retrieve users by email because no user token present.");
+      log.debug("Cannot search for identity because no user search available in Camunda Identity.");
       return Collections.emptyList();
     }
   }

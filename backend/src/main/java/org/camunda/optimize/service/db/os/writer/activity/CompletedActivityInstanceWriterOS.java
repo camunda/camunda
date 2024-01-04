@@ -17,6 +17,7 @@ import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondi
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -34,7 +35,7 @@ public class CompletedActivityInstanceWriterOS extends AbstractActivityInstanceW
   @Override
   public List<ImportRequestDto> generateActivityInstanceImports(final List<FlowNodeEventDto> activityInstances) {
     //todo will be handled in the OPT-7376
-    return null;
+    return new ArrayList<>();
   }
 
   @Override
@@ -48,7 +49,7 @@ public class CompletedActivityInstanceWriterOS extends AbstractActivityInstanceW
     // new import flowNodeInstances should win over already imported flowNodeInstances, since those might be running
     // instances.
     //todo will be handled in the OPT-7376
-    return null;
+    return "";
   }
 
 }

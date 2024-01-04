@@ -41,18 +41,18 @@ jobs:
         sudo apt install -y netcat
 
     - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v1
+      uses: google-github-actions/auth@67e9c72af6e0492df856527b474995862b7b6591 # v2
       with:
         credentials_json: ${{ steps.secrets.outputs.GCP_CREDENTIALS }}
 
     - name: Get gcloud credentials
-      uses: 'google-github-actions/get-gke-credentials@v1'
+      uses: 'google-github-actions/get-gke-credentials@0ee75eea82b114e2ac06176587c52970953206cf' # v2
       with:
         cluster_name: 'camunda-ci'
         location: 'europe-west1'
 
     - name: Configure Google SDK
-      uses: google-github-actions/setup-gcloud@v1.1.1
+      uses: google-github-actions/setup-gcloud@5a5f7b85fca43e76e53463acaa9d408a03c98d3a # v2.0.1
       with:
         install_components: gke-gcloud-auth-plugin, kubectl
 
@@ -80,7 +80,7 @@ jobs:
       if: always()
       run: .github/podSpecs/clusterTests/kill.sh $NAMESPACE
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4
       if: always()
       with:
         name: elasticsearch-logs

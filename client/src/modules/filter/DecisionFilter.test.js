@@ -137,9 +137,9 @@ it('should disable variable filters if no decision definition is available', () 
   const node = shallow(<DecisionFilter data={[]} />);
 
   const buttons = node.find(MenuItem);
-  expect(buttons.find({label: 'Evaluation Date Time'}).prop('disabled')).toBeFalsy();
-  expect(buttons.find({label: 'Input Variable'}).prop('disabled')).toBeTruthy();
-  expect(buttons.find({label: 'Output Variable'}).prop('disabled')).toBeTruthy();
+  expect(buttons.find({label: 'Evaluation date time'}).prop('disabled')).toBeFalsy();
+  expect(buttons.find({label: 'Input variable'}).prop('disabled')).toBeTruthy();
+  expect(buttons.find({label: 'Output variable'}).prop('disabled')).toBeTruthy();
 });
 
 it('should remove any previous evaluationDateTime filters when adding a new date filter', () => {

@@ -1059,7 +1059,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     }
   }
 
-  private String getLocalisedUnassignedLabel() {
+  private String getLocalizedUnassignedLabel() {
     return embeddedOptimizeExtension.getLocalizationService()
       .getDefaultLocaleMessageForMissingAssigneeLabel();
   }

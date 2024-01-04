@@ -58,6 +58,7 @@ data:
 
     import:
       customer-onboarding: true
+      skipDataAfterNestedDocLimitReached: true
 
     container:
       # A host name or IP address, to identify a specific network interface on

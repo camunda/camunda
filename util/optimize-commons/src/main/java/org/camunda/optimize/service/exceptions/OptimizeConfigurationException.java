@@ -5,10 +5,13 @@
  */
 package org.camunda.optimize.service.exceptions;
 
+import lombok.Getter;
+
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
+@Getter
 public class OptimizeConfigurationException extends OptimizeRuntimeException {
   private Map<String, String> deletedKeysAndDocumentationLink = Collections.emptyMap();
 
@@ -26,7 +29,4 @@ public class OptimizeConfigurationException extends OptimizeRuntimeException {
       .orElse(Collections.emptyMap());
   }
 
-  public Map<String, String> getDeletedKeysAndDocumentationLink() {
-    return deletedKeysAndDocumentationLink;
-  }
 }

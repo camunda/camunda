@@ -12,12 +12,16 @@ import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto
 
 import java.util.List;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NONE)
+@JsonTypeInfo(
+  use = JsonTypeInfo.Id.NONE)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = CombinedReportDataDto.class),
   @JsonSubTypes.Type(value = SingleReportDataDto.class),
 })
 public interface ReportDataDto {
+
   String createCommandKey();
+
   List<String> createCommandKeys();
+
 }

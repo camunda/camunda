@@ -39,7 +39,7 @@ test('create a collection and entities inside it', async (t) => {
 
   await t.click(Common.createNewButton);
 
-  const createNewMenu = Common.menu('Create New').textContent;
+  const createNewMenu = Common.menu('Create new').textContent;
 
   await t.expect(createNewMenu).notContains('Collection');
   await t.expect(createNewMenu).contains('Dashboard');
@@ -54,7 +54,7 @@ test('create a collection and entities inside it', async (t) => {
   await t.click(e.collectionBreadcrumb);
 
   await t.expect(Common.dashboardItem.visible).ok();
-  await t.expect(Common.dashboardItem.textContent).contains('Blank Dashboard');
+  await t.expect(Common.dashboardItem.textContent).contains('Blank dashboard');
   await t.expect(Common.dashboardItem.textContent).contains(description);
 });
 
@@ -109,7 +109,7 @@ test('user permissions', async (t) => {
   await t.click(Common.modalConfirmButton);
 
   await t.expect(e.groupItem.visible).ok();
-  await t.expect(e.groupItem.textContent).contains('User Group');
+  await t.expect(e.groupItem.textContent).contains('User group');
   await t.expect(e.groupItem.textContent).contains('Sales');
   await t.expect(e.groupItem.textContent).contains('Viewer');
 

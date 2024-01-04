@@ -25,13 +25,13 @@ test('should apply a filter to the report result', async (t) => {
   await u.createNewDecisionReport(t);
 
   await u.selectDefinition(t, 'Invoice Classification');
-  await u.selectView(t, 'Evaluation Count');
+  await u.selectView(t, 'Evaluation count');
 
   const unfiltered = +(await ProcessReport.reportNumber.textContent);
 
   await t.click(ProcessReport.sectionToggle('Filters'));
   await t.click(ProcessReport.filterButton);
-  await t.click(Common.menuOption('Input Variable'));
+  await t.click(Common.menuOption('Input variable'));
   await t.click(Common.comboBox);
   await t.click(Common.carbonOption('Invoice Amount'));
   await t.click(Filter.variableFilterOperatorButton('is less than'));
@@ -49,17 +49,17 @@ test('should have seperate input and output variables', async (t) => {
   await u.createNewDecisionReport(t);
 
   await u.selectDefinition(t, 'Invoice Classification');
-  await u.selectView(t, 'Evaluation Count');
+  await u.selectView(t, 'Evaluation count');
 
   await t.click(ProcessReport.sectionToggle('Filters'));
   await t.click(ProcessReport.filterButton);
-  await t.click(Common.menuOption('Input Variable'));
+  await t.click(Common.menuOption('Input variable'));
   await t.click(Common.comboBox);
   await t.expect(Common.carbonOption('Classification').exists).notOk();
   await t.click(Filter.modalCancel);
 
   await t.click(ProcessReport.filterButton);
-  await t.click(Common.menuOption('Output Variable'));
+  await t.click(Common.menuOption('Output variable'));
   await t.click(Common.comboBox);
 
   await t.expect(Common.carbonOption('Invoice Amount').exists).notOk();

@@ -214,24 +214,20 @@ export function formatTenants(tenantIds, tenantInfo, showOnlyTenant) {
   return '';
 }
 
-export function formatLabel(label, numbersOnly) {
-  if (!label || typeof label === 'object') {
-    return label;
-  }
-  const MAX_LENGHT = 50;
-  const tooLong = label.length >= MAX_LENGHT;
-  const parsedLabel = Number.parseFloat(label);
-  const isNan = Number.isNaN(parsedLabel);
+export function formatLabel(label, formatNumbersOnly) {
+  const MAX_LENGTH = 50;
 
-  if (!tooLong || (numbersOnly && isNan)) {
+  if (!label || typeof label === 'object' || label.toString().length <= MAX_LENGTH) {
     return label;
   }
 
-  if (isNan) {
-    return label.slice(0, MAX_LENGHT) + '...';
+  // too long string
+  if (isNaN(label)) {
+    return formatNumbersOnly ? label : label.slice(0, MAX_LENGTH) + '...';
   }
 
-  return parsedLabel.toExponential();
+  // too long number
+  return Number.parseFloat(label).toExponential();
 }
 
 export {

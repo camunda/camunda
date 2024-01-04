@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
+import org.camunda.optimize.util.SuppressionConstants;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -52,6 +53,7 @@ public class ProcessCleanupConfiguration {
     return new HashSet<>(processDefinitionSpecificConfiguration.keySet());
   }
 
+  @SuppressWarnings(SuppressionConstants.UNUSED)
   public void setProcessDefinitionSpecificConfiguration(
     Map<String, ProcessDefinitionCleanupConfiguration> processDefinitionSpecificConfiguration) {
     this.processDefinitionSpecificConfiguration = Optional.ofNullable(processDefinitionSpecificConfiguration)

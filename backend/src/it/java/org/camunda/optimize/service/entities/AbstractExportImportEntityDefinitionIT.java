@@ -533,8 +533,8 @@ public abstract class AbstractExportImportEntityDefinitionIT extends AbstractPla
     final ProcessReportDataDto reportData) {
     final SingleProcessReportDefinitionRequestDto reportDef = new SingleProcessReportDefinitionRequestDto();
     reportDef.setId(VALID_PROCESS_REPORT_ID);
-    reportDef.setName("Test Process Report");
-    reportDef.setDescription("Test Process Report Description");
+    reportDef.setName("Test process report");
+    reportDef.setDescription("Test process report description");
     reportDef.setData(reportData);
     reportDef.setCreated(OffsetDateTime.parse("2019-01-01T00:00:00+00:00"));
     reportDef.setLastModified(OffsetDateTime.parse("2019-01-02T00:00:00+00:00"));
@@ -547,8 +547,8 @@ public abstract class AbstractExportImportEntityDefinitionIT extends AbstractPla
     final DecisionReportDataDto reportData) {
     final SingleDecisionReportDefinitionRequestDto reportDef = new SingleDecisionReportDefinitionRequestDto();
     reportDef.setId(VALID_DECISION_REPORT_ID);
-    reportDef.setName("Test Decision Report");
-    reportDef.setDescription("Test Decision Report Description");
+    reportDef.setName("Test decision report");
+    reportDef.setDescription("Test decision report description");
     reportDef.setData(reportData);
     reportDef.setCreated(OffsetDateTime.parse("2019-01-01T00:00:00+00:00"));
     reportDef.setLastModified(OffsetDateTime.parse("2019-01-02T00:00:00+00:00"));

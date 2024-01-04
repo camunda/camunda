@@ -54,12 +54,6 @@ it('should load entities', () => {
   expect(loadEntities).toHaveBeenCalled();
 });
 
-it('should display the user name', () => {
-  const node = shallow(<Home {...props} />);
-
-  expect(node.find('.welcomeMessage')).toIncludeText('John Doe');
-});
-
 it('should show a ReportTemplateModal', () => {
   const node = shallow(<Home {...props} />);
 
@@ -111,7 +105,7 @@ it('should show empty state component', async () => {
 
   const emptyState = node.find('EmptyState');
 
-  expect(emptyState.prop('title')).toBe('Start by creating a Dashboard');
+  expect(emptyState.prop('title')).toBe('Start by creating a dashboard');
   expect(emptyState.prop('description')).toBe(
     'Click Create New Dashboard to get insights into business processes'
   );

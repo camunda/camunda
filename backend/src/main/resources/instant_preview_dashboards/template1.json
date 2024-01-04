@@ -91,8 +91,8 @@
         "stackedBar": false,
         "horizontalBar": false,
         "logScale": false,
-        "yLabel": "Flow Node Count",
-        "xLabel": "Flow Nodes"
+        "yLabel": "fn",
+        "xLabel": "flowNodes"
       },
       "definitions": [
         {
@@ -231,8 +231,8 @@
         "stackedBar": false,
         "horizontalBar": false,
         "logScale": false,
-        "yLabel": "Process Instance Count",
-        "xLabel": "None"
+        "yLabel": "pi",
+        "xLabel": "none"
       },
       "definitions": [
         {
@@ -371,8 +371,8 @@
         "stackedBar": false,
         "horizontalBar": false,
         "logScale": false,
-        "yLabel": "Process Instance Count",
-        "xLabel": "End Date"
+        "yLabel": "pi",
+        "xLabel": "endDate"
       },
       "definitions": [
         {
@@ -522,8 +522,8 @@
         "stackedBar": false,
         "horizontalBar": false,
         "logScale": false,
-        "yLabel": "Flow Node Duration",
-        "xLabel": "Flow Nodes"
+        "yLabel": "fn",
+        "xLabel": "flowNodes"
       },
       "definitions": [
         {
@@ -671,8 +671,8 @@
         "stackedBar": false,
         "horizontalBar": false,
         "logScale": false,
-        "yLabel": "Process Instance Count",
-        "xLabel": "None"
+        "yLabel": "pi",
+        "xLabel": "none"
       },
       "definitions": [
         {
@@ -820,8 +820,8 @@
         "stackedBar": false,
         "horizontalBar": false,
         "logScale": false,
-        "yLabel": "Incident Count",
-        "xLabel": "Flow Nodes"
+        "yLabel": "in",
+        "xLabel": "flowNodes"
       },
       "definitions": [
         {
@@ -960,8 +960,8 @@
         "stackedBar": false,
         "horizontalBar": false,
         "logScale": false,
-        "yLabel": "Process Instance Count",
-        "xLabel": "None"
+        "yLabel": "pi",
+        "xLabel": "none"
       },
       "definitions": [
         {
@@ -1109,8 +1109,8 @@
         "stackedBar": false,
         "horizontalBar": false,
         "logScale": false,
-        "yLabel": "Incident Count",
-        "xLabel": "None"
+        "yLabel": "in",
+        "xLabel": "none"
       },
       "definitions": [
         {
