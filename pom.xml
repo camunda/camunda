@@ -29,8 +29,8 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <version.zeebe>8.4.0-alpha2</version.zeebe>
-    <version.identity>8.4.0-alpha2</version.identity>
+    <version.zeebe>8.4.0</version.zeebe>
+    <version.identity>8.4.0</version.identity>
     <version.elasticsearch>7.17.16</version.elasticsearch>
     <version.elasticsearch-client>8.7.1</version.elasticsearch-client>
     <version.opensearch>2.7.0</version.opensearch>
