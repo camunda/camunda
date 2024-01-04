@@ -19,6 +19,7 @@ public class ZeebeConstants {
 
   public static final String ATTRIBUTE_RETRIES = "retries";
   public static final String ATTRIBUTE_TYPE = "type";
+  public static final String ATTRIBUTE_EVENT_TYPE = "eventType";
 
   public static final String ATTRIBUTE_KEY = "key";
   public static final String ATTRIBUTE_NAME = "name";
@@ -70,6 +71,7 @@ public class ZeebeConstants {
   public static final String ELEMENT_TASK_HEADERS = "taskHeaders";
 
   public static final String ELEMENT_EXECUTION_LISTENERS = "executionListeners";
+  public static final String ELEMENT_EXECUTION_LISTENER = "executionListener";
 
   public static final String ELEMENT_FORM_DEFINITION = "formDefinition";
   public static final String ELEMENT_USER_TASK_FORM = "userTaskForm";
