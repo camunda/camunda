@@ -32,12 +32,6 @@ public abstract class AzureBackupStoreException extends RuntimeException {
     }
   }
 
-  public static final class ContainerNotFound extends AzureBackupStoreException {
-    public ContainerNotFound(final String message) {
-      super(message);
-    }
-  }
-
   public static final class BlobAlreadyExists extends AzureBackupStoreException {
     public BlobAlreadyExists(final String message, final Throwable cause) {
       super(message, cause);

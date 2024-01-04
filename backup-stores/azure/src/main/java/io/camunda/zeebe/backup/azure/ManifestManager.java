@@ -27,7 +27,6 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
-import io.camunda.zeebe.backup.azure.AzureBackupStoreException.ContainerNotFound;
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.azure.manifest.Manifest;
 import io.camunda.zeebe.backup.azure.manifest.Manifest.InProgressManifest;
@@ -158,20 +157,19 @@ public final class ManifestManager {
 
   Manifest getManifest(final BackupIdentifier id) {
     final BlobClient blobClient;
+    final BinaryData binaryData;
+    blobClient =
+        blobContainerClient.getBlobClient(
+            MANIFEST_PATH_FORMAT.formatted(id.partitionId(), id.checkpointId(), id.nodeId()));
     try {
-      blobClient =
-          blobContainerClient.getBlobClient(
-              MANIFEST_PATH_FORMAT.formatted(id.partitionId(), id.checkpointId(), id.nodeId()));
+      binaryData = blobClient.downloadContent();
     } catch (final BlobStorageException e) {
-      if (e.getErrorCode() == BlobErrorCode.CONTAINER_NOT_FOUND) {
-        throw new ContainerNotFound(e.getMessage());
-      } else if (e.getErrorCode() == BlobErrorCode.BLOB_NOT_FOUND) {
+      if (e.getErrorCode() == BlobErrorCode.CONTAINER_NOT_FOUND
+          || e.getErrorCode() == BlobErrorCode.BLOB_NOT_FOUND) {
         return null;
       }
       throw new RuntimeException(e);
     }
-
-    final BinaryData binaryData = blobClient.downloadContent();
 
     try {
       return MAPPER.readValue(binaryData.toStream(), Manifest.class);
