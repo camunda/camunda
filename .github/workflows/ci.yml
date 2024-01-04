@@ -395,7 +395,7 @@ jobs:
     env:
       # bors-ng fails to set ${GITHUB_BASE_REF} to the target PR branch which breaks go-apidiff
       # so we use this fixed value as a workaround
-      GO_CLIENT_BASE_REF: stable/8.3
+      GO_CLIENT_BASE_REF: stable/8.4
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-zeebe
