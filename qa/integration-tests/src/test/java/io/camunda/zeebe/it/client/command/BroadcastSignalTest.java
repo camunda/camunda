@@ -151,11 +151,9 @@ public class BroadcastSignalTest {
     final Record<SignalRecordValue> record =
         signalRecords(SignalIntent.BROADCASTED).withSignalName(signalName).getFirst();
 
-    final long recordKey = record.getKey();
-
     // then
     final BroadcastSignalResponse response = responseFuture.join();
-    assertThat(response.getKey()).isEqualTo(recordKey);
+    assertThat(response.getKey()).isEqualTo(record.getKey());
     assertThat(response.getTenantId()).isEqualTo(record.getValue().getTenantId());
   }
 }
