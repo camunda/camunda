@@ -14,12 +14,11 @@ jobs:
       issues: write
       pull-requests: write
     steps:
-      - uses: blombard/move-to-current-iteration@master
+      - uses: rodrigo-lourenco-lopes/move-to-current-iteration@master
         with:
           owner: camunda
           number: 92 # project number
           token: ${{secrets.PROJECT_ADMIN_TOKEN}}
           iteration-field: Iteration
-          iteration: last
           new-iteration: Current
           statuses: ➡ Current Iteration
