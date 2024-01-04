@@ -18,8 +18,8 @@ jobs:
         with:
           owner: camunda
           number: 92 # project number
-          token: ${{secrets.GITHUB_TOKEN}}
+          token: ${{secrets.PROJECT_ADMIN_TOKEN}}
           iteration-field: Iteration
           iteration: last
           new-iteration: Current
-          statuses: In Progress
+          statuses: ➡ Current Iteration
