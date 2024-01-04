@@ -49,7 +49,9 @@ describe('<FormJSRenderer />', async () => {
     expect(await screen.findByLabelText(/surname/i)).toBeInTheDocument();
 
     await user.clear(screen.getByLabelText(/surname/i));
+    await user.tab();
     await user.type(screen.getByLabelText(/surname/i), 'bar');
+    await user.tab();
 
     formManager!.submit();
 
