@@ -300,12 +300,16 @@ public final class Gateway implements CloseableSilently {
     if (gatewayCfg.getLongPolling().isEnabled()) {
       return buildLongPollingHandler(brokerClient);
     } else {
-      return new RoundRobinActivateJobsHandler(brokerClient);
+      return new RoundRobinActivateJobsHandler(
+          brokerClient, gatewayCfg.getNetwork().getMaxMessageSize());
     }
   }
 
   private LongPollingActivateJobsHandler buildLongPollingHandler(final BrokerClient brokerClient) {
-    return LongPollingActivateJobsHandler.newBuilder().setBrokerClient(brokerClient).build();
+    return LongPollingActivateJobsHandler.newBuilder()
+        .setBrokerClient(brokerClient)
+        .setMaxMessageSize(gatewayCfg.getNetwork().getMaxMessageSize())
+        .build();
   }
 
   private ServerServiceDefinition applyInterceptors(final BindableService service) {
