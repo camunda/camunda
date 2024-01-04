@@ -86,11 +86,13 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
             ok -> {
               eventSubscriptionBehavior.unsubscribeFromEvents(context);
               compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
-              compensationSubscriptionBehaviour.completeCompensationHandler(context, element);
               return stateTransitionBehavior.transitionToCompleted(element, context);
             })
         .ifRightOrLeft(
-            completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
+            completed -> {
+              compensationSubscriptionBehaviour.completeCompensationHandler(context, element);
+              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+            },
             failure -> incidentBehavior.createIncident(failure, context));
   }
 

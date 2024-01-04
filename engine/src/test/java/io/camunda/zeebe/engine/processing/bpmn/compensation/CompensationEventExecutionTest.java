@@ -264,7 +264,12 @@ public class CompensationEventExecutionTest {
                 BpmnElementType.INTERMEDIATE_THROW_EVENT,
                 BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_COMPLETED,
-                "CompensationThrowEvent"));
+                "CompensationThrowEvent"),
+            tuple(
+                BpmnElementType.PROCESS,
+                BpmnEventType.UNSPECIFIED,
+                ProcessInstanceIntent.ELEMENT_COMPLETED,
+                PROCESS_ID));
   }
 
   @Test
@@ -353,7 +358,12 @@ public class CompensationEventExecutionTest {
                 BpmnElementType.END_EVENT,
                 BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_COMPLETED,
-                "CompensationEndEvent"));
+                "CompensationEndEvent"),
+            tuple(
+                BpmnElementType.PROCESS,
+                BpmnEventType.UNSPECIFIED,
+                ProcessInstanceIntent.ELEMENT_COMPLETED,
+                PROCESS_ID));
   }
 
   @Test
@@ -413,91 +423,11 @@ public class CompensationEventExecutionTest {
             r -> r.getValue().getElementId())
         .containsSubsequence(
             tuple(
-                BpmnElementType.USER_TASK,
-                BpmnEventType.UNSPECIFIED,
-                ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                "ActivityToCompensate2"),
-            tuple(
-                BpmnElementType.USER_TASK,
-                BpmnEventType.UNSPECIFIED,
-                ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                "ActivityToCompensate"),
-            tuple(
-                BpmnElementType.USER_TASK,
-                BpmnEventType.UNSPECIFIED,
-                ProcessInstanceIntent.ELEMENT_COMPLETED,
-                "ActivityToCompensate"),
-            tuple(
-                BpmnElementType.USER_TASK,
-                BpmnEventType.UNSPECIFIED,
-                ProcessInstanceIntent.ELEMENT_COMPLETED,
-                "ActivityToCompensate2"),
-            tuple(
                 BpmnElementType.INTERMEDIATE_THROW_EVENT,
                 BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED,
                 "CompensationThrowEvent"),
             tuple(
-                BpmnElementType.BOUNDARY_EVENT,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATING,
-                "CompensationBoundaryEvent2"),
-            tuple(
-                BpmnElementType.BOUNDARY_EVENT,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                "CompensationBoundaryEvent2"),
-            tuple(
-                BpmnElementType.BOUNDARY_EVENT,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_COMPLETING,
-                "CompensationBoundaryEvent2"),
-            tuple(
-                BpmnElementType.BOUNDARY_EVENT,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_COMPLETED,
-                "CompensationBoundaryEvent2"),
-            tuple(
-                BpmnElementType.BOUNDARY_EVENT,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATING,
-                "CompensationBoundaryEvent"),
-            tuple(
-                BpmnElementType.BOUNDARY_EVENT,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                "CompensationBoundaryEvent"),
-            tuple(
-                BpmnElementType.BOUNDARY_EVENT,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_COMPLETING,
-                "CompensationBoundaryEvent"),
-            tuple(
-                BpmnElementType.BOUNDARY_EVENT,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_COMPLETED,
-                "CompensationBoundaryEvent"),
-            tuple(
-                BpmnElementType.USER_TASK,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATING,
-                "CompensationHandler2"),
-            tuple(
-                BpmnElementType.USER_TASK,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                "CompensationHandler2"),
-            tuple(
-                BpmnElementType.USER_TASK,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATING,
-                "CompensationHandler"),
-            tuple(
-                BpmnElementType.USER_TASK,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                "CompensationHandler"),
-            tuple(
                 BpmnElementType.USER_TASK,
                 BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_COMPLETED,
@@ -511,7 +441,12 @@ public class CompensationEventExecutionTest {
                 BpmnElementType.INTERMEDIATE_THROW_EVENT,
                 BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_COMPLETED,
-                "CompensationThrowEvent"));
+                "CompensationThrowEvent"),
+            tuple(
+                BpmnElementType.PROCESS,
+                BpmnEventType.UNSPECIFIED,
+                ProcessInstanceIntent.ELEMENT_COMPLETED,
+                PROCESS_ID));
   }
 
   @Test
@@ -571,91 +506,11 @@ public class CompensationEventExecutionTest {
             r -> r.getValue().getElementId())
         .containsSubsequence(
             tuple(
-                BpmnElementType.USER_TASK,
-                BpmnEventType.UNSPECIFIED,
-                ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                "ActivityToCompensate2"),
-            tuple(
-                BpmnElementType.USER_TASK,
-                BpmnEventType.UNSPECIFIED,
-                ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                "ActivityToCompensate"),
-            tuple(
-                BpmnElementType.USER_TASK,
-                BpmnEventType.UNSPECIFIED,
-                ProcessInstanceIntent.ELEMENT_COMPLETED,
-                "ActivityToCompensate"),
-            tuple(
-                BpmnElementType.USER_TASK,
-                BpmnEventType.UNSPECIFIED,
-                ProcessInstanceIntent.ELEMENT_COMPLETED,
-                "ActivityToCompensate2"),
-            tuple(
                 BpmnElementType.END_EVENT,
                 BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_ACTIVATED,
                 "CompensationEndEvent"),
             tuple(
-                BpmnElementType.BOUNDARY_EVENT,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATING,
-                "CompensationBoundaryEvent"),
-            tuple(
-                BpmnElementType.BOUNDARY_EVENT,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                "CompensationBoundaryEvent"),
-            tuple(
-                BpmnElementType.BOUNDARY_EVENT,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_COMPLETING,
-                "CompensationBoundaryEvent"),
-            tuple(
-                BpmnElementType.BOUNDARY_EVENT,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_COMPLETED,
-                "CompensationBoundaryEvent"),
-            tuple(
-                BpmnElementType.BOUNDARY_EVENT,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATING,
-                "CompensationBoundaryEvent2"),
-            tuple(
-                BpmnElementType.BOUNDARY_EVENT,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                "CompensationBoundaryEvent2"),
-            tuple(
-                BpmnElementType.BOUNDARY_EVENT,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_COMPLETING,
-                "CompensationBoundaryEvent2"),
-            tuple(
-                BpmnElementType.BOUNDARY_EVENT,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_COMPLETED,
-                "CompensationBoundaryEvent2"),
-            tuple(
-                BpmnElementType.USER_TASK,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATING,
-                "CompensationHandler"),
-            tuple(
-                BpmnElementType.USER_TASK,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                "CompensationHandler"),
-            tuple(
-                BpmnElementType.USER_TASK,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATING,
-                "CompensationHandler2"),
-            tuple(
-                BpmnElementType.USER_TASK,
-                BpmnEventType.COMPENSATION,
-                ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                "CompensationHandler2"),
-            tuple(
                 BpmnElementType.USER_TASK,
                 BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_COMPLETED,
@@ -669,7 +524,12 @@ public class CompensationEventExecutionTest {
                 BpmnElementType.END_EVENT,
                 BpmnEventType.COMPENSATION,
                 ProcessInstanceIntent.ELEMENT_COMPLETED,
-                "CompensationEndEvent"));
+                "CompensationEndEvent"),
+            tuple(
+                BpmnElementType.PROCESS,
+                BpmnEventType.UNSPECIFIED,
+                ProcessInstanceIntent.ELEMENT_COMPLETED,
+                PROCESS_ID));
   }
 
   private BpmnModelInstance createModelFromClasspathResource(final String classpath) {

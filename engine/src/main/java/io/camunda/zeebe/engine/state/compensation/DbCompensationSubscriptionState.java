@@ -79,7 +79,7 @@ public class DbCompensationSubscriptionState implements MutableCompensationSubsc
   }
 
   @Override
-  public Optional<CompensationSubscription> findCompensationByCompensationHandlerId(
+  public Optional<CompensationSubscription> findSubscriptionByCompensationHandlerId(
       final String tenantId, final long piKey, final String compensationHandlerId) {
     tenantIdKey.wrapString(tenantId);
     processInstanceKey.wrapLong(piKey);
@@ -88,15 +88,29 @@ public class DbCompensationSubscriptionState implements MutableCompensationSubsc
     compensationSubscriptionColumnFamily.whileEqualPrefix(
         new DbCompositeKey<>(tenantIdKey, processInstanceKey),
         ((key, value) -> {
-          if (value.getRecord().getCompensationActivityElementId().equals(compensationHandlerId)) {
+          if (value.getRecord().getCompensationHandlerId().equals(compensationHandlerId)) {
             compensationSubscription.add(value.copy());
           }
         }));
 
-    if (compensationSubscription.isEmpty()) {
-      return Optional.empty();
-    }
-    return Optional.of(compensationSubscription.getFirst());
+    return compensationSubscription.stream().findFirst();
+  }
+
+  @Override
+  public Set<CompensationSubscription> findSubscriptionsByThrowEventInstanceKey(
+      final String tenantId, final long piKey, final long throwEventInstanceKey) {
+    tenantIdKey.wrapString(tenantId);
+    processInstanceKey.wrapLong(piKey);
+
+    final Set<CompensationSubscription> compensations = new HashSet<>();
+    compensationSubscriptionColumnFamily.whileEqualPrefix(
+        new DbCompositeKey<>(tenantIdKey, processInstanceKey),
+        ((key, value) -> {
+          if (value.getRecord().getThrowEventInstanceKey() == throwEventInstanceKey) {
+            compensations.add(value.copy());
+          }
+        }));
+    return compensations;
   }
 
   @Override
@@ -124,7 +138,7 @@ public class DbCompensationSubscriptionState implements MutableCompensationSubsc
   }
 
   @Override
-  public void remove(
+  public void delete(
       final String tenantId, final long processInstanceKey, final String compensableActivityId) {
     wrapCompensationKeys(processInstanceKey, compensableActivityId, tenantId);
 

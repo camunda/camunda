@@ -38,9 +38,7 @@ public class CompensationSubscription extends UnpackedObject implements DbValue 
         .setCompensableActivityScopeId(getRecord().getCompensableActivityScopeId());
     copy.recordProp.getValue().setThrowEventId(getRecord().getThrowEventId());
     copy.recordProp.getValue().setThrowEventInstanceKey(getRecord().getThrowEventInstanceKey());
-    copy.recordProp
-        .getValue()
-        .setCompensationActivityElementId(getRecord().getCompensationActivityElementId());
+    copy.recordProp.getValue().setCompensationHandlerId(getRecord().getCompensationHandlerId());
     copy.recordProp
         .getValue()
         .setVariables(BufferUtil.cloneBuffer(getRecord().getVariablesBuffer()));

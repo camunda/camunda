@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCompensation;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -17,7 +18,6 @@ import io.camunda.zeebe.engine.state.compensation.CompensationSubscription;
 import io.camunda.zeebe.engine.state.immutable.CompensationSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
-import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -27,7 +27,8 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import org.agrona.DirectBuffer;
 
@@ -63,7 +64,7 @@ public class BpmnCompensationSubscriptionBehaviour {
               .setCompensableActivityId(BufferUtil.bufferAsString(context.getElementId()))
               .setCompensableActivityScopeId(
                   BufferUtil.bufferAsString(element.getFlowScope().getId()))
-              .setCompensationActivityElementId(compensationHandlerId);
+              .setCompensationHandlerId(compensationHandlerId);
       stateWriter.appendFollowUpEvent(key, CompensationSubscriptionIntent.CREATED, compensation);
     }
   }
@@ -97,23 +98,26 @@ public class BpmnCompensationSubscriptionBehaviour {
     if (BpmnEventType.COMPENSATION.equals(context.getBpmnEventType())) {
       final var tenantId = context.getTenantId();
       final var processInstanceKey = context.getProcessInstanceKey();
-      final var compensationOpt =
-          compensationSubscriptionState.findCompensationByCompensationHandlerId(
-              tenantId, processInstanceKey, BufferUtil.bufferAsString(element.getId()));
-      if (compensationOpt.isPresent()) {
-        final var compensation = compensationOpt.get();
-        stateWriter.appendFollowUpEvent(
-            compensation.getKey(),
-            CompensationSubscriptionIntent.COMPLETED,
-            compensation.getRecord());
+      compensationSubscriptionState
+          .findSubscriptionByCompensationHandlerId(
+              tenantId, processInstanceKey, BufferUtil.bufferAsString(element.getId()))
+          .ifPresent(
+              compensation -> {
+                stateWriter.appendFollowUpEvent(
+                    compensation.getKey(),
+                    CompensationSubscriptionIntent.COMPLETED,
+                    compensation.getRecord());
 
-        final var compensations =
-            compensationSubscriptionState.findSubscriptionsByProcessInstanceKey(
-                tenantId, processInstanceKey);
-        if (compensations.isEmpty()) {
-          completeCompensationThrowEvent(context, compensation.getRecord().getThrowEventId());
-        }
-      }
+                final var compensations =
+                    compensationSubscriptionState.findSubscriptionsByThrowEventInstanceKey(
+                        tenantId,
+                        processInstanceKey,
+                        compensation.getRecord().getThrowEventInstanceKey());
+                if (compensations.isEmpty()) {
+                  completeCompensationThrowEvent(
+                      compensation.getRecord().getThrowEventInstanceKey());
+                }
+              });
     }
   }
 
@@ -185,19 +189,19 @@ public class BpmnCompensationSubscriptionBehaviour {
   }
 
   private String getCompensationHandlerId(final ExecutableActivity element) {
-    return BufferUtil.bufferAsString(
-        element.getBoundaryEvents().getFirst().getCompensation().getCompensationHandler().getId());
+    final var compensationHandlerId =
+        element.getBoundaryEvents().stream()
+            .map(ExecutableBoundaryEvent::getCompensation)
+            .filter(Objects::nonNull)
+            .map(ExecutableCompensation::getCompensationHandler)
+            .map(ExecutableActivity::getId)
+            .findFirst();
+    return compensationHandlerId.map(BufferUtil::bufferAsString).orElse(null);
   }
 
-  private void completeCompensationThrowEvent(
-      final BpmnElementContext context, final String throwEventId) {
+  private void completeCompensationThrowEvent(final long throwEventInstanceKey) {
 
-    final List<ElementInstance> children =
-        elementInstanceState.getChildren(context.getFlowScopeKey());
-
-    children.stream()
-        .filter(elementInstance -> elementInstance.getValue().getElementId().equals(throwEventId))
-        .findFirst()
+    Optional.ofNullable(elementInstanceState.getInstance(throwEventInstanceKey))
         .ifPresent(
             compensationThrowEvent -> {
               final long compensationThrowElementInstanceKey = compensationThrowEvent.getKey();

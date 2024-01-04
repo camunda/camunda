@@ -63,7 +63,7 @@ public interface CompensationSubscriptionRecordValue extends RecordValue {
   /**
    * @return the element id of the compensation handler
    */
-  String getCompensationActivityElementId();
+  String getCompensationHandlerId();
 
   /**
    * @return the local variables of activity with compensation handler

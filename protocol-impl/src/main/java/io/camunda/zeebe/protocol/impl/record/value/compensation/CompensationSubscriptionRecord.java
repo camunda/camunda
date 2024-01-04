@@ -38,8 +38,8 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
       new StringProperty("throwEventId", EMPTY_STRING);
   private final LongProperty throwEventInstanceKeyProperty =
       new LongProperty("throwEventInstanceKey", -1);
-  private final StringProperty compensationActivityElementIdProperty =
-      new StringProperty("compensationActivityElementId", EMPTY_STRING);
+  private final StringProperty compensationHandlerIdProperty =
+      new StringProperty("compensationHandlerId", EMPTY_STRING);
   private final DocumentProperty variablesProperty = new DocumentProperty("variables");
 
   public CompensationSubscriptionRecord() {
@@ -51,7 +51,7 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(compensableActivityScopeIdProperty)
         .declareProperty(throwEventIdProperty)
         .declareProperty(throwEventInstanceKeyProperty)
-        .declareProperty(compensationActivityElementIdProperty)
+        .declareProperty(compensationHandlerIdProperty)
         .declareProperty(variablesProperty);
   }
 
@@ -63,7 +63,7 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
     compensableActivityScopeIdProperty.setValue(record.getCompensableActivityScopeId());
     throwEventIdProperty.setValue(record.getThrowEventId());
     throwEventInstanceKeyProperty.setValue(record.getThrowEventInstanceKey());
-    compensationActivityElementIdProperty.setValue(record.getCompensationActivityElementId());
+    compensationHandlerIdProperty.setValue(record.getCompensationHandlerId());
     variablesProperty.setValue(record.getVariablesBuffer());
   }
 
@@ -118,8 +118,8 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
   }
 
   @Override
-  public String getCompensationActivityElementId() {
-    return BufferUtil.bufferAsString(compensationActivityElementIdProperty.getValue());
+  public String getCompensationHandlerId() {
+    return BufferUtil.bufferAsString(compensationHandlerIdProperty.getValue());
   }
 
   @Override
@@ -132,9 +132,9 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
-  public CompensationSubscriptionRecord setCompensationActivityElementId(
-      final String compensationActivityElementId) {
-    compensationActivityElementIdProperty.setValue(compensationActivityElementId);
+  public CompensationSubscriptionRecord setCompensationHandlerId(
+      final String compensationHandlerId) {
+    compensationHandlerIdProperty.setValue(compensationHandlerId);
     return this;
   }
 

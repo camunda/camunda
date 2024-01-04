@@ -19,6 +19,9 @@ public interface CompensationSubscriptionState {
   Set<CompensationSubscription> findSubscriptionsByProcessInstanceKey(
       String tenantId, long processInstanceKey);
 
-  Optional<CompensationSubscription> findCompensationByCompensationHandlerId(
+  Optional<CompensationSubscription> findSubscriptionByCompensationHandlerId(
       String tenantId, long processInstanceKey, String compensationHandlerId);
+
+  Set<CompensationSubscription> findSubscriptionsByThrowEventInstanceKey(
+      String tenantId, long processInstanceKey, long throwEventInstanceKey);
 }

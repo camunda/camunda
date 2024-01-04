@@ -24,7 +24,7 @@ public class CompensationSubscriptionCompletedApplier
 
   @Override
   public void applyState(final long key, final CompensationSubscriptionRecord value) {
-    compensationState.remove(
+    compensationState.delete(
         value.getTenantId(), value.getProcessInstanceKey(), value.getCompensableActivityId());
   }
 }
