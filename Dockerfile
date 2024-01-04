@@ -79,7 +79,7 @@ VOLUME /tmp
 
 COPY --from=prepare /tmp/tasklist /usr/local/tasklist
 
-RUN addgroup --gid 1002 tasklist && adduser -h /usr/local/tasklist -G tasklist -u 1002 -D tasklist
-USER tasklist:tasklist
+RUN addgroup --gid 1001 camunda && adduser -D -h /usr/local/tasklist -G camunda -u 1001 camunda
+USER 1001:1001
 
 ENTRYPOINT ["/sbin/tini", "--", "/usr/local/tasklist/bin/tasklist"]
