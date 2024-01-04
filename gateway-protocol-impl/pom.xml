@@ -131,7 +131,7 @@
                 <phase>generate-sources</phase>
                 <configuration>
                   <target>
-                    <copy failonerror="true" file="${project.build.directory}/generated-sources/protobuf/go/gateway.pb.go" tofile="${maven.multiModuleProjectDirectory}/clients/go/pkg/pb/gateway.pb.go" />
+                    <copy failonerror="true" file="${project.build.directory}/generated-sources/protobuf/go/gateway.pb.go" tofile="${maven.multiModuleProjectDirectory}/clients/go/pkg/pb/gateway.pb.go"></copy>
                   </target>
                 </configuration>
               </execution>
