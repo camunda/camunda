@@ -13,6 +13,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.response.BroadcastSignalResponse;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
@@ -138,5 +140,22 @@ public class BroadcastSignalTest {
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void shouldRespondWhenBroadcastingSignal() {
+    // when
+    final ZeebeFuture<BroadcastSignalResponse> responseFuture =
+        CLIENT_RULE.getClient().newBroadcastSignalCommand().signalName(signalName).send();
+
+    final Record<SignalRecordValue> record =
+        signalRecords(SignalIntent.BROADCASTED).withSignalName(signalName).getFirst();
+
+    final long recordKey = record.getKey();
+
+    // then
+    final BroadcastSignalResponse response = responseFuture.join();
+    assertThat(response.getKey()).isEqualTo(recordKey);
+    assertThat(response.getTenantId()).isEqualTo(record.getValue().getTenantId());
   }
 }
