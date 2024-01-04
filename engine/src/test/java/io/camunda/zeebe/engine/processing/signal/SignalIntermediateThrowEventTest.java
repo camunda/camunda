@@ -175,11 +175,15 @@ public class SignalIntermediateThrowEventTest {
   @Test
   public void shouldNotSendResponseWhenPartOfBatch() {
     // given
+    final String businessKey = "42";
+    final String messageName = "start";
+
     final var process =
         Bpmn.createExecutableProcess(PROCESS)
             .startEvent()
             .intermediateCatchEvent(
-                "start", b -> b.message(m -> m.name("start").zeebeCorrelationKey("=businessKey")))
+                "start",
+                b -> b.message(m -> m.name(messageName).zeebeCorrelationKey("=businessKey")))
             .intermediateThrowEvent("signal", b -> b.signal(SIGNAL_NAME_1))
             .endEvent()
             .done();
@@ -190,7 +194,7 @@ public class SignalIntermediateThrowEventTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(PROCESS)
-            .withVariables(Map.of("businessKey", "42"))
+            .withVariables(Map.of("businessKey", businessKey))
             .create();
 
     assertThat(
@@ -202,7 +206,7 @@ public class SignalIntermediateThrowEventTest {
         .isTrue();
 
     // when
-    ENGINE.message().withName("start").withCorrelationKey("42").publish();
+    ENGINE.message().withName(messageName).withCorrelationKey(businessKey).publish();
 
     assertThat(
             RecordingExporter.signalRecords(SignalIntent.BROADCASTED)
