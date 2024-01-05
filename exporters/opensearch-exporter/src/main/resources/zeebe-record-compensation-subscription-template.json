@@ -40,6 +40,9 @@
             "throwEventInstanceKey": {
               "type": "long"
             },
+            "compensationHandlerId": {
+              "type": "keyword"
+            },
             "variables": {
               "enabled": false
             }
