@@ -81,7 +81,7 @@ public final class AzureBackupStore implements BackupStore {
             fileSetManager.save(backup.id(), SEGMENTS_FILESET_NAME, backup.segments());
             manifestManager.completeManifest(persistedManifest);
           } catch (final Exception e) {
-            manifestManager.markAsFailed(persistedManifest.manifest(), e.getMessage());
+            manifestManager.markAsFailed(persistedManifest.manifest().id(), e.getMessage());
             throw e;
           }
         },
@@ -119,7 +119,12 @@ public final class AzureBackupStore implements BackupStore {
   @Override
   public CompletableFuture<BackupStatusCode> markFailed(
       final BackupIdentifier id, final String failureReason) {
-    throw new UnsupportedOperationException();
+    return CompletableFuture.supplyAsync(
+        () -> {
+          manifestManager.markAsFailed(id, failureReason);
+          return BackupStatusCode.FAILED;
+        },
+        executor);
   }
 
   @Override

@@ -136,17 +136,23 @@ public final class ManifestManager {
     }
   }
 
-  void markAsFailed(final Manifest existingManifest, final String failureReason) {
+  void markAsFailed(final BackupIdentifier manifestId, final String failureReason) {
     assureContainerCreated();
-    final BlobClient blobClient = blobContainerClient.getBlobClient(manifestPath(existingManifest));
+
+    final BlobClient blobClient = blobContainerClient.getBlobClient(manifestIdPath(manifestId));
+    Manifest manifest = getManifest(manifestId);
+    if (manifest == null) {
+      manifest = Manifest.createFailed(manifestId);
+    }
+
     final var updatedManifest =
-        switch (existingManifest.statusCode()) {
-          case FAILED -> existingManifest.asFailed();
-          case COMPLETED -> existingManifest.asCompleted().fail(failureReason);
-          case IN_PROGRESS -> existingManifest.asInProgress().fail(failureReason);
+        switch (manifest.statusCode()) {
+          case FAILED -> manifest.asFailed();
+          case COMPLETED -> manifest.asCompleted().fail(failureReason);
+          case IN_PROGRESS -> manifest.asInProgress().fail(failureReason);
         };
 
-    if (existingManifest != updatedManifest) {
+    if (manifest != updatedManifest) {
       try {
         blobClient.upload(BinaryData.fromBytes(MAPPER.writeValueAsBytes(updatedManifest)), true);
       } catch (final JsonProcessingException e) {
@@ -179,8 +185,12 @@ public final class ManifestManager {
   }
 
   private String manifestPath(final Manifest manifest) {
+    return manifestIdPath(manifest.id());
+  }
+
+  private String manifestIdPath(final BackupIdentifier backupIdentifier) {
     return MANIFEST_PATH_FORMAT.formatted(
-        manifest.id().partitionId(), manifest.id().checkpointId(), manifest.id().nodeId());
+        backupIdentifier.partitionId(), backupIdentifier.checkpointId(), backupIdentifier.nodeId());
   }
 
   void assureContainerCreated() {
