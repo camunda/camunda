@@ -39,6 +39,7 @@ import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.cluster.impl.RaftClusterContext;
+import io.atomix.raft.cluster.impl.RaftMemberContext;
 import io.atomix.raft.metrics.RaftReplicationMetrics;
 import io.atomix.raft.metrics.RaftRoleMetrics;
 import io.atomix.raft.metrics.RaftServiceMetrics;
@@ -79,6 +80,7 @@ import java.net.ConnectException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
@@ -565,6 +567,24 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     }
 
     return CompletableFuture.runAsync(raftLog::forceFlush, threadContext);
+  }
+
+  public void transferLeadership() {
+    threadContext.execute(
+        () -> {
+          final var localMemberId = cluster.getLocalMember().memberId();
+          Optional.ofNullable(electionConfig.getPrimary())
+              .filter(primary -> !primary.equals(localMemberId))
+              .or(
+                  () ->
+                      cluster.getReplicationTargets().stream()
+                          .max(Comparator.comparing(RaftMemberContext::getMatchIndex))
+                          .map(context -> context.getMember().memberId()))
+              .ifPresent(
+                  memberId ->
+                      protocol.transfer(
+                          memberId, TransferRequest.builder().withMember(localMemberId).build()));
+        });
   }
 
   /** Attempts to become the leader. */
