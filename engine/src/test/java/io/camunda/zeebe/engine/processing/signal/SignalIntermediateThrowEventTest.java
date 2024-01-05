@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.signal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -174,44 +175,26 @@ public class SignalIntermediateThrowEventTest {
 
   @Test
   public void shouldNotSendResponseWhenPartOfBatch() {
-    // given
-    final String businessKey = "42";
-    final String messageName = "start";
+    clearInvocations(ENGINE.getCommandResponseWriter());
 
+    // given
     final var process =
         Bpmn.createExecutableProcess(PROCESS)
             .startEvent()
-            .intermediateCatchEvent(
-                "start",
-                b -> b.message(m -> m.name(messageName).zeebeCorrelationKey("=businessKey")))
             .intermediateThrowEvent("signal", b -> b.signal(SIGNAL_NAME_1))
             .endEvent()
             .done();
 
     ENGINE.deployment().withXmlResource(process).deploy();
 
-    final var processInstanceKey =
-        ENGINE
-            .processInstance()
-            .ofBpmnProcessId(PROCESS)
-            .withVariables(Map.of("businessKey", businessKey))
-            .create();
-
-    assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementId("start")
-                .limit(1)
-                .exists())
-        .isTrue();
-
     // when
-    ENGINE.message().withName(messageName).withCorrelationKey(businessKey).publish();
+    ENGINE.processInstance().ofBpmnProcessId(PROCESS).create();
 
     assertThat(
             RecordingExporter.signalRecords(SignalIntent.BROADCASTED)
                 .withSignalName(SIGNAL_NAME_1)
-                .limit(1)
+                // No need to use .limit(1) here as .exists() uses .findFirst() in order to
+                // determine if the element is present.
                 .exists())
         .isTrue();
 
