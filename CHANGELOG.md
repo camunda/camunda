@@ -1,7 +1,7 @@
 # v8.4.0
 ## 🧹 Chore
 * change dockerfile uid and gid ([#4220](https://github.com/camunda/tasklist/issues/4220))
-* Bump form-js@1.6.2 ([#4218](https://github.com/camunda/tasklist/issues/4218))
+* Bump form-js@1.6.3 ([#4222](https://github.com/camunda/tasklist/pull/4222))
 * Revert release 8.4 automation commits for rebuild ([#4219](https://github.com/camunda/tasklist/issues/4219))
 * update CHANGELOG.md
 # v8.4.0-alpha2
