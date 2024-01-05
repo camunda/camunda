@@ -48,10 +48,10 @@
   // Branches to be checked
   baseBranches: [
     "master",
-    "release/3.12.0",
+    "maintenance/3.12",
     "maintenance/3.11",
     "maintenance/3.10",
-    "maintenance/3.9"
+    "maintenance/3.9",
   ],
   // This ignores are the ones comming by default from config:base with exception to **/test/**
   // We do this to be able to test files in docker/test directory
@@ -90,7 +90,7 @@
   packageRules: [
     // Ignore deps
     {
-      "matchPackageNames": [
+      matchPackageNames: [
         "org.camunda.optimize:optimize-data-generator",
         "org.camunda.optimize:camunda-optimize",
         "org.camunda.optimize:util",
@@ -106,9 +106,9 @@
         "io.camunda:zeebe-client-java",
         "io.camunda:zeebe-protocol",
         "ant-contrib:ant-contrib",
-        "old-bpmn-js"
+        "old-bpmn-js",
       ],
-      "enabled": false
+      enabled: false,
     },
     // Frontend deps
     {
