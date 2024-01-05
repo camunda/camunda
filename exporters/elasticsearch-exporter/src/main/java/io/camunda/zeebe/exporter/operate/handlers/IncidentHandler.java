@@ -12,11 +12,10 @@ import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.IncidentState;
-import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.OperateElasticsearchBulkRequest;
 import io.camunda.zeebe.exporter.operate.schema.templates.IncidentTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -110,16 +109,11 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
   }
 
   @Override
-  public void flush(IncidentEntity incident, BatchRequest batchRequest)
-      throws PersistenceException {
+  public void flush(IncidentEntity incident, OperateElasticsearchBulkRequest batchRequest) {
 
     LOGGER.debug("Index incident: id {}", incident.getId());
     // we only insert incidents but never update -> update will be performed in post importer
-    batchRequest.upsert(
-        incidentTemplate.getFullQualifiedName(),
-        String.valueOf(incident.getKey()),
-        incident,
-        Map.of());
+    batchRequest.upsert(incidentTemplate.getFullQualifiedName(), incident, Map.of());
   }
 
   @Override

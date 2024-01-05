@@ -11,8 +11,8 @@ import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
 import io.camunda.operate.entities.SequenceFlowEntity;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.store.BatchRequest;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.OperateElasticsearchBulkRequest;
 import io.camunda.zeebe.exporter.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -74,11 +74,11 @@ public class SequenceFlowHandler
   }
 
   @Override
-  public void flush(SequenceFlowEntity entity, BatchRequest batchRequest)
+  public void flush(SequenceFlowEntity entity, OperateElasticsearchBulkRequest batchRequest)
       throws PersistenceException {
 
     LOGGER.debug("Index sequence flow: id {}", entity.getId());
-    batchRequest.add(sequenceFlowTemplate.getFullQualifiedName(), entity);
+    batchRequest.index(sequenceFlowTemplate.getFullQualifiedName(), entity);
   }
 
   @Override

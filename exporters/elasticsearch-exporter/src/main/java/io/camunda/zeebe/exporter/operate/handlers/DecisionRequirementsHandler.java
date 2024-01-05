@@ -11,9 +11,8 @@ import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
 import io.camunda.operate.entities.dmn.definition.DecisionRequirementsEntity;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.store.BatchRequest;
-import io.camunda.operate.util.ConversionUtils;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.OperateElasticsearchBulkRequest;
 import io.camunda.zeebe.exporter.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -89,17 +88,14 @@ public class DecisionRequirementsHandler
   }
 
   @Override
-  public void flush(DecisionRequirementsEntity entity, BatchRequest batchRequest)
+  public void flush(DecisionRequirementsEntity entity, OperateElasticsearchBulkRequest batchRequest)
       throws PersistenceException {
     LOGGER.debug(
         "Process: key {}, decisionRequirementsId {}",
         entity.getKey(),
         entity.getDecisionRequirementsId());
 
-    batchRequest.addWithId(
-        decisionRequirementsIndex.getFullQualifiedName(),
-        ConversionUtils.toStringOrNull(entity.getKey()),
-        entity);
+    batchRequest.index(decisionRequirementsIndex.getFullQualifiedName(), entity);
   }
 
   @Override

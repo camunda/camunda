@@ -10,8 +10,8 @@ package io.camunda.zeebe.exporter.operate.handlers;
 import io.camunda.operate.entities.post.PostImporterActionType;
 import io.camunda.operate.entities.post.PostImporterQueueEntity;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.store.BatchRequest;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.OperateElasticsearchBulkRequest;
 import io.camunda.zeebe.exporter.operate.schema.templates.PostImporterQueueTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -66,9 +66,9 @@ public class PostImporterQueueHandler
   }
 
   @Override
-  public void flush(PostImporterQueueEntity entity, BatchRequest batchRequest)
+  public void flush(PostImporterQueueEntity entity, OperateElasticsearchBulkRequest batchRequest)
       throws PersistenceException {
-    batchRequest.add(postImporterQueueTemplate.getFullQualifiedName(), entity);
+    batchRequest.index(postImporterQueueTemplate.getFullQualifiedName(), entity);
   }
 
   @Override

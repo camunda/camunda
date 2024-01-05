@@ -10,7 +10,6 @@ package io.camunda.zeebe.exporter.operate;
 import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.Tuple;
 import io.camunda.zeebe.exporter.operate.handlers.DecisionInstanceHandler;
@@ -100,8 +99,7 @@ public class ExportBatchWriter {
             });
   }
 
-  public void flush(BatchRequest request) throws PersistenceException {
-    // TODO: flush here to an ES bulk request
+  public void flush(OperateElasticsearchBulkRequest request) throws PersistenceException {
     // TODO: consider that some handlers modify the same entity (e.g. list view flow node instances
     // are
     // updated from process instance and incident records); either change this

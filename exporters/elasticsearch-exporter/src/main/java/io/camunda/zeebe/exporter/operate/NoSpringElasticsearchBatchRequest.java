@@ -102,13 +102,14 @@ public class NoSpringElasticsearchBatchRequest implements BatchRequest {
         entity,
         updateFields);
     try {
+      HashMap actualParams =
+          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
+
       bulkRequest.add(
           new UpdateRequest()
               .index(index)
               .id(id)
-              .doc(
-                  objectMapper.readValue(
-                      objectMapper.writeValueAsString(updateFields), HashMap.class)) // empty
+              .doc(actualParams) // empty
               .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON));
     } catch (JsonProcessingException e) {
       throw new PersistenceException(
@@ -223,6 +224,7 @@ public class NoSpringElasticsearchBatchRequest implements BatchRequest {
   @Override
   public void execute() throws PersistenceException {
     LOGGER.debug("Execute batchRequest with {} requests", bulkRequest.requests().size());
+
     ElasticsearchUtil.processBulkRequest(
         esClient, bulkRequest, ElasticsearchProperties.BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT);
   }

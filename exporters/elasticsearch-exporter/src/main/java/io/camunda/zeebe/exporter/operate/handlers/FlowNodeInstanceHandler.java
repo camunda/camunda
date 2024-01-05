@@ -18,11 +18,11 @@ import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.operate.util.SoftHashMap;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.OperateElasticsearchBulkRequest;
 import io.camunda.zeebe.exporter.operate.OperateElasticsearchExporterConfiguration;
 import io.camunda.zeebe.exporter.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.zeebe.protocol.record.Record;
@@ -244,11 +244,11 @@ public class FlowNodeInstanceHandler
   }
 
   @Override
-  public void flush(FlowNodeInstanceEntity fniEntity, BatchRequest batchRequest)
+  public void flush(FlowNodeInstanceEntity fniEntity, OperateElasticsearchBulkRequest batchRequest)
       throws PersistenceException {
     LOGGER.debug("Flow node instance: id {}", fniEntity.getId());
     if (canOptimizeFlowNodeInstanceIndexing(fniEntity)) {
-      batchRequest.add(flowNodeInstanceTemplate.getFullQualifiedName(), fniEntity);
+      batchRequest.index(flowNodeInstanceTemplate.getFullQualifiedName(), fniEntity);
     } else {
       final Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(FlowNodeInstanceTemplate.ID, fniEntity.getId());
@@ -269,11 +269,7 @@ public class FlowNodeInstanceHandler
       if (fniEntity.getPosition() != null) {
         updateFields.put(FlowNodeInstanceTemplate.POSITION, fniEntity.getPosition());
       }
-      batchRequest.upsert(
-          flowNodeInstanceTemplate.getFullQualifiedName(),
-          fniEntity.getId(),
-          fniEntity,
-          updateFields);
+      batchRequest.upsert(flowNodeInstanceTemplate.getFullQualifiedName(), fniEntity, updateFields);
     }
   }
 

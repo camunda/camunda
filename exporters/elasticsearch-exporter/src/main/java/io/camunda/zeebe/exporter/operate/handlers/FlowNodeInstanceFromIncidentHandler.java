@@ -11,9 +11,9 @@ import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.OperateElasticsearchBulkRequest;
 import io.camunda.zeebe.exporter.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -88,14 +88,13 @@ public class FlowNodeInstanceFromIncidentHandler
   }
 
   @Override
-  public void flush(FlowNodeInstanceEntity entity, BatchRequest batchRequest)
+  public void flush(FlowNodeInstanceEntity entity, OperateElasticsearchBulkRequest batchRequest)
       throws PersistenceException {
 
     LOGGER.debug("Flow node instance: id {}", entity.getId());
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(FlowNodeInstanceTemplate.INCIDENT_KEY, entity.getIncidentKey());
-    batchRequest.upsert(
-        flowNodeInstanceTemplate.getFullQualifiedName(), entity.getId(), entity, updateFields);
+    batchRequest.upsert(flowNodeInstanceTemplate.getFullQualifiedName(), entity, updateFields);
   }
 
   @Override

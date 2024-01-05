@@ -11,8 +11,8 @@ import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.store.BatchRequest;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.OperateElasticsearchBulkRequest;
 import io.camunda.zeebe.exporter.operate.schema.templates.ListViewTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -81,7 +81,8 @@ public class ListViewFromVariableHandler
   }
 
   @Override
-  public void flush(VariableForListViewEntity variableEntity, BatchRequest batchRequest)
+  public void flush(
+      VariableForListViewEntity variableEntity, OperateElasticsearchBulkRequest batchRequest)
       throws PersistenceException {
     // TODO: restore insert or upsert behavior
     // final var initialIntent = cachedVariable.getLeft();
@@ -96,12 +97,11 @@ public class ListViewFromVariableHandler
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(ListViewTemplate.VAR_NAME, variableEntity.getVarName());
     updateFields.put(ListViewTemplate.VAR_VALUE, variableEntity.getVarValue());
-    batchRequest.upsertWithRouting(
+    batchRequest.upsert(
         listViewTemplate.getFullQualifiedName(),
-        variableEntity.getId(),
+        processInstanceKey.toString(),
         variableEntity,
-        updateFields,
-        processInstanceKey.toString());
+        updateFields);
     // }
 
   }

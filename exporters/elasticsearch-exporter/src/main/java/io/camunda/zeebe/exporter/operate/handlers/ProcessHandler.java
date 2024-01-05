@@ -11,10 +11,9 @@ import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.store.BatchRequest;
-import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.zeebeimport.util.XMLUtil;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.OperateElasticsearchBulkRequest;
 import io.camunda.zeebe.exporter.operate.schema.indices.ProcessIndex;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -98,7 +97,7 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
   }
 
   @Override
-  public void flush(ProcessEntity processEntity, BatchRequest batchRequest)
+  public void flush(ProcessEntity processEntity, OperateElasticsearchBulkRequest batchRequest)
       throws PersistenceException {
     LOGGER.debug(
         "Process: key {}, bpmnProcessId {}",
@@ -119,10 +118,7 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
     // updateFields);
     // }
 
-    batchRequest.addWithId(
-        processIndex.getFullQualifiedName(),
-        ConversionUtils.toStringOrNull(processEntity.getKey()),
-        processEntity);
+    batchRequest.index(processIndex.getFullQualifiedName(), processEntity);
   }
 
   @Override

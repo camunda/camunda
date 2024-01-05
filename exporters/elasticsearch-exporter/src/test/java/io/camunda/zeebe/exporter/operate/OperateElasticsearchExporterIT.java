@@ -244,7 +244,7 @@ public class OperateElasticsearchExporterIT {
             entry("batchOperationIds", null),
             entry("incident", false),
             entry("tenantId", "<default>"),
-            entry("treePath", null));
+            entry("treePath", "PI_2251799813685251"));
 
     // there should be flow node instances
     final String flowNodeIndexName =
@@ -266,7 +266,7 @@ public class OperateElasticsearchExporterIT {
     assertThat(startEvent.getPosition()).isEqualTo(10);
 
     assertThat(startEvent.getFlowNodeId()).isEqualTo("start");
-    assertThat(startEvent.getLevel()).isEqualTo(0);
+    assertThat(startEvent.getLevel()).isEqualTo(1);
     assertThat(startEvent.getType()).isEqualTo(FlowNodeType.START_EVENT);
 
     assertThat(startEvent.getBpmnProcessId()).isEqualTo("process");
@@ -277,7 +277,7 @@ public class OperateElasticsearchExporterIT {
     assertThat(startEvent.getEndDate()).isEqualTo(asDate(1702371335547L));
     assertThat(startEvent.getIncidentKey()).isNull();
     assertThat(startEvent.getTenantId()).isEqualTo("<default>");
-    assertThat(startEvent.getTreePath()).isNull();
+    assertThat(startEvent.getTreePath()).isEqualTo("2251799813685251/2251799813685253");
 
     // service task 2251799813685255
     final FlowNodeInstanceEntity serviceTask = flowNodeInstances.get("2251799813685255");
@@ -288,7 +288,7 @@ public class OperateElasticsearchExporterIT {
     assertThat(serviceTask.getPosition()).isEqualTo(17);
 
     assertThat(serviceTask.getFlowNodeId()).isEqualTo("task");
-    assertThat(serviceTask.getLevel()).isEqualTo(0);
+    assertThat(serviceTask.getLevel()).isEqualTo(1);
     assertThat(serviceTask.getType()).isEqualTo(FlowNodeType.SERVICE_TASK);
 
     assertThat(serviceTask.getBpmnProcessId()).isEqualTo("process");
@@ -299,7 +299,7 @@ public class OperateElasticsearchExporterIT {
     assertThat(serviceTask.getEndDate()).isEqualTo(asDate(1702371335671L));
     assertThat(serviceTask.getIncidentKey()).isNull();
     assertThat(serviceTask.getTenantId()).isEqualTo("<default>");
-    assertThat(serviceTask.getTreePath()).isNull();
+    assertThat(serviceTask.getTreePath()).isEqualTo("2251799813685251/2251799813685255");
 
     // end event 2251799813685260
     final FlowNodeInstanceEntity endEvent = flowNodeInstances.get("2251799813685260");
@@ -310,7 +310,7 @@ public class OperateElasticsearchExporterIT {
     assertThat(endEvent.getPosition()).isEqualTo(30);
 
     assertThat(endEvent.getFlowNodeId()).isEqualTo("end");
-    assertThat(endEvent.getLevel()).isEqualTo(0);
+    assertThat(endEvent.getLevel()).isEqualTo(1);
     assertThat(endEvent.getType()).isEqualTo(FlowNodeType.END_EVENT);
 
     assertThat(endEvent.getBpmnProcessId()).isEqualTo("process");
@@ -321,7 +321,7 @@ public class OperateElasticsearchExporterIT {
     assertThat(endEvent.getEndDate()).isEqualTo(asDate(1702371335671L));
     assertThat(endEvent.getIncidentKey()).isNull();
     assertThat(endEvent.getTenantId()).isEqualTo("<default>");
-    assertThat(endEvent.getTreePath()).isNull();
+    assertThat(endEvent.getTreePath()).isEqualTo("2251799813685251/2251799813685260");
   }
 
   @Test

@@ -13,8 +13,8 @@ import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.ImportProperties;
-import io.camunda.operate.store.BatchRequest;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.OperateElasticsearchBulkRequest;
 import io.camunda.zeebe.exporter.operate.schema.templates.VariableTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -90,7 +90,7 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
   }
 
   @Override
-  public void flush(VariableEntity variableEntity, BatchRequest batchRequest)
+  public void flush(VariableEntity variableEntity, OperateElasticsearchBulkRequest batchRequest)
       throws PersistenceException {
 
     // TODO: restore the distinction between insert and upsert
@@ -105,11 +105,7 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
     updateFields.put(VariableTemplate.VALUE, variableEntity.getValue());
     updateFields.put(VariableTemplate.FULL_VALUE, variableEntity.getFullValue());
     updateFields.put(VariableTemplate.IS_PREVIEW, variableEntity.getIsPreview());
-    batchRequest.upsert(
-        variableTemplate.getFullQualifiedName(),
-        variableEntity.getId(),
-        variableEntity,
-        updateFields);
+    batchRequest.upsert(variableTemplate.getFullQualifiedName(), variableEntity, updateFields);
     // }
 
   }

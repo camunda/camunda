@@ -11,9 +11,9 @@ import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
 import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.OperateElasticsearchBulkRequest;
 import io.camunda.zeebe.exporter.operate.schema.templates.ListViewTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -94,7 +94,8 @@ public class ListViewFromJobHandler
   }
 
   @Override
-  public void flush(FlowNodeInstanceForListViewEntity entity, BatchRequest batchRequest)
+  public void flush(
+      FlowNodeInstanceForListViewEntity entity, OperateElasticsearchBulkRequest batchRequest)
       throws PersistenceException {
 
     LOGGER.debug(
@@ -106,12 +107,11 @@ public class ListViewFromJobHandler
     updateFields.put(
         ListViewTemplate.JOB_FAILED_WITH_RETRIES_LEFT, entity.isJobFailedWithRetriesLeft());
 
-    batchRequest.upsertWithRouting(
+    batchRequest.upsert(
         listViewTemplate.getFullQualifiedName(),
-        entity.getId(),
+        String.valueOf(entity.getProcessInstanceKey()),
         entity,
-        updateFields,
-        String.valueOf(entity.getProcessInstanceKey()));
+        updateFields);
   }
 
   @Override

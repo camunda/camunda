@@ -16,9 +16,9 @@ import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.OperateElasticsearchBulkRequest;
 import io.camunda.zeebe.exporter.operate.schema.templates.ListViewTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -141,15 +141,16 @@ public class ListViewFromActivityInstanceHandler
   }
 
   @Override
-  public void flush(FlowNodeInstanceForListViewEntity actEntity, BatchRequest batchRequest)
+  public void flush(
+      FlowNodeInstanceForListViewEntity actEntity, OperateElasticsearchBulkRequest batchRequest)
       throws PersistenceException {
 
     final Long processInstanceKey = actEntity.getProcessInstanceKey();
 
     LOGGER.debug("Flow node instance for list view: id {}", actEntity.getId());
     if (canOptimizeFlowNodeInstanceIndexing(actEntity)) {
-      batchRequest.addWithRouting(
-          listViewTemplate.getFullQualifiedName(), actEntity, processInstanceKey.toString());
+      batchRequest.index(
+          listViewTemplate.getFullQualifiedName(), processInstanceKey.toString(), actEntity);
     } else {
       final Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(ListViewTemplate.ID, actEntity.getId());
@@ -157,12 +158,11 @@ public class ListViewFromActivityInstanceHandler
       updateFields.put(ListViewTemplate.ACTIVITY_TYPE, actEntity.getActivityType());
       updateFields.put(ListViewTemplate.ACTIVITY_STATE, actEntity.getActivityState());
 
-      batchRequest.upsertWithRouting(
+      batchRequest.upsert(
           listViewTemplate.getFullQualifiedName(),
-          actEntity.getId(),
+          processInstanceKey.toString(),
           actEntity,
-          updateFields,
-          processInstanceKey.toString());
+          updateFields);
     }
   }
 

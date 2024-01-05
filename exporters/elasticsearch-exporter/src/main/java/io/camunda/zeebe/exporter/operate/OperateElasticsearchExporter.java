@@ -7,12 +7,16 @@
  */
 package io.camunda.zeebe.exporter.operate;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.SoftHashMap;
+import io.camunda.zeebe.exporter.ElasticsearchExporterException;
 import io.camunda.zeebe.exporter.ElasticsearchMetrics;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.exporter.dto.BulkIndexResponse;
+import io.camunda.zeebe.exporter.dto.BulkIndexResponse.Error;
 import io.camunda.zeebe.exporter.operate.handlers.DecisionDefinitionHandler;
 import io.camunda.zeebe.exporter.operate.handlers.DecisionInstanceHandler;
 import io.camunda.zeebe.exporter.operate.handlers.DecisionRequirementsHandler;
@@ -47,13 +51,18 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.prometheus.client.Histogram;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
+import org.apache.http.entity.EntityTemplate;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.impl.nio.reactor.IOReactorConfig;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -64,6 +73,7 @@ import org.slf4j.LoggerFactory;
 public class OperateElasticsearchExporter implements Exporter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OperateElasticsearchExporter.class);
+  private static final ObjectMapper MAPPER = new ObjectMapper();
 
   private OperateElasticsearchExporterConfiguration configuration;
   private int batchSize; // stored separately so that we can change it easily in tests
@@ -166,15 +176,63 @@ public class OperateElasticsearchExporter implements Exporter {
    */
   public void flush() throws PersistenceException {
 
+    final RestClient lowLevelClient = esClient.getLowLevelClient();
+
+    OperateElasticsearchBulkRequest request = new OperateElasticsearchBulkRequest();
+
     try (final Histogram.Timer ignored = metrics.measureFlushDuration()) {
-      final NoSpringElasticsearchBatchRequest request =
-          new NoSpringElasticsearchBatchRequest(esClient);
       writer.flush(request);
 
-      metrics.recordBulkMemorySize(request.sizeInBytes());
-      request.execute();
-      // TODO: handle the elasticsearch response here; handle OperatePersistenceException
+      // TODO: restore request size metric
+      //      metrics.recordBulkMemorySize(request.sizeInBytes());
+      sendRequest(request);
     }
+  }
+
+  private void sendRequest(OperateElasticsearchBulkRequest request) {
+    final BulkIndexResponse response;
+    try {
+      final var lowLevelRequest = new Request("POST", "/_bulk");
+      final var body = new EntityTemplate(request);
+      body.setContentType("application/x-ndjson");
+      lowLevelRequest.setEntity(body);
+
+      response = sendLowLevelRequest(lowLevelRequest, BulkIndexResponse.class);
+
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException("Failed to flush bulk", e);
+    }
+
+    if (response.errors()) {
+      throwCollectedBulkError(response);
+    }
+  }
+
+  private <T> T sendLowLevelRequest(final Request request, final Class<T> responseType)
+      throws IOException {
+    RestClient lowLevelClient = esClient.getLowLevelClient();
+
+    final var lowLevelResponse = lowLevelClient.performRequest(request);
+    // buffer the complete response in memory before parsing it; this will give us a better error
+    // message which contains the raw response should the deserialization fail
+    final var responseBody = lowLevelResponse.getEntity().getContent().readAllBytes();
+    return MAPPER.readValue(responseBody, responseType);
+  }
+
+  private void throwCollectedBulkError(final BulkIndexResponse bulkResponse) {
+    final var collectedErrors = new ArrayList<String>();
+    bulkResponse.items().stream()
+        .flatMap(item -> Optional.ofNullable(item.index()).stream())
+        .flatMap(index -> Optional.ofNullable(index.error()).stream())
+        .collect(Collectors.groupingBy(Error::type))
+        .forEach(
+            (errorType, errors) ->
+                collectedErrors.add(
+                    String.format(
+                        "Failed to flush %d item(s) of bulk request [type: %s, reason: %s]",
+                        errors.size(), errorType, errors.get(0).reason())));
+
+    throw new ElasticsearchExporterException("Failed to flush bulk request: " + collectedErrors);
   }
 
   @Override

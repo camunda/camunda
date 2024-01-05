@@ -21,12 +21,12 @@ import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.operate.util.SoftHashMap;
 import io.camunda.operate.util.TreePath;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
+import io.camunda.zeebe.exporter.operate.OperateElasticsearchBulkRequest;
 import io.camunda.zeebe.exporter.operate.OperateElasticsearchExporterConfiguration;
 import io.camunda.zeebe.exporter.operate.schema.templates.ListViewTemplate;
 import io.camunda.zeebe.protocol.record.Record;
@@ -317,13 +317,14 @@ public class ListViewFromProcessInstanceHandler
   }
 
   @Override
-  public void flush(ProcessInstanceForListViewEntity piEntity, BatchRequest batchRequest)
+  public void flush(
+      ProcessInstanceForListViewEntity piEntity, OperateElasticsearchBulkRequest batchRequest)
       throws PersistenceException {
 
     LOGGER.debug("Process instance for list view: id {}", piEntity.getId());
 
     if (canOptimizeProcessInstanceIndexing(piEntity)) {
-      batchRequest.add(listViewTemplate.getFullQualifiedName(), piEntity);
+      batchRequest.index(listViewTemplate.getFullQualifiedName(), piEntity);
     } else {
       final Map<String, Object> updateFields = new HashMap<>();
       if (piEntity.getStartDate() != null) {
@@ -338,8 +339,7 @@ public class ListViewFromProcessInstanceHandler
         updateFields.put(ListViewTemplate.STATE, piEntity.getState());
       }
 
-      batchRequest.upsert(
-          listViewTemplate.getFullQualifiedName(), piEntity.getId(), piEntity, updateFields);
+      batchRequest.upsert(listViewTemplate.getFullQualifiedName(), piEntity, updateFields);
     }
   }
 

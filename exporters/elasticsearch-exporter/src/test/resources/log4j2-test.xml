@@ -17,6 +17,8 @@
 
   <Loggers>
     <Logger name="io.camunda.zeebe" level="debug"/>
+    <Logger name="org.elasticsearch.client" level="trace" />
+    <Logger name="org.apache.http" level="debug"/>
 
     <Root level="info">
       <AppenderRef ref="Console"/>
