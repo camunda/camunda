@@ -15,28 +15,33 @@
  */
 package io.atomix.raft.partition;
 
+import io.atomix.cluster.MemberId;
+
 public final class RaftElectionConfig {
 
   private final boolean priorityElectionEnabled;
   private final int initialTargetPriority;
   private int nodePriority;
+  private MemberId primary;
 
   private RaftElectionConfig(
+      final MemberId primary,
       final boolean priorityElectionEnabled,
       final int initialTargetPriority,
       final int nodePriority) {
+    this.primary = primary;
     this.priorityElectionEnabled = priorityElectionEnabled;
     this.initialTargetPriority = initialTargetPriority;
     this.nodePriority = nodePriority;
   }
 
   public static RaftElectionConfig ofPriorityElection(
-      final int initialTargetPriority, final int nodePriority) {
-    return new RaftElectionConfig(true, initialTargetPriority, nodePriority);
+      final MemberId primary, final int initialTargetPriority, final int nodePriority) {
+    return new RaftElectionConfig(primary, true, initialTargetPriority, nodePriority);
   }
 
   public static RaftElectionConfig ofDefaultElection() {
-    return new RaftElectionConfig(false, -1, -1);
+    return new RaftElectionConfig(null, false, -1, -1);
   }
 
   public boolean isPriorityElectionEnabled() {
@@ -53,5 +58,13 @@ public final class RaftElectionConfig {
 
   public void setNodePriority(final int nodePriority) {
     this.nodePriority = nodePriority;
+  }
+
+  public MemberId getPrimary() {
+    return primary;
+  }
+
+  public void setPrimary(final MemberId primary) {
+    this.primary = primary;
   }
 }

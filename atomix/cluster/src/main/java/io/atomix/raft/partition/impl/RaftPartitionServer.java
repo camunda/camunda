@@ -157,7 +157,9 @@ public class RaftPartitionServer implements HealthMonitorable {
     final var electionConfig =
         config.isPriorityElectionEnabled()
             ? RaftElectionConfig.ofPriorityElection(
-                partitionMetadata.getTargetPriority(), partitionMetadata.getPriority(localMemberId))
+                partitionMetadata.getPrimary().orElse(null),
+                partitionMetadata.getTargetPriority(),
+                partitionMetadata.getPriority(localMemberId))
             : RaftElectionConfig.ofDefaultElection();
 
     return RaftServer.builder(localMemberId)

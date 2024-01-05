@@ -41,7 +41,7 @@ public class RaftPriorityElectionTest {
               @Override
               public void configure(final MemberId id, final Builder builder) {
                 builder.withElectionConfig(
-                    RaftElectionConfig.ofPriorityElection(3, Integer.parseInt(id.id()) + 1));
+                    RaftElectionConfig.ofPriorityElection(null, 3, Integer.parseInt(id.id()) + 1));
               }
             })
       },
@@ -52,7 +52,7 @@ public class RaftPriorityElectionTest {
               @Override
               public void configure(final MemberId id, final Builder builder) {
                 builder.withElectionConfig(
-                    RaftElectionConfig.ofPriorityElection(4, Integer.parseInt(id.id()) + 1));
+                    RaftElectionConfig.ofPriorityElection(null, 4, Integer.parseInt(id.id()) + 1));
               }
             })
       },
@@ -63,7 +63,7 @@ public class RaftPriorityElectionTest {
               @Override
               public void configure(final MemberId id, final Builder builder) {
                 builder.withElectionConfig(
-                    RaftElectionConfig.ofPriorityElection(5, Integer.parseInt(id.id()) + 1));
+                    RaftElectionConfig.ofPriorityElection(null, 5, Integer.parseInt(id.id()) + 1));
               }
             })
       }
