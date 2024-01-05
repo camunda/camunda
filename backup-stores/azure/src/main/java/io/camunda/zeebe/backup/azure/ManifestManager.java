@@ -90,9 +90,9 @@ public final class ManifestManager {
       return new PersistedManifest(blockBlobItemResponse.getValue().getETag(), manifest);
     } catch (final BlobStorageException e) {
       if (e.getErrorCode() == BlobErrorCode.BLOB_ALREADY_EXISTS) {
-        throw new UnexpectedManifestState("Manifest already exists.", e.getCause());
+        throw new UnexpectedManifestState("Manifest already exists.", e);
       }
-      throw new RuntimeException(e);
+      throw e;
     }
   }
 

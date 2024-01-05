@@ -27,7 +27,7 @@ public abstract class AzureBackupStoreException extends RuntimeException {
       super(message);
     }
 
-    public UnexpectedManifestState(final String message, final Throwable cause) {
+    public UnexpectedManifestState(final String message, final Exception cause) {
       super(message, cause);
     }
   }

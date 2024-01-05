@@ -45,7 +45,7 @@ public interface SavingBackup {
     Assertions.assertThat(getStore().save(backup))
         .failsWithin(Duration.ofSeconds(10))
         .withThrowableOfType(Throwable.class)
-        .withRootCauseInstanceOf(getBackupInInvalidStateExceptionClass());
+        .withCauseExactlyInstanceOf(getBackupInInvalidStateExceptionClass());
   }
 
   @ParameterizedTest
