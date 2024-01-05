@@ -22,6 +22,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.ElectionTimer;
 import io.atomix.raft.ElectionTimerFactory;
 import io.atomix.raft.RaftServer;
+import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.impl.RaftContext;
@@ -33,6 +34,9 @@ import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.InternalAppendRequest;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
+import io.atomix.raft.protocol.RaftResponse.Status;
+import io.atomix.raft.protocol.TransferRequest;
+import io.atomix.raft.protocol.TransferResponse;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
@@ -179,6 +183,16 @@ public final class FollowerRole extends ActiveRole {
       onHeartbeatFromLeader();
     }
     return future;
+  }
+
+  @Override
+  public CompletableFuture<TransferResponse> onTransfer(final TransferRequest request) {
+    log.info(
+        "Current leader {} tries to transfer leadership, transitioning to candidate now.",
+        request.member());
+    raft.transition(Role.CANDIDATE);
+    return CompletableFuture.completedFuture(
+        logResponse(TransferResponse.builder().withStatus(Status.OK).build()));
   }
 
   @Override
