@@ -9,6 +9,8 @@ package io.camunda.zeebe.backup.testkit;
 
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.testkit.support.BackupAssert;
 import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import java.nio.file.Path;
@@ -40,6 +42,31 @@ public interface RestoringBackup {
       final Backup originalBackup, @TempDir final Path targetDir) {
     // given
     getStore().save(originalBackup).join();
+
+    // when
+    final var restored = getStore().restore(originalBackup.id(), targetDir).join();
+
+    // then
+    BackupAssert.assertThatBackup(restored)
+        .hasSameContentsAs(originalBackup)
+        .residesInPath(targetDir);
+  }
+
+  @ParameterizedTest
+  @ArgumentsSource(TestBackupProvider.class)
+  default void savedContentDoesNotGetOverWritten(
+      final Backup originalBackup, @TempDir final Path targetDir) {
+    // given
+    final Backup secondBackup =
+        new BackupImpl(
+            new BackupIdentifierImpl(
+                11, originalBackup.id().partitionId(), originalBackup.id().checkpointId()),
+            originalBackup.descriptor(),
+            originalBackup.snapshot(),
+            originalBackup.segments());
+
+    getStore().save(originalBackup).join();
+    getStore().save(secondBackup).join();
 
     // when
     final var restored = getStore().restore(originalBackup.id(), targetDir).join();

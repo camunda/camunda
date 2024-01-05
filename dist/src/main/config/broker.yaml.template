@@ -313,6 +313,7 @@
           # connectionString:
 
           # Used to define the container name where the blobs will be saved.
+          # This basePath cannot be null.
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_BASEPATH
           # basePath:
 

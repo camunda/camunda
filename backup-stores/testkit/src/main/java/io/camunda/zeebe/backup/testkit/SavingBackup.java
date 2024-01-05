@@ -15,7 +15,6 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -27,6 +26,8 @@ public interface SavingBackup {
   BackupStore getStore();
 
   Class<? extends Exception> getBackupInInvalidStateExceptionClass();
+
+  Class<? extends Exception> getFileNotFoundExceptionClass();
 
   @ParameterizedTest
   @ArgumentsSource(TestBackupProvider.class)
@@ -44,7 +45,7 @@ public interface SavingBackup {
     Assertions.assertThat(getStore().save(backup))
         .failsWithin(Duration.ofSeconds(10))
         .withThrowableOfType(Throwable.class)
-        .withRootCauseInstanceOf(getBackupInInvalidStateExceptionClass());
+        .withCauseExactlyInstanceOf(getBackupInInvalidStateExceptionClass());
   }
 
   @ParameterizedTest
@@ -58,7 +59,7 @@ public interface SavingBackup {
     Assertions.assertThat(getStore().save(backup))
         .failsWithin(Duration.ofMinutes(1))
         .withThrowableOfType(Throwable.class)
-        .withRootCauseInstanceOf(NoSuchFileException.class)
+        .withRootCauseInstanceOf(getFileNotFoundExceptionClass())
         .withMessageContaining(deletedFile.toString());
   }
 
