@@ -50,9 +50,9 @@ public class OptimizeEventsQueryPerformanceTest extends AbstractQueryPerformance
 
   @BeforeEach
   public void init() {
-    embeddedOptimizeExtension.getElasticSearchSchemaManager()
+    embeddedOptimizeExtension.getDatabaseSchemaManager()
       .createIndexIfMissing(
-        embeddedOptimizeExtension.getOptimizeElasticClient(),
+        embeddedOptimizeExtension.getOptimizeDatabaseClient(),
         // TODO deal with this in OPT-7225
         new EventSequenceCountIndexES(EXTERNAL_EVENTS_INDEX_SUFFIX)
       );

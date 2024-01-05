@@ -7,6 +7,7 @@ package org.camunda.optimize.service.db.es;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.FailsafeException;
@@ -305,6 +306,11 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
 
   public void deleteIndex(final IndexMappingCreator indexMappingCreator) {
     final String indexAlias = indexNameService.getOptimizeIndexAliasForIndex(indexMappingCreator);
+    deleteIndex(indexAlias);
+  }
+
+  @Override
+  public void deleteIndex(final String indexAlias) {
     final String[] allIndicesForAlias = getAllIndicesForAlias(indexAlias).toArray(String[]::new);
     deleteIndexByRawIndexNames(allIndicesForAlias);
   }
@@ -336,6 +342,12 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
 
   public String getElasticsearchVersion() throws IOException {
     return highLevelClient.info(requestOptions()).getVersion().getNumber();
+  }
+
+  @Override
+  @SneakyThrows
+  public void setDefaultRequestOptions() {
+    highLevelClient.info(RequestOptions.DEFAULT);
   }
 
   public void createIndex(final CreateIndexRequest request) throws IOException {

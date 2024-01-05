@@ -14,6 +14,8 @@ import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.CountRequest;
 import org.opensearch.client.opensearch.core.CountResponse;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
@@ -260,6 +262,14 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     } else {
       throw new NotFoundException(format("Could not find %s with key '%s'.", getIndex(requestBuilder), key));
     }
+  }
+
+  public BulkResponse bulk(final BulkRequest.Builder bulkReqBuilder, final Function<Exception,
+    String> errorMessageSupplier) {
+    return safe(
+      () -> openSearchClient.bulk(applyIndexPrefix(bulkReqBuilder).build()),
+      errorMessageSupplier
+    );
   }
 
   public long docCount(SearchRequest.Builder requestBuilder) {

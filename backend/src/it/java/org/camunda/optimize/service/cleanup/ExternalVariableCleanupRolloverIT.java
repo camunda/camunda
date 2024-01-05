@@ -28,8 +28,8 @@ public class ExternalVariableCleanupRolloverIT extends AbstractCleanupIT {
   @AfterEach
   public void cleanUpExternalVariableIndices() {
     databaseIntegrationTestExtension.deleteAllExternalVariableIndices();
-    embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
-      embeddedOptimizeExtension.getOptimizeElasticClient(),
+    embeddedOptimizeExtension.getDatabaseSchemaManager().createOrUpdateOptimizeIndex(
+      embeddedOptimizeExtension.getOptimizeDatabaseClient(),
       new ExternalProcessVariableIndexES()
     );
   }

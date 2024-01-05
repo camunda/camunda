@@ -906,8 +906,8 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   protected boolean indexExist(final String indexName) {
-    return embeddedOptimizeExtension.getElasticSearchSchemaManager()
-      .indexExists(embeddedOptimizeExtension.getOptimizeElasticClient(), indexName);
+    return embeddedOptimizeExtension.getDatabaseSchemaManager()
+      .indexExists(embeddedOptimizeExtension.getOptimizeDatabaseClient(), indexName);
   }
 
 }

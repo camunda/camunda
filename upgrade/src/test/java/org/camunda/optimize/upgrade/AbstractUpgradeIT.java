@@ -57,6 +57,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.xcontent.XContentBuilder;
 import org.elasticsearch.xcontent.XContentType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -144,7 +145,7 @@ public abstract class AbstractUpgradeIT {
     this.esMockServer.close();
   }
 
-  protected void initSchema(List<IndexMappingCreator<?>> mappingCreators) {
+  protected void initSchema(List<IndexMappingCreator<XContentBuilder>> mappingCreators) {
     final ElasticSearchSchemaManager elasticSearchSchemaManager = new ElasticSearchSchemaManager(
       metadataService, createDefaultConfiguration(), indexNameService, mappingCreators
     );

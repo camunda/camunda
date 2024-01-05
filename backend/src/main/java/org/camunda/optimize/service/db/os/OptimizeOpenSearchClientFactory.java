@@ -133,13 +133,13 @@ public class OptimizeOpenSearchClientFactory {
         DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
         DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES,
         DeserializationFeature.FAIL_ON_MISSING_EXTERNAL_TYPE_ID_PROPERTY,
-        SerializationFeature.FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS
-      )
-      .featuresToEnable(
-        JsonParser.Feature.ALLOW_COMMENTS,
+        SerializationFeature.FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS,
         SerializationFeature.INDENT_OUTPUT,
         DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY,
         MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS
+      )
+      .featuresToEnable(
+        JsonParser.Feature.ALLOW_COMMENTS
       )
       .build();
 
@@ -161,8 +161,11 @@ public class OptimizeOpenSearchClientFactory {
     waitForOpenSearch(openSearchClient, backoffCalculator, requestOptionsProvider.getRequestOptions());
     log.info("OpenSearch cluster successfully started");
 
-    OptimizeOpenSearchClient osClient =  new OptimizeOpenSearchClient(openSearchClient, optimizeIndexNameService,
-                                                                      requestOptionsProvider);
+    OptimizeOpenSearchClient osClient = new OptimizeOpenSearchClient(
+      openSearchClient,
+      optimizeIndexNameService,
+      requestOptionsProvider
+    );
     openSearchSchemaManager.validateExistingSchemaVersion(osClient);
     openSearchSchemaManager.initializeSchema(osClient);
 
@@ -170,8 +173,8 @@ public class OptimizeOpenSearchClientFactory {
   }
 
   private static void waitForOpenSearch(final OpenSearchClient osClient,
-                                       final BackoffCalculator backoffCalculator,
-                                       final RequestOptions requestOptions) throws IOException {
+                                        final BackoffCalculator backoffCalculator,
+                                        final RequestOptions requestOptions) throws IOException {
     boolean isConnected = false;
     while (!isConnected) {
       try {
@@ -263,7 +266,7 @@ public class OptimizeOpenSearchClientFactory {
     final KeyStore truststore = loadCustomTrustStore(configurationService);
     final TrustStrategy trustStrategy =
       Boolean.TRUE.equals(configurationService.getOpenSearchConfiguration()
-        .getSecuritySslSelfSigned()) ? new TrustSelfSignedStrategy() : null;
+                            .getSecuritySslSelfSigned()) ? new TrustSelfSignedStrategy() : null;
     if (truststore.size() > 0) {
       return SSLContexts.custom().loadTrustMaterial(truststore, trustStrategy).build();
     } else {

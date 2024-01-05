@@ -47,8 +47,8 @@ public abstract class AbstractEventRestServiceRolloverIT extends AbstractEventPr
   @BeforeEach
   public void cleanUpEventIndices() {
     databaseIntegrationTestExtension.deleteAllExternalEventIndices();
-    embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
-      embeddedOptimizeExtension.getOptimizeElasticClient(),
+    embeddedOptimizeExtension.getDatabaseSchemaManager().createOrUpdateOptimizeIndex(
+      embeddedOptimizeExtension.getOptimizeDatabaseClient(),
       new EventIndexES()
     );
     embeddedOptimizeExtension.getConfigurationService().getEventIndexRolloverConfiguration().setMaxIndexSizeGB(0);

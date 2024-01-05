@@ -191,7 +191,7 @@ public class VariableImportIT extends AbstractImportIT {
     final HttpRequest variableImportMatcher = request()
       .withPath("/_bulk")
       .withMethod(POST)
-      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeElasticClient()
+      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeDatabaseClient()
         .getIndexNameService()
         .getIndexPrefix() + "-" + VARIABLE_UPDATE_INSTANCE_INDEX_NAME + "\""));
     esMockServer

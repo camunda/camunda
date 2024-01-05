@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.db;
 
 import lombok.Getter;
+import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.elasticsearch.action.search.ClearScrollRequest;
@@ -37,6 +38,8 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
 
   public abstract boolean triggerRollover(final String indexAliasName, final int maxIndexSizeGB);
 
+  public abstract void deleteIndex(final String indexAlias);
+
   @Getter
   protected OptimizeIndexNameService indexNameService;
 
@@ -53,6 +56,8 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
   public abstract ClearScrollResponse clearScroll(final ClearScrollRequest clearScrollRequest) throws IOException ;
 
   public abstract String getElasticsearchVersion() throws IOException ;
+
+  public abstract void setDefaultRequestOptions();
 
   protected String[] convertToPrefixedAliasNames(final String[] indices) {
     return Arrays.stream(indices)

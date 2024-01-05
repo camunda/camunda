@@ -346,7 +346,7 @@ public class IncidentImportIT extends AbstractImportIT {
     final HttpRequest processInstanceIndexMatcher = request()
       .withPath("/_bulk")
       .withMethod(POST)
-      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeElasticClient()
+      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeDatabaseClient()
         .getIndexNameService()
         .getIndexPrefix() + "-" + PROCESS_INSTANCE_INDEX_PREFIX));
     esMockServer
@@ -374,7 +374,7 @@ public class IncidentImportIT extends AbstractImportIT {
     final HttpRequest processInstanceIndexMatcher = request()
       .withPath("/_bulk")
       .withMethod(POST)
-      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeElasticClient()
+      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeDatabaseClient()
         .getIndexNameService()
         .getIndexPrefix() + "-" + PROCESS_INSTANCE_INDEX_PREFIX));
     esMockServer
@@ -514,7 +514,7 @@ public class IncidentImportIT extends AbstractImportIT {
         IncidentType.FAILED_EXTERNAL_TASK, SERVICE_TASK, SERVICE_TASK, "Foo bar", IncidentStatus.RESOLVED
       )))
       .build();
-    embeddedOptimizeExtension.getElasticSearchSchemaManager()
+    embeddedOptimizeExtension.getDatabaseSchemaManager()
       .createIndexIfMissing(
         databaseIntegrationTestExtension.getOptimizeElasticsearchClient(),
         new ProcessInstanceIndexES(processInstanceWithIncident.getProcessDefinitionKey()),

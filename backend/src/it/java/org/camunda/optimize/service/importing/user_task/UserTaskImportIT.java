@@ -243,7 +243,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     final HttpRequest userTaskImportMatcher = request()
       .withPath("/_bulk")
       .withMethod(POST)
-      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeElasticClient()
+      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeDatabaseClient()
         .getIndexNameService()
         .getIndexPrefix() + "-" + PROCESS_INSTANCE_INDEX_PREFIX));
     esMockServer

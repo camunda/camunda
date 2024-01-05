@@ -74,7 +74,7 @@ public class BusinessKeyImportIT extends AbstractImportIT {
     final HttpRequest businessKeyImportMatcher = request()
       .withPath("/_bulk")
       .withMethod(POST)
-      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeElasticClient()
+      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeDatabaseClient()
         .getIndexNameService()
         .getIndexPrefix() + "-" + BUSINESS_KEY_INDEX_NAME + "\""));
     esMockServer
@@ -105,7 +105,7 @@ public class BusinessKeyImportIT extends AbstractImportIT {
     final HttpRequest businessKeyImportMatcher = request()
       .withPath("/_bulk")
       .withMethod(POST)
-      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeElasticClient()
+      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeDatabaseClient()
         .getIndexNameService()
         .getIndexPrefix() + "-" + BUSINESS_KEY_INDEX_NAME + "\""));
     esMockServer

@@ -24,9 +24,9 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleReq
 import org.camunda.optimize.dto.optimize.query.event.process.es.EsEventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.util.configuration.DatabaseProfile;
 import org.camunda.optimize.test.it.extension.db.DatabaseTestService;
 import org.camunda.optimize.test.it.extension.db.ElasticsearchDatabaseTestService;

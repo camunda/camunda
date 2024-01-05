@@ -34,13 +34,14 @@ import org.camunda.optimize.service.archive.ProcessInstanceArchivingService;
 import org.camunda.optimize.service.cleanup.CleanupScheduler;
 import org.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
 import org.camunda.optimize.service.dashboard.ManagementDashboardService;
+import org.camunda.optimize.service.db.DatabaseClient;
+import org.camunda.optimize.service.db.schema.DatabaseMetadataService;
+import org.camunda.optimize.service.db.schema.DatabaseSchemaManager;
 import org.camunda.optimize.service.db.writer.AbstractProcessInstanceDataWriter;
 import org.camunda.optimize.service.db.writer.InstantDashboardMetadataWriter;
 import org.camunda.optimize.service.db.writer.activity.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.digest.DigestService;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.events.rollover.EventIndexRolloverService;
@@ -473,7 +474,7 @@ public class EmbeddedOptimizeExtension
   }
 
   public void initMetadataIfMissing() {
-    getElasticsearchMetadataService().initMetadataIfMissing(getOptimizeElasticClient());
+    getDatabaseMetadataService().initMetadataIfMissing(getOptimizeDatabaseClient());
   }
 
   public void reloadConfiguration() {
@@ -496,11 +497,7 @@ public class EmbeddedOptimizeExtension
 
     // warmup the elastic client with default options (to not make use of plugins)
     // this is done to fully initialize the client as the client does a version validation on the first request
-    try {
-      getOptimizeElasticClient().getHighLevelClient().info(RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      log.error("Could not get cluster info from Elasticsearch", e);
-    }
+    getOptimizeDatabaseClient().setDefaultRequestOptions();
   }
 
   public void resetConfiguration() throws IOException {
@@ -576,7 +573,7 @@ public class EmbeddedOptimizeExtension
   }
 
   public void reinitializeSchema() {
-    getElasticSearchSchemaManager().initializeSchema(getOptimizeElasticClient());
+    getDatabaseSchemaManager().initializeSchema(getOptimizeDatabaseClient());
   }
 
   public ApplicationContext getApplicationContext() {
@@ -706,16 +703,26 @@ public class EmbeddedOptimizeExtension
     return getBean(EventBasedProcessesInstanceImportScheduler.class);
   }
 
-  public ElasticSearchSchemaManager getElasticSearchSchemaManager() {
-    return getBean(ElasticSearchSchemaManager.class);
+  public DatabaseSchemaManager getDatabaseSchemaManager() {
+    return getBean(DatabaseSchemaManager.class);
   }
 
-  public OptimizeElasticsearchClient getOptimizeElasticClient() {
-    return getBean(OptimizeElasticsearchClient.class);
+  public DatabaseClient getOptimizeDatabaseClient() {
+    return getBean(DatabaseClient.class);
   }
 
-  public ElasticSearchMetadataService getElasticsearchMetadataService() {
-    return getBean(ElasticSearchMetadataService.class);
+  // TODO remove with OPT-7455
+  public OptimizeElasticsearchClient getOptimizeElasticSearchClient() {
+    try {
+      return (OptimizeElasticsearchClient) getBean(DatabaseClient.class);
+    } catch (ClassCastException e) {
+      log.warn("Getting an OptimizeElasticsearchClient in OpenSearch operation mode is not supported.");
+      return null;
+    }
+  }
+
+  public DatabaseMetadataService getDatabaseMetadataService() {
+    return getBean(DatabaseMetadataService.class);
   }
 
   private boolean isResetImportOnStart() {

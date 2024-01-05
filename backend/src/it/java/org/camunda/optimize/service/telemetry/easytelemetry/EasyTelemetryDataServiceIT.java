@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.telemetry.ProductDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.TelemetryDataDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
+import org.camunda.optimize.service.db.schema.DatabaseMetadataService;
 import org.camunda.optimize.service.db.schema.index.MetadataIndex;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
@@ -321,8 +322,8 @@ public class EasyTelemetryDataServiceIT extends AbstractMultiEngineIT {
   }
 
   private Optional<MetadataDto> getMetadata() {
-    return embeddedOptimizeExtension.getBean(ElasticSearchMetadataService.class)
-      .readMetadata(embeddedOptimizeExtension.getOptimizeElasticClient());
+    return embeddedOptimizeExtension.getBean(DatabaseMetadataService.class)
+      .readMetadata(embeddedOptimizeExtension.getOptimizeDatabaseClient());
   }
 
   @SneakyThrows

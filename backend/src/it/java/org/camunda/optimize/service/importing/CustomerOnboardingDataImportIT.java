@@ -69,8 +69,8 @@ public class CustomerOnboardingDataImportIT extends AbstractImportIT {
   }
 
   protected boolean indexExist(final String indexName) {
-    return embeddedOptimizeExtension.getElasticSearchSchemaManager()
-      .indexExists(embeddedOptimizeExtension.getOptimizeElasticClient(), indexName);
+    return embeddedOptimizeExtension.getDatabaseSchemaManager()
+      .indexExists(embeddedOptimizeExtension.getOptimizeDatabaseClient(), indexName);
   }
 
   private void addDataToOptimize(final String processInstanceFile, final String processDefinitionFile) {

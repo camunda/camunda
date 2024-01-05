@@ -436,7 +436,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
     return String.format(
       "{\"%s\":{\"_index\":\"%s\",\"_id\":\"%s\"}}",
       operation,
-      embeddedOptimizeExtension.getOptimizeElasticClient().getIndexNameService()
+      embeddedOptimizeExtension.getOptimizeDatabaseClient().getIndexNameService()
         .getOptimizeIndexAliasForIndex(getProcessInstanceIndexAliasName(processDefinitionKey)),
       processInstanceId
     );

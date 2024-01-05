@@ -7,6 +7,7 @@ package org.camunda.optimize.service.schema;
 
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractPlatformIT;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.test.it.extension.DatabaseIntegrationTestExtension;
@@ -35,11 +36,11 @@ public class CustomIndexPrefixIT extends AbstractPlatformIT {
   public DatabaseIntegrationTestExtension customPrefixDatabaseIntegrationTestExtension
     = new DatabaseIntegrationTestExtension(CUSTOM_PREFIX);
 
-  private OptimizeElasticsearchClient prefixAwareRestHighLevelClient;
+  private DatabaseClient prefixAwareDatabaseClient;
 
   @BeforeEach
   public void setUp() {
-    prefixAwareRestHighLevelClient = embeddedOptimizeExtension.getOptimizeElasticClient();
+    prefixAwareDatabaseClient = embeddedOptimizeExtension.getOptimizeDatabaseClient();
   }
 
   @Test
@@ -52,8 +53,8 @@ public class CustomIndexPrefixIT extends AbstractPlatformIT {
     initializeSchema();
 
     // then
-    assertThat(prefixAwareRestHighLevelClient.getIndexNameService().getIndexPrefix()).isEqualTo(CUSTOM_PREFIX);
-    assertThat(embeddedOptimizeExtension.getElasticSearchSchemaManager().schemaExists(prefixAwareRestHighLevelClient))
+    assertThat(prefixAwareDatabaseClient.getIndexNameService().getIndexPrefix()).isEqualTo(CUSTOM_PREFIX);
+    assertThat(embeddedOptimizeExtension.getDatabaseSchemaManager().schemaExists(prefixAwareDatabaseClient))
       .isTrue();
   }
 
@@ -67,7 +68,7 @@ public class CustomIndexPrefixIT extends AbstractPlatformIT {
     initializeSchema();
 
     // then
-    final List<IndexMappingCreator<?>> mappings = embeddedOptimizeExtension.getElasticSearchSchemaManager().getMappings();
+    final List<IndexMappingCreator<?>> mappings = embeddedOptimizeExtension.getDatabaseSchemaManager().getMappings();
     assertThat(mappings).hasSize(29);
     for (IndexMappingCreator mapping : mappings) {
       final String expectedAliasName = getOptimizeIndexAliasForIndexNameAndPrefix(
@@ -125,6 +126,6 @@ public class CustomIndexPrefixIT extends AbstractPlatformIT {
   }
 
   private void initializeSchema() {
-    embeddedOptimizeExtension.getElasticSearchSchemaManager().initializeSchema(prefixAwareRestHighLevelClient);
+    embeddedOptimizeExtension.getDatabaseSchemaManager().initializeSchema(prefixAwareDatabaseClient);
   }
 }

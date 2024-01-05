@@ -64,8 +64,8 @@ public abstract class AbstractConnectToElasticsearchIT {
     final UpgradeProcedure testUpgradeProcedure = UpgradeProcedureFactory
       .create(createUpgradeDependenciesWithAdditionalConfigLocation(getCustomConfigFile()));
     // the metadata version needs to match the stated versionFrom for the upgrade to pass validation
-    embeddedOptimizeExtension.getElasticsearchMetadataService().upsertMetadata(
-      embeddedOptimizeExtension.getOptimizeElasticClient(), PreviousVersion.PREVIOUS_VERSION
+    embeddedOptimizeExtension.getDatabaseMetadataService().upsertMetadata(
+      embeddedOptimizeExtension.getOptimizeDatabaseClient(), PreviousVersion.PREVIOUS_VERSION
     );
 
     // then

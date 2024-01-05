@@ -22,6 +22,8 @@ import org.elasticsearch.action.search.SearchScrollRequest;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.CountRequest;
 import org.opensearch.client.opensearch.core.CountResponse;
 import org.opensearch.client.opensearch.core.DeleteRequest;
@@ -184,6 +186,11 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   }
 
   @Override
+  public void deleteIndex(final String indexAlias) {
+    getRichOpenSearchClient().index().deleteIndicesWithRetries(indexAlias);
+  }
+
+  @Override
   public org.elasticsearch.client.core.CountResponse count(final org.elasticsearch.client.core.CountRequest unfilteredTotalInstanceCountRequest) throws
                                                                                                                                                  IOException {
     //todo will be handle in the OPT-7469
@@ -237,6 +244,11 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   }
 
   @Override
+  public void setDefaultRequestOptions() {
+      // TODO Do nothing, will be handled with OPT-7400
+  }
+
+  @Override
   public Set<String> performSearchDefinitionQuery(final String indexName,
                                                   final String definitionXml,
                                                   final String definitionIdField,
@@ -270,6 +282,10 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       result.add(hit.id());
     }
     return result;
+  }
+
+  public BulkResponse bulk(final BulkRequest.Builder bulkRequest, final String errorMessage) {
+    return richOpenSearchClient.doc().bulk(bulkRequest, e -> errorMessage);
   }
 
   private SourceFilter buildBasicSearchDefinitionQuery(String definitionXml, String engineAlias) {

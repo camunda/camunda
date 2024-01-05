@@ -131,8 +131,8 @@ public class ExportLimitsIT extends AbstractPlatformIT {
       .processDefinitionVersion("1")
       .build();
 
-    embeddedOptimizeExtension.getElasticSearchSchemaManager().createOrUpdateOptimizeIndex(
-      embeddedOptimizeExtension.getOptimizeElasticClient(),
+    embeddedOptimizeExtension.getDatabaseSchemaManager().createOrUpdateOptimizeIndex(
+      embeddedOptimizeExtension.getOptimizeDatabaseClient(),
       new ProcessInstanceIndexES(processDefinitionKey)
     );
 

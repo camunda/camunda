@@ -132,7 +132,7 @@ public class DecisionImportIT extends AbstractImportIT {
     final HttpRequest definitionImportMatcher = request()
       .withPath("/_bulk")
       .withMethod(POST)
-      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeElasticClient()
+      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeDatabaseClient()
         .getIndexNameService()
         .getIndexPrefix() + "-" + DECISION_DEFINITION_INDEX_NAME + "\""));
     esMockServer
@@ -167,7 +167,7 @@ public class DecisionImportIT extends AbstractImportIT {
     final HttpRequest instanceImportMatcher = request()
       .withPath("/_bulk")
       .withMethod(POST)
-      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeElasticClient()
+      .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeDatabaseClient()
         .getIndexNameService()
         .getIndexPrefix() + "-" + DECISION_INSTANCE_INDEX_PREFIX));
     esMockServer

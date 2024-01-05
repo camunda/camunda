@@ -76,6 +76,6 @@ public class ElasticMetadataVersionIT extends AbstractPlatformIT {
 
   private Optional<MetadataDto> getMetadataDto() {
     return embeddedOptimizeExtension.getBean(ElasticSearchMetadataService.class)
-      .readMetadata(embeddedOptimizeExtension.getOptimizeElasticClient());
+      .readMetadata(embeddedOptimizeExtension.getOptimizeElasticSearchClient());
   }
 }
