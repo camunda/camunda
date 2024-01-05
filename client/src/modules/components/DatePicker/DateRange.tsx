@@ -30,11 +30,13 @@ export default function DateRange({
   onDateChange,
   endDateSelected,
 }: DateRangeProps) {
-  const validStartDate = isValid(startDate) ? startDate : new Date();
-  const validEndDate = isValid(endDate) ? endDate : new Date();
+  const validStartDate = startDate && isValid(startDate) ? startDate : new Date();
+  const validEndDate = endDate && isValid(endDate) ? endDate : new Date();
 
   let range;
   if (
+    startDate &&
+    endDate &&
     isValid(startDate) &&
     isValid(endDate) &&
     (isEqual(startDate, endDate) || isAfter(endDate, startDate))

@@ -20,28 +20,28 @@ export function format(date: Date | number, formatStr = 'PP'): string {
 export async function loadDateTranslation(localeCode: string): Promise<void> {
   switch (localeCode) {
     case 'de':
-      globalLocale = (await import('date-fns/locale/de/index.js')).default;
+      globalLocale = (await import('date-fns/locale/de')).default;
       break;
     case 'fr':
-      globalLocale = (await import('date-fns/locale/fr/index.js')).default;
+      globalLocale = (await import('date-fns/locale/fr')).default;
       break;
     case 'es':
-      globalLocale = (await import('date-fns/locale/es/index.js')).default;
+      globalLocale = (await import('date-fns/locale/es')).default;
       break;
     case 'hi':
-      globalLocale = (await import('date-fns/locale/hi/index.js')).default;
+      globalLocale = (await import('date-fns/locale/hi')).default;
       break;
     case 'it':
-      globalLocale = (await import('date-fns/locale/it/index.js')).default;
+      globalLocale = (await import('date-fns/locale/it')).default;
       break;
     case 'ja':
-      globalLocale = (await import('date-fns/locale/ja/index.js')).default;
+      globalLocale = (await import('date-fns/locale/ja')).default;
       break;
     case 'pt':
-      globalLocale = (await import('date-fns/locale/pt/index.js')).default;
+      globalLocale = (await import('date-fns/locale/pt')).default;
       break;
     case 'ru':
-      globalLocale = (await import('date-fns/locale/ru/index.js')).default;
+      globalLocale = (await import('date-fns/locale/ru')).default;
       break;
     default:
       break;
