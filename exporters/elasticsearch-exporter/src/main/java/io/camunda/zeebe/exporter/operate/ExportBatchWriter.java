@@ -69,7 +69,9 @@ public class ExportBatchWriter {
                     new Tuple<>(entityId, handler.getEntityType());
 
                 final OperateEntity<?> cachedEntity;
-                if (cachedEntities.containsKey(cacheKey)) {
+
+                final boolean alreadyCached = cachedEntities.containsKey(cacheKey);
+                if (alreadyCached) {
                   cachedEntity = cachedEntities.get(cacheKey).getLeft();
                 } else {
                   cachedEntity = handler.createNewEntity(entityId);
@@ -85,8 +87,15 @@ public class ExportBatchWriter {
                 // append the id to the end of the flush order (not particularly efficient, but
                 // should be
                 // fine for prototyping)
-                idFlushOrder.remove(cacheKey);
-                idFlushOrder.add(cacheKey);
+                // TODO: removed this to avoid the performance penalty; it's not clear to me that
+                // this is
+                // strictly needed, the order in which documents will appear in ES for one batch
+                // will be
+                // slightly different now
+                //                idFlushOrder.remove(cacheKey);
+                if (!alreadyCached) {
+                  idFlushOrder.add(cacheKey);
+                }
               }
             });
   }
