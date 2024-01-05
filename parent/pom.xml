@@ -1449,7 +1449,7 @@
               <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
               <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
             </statelessTestsetReporter>
-            <consoleOutputReporter implementation="io.camunda.zeebe.ZeebeConsoleOutputReporter"></consoleOutputReporter>
+            <!--<consoleOutputReporter implementation="io.camunda.zeebe.ZeebeConsoleOutputReporter"></consoleOutputReporter>-->
             <skip>${skipUTs}</skip>
           </configuration>
           <dependencies>
@@ -1489,7 +1489,7 @@
               <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
               <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
             </statelessTestsetReporter>
-            <consoleOutputReporter implementation="io.camunda.zeebe.ZeebeConsoleOutputReporter"></consoleOutputReporter>
+            <!--<consoleOutputReporter implementation="io.camunda.zeebe.ZeebeConsoleOutputReporter"></consoleOutputReporter>-->
             <skip>${skipITs}</skip>
           </configuration>
           <dependencies>
