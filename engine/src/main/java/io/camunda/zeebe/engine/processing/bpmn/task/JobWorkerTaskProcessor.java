@@ -18,6 +18,10 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * A BPMN processor for tasks that are based on jobs and should be processed by job workers. For
@@ -57,8 +61,24 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
         .flatMap(j -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> j))
         .ifRightOrLeft(
             jobProperties -> {
+              final List<ExecutionListener> executionListeners = element.getExecutionListeners();
+              final var eventTypeToExecution =
+                  executionListeners.stream()
+                      .collect(Collectors.groupingBy(ExecutionListener::getEventType));
+
+              // create jobs for EL's with 'start' event type
+              eventTypeToExecution
+                  .get(ZeebeExecutionListenerEventType.start)
+                  .forEach(listener -> createExecutionListenerJobs(element, context, listener));
+
+              // create regular job
               jobBehavior.createNewJob(context, element, jobProperties);
               stateTransitionBehavior.transitionToActivated(context, element.getEventType());
+
+              // create jobs for EL's with 'end' event type
+              eventTypeToExecution
+                  .get(ZeebeExecutionListenerEventType.end)
+                  .forEach(listener -> createExecutionListenerJobs(element, context, listener));
             },
             failure -> incidentBehavior.createIncident(failure, context));
   }
@@ -105,5 +125,16 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
                   stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
               stateTransitionBehavior.onElementTerminated(element, terminated);
             });
+  }
+
+  private void createExecutionListenerJobs(
+      final ExecutableJobWorkerTask element,
+      final BpmnElementContext context,
+      final ExecutionListener listener) {
+    jobBehavior
+        .evaluateJobExpressions(listener.getJobWorkerProperties(), context)
+        .ifRightOrLeft(
+            elJobProperties -> jobBehavior.createNewJob(context, element, elJobProperties),
+            failure -> incidentBehavior.createIncident(failure, context));
   }
 }

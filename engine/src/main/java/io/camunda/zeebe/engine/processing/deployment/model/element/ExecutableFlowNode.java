@@ -35,6 +35,7 @@ public class ExecutableFlowNode extends AbstractFlowElement {
     jobWorkerProperties.setType(type);
     jobWorkerProperties.setRetries(retries);
     listener.setJobWorkerProperties(jobWorkerProperties);
+    executionListeners.add(listener);
   }
 
   public List<ExecutionListener> getExecutionListeners() {
