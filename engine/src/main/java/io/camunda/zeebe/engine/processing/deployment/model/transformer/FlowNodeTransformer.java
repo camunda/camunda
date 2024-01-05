@@ -12,8 +12,10 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.ExecutionListenerTransformer;
 import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
@@ -22,6 +24,9 @@ public final class FlowNodeTransformer implements ModelElementTransformer<FlowNo
 
   private final VariableMappingTransformer variableMappingTransformer =
       new VariableMappingTransformer();
+
+  private final ExecutionListenerTransformer executionListenerTransformer =
+      new ExecutionListenerTransformer();
 
   @Override
   public Class<FlowNode> getType() {
@@ -33,9 +38,11 @@ public final class FlowNodeTransformer implements ModelElementTransformer<FlowNo
     final ExecutableProcess process = context.getCurrentProcess();
     final ExecutableFlowNode element =
         process.getElementById(flowNode.getId(), ExecutableFlowNode.class);
+    final ExpressionLanguage expressionLanguage = context.getExpressionLanguage();
 
     setParentReference(flowNode, process, element);
-    transformIoMappings(flowNode, element, context.getExpressionLanguage());
+    transformIoMappings(flowNode, element, expressionLanguage);
+    transformExecutionListeners(flowNode, element, expressionLanguage);
   }
 
   private void setParentReference(
@@ -71,5 +78,17 @@ public final class FlowNodeTransformer implements ModelElementTransformer<FlowNo
             mappings ->
                 variableMappingTransformer.transformOutputMappings(mappings, expressionLanguage))
         .ifPresent(flowNode::setOutputMappings);
+  }
+
+  private void transformExecutionListeners(
+      final FlowNode element,
+      final ExecutableFlowNode flowNode,
+      final ExpressionLanguage expressionLanguage) {
+
+    Optional.ofNullable(element.getSingleExtensionElement(ZeebeExecutionListeners.class))
+        .ifPresent(
+            listeners ->
+                executionListenerTransformer.transform(
+                    element, flowNode, listeners, expressionLanguage));
   }
 }

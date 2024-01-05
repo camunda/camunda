@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.JobState;
@@ -85,6 +86,11 @@ public final class BpmnJobBehavior {
   public Either<Failure, JobProperties> evaluateJobExpressions(
       final ExecutableJobWorkerElement element, final BpmnElementContext context) {
     final var jobWorkerProps = element.getJobWorkerProperties();
+    return evaluateJobExpressions(jobWorkerProps, context);
+  }
+
+  public Either<Failure, JobProperties> evaluateJobExpressions(
+      final JobWorkerProperties jobWorkerProps, final BpmnElementContext context) {
     final var scopeKey = context.getElementInstanceKey();
     final var tenantId = context.getTenantId();
     return Either.<Failure, JobProperties>right(new JobProperties())

@@ -8,20 +8,37 @@
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
 import io.camunda.zeebe.el.Expression;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 public class ExecutableFlowNode extends AbstractFlowElement {
-
+  private final List<ExecutionListener> executionListeners = new ArrayList<>();
   private final List<ExecutableSequenceFlow> incoming = new ArrayList<>();
   private final List<ExecutableSequenceFlow> outgoing = new ArrayList<>();
-
   private Optional<Expression> inputMappings = Optional.empty();
   private Optional<Expression> outputMappings = Optional.empty();
 
   public ExecutableFlowNode(final String id) {
     super(id);
+  }
+
+  public void addListener(
+      final ZeebeExecutionListenerEventType eventType,
+      final Expression type,
+      final Expression retries) {
+    final ExecutionListener listener = new ExecutionListener();
+    listener.setEventType(eventType);
+
+    final JobWorkerProperties jobWorkerProperties = new JobWorkerProperties();
+    jobWorkerProperties.setType(type);
+    jobWorkerProperties.setRetries(retries);
+    listener.setJobWorkerProperties(jobWorkerProperties);
+  }
+
+  public List<ExecutionListener> getExecutionListeners() {
+    return executionListeners;
   }
 
   public List<ExecutableSequenceFlow> getOutgoing() {
