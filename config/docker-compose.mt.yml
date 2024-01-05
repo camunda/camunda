@@ -55,7 +55,8 @@ services:
       start_period: 30s
   identity:
     depends_on:
-      - keycloak
+      keycloak:
+        condition: service_healthy
     container_name: identity
     image: camunda/identity:8.4.0
     ports:
@@ -83,7 +84,7 @@ services:
       KEYCLOAK_CLIENTS_0_PERMISSIONS_0_RESOURCE_SERVER_ID: zeebe-api
       KEYCLOAK_CLIENTS_0_PERMISSIONS_0_DEFINITION: write:*
       MULTITENANCY_ENABLED: true
-    env_file: .env.test
+    env_file: .env.mt.test
     healthcheck:
       test:
         [
@@ -150,8 +151,11 @@ services:
     ports:
       - 8081:8081
     depends_on:
-      - elasticsearch
-      - zeebe
-      - identity
+      zeebe:
+        condition: service_started
+      elasticsearch:
+        condition: service_started
+      identity:
+        condition: service_healthy
 volumes:
   keycloak-theme:
