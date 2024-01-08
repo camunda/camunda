@@ -15,7 +15,7 @@ const InlineLoading = styled(BaseInlineLoading)`
   width: fit-content;
 `;
 
-const Button = styled(BaseButton)`
+const Button: typeof BaseButton = styled(BaseButton)`
   &.hide {
     display: none;
   }

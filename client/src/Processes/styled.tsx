@@ -94,7 +94,7 @@ const MultiTenancyContainer = styled.div`
   }
 `;
 
-const Dropdown = styled(BaseDropdown)`
+const Dropdown: typeof BaseDropdown = styled(BaseDropdown)`
   width: 100%;
 `;
 
