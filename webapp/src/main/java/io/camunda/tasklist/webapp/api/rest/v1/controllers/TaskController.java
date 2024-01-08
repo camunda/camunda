@@ -22,6 +22,7 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariablesSearchRequest;
 import io.camunda.tasklist.webapp.mapper.TaskMapper;
 import io.camunda.tasklist.webapp.rest.exception.Error;
+import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.UserReader;
@@ -59,6 +60,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(value = TasklistURIs.TASKS_URL_V1, produces = MediaType.APPLICATION_JSON_VALUE)
 public class TaskController extends ApiErrorController {
+
+  public static final String USER_DOES_NOT_HAVE_ACCESS_TO_THIS_TASK_ERROR =
+      "User does not have permission to perform on this task.";
 
   @Autowired private TaskService taskService;
   @Autowired private VariableService variableService;
@@ -161,12 +165,41 @@ public class TaskController extends ApiErrorController {
             content =
                 @Content(
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = "User has no permission to access the task (Self-managed only).",
+            responseCode = "403",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class)))
       })
   @GetMapping("{taskId}")
   public ResponseEntity<TaskResponse> getTaskById(@PathVariable String taskId) {
-    final var task = taskMapper.toTaskResponse(taskService.getTask(taskId));
-    return ResponseEntity.ok(task);
+    final TaskResponse task = taskMapper.toTaskResponse(taskService.getTask(taskId));
+
+    if (!isUserRestrictionEnabled() || hasAccessToTask(task)) {
+      return ResponseEntity.ok(task);
+    } else {
+      throw new ForbiddenActionException(USER_DOES_NOT_HAVE_ACCESS_TO_THIS_TASK_ERROR);
+    }
+  }
+
+  private boolean hasAccessToTask(TaskResponse task) {
+    final String userName = userReader.getCurrentUser().getUserId();
+    final List<String> listOfUserGroups = identityAuthorizationService.getUserGroups();
+
+    final boolean allUsersTask =
+        task.getCandidateUsers() == null && task.getCandidateGroups() == null;
+    final boolean candidateGroupTasks =
+        task.getCandidateGroups() != null
+            && !Collections.disjoint(Arrays.asList(task.getCandidateGroups()), listOfUserGroups);
+    final boolean candidateUserTasks =
+        task.getCandidateUsers() != null
+            && Arrays.asList(task.getCandidateUsers()).contains(userName);
+    final boolean assigneeTasks = task.getAssignee() != null && task.getAssignee().equals(userName);
+
+    return candidateUserTasks || assigneeTasks || candidateGroupTasks || allUsersTask;
   }
 
   @Operation(
@@ -268,6 +301,13 @@ public class TaskController extends ApiErrorController {
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class))),
         @ApiResponse(
+            description = "User has no permission to access the task (Self-managed only).",
+            responseCode = "403",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
             description = "An error is returned when the task with the `taskId` is not found.",
             responseCode = "404",
             content =
@@ -282,8 +322,22 @@ public class TaskController extends ApiErrorController {
       @RequestBody(required = false) TaskCompleteRequest taskCompleteRequest) {
     final var variables =
         requireNonNullElse(taskCompleteRequest, new TaskCompleteRequest()).getVariables();
-    final var completedTask = taskService.completeTask(taskId, variables, true);
-    return ResponseEntity.ok(taskMapper.toTaskResponse(completedTask));
+    final TaskResponse task = taskMapper.toTaskResponse(taskService.getTask(taskId));
+
+    if (!isUserRestrictionEnabled() || hasAccessToTask(task)) {
+      final var completedTask = taskService.completeTask(taskId, variables, true);
+      return ResponseEntity.ok(taskMapper.toTaskResponse(completedTask));
+    } else {
+      throw new ForbiddenActionException(USER_DOES_NOT_HAVE_ACCESS_TO_THIS_TASK_ERROR);
+    }
+  }
+
+  private boolean isUserRestrictionEnabled() {
+    if (tasklistProperties.getIdentity() != null) {
+      return tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled();
+    } else {
+      return false;
+    }
   }
 
   @Operation(
@@ -315,6 +369,13 @@ public class TaskController extends ApiErrorController {
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class))),
         @ApiResponse(
+            description = "User has no permission to access the task (Self-managed only).",
+            responseCode = "403",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
             description =
                 "An error is returned if an unexpected error occurs while persisting draft task variables.",
             responseCode = "500",
@@ -327,7 +388,12 @@ public class TaskController extends ApiErrorController {
   @PostMapping("{taskId}/variables")
   public ResponseEntity<Void> saveDraftTaskVariables(
       @PathVariable String taskId, @RequestBody SaveVariablesRequest saveVariablesRequest) {
-    variableService.persistDraftTaskVariables(taskId, saveVariablesRequest.getVariables());
+    final TaskResponse task = taskMapper.toTaskResponse(taskService.getTask(taskId));
+    if (!isUserRestrictionEnabled() || hasAccessToTask(task)) {
+      variableService.persistDraftTaskVariables(taskId, saveVariablesRequest.getVariables());
+    } else {
+      throw new ForbiddenActionException(USER_DOES_NOT_HAVE_ACCESS_TO_THIS_TASK_ERROR);
+    }
     return ResponseEntity.noContent().build();
   }
 

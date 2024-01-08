@@ -57,6 +57,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class TaskControllerTest {
 
+  public static final String USER_DOES_NOT_HAVE_ACCESS_TO_THIS_TASK =
+      "User does not have permission to perform on this task.";
   private MockMvc mockMvc;
   @Mock private TaskService taskService;
   @Mock private VariableService variableService;
@@ -536,6 +538,8 @@ class TaskControllerTest {
               .setAssignee("demo")
               .setCreationDate("2023-02-20T18:37:19.214+0000")
               .setTaskState(TaskState.CREATED);
+
+      when(tasklistProperties.getIdentity()).thenReturn(null);
       when(taskService.getTask(taskId)).thenReturn(providedTask);
       when(taskMapper.toTaskResponse(providedTask)).thenReturn(taskResponse);
 
@@ -731,70 +735,6 @@ class TaskControllerTest {
   @Nested
   class TaskOperationTests {
     @Test
-    void completeTask() throws Exception {
-      // Given
-      final var taskId = "55555555";
-      final var mockedTask = mock(TaskDTO.class);
-      final var variables = List.of(new VariableInputDTO().setName("var_a").setValue("val_a"));
-      final var completeRequest = new TaskCompleteRequest().setVariables(variables);
-
-      final TaskResponse expectedTaskResponse = new TaskResponse();
-      expectedTaskResponse.setId("44444444");
-      expectedTaskResponse.setTaskState(TaskState.COMPLETED);
-
-      when(taskService.completeTask(taskId, variables, true)).thenReturn(mockedTask);
-      when(taskMapper.toTaskResponse(mockedTask)).thenReturn(expectedTaskResponse);
-
-      // When
-      final var responseAsString =
-          mockMvc
-              .perform(
-                  patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/complete"), taskId)
-                      .characterEncoding(StandardCharsets.UTF_8.name())
-                      .content(CommonUtils.OBJECT_MAPPER.writeValueAsString(completeRequest))
-                      .contentType(MediaType.APPLICATION_JSON)
-                      .accept(MediaType.APPLICATION_JSON))
-              .andDo(print())
-              .andExpect(status().isOk())
-              .andReturn()
-              .getResponse()
-              .getContentAsString();
-
-      final var result = CommonUtils.OBJECT_MAPPER.readValue(responseAsString, TaskResponse.class);
-
-      // Then
-      assertThat(result).isEqualTo(expectedTaskResponse);
-    }
-
-    @Test
-    void completeTaskWhenEmptyRequestBodySent() throws Exception {
-      // Given
-      final var taskId = "55555555";
-      final var mockedTask = mock(TaskDTO.class);
-
-      final TaskResponse expectedTaskResponse = new TaskResponse();
-      expectedTaskResponse.setId("55555555");
-
-      when(taskService.completeTask(taskId, List.of(), true)).thenReturn(mockedTask);
-      when(taskMapper.toTaskResponse(mockedTask)).thenReturn(expectedTaskResponse);
-
-      // When
-      final var responseAsString =
-          mockMvc
-              .perform(patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/complete"), taskId))
-              .andDo(print())
-              .andExpect(status().isOk())
-              .andReturn()
-              .getResponse()
-              .getContentAsString();
-
-      final var result = CommonUtils.OBJECT_MAPPER.readValue(responseAsString, TaskResponse.class);
-
-      // Then
-      assertThat(result).isEqualTo(expectedTaskResponse);
-    }
-
-    @Test
     void saveDraftTaskVariables() throws Exception {
       // Given
       final var taskId = "taskId778800";
@@ -884,11 +824,95 @@ class TaskControllerTest {
     }
 
     @Test
+    void completeTask() throws Exception {
+      // Given
+      final var taskId = "55555555";
+      final var mockedTask = mock(TaskDTO.class);
+      final var variables = List.of(new VariableInputDTO().setName("var_a").setValue("val_a"));
+      final var completeRequest = new TaskCompleteRequest().setVariables(variables);
+
+      final TaskResponse expectedTaskResponse = new TaskResponse();
+      expectedTaskResponse.setId("44444444");
+      expectedTaskResponse.setTaskState(TaskState.COMPLETED);
+
+      when(taskService.completeTask(taskId, variables, true)).thenReturn(mockedTask);
+      when(taskMapper.toTaskResponse(mockedTask)).thenReturn(expectedTaskResponse);
+      when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
+      when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
+      when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
+      when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
+      when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
+      when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(false);
+
+      // When
+      final var responseAsString =
+          mockMvc
+              .perform(
+                  patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/complete"), taskId)
+                      .characterEncoding(StandardCharsets.UTF_8.name())
+                      .content(CommonUtils.OBJECT_MAPPER.writeValueAsString(completeRequest))
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .accept(MediaType.APPLICATION_JSON))
+              .andDo(print())
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      final var result = CommonUtils.OBJECT_MAPPER.readValue(responseAsString, TaskResponse.class);
+
+      // Then
+      assertThat(result).isEqualTo(expectedTaskResponse);
+    }
+
+    @Test
+    void completeTaskWhenEmptyRequestBodySent() throws Exception {
+      // Given
+      final var taskId = "55555555";
+      final var mockedTask = mock(TaskDTO.class);
+
+      final TaskResponse expectedTaskResponse = new TaskResponse();
+      expectedTaskResponse.setId("55555555");
+
+      when(taskService.completeTask(taskId, List.of(), true)).thenReturn(mockedTask);
+      when(taskMapper.toTaskResponse(mockedTask)).thenReturn(expectedTaskResponse);
+      when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
+      when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
+      when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
+      when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
+      when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
+      when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(false);
+
+      // When
+      final var responseAsString =
+          mockMvc
+              .perform(patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/complete"), taskId))
+              .andDo(print())
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      final var result = CommonUtils.OBJECT_MAPPER.readValue(responseAsString, TaskResponse.class);
+
+      // Then
+      assertThat(result).isEqualTo(expectedTaskResponse);
+    }
+
+    @Test
     void completeTaskWithoutTenantAccess() throws Exception {
       final var taskId = "55555555";
       final var variables = List.of(new VariableInputDTO().setName("var_a").setValue("val_a"));
       final var completeRequest = new TaskCompleteRequest().setVariables(variables);
+
+      when(tasklistProperties.getIdentity()).thenReturn(null);
       when(taskService.completeTask(taskId, variables, true)).thenThrow(NotFoundException.class);
+      when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
+      when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
+      when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
+      when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
+      when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
+      when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(false);
 
       // When
       final var responseAsString =
@@ -905,217 +929,567 @@ class TaskControllerTest {
 
   @Nested
   class AccessRestrictionsTests {
-    @Test
-    void accessRestrictionsShouldReturnTasksForGroupAdminOnly() throws Exception {
-      // Given
-      final var providedTask =
-          new TaskDTO()
-              .setId("111111")
-              .setFlowNodeBpmnId("Register the passenger")
-              .setBpmnProcessId("Flight registration")
-              .setAssignee("demo")
-              .setCreationTime("2023-02-20T18:37:19.214+0000")
-              .setTaskState(TaskState.CREATED)
-              .setCandidateGroups(new String[] {"Admins"})
-              .setSortValues(new String[] {"123", "456"});
-      final var taskResponse =
-          new TaskSearchResponse()
-              .setId("111111")
-              .setName("Register the passenger")
-              .setProcessName("Flight registration")
-              .setAssignee("demo")
-              .setCreationDate("2023-02-20T18:37:19.214+0000")
-              .setCandidateGroups(new String[] {"Admins"})
-              .setTaskState(TaskState.CREATED)
-              .setSortValues(new String[] {"123", "456"});
-      final var searchRequest = new TaskSearchRequest().setPageSize(20).setState(TaskState.CREATED);
+    @Nested
+    class SearchTaskTests {
+      @Test
+      void accessRestrictionsShouldReturnTasksForGroupAdminOnly() throws Exception {
+        // Given
+        final var providedTask =
+            new TaskDTO()
+                .setId("111111")
+                .setFlowNodeBpmnId("Register the passenger")
+                .setBpmnProcessId("Flight registration")
+                .setAssignee("demo")
+                .setCreationTime("2023-02-20T18:37:19.214+0000")
+                .setTaskState(TaskState.CREATED)
+                .setCandidateGroups(new String[] {"Admins"})
+                .setSortValues(new String[] {"123", "456"});
+        final var taskResponse =
+            new TaskSearchResponse()
+                .setId("111111")
+                .setName("Register the passenger")
+                .setProcessName("Flight registration")
+                .setAssignee("demo")
+                .setCreationDate("2023-02-20T18:37:19.214+0000")
+                .setCandidateGroups(new String[] {"Admins"})
+                .setTaskState(TaskState.CREATED)
+                .setSortValues(new String[] {"123", "456"});
+        final var searchRequest =
+            new TaskSearchRequest().setPageSize(20).setState(TaskState.CREATED);
 
-      final var searchQuery = mock(TaskQueryDTO.class);
+        final var searchQuery = mock(TaskQueryDTO.class);
 
-      when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
-      when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
-      when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
-      when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
-      when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
-      when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
-      when(taskService.getTasks(searchQuery, emptySet(), false)).thenReturn(List.of(providedTask));
-      when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
+        when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
+        when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
+        when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
+        when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
+        when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
+        when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
+        when(taskService.getTasks(searchQuery, emptySet(), false))
+            .thenReturn(List.of(providedTask));
+        when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
 
-      // When
-      final var responseAsString =
-          mockMvc
-              .perform(
-                  post(TasklistURIs.TASKS_URL_V1.concat("/search"))
-                      .characterEncoding(StandardCharsets.UTF_8.name())
-                      .content(CommonUtils.OBJECT_MAPPER.writeValueAsString(searchRequest))
-                      .contentType(MediaType.APPLICATION_JSON)
-                      .accept(MediaType.APPLICATION_JSON))
-              .andDo(print())
-              .andExpect(status().isOk())
-              .andReturn()
-              .getResponse()
-              .getContentAsString();
-      final var result =
-          CommonUtils.OBJECT_MAPPER.readValue(
-              responseAsString, new TypeReference<List<TaskSearchResponse>>() {});
+        // When
+        final var responseAsString =
+            mockMvc
+                .perform(
+                    post(TasklistURIs.TASKS_URL_V1.concat("/search"))
+                        .characterEncoding(StandardCharsets.UTF_8.name())
+                        .content(CommonUtils.OBJECT_MAPPER.writeValueAsString(searchRequest))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        final var result =
+            CommonUtils.OBJECT_MAPPER.readValue(
+                responseAsString, new TypeReference<List<TaskSearchResponse>>() {});
 
-      // Then
-      assertThat(result).singleElement().isEqualTo(taskResponse);
+        // Then
+        assertThat(result).singleElement().isEqualTo(taskResponse);
+      }
+
+      @Test
+      void accessRestrictionsShouldReturnTasksForCandidateUser() throws Exception {
+        // Given
+        final var providedTask =
+            new TaskDTO()
+                .setId("111111")
+                .setFlowNodeBpmnId("Register the passenger")
+                .setBpmnProcessId("Flight registration")
+                .setAssignee("demo")
+                .setCreationTime("2023-02-20T18:37:19.214+0000")
+                .setTaskState(TaskState.CREATED)
+                .setCandidateUsers(new String[] {"demo"})
+                .setSortValues(new String[] {"123", "456"});
+        final var taskResponse =
+            new TaskSearchResponse()
+                .setId("111111")
+                .setName("Register the passenger")
+                .setProcessName("Flight registration")
+                .setAssignee("demo")
+                .setCreationDate("2023-02-20T18:37:19.214+0000")
+                .setCandidateUsers(new String[] {"demo"})
+                .setTaskState(TaskState.CREATED)
+                .setSortValues(new String[] {"123", "456"});
+        final var searchRequest =
+            new TaskSearchRequest().setPageSize(20).setState(TaskState.CREATED);
+
+        final var searchQuery = mock(TaskQueryDTO.class);
+
+        when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
+        when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
+        when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
+        when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
+        when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
+        when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
+        when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
+        when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
+        when(taskService.getTasks(searchQuery, emptySet(), false))
+            .thenReturn(List.of(providedTask));
+        when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
+
+        // When
+        final var responseAsString =
+            mockMvc
+                .perform(
+                    post(TasklistURIs.TASKS_URL_V1.concat("/search"))
+                        .characterEncoding(StandardCharsets.UTF_8.name())
+                        .content(CommonUtils.OBJECT_MAPPER.writeValueAsString(searchRequest))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        final var result =
+            CommonUtils.OBJECT_MAPPER.readValue(
+                responseAsString, new TypeReference<List<TaskSearchResponse>>() {});
+
+        // Then
+        assertThat(result).singleElement().isEqualTo(taskResponse);
+      }
+
+      @Test
+      void accessRestrictionsUserIsNotInTheGroupShouldSeeTaskAssigned() throws Exception {
+        // Given
+        final var providedTask =
+            new TaskDTO()
+                .setId("111111")
+                .setFlowNodeBpmnId("Register the passenger")
+                .setBpmnProcessId("Flight registration")
+                .setAssignee("demo")
+                .setCreationTime("2023-02-20T18:37:19.214+0000")
+                .setTaskState(TaskState.CREATED)
+                .setCandidateUsers(new String[] {"user1", "user2"})
+                .setAssignee("demo")
+                .setSortValues(new String[] {"123", "456"});
+        final var taskResponse =
+            new TaskSearchResponse()
+                .setId("111111")
+                .setName("Register the passenger")
+                .setProcessName("Flight registration")
+                .setAssignee("demo")
+                .setCreationDate("2023-02-20T18:37:19.214+0000")
+                .setCandidateUsers(new String[] {"user1", "user2"})
+                .setAssignee("demo")
+                .setTaskState(TaskState.CREATED)
+                .setSortValues(new String[] {"123", "456"});
+        final var searchRequest =
+            new TaskSearchRequest().setPageSize(20).setState(TaskState.CREATED);
+
+        final var searchQuery = mock(TaskQueryDTO.class);
+
+        when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
+        when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
+        when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
+        when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
+        when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
+        when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
+        when(taskService.getTasks(searchQuery, emptySet(), false))
+            .thenReturn(List.of(providedTask));
+        when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
+
+        // When
+        final var responseAsString =
+            mockMvc
+                .perform(
+                    post(TasklistURIs.TASKS_URL_V1.concat("/search"))
+                        .characterEncoding(StandardCharsets.UTF_8.name())
+                        .content(CommonUtils.OBJECT_MAPPER.writeValueAsString(searchRequest))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        final var result =
+            CommonUtils.OBJECT_MAPPER.readValue(
+                responseAsString, new TypeReference<List<TaskSearchResponse>>() {});
+
+        // Then
+        assertThat(result).singleElement().isEqualTo(taskResponse);
+      }
+
+      @Test
+      void accessRestrictionsUserShouldNotSeeTask() throws Exception {
+        // Given
+        final var searchRequest =
+            new TaskSearchRequest().setPageSize(20).setState(TaskState.CREATED);
+
+        final var searchQuery = mock(TaskQueryDTO.class);
+
+        when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
+        when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
+        when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
+        when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
+        when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
+        when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
+
+        // When
+        final var responseAsString =
+            mockMvc
+                .perform(
+                    post(TasklistURIs.TASKS_URL_V1.concat("/search"))
+                        .characterEncoding(StandardCharsets.UTF_8.name())
+                        .content(CommonUtils.OBJECT_MAPPER.writeValueAsString(searchRequest))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        final var result =
+            CommonUtils.OBJECT_MAPPER.readValue(
+                responseAsString, new TypeReference<List<TaskSearchResponse>>() {});
+
+        // Then
+        assertThat(result).isEqualTo(emptyList());
+      }
     }
 
-    @Test
-    void accessRestrictionsShouldReturnTasksForCandidateUser() throws Exception {
-      // Given
-      final var providedTask =
-          new TaskDTO()
-              .setId("111111")
-              .setFlowNodeBpmnId("Register the passenger")
-              .setBpmnProcessId("Flight registration")
-              .setAssignee("demo")
-              .setCreationTime("2023-02-20T18:37:19.214+0000")
-              .setTaskState(TaskState.CREATED)
-              .setCandidateUsers(new String[] {"demo"})
-              .setSortValues(new String[] {"123", "456"});
-      final var taskResponse =
-          new TaskSearchResponse()
-              .setId("111111")
-              .setName("Register the passenger")
-              .setProcessName("Flight registration")
-              .setAssignee("demo")
-              .setCreationDate("2023-02-20T18:37:19.214+0000")
-              .setCandidateUsers(new String[] {"demo"})
-              .setTaskState(TaskState.CREATED)
-              .setSortValues(new String[] {"123", "456"});
-      final var searchRequest = new TaskSearchRequest().setPageSize(20).setState(TaskState.CREATED);
+    @Nested
+    class CompleteTaskTests {
+      @Test
+      void completeTask() throws Exception {
+        // Given
+        final var taskId = "55555555";
+        final var mockedTask = mock(TaskDTO.class).setCandidateGroups(new String[] {"Admins"});
+        final var variables = List.of(new VariableInputDTO().setName("var_a").setValue("val_a"));
+        final var completeRequest = new TaskCompleteRequest().setVariables(variables);
 
-      final var searchQuery = mock(TaskQueryDTO.class);
+        final TaskResponse expectedTaskResponse = new TaskResponse();
+        expectedTaskResponse.setId("44444444");
+        expectedTaskResponse.setTaskState(TaskState.COMPLETED);
 
-      when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
-      when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
-      when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
-      when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
-      when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
-      when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
-      when(taskService.getTasks(searchQuery, emptySet(), false)).thenReturn(List.of(providedTask));
-      when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
+        when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
+        when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
+        when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
+        when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
+        when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
+        when(taskService.completeTask(taskId, variables, true)).thenReturn(mockedTask);
+        when(taskMapper.toTaskResponse(mockedTask)).thenReturn(expectedTaskResponse);
 
-      // When
-      final var responseAsString =
-          mockMvc
-              .perform(
-                  post(TasklistURIs.TASKS_URL_V1.concat("/search"))
-                      .characterEncoding(StandardCharsets.UTF_8.name())
-                      .content(CommonUtils.OBJECT_MAPPER.writeValueAsString(searchRequest))
-                      .contentType(MediaType.APPLICATION_JSON)
-                      .accept(MediaType.APPLICATION_JSON))
-              .andDo(print())
-              .andExpect(status().isOk())
-              .andReturn()
-              .getResponse()
-              .getContentAsString();
-      final var result =
-          CommonUtils.OBJECT_MAPPER.readValue(
-              responseAsString, new TypeReference<List<TaskSearchResponse>>() {});
+        // When
+        final var responseAsString =
+            mockMvc
+                .perform(
+                    patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/complete"), taskId)
+                        .characterEncoding(StandardCharsets.UTF_8.name())
+                        .content(CommonUtils.OBJECT_MAPPER.writeValueAsString(completeRequest))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
 
-      // Then
-      assertThat(result).singleElement().isEqualTo(taskResponse);
+        final var result =
+            CommonUtils.OBJECT_MAPPER.readValue(responseAsString, TaskResponse.class);
+
+        // Then
+        assertThat(result).isEqualTo(expectedTaskResponse);
+      }
+
+      @Test
+      void completeTaskShouldReturnForbiddenWhenUserHasNoAccess() throws Exception {
+        // Given
+        final var taskId = "55555555";
+        final var mockedTask = mock(TaskDTO.class).setCandidateGroups(new String[] {"Admins"});
+        final var variables = List.of(new VariableInputDTO().setName("var_a").setValue("val_a"));
+        final var completeRequest = new TaskCompleteRequest().setVariables(variables);
+
+        final TaskResponse expectedTaskResponse = new TaskResponse();
+        expectedTaskResponse.setId("44444444");
+        expectedTaskResponse.setCandidateGroups(new String[] {"Admins"});
+        expectedTaskResponse.setTaskState(TaskState.COMPLETED);
+
+        when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
+        when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
+        when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
+        when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
+        when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Demo"));
+        when(taskService.completeTask(taskId, variables, true)).thenReturn(mockedTask);
+        when(taskMapper.toTaskResponse(mockedTask)).thenReturn(expectedTaskResponse);
+
+        // When
+        final var responseAsString =
+            mockMvc
+                .perform(
+                    patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/complete"), taskId)
+                        .characterEncoding(StandardCharsets.UTF_8.name())
+                        .content(CommonUtils.OBJECT_MAPPER.writeValueAsString(completeRequest))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isForbidden())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        // Then
+        assertThat(responseAsString).contains(USER_DOES_NOT_HAVE_ACCESS_TO_THIS_TASK);
+      }
     }
 
-    @Test
-    void accessRestrictionsUserIsNotInTheGroupShouldSeeTaskAssigned() throws Exception {
-      // Given
-      final var providedTask =
-          new TaskDTO()
-              .setId("111111")
-              .setFlowNodeBpmnId("Register the passenger")
-              .setBpmnProcessId("Flight registration")
-              .setAssignee("demo")
-              .setCreationTime("2023-02-20T18:37:19.214+0000")
-              .setTaskState(TaskState.CREATED)
-              .setCandidateUsers(new String[] {"user1", "user2"})
-              .setAssignee("demo")
-              .setSortValues(new String[] {"123", "456"});
-      final var taskResponse =
-          new TaskSearchResponse()
-              .setId("111111")
-              .setName("Register the passenger")
-              .setProcessName("Flight registration")
-              .setAssignee("demo")
-              .setCreationDate("2023-02-20T18:37:19.214+0000")
-              .setCandidateUsers(new String[] {"user1", "user2"})
-              .setAssignee("demo")
-              .setTaskState(TaskState.CREATED)
-              .setSortValues(new String[] {"123", "456"});
-      final var searchRequest = new TaskSearchRequest().setPageSize(20).setState(TaskState.CREATED);
+    @Nested
+    class GetSingleTaskTests {
+      @Test
+      void accessRestrictionsShouldReturnTaskForCandidateUser() throws Exception {
+        // Given
+        final var providedTask =
+            new TaskDTO()
+                .setId("111111")
+                .setFlowNodeBpmnId("Register the passenger")
+                .setBpmnProcessId("Flight registration")
+                .setCreationTime("2023-02-20T18:37:19.214+0000")
+                .setTaskState(TaskState.CREATED)
+                .setCandidateUsers(new String[] {"demo"});
+        final var taskResponse =
+            new TaskResponse()
+                .setId("111111")
+                .setName("Register the passenger")
+                .setProcessName("Flight registration")
+                .setCreationDate("2023-02-20T18:37:19.214+0000")
+                .setCandidateUsers(new String[] {"demo"})
+                .setTaskState(TaskState.CREATED);
+        final var taskId = "111111";
 
-      final var searchQuery = mock(TaskQueryDTO.class);
+        when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
+        when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
+        when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
+        when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
+        when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
+        when(taskService.getTask(taskId)).thenReturn(providedTask);
+        when(taskMapper.toTaskResponse(providedTask)).thenReturn(taskResponse);
 
-      when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
-      when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
-      when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
-      when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
-      when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
-      when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
-      when(taskService.getTasks(searchQuery, emptySet(), false)).thenReturn(List.of(providedTask));
-      when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
+        // When
+        final var responseAsString =
+            mockMvc
+                .perform(
+                    get(TasklistURIs.TASKS_URL_V1.concat("/{taskId}"), taskId)
+                        .characterEncoding(StandardCharsets.UTF_8.name())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        final var result =
+            CommonUtils.OBJECT_MAPPER.readValue(responseAsString, TaskResponse.class);
 
-      // When
-      final var responseAsString =
-          mockMvc
-              .perform(
-                  post(TasklistURIs.TASKS_URL_V1.concat("/search"))
-                      .characterEncoding(StandardCharsets.UTF_8.name())
-                      .content(CommonUtils.OBJECT_MAPPER.writeValueAsString(searchRequest))
-                      .contentType(MediaType.APPLICATION_JSON)
-                      .accept(MediaType.APPLICATION_JSON))
-              .andDo(print())
-              .andExpect(status().isOk())
-              .andReturn()
-              .getResponse()
-              .getContentAsString();
-      final var result =
-          CommonUtils.OBJECT_MAPPER.readValue(
-              responseAsString, new TypeReference<List<TaskSearchResponse>>() {});
+        // Then
+        assertThat(result).isEqualTo(taskResponse);
+      }
 
-      // Then
-      assertThat(result).singleElement().isEqualTo(taskResponse);
+      @Test
+      void accessRestrictionsShouldReturnTaskForCandidateGroup() throws Exception {
+        // Given
+        final var providedTask =
+            new TaskDTO()
+                .setId("111111")
+                .setFlowNodeBpmnId("Register the passenger")
+                .setBpmnProcessId("Flight registration")
+                .setCreationTime("2023-02-20T18:37:19.214+0000")
+                .setTaskState(TaskState.CREATED)
+                .setCandidateGroups(new String[] {"Admins"});
+        final var taskResponse =
+            new TaskResponse()
+                .setId("111111")
+                .setName("Register the passenger")
+                .setProcessName("Flight registration")
+                .setCreationDate("2023-02-20T18:37:19.214+0000")
+                .setCandidateGroups(new String[] {"Admins"})
+                .setTaskState(TaskState.CREATED);
+        final var taskId = "111111";
+
+        when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
+        when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
+        when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
+        when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
+        when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
+        when(taskService.getTask(taskId)).thenReturn(providedTask);
+        when(taskMapper.toTaskResponse(providedTask)).thenReturn(taskResponse);
+
+        // When
+        final var responseAsString =
+            mockMvc
+                .perform(
+                    get(TasklistURIs.TASKS_URL_V1.concat("/{taskId}"), taskId)
+                        .characterEncoding(StandardCharsets.UTF_8.name())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        final var result =
+            CommonUtils.OBJECT_MAPPER.readValue(responseAsString, TaskResponse.class);
+
+        // Then
+        assertThat(result).isEqualTo(taskResponse);
+      }
+
+      @Test
+      void accessRestrictionsShouldReturnForbiddenWhenUserHasNoAccess() throws Exception {
+        // Given
+        final var providedTask =
+            new TaskDTO()
+                .setId("111111")
+                .setFlowNodeBpmnId("Register the passenger")
+                .setBpmnProcessId("Flight registration")
+                .setCreationTime("2023-02-20T18:37:19.214+0000")
+                .setTaskState(TaskState.CREATED)
+                .setCandidateUsers(new String[] {"admin"})
+                .setCandidateGroups(new String[] {"Admins"});
+        final var taskResponse =
+            new TaskResponse()
+                .setId("111111")
+                .setName("Register the passenger")
+                .setProcessName("Flight registration")
+                .setCreationDate("2023-02-20T18:37:19.214+0000")
+                .setCandidateUsers(new String[] {"admin"})
+                .setCandidateGroups(new String[] {"Admins"})
+                .setTaskState(TaskState.CREATED);
+        final var taskId = "111111";
+
+        when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
+        when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
+        when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
+        when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
+        when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Test"));
+        when(taskService.getTask(taskId)).thenReturn(providedTask);
+        when(taskMapper.toTaskResponse(providedTask)).thenReturn(taskResponse);
+
+        // When
+        final var responseAsString =
+            mockMvc
+                .perform(
+                    get(TasklistURIs.TASKS_URL_V1.concat("/{taskId}"), taskId)
+                        .characterEncoding(StandardCharsets.UTF_8.name())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isForbidden())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        // Then
+        assertThat(responseAsString).contains(USER_DOES_NOT_HAVE_ACCESS_TO_THIS_TASK);
+      }
     }
 
-    @Test
-    void accessRestrictionsUserShouldNotSeeTask() throws Exception {
-      // Given
-      final var searchRequest = new TaskSearchRequest().setPageSize(20).setState(TaskState.CREATED);
+    @Nested
+    class PersistTasksVariablesTest {
+      @Test
+      void saveDraftTaskVariables() throws Exception {
+        // Given
+        final var variables = List.of(new VariableInputDTO().setName("var_a").setValue("val_a"));
+        final var providedTask =
+            new TaskDTO()
+                .setId("111111")
+                .setFlowNodeBpmnId("Register the passenger")
+                .setBpmnProcessId("Flight registration")
+                .setCreationTime("2023-02-20T18:37:19.214+0000")
+                .setTaskState(TaskState.CREATED)
+                .setCandidateGroups(new String[] {"Admins"});
+        final var taskResponse =
+            new TaskResponse()
+                .setId("111111")
+                .setName("Register the passenger")
+                .setProcessName("Flight registration")
+                .setCreationDate("2023-02-20T18:37:19.214+0000")
+                .setCandidateGroups(new String[] {"Admins"})
+                .setTaskState(TaskState.CREATED);
+        final var taskId = "111111";
 
-      final var searchQuery = mock(TaskQueryDTO.class);
+        when(taskService.getTask(taskId)).thenReturn(providedTask);
+        when(taskMapper.toTaskResponse(providedTask)).thenReturn(taskResponse);
+        when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
+        when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
+        when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
+        when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
+        when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
 
-      when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
-      when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
-      when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
-      when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
-      when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
-      when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
-      when(taskService.getTasks(searchQuery, emptySet(), false)).thenReturn(emptyList());
+        // When
+        mockMvc
+            .perform(
+                post(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/variables"), taskId)
+                    .characterEncoding(StandardCharsets.UTF_8.name())
+                    .content(
+                        CommonUtils.OBJECT_MAPPER.writeValueAsString(
+                            new SaveVariablesRequest().setVariables(variables)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON))
+            .andDo(print())
+            .andExpect(status().isNoContent())
+            .andReturn()
+            .getResponse();
 
-      // When
-      final var responseAsString =
-          mockMvc
-              .perform(
-                  post(TasklistURIs.TASKS_URL_V1.concat("/search"))
-                      .characterEncoding(StandardCharsets.UTF_8.name())
-                      .content(CommonUtils.OBJECT_MAPPER.writeValueAsString(searchRequest))
-                      .contentType(MediaType.APPLICATION_JSON)
-                      .accept(MediaType.APPLICATION_JSON))
-              .andDo(print())
-              .andExpect(status().isOk())
-              .andReturn()
-              .getResponse()
-              .getContentAsString();
-      final var result =
-          CommonUtils.OBJECT_MAPPER.readValue(
-              responseAsString, new TypeReference<List<TaskSearchResponse>>() {});
+        // Then
+        verify(variableService).persistDraftTaskVariables(taskId, variables);
+      }
 
-      // Then
-      assertThat(result).isEqualTo(emptyList());
+      @Test
+      void saveDraftTaskVariablesShouldReturnForbiddenWhenUserHasNoAccess() throws Exception {
+        // Given
+        final var variables = List.of(new VariableInputDTO().setName("var_a").setValue("val_a"));
+        final var providedTask =
+            new TaskDTO()
+                .setId("111111")
+                .setFlowNodeBpmnId("Register the passenger")
+                .setBpmnProcessId("Flight registration")
+                .setCreationTime("2023-02-20T18:37:19.214+0000")
+                .setTaskState(TaskState.CREATED)
+                .setCandidateGroups(new String[] {"Admins"});
+        final var taskResponse =
+            new TaskResponse()
+                .setId("111111")
+                .setName("Register the passenger")
+                .setProcessName("Flight registration")
+                .setCreationDate("2023-02-20T18:37:19.214+0000")
+                .setCandidateGroups(new String[] {"Admins"})
+                .setTaskState(TaskState.CREATED);
+        final var taskId = "111111";
+
+        when(taskService.getTask(taskId)).thenReturn(providedTask);
+        when(taskMapper.toTaskResponse(providedTask)).thenReturn(taskResponse);
+        when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
+        when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
+        when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
+        when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
+        when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Demo"));
+
+        // When
+        final var responseAsString =
+            mockMvc
+                .perform(
+                    post(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/variables"), taskId)
+                        .characterEncoding(StandardCharsets.UTF_8.name())
+                        .content(
+                            CommonUtils.OBJECT_MAPPER.writeValueAsString(
+                                new SaveVariablesRequest().setVariables(variables)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isForbidden())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        // Then
+        verify(variableService, never()).persistDraftTaskVariables(taskId, variables);
+        assertThat(responseAsString).contains(USER_DOES_NOT_HAVE_ACCESS_TO_THIS_TASK);
+      }
     }
   }
 }
