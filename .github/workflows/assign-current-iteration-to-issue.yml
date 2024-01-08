@@ -7,7 +7,7 @@ on:
     types:
       - moved
 jobs:
-  assign_lable:
+  assign_label:
     if: github.event.project_card.column_id == '47fc9ee4' # this id can be found via the inspection tool on the browser
     runs-on: ubuntu-latest
     permissions:
