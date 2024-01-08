@@ -310,6 +310,32 @@
           "old": "method io.camunda.zeebe.protocol.record.RecordValue io.camunda.zeebe.protocol.record.value.ImmutableCommandDistributionRecordValue::getCommandValue()",
           "new": "method io.camunda.zeebe.protocol.record.ImmutableRecordValue io.camunda.zeebe.protocol.record.value.ImmutableCommandDistributionRecordValue::getCommandValue()",
           "justification": "This is a result of adding the Immutable annotation on RecordValue. This doesn't break any backwards compatibility."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method long io.camunda.zeebe.protocol.record.value.ImmutableCompensationSubscriptionRecordValue::getCompensableActivityScopeId()",
+          "new": "method java.lang.String io.camunda.zeebe.protocol.record.value.ImmutableCompensationSubscriptionRecordValue::getCompensableActivityScopeId()",
+          "justification": "This functionality is not yet released"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method long io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue::getCompensableActivityScopeId()",
+          "new": "method java.lang.String io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue::getCompensableActivityScopeId()",
+          "justification": "This functionality is not yet released"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableCompensationSubscriptionRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableCompensationSubscriptionRecordValue.Builder::withCompensableActivityScopeId(long)",
+          "justification": "This functionality is not yet released"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old":  "method io.camunda.zeebe.protocol.record.value.ImmutableCompensationSubscriptionRecordValue io.camunda.zeebe.protocol.record.value.ImmutableCompensationSubscriptionRecordValue::withCompensableActivityScopeId(long)",
+          "justification": "This functionality is not yet released"
         }
       ]
     }
