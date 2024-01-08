@@ -11,7 +11,7 @@
     "@carbon/react": "1.47.0",
     "@monaco-editor/react": "4.6.0",
     "@tanstack/react-query": "4.36.1",
-    "date-fns": "2.30.0",
+    "date-fns": "3.1.0",
     "event-source-polyfill": "1.0.31",
     "final-form": "4.20.10",
     "final-form-arrays": "3.1.0",
