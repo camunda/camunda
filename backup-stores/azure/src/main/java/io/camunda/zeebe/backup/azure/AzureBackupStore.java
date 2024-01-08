@@ -17,7 +17,9 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.azure.AzureBackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.azure.manifest.Manifest;
+import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -36,6 +38,10 @@ import org.slf4j.LoggerFactory;
  * scheme: {@code basePath/partitionId/checkpointId/nodeId}.
  */
 public final class AzureBackupStore implements BackupStore {
+  public static final String ERROR_MSG_BACKUP_NOT_FOUND =
+      "Expected to restore from backup with id '%s', but does not exist.";
+  public static final String ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE =
+      "Expected to restore from completed backup with id '%s', but was in state '%s'";
   public static final String SNAPSHOT_FILESET_NAME = "snapshot";
   public static final String SEGMENTS_FILESET_NAME = "segments";
   private static final Logger LOG = LoggerFactory.getLogger(AzureBackupStore.class);
@@ -119,7 +125,29 @@ public final class AzureBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Backup> restore(final BackupIdentifier id, final Path targetFolder) {
-    throw new UnsupportedOperationException();
+    return CompletableFuture.supplyAsync(
+        () -> {
+          final var manifest = manifestManager.getManifest(id);
+          if (manifest == null) {
+            throw new UnexpectedManifestState(ERROR_MSG_BACKUP_NOT_FOUND.formatted(id));
+          }
+          return switch (manifest.statusCode()) {
+            case FAILED, IN_PROGRESS ->
+                throw new UnexpectedManifestState(
+                    ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE.formatted(id, manifest.statusCode()));
+            case COMPLETED -> {
+              final var completed = manifest.asCompleted();
+              final var snapshot =
+                  fileSetManager.restore(
+                      id, SNAPSHOT_FILESET_NAME, completed.snapshot(), targetFolder);
+              final var segments =
+                  fileSetManager.restore(
+                      id, SEGMENTS_FILESET_NAME, completed.segments(), targetFolder);
+              yield new BackupImpl(id, manifest.descriptor(), snapshot, segments);
+            }
+          };
+        },
+        executor);
   }
 
   @Override

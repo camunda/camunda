@@ -27,14 +27,17 @@ import io.camunda.zeebe.backup.azure.manifest.Manifest;
 import io.camunda.zeebe.backup.azure.util.AzuriteContainer;
 import io.camunda.zeebe.backup.testkit.DeletingBackup;
 import io.camunda.zeebe.backup.testkit.QueryingBackupStatus;
+import io.camunda.zeebe.backup.testkit.RestoringBackup;
 import io.camunda.zeebe.backup.testkit.SavingBackup;
 import io.camunda.zeebe.backup.testkit.UpdatingBackupStatus;
 import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import java.io.FileNotFoundException;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.testcontainers.junit.jupiter.Container;
@@ -42,7 +45,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 public class AzureBackupStoreIT
-    implements SavingBackup, QueryingBackupStatus, UpdatingBackupStatus, DeletingBackup {
+    implements SavingBackup,
+        QueryingBackupStatus,
+        UpdatingBackupStatus,
+        DeletingBackup,
+        RestoringBackup {
 
   @Container private static final AzuriteContainer AZURITE_CONTAINER = new AzuriteContainer();
   private static final ObjectMapper MAPPER =
@@ -108,7 +115,28 @@ public class AzureBackupStoreIT
     Assertions.assertThat(getStore().delete(backup.id()))
         .failsWithin(Duration.ofSeconds(10))
         .withThrowableOfType(Throwable.class)
-        .withRootCauseInstanceOf(UnexpectedManifestState.class);
+        .withRootCauseInstanceOf(UnexpectedManifestState.class)
+        .withMessageContaining(
+            "Cannot delete Backup with id "
+                + "'BackupIdentifierImpl[nodeId=1, partitionId=2, checkpointId=3]' "
+                + "while saving is in progress.");
+  }
+
+  @ParameterizedTest
+  @ArgumentsSource(TestBackupProvider.class)
+  void cannotRestoreUploadingBackup(final Backup backup, @TempDir final Path targetDir) {
+    // when
+    uploadInProgressManifest(backup);
+
+    // then
+    Assertions.assertThat(getStore().restore(backup.id(), targetDir))
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableOfType(Throwable.class)
+        .withRootCauseInstanceOf(UnexpectedManifestState.class)
+        .withMessageContaining(
+            "Expected to restore from completed backup with id "
+                + "'BackupIdentifierImpl[nodeId=1, partitionId=2, checkpointId=3]', "
+                + "but was in state 'IN_PROGRESS'");
   }
 
   void uploadInProgressManifest(final Backup backup) {

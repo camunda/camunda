@@ -168,7 +168,8 @@ public final class ManifestManager {
       return;
     } else if (manifest.statusCode() == StatusCode.IN_PROGRESS) {
       throw new UnexpectedManifestState(
-          "Cannot delete Backup %s while saving is in progress.".formatted(id.toString()));
+          "Cannot delete Backup with id '%s' while saving is in progress."
+              .formatted(id.toString()));
     }
 
     blobClient.delete();
