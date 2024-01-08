@@ -13,7 +13,9 @@ import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.azure.util.AzuriteContainer;
+import io.camunda.zeebe.backup.testkit.QueryingBackupStatus;
 import io.camunda.zeebe.backup.testkit.SavingBackup;
+import io.camunda.zeebe.backup.testkit.UpdatingBackupStatus;
 import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import java.io.FileNotFoundException;
 import java.util.UUID;
@@ -25,7 +27,8 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
-public class AzureBackupStoreIT implements SavingBackup {
+public class AzureBackupStoreIT
+    implements SavingBackup, QueryingBackupStatus, UpdatingBackupStatus {
 
   @Container private static final AzuriteContainer AZURITE_CONTAINER = new AzuriteContainer();
   public AzureBackupConfig azureBackupConfig;

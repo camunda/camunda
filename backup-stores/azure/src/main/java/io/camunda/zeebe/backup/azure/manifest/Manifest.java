@@ -10,6 +10,7 @@ package io.camunda.zeebe.backup.azure.manifest;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.camunda.zeebe.backup.api.Backup;
+import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import java.time.Instant;
@@ -28,6 +29,18 @@ public sealed interface Manifest {
         StatusCode.IN_PROGRESS,
         FileSet.of(backup.snapshot()),
         FileSet.of(backup.segments()),
+        creationTime,
+        creationTime);
+  }
+
+  static FailedManifest createFailed(final BackupIdentifier id) {
+    final var creationTime = Instant.now();
+    return new ManifestImpl(
+        BackupIdentifierImpl.from(id),
+        null,
+        StatusCode.FAILED,
+        null,
+        null,
         creationTime,
         creationTime);
   }
