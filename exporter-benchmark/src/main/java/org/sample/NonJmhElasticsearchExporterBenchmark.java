@@ -1,3 +1,10 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
+ */
 package org.sample;
 
 import java.time.Duration;
@@ -26,7 +33,9 @@ public class NonJmhElasticsearchExporterBenchmark {
     System.out.println("Torn down benchmark");
   }
 
-  private static void runBenchmark(Duration benchmarkDuration, ExporterBenchmark benchmark,
+  private static void runBenchmark(
+      Duration benchmarkDuration,
+      ExporterBenchmark benchmark,
       ElasticsearchExporterState exporterState) {
     Instant startTime = Instant.now();
     Instant endTime = startTime.plus(benchmarkDuration);
@@ -38,7 +47,8 @@ public class NonJmhElasticsearchExporterBenchmark {
     }
 
     System.out.println("Finished benchmark");
-    System.out.printf("Completed iterations per second: %s%n",
+    System.out.printf(
+        "Completed iterations per second: %s%n",
         (double) iterations / benchmarkDuration.toSeconds());
   }
 
