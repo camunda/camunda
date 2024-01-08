@@ -288,7 +288,7 @@ class BackupMultiPartitionTest {
   private void restoreBroker(final long backupId, final int brokerId) {
     try {
       new RestoreManager(clusteringRule.getBrokerCfg(brokerId), s3BackupStore)
-          .restore(backupId)
+          .restore(backupId, true)
           .get(120, TimeUnit.SECONDS);
     } catch (final Exception e) {
       throw new RuntimeException(e);
