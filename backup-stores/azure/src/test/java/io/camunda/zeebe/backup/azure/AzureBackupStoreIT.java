@@ -15,13 +15,13 @@ import io.camunda.zeebe.backup.azure.AzureBackupStoreException.UnexpectedManifes
 import io.camunda.zeebe.backup.azure.util.AzuriteContainer;
 import io.camunda.zeebe.backup.testkit.DeletingBackup;
 import io.camunda.zeebe.backup.testkit.QueryingBackupStatus;
+import io.camunda.zeebe.backup.testkit.RestoringBackup;
 import io.camunda.zeebe.backup.testkit.SavingBackup;
 import io.camunda.zeebe.backup.testkit.UpdatingBackupStatus;
 import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import java.io.FileNotFoundException;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.testcontainers.junit.jupiter.Container;
@@ -29,7 +29,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 public class AzureBackupStoreIT
-    implements SavingBackup, QueryingBackupStatus, UpdatingBackupStatus, DeletingBackup {
+    implements SavingBackup,
+        QueryingBackupStatus,
+        UpdatingBackupStatus,
+        DeletingBackup,
+        RestoringBackup {
 
   @Container private static final AzuriteContainer AZURITE_CONTAINER = new AzuriteContainer();
   public AzureBackupConfig azureBackupConfig;
@@ -76,10 +80,5 @@ public class AzureBackupStoreIT
     final var status = getStore().getStatus(backup.id()).join();
     assertThat(status.statusCode()).isEqualTo(BackupStatusCode.COMPLETED);
     assertThat(status.lastModified()).isEqualTo(firstStatus.lastModified());
-  }
-
-  @Test
-  void cannotDeleteUploadingBlock() {
-    // TODO: when delete feature is done
   }
 }
