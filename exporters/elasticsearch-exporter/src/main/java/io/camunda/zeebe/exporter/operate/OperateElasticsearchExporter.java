@@ -9,7 +9,6 @@ package io.camunda.zeebe.exporter.operate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.util.SoftHashMap;
 import io.camunda.zeebe.exporter.ElasticsearchExporterException;
 import io.camunda.zeebe.exporter.ElasticsearchMetrics;
 import io.camunda.zeebe.exporter.api.Exporter;
@@ -304,8 +303,8 @@ public class OperateElasticsearchExporter implements Exporter {
 
   private ExportBatchWriter createBatchWriter() {
 
-    final SoftHashMap<String, String> callActivityIdCache =
-        new SoftHashMap<>(configuration.getTreePathCacheSize());
+    final OperateElasticsearchSoftHashMap<String, String> callActivityIdCache =
+        new OperateElasticsearchSoftHashMap<>(configuration.getTreePathCacheSize());
     return ExportBatchWriter.Builder.begin()
         // ImportBulkProcessor
         // #processDecisionRecords

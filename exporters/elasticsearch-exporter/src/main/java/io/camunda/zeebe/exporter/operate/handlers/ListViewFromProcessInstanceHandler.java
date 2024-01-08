@@ -23,11 +23,11 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
-import io.camunda.operate.util.SoftHashMap;
 import io.camunda.operate.util.TreePath;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
 import io.camunda.zeebe.exporter.operate.OperateElasticsearchBulkRequest;
 import io.camunda.zeebe.exporter.operate.OperateElasticsearchExporterConfiguration;
+import io.camunda.zeebe.exporter.operate.OperateElasticsearchSoftHashMap;
 import io.camunda.zeebe.exporter.operate.schema.templates.ListViewTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -88,7 +88,7 @@ public class ListViewFromProcessInstanceHandler
 
   private void initTreePathCache() {
     if (treePathCache == null) {
-      treePathCache = new SoftHashMap<>(configuration.getTreePathCacheSize());
+      treePathCache = new OperateElasticsearchSoftHashMap<>(configuration.getTreePathCacheSize());
     }
   }
 

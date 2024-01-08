@@ -20,10 +20,10 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
-import io.camunda.operate.util.SoftHashMap;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
 import io.camunda.zeebe.exporter.operate.OperateElasticsearchBulkRequest;
 import io.camunda.zeebe.exporter.operate.OperateElasticsearchExporterConfiguration;
+import io.camunda.zeebe.exporter.operate.OperateElasticsearchSoftHashMap;
 import io.camunda.zeebe.exporter.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -76,7 +76,7 @@ public class FlowNodeInstanceHandler
 
   private void initTreePathCaches() {
     if (treePathCache == null) {
-      treePathCache = new SoftHashMap<>(configuration.getTreePathCacheSize());
+      treePathCache = new OperateElasticsearchSoftHashMap<>(configuration.getTreePathCacheSize());
     }
   }
 
