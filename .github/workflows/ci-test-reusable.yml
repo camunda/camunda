@@ -1,0 +1,107 @@
+# This GitHub Actions workflow automates the CI test process for the 'tasklist' service.
+# It triggers on a `workflow_call` event and accepts inputs for branch name[required], fork count[optional], testProfile and database
+#
+# It consists of a several steps:
+# 1. Setup: It checks out the specified branch, sets up Java and Maven with the provided inputs, and imports secrets from Vault.
+# 2. Tests: Runs unit and integration tests.
+# 3. Reports: Publishes the test results, even if some steps failed.
+#
+# Environment variables are used to control CPU limits.
+# This workflow is designed to provide a comprehensive, automated CI process that ensures code quality, handles secrets securely,
+# and enables detailed reporting of test results.
+
+name: CI IT test reusable
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: "The branch name to be used for the workflow"
+        required: true
+        type: string
+      forkCount:
+        description: "The number of VMs to fork in parallel in order to execute the tests"
+        required: false
+        default: 4
+        type: number
+      testProfile:
+        description: "test profile used on ES/OS test execution"
+        required: true
+        type: string
+      database:
+        description: "database used on ES/OS test execution"
+        required: true
+        type: string
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  LIMITS_CPU: ${{ inputs.forkCount }} # consumed by `maven-surefire-plugin` & `maven-failsafe-plugin` plugins defined in main `pom.xml` file
+
+jobs:
+  build:
+    name: "'${{ inputs.branch }}' build"
+    runs-on: ${{ 'gcp-core-16-default' }}
+    if: ${{ !startsWith(inputs.branch, 'fe-') && !startsWith(inputs.branch, 'renovate/') }}
+    timeout-minutes: 120
+    steps:
+      # Setup: checkout branch
+      - name: "Checkout '${{ inputs.branch }}' branch"
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        with:
+          ref: refs/heads/${{ inputs.branch }}
+          fetch-depth: 0  # fetches all history for all branches and tags
+
+      # Setup: import secrets from vault
+      - name: Import Secrets
+        id: secrets # important to refer to it in later steps
+        uses: hashicorp/vault-action@6853090cd99ab382c4830a1ae8966b5a906315b6
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/github.com/organizations/camunda NEXUS_PSW;
+
+      # Setup: configure Java, Maven, settings.xml
+      - uses: ./.github/actions/build-setup
+        name: Build setup
+        with:
+          nexusUsername: ${{ steps.secrets.outputs.NEXUS_USR }}
+          nexusPassword: ${{ steps.secrets.outputs.NEXUS_PSW }}
+
+      # Tests: run tests for all Maven modules
+      - name: Run Tests
+        run: |
+          mvn -T4 verify -P ${{ inputs.testProfile }},skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2 -Dcamunda.tasklist.database=${{ inputs.database }}
+
+      # Reports: publish test metrics results
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2.11.0
+        if: ${{ (success() || failure()) }} # Publish results for non-FE branch even if the build step was failed
+        with:
+          files: |
+            **/target/surefire-reports/*.xml
+            **/target/failsafe-reports/TEST-*.xml
+
+      # Sanitize the branch name to replace non alphanumeric characters with `-`
+      - id: sanitize
+        uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+        with:
+          branch: ${{ inputs.branch }}
+          max_length: '50'
+
+      - name: Upload JaCoCo report
+        uses: actions/upload-artifact@v4
+        if: ${{ (success() || failure()) }}
+        with:
+          name: jacoco-report-${{ steps.sanitize.outputs.branch_name }}-${{ inputs.database }}
+          path: ${{ github.workspace }}/test-coverage/target/site/jacoco-aggregate/
+          retention-days: 2

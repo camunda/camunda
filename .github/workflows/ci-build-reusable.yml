@@ -1,14 +1,12 @@
-# This GitHub Actions workflow automates the CI process for the 'tasklist' service.
-# It triggers on a `workflow_call` event and accepts inputs for branch name[required], Java version[optional], and fork count[optional].
+# This GitHub Actions workflow automates the CI build process for the 'tasklist' service.
+# It triggers on a `workflow_call` event and accepts inputs for branch name[required], Java version[optional]
 #
 # It consists of a several steps:
 # 1. Setup: It checks out the specified branch, sets up Java and Maven with the provided inputs, and imports secrets from Vault.
 # 2. Build: Then it builds the Maven artifacts and Docker images
-# 3. Tests: Runs unit and integration tests.
-# 4. Reports: Publishes the test results, even if some steps failed.
-# 5. Upload: Deploys SNAPSHOT Docker image and mvn artifacts
+# 3. Upload: Deploys SNAPSHOT Docker image and mvn artifacts
 #
-# Environment variables are used to control CPU limits and define the image tags used for Docker builds.
+# Environment variables are used to define the image tags used for Docker builds.
 # This workflow is designed to provide a comprehensive, automated CI process that ensures code quality, handles secrets securely,
 # and enables detailed reporting of test results.
 
@@ -21,24 +19,6 @@ on:
         description: "The branch name to be used for the workflow"
         required: true
         type: string
-      javaVersion:
-        description: "The version of Java to be used to build the service"
-        required: false
-        type: number
-        default: 17
-      forkCount:
-        description: "The number of VMs to fork in parallel in order to execute the tests"
-        required: false
-        default: 4
-        type: number
-      testProfile:
-        description: "test profile used on ES/OS test execution"
-        required: true
-        type: string
-      database:
-        description: "database used on ES/OS test execution"
-        required: true
-        type: string
 
 defaults:
   run:
@@ -47,11 +27,8 @@ defaults:
     shell: bash
 
 env:
-  JAVA_VERSION: ${{ inputs.javaVersion }}
   BRANCH_NAME: ${{ inputs.branch }}
   IS_MASTER_BRANCH: ${{ inputs.branch == 'master' }}
-  RUN_BE_TESTS: ${{ !startsWith(inputs.branch, 'fe-') && !startsWith(inputs.branch, 'renovate/') }}
-  LIMITS_CPU: ${{ inputs.forkCount }} # consumed by `maven-surefire-plugin` & `maven-failsafe-plugin` plugins defined in main `pom.xml` file
 
 jobs:
   build:
@@ -95,31 +72,11 @@ jobs:
 
       #########################################################################
       # Setup: configure Java, Maven, settings.xml
-      - name: Setup Java ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v4
+      - uses: ./.github/actions/build-setup
+        name: Build setup
         with:
-          distribution: "adopt"
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: "maven"
-
-      - name: Setup Maven
-        uses: stCarolas/setup-maven@v4.5
-        with:
-          maven-version: 3.8.6
-
-      # Setup: Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
-      - name: Create Maven settings.xml
-        uses: s4u/maven-settings-action@v2.8.0
-        with:
-          githubServer: false
-          servers: |
-            [{
-              "id": "camunda-nexus",
-              "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
-              "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
-            }]
-          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
-
+          nexusUsername: ${{ steps.secrets.outputs.NEXUS_USR }}
+          nexusPassword: ${{ steps.secrets.outputs.NEXUS_PSW }}
       #########################################################################
       # Build: maven artifacts and Docker images
       - name: Build Maven
@@ -147,38 +104,6 @@ jobs:
         with:
           tags: ${{ steps.meta.outputs.tags }}
           push: true
-
-      #########################################################################
-      # Tests: run tests for all Maven modules
-      - name: Run Tests
-        if: ${{ env.RUN_BE_TESTS == 'true' }}
-        run: |
-          mvn -T4 verify -P ${{ inputs.testProfile }},skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2 -Dcamunda.tasklist.database=${{ inputs.database }}
-
-      #########################################################################
-      # Reports: publish test metrics results
-      - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2.11.0
-        if: ${{ env.RUN_BE_TESTS == 'true' && (success() || failure()) }} # Publish results for non-FE branch even if the build step was failed
-        with:
-          files: |
-            **/target/surefire-reports/*.xml
-            **/target/failsafe-reports/TEST-*.xml
-
-      # Sanitize the branch name to replace non alphanumeric characters with `-`
-      - id: sanitize
-        uses: camunda/infra-global-github-actions/sanitize-branch-name@main
-        with:
-          branch: ${{ env.BRANCH_NAME }}
-          max_length: '50'
-
-      - name: Upload JaCoCo report
-        uses: actions/upload-artifact@v4
-        if: ${{ env.RUN_BE_TESTS == 'true' && (success() || failure()) }}
-        with:
-          name: jacoco-report-${{ steps.sanitize.outputs.branch_name }}-${{ inputs.database }}
-          path: ${{ github.workspace }}/test-coverage/target/site/jacoco-aggregate/
-          retention-days: 2
 
       #########################################################################
       # Upload: deploy SNAPSHOT Docker image and mvn artifacts

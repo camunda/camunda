@@ -1,5 +1,5 @@
 # This GitHub Actions workflow that is triggered on push to `master` and `stable/**` branch or on any pull request creation
-# and invokes `ci-reusable` workflow.
+# and invokes `ci-build-reusable` and `ci-test-reusable` workflows.
 
 name: CI
 on:
@@ -11,25 +11,29 @@ on:
   pull_request:
 
 jobs:
-  run-build-es:
-    name: run-es
-    uses: ./.github/workflows/ci-reusable.yml
+  run-build:
+    name: run-build
+    uses: ./.github/workflows/ci-build-reusable.yml
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `master` or `stable/**`
-      testProfile: docker-es
-      database: elasticsearch
-    concurrency:
-      group: ci-es-${{ github.head_ref || github.ref_name }}
-      cancel-in-progress: true
-  run-build-os:
-    name: run-os
-    uses: ./.github/workflows/ci-reusable.yml
+
+  run-tests:
+    name: "run-${{ matrix.name }}-tests"
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [ elasticsearch, opensearch ]
+        include:
+          - database: elasticsearch
+            testProfile: docker-es
+            name: es
+          - database: opensearch
+            testProfile: docker-os
+            name: os
+    uses: ./.github/workflows/ci-test-reusable.yml
     secrets: inherit
     with:
-      branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `master` or `stable/**`
-      testProfile: docker-os
-      database: opensearch
-    concurrency:
-      group: ci-os-${{ github.head_ref || github.ref_name }}
-      cancel-in-progress: true
+      branch: ${{ github.head_ref || github.ref_name }}
+      testProfile: ${{ matrix.testProfile }}
+      database: ${{ matrix.database }}
