@@ -17,7 +17,9 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.azure.AzureBackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.azure.manifest.Manifest;
+import io.camunda.zeebe.backup.azure.manifest.Manifest.StatusCode;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -108,7 +110,21 @@ public final class AzureBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> delete(final BackupIdentifier id) {
-    throw new UnsupportedOperationException();
+    return CompletableFuture.runAsync(
+        () -> {
+          final Manifest manifest = manifestManager.getManifest(id);
+          if (manifest == null) {
+            return;
+          } else if (manifest.statusCode() == StatusCode.IN_PROGRESS) {
+            throw new UnexpectedManifestState(
+                "Cannot delete Backup %s while saving is in progress.".formatted(id.toString()));
+          }
+
+          manifestManager.deleteManifest(id);
+          fileSetManager.delete(id, SNAPSHOT_FILESET_NAME);
+          fileSetManager.delete(id, SEGMENTS_FILESET_NAME);
+        },
+        executor);
   }
 
   @Override

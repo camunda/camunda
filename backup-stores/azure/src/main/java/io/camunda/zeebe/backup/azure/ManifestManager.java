@@ -161,6 +161,13 @@ public final class ManifestManager {
     }
   }
 
+  public void deleteManifest(final BackupIdentifier id) {
+    final BlobClient blobClient = blobContainerClient.getBlobClient(manifestIdPath(id));
+    if (blobClient.exists()) {
+      blobClient.delete();
+    }
+  }
+
   Manifest getManifest(final BackupIdentifier id) {
     final BlobClient blobClient;
     final BinaryData binaryData;

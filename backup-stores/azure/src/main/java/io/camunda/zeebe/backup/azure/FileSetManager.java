@@ -12,9 +12,12 @@ import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.models.BlobErrorCode;
 import com.azure.storage.blob.models.BlobStorageException;
+import com.azure.storage.blob.models.ListBlobsOptions;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException.BlobAlreadyExists;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 
 final class FileSetManager {
   // The path format is constructed by partitionId/checkpointId/nodeId/nameOfFile
@@ -27,10 +30,7 @@ final class FileSetManager {
   }
 
   void save(final BackupIdentifier id, final String fileSetName, final NamedFileSet fileSet) {
-    if (!containerCreated) {
-      containerClient.createIfNotExists();
-      containerCreated = true;
-    }
+    assureContainerCreated();
     for (final var namedFile : fileSet.namedFiles().entrySet()) {
       final var fileName = namedFile.getKey();
       final var filePath = namedFile.getValue();
@@ -47,6 +47,23 @@ final class FileSetManager {
         }
         throw e;
       }
+    }
+  }
+
+  public void delete(final BackupIdentifier id, final String fileSetName) {
+    assureContainerCreated();
+    final ListBlobsOptions options = new ListBlobsOptions().setPrefix(fileSetPath(id, fileSetName));
+    containerClient
+        .listBlobs(options, Duration.of(10, ChronoUnit.SECONDS))
+        .forEach(
+            blobItem ->
+                containerClient.getBlobClient(blobItem.getName()).getBlockBlobClient().delete());
+  }
+
+  void assureContainerCreated() {
+    if (!containerCreated) {
+      containerClient.createIfNotExists();
+      containerCreated = true;
     }
   }
 
