@@ -7,6 +7,7 @@
 package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.hamcrest.Matchers.containsString;
@@ -26,6 +27,7 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.*;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
+import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.mapper.TaskMapper;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
@@ -35,7 +37,9 @@ import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService
 import io.camunda.tasklist.webapp.service.TaskService;
 import io.camunda.tasklist.webapp.service.VariableService;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -98,7 +102,84 @@ class TaskControllerTest {
               .setSearchAfter(new String[] {"123", "456"});
       final var searchQuery = mock(TaskQueryDTO.class);
       when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
-      when(taskService.getTasks(searchQuery, emptyList())).thenReturn(List.of(providedTask));
+      when(taskService.getTasks(searchQuery, emptySet(), false)).thenReturn(List.of(providedTask));
+      when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
+
+      // When
+      final var responseAsString =
+          mockMvc
+              .perform(
+                  post(TasklistURIs.TASKS_URL_V1.concat("/search"))
+                      .characterEncoding(StandardCharsets.UTF_8.name())
+                      .content(CommonUtils.OBJECT_MAPPER.writeValueAsString(searchRequest))
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .accept(MediaType.APPLICATION_JSON))
+              .andDo(print())
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+      final var result =
+          CommonUtils.OBJECT_MAPPER.readValue(
+              responseAsString, new TypeReference<List<TaskSearchResponse>>() {});
+
+      // Then
+      assertThat(result).singleElement().isEqualTo(taskResponse);
+    }
+
+    @Test
+    void searchTasksWithVariablesWithFullValues() throws Exception {
+      // Given
+      final var providedTask =
+          new TaskDTO()
+              .setId("111111")
+              .setFlowNodeBpmnId("Register the passenger")
+              .setBpmnProcessId("Flight registration")
+              .setAssignee("demo")
+              .setCreationTime("2023-02-20T18:37:19.214+0000")
+              .setTaskState(TaskState.CREATED)
+              .setSortValues(new String[] {"123", "456"})
+              .setVariables(
+                  new VariableDTO[] {
+                    new VariableDTO()
+                        .setId("varA_id")
+                        .setName("varA")
+                        .setPreviewValue("veryLon")
+                        .setValue("veryLong")
+                        .setIsValueTruncated(true)
+                  });
+      final var taskResponse =
+          new TaskSearchResponse()
+              .setId("111111")
+              .setName("Register the passenger")
+              .setProcessName("Flight registration")
+              .setAssignee("demo")
+              .setCreationDate("2023-02-20T18:37:19.214+0000")
+              .setTaskState(TaskState.CREATED)
+              .setSortValues(new String[] {"123", "456"})
+              .setVariables(
+                  new VariableSearchResponse[] {
+                    new VariableSearchResponse()
+                        .setId("varA_id")
+                        .setName("varA")
+                        .setPreviewValue("veryLon")
+                        .setValue("veryLong")
+                        .setIsValueTruncated(false)
+                  });
+      final var searchRequest =
+          new TaskSearchRequest()
+              .setPageSize(20)
+              .setState(TaskState.CREATED)
+              .setAssigned(true)
+              .setSearchAfter(new String[] {"123", "456"})
+              .setIncludeVariables(
+                  new IncludeVariable[] {
+                    new IncludeVariable().setName("varA").setAlwaysReturnFullValue(true)
+                  });
+      final var searchQuery = mock(TaskQueryDTO.class);
+      when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
+      when(taskService.getTasks(searchQuery, Set.of("varA"), true))
+          .thenReturn(List.of(providedTask));
       when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
 
       // When
@@ -135,7 +216,7 @@ class TaskControllerTest {
               .setSearchAfterOrEqual(new String[] {"456"});
       final var searchQuery = mock(TaskQueryDTO.class);
       when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
-      when(taskService.getTasks(searchQuery, emptyList()))
+      when(taskService.getTasks(searchQuery, emptySet(), false))
           .thenThrow(
               new InvalidRequestException(
                   "Only one of [searchAfter, searchAfterOrEqual, searchBefore, searchBeforeOrEqual] must be present in request."));
@@ -176,7 +257,7 @@ class TaskControllerTest {
       final var searchRequest = new TaskSearchRequest().setPageSize(50);
       final var searchQuery = new TaskQueryDTO().setPageSize(50);
       when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
-      when(taskService.getTasks(searchQuery, emptyList())).thenReturn(List.of(providedTask));
+      when(taskService.getTasks(searchQuery, emptySet(), false)).thenReturn(List.of(providedTask));
       when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
 
       // When
@@ -228,7 +309,7 @@ class TaskControllerTest {
                       .setValue("\"updatedVeryVeryLongValue\"")
                       .setIsValueTruncated(true)
                       .setPreviewValue("\"updatedVeryVeryLo"));
-      final var variableNames = List.of("varA", "varB", "varC");
+      final var variableNames = Set.of("varA", "varB", "varC");
       when(variableService.getVariableSearchResponses(taskId, variableNames))
           .thenReturn(List.of(variableA, variableB, variableC));
 
@@ -240,7 +321,8 @@ class TaskControllerTest {
                       .characterEncoding(StandardCharsets.UTF_8.name())
                       .content(
                           CommonUtils.OBJECT_MAPPER.writeValueAsString(
-                              new VariablesSearchRequest().setVariableNames(variableNames)))
+                              new VariablesSearchRequest()
+                                  .setVariableNames(new ArrayList<>(variableNames))))
                       .contentType(MediaType.APPLICATION_JSON)
                       .accept(MediaType.APPLICATION_JSON))
               .andDo(print())
@@ -277,6 +359,129 @@ class TaskControllerTest {
     }
 
     @Test
+    void searchTaskVariablesWithFullValues() throws Exception {
+      // Given
+      final var taskId = "778899";
+      final var variableA =
+          new VariableSearchResponse()
+              .setId("111")
+              .setName("varA")
+              .setValue("925.5")
+              .setPreviewValue("925.5")
+              .setDraft(
+                  new VariableSearchResponse.DraftSearchVariableValue()
+                      .setValue("10000.5")
+                      .setPreviewValue("10000.5"));
+      final var variableB =
+          new VariableSearchResponse()
+              .setId("112")
+              .setName("varB")
+              .setValue("\"veryVeryLongValueThatExceedsVariableSizeLimit\"")
+              .setIsValueTruncated(true)
+              .setPreviewValue("\"veryVeryLongValue");
+      final var variableC =
+          new VariableSearchResponse()
+              .setId("113")
+              .setName("varC")
+              .setValue("\"normalValue\"")
+              .setPreviewValue("\"normalValue\"")
+              .setDraft(
+                  new VariableSearchResponse.DraftSearchVariableValue()
+                      .setValue("\"updatedVeryVeryLongValue\"")
+                      .setIsValueTruncated(true)
+                      .setPreviewValue("\"updatedVeryVeryLo"));
+      final var variableNames = Set.of("varA", "varB", "varC");
+      when(variableService.getVariableSearchResponses(taskId, variableNames))
+          .thenReturn(List.of(variableA, variableB, variableC));
+
+      // When
+      final var responseAsString =
+          mockMvc
+              .perform(
+                  post(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/variables/search"), taskId)
+                      .characterEncoding(StandardCharsets.UTF_8.name())
+                      .content(
+                          CommonUtils.OBJECT_MAPPER.writeValueAsString(
+                              new VariablesSearchRequest()
+                                  .setIncludeVariables(
+                                      List.of(
+                                          new IncludeVariable()
+                                              .setName("varA")
+                                              .setAlwaysReturnFullValue(true),
+                                          new IncludeVariable()
+                                              .setName("varB")
+                                              .setAlwaysReturnFullValue(true),
+                                          new IncludeVariable()
+                                              .setName("varC")
+                                              .setAlwaysReturnFullValue(true)))))
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .accept(MediaType.APPLICATION_JSON))
+              .andDo(print())
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      final var result =
+          CommonUtils.OBJECT_MAPPER.readValue(
+              responseAsString, new TypeReference<List<VariableSearchResponse>>() {});
+
+      // Then
+      assertThat(result)
+          .extracting("name", "value", "isValueTruncated", "previewValue", "draft")
+          .containsExactly(
+              tuple(
+                  "varA",
+                  "925.5",
+                  false,
+                  "925.5",
+                  new VariableSearchResponse.DraftSearchVariableValue()
+                      .setValue("10000.5")
+                      .setPreviewValue("10000.5")),
+              tuple(
+                  "varB",
+                  "\"veryVeryLongValueThatExceedsVariableSizeLimit\"",
+                  true,
+                  "\"veryVeryLongValue",
+                  null),
+              tuple(
+                  "varC",
+                  "\"normalValue\"",
+                  false,
+                  "\"normalValue\"",
+                  new VariableSearchResponse.DraftSearchVariableValue()
+                      .setIsValueTruncated(true)
+                      .setPreviewValue("\"updatedVeryVeryLo")
+                      .setValue("\"updatedVeryVeryLongValue\"")));
+    }
+
+    @Test
+    void searchTaskVariablesWithVariableNamesAndIncludeVariablesShouldReturn400() throws Exception {
+      final var expectedErrorMessage =
+          "Only one of [variableNames, includeVariables] must be present in request";
+      mockMvc
+          .perform(
+              post(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/variables/search"), "taskId")
+                  .characterEncoding(StandardCharsets.UTF_8.name())
+                  .content(
+                      CommonUtils.OBJECT_MAPPER.writeValueAsString(
+                          new VariablesSearchRequest()
+                              .setVariableNames(List.of("varA"))
+                              .setIncludeVariables(List.of(new IncludeVariable().setName("varA")))))
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .accept(MediaType.APPLICATION_JSON))
+          .andDo(print())
+          .andExpect(
+              content()
+                  .string(
+                      containsString(
+                          expectedErrorMessage))) // Check for the error message in the response
+          .andReturn()
+          .getResponse()
+          .getContentAsString();
+    }
+
+    @Test
     void variablesSearchWhenTaskIdDoesntExistOrTenantWithoutAccess() throws Exception {
       final var taskId = "2222222";
       mockMvc
@@ -288,7 +493,7 @@ class TaskControllerTest {
     void searchTaskVariablesWhenRequestBodyIsEmpty() throws Exception {
       // Given
       final var taskId = "11778899";
-      when(variableService.getVariableSearchResponses(taskId, emptyList())).thenReturn(emptyList());
+      when(variableService.getVariableSearchResponses(taskId, emptySet())).thenReturn(emptyList());
 
       // When
       final var responseAsString =
@@ -733,7 +938,7 @@ class TaskControllerTest {
       when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
       when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
       when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
-      when(taskService.getTasks(searchQuery, emptyList())).thenReturn(List.of(providedTask));
+      when(taskService.getTasks(searchQuery, emptySet(), false)).thenReturn(List.of(providedTask));
       when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
 
       // When
@@ -791,7 +996,7 @@ class TaskControllerTest {
       when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
       when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
       when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
-      when(taskService.getTasks(searchQuery, emptyList())).thenReturn(List.of(providedTask));
+      when(taskService.getTasks(searchQuery, emptySet(), false)).thenReturn(List.of(providedTask));
       when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
 
       // When
@@ -851,7 +1056,7 @@ class TaskControllerTest {
       when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
       when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
       when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
-      when(taskService.getTasks(searchQuery, emptyList())).thenReturn(List.of(providedTask));
+      when(taskService.getTasks(searchQuery, emptySet(), false)).thenReturn(List.of(providedTask));
       when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
 
       // When
@@ -889,7 +1094,7 @@ class TaskControllerTest {
       when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
       when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
       when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
-      when(taskService.getTasks(searchQuery, emptyList())).thenReturn(emptyList());
+      when(taskService.getTasks(searchQuery, emptySet(), false)).thenReturn(emptyList());
 
       // When
       final var responseAsString =

@@ -22,6 +22,7 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariablesSearchRequest;
 import io.camunda.tasklist.webapp.mapper.TaskMapper;
 import io.camunda.tasklist.webapp.rest.exception.Error;
+import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
@@ -35,8 +36,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -102,18 +108,44 @@ public class TaskController extends ApiErrorController {
       }
     }
 
-    final List<String> includeVariableNames =
-        searchRequest != null && searchRequest.getIncludeVariables() != null
-            ? Arrays.stream(searchRequest.getIncludeVariables())
-                .map(IncludeVariable::getName)
-                .toList()
-            : Collections.emptyList();
-
+    final Map<String, Boolean> variableNamesToReturnFullValue;
+    if (searchRequest != null && searchRequest.getIncludeVariables() != null) {
+      variableNamesToReturnFullValue =
+          Arrays.stream(searchRequest.getIncludeVariables())
+              .collect(
+                  Collectors.toMap(
+                      IncludeVariable::getName, IncludeVariable::isAlwaysReturnFullValue));
+    } else {
+      variableNamesToReturnFullValue = Collections.emptyMap();
+    }
+    final Set<String> includeVariableNames = variableNamesToReturnFullValue.keySet();
+    final boolean fetchFullValuesFromDB =
+        variableNamesToReturnFullValue.values().stream().anyMatch(Boolean::booleanValue);
     final var tasks =
-        taskService.getTasks(query, includeVariableNames).stream()
+        taskService.getTasks(query, includeVariableNames, fetchFullValuesFromDB).stream()
             .map(taskMapper::toTaskSearchResponse)
             .collect(Collectors.toList());
+
+    tasks.stream()
+        .map(TaskSearchResponse::getVariables)
+        .filter(Objects::nonNull)
+        .flatMap(Arrays::stream)
+        .forEach(resp -> unsetBigVariableValuesIfNeeded(resp, variableNamesToReturnFullValue));
     return ResponseEntity.ok(tasks);
+  }
+
+  private void unsetBigVariableValuesIfNeeded(
+      VariableSearchResponse resp, Map<String, Boolean> variableNamesToReturnFullValue) {
+    final boolean returnFullValue =
+        Optional.ofNullable(variableNamesToReturnFullValue.get(resp.getName())).orElse(false);
+    if (resp.getIsValueTruncated() && !returnFullValue) {
+      resp.resetValue();
+    }
+
+    final var draft = resp.getDraft();
+    if (draft != null && draft.getIsValueTruncated() && !returnFullValue) {
+      draft.resetValue();
+    }
   }
 
   @Operation(
@@ -322,25 +354,33 @@ public class TaskController extends ApiErrorController {
   public ResponseEntity<List<VariableSearchResponse>> searchTaskVariables(
       @PathVariable String taskId,
       @RequestBody(required = false) VariablesSearchRequest variablesSearchRequest) {
-    final List<String> variableNames =
-        Optional.ofNullable(variablesSearchRequest)
-            .map(VariablesSearchRequest::getVariableNames)
-            .orElse(Collections.emptyList());
+    final Map<String, Boolean> variableNamesToReturnFullValue;
+    if (variablesSearchRequest != null) {
+      if (CollectionUtils.isNotEmpty(variablesSearchRequest.getVariableNames())
+          && CollectionUtils.isNotEmpty(variablesSearchRequest.getIncludeVariables())) {
+        throw new InvalidRequestException(
+            "Only one of [variableNames, includeVariables] must be present in request.");
+      } else if (CollectionUtils.isNotEmpty(variablesSearchRequest.getVariableNames())) {
+        variableNamesToReturnFullValue =
+            variablesSearchRequest.getVariableNames().stream()
+                .collect(Collectors.toMap(Function.identity(), k -> false));
+      } else if (CollectionUtils.isNotEmpty(variablesSearchRequest.getIncludeVariables())) {
+        variableNamesToReturnFullValue =
+            variablesSearchRequest.getIncludeVariables().stream()
+                .collect(
+                    Collectors.toMap(
+                        IncludeVariable::getName, IncludeVariable::isAlwaysReturnFullValue));
+      } else {
+        variableNamesToReturnFullValue = Collections.emptyMap();
+      }
+    } else {
+      variableNamesToReturnFullValue = Collections.emptyMap();
+    }
 
     final List<VariableSearchResponse> variables =
-        variableService.getVariableSearchResponses(taskId, variableNames);
+        variableService.getVariableSearchResponses(taskId, variableNamesToReturnFullValue.keySet());
 
-    variables.forEach(
-        resp -> {
-          if (resp.getIsValueTruncated()) {
-            resp.resetValue();
-          }
-
-          final var draft = resp.getDraft();
-          if (draft != null && draft.getIsValueTruncated()) {
-            draft.resetValue();
-          }
-        });
+    variables.forEach(resp -> unsetBigVariableValuesIfNeeded(resp, variableNamesToReturnFullValue));
 
     return ResponseEntity.ok(variables);
   }

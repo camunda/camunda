@@ -215,7 +215,7 @@ class VariableServiceTest {
         .thenReturn(List.of(numDraftVariable, strDraftVariable));
 
     // when
-    final var result = instance.getVariableSearchResponses(taskId, emptyList());
+    final var result = instance.getVariableSearchResponses(taskId, emptySet());
 
     // then
     assertThat(result)

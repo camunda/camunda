@@ -11,12 +11,23 @@ import java.util.Objects;
 public class IncludeVariable {
   private String name;
 
+  private boolean alwaysReturnFullValue = false;
+
   public String getName() {
     return name;
   }
 
   public IncludeVariable setName(String name) {
     this.name = name;
+    return this;
+  }
+
+  public boolean isAlwaysReturnFullValue() {
+    return alwaysReturnFullValue;
+  }
+
+  public IncludeVariable setAlwaysReturnFullValue(boolean alwaysReturnFullValue) {
+    this.alwaysReturnFullValue = alwaysReturnFullValue;
     return this;
   }
 
@@ -29,11 +40,11 @@ public class IncludeVariable {
       return false;
     }
     final IncludeVariable that = (IncludeVariable) o;
-    return Objects.equals(name, that.name);
+    return alwaysReturnFullValue == that.alwaysReturnFullValue && Objects.equals(name, that.name);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name);
+    return Objects.hash(alwaysReturnFullValue, name);
   }
 }

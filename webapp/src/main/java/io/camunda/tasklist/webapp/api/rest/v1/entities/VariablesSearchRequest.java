@@ -14,12 +14,23 @@ import java.util.StringJoiner;
 public class VariablesSearchRequest {
   private List<String> variableNames = new ArrayList<>();
 
+  private List<IncludeVariable> includeVariables = new ArrayList<>();
+
   public List<String> getVariableNames() {
     return variableNames;
   }
 
   public VariablesSearchRequest setVariableNames(List<String> variableNames) {
     this.variableNames = variableNames;
+    return this;
+  }
+
+  public List<IncludeVariable> getIncludeVariables() {
+    return includeVariables;
+  }
+
+  public VariablesSearchRequest setIncludeVariables(List<IncludeVariable> includeVariables) {
+    this.includeVariables = includeVariables;
     return this;
   }
 
@@ -32,18 +43,20 @@ public class VariablesSearchRequest {
       return false;
     }
     final VariablesSearchRequest that = (VariablesSearchRequest) o;
-    return Objects.equals(variableNames, that.variableNames);
+    return Objects.equals(variableNames, that.variableNames)
+        && Objects.equals(includeVariables, that.includeVariables);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(variableNames);
+    return Objects.hash(variableNames, includeVariables);
   }
 
   @Override
   public String toString() {
     return new StringJoiner(", ", VariablesSearchRequest.class.getSimpleName() + "[", "]")
         .add("variableNames=" + variableNames)
+        .add("includeVariables=" + includeVariables)
         .toString();
   }
 }

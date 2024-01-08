@@ -7,6 +7,7 @@
 package io.camunda.tasklist.webapp.service;
 
 import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
+import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,7 +43,6 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import java.time.OffsetDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -182,7 +182,7 @@ class TaskServiceTest {
                         .setIsValueTruncated(true))));
 
     // When
-    final var result = instance.getTasks(taskQuery, List.of("varA"));
+    final var result = instance.getTasks(taskQuery, Set.of("varA"), false);
 
     // Then
     assertThat(result).containsAll(expectedTasks);
@@ -204,7 +204,7 @@ class TaskServiceTest {
     when(taskStore.getTasks(taskQuery.toTaskQuery())).thenReturn(providedTasks);
 
     // When
-    final var result = instance.getTasks(taskQuery, Collections.emptyList());
+    final var result = instance.getTasks(taskQuery, emptySet(), false);
 
     // Then
     assertThat(result).containsAll(expectedTasks);

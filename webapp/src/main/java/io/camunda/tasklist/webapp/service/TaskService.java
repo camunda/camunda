@@ -13,7 +13,7 @@ import static io.camunda.tasklist.Metrics.TAG_KEY_FLOW_NODE_ID;
 import static io.camunda.tasklist.Metrics.TAG_KEY_ORGANIZATION_ID;
 import static io.camunda.tasklist.Metrics.TAG_KEY_USER_ID;
 import static io.camunda.tasklist.util.CollectionUtil.countNonNullObjects;
-import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNullElse;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,6 +37,7 @@ import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -67,10 +68,11 @@ public class TaskService {
   @Autowired private TaskValidator taskValidator;
 
   public List<TaskDTO> getTasks(TaskQueryDTO query) {
-    return getTasks(query, emptyList());
+    return getTasks(query, emptySet(), false);
   }
 
-  public List<TaskDTO> getTasks(TaskQueryDTO query, List<String> includeVariableNames) {
+  public List<TaskDTO> getTasks(
+      TaskQueryDTO query, Set<String> includeVariableNames, boolean fetchFullValuesFromDB) {
     if (countNonNullObjects(
             query.getSearchAfter(), query.getSearchAfterOrEqual(),
             query.getSearchBefore(), query.getSearchBeforeOrEqual())
@@ -85,11 +87,13 @@ public class TaskService {
 
     final List<TaskSearchView> tasks = taskStore.getTasks(query.toTaskQuery());
     final Set<String> fieldNames =
-        Set.of(
-            "id",
-            "name",
-            "previewValue",
-            "isValueTruncated"); // use fieldNames to not fetch fullValue from DB
+        fetchFullValuesFromDB
+            ? emptySet()
+            : Set.of(
+                "id",
+                "name",
+                "previewValue",
+                "isValueTruncated"); // use fieldNames to not fetch fullValue from DB
     final Map<String, List<VariableDTO>> variablesPerTaskId =
         CollectionUtils.isEmpty(includeVariableNames)
             ? Collections.emptyMap()
@@ -98,7 +102,7 @@ public class TaskService {
                     .map(
                         taskView ->
                             VariableStore.GetVariablesRequest.createFrom(
-                                taskView, includeVariableNames, fieldNames))
+                                taskView, new ArrayList<>(includeVariableNames), fieldNames))
                     .toList());
     return tasks.stream()
         .map(

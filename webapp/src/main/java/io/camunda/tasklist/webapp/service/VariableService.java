@@ -355,13 +355,13 @@ public class VariableService {
   }
 
   public List<VariableSearchResponse> getVariableSearchResponses(
-      String taskId, List<String> variableNames) {
+      String taskId, Set<String> variableNames) {
 
     final TaskEntity task = taskStore.getTask(taskId);
     final List<GetVariablesRequest> requests =
         Collections.singletonList(
             VariableStore.GetVariablesRequest.createFrom(task)
-                .setVarNames(variableNames)
+                .setVarNames(new ArrayList<>(variableNames))
                 .setFieldNames(Collections.emptySet()));
 
     final List<VariableSearchResponse> vars = new ArrayList<>();
@@ -373,7 +373,7 @@ public class VariableService {
                 originalVar -> nameToOriginalVariables.put(originalVar.getName(), originalVar));
         final Map<String, DraftTaskVariableEntity> nameToDraftVariable = new HashMap<>();
         draftVariableStore
-            .getVariablesByTaskIdAndVariableNames(taskId, variableNames)
+            .getVariablesByTaskIdAndVariableNames(taskId, new ArrayList<>(variableNames))
             .forEach(draftVar -> nameToDraftVariable.put(draftVar.getName(), draftVar));
 
         nameToOriginalVariables.forEach(
