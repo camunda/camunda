@@ -18,6 +18,9 @@ import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.management.BackupService;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
+import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
+import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator.BackupNotValidException;
+import io.camunda.zeebe.restore.RestoreManager.ValidatePartitionCount;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.CorruptedSnapshotException;
@@ -128,7 +131,7 @@ class PartitionRestoreServiceTest {
     final var backup = takeBackup(backupId, 4);
 
     // when
-    restoreService.restore(backupId).join();
+    restoreService.restore(backupId, BackupValidator.none()).join();
 
     // then
     assertThat(dataDirectoryToRestore).isNotEmptyDirectory();
@@ -166,7 +169,7 @@ class PartitionRestoreServiceTest {
     takeBackup(backupId, 5);
 
     // when - then
-    assertThat(restoreService.restore(backupId))
+    assertThat(restoreService.restore(backupId, new ValidatePartitionCount(1)))
         .failsWithin(Duration.ofSeconds(1))
         .withThrowableOfType(ExecutionException.class)
         .withCauseInstanceOf(IllegalStateException.class)
@@ -192,10 +195,31 @@ class PartitionRestoreServiceTest {
         StandardOpenOption.APPEND);
 
     // when - then
-    assertThat(restoreService.restore(backupId))
+    assertThat(restoreService.restore(backupId, new ValidatePartitionCount(1)))
         .failsWithin(Duration.ofSeconds(1))
         .withThrowableOfType(ExecutionException.class)
         .withCauseInstanceOf(CorruptedSnapshotException.class);
+  }
+
+  @Test
+  void shouldFailToRestoreWhenPartitionCountIsDifferent() {
+    // given
+    appendRecord(1, "data");
+    appendRecord(2, "data");
+    appendRecord(3, "data");
+    appendRecord(4, "checkpoint");
+
+    takeSnapshot(2, 3);
+
+    final long backupId = 1;
+    takeBackup(backupId, 4);
+
+    // when - then
+    assertThat(restoreService.restore(backupId, new ValidatePartitionCount(2)))
+        .failsWithin(Duration.ofSeconds(1))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(BackupNotValidException.class)
+        .withMessageContaining("Expected backup to have 2 partitions, but has 1");
   }
 
   private Set<String> getRegularFiles(final Path directory) throws IOException {

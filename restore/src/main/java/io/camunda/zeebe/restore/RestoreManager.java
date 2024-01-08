@@ -10,9 +10,11 @@ package io.camunda.zeebe.restore;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
+import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.partitioning.RaftPartitionGroupFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
@@ -33,7 +35,7 @@ public class RestoreManager {
     this.backupStore = backupStore;
   }
 
-  public CompletableFuture<Void> restore(final long backupId) {
+  public CompletableFuture<Void> restore(final long backupId, final boolean validateConfig) {
     final Path dataDirectory = Path.of(configuration.getData().getDirectory());
     try {
       if (!FileUtil.isEmpty(dataDirectory)) {
@@ -55,7 +57,9 @@ public class RestoreManager {
 
     return CompletableFuture.allOf(
             partitionToRestore.stream()
-                .map(partition -> restorePartition(partition, backupId, localBrokerId))
+                .map(
+                    partition ->
+                        restorePartition(partition, backupId, localBrokerId, validateConfig))
                 .toArray(CompletableFuture[]::new))
         .exceptionallyComposeAsync(error -> logFailureAndDeleteDataDirectory(dataDirectory, error));
   }
@@ -82,9 +86,19 @@ public class RestoreManager {
   }
 
   private CompletableFuture<Void> restorePartition(
-      final RaftPartition partition, final long backupId, final int localBrokerId) {
+      final RaftPartition partition,
+      final long backupId,
+      final int localBrokerId,
+      final boolean validateConfig) {
+    final BackupValidator validator;
+    if (validateConfig) {
+      validator = new ValidatePartitionCount(configuration.getCluster().getPartitionsCount());
+    } else {
+      LOG.warn("Restoring without validating backup");
+      validator = BackupValidator.none();
+    }
     return new PartitionRestoreService(backupStore, partition, localBrokerId)
-        .restore(backupId)
+        .restore(backupId, validator)
         .thenAccept(backup -> logSuccessfulRestore(backup, partition.id().id(), backupId));
   }
 
@@ -100,5 +114,29 @@ public class RestoreManager {
         .map(RaftPartition.class::cast)
         .filter(partition -> partition.getMetadata().members().contains(localMember))
         .collect(Collectors.toSet());
+  }
+
+  static final class ValidatePartitionCount implements BackupValidator {
+    private final int expectedPartitionCount;
+
+    ValidatePartitionCount(final int expectedPartitionCount) {
+      this.expectedPartitionCount = expectedPartitionCount;
+    }
+
+    @Override
+    public BackupStatus validateStatus(final BackupStatus status) throws BackupNotValidException {
+      final var descriptor =
+          status
+              .descriptor()
+              .orElseThrow(
+                  () -> new BackupNotValidException(status, "Backup does not have a descriptor"));
+      if (descriptor.numberOfPartitions() != expectedPartitionCount) {
+        throw new BackupNotValidException(
+            status,
+            "Expected backup to have %d partitions, but has %d"
+                .formatted(expectedPartitionCount, descriptor.numberOfPartitions()));
+      }
+      return status;
+    }
   }
 }

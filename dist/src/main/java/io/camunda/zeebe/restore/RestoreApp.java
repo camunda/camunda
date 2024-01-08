@@ -23,7 +23,8 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
 @SpringBootApplication(
     scanBasePackages = {"io.camunda.zeebe.restore", "io.camunda.zeebe.broker.shared"})
-@ConfigurationPropertiesScan(basePackages = {"io.camunda.zeebe.broker.shared"})
+@ConfigurationPropertiesScan(
+    basePackages = {"io.camunda.zeebe.broker.shared", "io.camunda.zeebe.restore"})
 public class RestoreApp implements ApplicationRunner {
 
   private static final Logger LOG = LoggerFactory.getLogger(RestoreApp.class);
@@ -34,10 +35,16 @@ public class RestoreApp implements ApplicationRunner {
   // Parsed from commandline Eg:-`--backupId=100`
   private long backupId;
 
+  private final RestoreConfiguration restoreConfiguration;
+
   @Autowired
-  public RestoreApp(final BrokerCfg configuration, final BackupStore backupStore) {
+  public RestoreApp(
+      final BrokerCfg configuration,
+      final BackupStore backupStore,
+      final RestoreConfiguration restoreConfiguration) {
     this.configuration = configuration;
     this.backupStore = backupStore;
+    this.restoreConfiguration = restoreConfiguration;
   }
 
   public static void main(final String[] args) {
@@ -54,7 +61,9 @@ public class RestoreApp implements ApplicationRunner {
   @Override
   public void run(final ApplicationArguments args) {
     LOG.info("Starting to restore from backup {}", backupId);
-    new RestoreManager(configuration, backupStore).restore(backupId).join();
+    new RestoreManager(configuration, backupStore)
+        .restore(backupId, restoreConfiguration.validateConfig())
+        .join();
     LOG.info("Successfully restored broker from backup {}", backupId);
   }
 }
