@@ -77,6 +77,11 @@ public class GcsBackupStoreIT {
     public Class<? extends Exception> getFileNotFoundExceptionClass() {
       return NoSuchFileException.class;
     }
+
+    @Override
+    public Class<? extends Exception> getFailToRestoreDuetoUnexistingFileExceptionClass() {
+      return RuntimeException.class;
+    }
   }
 
   @Nested
@@ -120,6 +125,11 @@ public class GcsBackupStoreIT {
     @Override
     public Class<? extends Exception> getFileNotFoundExceptionClass() {
       return NoSuchFileException.class;
+    }
+
+    @Override
+    public Class<? extends Exception> getFailToRestoreDuetoUnexistingFileExceptionClass() {
+      return RuntimeException.class;
     }
   }
 }

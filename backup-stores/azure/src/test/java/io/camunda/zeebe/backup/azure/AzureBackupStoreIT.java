@@ -65,6 +65,11 @@ public class AzureBackupStoreIT
     return FileNotFoundException.class;
   }
 
+  @Override
+  public Class<? extends Exception> getFailToRestoreDuetoUnexistingFileExceptionClass() {
+    return UnexpectedManifestState.class;
+  }
+
   @ParameterizedTest
   @ArgumentsSource(TestBackupProvider.class)
   void backupShouldExistAfterStoreIsClosed(final Backup backup) {

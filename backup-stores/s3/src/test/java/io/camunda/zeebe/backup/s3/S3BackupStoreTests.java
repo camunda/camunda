@@ -44,6 +44,11 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
     return BackupInInvalidStateException.class;
   }
 
+  @Override
+  default Class<? extends Exception> getFailToRestoreDuetoUnexistingFileExceptionClass() {
+    return BackupInInvalidStateException.class;
+  }
+
   @ParameterizedTest
   @ArgumentsSource(TestBackupProvider.class)
   default void savesManifest(final Backup backup) throws IOException {

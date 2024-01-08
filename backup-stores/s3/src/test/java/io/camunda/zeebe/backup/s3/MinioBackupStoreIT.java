@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.s3;
 
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
+import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupInInvalidStateException;
 import java.nio.file.NoSuchFileException;
 import java.time.Duration;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -104,6 +105,11 @@ final class MinioBackupStoreIT implements S3BackupStoreTests {
   @Override
   public S3BackupStore getStore() {
     return store;
+  }
+
+  @Override
+  public Class<? extends Exception> getFailToRestoreDuetoUnexistingFileExceptionClass() {
+    return BackupInInvalidStateException.class;
   }
 
   @Override
