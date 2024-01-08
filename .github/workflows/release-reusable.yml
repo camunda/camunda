@@ -223,7 +223,7 @@ jobs:
           export VERSION=$VERSION
           export DATE=$date_time_stamp
           export REVISION=$commit_hash
-          export BASE_IMAGE=docker.io/library/alpine:3.18.4
+          export BASE_IMAGE=docker.io/library/alpine:3.19.0
           sudo apt update
           sudo apt install -y jq
           sudo apt install -y bash

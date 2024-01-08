@@ -212,7 +212,7 @@ pipeline {
               export VERSION=${VERSION}
               export DATE=${DATE}
               export REVISION=${REVISION}
-              export BASE_IMAGE=docker.io/library/alpine:3.18.4
+              export BASE_IMAGE=docker.io/library/alpine:3.19.0
               apk update
               apk add jq
               apk --no-cache add bash
