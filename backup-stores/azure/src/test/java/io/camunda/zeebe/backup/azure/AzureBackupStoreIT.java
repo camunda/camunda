@@ -7,34 +7,34 @@
  */
 package io.camunda.zeebe.backup.azure;
 
+import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.azure.core.util.BinaryData;
+import com.azure.storage.blob.BlobClient;
+import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.BlobServiceClient;
+import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException.UnexpectedManifestState;
-import io.camunda.zeebe.backup.azure.manifest.Manifest.StatusCode;
+import io.camunda.zeebe.backup.azure.manifest.Manifest;
 import io.camunda.zeebe.backup.azure.util.AzuriteContainer;
-import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
-import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
-import io.camunda.zeebe.backup.common.BackupImpl;
-import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.backup.testkit.DeletingBackup;
 import io.camunda.zeebe.backup.testkit.QueryingBackupStatus;
 import io.camunda.zeebe.backup.testkit.SavingBackup;
 import io.camunda.zeebe.backup.testkit.UpdatingBackupStatus;
 import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.time.Duration;
-import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
-import org.apache.commons.lang3.RandomUtils;
 import org.assertj.core.api.Assertions;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.testcontainers.junit.jupiter.Container;
@@ -45,6 +45,12 @@ public class AzureBackupStoreIT
     implements SavingBackup, QueryingBackupStatus, UpdatingBackupStatus, DeletingBackup {
 
   @Container private static final AzuriteContainer AZURITE_CONTAINER = new AzuriteContainer();
+  private static final ObjectMapper MAPPER =
+      new ObjectMapper()
+          .registerModule(new Jdk8Module())
+          .registerModule(new JavaTimeModule())
+          .disable(WRITE_DATES_AS_TIMESTAMPS)
+          .setSerializationInclusion(Include.NON_ABSENT);
   public AzureBackupConfig azureBackupConfig;
   public AzureBackupStore azureBackupStore;
   public final String containerName = UUID.randomUUID().toString();
@@ -91,42 +97,42 @@ public class AzureBackupStoreIT
     assertThat(status.lastModified()).isEqualTo(firstStatus.lastModified());
   }
 
-  @Test
-  public void cannotDeleteUploadingBlock() throws IOException, InterruptedException {
-    // given
-    final var tempDir = Files.createTempDirectory("backup");
-    Files.createDirectory(tempDir.resolve("segments/"));
-    final var seg1 = Files.createFile(tempDir.resolve("segments/segment-file-1"));
+  @ParameterizedTest
+  @ArgumentsSource(TestBackupProvider.class)
+  public void cannotDeleteUploadingBlock(final Backup backup) {
 
-    Files.write(seg1, RandomUtils.nextBytes(50 * 1024 * 1024));
-
-    final Backup largeBackup =
-        new BackupImpl(
-            new BackupIdentifierImpl(1, 2, 3),
-            new BackupDescriptorImpl(Optional.empty(), 4, 5, "test"),
-            new NamedFileSetImpl(Map.of()),
-            new NamedFileSetImpl(Map.of("segment-file-1", seg1)));
-
-    // when
-    // Takes long to save 50MB
-    getStore().save(largeBackup);
-    // Await just enough to the manifest to be written
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(5))
-        .pollInterval(Duration.ofMillis(100))
-        .until(
-            () ->
-                getStore()
-                    .getStatus(largeBackup.id())
-                    .join()
-                    .statusCode()
-                    .toString()
-                    .equals(StatusCode.IN_PROGRESS.toString()));
+    // given when
+    uploadInProgressManifest(backup);
 
     // then
-    Assertions.assertThat(getStore().delete(largeBackup.id()))
+    Assertions.assertThat(getStore().delete(backup.id()))
         .failsWithin(Duration.ofSeconds(10))
         .withThrowableOfType(Throwable.class)
         .withRootCauseInstanceOf(UnexpectedManifestState.class);
+  }
+
+  void uploadInProgressManifest(final Backup backup) {
+    final var manifest = Manifest.createInProgress(backup);
+    final byte[] serializedManifest;
+
+    try {
+      serializedManifest = MAPPER.writeValueAsBytes(manifest);
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+
+    final BlobClient blobClient = buildBlobClient(manifest);
+    blobClient.upload(BinaryData.fromBytes(serializedManifest));
+  }
+
+  BlobClient buildBlobClient(final Manifest manifest) {
+    final BlobServiceClient blobServiceClient =
+        new BlobServiceClientBuilder()
+            .connectionString(azureBackupConfig.connectionString())
+            .buildClient();
+    final BlobContainerClient blobContainerClient =
+        blobServiceClient.getBlobContainerClient(azureBackupConfig.containerName());
+    blobContainerClient.createIfNotExists();
+    return blobContainerClient.getBlobClient(ManifestManager.manifestPath(manifest));
   }
 }

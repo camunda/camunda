@@ -16,8 +16,6 @@ import com.azure.storage.blob.models.ListBlobsOptions;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException.BlobAlreadyExists;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 
 final class FileSetManager {
   // The path format is constructed by partitionId/checkpointId/nodeId/nameOfFile
@@ -54,7 +52,7 @@ final class FileSetManager {
     assureContainerCreated();
     final ListBlobsOptions options = new ListBlobsOptions().setPrefix(fileSetPath(id, fileSetName));
     containerClient
-        .listBlobs(options, Duration.of(10, ChronoUnit.SECONDS))
+        .listBlobs(options, null)
         .forEach(
             blobItem ->
                 containerClient.getBlobClient(blobItem.getName()).getBlockBlobClient().delete());
