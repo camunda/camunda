@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@bpmn-io/form-js-carbon-styles": "1.6.3",
-    "@bpmn-io/form-js-viewer": "1.6.3",
+    "@bpmn-io/form-js-carbon-styles": "1.6.4",
+    "@bpmn-io/form-js-viewer": "1.6.4",
     "@camunda/camunda-composite-components": "0.3.0",
     "@carbon/elements": "11.36.0",
     "@carbon/react": "1.47.0",

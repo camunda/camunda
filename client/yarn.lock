@@ -249,15 +249,15 @@
     "@codemirror/language" "^6.8.0"
     lezer-feel "^1.2.0"
 
-"@bpmn-io/form-js-carbon-styles@1.6.3":
-  version "1.6.3"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.6.3.tgz#6a63593f9a22f2b668ccbb369bf7cb5ab583f954"
-  integrity sha512-c/Qrzbfo5H7AC17DkxazWia6EH9pRB591wORAt5a5sUq8FOJHF392XZGfGdMa63OyGDkI4BkQOdQSpaK6cPE2g==
+"@bpmn-io/form-js-carbon-styles@1.6.4":
+  version "1.6.4"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.6.4.tgz#aeac32806aa40b6db7e987f02a98b66915498403"
+  integrity sha512-X0a+q9vTgWd8iJv5HIcAiVsNsTm9dcFXlPMBvajPMF80xJepPCzZEUjuCZe9VIJE7k54ITO7WmuZk6ZELRDvKA==
 
-"@bpmn-io/form-js-viewer@1.6.3":
-  version "1.6.3"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.6.3.tgz#8ec26eaa645c0ec2d91e4a25778f1146580c7528"
-  integrity sha512-AxrrNp0rFKaxNbALqt8IKwSlGtrFTMOmSSg0zZrga927wnQ7uwbtPH7hhGDKWN79hX/11NQARSYMxGQXWEG1SQ==
+"@bpmn-io/form-js-viewer@1.6.4":
+  version "1.6.4"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.6.4.tgz#dc1570c9bf44e88f386c685a29c4822e819864cf"
+  integrity sha512-YOllEnc1dKkIrva59Jj31d3HkLjTnWDMY+tOL4XliFrm5a4fMuwUshxXH4J7buW2nRZJzD62tTQk2CAsj69Epg==
   dependencies:
     "@carbon/grid" "^11.11.0"
     big.js "^6.2.1"
@@ -267,7 +267,7 @@
     feelin "^3.0.0"
     flatpickr "^4.6.13"
     ids "^1.0.0"
-    lodash.isequal "^4.5.0"
+    lodash "^4.5.0"
     min-dash "^4.0.0"
     preact "^10.5.14"
     preact-markup "^2.1.1"
@@ -3929,7 +3929,7 @@ lodash.throttle@^4.1.1:
   resolved "https://registry.yarnpkg.com/lodash.throttle/-/lodash.throttle-4.1.1.tgz#c23e91b710242ac70c37f1e1cda9274cc39bf2f4"
   integrity sha512-wIkUCfVKpVsWo3JSZlc+8MB5it+2AN5W8J7YVMST30UrvcQNZ1Okbj+rbVniijTWE6FGYy4XJq/rHkas8qJMLQ==
 
-lodash@4.17.21, lodash@^4.17.15, lodash@^4.17.20, lodash@^4.17.21:
+lodash@4.17.21, lodash@^4.17.15, lodash@^4.17.20, lodash@^4.17.21, lodash@^4.5.0:
   version "4.17.21"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz#679591c564c3bffaae8454cf0b3df370c3d6911c"
   integrity sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==
