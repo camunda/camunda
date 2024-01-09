@@ -152,7 +152,8 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
     jobBehavior
         .evaluateJobExpressions(listener.getJobWorkerProperties(), context)
         .ifRightOrLeft(
-            elJobProperties -> jobBehavior.createNewJob(context, element, elJobProperties),
+            elJobProperties ->
+                jobBehavior.createNewExecutionListenerJob(context, element, elJobProperties),
             failure -> incidentBehavior.createIncident(failure, context));
   }
 }

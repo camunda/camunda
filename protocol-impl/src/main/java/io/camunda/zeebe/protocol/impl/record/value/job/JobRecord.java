@@ -13,6 +13,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
+import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.PackedProperty;
@@ -39,6 +40,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private final StringProperty typeProp = new StringProperty(TYPE, EMPTY_STRING);
 
   private final StringProperty workerProp = new StringProperty("worker", EMPTY_STRING);
+  private final EnumProperty<AssociatedJobType> associatedTo =
+      new EnumProperty<>("associatedTo", AssociatedJobType.class, AssociatedJobType.REGULAR);
   private final LongProperty deadlineProp = new LongProperty("deadline", -1);
   private final LongProperty timeoutProp = new LongProperty("timeout", -1);
   private final IntegerProperty retriesProp = new IntegerProperty(RETRIES, -1);
@@ -65,10 +68,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public JobRecord() {
-    super(18);
+    super(19);
     declareProperty(deadlineProp)
         .declareProperty(timeoutProp)
         .declareProperty(workerProp)
+        .declareProperty(associatedTo)
         .declareProperty(retriesProp)
         .declareProperty(retryBackoffProp)
         .declareProperty(recurringTimeProp)
@@ -90,6 +94,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     deadlineProp.setValue(record.getDeadline());
     timeoutProp.setValue(record.getTimeout());
     workerProp.setValue(record.getWorkerBuffer());
+    associatedTo.setValue(record.getAssociatedTo());
     retriesProp.setValue(record.getRetries());
     retryBackoffProp.setValue(record.getRetryBackoff());
     recurringTimeProp.setValue(record.getRecurringTime());
@@ -145,6 +150,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   @Override
   public String getWorker() {
     return bufferAsString(workerProp.getValue());
+  }
+
+  @Override
+  public AssociatedJobType getAssociatedTo() {
+    return associatedTo.getValue();
   }
 
   @Override
@@ -277,6 +287,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   public JobRecord setRetries(final int retries) {
     retriesProp.setValue(retries);
+    return this;
+  }
+
+  public JobRecord setAssociatedTo(final AssociatedJobType associatedJobType) {
+    associatedTo.setValue(associatedJobType);
     return this;
   }
 

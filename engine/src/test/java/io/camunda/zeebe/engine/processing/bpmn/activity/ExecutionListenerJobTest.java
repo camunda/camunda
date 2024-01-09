@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue.AssociatedJobType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -74,6 +75,7 @@ public class ExecutionListenerJobTest {
         .hasProcessDefinitionKey(taskActivated.getValue().getProcessDefinitionKey())
         .hasBpmnProcessId(taskActivated.getValue().getBpmnProcessId())
         .hasProcessDefinitionVersion(taskActivated.getValue().getVersion())
+        .hasAssociatedTo(AssociatedJobType.EXECUTION_LISTENER)
         .hasType("dmk_task_start_type_1");
   }
 }

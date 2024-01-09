@@ -46,6 +46,8 @@ public interface JobRecordValue
    */
   String getWorker();
 
+  AssociatedJobType getAssociatedTo();
+
   /**
    * @return remaining retries
    */
@@ -113,4 +115,10 @@ public interface JobRecordValue
    * @return the process key of the corresponding process definition
    */
   long getProcessDefinitionKey();
+
+  enum AssociatedJobType {
+    REGULAR,
+    EXECUTION_LISTENER,
+    TASK_LISTENER
+  }
 }

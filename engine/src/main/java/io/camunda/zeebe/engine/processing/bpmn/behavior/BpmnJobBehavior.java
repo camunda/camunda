@@ -26,6 +26,7 @@ import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue.AssociatedJobType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.util.EnumSet;
@@ -136,6 +137,33 @@ public final class BpmnJobBehavior {
       final ExecutableJobWorkerElement element,
       final JobProperties jobProperties) {
     writeJobCreatedEvent(context, element, jobProperties);
+    jobMetrics.jobCreated(jobProperties.getType());
+  }
+
+  public void createNewExecutionListenerJob(
+      final BpmnElementContext context,
+      final ExecutableJobWorkerElement element,
+      final JobProperties jobProperties) {
+    final var taskHeaders = element.getJobWorkerProperties().getTaskHeaders();
+    final var encodedHeaders = encodeHeaders(taskHeaders, jobProperties);
+
+    jobRecord
+        .setType(jobProperties.getType())
+        .setRetries(jobProperties.getRetries().intValue())
+        .setCustomHeaders(encodedHeaders)
+        .setBpmnProcessId(context.getBpmnProcessId())
+        .setProcessDefinitionVersion(context.getProcessVersion())
+        .setProcessDefinitionKey(context.getProcessDefinitionKey())
+        .setProcessInstanceKey(context.getProcessInstanceKey())
+        .setElementId(element.getId())
+        .setElementInstanceKey(context.getElementInstanceKey())
+        .setTenantId(context.getTenantId())
+        .setAssociatedTo(AssociatedJobType.EXECUTION_LISTENER);
+
+    final var jobKey = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
+
+    jobActivationBehavior.publishWork(jobKey, jobRecord);
     jobMetrics.jobCreated(jobProperties.getType());
   }
 
