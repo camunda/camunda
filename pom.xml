@@ -60,7 +60,7 @@
     <zeebe-test-container.version>3.6.2</zeebe-test-container.version>
     <elasticsearch-test-container.version>1.19.3</elasticsearch-test-container.version>
     <opensearch-testcontainers.version>2.0.1</opensearch-testcontainers.version>
-    <postgres-test-container.version>1.17.6</postgres-test-container.version>
+    <postgres-test-container.version>1.19.3</postgres-test-container.version>
     <testcontainers.version>1.19.3</testcontainers.version>
     <keycloak-client.version>22.0.5</keycloak-client.version>
 
