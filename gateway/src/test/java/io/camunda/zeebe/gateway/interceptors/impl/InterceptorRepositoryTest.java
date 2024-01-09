@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
+import io.camunda.zeebe.gateway.interceptors.impl.InterceptorRepository.InterceptorId;
 import io.camunda.zeebe.gateway.interceptors.util.ExternalInterceptor;
 import io.camunda.zeebe.util.jar.ExternalJarLoadException;
 import io.camunda.zeebe.util.jar.ExternalJarRepository;
@@ -21,8 +22,8 @@ import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
+import java.util.TreeMap;
 import net.bytebuddy.ByteBuddy;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -42,7 +43,7 @@ class InterceptorRepositoryTest {
     config.setId(id);
 
     // then
-    assertThatThrownBy(() -> repository.load(config))
+    assertThatThrownBy(() -> repository.load(0, config))
         .isInstanceOf(InterceptorLoadException.class)
         .hasCauseInstanceOf(ClassCastException.class);
   }
@@ -56,7 +57,7 @@ class InterceptorRepositoryTest {
     config.setId(id);
 
     // then
-    assertThatThrownBy(() -> repository.load(config))
+    assertThatThrownBy(() -> repository.load(0, config))
         .isInstanceOf(InterceptorLoadException.class)
         .hasCauseInstanceOf(ClassNotFoundException.class);
   }
@@ -72,13 +73,13 @@ class InterceptorRepositoryTest {
     config.setId(id);
 
     // when
-    final var loadedClass = repository.load(config);
+    final var loadedClass = repository.load(0, config);
 
     // then
     assertThat(config.isExternal()).isFalse();
     assertThat(loadedClass).isEqualTo(MinimalInterceptor.class);
     assertThat(loadedClass.getClassLoader()).isEqualTo(getClass().getClassLoader());
-    assertThat(repository.getInterceptors()).containsEntry(id, loadedClass);
+    assertThat(repository.getInterceptors()).containsEntry(new InterceptorId(id, 0), loadedClass);
   }
 
   @Test
@@ -95,7 +96,7 @@ class InterceptorRepositoryTest {
     config.setId(id);
 
     // when
-    final var loadedClass = repository.load(config);
+    final var loadedClass = repository.load(0, config);
 
     // then
     assertThat(config.isExternal()).isTrue();
@@ -103,7 +104,7 @@ class InterceptorRepositoryTest {
         .as("the loaded class implements ServerInterceptor")
         .isTrue();
     assertThat(loadedClass.getClassLoader()).isNotEqualTo(getClass().getClassLoader());
-    assertThat(repository.getInterceptors()).containsEntry(id, loadedClass);
+    assertThat(repository.getInterceptors()).containsEntry(new InterceptorId(id, 0), loadedClass);
   }
 
   @Test
@@ -121,7 +122,7 @@ class InterceptorRepositoryTest {
     config.setJarPath(jarFile.getAbsolutePath());
 
     // then
-    assertThatThrownBy(() -> repository.load(config))
+    assertThatThrownBy(() -> repository.load(0, config))
         .isInstanceOf(InterceptorLoadException.class)
         .hasCauseInstanceOf(ClassCastException.class);
   }
@@ -140,7 +141,7 @@ class InterceptorRepositoryTest {
     config.setJarPath(jarFile.getAbsolutePath());
 
     // then
-    assertThatThrownBy(() -> repository.load(config))
+    assertThatThrownBy(() -> repository.load(0, config))
         .isInstanceOf(InterceptorLoadException.class)
         .hasCauseInstanceOf(ClassNotFoundException.class);
   }
@@ -150,7 +151,7 @@ class InterceptorRepositoryTest {
       throws IOException {
     // given
     final var baseRepository =
-        new InterceptorRepository(new HashMap<>(), new ExternalJarRepository(), tempDir.toPath());
+        new InterceptorRepository(new TreeMap<>(), new ExternalJarRepository(), tempDir.toPath());
     final var id = "myInterceptor";
     final var interceptorClass = ExternalInterceptor.createUnloadedInterceptorClass();
     final var jarFile = interceptorClass.toJar(new File(tempDir, "interceptor.jar"));
@@ -163,7 +164,7 @@ class InterceptorRepositoryTest {
 
     // when
     final Class<? extends ServerInterceptor> loadedClass;
-    loadedClass = baseRepository.load(config);
+    loadedClass = baseRepository.load(0, config);
 
     // then
     assertThat(ServerInterceptor.class.isAssignableFrom(loadedClass))
@@ -189,11 +190,11 @@ class InterceptorRepositoryTest {
     final var interceptors = repository.load(List.of(internalConfig, externalConfig)).instantiate();
 
     // then
-    final var loadedClass = repository.getInterceptors().get("external");
+    final var loadedClass = repository.getInterceptors().get(new InterceptorId("external", 1));
     assertThat(interceptors)
         .hasSize(2)
         .map(interceptor -> (Class) interceptor.getClass())
-        .containsExactlyInAnyOrder(MinimalInterceptor.class, loadedClass);
+        .containsExactly(MinimalInterceptor.class, loadedClass);
   }
 
   public static final class MinimalInterceptor implements ServerInterceptor {
