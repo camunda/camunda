@@ -16,4 +16,8 @@ public final class DecodingFailed extends RuntimeException {
   public DecodingFailed(final String message) {
     super(message);
   }
+
+  public DecodingFailed(final String message, final Exception e) {
+    super(message, e);
+  }
 }

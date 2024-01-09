@@ -74,8 +74,15 @@ public class ProtoBufSerializer implements ClusterTopologySerializer, TopologyRe
     final ClusterTopologyGossipState clusterTopologyGossipState = new ClusterTopologyGossipState();
 
     if (gossipState.hasClusterTopology()) {
-      clusterTopologyGossipState.setClusterTopology(
-          decodeClusterTopology(gossipState.getClusterTopology()));
+      try {
+        clusterTopologyGossipState.setClusterTopology(
+            decodeClusterTopology(gossipState.getClusterTopology()));
+      } catch (final Exception e) {
+        throw new DecodingFailed(
+            "Cluster topology could not be deserialized from gossiped state: %s"
+                .formatted(gossipState),
+            e);
+      }
     }
     return clusterTopologyGossipState;
   }
