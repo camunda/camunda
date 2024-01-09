@@ -1403,7 +1403,8 @@
           "notExecutedFlowNodes": "Nicht ausgeführte Prozessknoten",
           "canceledFlowNodes": "Abgebrochene Prozessknoten",
           "executingFlowNodes": "Laufende Prozessknoten"
-        }
+        },
+        "selectFlowNode": "Klicken Sie auf den Prozessknoten, den Sie auswählen möchten:"
       },
       "nodeDateModal": {
         "info": {

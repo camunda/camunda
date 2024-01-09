@@ -1,3 +1,4 @@
+@use '@carbon/styles/scss/spacing';
 @import 'shared-styles/shared-styles.scss';
 
 .NodeFilter {
@@ -10,13 +11,13 @@
     flex-direction: column;
 
     .diagramContainer {
-      margin-top: 25px;
+      margin-top: spacing.$spacing-06;
       flex-grow: 1;
       display: flex;
     }
 
     .preview {
-      margin-bottom: 24px;
+      min-height: 35px;
 
       .previewList {
         display: inline;

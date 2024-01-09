@@ -1403,7 +1403,8 @@
           "notExecutedFlowNodes": "Not executed flow nodes",
           "canceledFlowNodes": "Canceled flow nodes",
           "executingFlowNodes": "Running flow nodes"
-        }
+        },
+        "selectFlowNode": "Click on the flow node you'd like to select:"
       },
       "nodeDateModal": {
         "info": {

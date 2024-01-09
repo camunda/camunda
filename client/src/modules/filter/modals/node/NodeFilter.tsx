@@ -6,17 +6,9 @@
  */
 
 import {useEffect, useState} from 'react';
-import {Button} from '@carbon/react';
+import {Button, RadioButton, RadioButtonGroup, Stack} from '@carbon/react';
 
-import {
-  Modal,
-  ButtonGroup,
-  Button as LegacyButton,
-  BPMNDiagram,
-  ClickBehavior,
-  LoadingIndicator,
-  ModdleElement,
-} from 'components';
+import {Modal, BPMNDiagram, ClickBehavior, LoadingIndicator, ModdleElement} from 'components';
 import {t} from 'translation';
 import {loadProcessDefinitionXml} from 'services';
 import {WithErrorHandlingProps, withErrorHandling} from 'HOC';
@@ -124,41 +116,51 @@ export function NodeFilter({
         {!xml && <LoadingIndicator />}
         {xml && (
           <>
-            <div className="preview">
-              <NodeListPreview
-                nodes={selectedNodes as ModdleElement[]}
-                operator={operator}
-                type={type}
-              />
-            </div>
-            <ButtonGroup>
-              <LegacyButton
-                active={type === 'executingFlowNodes'}
-                onClick={() =>
-                  setTypeAndOperator({operator: undefined, type: 'executingFlowNodes'})
-                }
+            <Stack gap={6}>
+              <div className="preview">
+                <NodeListPreview
+                  nodes={selectedNodes as ModdleElement[]}
+                  operator={operator}
+                  type={type}
+                />
+              </div>
+              <RadioButtonGroup
+                legendText={t('common.filter.types.flowNodeStatus')}
+                name="flowNodeStateRadioGroup"
               >
-                {t('common.filter.nodeModal.executingFlowNodes')}
-              </LegacyButton>
-              <LegacyButton
-                active={operator === 'in'}
-                onClick={() => setTypeAndOperator({operator: 'in', type: 'executedFlowNodes'})}
-              >
-                {t('common.filter.nodeModal.executedFlowNodes')}
-              </LegacyButton>
-              <LegacyButton
-                active={operator === 'not in'}
-                onClick={() => setTypeAndOperator({operator: 'not in', type: 'executedFlowNodes'})}
-              >
-                {t('common.filter.nodeModal.notExecutedFlowNodes')}
-              </LegacyButton>
-              <LegacyButton
-                active={type === 'canceledFlowNodes'}
-                onClick={() => setTypeAndOperator({operator: undefined, type: 'canceledFlowNodes'})}
-              >
-                {t('common.filter.nodeModal.canceledFlowNodes')}
-              </LegacyButton>
-            </ButtonGroup>
+                <RadioButton
+                  checked={type === 'executingFlowNodes'}
+                  onClick={() =>
+                    setTypeAndOperator({operator: undefined, type: 'executingFlowNodes'})
+                  }
+                  labelText={t('common.filter.nodeModal.executingFlowNodes')}
+                  value="executingFlowNodes"
+                />
+                <RadioButton
+                  checked={operator === 'in'}
+                  onClick={() => setTypeAndOperator({operator: 'in', type: 'executedFlowNodes'})}
+                  labelText={t('common.filter.nodeModal.executedFlowNodes')}
+                  value="in"
+                />
+                <RadioButton
+                  checked={operator === 'not in'}
+                  onClick={() =>
+                    setTypeAndOperator({operator: 'not in', type: 'executedFlowNodes'})
+                  }
+                  labelText={t('common.filter.nodeModal.notExecutedFlowNodes')}
+                  value="not in"
+                />
+                <RadioButton
+                  checked={type === 'canceledFlowNodes'}
+                  onClick={() =>
+                    setTypeAndOperator({operator: undefined, type: 'canceledFlowNodes'})
+                  }
+                  labelText={t('common.filter.nodeModal.canceledFlowNodes')}
+                  value="canceledFlowNodes"
+                />
+              </RadioButtonGroup>
+              <p>{t('common.filter.nodeModal.selectFlowNode')}</p>
+            </Stack>
             <div className="diagramContainer">
               <BPMNDiagram xml={xml}>
                 <ClickBehavior
