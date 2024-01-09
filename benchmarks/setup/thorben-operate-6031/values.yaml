@@ -105,6 +105,14 @@ camunda-platform:
         value: io.camunda.zeebe.exporter.operate.OperateElasticsearchExporter
       - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL
         value: "{{ .Values.global.elasticsearch.protocol }}://{{ .Values.global.elasticsearch.host }}:{{ .Values.global.elasticsearch.port }}"
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+      requests:
+        cpu: 2000m
+        memory: 4Gi
+    nodeSelector: null
   operate:
     enabled: true
     # Image configuration to configure the zeebe image specifics

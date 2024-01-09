@@ -96,6 +96,14 @@ camunda-platform:
       # Image.repository defines which image repository to use
       repository: camunda/zeebe
       tag: 8.3.4
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+      requests:
+        cpu: 2000m
+        memory: 4Gi
+    nodeSelector: null
   operate:
     enabled: true
     image:
