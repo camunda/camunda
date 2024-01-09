@@ -193,8 +193,6 @@ public class SignalIntermediateThrowEventTest {
     assertThat(
             RecordingExporter.signalRecords(SignalIntent.BROADCASTED)
                 .withSignalName(SIGNAL_NAME_1)
-                // No need to use .limit(1) here as .exists() uses .findFirst() in order to
-                // determine if the element is present.
                 .exists())
         .isTrue();
 
