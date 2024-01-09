@@ -7,20 +7,34 @@
  */
 package io.camunda.zeebe.backup.azure;
 
+import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.azure.core.util.BinaryData;
+import com.azure.storage.blob.BlobClient;
+import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.BlobServiceClient;
+import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException.UnexpectedManifestState;
+import io.camunda.zeebe.backup.azure.manifest.Manifest;
 import io.camunda.zeebe.backup.azure.util.AzuriteContainer;
+import io.camunda.zeebe.backup.testkit.DeletingBackup;
 import io.camunda.zeebe.backup.testkit.QueryingBackupStatus;
 import io.camunda.zeebe.backup.testkit.SavingBackup;
 import io.camunda.zeebe.backup.testkit.UpdatingBackupStatus;
 import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import java.io.FileNotFoundException;
+import java.time.Duration;
 import java.util.UUID;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.testcontainers.junit.jupiter.Container;
@@ -28,9 +42,15 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 public class AzureBackupStoreIT
-    implements SavingBackup, QueryingBackupStatus, UpdatingBackupStatus {
+    implements SavingBackup, QueryingBackupStatus, UpdatingBackupStatus, DeletingBackup {
 
   @Container private static final AzuriteContainer AZURITE_CONTAINER = new AzuriteContainer();
+  private static final ObjectMapper MAPPER =
+      new ObjectMapper()
+          .registerModule(new Jdk8Module())
+          .registerModule(new JavaTimeModule())
+          .disable(WRITE_DATES_AS_TIMESTAMPS)
+          .setSerializationInclusion(Include.NON_ABSENT);
   public AzureBackupConfig azureBackupConfig;
   public AzureBackupStore azureBackupStore;
   public final String containerName = UUID.randomUUID().toString();
@@ -77,8 +97,42 @@ public class AzureBackupStoreIT
     assertThat(status.lastModified()).isEqualTo(firstStatus.lastModified());
   }
 
-  @Test
-  void cannotDeleteUploadingBlock() {
-    // TODO: when delete feature is done
+  @ParameterizedTest
+  @ArgumentsSource(TestBackupProvider.class)
+  public void cannotDeleteUploadingBlock(final Backup backup) {
+
+    // given when
+    uploadInProgressManifest(backup);
+
+    // then
+    Assertions.assertThat(getStore().delete(backup.id()))
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableOfType(Throwable.class)
+        .withRootCauseInstanceOf(UnexpectedManifestState.class);
+  }
+
+  void uploadInProgressManifest(final Backup backup) {
+    final var manifest = Manifest.createInProgress(backup);
+    final byte[] serializedManifest;
+
+    try {
+      serializedManifest = MAPPER.writeValueAsBytes(manifest);
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+
+    final BlobClient blobClient = buildBlobClient(manifest);
+    blobClient.upload(BinaryData.fromBytes(serializedManifest));
+  }
+
+  BlobClient buildBlobClient(final Manifest manifest) {
+    final BlobServiceClient blobServiceClient =
+        new BlobServiceClientBuilder()
+            .connectionString(azureBackupConfig.connectionString())
+            .buildClient();
+    final BlobContainerClient blobContainerClient =
+        blobServiceClient.getBlobContainerClient(azureBackupConfig.containerName());
+    blobContainerClient.createIfNotExists();
+    return blobContainerClient.getBlobClient(ManifestManager.manifestPath(manifest));
   }
 }

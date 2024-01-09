@@ -161,6 +161,19 @@ public final class ManifestManager {
     }
   }
 
+  public void deleteManifest(final BackupIdentifier id) {
+    final BlobClient blobClient = blobContainerClient.getBlobClient(manifestIdPath(id));
+    final Manifest manifest = getManifest(id);
+    if (manifest == null) {
+      return;
+    } else if (manifest.statusCode() == StatusCode.IN_PROGRESS) {
+      throw new UnexpectedManifestState(
+          "Cannot delete Backup %s while saving is in progress.".formatted(id.toString()));
+    }
+
+    blobClient.delete();
+  }
+
   Manifest getManifest(final BackupIdentifier id) {
     final BlobClient blobClient;
     final BinaryData binaryData;
@@ -184,11 +197,11 @@ public final class ManifestManager {
     }
   }
 
-  private String manifestPath(final Manifest manifest) {
+  public static String manifestPath(final Manifest manifest) {
     return manifestIdPath(manifest.id());
   }
 
-  private String manifestIdPath(final BackupIdentifier backupIdentifier) {
+  private static String manifestIdPath(final BackupIdentifier backupIdentifier) {
     return MANIFEST_PATH_FORMAT.formatted(
         backupIdentifier.partitionId(), backupIdentifier.checkpointId(), backupIdentifier.nodeId());
   }

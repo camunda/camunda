@@ -108,7 +108,13 @@ public final class AzureBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> delete(final BackupIdentifier id) {
-    throw new UnsupportedOperationException();
+    return CompletableFuture.runAsync(
+        () -> {
+          manifestManager.deleteManifest(id);
+          fileSetManager.delete(id, SNAPSHOT_FILESET_NAME);
+          fileSetManager.delete(id, SEGMENTS_FILESET_NAME);
+        },
+        executor);
   }
 
   @Override
