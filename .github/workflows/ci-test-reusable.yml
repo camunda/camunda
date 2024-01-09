@@ -10,6 +10,10 @@
 # This workflow is designed to provide a comprehensive, automated CI process that ensures code quality, handles secrets securely,
 # and enables detailed reporting of test results.
 
+# CI IT test reusable GitHub Actions Workflow
+# Triggers on a workflow_call event and accepts inputs for branch name, fork count, test profile, and database.
+# Performs integration tests for the tasklist service with parallel execution.
+
 name: CI IT test reusable
 
 on:
@@ -35,37 +39,35 @@ on:
 
 defaults:
   run:
-    # use bash shell by default to ensure pipefail behavior is the default
-    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
     shell: bash
 
+# Define environment variable for concurrency
 env:
-  LIMITS_CPU: ${{ inputs.forkCount }} # consumed by `maven-surefire-plugin` & `maven-failsafe-plugin` plugins defined in main `pom.xml` file
+  LIMITS_CPU: ${{ inputs.forkCount }}  # consumed by `maven-surefire-plugin` & `maven-failsafe-plugin` plugins defined in main `pom.xml` file
 
 jobs:
-  build:
-    name: "'${{ inputs.branch }}' build"
+  integration-tests:
+    name: Integration Tests
     runs-on: ${{ 'gcp-core-16-default' }}
     if: ${{ !startsWith(inputs.branch, 'fe-') && !startsWith(inputs.branch, 'renovate/') }}
-    timeout-minutes: 120
     steps:
       # Setup: checkout branch
-      - name: "Checkout '${{ inputs.branch }}' branch"
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - name: Checkout '${{ inputs.branch }}' branch
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         with:
           ref: refs/heads/${{ inputs.branch }}
-          fetch-depth: 0  # fetches all history for all branches and tags
+          fetch-depth: 0 # fetches all history for all branches and tags
 
       # Setup: import secrets from vault
       - name: Import Secrets
-        id: secrets # important to refer to it in later steps
+        id: secrets  # important to refer to it in later steps
         uses: hashicorp/vault-action@00bce0da9c4b8be526718f7f5f20a88966f31022
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false # we rely on step outputs, no need for environment variables
+          exportEnv: false  # we rely on step outputs, no need for environment variables
           secrets: |
             secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
@@ -77,15 +79,15 @@ jobs:
           nexusUsername: ${{ steps.secrets.outputs.NEXUS_USR }}
           nexusPassword: ${{ steps.secrets.outputs.NEXUS_PSW }}
 
-      # Tests: run tests for all Maven modules
-      - name: Run Tests
+      # Run integration tests in parallel
+      - name: Run Integration Tests
         run: |
-          mvn -T4 verify -P ${{ inputs.testProfile }},skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2 -Dcamunda.tasklist.database=${{ inputs.database }}
+          mvn -T${{ env.LIMITS_CPU }} verify -P ${{ inputs.testProfile }},skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2 -Dcamunda.tasklist.database=${{ inputs.database }}
 
       # Reports: publish test metrics results
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2.12.0
-        if: ${{ (success() || failure()) }} # Publish results for non-FE branch even if the build step was failed
+        if: ${{ (success() || failure()) }}
         with:
           files: |
             **/target/surefire-reports/*.xml
@@ -98,6 +100,7 @@ jobs:
           branch: ${{ inputs.branch }}
           max_length: '50'
 
+      # Upload JaCoCo report
       - name: Upload JaCoCo report
         uses: actions/upload-artifact@v4
         if: ${{ (success() || failure()) }}
