@@ -13,29 +13,37 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 
 public class UserTaskClaimProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
-  private final UserTaskState userTaskState;
+  private static final String INVALID_USER_TASK_ASSIGNEE_MESSAGE =
+      "Expected to claim user task with key '%d', but it has already been assigned";
+  private static final String INVALID_USER_TASK_EMPTY_ASSIGNEE_MESSAGE =
+      "Expected to claim user task with key '%d', but provided assignee is empty";
+
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final UserTaskCommandPreconditionChecker preconditionChecker;
 
   public UserTaskClaimProcessor(final ProcessingState state, final Writers writers) {
-    userTaskState = state.getUserTaskState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     preconditionChecker =
         new UserTaskCommandPreconditionChecker(
-            List.of(LifecycleState.CREATED), "claim", userTaskState);
+            List.of(LifecycleState.CREATED),
+            "claim",
+            UserTaskClaimProcessor::checkClaim,
+            state.getUserTaskState());
   }
 
   @Override
@@ -61,5 +69,29 @@ public class UserTaskClaimProcessor implements TypedRecordProcessor<UserTaskReco
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
     responseWriter.writeEventOnCommand(
         userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord, command);
+  }
+
+  private static Either<Tuple<RejectionType, String>, UserTaskRecord> checkClaim(
+      final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
+
+    final long userTaskKey = command.getKey();
+    final String newAssignee = command.getValue().getAssignee();
+    if (newAssignee.isBlank()) {
+      return Either.left(
+          Tuple.of(
+              RejectionType.INVALID_STATE,
+              String.format(INVALID_USER_TASK_EMPTY_ASSIGNEE_MESSAGE, userTaskKey)));
+    }
+
+    final String currentAssignee = userTaskRecord.getAssignee();
+    final boolean canClaim = currentAssignee.isBlank() || currentAssignee.equals(newAssignee);
+    if (!canClaim) {
+      return Either.left(
+          Tuple.of(
+              RejectionType.INVALID_STATE,
+              String.format(INVALID_USER_TASK_ASSIGNEE_MESSAGE, userTaskKey)));
+    }
+
+    return Either.right(userTaskRecord);
   }
 }
