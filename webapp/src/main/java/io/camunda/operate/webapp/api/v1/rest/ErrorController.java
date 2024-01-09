@@ -27,10 +27,26 @@ public abstract class ErrorController {
 
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
+  @ResponseStatus(HttpStatus.FORBIDDEN)
+  @ExceptionHandler(AccessDeniedException.class)
+  public ResponseEntity<Error> handleAccessDeniedException(AccessDeniedException exception) {
+    logger.error(getSummary(exception));
+    logger.debug(exception.getMessage(), exception);
+    final Error error = new Error()
+        .setType(exception.getClass().getSimpleName())
+        .setInstance(UUID.randomUUID().toString())
+        .setStatus(HttpStatus.FORBIDDEN.value())
+        .setMessage(exception.getMessage());
+    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(error);
+  }
+
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   @ExceptionHandler(ClientException.class)
   public ResponseEntity<Error> handleInvalidRequest(ClientException exception) {
-    logger.info(exception.getMessage(), exception);
+    logger.error(getSummary(exception));
+    logger.debug(exception.getMessage(), exception);
     final Error error = new Error()
         .setType(ClientException.TYPE)
         .setInstance(exception.getInstance())
@@ -41,38 +57,19 @@ public abstract class ErrorController {
         .body(error);
   }
 
-  @ResponseStatus(HttpStatus.UNAUTHORIZED)
-  @ExceptionHandler(AccessDeniedException.class)
-  public ResponseEntity<Error> handleAccessDeniedException(AccessDeniedException exception) {
-    logger.info(exception.getMessage(), exception);
-    final Error error = new Error()
-        .setType(exception.getClass().getSimpleName())
-        .setInstance(UUID.randomUUID().toString())
-        .setStatus(HttpStatus.UNAUTHORIZED.value())
-        .setMessage(exception.getMessage());
-    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .body(error);
-  }
-
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   @ExceptionHandler(Exception.class)
   public ResponseEntity<Error> handleException(Exception exception) {
     // Show client only detail message, log all messages
-    return handleInvalidRequest(
-        new ClientException(
-            getOnlyDetailMessage(exception), exception)
+    return handleInvalidRequest(new ClientException(getOnlyDetailMessage(exception), exception)
     );
-  }
-
-  private String getOnlyDetailMessage(final Exception exception) {
-    return StringUtils.substringBefore(exception.getMessage(), "; nested exception is");
   }
 
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   @ExceptionHandler(ValidationException.class)
   public ResponseEntity<Error> handleInvalidRequest(ValidationException exception) {
-    logger.info(exception.getMessage(), exception);
+    logger.error(getSummary(exception));
+    logger.debug(exception.getMessage(), exception);
     final Error error = new Error()
         .setType(ValidationException.TYPE)
         .setInstance(exception.getInstance())
@@ -83,12 +80,11 @@ public abstract class ErrorController {
         .body(error);
   }
 
-
-
   @ResponseStatus(HttpStatus.NOT_FOUND)
   @ExceptionHandler(ResourceNotFoundException.class)
   public ResponseEntity<Error> handleNotFound(ResourceNotFoundException exception) {
-    logger.info(exception.getMessage(), exception);
+    logger.error(getSummary(exception));
+    logger.debug(exception.getMessage(), exception);
     final Error error = new Error()
         .setType(ResourceNotFoundException.TYPE)
         .setInstance(exception.getInstance())
@@ -111,5 +107,13 @@ public abstract class ErrorController {
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(error);
+  }
+
+  private String getOnlyDetailMessage(final Exception exception) {
+    return StringUtils.substringBefore(exception.getMessage(), "; nested exception is");
+  }
+
+  private String getSummary(final Exception exception) {
+    return String.format("%s: %s", exception.getClass().getSimpleName(), exception.getMessage());
   }
 }
