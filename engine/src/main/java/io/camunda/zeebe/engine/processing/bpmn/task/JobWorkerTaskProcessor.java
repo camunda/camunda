@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionListener;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
+import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -70,7 +71,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
               // create jobs for EL's with 'start' event type
               eventTypeToExecution
                   .get(ZeebeExecutionListenerEventType.start)
-                  .forEach(listener -> createExecutionListenerJobs(element, context, listener));
+                  .forEach(listener -> createExecutionListenerJob(element, context, listener));
 
               // create regular job
               jobBehavior.createNewJob(context, element, jobProperties);
@@ -79,7 +80,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
               // create jobs for EL's with 'end' event type
               eventTypeToExecution
                   .get(ZeebeExecutionListenerEventType.end)
-                  .forEach(listener -> createExecutionListenerJobs(element, context, listener));
+                  .forEach(listener -> createExecutionListenerJob(element, context, listener));
             },
             failure -> incidentBehavior.createIncident(failure, context));
   }
@@ -155,13 +156,11 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
       final ExecutableJobWorkerTask element,
       final BpmnElementContext context,
       final ExecutionListener listener) {
-    final var customHeaders = Map.of("el:eventType", listener.getEventType().name());
 
     jobBehavior
         .evaluateJobExpressions(listener.getJobWorkerProperties(), context)
         .ifRightOrLeft(
-            elJobProperties ->
-                jobBehavior.createNewJob(context, element, elJobProperties, customHeaders),
+            elJobProperties -> jobBehavior.createNewJob(context, element, elJobProperties),
             failure -> incidentBehavior.createIncident(failure, context));
   }
 }

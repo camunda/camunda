@@ -11,7 +11,6 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -21,7 +20,6 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -76,7 +74,6 @@ public class ExecutionListenerJobTest {
         .hasProcessDefinitionKey(taskActivated.getValue().getProcessDefinitionKey())
         .hasBpmnProcessId(taskActivated.getValue().getBpmnProcessId())
         .hasProcessDefinitionVersion(taskActivated.getValue().getVersion())
-        .hasType("dmk_task_start_type_1")
-        .hasCustomHeaders(Map.of("el:eventType", ZeebeExecutionListenerEventType.start.name()));
+        .hasType("dmk_task_start_type_1");
   }
 }
