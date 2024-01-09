@@ -10,9 +10,7 @@ package io.camunda.zeebe.engine.processing.bpmn.compensation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.camunda.zeebe.engine.state.immutable.CompensationSubscriptionState;
 import io.camunda.zeebe.engine.util.EngineRule;
-import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
@@ -26,7 +24,6 @@ import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,16 +36,6 @@ public class CompensationEventExecutionTest {
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
-
-  @Rule public final ProcessingStateRule processingState = new ProcessingStateRule();
-
-  private CompensationSubscriptionState compensationSubscriptionState;
-
-  @Before
-  public void setUp() {
-    compensationSubscriptionState =
-        processingState.getProcessingState().getCompensationSubscriptionState();
-  }
 
   @Test
   public void shouldExecuteAProcessWithCompensationIntermediateEvent() {
@@ -284,11 +271,13 @@ public class CompensationEventExecutionTest {
                 ProcessInstanceIntent.ELEMENT_COMPLETED,
                 PROCESS_ID));
 
-    // verify compensation subscription are removed from the state
-    final var compensations =
-        compensationSubscriptionState.findSubscriptionsByProcessInstanceKey(
-            TenantOwned.DEFAULT_TENANT_IDENTIFIER, processInstanceKey);
-    assertThat(compensations).isEmpty();
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(3))
+        .extracting(Record::getValueType, Record::getIntent)
+        .containsSubsequence(
+            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.COMPLETED));
   }
 
   @Test
@@ -384,11 +373,13 @@ public class CompensationEventExecutionTest {
                 ProcessInstanceIntent.ELEMENT_COMPLETED,
                 PROCESS_ID));
 
-    // verify compensation subscription are removed from the state
-    final var compensations =
-        compensationSubscriptionState.findSubscriptionsByProcessInstanceKey(
-            TenantOwned.DEFAULT_TENANT_IDENTIFIER, processInstanceKey);
-    assertThat(compensations).isEmpty();
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(3))
+        .extracting(Record::getValueType, Record::getIntent)
+        .containsSubsequence(
+            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.COMPLETED));
   }
 
   @Test
@@ -473,11 +464,14 @@ public class CompensationEventExecutionTest {
                 ProcessInstanceIntent.ELEMENT_COMPLETED,
                 PROCESS_ID));
 
-    // verify compensation subscription are removed from the state
-    final var compensations =
-        compensationSubscriptionState.findSubscriptionsByProcessInstanceKey(
-            TenantOwned.DEFAULT_TENANT_IDENTIFIER, processInstanceKey);
-    assertThat(compensations).isEmpty();
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(6))
+        .extracting(Record::getValueType, Record::getIntent)
+        .containsSubsequence(
+            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.COMPLETED),
+            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.COMPLETED));
   }
 
   @Test
@@ -562,11 +556,14 @@ public class CompensationEventExecutionTest {
                 ProcessInstanceIntent.ELEMENT_COMPLETED,
                 PROCESS_ID));
 
-    // verify compensation subscription are removed from the state
-    final var compensations =
-        compensationSubscriptionState.findSubscriptionsByProcessInstanceKey(
-            TenantOwned.DEFAULT_TENANT_IDENTIFIER, processInstanceKey);
-    assertThat(compensations).isEmpty();
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(6))
+        .extracting(Record::getValueType, Record::getIntent)
+        .containsSubsequence(
+            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.COMPLETED),
+            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.COMPLETED));
   }
 
   @Test
@@ -616,11 +613,13 @@ public class CompensationEventExecutionTest {
                 ProcessInstanceIntent.ELEMENT_TERMINATED,
                 PROCESS_ID));
 
-    // verify compensation subscription are removed from the state
-    final var compensations =
-        compensationSubscriptionState.findSubscriptionsByProcessInstanceKey(
-            TenantOwned.DEFAULT_TENANT_IDENTIFIER, processInstanceKey);
-    assertThat(compensations).isEmpty();
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(3))
+        .extracting(Record::getValueType, Record::getIntent)
+        .containsSubsequence(
+            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.DELETED));
   }
 
   @Test
@@ -670,11 +669,62 @@ public class CompensationEventExecutionTest {
                 ProcessInstanceIntent.ELEMENT_TERMINATED,
                 PROCESS_ID));
 
-    // verify compensation subscription are removed from the state
-    final var compensations =
-        compensationSubscriptionState.findSubscriptionsByProcessInstanceKey(
-            TenantOwned.DEFAULT_TENANT_IDENTIFIER, processInstanceKey);
-    assertThat(compensations).isEmpty();
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(3))
+        .extracting(Record::getValueType, Record::getIntent)
+        .containsSubsequence(
+            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.DELETED));
+  }
+
+  @Test
+  public void shouldDeleteAllSubscriptionWhenProcessIsCompletedWithoutTriggerCompensationHandler() {
+    // given
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-no-throw-event.bpmn");
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType(Protocol.USER_TASK_JOB_TYPE).complete();
+
+    // then
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(2))
+        .extracting(Record::getValueType, Record::getIntent)
+        .containsSubsequence(
+            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.DELETED));
+  }
+
+  @Test
+  public void
+      shouldDeleteAllSubscriptionWhenProcessIsTerminatedWithoutTriggerCompensationHandler() {
+    // given
+    final var process =
+        createModelFromClasspathResource(
+            "/compensation/compensation-no-throw-event-terminate.bpmn");
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType(Protocol.USER_TASK_JOB_TYPE).complete();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(2))
+        .extracting(Record::getValueType, Record::getIntent)
+        .containsSubsequence(
+            tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.DELETED));
   }
 
   private BpmnModelInstance createModelFromClasspathResource(final String classpath) {

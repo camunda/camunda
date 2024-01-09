@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBufferedMessageStartEventBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnProcessResultSenderBehavior;
@@ -35,6 +36,7 @@ public final class ProcessProcessor
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnProcessResultSenderBehavior processResultSenderBehavior;
   private final BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior;
+  private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
 
   public ProcessProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -45,6 +47,7 @@ public final class ProcessProcessor
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     processResultSenderBehavior = bpmnBehaviors.processResultSenderBehavior();
     bufferedMessageStartEventBehavior = bpmnBehaviors.bufferedMessageStartEventBehavior();
+    compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
   }
 
   @Override
@@ -65,6 +68,7 @@ public final class ProcessProcessor
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
+    compensationSubscriptionBehaviour.deleteNotTriggeredSubscriptions(context);
 
     // we need to send the result before we transition to completed, since the
     // event applier will delete the element instance
@@ -82,6 +86,7 @@ public final class ProcessProcessor
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     incidentBehavior.resolveIncidents(context);
+    compensationSubscriptionBehaviour.deleteNotTriggeredSubscriptions(context);
 
     final var noActiveChildInstances = stateTransitionBehavior.terminateChildInstances(context);
 

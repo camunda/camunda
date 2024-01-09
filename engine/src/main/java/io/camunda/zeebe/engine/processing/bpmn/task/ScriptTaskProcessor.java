@@ -110,7 +110,6 @@ public final class ScriptTaskProcessor
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 
     incidentBehavior.resolveIncidents(context);
-    compensationSubscriptionBehaviour.terminateCompensationHandler(context, element);
 
     eventSubscriptionBehavior
         .findEventTrigger(context)

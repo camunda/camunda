@@ -88,7 +88,6 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
     jobBehavior.cancelJob(context);
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     incidentBehavior.resolveIncidents(context);
-    compensationSubscriptionBehaviour.terminateCompensationHandler(context, element);
 
     eventSubscriptionBehavior
         .findEventTrigger(context)
