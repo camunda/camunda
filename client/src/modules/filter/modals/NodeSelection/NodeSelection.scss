@@ -1,16 +1,20 @@
+@use '@carbon/styles/scss/spacing';
+
 .NodeSelection {
   .cds--modal-container {
     height: 100%;
   }
 
-  .cds--modal-content {
+  .modalContent {
     display: flex;
     flex-direction: column;
 
     .diagramActions {
-      .Button:first-of-type {
-        margin-right: 10px;
-      }
+      margin-bottom: spacing.$spacing-06;
+    }
+
+    .loadingIndicator {
+      margin: auto;
     }
 
     .diagramContainer {

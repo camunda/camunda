@@ -420,7 +420,7 @@ test('select which flow nodes to show from the configuration', async (t) => {
   await t.click(Report.flowNodeFilterButton);
   await t.click(Common.menuOption('Flow node selection'));
 
-  await t.click(Report.deselectAllButton);
+  await t.click(Report.selectAllCheckbox);
 
   await t.click(Report.flowNode('approveInvoice'));
   await t.click(Report.flowNode('reviewInvoice'));

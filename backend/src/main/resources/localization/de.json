@@ -1446,7 +1446,8 @@
       "instanceFilter": "Prozessinstanzen Filter",
       "decisionFilter": "Entscheidungsevaluierungen Filter",
       "flowNodeFilter": "Prozessknoten-Daten Filter",
-      "excludedFlowNodes": "Ausgeschlossene Prozessknoten"
+      "excludedFlowNodes": "Ausgeschlossene Prozessknoten",
+      "UnselectFlowNodes": "Deselektieren Sie die Prozessknoten, um sie von der Visualisierung auszuschließen:"
     },
     "definitionSelection": {
       "latest": "Neueste",

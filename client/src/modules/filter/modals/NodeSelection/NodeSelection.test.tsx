@@ -10,12 +10,19 @@ import {runAllEffects} from '__mocks__/react';
 import {shallow} from 'enzyme';
 import {Button} from '@carbon/react';
 
-import {Modal, Button as LegacyButton, BPMNDiagram, ClickBehavior} from 'components';
+import {Modal, BPMNDiagram, ClickBehavior} from 'components';
 import {loadProcessDefinitionXml} from 'services';
 
 import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
 
 import {NodeSelection} from './NodeSelection';
+
+jest.mock('hooks', () => ({
+  ...jest.requireActual('hooks'),
+  useErrorHandling: () => ({
+    mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  }),
+}));
 
 jest.mock('bpmn-js/lib/NavigatedViewer', () => {
   return class Viewer {
@@ -58,7 +65,6 @@ const props: ComponentProps<typeof NodeSelection> = {
   filterType: 'executingFlowNodes',
   close: jest.fn(),
   addFilter: jest.fn(),
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   definitions: [
     {identifier: 'definition', key: 'definitionKey', versions: ['all'], tenantIds: [null]},
   ],
@@ -148,14 +154,16 @@ it('should disable create filter button if all nodes are selected', async () => 
   expect(node.find(Modal.Footer).find('.confirm').prop('disabled')).toBeTruthy();
 });
 
-it('should deselect All nodes if deselectAll button is clicked', async () => {
+it('should deselect/select All nodes when toggling the checkbox', async () => {
   const node = shallow(<NodeSelection {...props} />);
 
   await runAllEffects();
 
-  node.find(Modal.Content).find(LegacyButton).at(1).simulate('click');
-
+  node.find('.diagramActions Checkbox').simulate('change', {}, {checked: false});
   expect(node.find(ClickBehavior).prop('selectedNodes')).toEqual([]);
+
+  node.find('.diagramActions Checkbox').simulate('change', {}, {checked: true});
+  expect(node.find(ClickBehavior).prop('selectedNodes')).toEqual(['a', 'b', 'c']);
 });
 
 it('should initially load xml', async () => {

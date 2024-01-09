@@ -7,21 +7,13 @@
 
 import {useEffect, useState} from 'react';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
-import {Button} from '@carbon/react';
+import {Button, Checkbox, Loading} from '@carbon/react';
 
-import {
-  Modal,
-  Button as LegacyButton,
-  BPMNDiagram,
-  ClickBehavior,
-  LoadingIndicator,
-  RegistryElement,
-  ModdleElement,
-} from 'components';
+import {Modal, BPMNDiagram, ClickBehavior, RegistryElement, ModdleElement} from 'components';
 import {loadProcessDefinitionXml} from 'services';
 import {t} from 'translation';
-import {WithErrorHandlingProps, withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
+import {useErrorHandling} from 'hooks';
 
 import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
 import {FilterProps} from '../types';
@@ -29,22 +21,15 @@ import {FilterProps} from '../types';
 import './NodeSelection.scss';
 
 interface NodeSelectionProps
-  extends WithErrorHandlingProps,
-    FilterProps<{
-      values?: string[];
-      operator?: string;
-    }> {
+  extends FilterProps<{
+    values?: string[];
+    operator?: string;
+  }> {
   filterLevel: 'view';
   filterType: 'executedFlowNodes' | 'executingFlowNodes' | 'canceledFlowNodes';
 }
 
-export function NodeSelection({
-  filterData,
-  definitions,
-  mightFail,
-  close,
-  addFilter,
-}: NodeSelectionProps) {
+export function NodeSelection({filterData, definitions, close, addFilter}: NodeSelectionProps) {
   const [allFlowNodes, setAllFlowNodes] = useState<string[]>([]);
   const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
   const [applyTo, setApplyTo] = useState(() => {
@@ -58,6 +43,7 @@ export function NodeSelection({
     );
   });
   const [xml, setXml] = useState<string | null>(null);
+  const {mightFail} = useErrorHandling();
 
   useEffect(() => {
     if (applyTo) {
@@ -112,24 +98,12 @@ export function NodeSelection({
     });
   };
 
-  const isNodeSelected = () => {
-    return selectedNodes.length > 0;
-  };
-
   const isAllSelected = () => {
     return allFlowNodes.length === selectedNodes.length;
   };
 
-  const selectAll = () => {
-    setSelectedNodes(allFlowNodes);
-  };
-
-  const deselectAll = () => {
-    setSelectedNodes([]);
-  };
-
   const isValidSelection = () => {
-    return isNodeSelected() && !isAllSelected();
+    return selectedNodes.length > 0 && !isAllSelected();
   };
 
   return (
@@ -141,16 +115,19 @@ export function NodeSelection({
           applyTo={applyTo}
           setApplyTo={setApplyTo}
         />
-        {!xml && <LoadingIndicator />}
+        {!xml && <Loading className="loadingIndicator" withOverlay={false} />}
         {xml && (
           <>
+            <p>{t('common.filter.UnselectFlowNodes')}</p>
             <div className="diagramActions">
-              <LegacyButton disabled={false} onClick={selectAll}>
-                {t('common.selectAll')}
-              </LegacyButton>
-              <LegacyButton disabled={!isNodeSelected()} onClick={deselectAll}>
-                {t('common.deselectAll')}
-              </LegacyButton>
+              <Checkbox
+                id="nodeSelectionSelectAll"
+                checked={isAllSelected()}
+                labelText={t('common.selectAll')}
+                onChange={(_, {checked}) => {
+                  setSelectedNodes(checked ? allFlowNodes : []);
+                }}
+              />
             </div>
             <div className="diagramContainer">
               <BPMNDiagram xml={xml}>
@@ -176,4 +153,4 @@ export function NodeSelection({
   );
 }
 
-export default withErrorHandling(NodeSelection);
+export default NodeSelection;

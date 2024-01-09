@@ -108,7 +108,7 @@ export const removeMeasureButton = Selector('.Measure').nth(1).find('.SelectionP
 export const heatDropdown = Selector('.Heatmap .Select');
 export const sectionToggle = (sectionName) =>
   Selector('button.cds--accordion__heading').withText(sectionName);
-export const deselectAllButton = Selector('.Button').withText('Deselect all');
+export const selectAllCheckbox = Selector('.NodeSelection .diagramActions input[type="checkbox"]');
 export const addDefinitionButton = Selector('.AddDefinition');
 export const definitionEntry = (name) => Selector('.Checklist tr').withText(name);
 export const lineButton = Selector('.cds--radio-button-wrapper').withText('Line');

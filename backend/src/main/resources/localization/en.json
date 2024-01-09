@@ -1446,7 +1446,8 @@
       "instanceFilter": "Process instance filter",
       "decisionFilter": "Decision instance filter",
       "flowNodeFilter": "Flow node data filter",
-      "excludedFlowNodes": "excluded flow nodes"
+      "excludedFlowNodes": "excluded flow nodes",
+      "UnselectFlowNodes": "Unselect the flow nodes to exclude them from the visualization:"
     },
     "definitionSelection": {
       "latest": "Latest",
