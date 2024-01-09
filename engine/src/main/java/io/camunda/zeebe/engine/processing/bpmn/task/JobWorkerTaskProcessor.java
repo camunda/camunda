@@ -23,7 +23,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionList
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * A BPMN processor for tasks that are based on jobs and should be processed by job workers. For
@@ -59,30 +58,23 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   public void onActivate(final ExecutableJobWorkerTask element, final BpmnElementContext context) {
     variableMappingBehavior
         .applyInputMappings(context, element)
-        .flatMap(ok -> jobBehavior.evaluateJobExpressions(element, context))
-        .flatMap(j -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> j))
-        .ifRightOrLeft(
-            jobProperties -> {
-              final List<ExecutionListener> executionListeners = element.getExecutionListeners();
-              final var eventTypeToExecution =
-                  executionListeners.stream()
-                      .collect(Collectors.groupingBy(ExecutionListener::getEventType));
+        .flatMap(
+            ignored -> {
+              final List<ExecutionListener> startExecutionListeners =
+                  element.getExecutionListeners().stream()
+                      .filter(el -> ZeebeExecutionListenerEventType.start.equals(el.getEventType()))
+                      .toList();
 
-              // create jobs for EL's with 'start' event type
-              eventTypeToExecution
-                  .get(ZeebeExecutionListenerEventType.start)
-                  .forEach(listener -> createExecutionListenerJob(element, context, listener));
-
-              // create regular job
-              jobBehavior.createNewJob(context, element, jobProperties);
-              stateTransitionBehavior.transitionToActivated(context, element.getEventType());
-
-              // create jobs for EL's with 'end' event type
-              eventTypeToExecution
-                  .get(ZeebeExecutionListenerEventType.end)
-                  .forEach(listener -> createExecutionListenerJob(element, context, listener));
-            },
-            failure -> incidentBehavior.createIncident(failure, context));
+              if (startExecutionListeners.isEmpty()) {
+                return regularJobExecution(element, context);
+              } else {
+                // create jobs for EL's with 'start' event type
+                final ExecutionListener firstExecutionListener = startExecutionListeners.getFirst();
+                createExecutionListenerJob(element, context, firstExecutionListener);
+                return Either.right(null);
+              }
+            })
+        .ifRightOrLeft(ignore -> {}, failure -> incidentBehavior.createIncident(failure, context));
   }
 
   @Override
