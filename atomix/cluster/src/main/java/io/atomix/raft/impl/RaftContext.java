@@ -569,22 +569,24 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     return CompletableFuture.runAsync(raftLog::forceFlush, threadContext);
   }
 
-  public void transferLeadership() {
-    threadContext.execute(
-        () -> {
-          final var localMemberId = cluster.getLocalMember().memberId();
-          Optional.ofNullable(electionConfig.getPrimary())
-              .filter(primary -> !primary.equals(localMemberId))
-              .or(
-                  () ->
-                      cluster.getReplicationTargets().stream()
-                          .max(Comparator.comparing(RaftMemberContext::getMatchIndex))
-                          .map(context -> context.getMember().memberId()))
-              .ifPresent(
-                  memberId ->
-                      protocol.transfer(
-                          memberId, TransferRequest.builder().withMember(localMemberId).build()));
-        });
+  public CompletableFuture<Void> transferLeadership() {
+    threadContext.checkThread();
+    final var localMemberId = cluster.getLocalMember().memberId();
+    final var next =
+        Optional.ofNullable(electionConfig.getPrimary())
+            .filter(primary -> !primary.equals(localMemberId))
+            .or(
+                () ->
+                    cluster.getReplicationTargets().stream()
+                        .max(Comparator.comparing(RaftMemberContext::getMatchIndex))
+                        .map(context -> context.getMember().memberId()));
+    if (next.isPresent()) {
+      return protocol
+          .transfer(next.get(), TransferRequest.builder().withMember(localMemberId).build())
+          .thenApply(ignored -> null);
+    } else {
+      return CompletableFuture.completedFuture(null);
+    }
   }
 
   /** Attempts to become the leader. */
