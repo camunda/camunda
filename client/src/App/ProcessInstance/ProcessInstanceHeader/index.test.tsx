@@ -249,6 +249,8 @@ describe('InstanceHeader', () => {
 
     const {user} = render(<ProcessInstanceHeader />, {wrapper: Wrapper});
 
+    jest.useFakeTimers();
+
     processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({id: mockInstanceWithoutOperations.id});
     await waitForElementToBeRemoved(
@@ -261,6 +263,15 @@ describe('InstanceHeader', () => {
     await user.click(screen.getByRole('button', {name: 'Apply'}));
 
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
+
+    mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('operation-spinner'),
+    );
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('should show spinner when variables is added', async () => {
