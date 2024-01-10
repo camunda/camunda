@@ -15,4 +15,4 @@ dependencies:
   version: 8.2.15
 - name: infra-preview-environments-ingress
   repository: oci://registry.camunda.cloud/library
-  version: 1.3.0
+  version: 1.4.0
