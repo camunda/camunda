@@ -13,9 +13,15 @@ import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.models.BlobErrorCode;
 import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.models.ListBlobsOptions;
+import com.azure.storage.blob.specialized.BlockBlobClient;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException.BlobAlreadyExists;
+import io.camunda.zeebe.backup.azure.manifest.FileSet;
+import io.camunda.zeebe.backup.azure.manifest.FileSet.NamedFile;
+import io.camunda.zeebe.backup.common.NamedFileSetImpl;
+import java.nio.file.Path;
+import java.util.stream.Collectors;
 
 final class FileSetManager {
   // The path format is constructed by partitionId/checkpointId/nodeId/nameOfFile
@@ -56,6 +62,30 @@ final class FileSetManager {
         .forEach(
             blobItem ->
                 containerClient.getBlobClient(blobItem.getName()).getBlockBlobClient().delete());
+  }
+
+  public NamedFileSet restore(
+      final BackupIdentifier id,
+      final String fileSetName,
+      final FileSet fileSet,
+      final Path targetFolder) {
+
+    final var pathByName =
+        fileSet.files().stream()
+            .collect(Collectors.toMap(NamedFile::name, f -> targetFolder.resolve(f.name())));
+
+    for (final var entry : pathByName.entrySet()) {
+      final var fileName = entry.getKey();
+      final var filePath = entry.getValue();
+
+      final BlockBlobClient blobClient =
+          containerClient
+              .getBlobClient(fileSetPath(id, fileSetName) + fileName)
+              .getBlockBlobClient();
+      blobClient.downloadToFile(String.valueOf(filePath), true);
+    }
+
+    return new NamedFileSetImpl(pathByName);
   }
 
   void assureContainerCreated() {
