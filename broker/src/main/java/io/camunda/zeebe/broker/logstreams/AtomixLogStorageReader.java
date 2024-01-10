@@ -89,7 +89,13 @@ public final class AtomixLogStorageReader implements LogStorageReader {
 
   private boolean readNextBlock() {
     while (reader.hasNext()) {
-      final IndexedRaftLogEntry entry = reader.next();
+      final IndexedRaftLogEntry entry;
+      try {
+        entry = reader.next();
+      } catch (final NoSuchElementException e) {
+        // log was reset between checking `hasNext` and calling `next`
+        return false;
+      }
       if (entry.isApplicationEntry()) {
         final ApplicationEntry nextEntry = entry.getApplicationEntry();
 
