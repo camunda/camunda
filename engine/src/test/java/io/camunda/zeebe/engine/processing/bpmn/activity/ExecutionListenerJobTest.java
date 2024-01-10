@@ -8,9 +8,6 @@
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
 import io.camunda.zeebe.engine.util.EngineRule;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -21,7 +18,6 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue.AssociatedJobType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.util.function.Consumer;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,19 +31,6 @@ public class ExecutionListenerJobTest {
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  private static BpmnModelInstance process() {
-    return process(b -> {});
-  }
-
-  private static BpmnModelInstance process(final Consumer<UserTaskBuilder> consumer) {
-    final var builder =
-        Bpmn.createExecutableProcess(PROCESS_ID).startEvent().userTask("task").zeebeUserTask();
-
-    consumer.accept(builder);
-
-    return builder.endEvent().done();
-  }
-
   @Test
   public void shouldCreateExecutionListenerJob() {
     // given
@@ -57,60 +40,114 @@ public class ExecutionListenerJobTest {
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // then
-    final Record<ProcessInstanceRecordValue> jobsActivating =
-        RecordingExporter.processInstanceRecords()
-            .withProcessInstanceKey(processInstanceKey)
-            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
-            .withElementType(BpmnElementType.SERVICE_TASK)
-            .getFirst();
-
-    final Record<JobRecordValue> executionListenerTask =
-        RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-
-    Assertions.assertThat(executionListenerTask.getValue())
-        .hasElementInstanceKey(jobsActivating.getKey())
-        .hasElementId(jobsActivating.getValue().getElementId())
-        .hasProcessDefinitionKey(jobsActivating.getValue().getProcessDefinitionKey())
-        .hasBpmnProcessId(jobsActivating.getValue().getBpmnProcessId())
-        .hasProcessDefinitionVersion(jobsActivating.getValue().getVersion())
-        .hasAssociatedTo(AssociatedJobType.EXECUTION_LISTENER)
-        .hasType("dmk_task_start_type_1");
+    assertJobLifecycle(
+        processInstanceKey,
+        0,
+        "dmk_task_start_type_1",
+        JobIntent.CREATED,
+        AssociatedJobType.EXECUTION_LISTENER);
   }
 
   @Test
   public void shouldCompleteExecutionListenerJob() {
     // given
     ENGINE.deployment().withXmlClasspathResource("/processes/execution-listeners.bpmn").deploy();
-
-    // when
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    // then
+    // when - then
+    assertJobLifecycle(
+        processInstanceKey,
+        0,
+        "dmk_task_start_type_1",
+        JobIntent.CREATED,
+        AssociatedJobType.EXECUTION_LISTENER);
     ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_start_type_1").complete();
-    ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_start_type_2").complete();
+    assertJobLifecycle(
+        processInstanceKey,
+        0,
+        "dmk_task_start_type_1",
+        JobIntent.COMPLETED,
+        AssociatedJobType.EXECUTION_LISTENER);
 
-    final Record<ProcessInstanceRecordValue> taskActivated =
+    // when - then
+    assertJobLifecycle(
+        processInstanceKey,
+        1,
+        "dmk_task_start_type_2",
+        JobIntent.CREATED,
+        AssociatedJobType.EXECUTION_LISTENER);
+    ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_start_type_2").complete();
+    assertJobLifecycle(
+        processInstanceKey,
+        1,
+        "dmk_task_start_type_2",
+        JobIntent.COMPLETED,
+        AssociatedJobType.EXECUTION_LISTENER);
+
+    // when - then
+    assertJobLifecycle(
+        processInstanceKey,
+        2,
+        "dmk_task_start_type_3",
+        JobIntent.CREATED,
+        AssociatedJobType.EXECUTION_LISTENER);
+    ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_start_type_3").complete();
+    assertJobLifecycle(
+        processInstanceKey,
+        2,
+        "dmk_task_start_type_3",
+        JobIntent.COMPLETED,
+        AssociatedJobType.EXECUTION_LISTENER);
+
+    // when - then
+    assertJobLifecycle(
+        processInstanceKey, 3, "dmk_task_type", JobIntent.CREATED, AssociatedJobType.REGULAR);
+    ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_type").complete();
+    assertJobLifecycle(
+        processInstanceKey, 3, "dmk_task_type", JobIntent.COMPLETED, AssociatedJobType.REGULAR);
+
+    // when - then
+    assertJobLifecycle(
+        processInstanceKey,
+        4,
+        "dmk_task_end_type_1",
+        JobIntent.CREATED,
+        AssociatedJobType.EXECUTION_LISTENER);
+    ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_end_type_1").complete();
+    assertJobLifecycle(
+        processInstanceKey,
+        4,
+        "dmk_task_end_type_1",
+        JobIntent.COMPLETED,
+        AssociatedJobType.EXECUTION_LISTENER);
+  }
+
+  void assertJobLifecycle(
+      final long processInstanceKey,
+      final long jobIndex,
+      final String expectedJobType,
+      final JobIntent expectedJobIntent,
+      final AssociatedJobType expectedAssociatedJobType) {
+    final Record<ProcessInstanceRecordValue> activatingJob =
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey)
             .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withElementType(BpmnElementType.SERVICE_TASK)
             .getFirst();
 
-    final Record<JobRecordValue> secondListenerTask =
-        RecordingExporter.jobRecords(JobIntent.CREATED)
+    final Record<JobRecordValue> jobRecord =
+        RecordingExporter.jobRecords(expectedJobIntent)
             .withProcessInstanceKey(processInstanceKey)
-            .skip(1)
+            .skip(jobIndex)
             .getFirst();
 
-    Assertions.assertThat(secondListenerTask.getValue())
-        .hasElementInstanceKey(taskActivated.getKey())
-        .hasElementId(taskActivated.getValue().getElementId())
-        .hasProcessDefinitionKey(taskActivated.getValue().getProcessDefinitionKey())
-        .hasBpmnProcessId(taskActivated.getValue().getBpmnProcessId())
-        .hasProcessDefinitionVersion(taskActivated.getValue().getVersion())
-        .hasAssociatedTo(AssociatedJobType.EXECUTION_LISTENER)
-        .hasType("dmk_task_start_type_2");
+    Assertions.assertThat(jobRecord.getValue())
+        .hasElementInstanceKey(activatingJob.getKey())
+        .hasElementId(activatingJob.getValue().getElementId())
+        .hasProcessDefinitionKey(activatingJob.getValue().getProcessDefinitionKey())
+        .hasBpmnProcessId(activatingJob.getValue().getBpmnProcessId())
+        .hasProcessDefinitionVersion(activatingJob.getValue().getVersion())
+        .hasAssociatedTo(expectedAssociatedJobType)
+        .hasType(expectedJobType);
   }
 }

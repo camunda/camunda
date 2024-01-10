@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionList
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * A BPMN processor for tasks that are based on jobs and should be processed by job workers. For
@@ -58,23 +59,8 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   public void onActivate(final ExecutableJobWorkerTask element, final BpmnElementContext context) {
     variableMappingBehavior
         .applyInputMappings(context, element)
-        .flatMap(
-            ignored -> {
-              final List<ExecutionListener> startExecutionListeners =
-                  element.getExecutionListeners().stream()
-                      .filter(el -> ZeebeExecutionListenerEventType.start.equals(el.getEventType()))
-                      .toList();
-
-              if (startExecutionListeners.isEmpty()) {
-                return regularJobExecution(element, context);
-              } else {
-                // create jobs for EL's with 'start' event type
-                final ExecutionListener firstExecutionListener = startExecutionListeners.getFirst();
-                createExecutionListenerJob(element, context, firstExecutionListener);
-                return Either.right(null);
-              }
-            })
-        .ifRightOrLeft(ignore -> {}, failure -> incidentBehavior.createIncident(failure, context));
+        .flatMap(ignore -> handleStartExecutionListenersOrRegularJob(element, context))
+        .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
   }
 
   @Override
@@ -90,27 +76,40 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
         .ifRightOrLeft(
             completed -> {
               final List<ExecutionListener> endExecutionListeners =
-                  element.getExecutionListeners().stream()
-                      .filter(el -> ZeebeExecutionListenerEventType.end.equals(el.getEventType()))
-                      .toList();
+                  getExecutionListenersByEventType(element, ZeebeExecutionListenerEventType.end);
 
-              // create jobs for EL's with 'end' event type
-              endExecutionListeners.forEach(
-                  listener -> createExecutionListenerJob(element, context, listener));
-
-              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+              if (endExecutionListeners.isEmpty()) {
+                stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+              } else {
+                createExecutionListenerJob(element, context, endExecutionListeners.getFirst());
+              }
             },
             failure -> incidentBehavior.createIncident(failure, context));
   }
 
   @Override
-  public void onExecutionListenerComplete(final ExecutableJobWorkerTask element,
-      final BpmnElementContext context) {
-        element.getExecutionListeners().stream()
-            .filter(el -> ZeebeExecutionListenerEventType.start.equals(el.getEventType()))
-            .skip(1)
-            .findFirst()
-            .ifPresent(el -> createExecutionListenerJob(element, context, el));
+  public void onExecutionListenerComplete(
+      final ExecutableJobWorkerTask element, final BpmnElementContext context) {
+
+    final String currentExecutionListenerType =
+        stateBehavior.getElementInstance(context).getExecutionListenerType();
+    final List<ExecutionListener> startExecutionListeners =
+        getExecutionListenersByEventType(element, ZeebeExecutionListenerEventType.start);
+
+    final List<String> types =
+        startExecutionListeners.stream()
+            .map(el -> el.getJobWorkerProperties().getType().getExpression())
+            .toList();
+
+    final int nextElement = types.indexOf(currentExecutionListenerType) + 1;
+
+    if (nextElement < startExecutionListeners.size()) {
+      createExecutionListenerJob(element, context, startExecutionListeners.get(nextElement));
+    } else {
+      regularJobExecution(element, context)
+          .ifRightOrLeft(
+              ignore -> {}, failure -> incidentBehavior.createIncident(failure, context));
+    }
   }
 
   @Override
@@ -142,6 +141,23 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
             });
   }
 
+  private List<ExecutionListener> getExecutionListenersByEventType(
+      final ExecutableJobWorkerTask element, final ZeebeExecutionListenerEventType eventType) {
+    return element.getExecutionListeners().stream()
+        .filter(el -> eventType == el.getEventType())
+        .collect(Collectors.toList());
+  }
+
+  private Either<Failure, BpmnElementContext> handleStartExecutionListenersOrRegularJob(
+      final ExecutableJobWorkerTask element, final BpmnElementContext context) {
+    final List<ExecutionListener> startExecutionListeners =
+        getExecutionListenersByEventType(element, ZeebeExecutionListenerEventType.start);
+
+    return startExecutionListeners.isEmpty()
+        ? regularJobExecution(element, context)
+        : createExecutionListenerJob(element, context, startExecutionListeners.getFirst());
+  }
+
   private Either<Failure, BpmnElementContext> regularJobExecution(
       final ExecutableJobWorkerTask element, final BpmnElementContext context) {
     return jobBehavior
@@ -150,20 +166,22 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
         .map(
             jobProperties -> {
               jobBehavior.createNewJob(context, element, jobProperties);
-              return stateTransitionBehavior.transitionToActivated(context, element.getEventType());
+              stateTransitionBehavior.transitionToActivated(context, element.getEventType());
+              return context;
             });
   }
 
-  private void createExecutionListenerJob(
+  private Either<Failure, BpmnElementContext> createExecutionListenerJob(
       final ExecutableJobWorkerTask element,
       final BpmnElementContext context,
       final ExecutionListener listener) {
 
-    jobBehavior
+    return jobBehavior
         .evaluateJobExpressions(listener.getJobWorkerProperties(), context)
-        .ifRightOrLeft(
-            elJobProperties ->
-                jobBehavior.createNewExecutionListenerJob(context, element, elJobProperties),
-            failure -> incidentBehavior.createIncident(failure, context));
+        .map(
+            elJobProperties -> {
+              jobBehavior.createNewExecutionListenerJob(context, element, elJobProperties);
+              return context;
+            });
   }
 }
