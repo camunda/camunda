@@ -46,6 +46,10 @@ public final class UserTaskEventProcessors {
         .onCommand(
             ValueType.USER_TASK,
             UserTaskIntent.CLAIM,
-            new UserTaskClaimProcessor(processingState, writers));
+            new UserTaskClaimProcessor(processingState, writers))
+        .onCommand(
+            ValueType.USER_TASK,
+            UserTaskIntent.UPDATE,
+            new UserTaskUpdateProcessor(processingState, writers));
   }
 }
