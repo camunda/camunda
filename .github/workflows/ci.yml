@@ -695,5 +695,3 @@ jobs:
         run: |
           gh pr review ${{ github.event.pull_request.number }} --approve
           gh pr merge ${{ github.event.pull_request.number }} --auto --merge
-        env:
-          GITHUB_TOKEN: "${{secrets.GITHUB_TOKEN}}"
