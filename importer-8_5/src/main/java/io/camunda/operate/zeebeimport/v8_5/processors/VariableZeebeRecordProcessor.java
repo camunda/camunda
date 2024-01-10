@@ -4,7 +4,7 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.zeebeimport.v8_3.processors;
+package io.camunda.operate.zeebeimport.v8_5.processors;
 
 import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
@@ -17,16 +17,12 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.*;
 
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
@@ -34,13 +30,6 @@ import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 public class VariableZeebeRecordProcessor {
 
   private static final Logger logger = LoggerFactory.getLogger(VariableZeebeRecordProcessor.class);
-
-  private static final Set<String> VARIABLE_STATES = new HashSet<>();
-
-  static {
-    VARIABLE_STATES.add(VariableIntent.CREATED.name());
-    VARIABLE_STATES.add(VariableIntent.UPDATED.name());
-  }
 
   @Autowired
   private VariableTemplate variableTemplate;
@@ -73,12 +62,20 @@ public class VariableZeebeRecordProcessor {
 
         if (initialIntent == VariableIntent.CREATED) {
           batchRequest.add(variableTemplate.getFullQualifiedName(), variableEntity);
+        } else if (initialIntent == VariableIntent.MIGRATED){
+          Map<String, Object> updateFields = new HashMap<>();
+          updateFields.put(VariableTemplate.PROCESS_DEFINITION_KEY, variableEntity.getProcessDefinitionKey());
+          updateFields.put(VariableTemplate.BPMN_PROCESS_ID, variableEntity.getBpmnProcessId());
+          batchRequest.upsert(variableTemplate.getFullQualifiedName(), variableEntity.getId(), variableEntity, updateFields);
         } else {
           Map<String, Object> updateFields = new HashMap<>();
-          updateFields.put( VariableTemplate.VALUE, variableEntity.getValue());
-          updateFields.put(    VariableTemplate.FULL_VALUE, variableEntity.getFullValue());
-          updateFields.put(  VariableTemplate.IS_PREVIEW, variableEntity.getIsPreview());
-          batchRequest.upsert(variableTemplate.getFullQualifiedName(), variableEntity.getId(), variableEntity, updateFields);
+          updateFields.put(VariableTemplate.VALUE, variableEntity.getValue());
+          updateFields.put(VariableTemplate.FULL_VALUE, variableEntity.getFullValue());
+          updateFields.put(VariableTemplate.IS_PREVIEW, variableEntity.getIsPreview());
+          updateFields.put(VariableTemplate.PROCESS_DEFINITION_KEY, variableEntity.getProcessDefinitionKey());
+          updateFields.put(VariableTemplate.BPMN_PROCESS_ID, variableEntity.getBpmnProcessId());
+          batchRequest.upsert(variableTemplate.getFullQualifiedName(), variableEntity.getId(), variableEntity,
+              updateFields);
         }
       }
     }

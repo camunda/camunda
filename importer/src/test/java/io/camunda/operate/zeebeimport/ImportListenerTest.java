@@ -20,7 +20,7 @@ import io.camunda.operate.store.elasticsearch.ElasticsearchZeebeStore;
 import io.camunda.operate.util.NoBeansTest;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.zeebe.ImportValueType;
-import io.camunda.operate.zeebeimport.v8_3.processors.ImportBulkProcessor;
+import io.camunda.operate.zeebeimport.v8_5.processors.ImportBulkProcessor;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.Before;
 import org.junit.Test;

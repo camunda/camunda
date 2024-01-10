@@ -4,17 +4,11 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.zeebeimport.v8_3.processors;
-
-import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
+package io.camunda.operate.zeebeimport.v8_5.processors;
 
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
-import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
@@ -28,6 +22,12 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
@@ -35,11 +35,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import jakarta.annotation.PostConstruct;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 
 @Component
 public class FlowNodeInstanceZeebeRecordProcessor {
@@ -118,6 +115,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
             updateFields.put(FlowNodeInstanceTemplate.TREE_PATH, fniEntity.getTreePath());
             updateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, fniEntity.getFlowNodeId());
             updateFields.put(FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, fniEntity.getProcessDefinitionKey());
+            updateFields.put(FlowNodeInstanceTemplate.BPMN_PROCESS_ID, fniEntity.getBpmnProcessId());
             updateFields.put(FlowNodeInstanceTemplate.LEVEL, fniEntity.getLevel());
             if (fniEntity.getStartDate() != null) {
               updateFields.put(FlowNodeInstanceTemplate.START_DATE, fniEntity.getStartDate());
@@ -137,7 +135,8 @@ public class FlowNodeInstanceZeebeRecordProcessor {
   private boolean shouldProcessProcessInstanceRecord(final Record<ProcessInstanceRecordValue> processInstanceRecord) {
     final var processInstanceRecordValue = processInstanceRecord.getValue();
     final var intent = processInstanceRecord.getIntent().name();
-    return !isProcessEvent(processInstanceRecordValue) && (AI_START_STATES.contains(intent) || AI_FINISH_STATES.contains(intent));
+    return !isProcessEvent(processInstanceRecordValue) && (AI_START_STATES.contains(
+        intent) || AI_FINISH_STATES.contains(intent) || ELEMENT_MIGRATED.name().equals(intent));
   }
 
   private FlowNodeInstanceEntity updateFlowNodeInstance(Record<ProcessInstanceRecordValue> record, FlowNodeInstanceEntity entity) {

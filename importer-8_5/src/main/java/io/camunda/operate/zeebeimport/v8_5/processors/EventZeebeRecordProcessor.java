@@ -4,22 +4,10 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.zeebeimport.v8_3.processors;
-
-import static io.camunda.operate.entities.EventType.ELEMENT_ACTIVATING;
-import static io.camunda.operate.entities.EventType.ELEMENT_COMPLETING;
-import static io.camunda.operate.schema.templates.EventTemplate.METADATA;
-import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
-import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
+package io.camunda.operate.zeebeimport.v8_5.processors;
 
 import io.camunda.operate.entities.ErrorType;
-import io.camunda.operate.entities.EventEntity;
-import io.camunda.operate.entities.EventMetadataEntity;
-import io.camunda.operate.entities.EventSourceType;
-import io.camunda.operate.entities.EventType;
+import io.camunda.operate.entities.*;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.store.BatchRequest;
@@ -29,23 +17,23 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
-import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
+import io.camunda.zeebe.protocol.record.value.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+
+import java.time.Instant;
+import java.util.*;
+import java.util.function.Consumer;
+
+import static io.camunda.operate.entities.EventType.ELEMENT_ACTIVATING;
+import static io.camunda.operate.entities.EventType.ELEMENT_COMPLETING;
+import static io.camunda.operate.schema.templates.EventTemplate.METADATA;
+import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
+import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 
 @Component
 public class EventZeebeRecordProcessor {
@@ -70,6 +58,7 @@ public class EventZeebeRecordProcessor {
     JOB_EVENTS.add(JobIntent.FAILED.name());
     JOB_EVENTS.add(JobIntent.RETRIES_UPDATED.name());
     JOB_EVENTS.add(JobIntent.CANCELED.name());
+    JOB_EVENTS.add(JobIntent.MIGRATED.name());
 
     PROCESS_INSTANCE_STATES.add(ELEMENT_ACTIVATING.name());
     PROCESS_INSTANCE_STATES.add(ELEMENT_ACTIVATED.name());
@@ -295,6 +284,9 @@ public class EventZeebeRecordProcessor {
       jsonMap.put(EventTemplate.EVENT_SOURCE_TYPE, entity.getEventSourceType());
       jsonMap.put(EventTemplate.EVENT_TYPE, entity.getEventType());
       jsonMap.put(EventTemplate.DATE_TIME, entity.getDateTime());
+      jsonMap.put(EventTemplate.PROCESS_KEY, entity.getProcessDefinitionKey());
+      jsonMap.put(EventTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
+      jsonMap.put(EventTemplate.FLOW_NODE_ID, entity.getFlowNodeId());
       if (entity.getMetadata() != null) {
         Map<String, Object> metadataMap = new HashMap<>();
         if (

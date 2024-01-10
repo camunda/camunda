@@ -36,7 +36,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import io.camunda.operate.zeebeimport.v8_4.processors.ImportBulkProcessor;
+import io.camunda.operate.zeebeimport.v8_5.processors.ImportBulkProcessor;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.junit.*;
@@ -89,7 +89,7 @@ public class ImportSeveralVersionsIT extends OperateAbstractIT {
   private ImportBulkProcessor importerv2;
 
   @SpyBean
-  private io.camunda.operate.zeebeimport.v8_3.processors.ImportBulkProcessor importerv1;
+  private io.camunda.operate.zeebeimport.v8_4.processors.ImportBulkProcessor importerv1;
 
   @MockBean
   private PartitionHolder partitionHolder;

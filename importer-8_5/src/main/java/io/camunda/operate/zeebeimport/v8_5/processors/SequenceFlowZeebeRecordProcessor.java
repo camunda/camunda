@@ -4,7 +4,7 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.zeebeimport.v8_3.processors;
+package io.camunda.operate.zeebeimport.v8_5.processors;
 
 import io.camunda.operate.entities.SequenceFlowEntity;
 import io.camunda.operate.exceptions.PersistenceException;
@@ -13,7 +13,6 @@ import io.camunda.operate.store.BatchRequest;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

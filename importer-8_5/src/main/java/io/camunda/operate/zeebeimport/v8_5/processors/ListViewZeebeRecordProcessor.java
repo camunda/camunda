@@ -4,13 +4,7 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.zeebeimport.v8_3.processors;
-
-import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
-import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
+package io.camunda.operate.zeebeimport.v8_5.processors;
 
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.entities.FlowNodeState;
@@ -20,44 +14,37 @@ import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
-import io.camunda.operate.store.MetricsStore;
-import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.FlowNodeStore;
 import io.camunda.operate.store.ListViewStore;
-import io.camunda.operate.util.ConversionUtils;
-import io.camunda.operate.util.DateUtil;
-import io.camunda.operate.util.OperationsManager;
-import io.camunda.operate.util.SoftHashMap;
-import io.camunda.operate.util.Tuple;
+import io.camunda.operate.store.MetricsStore;
+import io.camunda.operate.util.*;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ImportBatch;
-import io.camunda.operate.util.TreePath;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.*;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.util.*;
+import java.util.function.Consumer;
+
+import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
+import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 
 @Component
 public class ListViewZeebeRecordProcessor {
@@ -208,6 +195,9 @@ public class ListViewZeebeRecordProcessor {
             if (isProcessInstanceTerminated(record)) {
               //resolve corresponding operation
               operationsManager.completeOperation(null, record.getKey(), null, OperationType.CANCEL_PROCESS_INSTANCE, batchRequest);
+            } else if (isProcessInstanceMigrated(record)) {
+              //resolve corresponding operation
+              operationsManager.completeOperation(null, record.getKey(), null, OperationType.MIGRATE_PROCESS_INSTANCE, batchRequest);
             }
             piEntity = updateProcessInstance(importBatch, record, piEntity, treePathMap, batchRequest);
           } else {
@@ -230,6 +220,8 @@ public class ListViewZeebeRecordProcessor {
           }
           updateFields.put(ListViewTemplate.PROCESS_NAME, piEntity.getProcessName());
           updateFields.put(ListViewTemplate.PROCESS_VERSION, piEntity.getProcessVersion());
+          updateFields.put(ListViewTemplate.PROCESS_KEY, piEntity.getProcessDefinitionKey());
+          updateFields.put(ListViewTemplate.BPMN_PROCESS_ID, piEntity.getBpmnProcessId());
           if (piEntity.getState() != null) {
             updateFields.put(ListViewTemplate.STATE, piEntity.getState());
           }
@@ -244,9 +236,11 @@ public class ListViewZeebeRecordProcessor {
         } else {
           Map<String, Object> updateFields = new HashMap<>();
           updateFields.put(ListViewTemplate.ID, actEntity.getId());
-          updateFields.put( ListViewTemplate.PARTITION_ID, actEntity.getPartitionId());
-          updateFields.put(  ListViewTemplate.ACTIVITY_TYPE, actEntity.getActivityType());
-          updateFields.put(  ListViewTemplate.ACTIVITY_STATE, actEntity.getActivityState());
+          updateFields.put(ListViewTemplate.PARTITION_ID, actEntity.getPartitionId());
+          updateFields.put(ListViewTemplate.PROCESS_KEY, actEntity.getProcessInstanceKey());
+          updateFields.put(ListViewTemplate.ACTIVITY_ID, actEntity.getActivityId());
+          updateFields.put(ListViewTemplate.ACTIVITY_TYPE, actEntity.getActivityType());
+          updateFields.put(ListViewTemplate.ACTIVITY_STATE, actEntity.getActivityState());
 
           batchRequest.upsertWithRouting(listViewTemplate.getFullQualifiedName(),actEntity.getId() , actEntity, updateFields, processInstanceKey.toString());
         }
@@ -272,11 +266,15 @@ public class ListViewZeebeRecordProcessor {
 
   private boolean shouldProcessProcessInstanceRecord(final Record<ProcessInstanceRecordValue> record) {
     final var intent = record.getIntent().name();
-    return PI_AND_AI_START_STATES.contains(intent) || PI_AND_AI_FINISH_STATES.contains(intent);
+    return PI_AND_AI_START_STATES.contains(intent) || PI_AND_AI_FINISH_STATES.contains(intent) || ELEMENT_MIGRATED.name().equals(intent);
   }
 
   private boolean isProcessInstanceTerminated(final Record<ProcessInstanceRecordValue> record) {
     return record.getIntent() == ELEMENT_TERMINATED;
+  }
+
+  private boolean isProcessInstanceMigrated(final Record<ProcessInstanceRecordValue> record) {
+    return record.getIntent() == ELEMENT_MIGRATED;
   }
 
   private ProcessInstanceForListViewEntity updateProcessInstance(ImportBatch importBatch,
@@ -426,7 +424,7 @@ public class ListViewZeebeRecordProcessor {
     final var intentStr = record.getIntent().name();
 
     entity.setKey(record.getKey());
-    entity.setId( ConversionUtils.toStringOrNull(record.getKey()));
+    entity.setId(ConversionUtils.toStringOrNull(record.getKey()));
     entity.setPartitionId(record.getPartitionId());
     entity.setActivityId(recordValue.getElementId());
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
