@@ -38,9 +38,9 @@ global:
 # Worker configuration for the to be deployed worker application
 worker:
   # Worker.replicas defines how many replicas of the worker application should be deployed
-  replicas: 3
+  replicas: 5
   # Worker.capacity defines how many jobs the worker should activate and work on
-  capacity: 60
+  capacity: 120
 
 # Starter configuration for the to be deployed starter application
 starter:
@@ -107,12 +107,13 @@ camunda-platform:
         value: "{{ .Values.global.elasticsearch.protocol }}://{{ .Values.global.elasticsearch.host }}:{{ .Values.global.elasticsearch.port }}"
     resources:
       limits:
-        cpu: 2000m
-        memory: 4Gi
+        cpu: 4000m
+        memory: 6Gi
       requests:
-        cpu: 2000m
-        memory: 4Gi
+        cpu: 4000m
+        memory: 6Gi
     nodeSelector: null
+    partitionCount: "6"
   operate:
     enabled: true
     # Image configuration to configure the zeebe image specifics
