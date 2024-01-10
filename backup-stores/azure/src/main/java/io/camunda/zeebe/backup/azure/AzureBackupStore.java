@@ -109,7 +109,12 @@ public final class AzureBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Collection<BackupStatus>> list(final BackupIdentifierWildcard wildcard) {
-    throw new UnsupportedOperationException();
+    return CompletableFuture.supplyAsync(
+        () ->
+            manifestManager.listManifests(wildcard).stream()
+                .map(AzureBackupStore::toStatus)
+                .toList(),
+        executor);
   }
 
   @Override

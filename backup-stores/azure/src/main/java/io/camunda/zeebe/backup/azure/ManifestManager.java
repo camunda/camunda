@@ -15,6 +15,7 @@ import com.azure.core.util.Context;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.models.BlobErrorCode;
+import com.azure.storage.blob.models.BlobItem;
 import com.azure.storage.blob.models.BlobRequestConditions;
 import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.models.BlockBlobItem;
@@ -27,12 +28,15 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.azure.manifest.Manifest;
 import io.camunda.zeebe.backup.azure.manifest.Manifest.InProgressManifest;
 import io.camunda.zeebe.backup.azure.manifest.Manifest.StatusCode;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Collection;
+import java.util.regex.Pattern;
 
 public final class ManifestManager {
   public static final int PRECONDITION_FAILED = 412;
@@ -176,11 +180,14 @@ public final class ManifestManager {
   }
 
   Manifest getManifest(final BackupIdentifier id) {
+    return getManifestWithPath(
+        MANIFEST_PATH_FORMAT.formatted(id.partitionId(), id.checkpointId(), id.nodeId()));
+  }
+
+  private Manifest getManifestWithPath(final String path) {
     final BlobClient blobClient;
     final BinaryData binaryData;
-    blobClient =
-        blobContainerClient.getBlobClient(
-            MANIFEST_PATH_FORMAT.formatted(id.partitionId(), id.checkpointId(), id.nodeId()));
+    blobClient = blobContainerClient.getBlobClient(path);
     try {
       binaryData = blobClient.downloadContent();
     } catch (final BlobStorageException e) {
@@ -198,6 +205,15 @@ public final class ManifestManager {
     }
   }
 
+  public Collection<Manifest> listManifests(final BackupIdentifierWildcard wildcard) {
+
+    return blobContainerClient.listBlobs().stream()
+        .map(BlobItem::getName)
+        .filter(path -> filterBlobsByWildcard(wildcard, path))
+        .map(path -> getManifestWithPath(path))
+        .toList();
+  }
+
   public static String manifestPath(final Manifest manifest) {
     return manifestIdPath(manifest.id());
   }
@@ -205,6 +221,18 @@ public final class ManifestManager {
   private static String manifestIdPath(final BackupIdentifier backupIdentifier) {
     return MANIFEST_PATH_FORMAT.formatted(
         backupIdentifier.partitionId(), backupIdentifier.checkpointId(), backupIdentifier.nodeId());
+  }
+
+  private boolean filterBlobsByWildcard(
+      final BackupIdentifierWildcard wildcard, final String path) {
+    final var pattern =
+        Pattern.compile(
+                MANIFEST_PATH_FORMAT.formatted(
+                    wildcard.partitionId().map(Number::toString).orElse("\\d+"),
+                    wildcard.checkpointId().map(Number::toString).orElse("\\d+"),
+                    wildcard.nodeId().map(Number::toString).orElse("\\d+")))
+            .asMatchPredicate();
+    return pattern.test(path);
   }
 
   void assureContainerCreated() {
