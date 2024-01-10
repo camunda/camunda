@@ -147,9 +147,11 @@ jobs:
           RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION || '0.0.0' }}
           DEVELOPMENT_VERSION: ${{ github.event.inputs.DEVELOPMENT_VERSION || '0.1.0-SNAPSHOT' }}
           BRANCH: ${{ github.event.inputs.BRANCH || github.ref_name}}
-          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
+          GITHUB_APP_PRIVATE_KEY: ${{ steps.github-token.outputs.token }}
           GITHUB_APP_ID: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
           DRY_RUN: ${{ github.event.inputs.DRY_RUN || 'true' }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           .github/scripts/execute-release.sh
 
@@ -167,7 +169,7 @@ jobs:
 
       - name: Auto-update previous version
         env:
-          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
+          GITHUB_APP_PRIVATE_KEY: ${{ steps.github-token.outputs.token }}
           GITHUB_APP_ID: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
           IS_PATCH: ${{ steps.is-major-or-minor.outputs.is_patch }}
           RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION || '0.0.0' }}
@@ -227,7 +229,7 @@ jobs:
         if: inputs.RELEASE_EXAMPLES == 'true'
         working-directory: camunda-optimize-examples
         env:
-          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
+          GITHUB_APP_PRIVATE_KEY: ${{ steps.github-token.outputs.token }}
           GITHUB_APP_ID: ${{ steps.secrets.outputs.GITHUB_OPTIMIZE_APP_ID }}
           RELEASE_VERSION: ${{ github.event.inputs.RELEASE_VERSION }}
           DEVELOPMENT_VERSION: ${{ github.event.inputs.DEVELOPMENT_VERSION }}

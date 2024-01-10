@@ -616,10 +616,10 @@
 
   <scm>
     <url>https://github.com/camunda/camunda-optimize</url>
-    <connection>scm:git:https://${env.GITHUB_APP}:${env.GITHUB_ACCESS_TOKEN}@github.com/camunda/camunda-optimize.git
+    <connection>scm:git:https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/camunda/camunda-optimize.git
     </connection>
     <developerConnection>
-      scm:git:https://${env.GITHUB_APP}:${env.GITHUB_ACCESS_TOKEN}@github.com/camunda/camunda-optimize.git
+      scm:git:https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/camunda/camunda-optimize.git
     </developerConnection>
     <tag>HEAD</tag>
   </scm>
