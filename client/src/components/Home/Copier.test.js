@@ -8,11 +8,13 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
+import {copyEntity} from 'services';
+
 import CopierWithErrorHandling from './Copier';
 import CopyModal from './modals/CopyModal';
-import {copyEntity} from './service';
 
-jest.mock('./service', () => ({
+jest.mock('services', () => ({
+  ...jest.requireActual('services'),
   copyEntity: jest.fn(),
 }));
 

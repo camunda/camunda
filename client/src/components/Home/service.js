@@ -53,19 +53,6 @@ export async function checkDeleteSourceConflicts(collection, scopeId) {
   return await response.json();
 }
 
-export async function copyEntity(type, id, name, collectionId) {
-  const query = {name};
-
-  if (collectionId || collectionId === null) {
-    query.collectionId = collectionId;
-  }
-
-  const response = await post(`api/${type}/${id}/copy`, undefined, {query});
-  const json = await response.json();
-
-  return json.id;
-}
-
 export async function importEntity(json, collectionId) {
   const query = {};
   if (collectionId) {
