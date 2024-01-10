@@ -314,7 +314,11 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
 
     try {
       completionLock.lock();
-      isDoneCondition.signalAll();
+      if (isDoneCondition != null) {
+        // condition is null if the future was created with `completed` or `completedExceptionally`,
+        // i.e. the future was never waiting for a result.
+        isDoneCondition.signalAll();
+      }
     } finally {
       completionLock.unlock();
     }
