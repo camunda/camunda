@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -606,6 +607,42 @@ public final class NativeUserTaskTest {
                 .getFirst()
                 .getValue())
         .hasAssignee("foo");
+  }
+
+  @Test
+  public void shouldUpdateUserTaskAttributes() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            process(
+                t ->
+                    t.zeebeCandidateGroups("foo, bar")
+                        .zeebeCandidateUsers("oof, rab")
+                        .zeebeFollowUpDate("2023-03-02T15:35+02:00")
+                        .zeebeDueDate("2023-03-02T16:35+02:00")))
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE.userTask().ofInstance(processInstanceKey).update(new UserTaskRecord());
+
+    // then
+    assertThat(RecordingExporter.userTaskRecords().withProcessInstanceKey(processInstanceKey))
+        .extracting(Record::getValueType, Record::getIntent)
+        .containsSubsequence(
+            tuple(ValueType.USER_TASK, UserTaskIntent.UPDATING),
+            tuple(ValueType.USER_TASK, UserTaskIntent.UPDATED));
+
+    Assertions.assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.UPDATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasCandidateGroups("")
+        .hasCandidateUsers("")
+        .hasDueDate("")
+        .hasFollowUpDate("");
   }
 
   @Test
