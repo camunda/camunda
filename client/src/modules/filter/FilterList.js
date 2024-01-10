@@ -6,6 +6,7 @@
  */
 
 import React from 'react';
+import {Tag} from '@carbon/react';
 
 import {ActionItem} from 'components';
 import {t} from 'translation';
@@ -222,9 +223,9 @@ export default class FilterList extends React.Component {
                   >
                     {filter.filterLevel === 'view' ? (
                       <>
-                        <span className="parameterName">
+                        <Tag type="blue" className="parameterName">
                           {t('common.filter.types.flowNodeSelection')}
-                        </span>
+                        </Tag>
                         <b className="filterText">
                           {selectedNodes.length} {t('common.filter.excludedFlowNodes')}
                         </b>
@@ -256,9 +257,9 @@ export default class FilterList extends React.Component {
                 deleteFilter(filter);
               }}
             >
-              <span className="parameterName">
+              <Tag type="blue" className="parameterName">
                 {t('common.filter.types.processInstanceDuration')}
-              </span>
+              </Tag>
               <span className="filterText">
                 {operator === '<' && this.createOperator(t('common.filter.list.operators.less'))}
                 {operator === '>' && this.createOperator(t('common.filter.list.operators.more'))}
@@ -323,9 +324,9 @@ export default class FilterList extends React.Component {
                       deleteFilter(filter);
                     }}
                   >
-                    <span className="parameterName">
+                    <Tag type="blue" className="parameterName">
                       {t('common.filter.types.flowNodeDuration')}
-                    </span>
+                    </Tag>
                     <span className="filterText">{filterValues}</span>
                     <AppliedToInfo filter={filter} definitions={definitions} />
                   </ActionItem>
@@ -344,7 +345,9 @@ export default class FilterList extends React.Component {
                 deleteFilter(filter);
               }}
             >
-              <span className="parameterName">{getStateFilterParameterName(filter)}</span>
+              <Tag type="blue" className="parameterName">
+                {getStateFilterParameterName(filter)}
+              </Tag>
               <span className="filterText">{getStateFilterFilterText(filter)}</span>
               <AppliedToInfo filter={filter} definitions={definitions} />
             </ActionItem>

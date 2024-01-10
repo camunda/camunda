@@ -20,16 +20,14 @@ export const variableFilterValueInput = Selector('.Modal .ValueListInput input')
 export const variableOrButton = Selector('.MultipleVariableFilterModal .orButton');
 export const removeVariableBtn = Selector('.MultipleVariableFilterModal .removeButton');
 export const variableHeader = (text) => Selector('.variableContainer .sectionTitle').withText(text);
-export const dateFilterTypeSelect = Selector('.DateRangeInput .Dropdown');
-export const dateFilterTypeOption = (text) =>
-  Selector('.DateRangeInput .DropdownOption').withText(text);
+export const dateFilterTypeSelect = Selector('.DateRangeInput .CarbonSelect').nth(0);
 export const dateFilterStartInput = Selector('.DateFields .PickerDateInput:first-child input');
 export const dateFilterEndInput = Selector('.DateFields .PickerDateInput:last-child input');
 export const pickerDate = (number) =>
   Selector('.DateFields .rdrMonths .rdrMonth:first-child .rdrDay').withText(number);
 export const infoText = Selector('.Modal .tip');
-export const dateTypeSelect = Selector('.selectGroup > .Select');
-export const unitSelect = Selector('.unitSelection .Select');
+export const dateTypeSelect = Selector('.selectGroup > .CarbonSelect');
+export const unitSelect = Selector('.unitSelection .CarbonSelect');
 export const customDateInput = Selector('.unitSelection').find('input');
 export const durationFilterOperator = Selector('.DurationFilter .CarbonSelect');
 export const durationFilterInput = Selector('.DurationFilter input[type="text"]');

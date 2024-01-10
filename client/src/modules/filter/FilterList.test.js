@@ -230,7 +230,7 @@ it('should display excluded flow nodes for view level flow node selection filter
   let node = shallow(<FilterList {...props} data={data} />);
   node = shallow(node.find(FlowNodeResolver).prop('render')({flowNode: 'flow node name'}));
 
-  expect(node.find('.parameterName')).toIncludeText('Flow node selection');
+  expect(node.find('.parameterName').dive()).toIncludeText('Flow node selection');
   expect(node.find('.filterText')).toIncludeText('2 excluded flow nodes');
 });
 
@@ -289,7 +289,8 @@ it('should display a duration filter', () => {
   const node = shallow(<FilterList {...props} data={data} />);
   const actionItem = node.find('ActionItem').dive();
 
-  expect(actionItem).toIncludeText('duration is less than');
+  expect(actionItem).toIncludeText('is less than');
+  expect(actionItem.find('Tag').dive()).toIncludeText('duration');
   expect(actionItem.find('b').prop('children').join('')).toBe('18 hours');
 });
 
@@ -307,7 +308,7 @@ it('should display a flow node duration filter', () => {
   let node = shallow(<FilterList {...props} data={data} />);
   node = shallow(node.find(FlowNodeResolver).prop('render')({a: 'flow node name'}));
 
-  expect(node.find(ActionItem).dive()).toIncludeText('Flow node duration');
+  expect(node.find(ActionItem).dive().find('Tag').dive()).toIncludeText('Flow node duration');
 });
 
 it('should show flow node duration filter in expanded state if specified', () => {

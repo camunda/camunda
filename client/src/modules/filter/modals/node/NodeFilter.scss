@@ -18,10 +18,6 @@
     .preview {
       margin-bottom: 24px;
 
-      .parameterName {
-        @include highlighted;
-      }
-
       .previewList {
         display: inline;
         line-height: 30px;

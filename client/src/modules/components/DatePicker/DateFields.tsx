@@ -120,8 +120,10 @@ export default class DateFields extends PureComponent<DateFieldsProps, DateField
         {(this.state.popupOpen || forceOpen) && (
           <div
             className={classnames(POPUP_CLASSNAME, {
-              dateRangeContainerLeft: this.isFieldSelected('startDate'),
-              dateRangeContainerRight: this.isFieldSelected('endDate'),
+              dateRangeContainerLeft:
+                this.isFieldSelected('startDate') ||
+                (this.isFieldSelected('endDate') && type === 'before'),
+              dateRangeContainerRight: this.isFieldSelected('endDate') && type !== 'before',
             })}
           >
             <DateRange

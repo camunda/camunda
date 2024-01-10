@@ -9,6 +9,7 @@ import React from 'react';
 
 import {t} from 'translation';
 import {Tooltip} from 'components';
+import {Tag} from '@carbon/react';
 
 export default function VariablePreview({
   variableName,
@@ -25,10 +26,10 @@ export default function VariablePreview({
     </span>
   );
   const parameterName = (
-    <span className="parameterName">
+    <Tag type="blue" className="parameterName">
       {' '}
       {t('report.table.rawData.' + type)}: <b>{variableName}</b>
-    </span>
+    </Tag>
   );
 
   return (

@@ -35,11 +35,13 @@
     }
 
     .parameterName {
-      @include highlighted;
       max-width: 230px;
-      text-overflow: ellipsis;
-      overflow: hidden;
       font-size: 11px;
+      margin-left: 0;
+
+      > span {
+        @include overflow-ellipsis;
+      }
     }
 
     .filterText {

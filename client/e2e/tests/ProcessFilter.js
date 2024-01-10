@@ -64,7 +64,7 @@ test('variable filter modal dependent on variable type', async (t) => {
   await t.typeText(Filter.variableTypeahead, 'dateVar', {replace: true});
   await t.click(Common.carbonOption('dateVar'));
   await t.click(Filter.dateFilterTypeSelect);
-  await t.click(Filter.dateFilterTypeOption('Between'));
+  await t.click(Common.menuOption('Between'));
   await t.click(Filter.dateFilterStartInput);
   await t.click(Filter.pickerDate('5'));
   await t.click(Filter.pickerDate('22')).wait(200);
@@ -178,7 +178,7 @@ test('pick a start date from the date picker', async (t) => {
   await t.hover(Common.menuOption('Instance date'));
   await t.click(Common.submenuOption('Start date'));
   await t.click(Filter.dateTypeSelect);
-  await t.click(Common.option('Between'));
+  await t.click(Common.menuOption('Between'));
   await t.click(Filter.dateFilterStartInput);
   await t.click(Filter.pickerDate('5'));
   await t.click(Filter.pickerDate('22'));
@@ -189,7 +189,7 @@ test('pick a start date from the date picker', async (t) => {
 
   await t.click(Filter.editButton);
   await t.click(Filter.dateTypeSelect);
-  await t.click(Common.option('After'));
+  await t.click(Common.menuOption('After'));
   await t.click(Filter.dateFilterStartInput);
   await t.click(Filter.pickerDate('5'));
   await t.click(Filter.infoText);
@@ -207,9 +207,9 @@ test('add relative current month start date filter', async (t) => {
   await t.hover(Common.menuOption('Instance date'));
   await t.click(Common.submenuOption('Start date'));
   await t.click(Filter.dateTypeSelect);
-  await t.click(Common.option('This...'));
+  await t.click(Common.menuOption('This...'));
   await t.click(Filter.unitSelect);
-  await t.click(Common.option('month'));
+  await t.click(Common.menuOption('month'));
 
   await t.click(Common.modalConfirmButton);
   await t.expect(Report.reportRenderer.visible).ok();
@@ -224,9 +224,9 @@ test('add rolling last 5 days end date filter', async (t) => {
   await t.hover(Common.menuOption('Instance date'));
   await t.click(Common.submenuOption('End date'));
   await t.click(Filter.dateTypeSelect);
-  await t.click(Common.option('Rolling'));
+  await t.click(Common.menuOption('Rolling'));
   await t.click(Filter.unitSelect);
-  await t.click(Common.option('days'));
+  await t.click(Common.menuOption('days'));
   await t.typeText(Filter.customDateInput, '5', {replace: true});
 
   await t.click(Common.modalConfirmButton);
@@ -338,9 +338,9 @@ test('the filter is visible in the control panel and contains correct informatio
   await t.click(Common.submenuOption('Start date'));
 
   await t.click(Filter.dateTypeSelect);
-  await t.click(Common.option('This...'));
+  await t.click(Common.menuOption('This...'));
   await t.click(Filter.unitSelect);
-  await t.click(Common.option('month'));
+  await t.click(Common.menuOption('month'));
   await t.click(Common.modalConfirmButton);
 
   await t.click(Report.filterButton);
@@ -464,8 +464,8 @@ test('multi definition filters', async (t) => {
   await t.click(Report.filterButton);
   await t.click(Common.menuOption('Flow node execution'));
 
-  await t.click(Common.typeahead);
-  await t.click(Common.typeaheadOption('Embedded Subprocess'));
+  await t.click(Common.comboBox);
+  await t.click(Common.carbonOption('Embedded Subprocess'));
 
   await t.click(Report.flowNode('Task_0th4ivq'));
   await t.click(Report.flowNode('Task_1q83i19'));
@@ -492,9 +492,9 @@ test('add flow node start date filter', async (t) => {
   await t.click(Common.submenuOption('Start date'));
 
   await t.click(Filter.dateTypeSelect);
-  await t.click(Common.option('This...'));
+  await t.click(Common.menuOption('This...'));
   await t.click(Filter.unitSelect);
-  await t.click(Common.option('year'));
+  await t.click(Common.menuOption('year'));
 
   await t.click(Report.flowNode('approveInvoice'));
   await t.click(Report.flowNode('reviewInvoice'));

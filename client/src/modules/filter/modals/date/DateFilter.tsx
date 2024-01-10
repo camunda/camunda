@@ -6,15 +6,15 @@
  */
 
 import {useState} from 'react';
-import {Button} from '@carbon/react';
+import {Button, Form, InlineNotification, Stack} from '@carbon/react';
 
 import {t} from 'translation';
-import {Modal, Form, MessageBox, DateRangeInput} from 'components';
+import {Modal, DateRangeInput} from 'components';
 import {Definition, Filter, FilterState} from 'types';
 
 import {FilterProps} from '../types';
-
 import FilterDefinitionSelection from '../FilterDefinitionSelection';
+
 import DateFilterPreview from './DateFilterPreview';
 import {convertFilterToState, convertStateToFilter, isValid} from './service';
 
@@ -87,39 +87,44 @@ export default function DateFilter({
         })}
       </Modal.Header>
       <Modal.Content>
-        <FilterDefinitionSelection
-          availableDefinitions={definitions}
-          applyTo={applyTo as Definition[]}
-          setApplyTo={(applyTo) => setFilterState({...filterState, applyTo})}
-        />
-        {filterType === 'instanceEndDate' && (
-          <MessageBox type="warning">{t('common.filter.dateModal.endDateWarning')}</MessageBox>
-        )}
-        <Form>
-          <span className="tip">{t(`common.filter.dateModal.info.${filterType}`)}</span>
-          <DateRangeInput
-            type={type}
-            unit={unit}
-            startDate={startDate}
-            endDate={endDate}
-            customNum={customNum}
-            onChange={(change) => setFilterState({...filterState, ...change})}
+        <Stack gap={6}>
+          <FilterDefinitionSelection
+            availableDefinitions={definitions}
+            applyTo={applyTo as Definition[]}
+            setApplyTo={(applyTo) => setFilterState({...filterState, applyTo})}
           />
-          <Form.Group className="previewContainer">
-            {isValid(filterState) && (
-              <DateFilterPreview
-                filterType={filterType}
-                filter={convertStateToFilter({
-                  type,
-                  unit,
-                  customNum,
-                  startDate,
-                  endDate,
-                })}
+          {filterType === 'instanceEndDate' && (
+            <InlineNotification
+              kind="warning"
+              subtitle={t('common.filter.dateModal.endDateWarning').toString()}
+            />
+          )}
+          <Form>
+            <Stack gap={6}>
+              <span className="tip">{t(`common.filter.dateModal.info.${filterType}`)}</span>
+              <DateRangeInput
+                type={type}
+                unit={unit}
+                startDate={startDate}
+                endDate={endDate}
+                customNum={customNum}
+                onChange={(change) => setFilterState({...filterState, ...change})}
               />
-            )}
-          </Form.Group>
-        </Form>
+              {isValid(filterState) && (
+                <DateFilterPreview
+                  filterType={filterType}
+                  filter={convertStateToFilter({
+                    type,
+                    unit,
+                    customNum,
+                    startDate,
+                    endDate,
+                  })}
+                />
+              )}
+            </Stack>
+          </Form>
+        </Stack>
       </Modal.Content>
       <Modal.Footer>
         <Button kind="secondary" className="cancel" onClick={close}>

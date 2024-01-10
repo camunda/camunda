@@ -1,33 +1,32 @@
 .DateRangeInput {
+  > .cds--label {
+    display: none;
+  }
+
   .selectGroup {
-    align-items: flex-start;
+    align-items: start;
     position: relative;
+    width: fit-content;
+
+    > .CarbonSelect:first-of-type {
+      width: 150px;
+    }
   }
 
   .unitSelection {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
 
-    .Input.number {
-      max-width: 50px;
-      margin: 0 10px;
+    .number {
+      margin: 0 var(--cds-stack-gap);
     }
 
-    .Select {
-      flex: 1;
-    }
-
-    .customDate {
-      border-top: 1px solid var(--silver-darken-80);
+    & > span {
+      margin-top: 12px;
     }
   }
+}
 
-  .Message {
-    margin-top: 10px;
-
-    &.error {
-      width: 100%;
-    }
-  }
+.MenuDropdownMenu .customDate {
+  border-top: 1px solid var(--cds-border-subtle);
 }
