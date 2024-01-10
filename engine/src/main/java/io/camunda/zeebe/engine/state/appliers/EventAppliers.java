@@ -315,6 +315,8 @@ public final class EventAppliers implements EventApplier {
     register(UserTaskIntent.COMPLETED, new UserTaskCompletedApplier(state));
     register(UserTaskIntent.ASSIGNING, new UserTaskAssigningApplier(state));
     register(UserTaskIntent.ASSIGNED, new UserTaskAssignedApplier(state));
+    register(UserTaskIntent.UPDATING, new UserTaskUpdatingApplier(state));
+    register(UserTaskIntent.UPDATED, new UserTaskUpdatedApplier(state));
   }
 
   private void registerCompensationSubscriptionApplier(
