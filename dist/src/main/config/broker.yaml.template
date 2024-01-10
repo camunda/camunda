@@ -151,7 +151,7 @@
 
       # How often we take snapshots of streams (time unit)
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_SNAPSHOTPERIOD.
-      # snapshotPeriod: 15m
+      # snapshotPeriod: 5m
 
       # Configure whether to monitor disk usage to prevent out of disk space issues.
       # If set to false the broker might run out of disk space and end in a non recoverable state.
