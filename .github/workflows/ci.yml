@@ -679,6 +679,8 @@ jobs:
     permissions:
       checks: read
       pull-requests: write
+    env:
+      GITHUB_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - id: metadata
