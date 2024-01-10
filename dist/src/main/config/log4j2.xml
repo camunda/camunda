@@ -45,6 +45,9 @@
       <!-- remove to disable console logging -->
       <AppenderRef ref="${env:ZEEBE_LOG_APPENDER:-Console}"/>
     </Root>
+
+    <!-- disable noisy loggers -->
+    <Logger name="org.ehcache.core.EhcacheManager" level="warn"/>
   </Loggers>
 
 </Configuration>
