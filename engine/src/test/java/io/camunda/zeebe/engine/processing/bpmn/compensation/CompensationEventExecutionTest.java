@@ -276,7 +276,7 @@ public class CompensationEventExecutionTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(3))
         .extracting(Record::getValueType, Record::getIntent)
-        .containsSubsequence(
+        .contains(
             tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.COMPLETED));
   }
 
@@ -378,7 +378,7 @@ public class CompensationEventExecutionTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(3))
         .extracting(Record::getValueType, Record::getIntent)
-        .containsSubsequence(
+        .contains(
             tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.COMPLETED));
   }
 
@@ -618,7 +618,7 @@ public class CompensationEventExecutionTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(3))
         .extracting(Record::getValueType, Record::getIntent)
-        .containsSubsequence(
+        .contains(
             tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.DELETED));
   }
 
@@ -674,7 +674,7 @@ public class CompensationEventExecutionTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(3))
         .extracting(Record::getValueType, Record::getIntent)
-        .containsSubsequence(
+        .contains(
             tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.DELETED));
   }
 
@@ -697,7 +697,7 @@ public class CompensationEventExecutionTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(2))
         .extracting(Record::getValueType, Record::getIntent)
-        .containsSubsequence(
+        .contains(
             tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.DELETED));
   }
 
@@ -723,7 +723,7 @@ public class CompensationEventExecutionTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(2))
         .extracting(Record::getValueType, Record::getIntent)
-        .containsSubsequence(
+        .contains(
             tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.DELETED));
   }
 
