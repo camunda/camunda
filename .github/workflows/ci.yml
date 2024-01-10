@@ -696,6 +696,8 @@ jobs:
       - id: approve-and-merge-backport-renovate
         name: Approve and merge backport PR
         if: github.actor == 'backport-action' || github.actor == 'renovate[bot]'
-        run: gh pr review ${{ github.event.pull_request.number }} --approve -b "bors merge"
+        run: |
+          gh pr review ${{ github.event.pull_request.number }} --approve
+          gh pr merge ${{ github.event.pull_request.number }} --auto --merge
         env:
           GITHUB_TOKEN: "${{secrets.GITHUB_TOKEN}}"
