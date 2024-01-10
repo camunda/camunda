@@ -4,8 +4,8 @@ on: push
 jobs:
   integration-tests:
     name: Docker container tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
+    runs-on: gcp-core-2-default
+    timeout-minutes: 20
     env:
       OPERATE_TEST_DOCKER_IMAGE: localhost:5000/camunda/operate:current-test
     services:
@@ -30,12 +30,12 @@ jobs:
           secrets: |
             secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - name: Setup Maven Action
+        uses: s4u/setup-maven-action@v1.11.0
         with:
-          distribution: "adopt"
           java-version: "17"
-          cache: "maven"
+          java-distribution: "adopt"
+          maven-version: "3.9.6"
       # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
       - name: 'Create settings.xml'
         uses: s4u/maven-settings-action@v2.8.0
