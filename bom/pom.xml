@@ -13,7 +13,7 @@
 
   <groupId>io.camunda</groupId>
   <artifactId>zeebe-bom</artifactId>
-  <version>8.4.0-SNAPSHOT</version>
+  <version>8.5.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Zeebe BOM</name>
@@ -228,6 +228,14 @@
             <phase>clean</phase>
           </execution>
         </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
+        <configuration>
+          <stagingProgressTimeoutMinutes>40</stagingProgressTimeoutMinutes>
+        </configuration>
       </plugin>
     </plugins>
   </build>
