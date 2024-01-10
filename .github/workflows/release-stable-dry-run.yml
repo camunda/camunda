@@ -6,6 +6,18 @@ on:
     - cron: '0 2 * * 1-5'
 
 jobs:
+  dry-run-release-84:
+    name: "Release from stable/8.4"
+    uses: camunda/zeebe/.github/workflows/release.yml@stable/8.4
+    secrets: inherit
+    strategy:
+      fail-fast: false
+    with:
+      releaseBranch: stable/8.5
+      releaseVersion: 0.8.4
+      nextDevelopmentVersion: 0.0.0-SNAPSHOT
+      isLatest: true
+      dryRun: true
   dry-run-release-83:
     name: "Release from stable/8.3"
     uses: camunda/zeebe/.github/workflows/release.yml@stable/8.3
