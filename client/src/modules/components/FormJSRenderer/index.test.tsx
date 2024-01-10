@@ -16,6 +16,9 @@ function noop() {
 
 describe('<FormJSRenderer />', async () => {
   it('should merge variables on submit', async () => {
+    vi.useFakeTimers({
+      shouldAdvanceTime: true,
+    });
     let formManager: FormManager | null = null;
     const variables = {
       root: {
@@ -49,9 +52,9 @@ describe('<FormJSRenderer />', async () => {
     expect(await screen.findByLabelText(/surname/i)).toBeInTheDocument();
 
     await user.clear(screen.getByLabelText(/surname/i));
-    await user.tab();
+    vi.runOnlyPendingTimers();
     await user.type(screen.getByLabelText(/surname/i), 'bar');
-    await user.tab();
+    vi.runOnlyPendingTimers();
 
     formManager!.submit();
 
@@ -67,5 +70,7 @@ describe('<FormJSRenderer />', async () => {
         }),
       },
     ]);
+
+    vi.useRealTimers();
   });
 });

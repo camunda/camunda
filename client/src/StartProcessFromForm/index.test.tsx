@@ -45,6 +45,9 @@ const getWrapper = ({
 
 describe('<StartProcessFromForm />', () => {
   it('should submit form', async () => {
+    vi.useFakeTimers({
+      shouldAdvanceTime: true,
+    });
     nodeMockServer.use(
       rest.get('/v1/external/process/:bpmnProcessId/form', (_, res, ctx) =>
         res(ctx.json(formMocks.form)),
@@ -78,12 +81,14 @@ describe('<StartProcessFromForm />', () => {
       screen.getByRole('textbox', {name: /my variable \*/i}),
       'var1',
     );
+    vi.runOnlyPendingTimers();
     await user.type(
       screen.getByRole('textbox', {
         name: /is cool\?/i,
       }),
       'Yes',
     );
+    vi.runOnlyPendingTimers();
     fireEvent.click(
       screen.getByRole('button', {
         name: 'Submit',
@@ -100,6 +105,7 @@ describe('<StartProcessFromForm />', () => {
         'Your form has been successfully submitted.You can close this window now.',
       ),
     ).toBeInTheDocument();
+    vi.useRealTimers();
   });
 
   it('should show validation error', async () => {

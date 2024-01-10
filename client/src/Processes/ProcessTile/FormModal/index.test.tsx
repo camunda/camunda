@@ -41,6 +41,9 @@ const getWrapper = () => {
 
 describe('<FormModal />', () => {
   it('should submit a form', async () => {
+    vi.useFakeTimers({
+      shouldAdvanceTime: true,
+    });
     nodeMockServer.use(
       rest.get('/v1/forms/:formId', (_, res, ctx) => {
         return res(ctx.json(formMocks.form));
@@ -79,7 +82,7 @@ describe('<FormModal />', () => {
         name: /start process/i,
       }),
     );
-
+    vi.runOnlyPendingTimers();
     expect(
       screen.getByRole('button', {
         name: /start process/i,
@@ -89,6 +92,7 @@ describe('<FormModal />', () => {
     expect(mockOnSubmit).toHaveBeenCalled();
 
     await waitForElementToBeRemoved(screen.queryByTestId('loading-spinner'));
+    vi.useRealTimers();
   });
 
   it('should handle closing', async () => {

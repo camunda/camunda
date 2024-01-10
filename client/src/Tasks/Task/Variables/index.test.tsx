@@ -41,6 +41,14 @@ describe('<Variables />', () => {
         return res.once(ctx.json(userMocks.currentUser));
       }),
     );
+
+    vi.useFakeTimers({
+      shouldAdvanceTime: true,
+    });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("should show an error message if variables can't be loaded", async () => {
@@ -154,6 +162,8 @@ describe('<Variables />', () => {
 
     expect(screen.getByDisplayValue(newVariableValue)).toBeInTheDocument();
 
+    vi.runOnlyPendingTimers();
+
     await waitFor(() =>
       expect(screen.getByText(/complete task/i)).toBeEnabled(),
     );
@@ -260,6 +270,8 @@ describe('<Variables />', () => {
       '"valid_value"',
     );
 
+    vi.runOnlyPendingTimers();
+
     await waitFor(() =>
       expect(
         screen.getByLabelText(/1st variable name/i),
@@ -294,6 +306,8 @@ describe('<Variables />', () => {
       '"valid_value"',
     );
 
+    vi.runOnlyPendingTimers();
+
     await waitFor(() =>
       expect(
         screen.getByLabelText(/1st variable name/i),
@@ -302,6 +316,8 @@ describe('<Variables />', () => {
 
     await user.clear(screen.getByLabelText(/1st variable name/i));
 
+    vi.runOnlyPendingTimers();
+
     await waitFor(() =>
       expect(
         screen.getByLabelText(/1st variable name/i),
@@ -309,6 +325,8 @@ describe('<Variables />', () => {
     );
 
     await user.type(screen.getByLabelText(/1st variable name/i), 'test ');
+
+    vi.runOnlyPendingTimers();
 
     expect(await screen.findByText(/name is invalid/i)).toBeInTheDocument();
   });
@@ -335,6 +353,8 @@ describe('<Variables />', () => {
 
     await user.click(await screen.findByText(/add variable/i));
     await user.type(screen.getByLabelText(/1st variable name/i), 'valid_name');
+
+    vi.runOnlyPendingTimers();
 
     await waitFor(() =>
       expect(
@@ -369,6 +389,8 @@ describe('<Variables />', () => {
       screen.getByLabelText(/1st variable value/i),
       'invalid_value}}}',
     );
+
+    vi.runOnlyPendingTimers();
 
     await waitFor(() =>
       expect(
@@ -406,6 +428,8 @@ describe('<Variables />', () => {
       screen.getByLabelText(/1st variable value/i),
       '"valid_value"',
     );
+
+    vi.runOnlyPendingTimers();
 
     await waitFor(() =>
       expect(screen.getByText(/complete task/i)).toBeEnabled(),
@@ -449,6 +473,7 @@ describe('<Variables />', () => {
       },
     );
 
+    vi.runOnlyPendingTimers();
     await waitFor(() =>
       expect(screen.getByText(/complete task/i)).toBeEnabled(),
     );
@@ -463,6 +488,7 @@ describe('<Variables />', () => {
     await user.type(screen.getByLabelText(/1st variable name/i), 'var');
     await user.type(screen.getByLabelText(/1st variable value/i), '1');
 
+    vi.runOnlyPendingTimers();
     await waitFor(() =>
       expect(screen.getByText(/complete task/i)).toBeEnabled(),
     );
@@ -495,6 +521,7 @@ describe('<Variables />', () => {
     await user.type(screen.getByLabelText(/1st variable name/i), 'name');
     await user.type(screen.getByLabelText(/1st variable value/i), '"Jon"');
 
+    vi.runOnlyPendingTimers();
     await waitFor(() =>
       expect(screen.getByText(/complete task/i)).toBeEnabled(),
     );
@@ -535,6 +562,7 @@ describe('<Variables />', () => {
 
     await user.clear(await screen.findByLabelText('myVar'));
     await user.type(screen.getByLabelText('myVar'), '"newValue"');
+    vi.runOnlyPendingTimers();
     await waitFor(() =>
       expect(screen.getByText(/complete task/i)).toBeEnabled(),
     );
@@ -625,11 +653,13 @@ describe('<Variables />', () => {
       '"newVariableValue"',
     );
 
+    vi.runOnlyPendingTimers();
     await waitFor(() =>
       expect(screen.getByText(/complete task/i)).toBeEnabled(),
     );
     await user.click(screen.getByText(/complete task/i));
 
+    vi.runOnlyPendingTimers();
     await waitFor(() =>
       expect(mockOnSubmit).toHaveBeenCalledWith([
         {
@@ -687,6 +717,7 @@ describe('<Variables />', () => {
 
     await user.type(await screen.findByLabelText('myVar'), '{{ invalid value');
 
+    vi.runOnlyPendingTimers();
     await waitFor(() =>
       expect(screen.getByLabelText('myVar')).toHaveAccessibleDescription(
         /value has to be json or a literal/i,
@@ -722,6 +753,7 @@ describe('<Variables />', () => {
       '{{ invalid value',
     );
 
+    vi.runOnlyPendingTimers();
     await waitFor(() =>
       expect(
         screen.getByLabelText(/1st variable value/i),
@@ -816,6 +848,7 @@ describe('<Variables />', () => {
 
     await user.clear(screen.getByDisplayValue('"0001"'));
     await user.type(screen.getByLabelText('myVar'), '"newVariableValue"');
+    vi.runOnlyPendingTimers();
     await waitFor(() =>
       expect(screen.getByText(/complete task/i)).toBeEnabled(),
     );
@@ -959,6 +992,7 @@ describe('<Variables />', () => {
       await user.click(await screen.findByText(/add variable/i));
       await user.type(screen.getByLabelText(/1st variable name/i), 'myVar');
 
+      vi.runOnlyPendingTimers();
       await waitFor(() =>
         expect(
           screen.getByLabelText(/1st variable value/i),
@@ -999,6 +1033,8 @@ describe('<Variables />', () => {
       await user.click(screen.getByText(/add variable/i));
       await user.type(screen.getByLabelText(/2nd variable name/i), 'myVar2');
 
+      vi.runOnlyPendingTimers();
+
       await waitFor(() =>
         expect(
           screen.getByLabelText(/2nd variable name/i),
@@ -1014,6 +1050,8 @@ describe('<Variables />', () => {
       );
 
       await user.type(screen.getByLabelText(/1st variable name/i), 'foo');
+
+      vi.runOnlyPendingTimers();
 
       await waitFor(() =>
         expect(
@@ -1050,6 +1088,8 @@ describe('<Variables />', () => {
       await user.type(screen.getByLabelText(/1st variable name/i), 'myVar2');
       await user.type(screen.getByLabelText(/1st variable value/i), '1');
 
+      vi.runOnlyPendingTimers();
+
       await waitFor(() =>
         expect(screen.getByText(/complete task/i)).toBeEnabled(),
       );
@@ -1058,6 +1098,8 @@ describe('<Variables />', () => {
 
       await user.type(screen.getByLabelText(/2nd variable name/i), 'myVar2');
       await user.type(screen.getByLabelText(/2nd variable value/i), '2');
+
+      vi.runOnlyPendingTimers();
 
       await waitFor(() =>
         expect(
@@ -1095,6 +1137,8 @@ describe('<Variables />', () => {
       await user.type(screen.getByLabelText(/1st variable name/i), 'myVar2');
       await user.type(screen.getByLabelText(/1st variable value/i), '1');
 
+      vi.runOnlyPendingTimers();
+
       await waitFor(() =>
         expect(screen.getByText(/complete task/i)).toBeEnabled(),
       );
@@ -1103,6 +1147,8 @@ describe('<Variables />', () => {
 
       await user.type(screen.getByLabelText(/2nd variable name/i), 'myVar2');
       await user.type(screen.getByLabelText(/2nd variable value/i), '2');
+
+      vi.runOnlyPendingTimers();
 
       await waitFor(() =>
         expect(
@@ -1114,6 +1160,8 @@ describe('<Variables />', () => {
 
       await user.type(screen.getByLabelText(/3rd variable name/i), 'myVar2');
       await user.type(screen.getByLabelText(/3rd variable value/i), '3');
+
+      vi.runOnlyPendingTimers();
 
       await waitFor(() =>
         expect(
