@@ -56,9 +56,10 @@ public class PartitionRestoreService {
    * @param backupId id of the backup to restore from
    * @return the descriptor of the backup it restored
    */
-  public CompletableFuture<BackupDescriptor> restore(final long backupId) {
+  public CompletableFuture<BackupDescriptor> restore(
+      final long backupId, final BackupValidator validator) {
     return getTargetDirectory(backupId)
-        .thenCompose(targetDirectory -> download(backupId, targetDirectory))
+        .thenCompose(targetDirectory -> download(backupId, targetDirectory, validator))
         .thenApply(this::moveFilesToDataDirectory)
         .thenApply(
             backup -> {
@@ -196,8 +197,8 @@ public class PartitionRestoreService {
   }
 
   private CompletionStage<Backup> download(
-      final long checkpointId, final Path tempRestoringDirectory) {
-    return findValidBackup(checkpointId)
+      final long checkpointId, final Path tempRestoringDirectory, final BackupValidator validator) {
+    return findValidBackup(checkpointId, validator)
         .thenCompose(
             backup -> {
               LOG.info("Downloading backup {} to {}", backup, tempRestoringDirectory);
@@ -205,7 +206,8 @@ public class PartitionRestoreService {
             });
   }
 
-  private CompletionStage<BackupIdentifier> findValidBackup(final long checkpointId) {
+  private CompletionStage<BackupIdentifier> findValidBackup(
+      final long checkpointId, final BackupValidator validator) {
     LOG.info("Searching for a completed backup with id {}", checkpointId);
     return backupStore
         .list(
@@ -215,8 +217,24 @@ public class PartitionRestoreService {
             statuses ->
                 statuses.stream()
                     .filter(status -> status.statusCode() == BackupStatusCode.COMPLETED)
-                    .map(BackupStatus::id)
                     .findAny()
-                    .orElseThrow(() -> new BackupNotFoundException(checkpointId)));
+                    .orElseThrow(() -> new BackupNotFoundException(checkpointId)))
+        .thenApply(validator::validateStatus)
+        .thenApply(BackupStatus::id);
+  }
+
+  @FunctionalInterface
+  public interface BackupValidator {
+    BackupStatus validateStatus(BackupStatus status) throws BackupNotValidException;
+
+    static BackupValidator none() {
+      return status -> status;
+    }
+
+    class BackupNotValidException extends RuntimeException {
+      public BackupNotValidException(final BackupStatus status, final String message) {
+        super("Backup is not valid: " + message + ". Backup status: " + status);
+      }
+    }
   }
 }
