@@ -2,6 +2,7 @@ name: Run Test Migrate Elasticsearch Data
 on:
   schedule:
     - cron: "0 5 * * *"
+  workflow_dispatch:
 jobs:
   run-migration-tests:
     uses: ./.github/workflows/run-tests.yml
