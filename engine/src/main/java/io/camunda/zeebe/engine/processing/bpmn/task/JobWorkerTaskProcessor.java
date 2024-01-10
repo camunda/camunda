@@ -104,6 +104,16 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   }
 
   @Override
+  public void onExecutionListenerComplete(final ExecutableJobWorkerTask element,
+      final BpmnElementContext context) {
+        element.getExecutionListeners().stream()
+            .filter(el -> ZeebeExecutionListenerEventType.start.equals(el.getEventType()))
+            .skip(1)
+            .findFirst()
+            .ifPresent(el -> createExecutionListenerJob(element, context, el));
+  }
+
+  @Override
   public void onTerminate(final ExecutableJobWorkerTask element, final BpmnElementContext context) {
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 

@@ -47,28 +47,27 @@ public final class ProcessInstanceStateTransitionGuard {
   private Either<String, ?> checkStateTransition(
       final BpmnElementContext context, final ExecutableFlowElement element) {
     return switch (context.getIntent()) {
-      case ACTIVATE_ELEMENT ->
-          hasActiveFlowScopeInstance(context)
-              .flatMap(ok -> canActivateParallelGateway(context, element));
+      case ACTIVATE_ELEMENT -> hasActiveFlowScopeInstance(context)
+          .flatMap(ok -> canActivateParallelGateway(context, element));
       case COMPLETE_ELEMENT ->
-          // an incident is resolved by writing a COMPLETE command when the element instance is in
-          // state COMPLETING
-          hasElementInstanceWithState(
-                  context,
-                  ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                  ProcessInstanceIntent.ELEMENT_COMPLETING)
-              .flatMap(ok -> hasActiveFlowScopeInstance(context));
-      case TERMINATE_ELEMENT ->
-          hasElementInstanceWithState(
+      // an incident is resolved by writing a COMPLETE command when the element instance is in
+      // state COMPLETING
+      hasElementInstanceWithState(
               context,
-              ProcessInstanceIntent.ELEMENT_ACTIVATING,
               ProcessInstanceIntent.ELEMENT_ACTIVATED,
-              ProcessInstanceIntent.ELEMENT_COMPLETING);
-      default ->
-          Either.left(
-              String.format(
-                  "Expected the check of the preconditions of a command with intent [activate,complete,terminate] but the intent was '%s'",
-                  context.getIntent()));
+              ProcessInstanceIntent.ELEMENT_COMPLETING)
+          .flatMap(ok -> hasActiveFlowScopeInstance(context));
+      case TERMINATE_ELEMENT -> hasElementInstanceWithState(
+          context,
+          ProcessInstanceIntent.ELEMENT_ACTIVATING,
+          ProcessInstanceIntent.ELEMENT_ACTIVATED,
+          ProcessInstanceIntent.ELEMENT_COMPLETING);
+      case EXECUTION_LISTENER_COMPLETE -> hasElementInstanceWithState(
+          context, ProcessInstanceIntent.ELEMENT_ACTIVATING);
+      default -> Either.left(
+          String.format(
+              "Expected the check of the preconditions of a command with intent [activate,complete,terminate] but the intent was '%s'",
+              context.getIntent()));
     };
   }
 
