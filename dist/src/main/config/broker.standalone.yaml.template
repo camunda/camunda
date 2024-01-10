@@ -211,7 +211,7 @@
 
       # How often we take snapshots of streams (time unit)
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_SNAPSHOTPERIOD.
-      # snapshotPeriod: 15m
+      # snapshotPeriod: 5m
 
       # When the disk usage is above this value all client commands will be rejected.
       # The value is specified as a percentage of the total disk space.
