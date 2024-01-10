@@ -2271,10 +2271,10 @@ data-urls@^5.0.0:
     whatwg-mimetype "^4.0.0"
     whatwg-url "^14.0.0"
 
-date-fns@3.1.0:
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/date-fns/-/date-fns-3.1.0.tgz#576df8df93202942aeebd49ecc042218feb40426"
-  integrity sha512-ZO7yefXV/wCWzd3I9haCHmfzlfA3i1a2HHO7ZXjtJrRjXt8FULKJ2Vl8wji3XYF4dQ0ZJ/tokXDZeYlFvgms9Q==
+date-fns@3.2.0:
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/date-fns/-/date-fns-3.2.0.tgz#c97cf685b62c829aa4ecba554e4a51768cf0bffc"
+  integrity sha512-E4KWKavANzeuusPi0jUjpuI22SURAznGkx7eZV+4i6x2A+IZxAMcajgkvuDAU1bg40+xuhW1zRdVIIM/4khuIg==
 
 dateformat@^4.6.3:
   version "4.6.3"
