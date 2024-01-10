@@ -532,6 +532,8 @@ jobs:
         name: Fetch dependency metadata
         if: github.actor == 'dependabot[bot]'
         uses: dependabot/fetch-metadata@v1.3.6
+        with:
+          github_token: "${{ secrets.GITHUB_TOKEN }}"
       - id: approve-and-merge-dependabot
         name: Approve and merge dependabot PR
         if: github.actor == 'dependabot[bot]' && (steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor')
