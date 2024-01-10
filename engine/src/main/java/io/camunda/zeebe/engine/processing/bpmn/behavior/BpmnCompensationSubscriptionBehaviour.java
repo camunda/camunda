@@ -121,6 +121,18 @@ public class BpmnCompensationSubscriptionBehaviour {
     }
   }
 
+  public void deleteNotTriggeredSubscriptions(final BpmnElementContext context) {
+    final var notTriggeredSubscriptions =
+        compensationSubscriptionState.findSubscriptionsByProcessInstanceKey(
+            context.getTenantId(), context.getProcessInstanceKey());
+    notTriggeredSubscriptions.forEach(
+        compensation ->
+            stateWriter.appendFollowUpEvent(
+                compensation.getKey(),
+                CompensationSubscriptionIntent.DELETED,
+                compensation.getRecord()));
+  }
+
   private Set<CompensationSubscription> getCompensationSubscriptionForCompletedActivities(
       final BpmnElementContext context) {
     return compensationSubscriptionState.findSubscriptionsByProcessInstanceKey(
