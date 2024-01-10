@@ -1,0 +1,131 @@
+name: Engine Compatibility Integration Tests with supported CamBPM Versions
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: 0 22 * * 1-5
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  engine-compatibility:
+    name: Engine Compatibility Tests
+    runs-on: gcp-core-16-default
+    timeout-minutes: 90
+
+    strategy:
+      fail-fast: false
+      matrix:
+        cambpm: ["7.18", "7.19", "7.20"] #TODO: add the 'snapshot' option back when we find a solution for new engine DMN transform error and BPMN history ttl issues
+        includedGroups:
+          ["import,eventBasedProcess", "reportEvaluation", ""]
+        include:
+          - includedGroups: "import,eventBasedProcess"
+            excludedGroups: ""
+          - includedGroups: "reportEvaluation"
+            excludedGroups: ""
+          - includedGroups: ""
+            excludedGroups: "ccsm-test,import,eventBasedProcess,reportEvaluation"
+
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
+        with:
+          secrets: ${{ toJSON(secrets) }}
+
+      - name: Login to Harbor registry
+        uses: ./.github/actions/login-registry
+        with:
+          secrets: ${{ toJSON(secrets) }}
+
+      - name: Login to Google Cloud
+        uses: ./.github/actions/login-gcloud
+        with:
+          secrets: ${{ toJSON(secrets) }}
+
+      - name: Import secrets
+        id: secrets
+        uses: hashicorp/vault-action@affa6f04da5c2d55e6e115b7d1b044a6b1af8c74 # v2.7.4
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/optimize/ci/camunda-optimize SLACK_BOT_URL;
+
+      - name: "Read pom.xml file"
+        id: "pom-info"
+        uses: YunaBraska/java-info-action@main
+
+      - name: Get engine property name
+        if: ${{ matrix.cambpm != 'snapshot' }}
+        run: |
+          CAMBPM_VERSION=${{ matrix.cambpm }}
+          echo "ENGINE_VERSION_PROP=x_project_profiles_profile_engine-${CAMBPM_VERSION//./_}_properties_camunda_engine_version" >> "$GITHUB_ENV"
+
+      - name: Get engine snapshot version
+        if: ${{ matrix.cambpm == 'snapshot' }}
+        run: |
+          sudo apt-get update -qq 
+          sudo apt-get install -y libxml2-utils
+
+          CAMBPM_SNAPSHOT_VERSION=$(./.github/scripts/get-engine-snapshot-version.sh)
+          echo "Snapshot version found: $ENGINE_SNAPSHOT_VERSION"  
+
+          echo "CAMBPM_SNAPSHOT_VERSION=${CAMBPM_SNAPSHOT_VERSION}" >> "$GITHUB_ENV"
+
+      - name: Start Cambpm
+        uses: ./.github/actions/compose
+        with:
+          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.cambpm.yml
+          project_name: cambpm
+        env:
+          CAMBPM_VERSION: ${{ matrix.cambpm == 'snapshot' && steps.pom-info.outputs[env.ENGINE_VERSION_PROP] || env.CAMBPM_SNAPSHOT_VERSION }}
+          CAMBPM_JVM_MEMORY: 12
+
+      - name: Start Elastic
+        uses: ./.github/actions/compose
+        with:
+          compose_file: ${{ github.workspace }}/.github/actions/compose/docker-compose.elasticsearch-secured.yml
+          project_name: elasticsearch
+        env:
+          ELASTIC_VERSION: ${{ steps.java_info.outputs.x_elasticsearch8.test.version }}
+          ELASTIC_JVM_MEMORY: 12
+          ELASTIC_HTTP_PORT: 9200
+
+      - name: IT ${{ matrix.includedGroups }}${{ matrix.excludedGroups }} - ES ${{ steps.java_info.outputs.x_elasticsearch8.test.version }}, CamBPM ${{ matrix.cambpm }}
+        if: always()
+        uses: ./.github/actions/run-maven
+        env:
+          LIMITS_CPU: 8
+        with:
+          threads: 8
+          parameters: verify -Dit.test.includedGroups=${{ matrix.includedGroups }} -Dit.test.excludedGroups=${{ matrix.excludedGroups }} -Dskip.docker -Dskip.fe.build -Pit,engine-${{ matrix.cambpm }} -pl backend -am
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4
+        with:
+          name: engine-compatibility-${{ matrix.cambpm }}-${{ matrix.includedGroups }}${{ matrix.excludedGroups }}-junit
+          path: |
+            **/failsafe-reports/**/*.xml
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Docker log dump
+        if: always()
+        uses: ./.github/actions/docker-logs
+        with:
+          archive_name: engine-compatibility-${{ matrix.cambpm }}-${{ matrix.includedGroups }}${{ matrix.excludedGroups }}-docker
+
+      - name: Post results on slack
+        if: failure()
+        uses: ./.github/actions/notify-on-slack
+        with:
+          slack_webhook_url: ${{ steps.secrets.outputs.SLACK_BOT_URL}}
+          status: ${{ job.status }}

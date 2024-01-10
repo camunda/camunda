@@ -106,6 +106,7 @@ async function createHealthStatusConfig() {
         'import-dynamic-data-performance',
         'e2e-tests',
         'release-optimize',
+        'engine-compatibility',
       ],
     },
     snyk: {
