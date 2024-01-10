@@ -19,7 +19,6 @@
     "mixpanel-browser": "2.48.1",
     "mobx": "6.12.0",
     "mobx-react-lite": "4.0.5",
-    "polished": "4.2.2",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-final-form": "6.5.9",
