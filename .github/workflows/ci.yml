@@ -687,23 +687,21 @@ jobs:
     permissions:
       checks: read
       pull-requests: write
+    env:
+      GITHUB_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - id: metadata
         name: Fetch dependency metadata
         if: github.actor == 'dependabot[bot]'
         uses: dependabot/fetch-metadata@v1.6.0
-        with:
-          github-token: "${{ secrets.GITHUB_TOKEN }}"
       - id: approve-and-merge-dependabot
         name: Approve and merge dependabot PR
         if: github.actor == 'dependabot[bot]' && (steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor')
         run: gh pr review ${{ github.event.pull_request.number }} --approve -b "bors merge"
-        env:
-          GITHUB_TOKEN: "${{secrets.GITHUB_TOKEN}}"
       - id: approve-and-merge-backport-renovate
         name: Approve and merge backport PR
         if: github.actor == 'backport-action' || github.actor == 'renovate[bot]'
-        run: gh pr review ${{ github.event.pull_request.number }} --approve -b "bors merge"
-        env:
-          GITHUB_TOKEN: "${{secrets.GITHUB_TOKEN}}"
+        run: |
+          gh pr review ${{ github.event.pull_request.number }} --approve
+          gh pr merge ${{ github.event.pull_request.number }} --auto --merge
