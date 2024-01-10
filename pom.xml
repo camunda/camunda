@@ -56,6 +56,7 @@
     <version.zeebe>8.4.0</version.zeebe>
     <version.identity>8.4.0</version.identity>
     <version.elasticsearch>7.17.16</version.elasticsearch>
+    <version.parsson>1.0.5</version.parsson>
     <version.opensearch>2.5.0</version.opensearch>
     <version.springdoc>2.2.0</version.springdoc>
     <version.jakarta.json>2.0.1</version.jakarta.json>
@@ -118,6 +119,13 @@
         <artifactId>elasticsearch-x-content</artifactId>
         <version>${version.elasticsearch}</version>
       </dependency>
+
+      <dependency>
+        <groupId>org.eclipse.parsson</groupId>
+        <artifactId>parsson</artifactId>
+        <version>${version.parsson}</version>
+      </dependency>
+
 
       <!-- Opensearch  -->
       <dependency>

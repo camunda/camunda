@@ -61,6 +61,11 @@
 			<artifactId>elasticsearch-java</artifactId>
 		</dependency>
 
+    <dependency>
+      <groupId>org.eclipse.parsson</groupId>
+      <artifactId>parsson</artifactId>
+    </dependency>
+
 		<!-- Opensearch -->
 		<dependency>
 			<groupId>org.apache.httpcomponents.core5</groupId>
