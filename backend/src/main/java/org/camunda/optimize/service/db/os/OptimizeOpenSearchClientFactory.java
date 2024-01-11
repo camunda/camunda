@@ -135,11 +135,11 @@ public class OptimizeOpenSearchClientFactory {
         DeserializationFeature.FAIL_ON_MISSING_EXTERNAL_TYPE_ID_PROPERTY,
         SerializationFeature.FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS,
         SerializationFeature.INDENT_OUTPUT,
-        DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY,
-        MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS
+        DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY
       )
       .featuresToEnable(
-        JsonParser.Feature.ALLOW_COMMENTS
+        JsonParser.Feature.ALLOW_COMMENTS,
+        MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS
       )
       .build();
 

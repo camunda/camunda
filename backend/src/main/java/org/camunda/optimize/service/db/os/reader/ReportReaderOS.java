@@ -291,17 +291,16 @@ public class ReportReaderOS implements ReportReader {
       new String[]{COMBINED_REPORT_INDEX_NAME}
     );
 
-    SearchResponse<CombinedReportDefinitionRequestDto> searchResponse;
-    try {
-      searchResponse = osClient.search(searchRequest, CombinedReportDefinitionRequestDto.class);
-    } catch (IOException e) {
-      String reason = String.format(
-        "Was not able to fetch combined reports that contain reports with ids [%s]",
-        simpleReportIds
-      );
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
+    final String errorMessage = String.format(
+      "Was not able to fetch combined reports that contain reports with ids [%s]",
+      simpleReportIds
+    );
+    SearchResponse<CombinedReportDefinitionRequestDto> searchResponse = osClient.search(
+      searchRequest,
+      CombinedReportDefinitionRequestDto.class,
+      errorMessage
+    );
+
     return searchResponse.hits().hits().stream().map(Hit::source).toList();
   }
 
@@ -323,15 +322,9 @@ public class ReportReaderOS implements ReportReader {
       searchRequest = getSearchRequestOmitXml(reportByCollectionQuery, ALL_REPORT_INDICES);
     }
 
-    SearchResponse<ReportDefinitionDto> searchResponse;
-    try {
-      searchResponse = osClient.search(searchRequest, ReportDefinitionDto.class);
-      return searchResponse.hits().hits().stream().map(Hit::source).toList();
-    } catch (IOException e) {
-      String reason = String.format("Was not able to fetch reports for collection with id [%s]", collectionId);
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
+    final String errorMessage = String.format("Was not able to fetch reports for collection with id [%s]", collectionId);
+    SearchResponse<ReportDefinitionDto> searchResponse = osClient.search(searchRequest, ReportDefinitionDto.class, errorMessage);
+    return searchResponse.hits().hits().stream().map(Hit::source).toList();
   }
 
   private <T extends ReportDefinitionDto> List<T> getReportDefinitionDtos(final List<String> reportIds,
@@ -402,12 +395,8 @@ public class ReportReaderOS implements ReportReader {
     ).scroll(new Time.Builder().time(String.valueOf(configurationService.getOpenSearchConfiguration()
                                                       .getScrollTimeoutInSeconds())).build());
 
-    try {
-      return osClient.search(searchRequest, Void.class);
-    } catch (IOException e) {
-      log.error("Was not able to retrieve reports!", e);
-      throw new OptimizeRuntimeException("Was not able to retrieve reports!", e);
-    }
+    String errorMessage = "Was not able to retrieve reports!";
+    return osClient.search(searchRequest, Void.class, errorMessage);
   }
 
   private MgetResponse<ReportDefinitionDto> performMultiGetReportRequest(String reportId) {

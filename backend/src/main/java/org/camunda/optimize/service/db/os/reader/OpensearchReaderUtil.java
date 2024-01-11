@@ -6,15 +6,21 @@
 package org.camunda.optimize.service.db.os.reader;
 
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.elasticsearch.search.SearchHit;
+import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.get.GetResult;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
 @Slf4j
 public class OpensearchReaderUtil {
@@ -48,4 +54,24 @@ public class OpensearchReaderUtil {
       .map(GetResult::source);
   }
 
+  public static <T> Collection<? extends T> mapHits(final HitsMetadata<JsonData> searchHits,
+                                                    final int resultLimit, final Class<T> typeClass) {
+    final List<T> results = new ArrayList<>();
+    for (Hit<JsonData> hit : searchHits.hits()) {
+      if (results.size() >= resultLimit) {
+        break;
+      }
+
+      try {
+        final Optional<JsonData> optionalMappedHit = Optional.ofNullable(hit.source());
+        optionalMappedHit.ifPresent(hitValue -> results.add(hitValue.to(typeClass)));
+      } catch (Exception e) {
+        final String reason = "While mapping search results to class {} "
+          + "it was not possible to deserialize a hit from Opensearch!";
+        log.error(reason, typeClass.getSimpleName(), e);
+        throw new OptimizeRuntimeException(reason);
+      }
+    }
+    return results;
+  }
 }

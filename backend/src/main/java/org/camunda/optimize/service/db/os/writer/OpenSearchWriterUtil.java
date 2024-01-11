@@ -23,6 +23,7 @@ import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAccessor;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -94,6 +95,10 @@ public class OpenSearchWriterUtil {
       List<BulkOperation> operations = entityCollection.stream().map(addDtoToRequestConsumer).toList();
       doBulkRequest(osClient, bulkReqBuilder, operations, importItemName, retryRequestIfNestedDocLimitReached);
     }
+  }
+
+  public static Script createDefaultScript(final String inlineUpdateScript) {
+    return createDefaultScriptWithPrimitiveParams(inlineUpdateScript, Collections.emptyMap());
   }
 
   private static void doBulkRequest(final OptimizeOpenSearchClient osClient,

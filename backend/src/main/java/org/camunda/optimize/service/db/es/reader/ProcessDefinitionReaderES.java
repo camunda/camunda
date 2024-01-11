@@ -48,7 +48,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 @Conditional(ElasticSearchCondition.class)
 public class ProcessDefinitionReaderES implements ProcessDefinitionReader {
 
-  private final DefinitionReader definitionReader;
+  private final DefinitionReaderES definitionReader;
   private final OptimizeElasticsearchClient esClient;
 
   @Override

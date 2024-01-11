@@ -10,7 +10,6 @@ import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import java.util.List;
 import java.util.Optional;
 
-
 public interface DecisionDefinitionReader {
 
   Optional<DecisionDefinitionOptimizeDto> getDecisionDefinition(final String decisionDefinitionKey,
@@ -20,4 +19,5 @@ public interface DecisionDefinitionReader {
   List<DecisionDefinitionOptimizeDto> getAllDecisionDefinitions();
 
   String getLatestVersionToKey(String key);
+
 }

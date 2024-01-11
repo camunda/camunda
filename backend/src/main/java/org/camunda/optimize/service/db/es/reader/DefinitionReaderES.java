@@ -10,7 +10,6 @@ import jakarta.ws.rs.NotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
@@ -20,13 +19,13 @@ import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantId
 import org.camunda.optimize.dto.optimize.query.definition.TenantIdWithDefinitionsDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
 import org.camunda.optimize.service.db.DatabaseConstants;
-import org.camunda.optimize.service.db.reader.DefinitionReader;
-import org.camunda.optimize.service.db.es.CompositeAggregationScroller;
+import org.camunda.optimize.service.db.es.ElasticsearchCompositeAggregationScroller;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.db.es.schema.index.DecisionDefinitionIndexES;
 import org.camunda.optimize.service.db.es.schema.index.ProcessDefinitionIndexES;
 import org.camunda.optimize.service.db.es.schema.index.events.EventProcessDefinitionIndexES;
+import org.camunda.optimize.service.db.reader.DefinitionReader;
+import org.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.DefinitionVersionHandlingUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -73,11 +72,10 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_KEY;
@@ -85,16 +83,10 @@ import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionInd
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_TENANT_ID;
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_VERSION;
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_VERSION_TAG;
-import static org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_KEY;
-import static org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_VERSION;
 import static org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_XML;
-import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_KEY;
-import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_VERSION;
 import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
 import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.TENANT_ID;
-import static org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.convertToLatestParticularVersion;
-import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -255,7 +247,8 @@ public class DefinitionReaderES implements DefinitionReader {
     // 1. group by key, type and tenant (composite aggregation)
     List<CompositeValuesSourceBuilder<?>> keyAndTypeAndTenantSources = new ArrayList<>();
     keyAndTypeAndTenantSources.add(
-      new TermsValuesSourceBuilder(TENANT_AGGREGATION).field(DEFINITION_TENANT_ID)
+      new TermsValuesSourceBuilder(TENANT_AGGREGATION)
+        .field(DEFINITION_TENANT_ID)
         .missingBucket(true)
         .order(SortOrder.ASC)
     );
@@ -278,7 +271,7 @@ public class DefinitionReaderES implements DefinitionReader {
       .source(searchSourceBuilder);
 
     final Map<String, List<ParsedComposite.ParsedBucket>> keyAndTypeAggBucketsByTenantId = new HashMap<>();
-    CompositeAggregationScroller.create()
+    ElasticsearchCompositeAggregationScroller.create()
       .setEsClient(esClient)
       .setSearchRequest(searchRequest)
       .setPathToAggregation(DEFINITION_KEY_AND_TYPE_AND_TENANT_AGGREGATION)
@@ -413,7 +406,6 @@ public class DefinitionReaderES implements DefinitionReader {
       .collect(Collectors.toList());
   }
 
-
   @Override
   public <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(final DefinitionType type,
                                                                           final boolean fullyImported,
@@ -442,14 +434,13 @@ public class DefinitionReaderES implements DefinitionReader {
     return getDefinitions(type, filteredQuery, withXml);
   }
 
-  @Override
   public <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(final DefinitionType type,
-                                                                          final BoolQueryBuilder filterQuery,
+                                                                          final BoolQueryBuilder filteredQuery,
                                                                           final boolean withXml) {
     final String xmlField = resolveXmlFieldFromType(type);
     final String[] fieldsToExclude = withXml ? null : new String[]{xmlField};
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(filterQuery)
+      .query(filteredQuery)
       .size(LIST_FETCH_LIMIT)
       .fetchSource(null, fieldsToExclude);
     final SearchRequest searchRequest =
@@ -685,7 +676,7 @@ public class DefinitionReaderES implements DefinitionReader {
             .map(Terms.Bucket::getKeyAsString)
             // convert null bucket back to a `null` id
             .map(tenantId -> TENANT_NOT_DEFINED_VALUE.equalsIgnoreCase(tenantId) ? null : tenantId)
-            .collect(toList()),
+            .collect(Collectors.toList()),
           enginesResult.getBuckets().stream().map(Terms.Bucket::getKeyAsString).collect(Collectors.toSet())
         );
       })
@@ -699,12 +690,10 @@ public class DefinitionReaderES implements DefinitionReader {
       if (tenantIds.contains(null)) {
         tenantFilterQuery.should(boolQuery().mustNot(existsQuery(TENANT_ID)));
       }
-
       final Set<String> nonNullValues = tenantIds.stream().filter(Objects::nonNull).collect(Collectors.toSet());
       if (!nonNullValues.isEmpty()) {
         tenantFilterQuery.should(termsQuery(TENANT_ID, nonNullValues));
       }
-
       query.filter(tenantFilterQuery);
     }
   }
@@ -816,66 +805,6 @@ public class DefinitionReaderES implements DefinitionReader {
 
   private String getOptimizeIndexNameForIndex(final DefaultIndexMappingCreator index) {
     return esClient.getIndexNameService().getOptimizeIndexNameWithVersion(index);
-  }
-
-  private String[] resolveIndexNameForType(final DefinitionType type) {
-    if (type == null) {
-      return ALL_DEFINITION_INDEXES;
-    }
-
-    switch (type) {
-      case PROCESS:
-        return new String[]{PROCESS_DEFINITION_INDEX_NAME, EVENT_PROCESS_DEFINITION_INDEX_NAME};
-      case DECISION:
-        return new String[]{DECISION_DEFINITION_INDEX_NAME};
-      default:
-        throw new OptimizeRuntimeException("Unsupported definition type:" + type);
-    }
-  }
-
-  private String resolveXmlFieldFromType(final DefinitionType type) {
-    switch (type) {
-      case PROCESS:
-        return PROCESS_DEFINITION_XML;
-      case DECISION:
-        return DECISION_DEFINITION_XML;
-      default:
-        throw new IllegalStateException("Unknown DefinitionType:" + type);
-    }
-  }
-
-  private String resolveVersionFieldFromType(final DefinitionType type) {
-    switch (type) {
-      case PROCESS:
-        return PROCESS_DEFINITION_VERSION;
-      case DECISION:
-        return DECISION_DEFINITION_VERSION;
-      default:
-        throw new IllegalStateException("Unknown DefinitionType:" + type);
-    }
-  }
-
-  private String resolveDefinitionKeyFieldFromType(final DefinitionType type) {
-    switch (type) {
-      case PROCESS:
-        return PROCESS_DEFINITION_KEY;
-      case DECISION:
-        return DECISION_DEFINITION_KEY;
-      default:
-        throw new IllegalStateException("Unknown DefinitionType:" + type);
-    }
-  }
-
-  @SuppressWarnings(UNCHECKED_CAST)
-  private <T extends DefinitionOptimizeResponseDto> Class<T> resolveDefinitionClassFromType(final DefinitionType type) {
-    switch (type) {
-      case PROCESS:
-        return (Class<T>) ProcessDefinitionOptimizeDto.class;
-      case DECISION:
-        return (Class<T>) DecisionDefinitionOptimizeDto.class;
-      default:
-        throw new IllegalStateException("Unknown DefinitionType:" + type);
-    }
   }
 
 }

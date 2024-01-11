@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
+import org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
 import org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -20,7 +21,11 @@ import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.ClearScrollResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.Script;
+import org.opensearch.client.opensearch._types.SortOptions;
+import org.opensearch.client.opensearch._types.SortOrder;
+import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
@@ -39,7 +44,6 @@ import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.UpdateResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.SourceConfig;
-import org.opensearch.client.opensearch.core.search.SourceFilter;
 import org.opensearch.client.opensearch.indices.GetAliasRequest;
 import org.opensearch.client.opensearch.indices.GetAliasResponse;
 import org.opensearch.client.opensearch.indices.RolloverRequest;
@@ -227,9 +231,10 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return new org.elasticsearch.action.search.SearchResponse(null);
   }
 
-  public <T> SearchResponse<T> search(final SearchRequest.Builder requestBuilder, Class<T> responseType) throws
-                                                                                                         IOException {
-    return richOpenSearchClient.doc().search(requestBuilder, responseType);
+  public <T> SearchResponse<T> search(final SearchRequest.Builder requestBuilder,
+                                      final Class<T> responseType,
+                                      final String errorMessage) {
+    return richOpenSearchClient.doc().search(requestBuilder, responseType, e -> errorMessage);
   }
 
   @Override
@@ -245,7 +250,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
 
   @Override
   public void setDefaultRequestOptions() {
-      // TODO Do nothing, will be handled with OPT-7400
+    // TODO Do nothing, will be handled with OPT-7400
   }
 
   @Override
@@ -257,25 +262,31 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     log.debug("Performing " + indexName + " search query!");
     Set<String> result = new HashSet<>();
 
-    SourceFilter filter = buildBasicSearchDefinitionQuery(definitionXml, engineAlias);
-    SourceConfig sourceConfig = new SourceConfig.Builder()
-      .filter(filter)
-      .build();
+    BoolQuery filterQuery = buildBasicSearchDefinitionQuery(definitionXml, engineAlias);
 
     SearchRequest.Builder searchRequest = new SearchRequest
       .Builder()
+      .sort(new SortOptions.Builder()
+              .field(new FieldSort.Builder()
+                       .field(definitionIdField)
+                       .order(SortOrder.Desc)
+                       .build())
+              .build())
       .index(indexName)
-      .source(sourceConfig);
+      .source(new SourceConfig.Builder().fetch(false).build())
+      .query(filterQuery._toQuery());
 
-    SearchResponse<DefinitionOptimizeResponseDto> searchResponse;
-    try {
-      // refresh to ensure we see the latest state
-      richOpenSearchClient.index().refresh(indexName);
-      searchResponse = this.search(searchRequest, DefinitionOptimizeResponseDto.class);
-    } catch (IOException e) {
-      log.error("Was not able to search for " + indexName + "!", e);
-      throw new OptimizeRuntimeException("Was not able to search for " + indexName + "!", e);
-    }
+    // refresh to ensure we see the latest state
+    richOpenSearchClient.index().refresh(indexName);
+
+    String errorMessage = "Was not able to search for " + indexName + "!";
+
+    SearchResponse<DefinitionOptimizeResponseDto> searchResponse = this.search(
+      searchRequest,
+      DefinitionOptimizeResponseDto.class,
+      errorMessage
+    );
+
     log.debug(indexName + " search query got [{}] results", searchResponse.hits().hits());
 
     for (Hit<DefinitionOptimizeResponseDto> hit : searchResponse.hits().hits()) {
@@ -288,12 +299,12 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return richOpenSearchClient.doc().bulk(bulkRequest, e -> errorMessage);
   }
 
-  private SourceFilter buildBasicSearchDefinitionQuery(String definitionXml, String engineAlias) {
-    return new SourceFilter.Builder()
-      .excludes(List.of(definitionXml))
-      .includes(DEFINITION_DELETED, "false")
-      .includes(DATA_SOURCE + "." + DataSourceDto.Fields.type, DataImportSourceType.ENGINE.toString())
-      .includes(DATA_SOURCE + "." + DataSourceDto.Fields.name, engineAlias)
+  private BoolQuery buildBasicSearchDefinitionQuery(String definitionXml, String engineAlias) {
+    return new BoolQuery.Builder()
+      .mustNot(QueryDSL.exists(definitionXml))
+      .must(QueryDSL.term(DEFINITION_DELETED, "false"))
+      .must(QueryDSL.term(DATA_SOURCE + "." + DataSourceDto.Fields.type, DataImportSourceType.ENGINE.toString()))
+      .must(QueryDSL.term(DATA_SOURCE + "." + DataSourceDto.Fields.name, engineAlias))
       .build();
   }
 

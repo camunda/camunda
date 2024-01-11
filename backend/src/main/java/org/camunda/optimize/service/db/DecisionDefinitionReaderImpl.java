@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.db.es.reader;
+package org.camunda.optimize.service.db;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,8 +11,6 @@ import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.service.db.reader.DecisionDefinitionReader;
 import org.camunda.optimize.service.db.reader.DefinitionReader;
-import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -21,8 +19,7 @@ import java.util.Optional;
 @AllArgsConstructor
 @Component
 @Slf4j
-@Conditional(ElasticSearchCondition.class)
-public class DecisionDefinitionReaderES implements DecisionDefinitionReader {
+public class DecisionDefinitionReaderImpl implements DecisionDefinitionReader {
 
   private final DefinitionReader definitionReader;
 
@@ -52,4 +49,5 @@ public class DecisionDefinitionReaderES implements DecisionDefinitionReader {
   public String getLatestVersionToKey(String key) {
     return definitionReader.getLatestVersionToKey(DefinitionType.DECISION, key);
   }
+
 }

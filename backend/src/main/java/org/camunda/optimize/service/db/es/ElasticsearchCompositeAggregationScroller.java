@@ -27,15 +27,15 @@ import java.util.function.Consumer;
 import static org.camunda.optimize.service.util.InstanceIndexUtil.isInstanceIndexNotFoundException;
 
 @Slf4j
-public class CompositeAggregationScroller {
+public class ElasticsearchCompositeAggregationScroller {
 
   private OptimizeElasticsearchClient esClient;
   private SearchRequest searchRequest;
   private Consumer<ParsedComposite.ParsedBucket> compositeBucketConsumer;
   private LinkedList<String> pathToAggregation;
 
-  public static CompositeAggregationScroller create() {
-    return new CompositeAggregationScroller();
+  public static ElasticsearchCompositeAggregationScroller create() {
+    return new ElasticsearchCompositeAggregationScroller();
   }
 
   public void consumeAllPages() {
@@ -118,17 +118,17 @@ public class CompositeAggregationScroller {
       ));
   }
 
-  public CompositeAggregationScroller setSearchRequest(final SearchRequest searchRequest) {
+  public ElasticsearchCompositeAggregationScroller setSearchRequest(final SearchRequest searchRequest) {
     this.searchRequest = searchRequest;
     return this;
   }
 
-  public CompositeAggregationScroller setEsClient(final OptimizeElasticsearchClient esClient) {
+  public ElasticsearchCompositeAggregationScroller setEsClient(final OptimizeElasticsearchClient esClient) {
     this.esClient = esClient;
     return this;
   }
 
-  public CompositeAggregationScroller setCompositeBucketConsumer(final Consumer<ParsedComposite.ParsedBucket> compositeBucketConsumer) {
+  public ElasticsearchCompositeAggregationScroller setCompositeBucketConsumer(final Consumer<ParsedComposite.ParsedBucket> compositeBucketConsumer) {
     this.compositeBucketConsumer = compositeBucketConsumer;
     return this;
   }
@@ -144,7 +144,7 @@ public class CompositeAggregationScroller {
    * @param pathToAggregation a path to where to find the composite aggregation
    * @return the scroller object
    */
-  public CompositeAggregationScroller setPathToAggregation(String... pathToAggregation) {
+  public ElasticsearchCompositeAggregationScroller setPathToAggregation(String... pathToAggregation) {
     this.pathToAggregation = new LinkedList<>(Arrays.asList(pathToAggregation));
     return this;
   }

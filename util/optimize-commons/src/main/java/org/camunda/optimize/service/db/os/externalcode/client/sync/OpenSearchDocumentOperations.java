@@ -225,17 +225,19 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     return response;
   }
 
-  public <R> SearchResponse<R> search(SearchRequest.Builder requestBuilder, Class<R> entityClass) {
-    return search(requestBuilder, entityClass, false);
+  public <R> SearchResponse<R> search(final SearchRequest.Builder requestBuilder, final Class<R> entityClass,
+                                      final Function<Exception, String> errorMessage) {
+    return search(requestBuilder, entityClass, errorMessage, false);
   }
 
-  public <R> SearchResponse<R> search(SearchRequest.Builder requestBuilder, Class<R> entityClass, boolean retry) {
+  public <R> SearchResponse<R> search(final SearchRequest.Builder requestBuilder, final Class<R> entityClass,
+                                      final Function<Exception, String> searchErrorMessage, boolean retry) {
     var request = applyIndexPrefix(requestBuilder).build();
     return retry ?
       executeWithRetries(() -> unsafeSearch(request, entityClass)) :
       safe(
         () -> unsafeSearch(request, entityClass),
-        defaultSearchErrorMessage(getIndex(requestBuilder))
+        searchErrorMessage
       );
   }
 
@@ -244,16 +246,20 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   }
 
   public <R> List<R> searchValues(SearchRequest.Builder requestBuilder, Class<R> entityClass, boolean retry) {
-    return search(requestBuilder, entityClass, retry).hits().hits().stream().map(Hit::source).toList();
+    return search(requestBuilder, entityClass, defaultSearchErrorMessage(getIndex(requestBuilder)), retry).hits()
+      .hits()
+      .stream()
+      .map(Hit::source)
+      .toList();
   }
 
   public Map<String, Aggregate> searchAggregations(SearchRequest.Builder requestBuilder) {
     requestBuilder.size(0);
-    return search(requestBuilder, Void.class).aggregations();
+    return search(requestBuilder, Void.class, defaultSearchErrorMessage(getIndex(requestBuilder))).aggregations();
   }
 
   public <R> R searchUnique(SearchRequest.Builder requestBuilder, Class<R> entityClass, String key) {
-    final SearchResponse<R> response = search(requestBuilder, entityClass);
+    final SearchResponse<R> response = search(requestBuilder, entityClass, defaultSearchErrorMessage(getIndex(requestBuilder)));
 
     if (response.hits().total().value() == 1) {
       return response.hits().hits().get(0).source();
@@ -274,7 +280,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
 
   public long docCount(SearchRequest.Builder requestBuilder) {
     requestBuilder.size(0);
-    return search(requestBuilder, Void.class).hits().total().value();
+    return search(requestBuilder, Void.class, defaultSearchErrorMessage(getIndex(requestBuilder))).hits().total().value();
   }
 
   public Map<String, String> getIndexNames(String index, Collection<String> ids) {

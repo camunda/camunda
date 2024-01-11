@@ -12,7 +12,6 @@ import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
 import org.camunda.optimize.service.db.reader.DashboardReader;
 import org.camunda.optimize.service.db.schema.index.DashboardIndex;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
@@ -26,7 +25,6 @@ import org.opensearch.client.opensearch.core.SearchResponse;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -34,7 +32,6 @@ import java.util.Set;
 import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.service.db.schema.index.DashboardIndex.COLLECTION_ID;
-
 
 @RequiredArgsConstructor
 @Component
@@ -84,14 +81,13 @@ public class DashboardReaderOS implements DashboardReader {
       .query(QueryDSL.ids(dashboardIdsAsArray))
       .size(LIST_FETCH_LIMIT);
 
-    SearchResponse<DashboardDefinitionRestDto> searchResponse;
-    try {
-      searchResponse = osClient.search(requestBuilder, DashboardDefinitionRestDto.class);
-    } catch (IOException e) {
-      String reason = String.format("Was not able to fetch dashboards for IDs [%s]", dashboardIds);
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
+    String errorMessage = String.format("Was not able to fetch dashboards for IDs [%s]", dashboardIds);
+
+    SearchResponse<DashboardDefinitionRestDto> searchResponse = osClient.search(
+      requestBuilder,
+      DashboardDefinitionRestDto.class,
+      errorMessage
+    );
 
     return OpensearchReaderUtil.extractResponseValues(searchResponse);
   }
@@ -105,15 +101,13 @@ public class DashboardReaderOS implements DashboardReader {
       .query(QueryDSL.term(COLLECTION_ID, collectionId))
       .size(LIST_FETCH_LIMIT);
 
-    SearchResponse<DashboardDefinitionRestDto> searchResponse;
-    try {
-      searchResponse = osClient.search(requestBuilder, DashboardDefinitionRestDto.class);
-    } catch (IOException e) {
-      String reason = String.format("Was not able to fetch dashboards for collection with id [%s]", collectionId);
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
+    String errorMessage = String.format("Was not able to fetch dashboards for collection with id [%s]", collectionId);
 
+    SearchResponse<DashboardDefinitionRestDto> searchResponse = osClient.search(
+      requestBuilder,
+      DashboardDefinitionRestDto.class,
+      errorMessage
+    );
     return OpensearchReaderUtil.extractResponseValues(searchResponse);
   }
 
@@ -137,14 +131,12 @@ public class DashboardReaderOS implements DashboardReader {
       .query(getCombinedReportsBySimpleReportIdQuery)
       .size(LIST_FETCH_LIMIT);
 
-    SearchResponse<DashboardDefinitionRestDto> searchResponse;
-    try {
-      searchResponse = osClient.search(requestBuilder, DashboardDefinitionRestDto.class);
-    } catch (IOException e) {
-      String reason = String.format("Was not able to fetch dashboards for report with id [%s]", reportId);
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
+    final String errorMessage = String.format("Was not able to fetch dashboards for report with id [%s]", reportId);
+    SearchResponse<DashboardDefinitionRestDto> searchResponse = osClient.search(
+      requestBuilder,
+      DashboardDefinitionRestDto.class,
+      errorMessage
+    );
 
     return OpensearchReaderUtil.extractResponseValues(searchResponse);
   }

@@ -5,12 +5,14 @@
  */
 package org.camunda.optimize.service.db.reader;
 
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantIdWithDefinitionsDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionResponseDto;
-import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 import java.util.List;
 import java.util.Map;
@@ -21,6 +23,13 @@ import java.util.function.Supplier;
 import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_KEY;
+import static org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_VERSION;
+import static org.camunda.optimize.service.db.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_XML;
+import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_KEY;
+import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_VERSION;
+import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
+import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 
 public interface DefinitionReader {
   String VERSION_AGGREGATION = "versions";
@@ -84,7 +93,49 @@ public interface DefinitionReader {
                                                                    final boolean withXml,
                                                                    final boolean includeDeleted);
 
-  <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(final DefinitionType type,
-                                                                   final BoolQueryBuilder filterQuery,
-                                                                   final boolean withXml);
+  default String[] resolveIndexNameForType(final DefinitionType type) {
+    if (type == null) {
+      return ALL_DEFINITION_INDEXES;
+    }
+
+    return switch (type) {
+      case PROCESS -> new String[]{PROCESS_DEFINITION_INDEX_NAME, EVENT_PROCESS_DEFINITION_INDEX_NAME};
+      case DECISION -> new String[]{DECISION_DEFINITION_INDEX_NAME};
+      default -> throw new OptimizeRuntimeException("Unsupported definition type:" + type);
+    };
+  }
+
+  default String resolveXmlFieldFromType(final DefinitionType type) {
+    return switch (type) {
+      case PROCESS -> PROCESS_DEFINITION_XML;
+      case DECISION -> DECISION_DEFINITION_XML;
+      default -> throw new IllegalStateException("Unknown DefinitionType:" + type);
+    };
+  }
+
+  default String resolveVersionFieldFromType(final DefinitionType type) {
+    return switch (type) {
+      case PROCESS -> PROCESS_DEFINITION_VERSION;
+      case DECISION -> DECISION_DEFINITION_VERSION;
+      default -> throw new IllegalStateException("Unknown DefinitionType:" + type);
+    };
+  }
+
+  default String resolveDefinitionKeyFieldFromType(final DefinitionType type) {
+    return switch (type) {
+      case PROCESS -> PROCESS_DEFINITION_KEY;
+      case DECISION -> DECISION_DEFINITION_KEY;
+      default -> throw new IllegalStateException("Unknown DefinitionType:" + type);
+    };
+  }
+
+  @SuppressWarnings(UNCHECKED_CAST)
+  default <T extends DefinitionOptimizeResponseDto> Class<T> resolveDefinitionClassFromType(final DefinitionType type) {
+    return switch (type) {
+      case PROCESS -> (Class<T>) ProcessDefinitionOptimizeDto.class;
+      case DECISION -> (Class<T>) DecisionDefinitionOptimizeDto.class;
+      default -> throw new IllegalStateException("Unknown DefinitionType:" + type);
+    };
+  }
+
 }

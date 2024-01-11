@@ -179,19 +179,20 @@ public class EntitiesReaderOS implements EntitiesReader {
       searchRequestBuilder.aggregations("collectionAggregation", collectionFilterAggregation);
     });
 
-    try {
-      final SearchResponse<CollectionEntity> searchResponse = osClient.search(searchRequestBuilder, CollectionEntity.class);
-      return searchResponse.aggregations()
-        .entrySet()
-        .stream()
-        .map(nameToAggregation -> new AbstractMap.SimpleEntry<>(
-          nameToAggregation.getKey(),
-          extractEntityIndexCounts(nameToAggregation.getValue().sterms().buckets().array())
-        ))
-        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    } catch (IOException e) {
-      throw new OptimizeRuntimeException("Was not able to count collection entities!", e);
-    }
+    final String errorMessage = "Was not able to count collection entities!";
+    final SearchResponse<CollectionEntity> searchResponse = osClient.search(
+      searchRequestBuilder,
+      CollectionEntity.class,
+      errorMessage
+    );
+    return searchResponse.aggregations()
+      .entrySet()
+      .stream()
+      .map(nameToAggregation -> new AbstractMap.SimpleEntry<>(
+        nameToAggregation.getKey(),
+        extractEntityIndexCounts(nameToAggregation.getValue().sterms().buckets().array())
+      ))
+      .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   @Override

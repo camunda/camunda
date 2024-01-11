@@ -150,4 +150,5 @@ public class DecisionDefinitionWriterES implements DecisionDefinitionWriter {
 
     bulkRequest.add(request);
   }
+
 }
