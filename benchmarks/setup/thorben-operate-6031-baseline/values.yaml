@@ -96,15 +96,25 @@ camunda-platform:
       # Image.repository defines which image repository to use
       repository: camunda/zeebe
       tag: 8.3.4
+    env: 
+      # 3-L cluster plan env vars below
+      - name: ZEEBE_BROKER_THREADS_CPUTHREADCOUNT
+        value: "5"
+      - name: ZEEBE_BROKER_THREADS_IOTHREADCOUNT
+        value: "5"
+      - name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK
+        value: "0.87"
+      - name: ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK
+        value: "0.85"
     resources:
       limits:
-        cpu: 4000m
-        memory: 6Gi
+        cpu: 5
+        memory: 9Gi
       requests:
-        cpu: 4000m
+        cpu: 4
         memory: 6Gi
     nodeSelector: null
-    partitionCount: "6"
+    partitionCount: "3"
   operate:
     enabled: true
     image:
@@ -118,14 +128,21 @@ camunda-platform:
         value: "3"
       - name: CAMUNDA_OPERATE_ARCHIVERENABLED
         value: "false"
+    resources:
+      limits:
+        cpu: 5
+        memory: 7Gi
+      requests:
+        cpu: 3
+        memory: 4Gi
   elasticsearch:
     resources:
       requests:
-        cpu: 4
-        memory: 6Gi
+        cpu: 5
+        memory: 15Gi
       limits:
-        cpu: 4
-        memory: 6Gi
+        cpu: 10
+        memory: 20Gi
     volumeClaimTemplate:
       resources:
         requests:
