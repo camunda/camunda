@@ -22,6 +22,8 @@ import java.util.List;
 
 public final class UserTaskUpdateProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
+  private static final String DEFAULT_ACTION = "update";
+
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
@@ -56,6 +58,7 @@ public final class UserTaskUpdateProcessor implements TypedRecordProcessor<UserT
     final UserTaskRecord updateRecord = new UserTaskRecord();
     updateRecord.wrap(BufferUtil.createCopy(userTaskRecord));
     updateRecord.wrapChangedAttributes(command.getValue(), true);
+    updateRecord.setAction(command.getValue().getAction(DEFAULT_ACTION));
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATING, updateRecord);
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, updateRecord);

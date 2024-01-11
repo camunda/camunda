@@ -21,6 +21,8 @@ import java.util.List;
 
 public final class UserTaskAssignProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
+  private static final String DEFAULT_ACTION = "assign";
+
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
@@ -53,6 +55,7 @@ public final class UserTaskAssignProcessor implements TypedRecordProcessor<UserT
     final long userTaskKey = command.getKey();
 
     userTaskRecord.setAssignee(command.getValue().getAssignee());
+    userTaskRecord.setAction(command.getValue().getAction(DEFAULT_ACTION));
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);

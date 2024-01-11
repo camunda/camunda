@@ -24,6 +24,8 @@ import java.util.List;
 
 public class UserTaskClaimProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
+  private static final String DEFAULT_ACTION = "claim";
+
   private static final String INVALID_USER_TASK_ASSIGNEE_MESSAGE =
       "Expected to claim user task with key '%d', but it has already been assigned";
   private static final String INVALID_USER_TASK_EMPTY_ASSIGNEE_MESSAGE =
@@ -64,6 +66,7 @@ public class UserTaskClaimProcessor implements TypedRecordProcessor<UserTaskReco
     final long userTaskKey = command.getKey();
 
     userTaskRecord.setAssignee(command.getValue().getAssignee());
+    userTaskRecord.setAction(command.getValue().getAction(DEFAULT_ACTION));
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
