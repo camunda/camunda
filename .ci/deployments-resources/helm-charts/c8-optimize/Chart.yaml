@@ -26,7 +26,7 @@ dependencies:
 - name: camunda-platform
   # @camunda-cloud references https://helm.camunda.io repository configured as camunda-cloud in Argo CD
   repository: "@helm-camunda-io"
-  version: 8.3.4
+  version: 9.0.0
 - name: infra-preview-environments-ingress
   repository: oci://registry.camunda.cloud/library
   version: 1.4.0
