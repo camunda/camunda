@@ -1,31 +1,37 @@
+@use '@carbon/styles/scss/spacing';
+
 .BranchControlPanel {
-  background-color: var(--silver-base-97);
-  border-radius: 8px;
-  border: 1px solid var(--silver-darken-87);
-  padding: 12px;
+  background-color: var(--cds-layer);
+  padding: spacing.$spacing-04;
   margin-bottom: 1em;
 
-  .list .item {
-    display: inline;
-    position: relative;
-    padding-right: 20px;
+  .list {
+    margin-top: -10px;
 
-    &.summary {
-      line-height: 50px;
+    .item {
+      display: inline;
+      position: relative;
+      padding-right: 20px;
+      list-style-position: inside;
 
-      .DefinitionSelection {
-        display: inline-block;
-        margin: 0 0.5em;
-        line-height: normal;
-        width: 220px;
+      &.summary {
+        .DefinitionSelection {
+          width: 220px;
+          display: inline-block;
+          margin: spacing.$spacing-04 spacing.$spacing-04 0 spacing.$spacing-04;
+
+          .buttonWrapper {
+            line-height: 30px;
+          }
+        }
       }
-    }
 
-    .config {
-      cursor: default;
-      display: inline-block;
-      margin: 0 0.5em;
-      line-height: 20px;
+      .config {
+        cursor: default;
+        display: inline-block;
+        margin: 0 spacing.$spacing-04;
+        margin-top: spacing.$spacing-04;
+      }
     }
   }
 
@@ -34,6 +40,8 @@
       position: relative;
       display: inline-flex;
       margin-right: 20px;
+      margin-top: spacing.$spacing-04;
+      margin-bottom: 0;
 
       .dropdownLabel {
         margin-right: 10px;

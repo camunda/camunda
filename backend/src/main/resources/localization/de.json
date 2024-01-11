@@ -96,7 +96,7 @@
       "noProcess": "Wählen Sie eine Prozessdefinition aus, um eine Vorlage auswählen zu können.",
       "multipleProcess": "Diese Vorlage eignet sich am besten für mehrere Prozesse.",
       "singleProcess": "Diese Vorlage eignet sich am besten für einzelne Prozesse.",
-      "editReport": "Um diesen Wert zu ändern, bearbeiten Sie die Datenquellen der erstellten Berichte."
+      "editReport": "Um die Versionenauswahl zu ändern, bearbeiten Sie die Datenquellen der erstellten Berichte."
     },
     "templateGroups": {
       "blankGroup": "Leere Vorlage",

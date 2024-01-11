@@ -6,10 +6,12 @@
  */
 
 import React from 'react';
+import {Tab, TabList, Tabs} from '@carbon/react';
+import {Link, Route, Switch} from 'react-router-dom';
 
-import {SubNav, ErrorPage} from 'components';
+import {ErrorPage} from 'components';
 import {t} from 'translation';
-import {Route, Switch} from 'react-router-dom';
+
 import {BranchAnalysis} from './BranchAnalysis';
 import {TaskAnalysis} from './TaskAnalysis';
 
@@ -18,18 +20,16 @@ import './Analysis.scss';
 export default function Analysis() {
   return (
     <div className="Analysis">
-      <SubNav>
-        <SubNav.Item
-          name={t('analysis.task.label')}
-          linksTo="/analysis/taskAnalysis"
-          active={['/analysis', '/analysis/taskAnalysis']}
-        />
-        <SubNav.Item
-          name={t('analysis.branchAnalysis')}
-          linksTo="/analysis/branchAnalysis"
-          active={['/analysis/branchAnalysis']}
-        />
-      </SubNav>
+      <Tabs>
+        <TabList aria-label="tabs" className="tabList">
+          <Tab as={Link} to="/analysis/taskAnalysis">
+            {t('analysis.task.label')}
+          </Tab>
+          <Tab as={Link} to="/analysis/branchAnalysis">
+            {t('analysis.branchAnalysis')}
+          </Tab>
+        </TabList>
+      </Tabs>
       <Switch>
         <Route path="/analysis/" exact component={TaskAnalysis} />
         <Route path="/analysis/branchAnalysis" component={BranchAnalysis} />

@@ -164,11 +164,6 @@ export default function TemplateModal({
                 expanded
                 selectedDefinitions={selectedDefinitions}
                 onChange={setSelectedDefinitions}
-                versionTooltip={
-                  selectedDefinitions?.length > 1
-                    ? t('templates.disabledMessage.editReport')
-                    : undefined
-                }
               />
             </div>
             <div className="diagramArea" ref={diagramArea}>

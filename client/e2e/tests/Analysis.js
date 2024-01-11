@@ -53,6 +53,7 @@ test('show end event statistics on hover', async (t) => {
 
   await addAnnotation(Analysis.endEventOverlay, 'End Event Information', {x: 50, y: 0});
 
+  await t.click(Analysis.flowNode('EndEvent_0kcx8gn'));
   await t.takeScreenshot('process-analysis/img/analysis-1.png', {fullPage: true}).maximizeWindow();
 
   await clearAllAnnotations();

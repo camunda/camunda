@@ -264,12 +264,13 @@ export default withRouter(
               }
               return (
                 <Popover
-                  title={
-                    <span
-                      className="colorBox"
+                  trigger={
+                    <Popover.Button
+                      size="sm"
                       style={{
                         background: selectedColor,
                       }}
+                      className="colorPickerBtn"
                     />
                   }
                 >

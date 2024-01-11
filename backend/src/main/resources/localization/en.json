@@ -96,7 +96,7 @@
       "noProcess": "Select process definition to be able to select a template.",
       "multipleProcess": "This template is best suited for multiple processes.",
       "singleProcess": "This template is best suited for single processes.",
-      "editReport": "To change this value, edit the data source section of the created report(s)."
+      "editReport": "To change the version selection, edit the data source section of the created report(s)."
     },
     "templateGroups": {
       "blankGroup": "Blank template",

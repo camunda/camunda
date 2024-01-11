@@ -8,6 +8,7 @@
 import update from 'immutability-helper';
 import React from 'react';
 import equal from 'fast-deep-equal';
+import {Layer} from '@carbon/react';
 
 import {DefinitionSelection, SelectionPreview} from 'components';
 import {Filter} from 'filter';
@@ -103,7 +104,7 @@ export class BranchControlPanel extends React.Component {
 
     return (
       <div className="BranchControlPanel">
-        <ul className="list">
+        <Layer as="ul" className="list">
           <li className="item summary">
             {t('analysis.selectLabel')}
             <DefinitionSelection
@@ -137,7 +138,7 @@ export class BranchControlPanel extends React.Component {
               variables={this.state.variables}
             />
           </li>
-        </ul>
+        </Layer>
       </div>
     );
   }

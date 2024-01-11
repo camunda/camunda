@@ -145,7 +145,6 @@ export default class Configuration extends Component {
             />
           }
           className="configurationPopover"
-          tooltipPosition="bottom"
           align="bottom-right"
           floating
         >

@@ -4,27 +4,49 @@ exports[`should render sub navigation 1`] = `
 <div
   className="Analysis"
 >
-  <SubNav>
-    <SubNavItem
-      active={
-        Array [
-          "/analysis",
-          "/analysis/taskAnalysis",
-        ]
-      }
-      linksTo="/analysis/taskAnalysis"
-      name="Task analysis"
-    />
-    <SubNavItem
-      active={
-        Array [
-          "/analysis/branchAnalysis",
-        ]
-      }
-      linksTo="/analysis/branchAnalysis"
-      name="Branch analysis"
-    />
-  </SubNav>
+  <Tabs>
+    <TabList
+      aria-label="tabs"
+      className="tabList"
+    >
+      <ForwardRef(Tab)
+        as={
+          Object {
+            "$$typeof": Symbol(react.forward_ref),
+            "propTypes": Object {
+              "innerRef": [Function],
+              "onClick": [Function],
+              "replace": [Function],
+              "target": [Function],
+              "to": [Function],
+            },
+            "render": [Function],
+          }
+        }
+        to="/analysis/taskAnalysis"
+      >
+        Task analysis
+      </ForwardRef(Tab)>
+      <ForwardRef(Tab)
+        as={
+          Object {
+            "$$typeof": Symbol(react.forward_ref),
+            "propTypes": Object {
+              "innerRef": [Function],
+              "onClick": [Function],
+              "replace": [Function],
+              "target": [Function],
+              "to": [Function],
+            },
+            "render": [Function],
+          }
+        }
+        to="/analysis/branchAnalysis"
+      >
+        Branch analysis
+      </ForwardRef(Tab)>
+    </TabList>
+  </Tabs>
   <Switch>
     <Route
       component={[Function]}
