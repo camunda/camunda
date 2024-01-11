@@ -82,31 +82,24 @@ public class EventFromProcessInstanceHandler
   }
 
   @Override
-  public void updateEntity(Record<ProcessInstanceRecordValue> record, EventEntity entity) {
+  public void updateEntity(Record<ProcessInstanceRecordValue> record, EventEntity eventEntity) {
 
     final ProcessInstanceRecordValue recordValue = record.getValue();
 
-    if (!isProcessEvent(recordValue)) { // we do not need to store process level events
-      final EventEntity eventEntity =
-          new EventEntity()
-              .setId(
-                  String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), record.getKey()));
+    loadEventGeneralData(record, eventEntity);
 
-      loadEventGeneralData(record, eventEntity);
+    eventEntity
+        .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
+        .setProcessInstanceKey(recordValue.getProcessInstanceKey())
+        .setBpmnProcessId(recordValue.getBpmnProcessId())
+        .setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
-      eventEntity
-          .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
-          .setProcessInstanceKey(recordValue.getProcessInstanceKey())
-          .setBpmnProcessId(recordValue.getBpmnProcessId())
-          .setTenantId(tenantOrDefault(recordValue.getTenantId()));
+    if (recordValue.getElementId() != null) {
+      eventEntity.setFlowNodeId(recordValue.getElementId());
+    }
 
-      if (recordValue.getElementId() != null) {
-        eventEntity.setFlowNodeId(recordValue.getElementId());
-      }
-
-      if (record.getKey() != recordValue.getProcessInstanceKey()) {
-        eventEntity.setFlowNodeInstanceKey(record.getKey());
-      }
+    if (record.getKey() != recordValue.getProcessInstanceKey()) {
+      eventEntity.setFlowNodeInstanceKey(record.getKey());
     }
   }
 
