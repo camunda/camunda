@@ -20,7 +20,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehav
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionListener;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
+import io.camunda.zeebe.protocol.record.value.ExecutionListenerEventType;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Optional;
@@ -85,7 +85,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
     final String currentExecutionListenerType =
         stateBehavior.getElementInstance(context).getExecutionListenerType();
     final List<ExecutionListener> startExecutionListeners =
-        getExecutionListenersByEventType(element, ZeebeExecutionListenerEventType.start);
+        getExecutionListenersByEventType(element, ExecutionListenerEventType.START);
 
     findNextExecutionListener(startExecutionListeners, currentExecutionListenerType)
         .ifPresentOrElse(
@@ -135,7 +135,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   }
 
   private List<ExecutionListener> getExecutionListenersByEventType(
-      final ExecutableJobWorkerTask element, final ZeebeExecutionListenerEventType eventType) {
+      final ExecutableJobWorkerTask element, final ExecutionListenerEventType eventType) {
     return element.getExecutionListeners().stream()
         .filter(el -> eventType == el.getEventType())
         .collect(Collectors.toList());
@@ -144,7 +144,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   private Either<Failure, BpmnElementContext> handleStartExecutionListenersOrRegularJob(
       final ExecutableJobWorkerTask element, final BpmnElementContext context) {
     final List<ExecutionListener> startExecutionListeners =
-        getExecutionListenersByEventType(element, ZeebeExecutionListenerEventType.start);
+        getExecutionListenersByEventType(element, ExecutionListenerEventType.START);
 
     return startExecutionListeners.isEmpty()
         ? regularJobExecution(element, context)
@@ -167,7 +167,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   private Either<Failure, BpmnElementContext> handleEndExecutionListenersOrTaskCompletion(
       final ExecutableJobWorkerTask element, final BpmnElementContext context) {
     final List<ExecutionListener> endExecutionListeners =
-        getExecutionListenersByEventType(element, ZeebeExecutionListenerEventType.end);
+        getExecutionListenersByEventType(element, ExecutionListenerEventType.END);
 
     return endExecutionListeners.isEmpty()
         ? regularJobCompletion(element, context)

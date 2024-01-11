@@ -7,17 +7,17 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
+import io.camunda.zeebe.protocol.record.value.ExecutionListenerEventType;
 
 public class ExecutionListener {
-  private ZeebeExecutionListenerEventType eventType;
+  private ExecutionListenerEventType eventType;
   private JobWorkerProperties jobWorkerProperties = new JobWorkerProperties();
 
-  public ZeebeExecutionListenerEventType getEventType() {
+  public ExecutionListenerEventType getEventType() {
     return eventType;
   }
 
-  public void setEventType(final ZeebeExecutionListenerEventType eventType) {
+  public void setEventType(final ExecutionListenerEventType eventType) {
     this.eventType = eventType;
   }
 

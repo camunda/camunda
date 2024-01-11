@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
 import io.camunda.zeebe.el.Expression;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
+import io.camunda.zeebe.protocol.record.value.ExecutionListenerEventType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -25,9 +25,7 @@ public class ExecutableFlowNode extends AbstractFlowElement {
   }
 
   public void addListener(
-      final ZeebeExecutionListenerEventType eventType,
-      final Expression type,
-      final Expression retries) {
+      final ExecutionListenerEventType eventType, final Expression type, final Expression retries) {
     final ExecutionListener listener = new ExecutionListener();
     listener.setEventType(eventType);
 
