@@ -184,7 +184,6 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
       final ExecutableJobWorkerTask element,
       final BpmnElementContext context,
       final ExecutionListener listener) {
-
     return jobBehavior
         .evaluateJobExpressions(listener.getJobWorkerProperties(), context)
         .map(

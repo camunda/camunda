@@ -144,26 +144,7 @@ public final class BpmnJobBehavior {
       final BpmnElementContext context,
       final ExecutableJobWorkerElement element,
       final JobProperties jobProperties) {
-    final var taskHeaders = element.getJobWorkerProperties().getTaskHeaders();
-    final var encodedHeaders = encodeHeaders(taskHeaders, jobProperties);
-
-    jobRecord
-        .setType(jobProperties.getType())
-        .setRetries(jobProperties.getRetries().intValue())
-        .setCustomHeaders(encodedHeaders)
-        .setBpmnProcessId(context.getBpmnProcessId())
-        .setProcessDefinitionVersion(context.getProcessVersion())
-        .setProcessDefinitionKey(context.getProcessDefinitionKey())
-        .setProcessInstanceKey(context.getProcessInstanceKey())
-        .setElementId(element.getId())
-        .setElementInstanceKey(context.getElementInstanceKey())
-        .setTenantId(context.getTenantId())
-        .setActivityType(ActivityType.EXECUTION_LISTENER);
-
-    final var jobKey = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
-
-    jobActivationBehavior.publishWork(jobKey, jobRecord);
+    writeExecutionListenerJobCreatedEvent(context, element, jobProperties);
     jobMetrics.jobCreated(jobProperties.getType());
   }
 
@@ -195,6 +176,33 @@ public final class BpmnJobBehavior {
         .setElementInstanceKey(context.getElementInstanceKey())
         .setTenantId(context.getTenantId())
         .setActivityType(ActivityType.REGULAR);
+
+    final var jobKey = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
+
+    jobActivationBehavior.publishWork(jobKey, jobRecord);
+  }
+
+  private void writeExecutionListenerJobCreatedEvent(
+      final BpmnElementContext context,
+      final ExecutableJobWorkerElement jobWorkerElement,
+      final JobProperties props) {
+
+    final var taskHeaders = jobWorkerElement.getJobWorkerProperties().getTaskHeaders();
+    final var encodedHeaders = encodeHeaders(taskHeaders, props);
+
+    jobRecord
+        .setType(props.getType())
+        .setRetries(props.getRetries().intValue())
+        .setCustomHeaders(encodedHeaders)
+        .setBpmnProcessId(context.getBpmnProcessId())
+        .setProcessDefinitionVersion(context.getProcessVersion())
+        .setProcessDefinitionKey(context.getProcessDefinitionKey())
+        .setProcessInstanceKey(context.getProcessInstanceKey())
+        .setElementId(jobWorkerElement.getId())
+        .setElementInstanceKey(context.getElementInstanceKey())
+        .setTenantId(context.getTenantId())
+        .setActivityType(ActivityType.EXECUTION_LISTENER);
 
     final var jobKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
