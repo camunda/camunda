@@ -4,7 +4,7 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.qa.migration.v830;
+package io.camunda.operate.qa.migration.v840;
 
 import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.qa.util.migration.AbstractTestFixture;
