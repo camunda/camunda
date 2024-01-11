@@ -49,6 +49,12 @@ public interface ZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType>> extend
    */
   void createSnapshot(File snapshotDir);
 
+  /**
+   * Initiates a compaction of all data in the database. After the database has been compacted, all
+   * data will have been pushed down to the last level containing any data.
+   */
+  void compactRange();
+
   Optional<String> getProperty(String propertyName);
 
   TransactionContext createContext();

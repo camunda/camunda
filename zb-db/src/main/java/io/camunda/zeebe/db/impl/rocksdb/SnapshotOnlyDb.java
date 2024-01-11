@@ -57,6 +57,11 @@ final class SnapshotOnlyDb<ColumnFamilyType extends Enum<ColumnFamilyType>>
   }
 
   @Override
+  public void compactRange() {
+    throw unsupported("compactRange");
+  }
+
+  @Override
   public Optional<String> getProperty(final String propertyName) {
     throw unsupported("getProperty");
   }

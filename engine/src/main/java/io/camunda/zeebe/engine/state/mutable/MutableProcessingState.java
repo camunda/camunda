@@ -73,4 +73,6 @@ public interface MutableProcessingState extends ProcessingState {
   MutableCompensationSubscriptionState getCompensationSubscriptionState();
 
   KeyGenerator getKeyGenerator();
+
+  void compactRange();
 }

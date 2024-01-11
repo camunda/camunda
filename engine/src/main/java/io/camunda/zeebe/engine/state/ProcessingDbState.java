@@ -245,6 +245,11 @@ public class ProcessingDbState implements MutableProcessingState {
   }
 
   @Override
+  public void compactRange() {
+    zeebeDb.compactRange();
+  }
+
+  @Override
   public PendingMessageSubscriptionState getPendingMessageSubscriptionState() {
     return messageSubscriptionState;
   }

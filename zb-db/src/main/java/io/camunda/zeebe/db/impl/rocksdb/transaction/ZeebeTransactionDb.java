@@ -144,6 +144,15 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
   }
 
   @Override
+  public void compactRange() {
+    try {
+      optimisticTransactionDB.compactRange(defaultHandle);
+    } catch (final RocksDBException rocksException) {
+      throw new ZeebeDbException("Failed to compact range for column family", rocksException);
+    }
+  }
+
+  @Override
   public Optional<String> getProperty(final String propertyName) {
     String propertyValue = null;
     try {

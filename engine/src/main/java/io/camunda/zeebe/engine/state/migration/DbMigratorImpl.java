@@ -86,6 +86,8 @@ public class DbMigratorImpl implements DbMigrator {
     for (int index = 1; index <= migrationTasks.size() && !abortRequested; index++) {
       // one based index looks nicer in logs
 
+      processingState.compactRange();
+
       final var migration = migrationTasks.get(index - 1);
       final int finalIndex = index;
       zeebeDbContext.runInTransaction(
