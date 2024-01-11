@@ -36,14 +36,18 @@ exports[`should show different text depending on the republish prop 1`] = `
       <h4>
         Who can use this process?
       </h4>
-      Private - Only you
-      <ForwardRef(Button)
-        link={true}
-        onClick={[Function]}
-      >
-        Change
-        ...
-      </ForwardRef(Button)>
+      <div>
+        Private - Only you
+        <Button
+          kind="ghost"
+          link={true}
+          onClick={[Function]}
+          size="sm"
+        >
+          Change
+          ...
+        </Button>
+      </div>
     </div>
   </ForwardRef>
   <ForwardRef(ModalFooter)
@@ -91,14 +95,18 @@ exports[`should show different text depending on the republish prop 2`] = `
       <h4>
         Who can use this process?
       </h4>
-      Private - Only you
-      <ForwardRef(Button)
-        link={true}
-        onClick={[Function]}
-      >
-        Change
-        ...
-      </ForwardRef(Button)>
+      <div>
+        Private - Only you
+        <Button
+          kind="ghost"
+          link={true}
+          onClick={[Function]}
+          size="sm"
+        >
+          Change
+          ...
+        </Button>
+      </div>
     </div>
   </ForwardRef>
   <ForwardRef(ModalFooter)
@@ -132,13 +140,17 @@ exports[`should show that access is granted if there are more than one user 1`] 
   <h4>
     Who can use this process?
   </h4>
-  User access granted
-  <ForwardRef(Button)
-    link={true}
-    onClick={[Function]}
-  >
-    Change
-    ...
-  </ForwardRef(Button)>
+  <div>
+    User access granted
+    <Button
+      kind="ghost"
+      link={true}
+      onClick={[Function]}
+      size="sm"
+    >
+      Change
+      ...
+    </Button>
+  </div>
 </div>
 `;

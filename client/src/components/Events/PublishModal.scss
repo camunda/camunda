@@ -1,13 +1,14 @@
-.PublishModal {
-  .permission {
-    margin-bottom: 20px;
+.PublishModal .permission {
+  h4 {
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
 
-    h4 {
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
+  > div {
+    display: flex;
+    align-items: center;
 
-    .Button {
+    button {
       margin-left: 10px;
     }
   }

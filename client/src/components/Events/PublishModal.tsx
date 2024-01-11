@@ -8,9 +8,9 @@
 import {useState, useEffect} from 'react';
 import {Button} from '@carbon/react';
 
-import {Modal, Button as LegacyButton, User} from 'components';
+import {Modal, User} from 'components';
 import {t} from 'translation';
-import {withErrorHandling, WithErrorHandlingProps, withUser, WithUserProps} from 'HOC';
+import {useUser, useErrorHandling} from 'hooks';
 import {showError, addNotification} from 'notifications';
 
 import {publish, getUsers} from './service';
@@ -18,24 +18,24 @@ import UsersModal from './UsersModal';
 
 import './PublishModal.scss';
 
-interface PublishModalProps extends WithErrorHandlingProps, WithUserProps {
+interface PublishModalProps {
   id: string;
   republish: boolean;
   onClose: () => void;
   onPublish: (id?: string) => void;
 }
 
-export function PublishModal({
+export default function PublishModal({
   onClose,
   onPublish,
-  mightFail,
   id,
-  user,
   republish,
 }: PublishModalProps): JSX.Element {
   const [loading, setLoading] = useState<boolean>(false);
   const [editingAccess, setEditingAccess] = useState<string | null>(null);
   const [isPrivate, setIsPrivate] = useState<boolean>(false);
+  const {mightFail} = useErrorHandling();
+  const {user} = useUser();
 
   useEffect(() => {
     mightFail(
@@ -83,10 +83,12 @@ export function PublishModal({
         )}
         <div className="permission">
           <h4>{t('events.permissions.whoHasAccess')}</h4>
-          {isPrivate ? t('events.permissions.private') : t('events.permissions.userGranted')}
-          <LegacyButton onClick={() => setEditingAccess(id)} link>
-            {t('common.change')}...
-          </LegacyButton>
+          <div>
+            {isPrivate ? t('events.permissions.private') : t('events.permissions.userGranted')}
+            <Button size="sm" kind="ghost" onClick={() => setEditingAccess(id)} link>
+              {t('common.change')}...
+            </Button>
+          </div>
         </div>
         {editingAccess && <UsersModal id={editingAccess} onClose={closeUsersModal} />}
       </Modal.Content>
@@ -101,5 +103,3 @@ export function PublishModal({
     </Modal>
   );
 }
-
-export default withUser(withErrorHandling(PublishModal));
