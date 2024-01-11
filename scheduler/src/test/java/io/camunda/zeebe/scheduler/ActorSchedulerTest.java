@@ -7,12 +7,52 @@
  */
 package io.camunda.zeebe.scheduler;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
+import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
 import org.junit.jupiter.api.Test;
 
 final class ActorSchedulerTest {
+
+  @Test
+  void shouldCloseUnscheduledTask() {
+    // given
+    final var testActor = new TestActor();
+
+    // when
+    assertThat(testActor.closeAsync()).isDone();
+  }
+
+  @Test
+  void shouldWaitForCloseAfterSchedulingTask() {
+    // given
+    final var latch = new CountDownLatch(1);
+    final var testActor =
+        new Actor() {
+          @Override
+          protected void onActorClosing() {
+            try {
+              latch.await();
+            } catch (final InterruptedException e) {
+              throw new RuntimeException(e);
+            }
+          }
+        };
+
+    final var scheduler = ActorScheduler.newActorScheduler().build();
+    scheduler.start();
+    scheduler.submitActor(testActor);
+
+    // then -- closing is blocked at first
+    final var closeFuture = testActor.closeAsync();
+    assertThat(closeFuture).isNotDone();
+    // then -- closing completes eventually
+    latch.countDown();
+    assertThat(closeFuture).succeedsWithin(Duration.ofSeconds(1));
+  }
 
   @Test
   void shouldThrowIllegalStateExceptionWhenTaskIsSubmittedBeforeActorSchedulerIsNotRunning() {
