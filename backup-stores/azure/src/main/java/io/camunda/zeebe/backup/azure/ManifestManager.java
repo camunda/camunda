@@ -15,9 +15,11 @@ import com.azure.core.util.Context;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.models.BlobErrorCode;
+import com.azure.storage.blob.models.BlobItem;
 import com.azure.storage.blob.models.BlobRequestConditions;
 import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.models.BlockBlobItem;
+import com.azure.storage.blob.models.ListBlobsOptions;
 import com.azure.storage.blob.options.BlobParallelUploadOptions;
 import com.azure.storage.common.implementation.Constants;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -27,12 +29,18 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.azure.manifest.Manifest;
 import io.camunda.zeebe.backup.azure.manifest.Manifest.InProgressManifest;
 import io.camunda.zeebe.backup.azure.manifest.Manifest.StatusCode;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Collection;
+import java.util.Optional;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class ManifestManager {
   public static final int PRECONDITION_FAILED = 412;
@@ -50,7 +58,7 @@ public final class ManifestManager {
    *
    * The path format is constructed by partitionId/checkpointId/nodeId/manifest.json
    */
-  private static final String MANIFEST_PATH_FORMAT = "%s/%s/%s/manifest.json";
+  private static final String MANIFEST_PATH_FORMAT = "manifests/%s/%s/%s/manifest.json";
 
   private static final ObjectMapper MAPPER =
       new ObjectMapper()
@@ -176,11 +184,14 @@ public final class ManifestManager {
   }
 
   Manifest getManifest(final BackupIdentifier id) {
+    return getManifestWithPath(
+        MANIFEST_PATH_FORMAT.formatted(id.partitionId(), id.checkpointId(), id.nodeId()));
+  }
+
+  private Manifest getManifestWithPath(final String path) {
     final BlobClient blobClient;
     final BinaryData binaryData;
-    blobClient =
-        blobContainerClient.getBlobClient(
-            MANIFEST_PATH_FORMAT.formatted(id.partitionId(), id.checkpointId(), id.nodeId()));
+    blobClient = blobContainerClient.getBlobClient(path);
     try {
       binaryData = blobClient.downloadContent();
     } catch (final BlobStorageException e) {
@@ -198,6 +209,17 @@ public final class ManifestManager {
     }
   }
 
+  public Collection<Manifest> listManifests(final BackupIdentifierWildcard wildcard) {
+
+    return blobContainerClient
+        .listBlobs(new ListBlobsOptions().setPrefix(wildcardPrefix(wildcard)), null)
+        .stream()
+        .map(BlobItem::getName)
+        .filter(path -> filterBlobsByWildcard(wildcard, path))
+        .map(this::getManifestWithPath)
+        .toList();
+  }
+
   public static String manifestPath(final Manifest manifest) {
     return manifestIdPath(manifest.id());
   }
@@ -205,6 +227,32 @@ public final class ManifestManager {
   private static String manifestIdPath(final BackupIdentifier backupIdentifier) {
     return MANIFEST_PATH_FORMAT.formatted(
         backupIdentifier.partitionId(), backupIdentifier.checkpointId(), backupIdentifier.nodeId());
+  }
+
+  private boolean filterBlobsByWildcard(
+      final BackupIdentifierWildcard wildcard, final String path) {
+    final var pattern =
+        Pattern.compile(
+                MANIFEST_PATH_FORMAT.formatted(
+                    wildcard.partitionId().map(Number::toString).orElse("\\d+"),
+                    wildcard.checkpointId().map(Number::toString).orElse("\\d+"),
+                    wildcard.nodeId().map(Number::toString).orElse("\\d+")))
+            .asMatchPredicate();
+    return pattern.test(path);
+  }
+
+  /**
+   * Tries to build the longest possible prefix based on the given wildcard. If the first component
+   * of prefix is not present in the wildcard, the prefix will be empty. If the second component of
+   * the prefix is empty, the prefix will only contain the first prefix component and so forth.
+   */
+  private String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
+    //noinspection OptionalGetWithoutIsPresent -- checked by takeWhile
+    return Stream.of(wildcard.partitionId(), wildcard.checkpointId(), wildcard.nodeId())
+        .takeWhile(Optional::isPresent)
+        .map(Optional::get)
+        .map(Number::toString)
+        .collect(Collectors.joining("/", "manifests/", ""));
   }
 
   void assureContainerCreated() {

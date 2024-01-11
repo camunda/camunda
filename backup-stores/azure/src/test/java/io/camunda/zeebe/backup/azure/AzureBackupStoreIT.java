@@ -25,11 +25,7 @@ import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.azure.manifest.Manifest;
 import io.camunda.zeebe.backup.azure.util.AzuriteContainer;
-import io.camunda.zeebe.backup.testkit.DeletingBackup;
-import io.camunda.zeebe.backup.testkit.QueryingBackupStatus;
-import io.camunda.zeebe.backup.testkit.RestoringBackup;
-import io.camunda.zeebe.backup.testkit.SavingBackup;
-import io.camunda.zeebe.backup.testkit.UpdatingBackupStatus;
+import io.camunda.zeebe.backup.testkit.BackupStoreTestKit;
 import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
@@ -44,12 +40,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
-public class AzureBackupStoreIT
-    implements SavingBackup,
-        QueryingBackupStatus,
-        UpdatingBackupStatus,
-        DeletingBackup,
-        RestoringBackup {
+public class AzureBackupStoreIT implements BackupStoreTestKit {
 
   @Container private static final AzuriteContainer AZURITE_CONTAINER = new AzuriteContainer();
   private static final ObjectMapper MAPPER =
