@@ -19,6 +19,7 @@ import com.azure.storage.blob.models.BlobItem;
 import com.azure.storage.blob.models.BlobRequestConditions;
 import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.models.BlockBlobItem;
+import com.azure.storage.blob.models.ListBlobsOptions;
 import com.azure.storage.blob.options.BlobParallelUploadOptions;
 import com.azure.storage.common.implementation.Constants;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -54,7 +55,7 @@ public final class ManifestManager {
    *
    * The path format is constructed by partitionId/checkpointId/nodeId/manifest.json
    */
-  private static final String MANIFEST_PATH_FORMAT = "%s/%s/%s/manifest.json";
+  private static final String MANIFEST_PATH_FORMAT = "manifests/%s/%s/%s/manifest.json";
 
   private static final ObjectMapper MAPPER =
       new ObjectMapper()
@@ -207,10 +208,12 @@ public final class ManifestManager {
 
   public Collection<Manifest> listManifests(final BackupIdentifierWildcard wildcard) {
 
-    return blobContainerClient.listBlobs().stream()
+    return blobContainerClient
+        .listBlobs(new ListBlobsOptions().setPrefix("manifests/"), null)
+        .stream()
         .map(BlobItem::getName)
         .filter(path -> filterBlobsByWildcard(wildcard, path))
-        .map(path -> getManifestWithPath(path))
+        .map(this::getManifestWithPath)
         .toList();
   }
 
