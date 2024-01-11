@@ -682,4 +682,5 @@ jobs:
         if: github.actor == 'backport-action' || github.actor == 'renovate[bot]'
         run: |
           gh pr review ${{ github.event.pull_request.number }} --approve
-          gh pr merge ${{ github.event.pull_request.number }} --auto --merge
+          # Call the API directly to work around https://github.com/cli/cli/issues/8352
+          gh api graphql -f query='mutation PullRequestAutoMerge {enablePullRequestAutoMerge(input: {pullRequestId: "${{ github.event.pull_request.node_id }}"}) {clientMutationId}}'
