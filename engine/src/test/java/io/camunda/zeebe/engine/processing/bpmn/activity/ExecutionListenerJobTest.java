@@ -14,7 +14,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.protocol.record.value.JobRecordValue.AssociatedJobType;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue.ActivityType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -45,7 +45,7 @@ public class ExecutionListenerJobTest {
         0,
         "dmk_task_start_type_1",
         JobIntent.CREATED,
-        AssociatedJobType.EXECUTION_LISTENER);
+        ActivityType.EXECUTION_LISTENER);
   }
 
   @Test
@@ -60,14 +60,14 @@ public class ExecutionListenerJobTest {
         0,
         "dmk_task_start_type_1",
         JobIntent.CREATED,
-        AssociatedJobType.EXECUTION_LISTENER);
+        ActivityType.EXECUTION_LISTENER);
     ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_start_type_1").complete();
     assertJobLifecycle(
         processInstanceKey,
         0,
         "dmk_task_start_type_1",
         JobIntent.COMPLETED,
-        AssociatedJobType.EXECUTION_LISTENER);
+        ActivityType.EXECUTION_LISTENER);
 
     // when - then
     assertJobLifecycle(
@@ -75,14 +75,14 @@ public class ExecutionListenerJobTest {
         1,
         "dmk_task_start_type_2",
         JobIntent.CREATED,
-        AssociatedJobType.EXECUTION_LISTENER);
+        ActivityType.EXECUTION_LISTENER);
     ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_start_type_2").complete();
     assertJobLifecycle(
         processInstanceKey,
         1,
         "dmk_task_start_type_2",
         JobIntent.COMPLETED,
-        AssociatedJobType.EXECUTION_LISTENER);
+        ActivityType.EXECUTION_LISTENER);
 
     // when - then
     assertJobLifecycle(
@@ -90,21 +90,21 @@ public class ExecutionListenerJobTest {
         2,
         "dmk_task_start_type_3",
         JobIntent.CREATED,
-        AssociatedJobType.EXECUTION_LISTENER);
+        ActivityType.EXECUTION_LISTENER);
     ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_start_type_3").complete();
     assertJobLifecycle(
         processInstanceKey,
         2,
         "dmk_task_start_type_3",
         JobIntent.COMPLETED,
-        AssociatedJobType.EXECUTION_LISTENER);
+        ActivityType.EXECUTION_LISTENER);
 
     // when - then
     assertJobLifecycle(
-        processInstanceKey, 3, "dmk_task_type", JobIntent.CREATED, AssociatedJobType.REGULAR);
+        processInstanceKey, 3, "dmk_task_type", JobIntent.CREATED, ActivityType.REGULAR);
     ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_type").complete();
     assertJobLifecycle(
-        processInstanceKey, 3, "dmk_task_type", JobIntent.COMPLETED, AssociatedJobType.REGULAR);
+        processInstanceKey, 3, "dmk_task_type", JobIntent.COMPLETED, ActivityType.REGULAR);
 
     // when - then
     assertJobLifecycle(
@@ -112,14 +112,14 @@ public class ExecutionListenerJobTest {
         4,
         "dmk_task_end_type_1",
         JobIntent.CREATED,
-        AssociatedJobType.EXECUTION_LISTENER);
+        ActivityType.EXECUTION_LISTENER);
     ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_end_type_1").complete();
     assertJobLifecycle(
         processInstanceKey,
         4,
         "dmk_task_end_type_1",
         JobIntent.COMPLETED,
-        AssociatedJobType.EXECUTION_LISTENER);
+        ActivityType.EXECUTION_LISTENER);
   }
 
   void assertJobLifecycle(
@@ -127,7 +127,7 @@ public class ExecutionListenerJobTest {
       final long jobIndex,
       final String expectedJobType,
       final JobIntent expectedJobIntent,
-      final AssociatedJobType expectedAssociatedJobType) {
+      final ActivityType expectedActivityType) {
     final Record<ProcessInstanceRecordValue> activatingJob =
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey)
@@ -147,7 +147,7 @@ public class ExecutionListenerJobTest {
         .hasProcessDefinitionKey(activatingJob.getValue().getProcessDefinitionKey())
         .hasBpmnProcessId(activatingJob.getValue().getBpmnProcessId())
         .hasProcessDefinitionVersion(activatingJob.getValue().getVersion())
-        .hasAssociatedTo(expectedAssociatedJobType)
+        .hasActivityType(expectedActivityType)
         .hasType(expectedJobType);
   }
 }

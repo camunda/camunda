@@ -26,7 +26,7 @@ import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.protocol.record.value.JobRecordValue.AssociatedJobType;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue.ActivityType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.util.EnumSet;
@@ -158,7 +158,7 @@ public final class BpmnJobBehavior {
         .setElementId(element.getId())
         .setElementInstanceKey(context.getElementInstanceKey())
         .setTenantId(context.getTenantId())
-        .setAssociatedTo(AssociatedJobType.EXECUTION_LISTENER);
+        .setActivityType(ActivityType.EXECUTION_LISTENER);
 
     final var jobKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
@@ -194,7 +194,7 @@ public final class BpmnJobBehavior {
         .setElementId(jobWorkerElement.getId())
         .setElementInstanceKey(context.getElementInstanceKey())
         .setTenantId(context.getTenantId())
-        .setAssociatedTo(AssociatedJobType.REGULAR);
+        .setActivityType(ActivityType.REGULAR);
 
     final var jobKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);

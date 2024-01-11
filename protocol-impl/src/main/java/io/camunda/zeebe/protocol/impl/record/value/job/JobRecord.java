@@ -40,8 +40,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private final StringProperty typeProp = new StringProperty(TYPE, EMPTY_STRING);
 
   private final StringProperty workerProp = new StringProperty("worker", EMPTY_STRING);
-  private final EnumProperty<AssociatedJobType> associatedTo =
-      new EnumProperty<>("associatedTo", AssociatedJobType.class, AssociatedJobType.REGULAR);
+  private final EnumProperty<ActivityType> activityType =
+      new EnumProperty<>("activityType", ActivityType.class, ActivityType.REGULAR);
   private final LongProperty deadlineProp = new LongProperty("deadline", -1);
   private final LongProperty timeoutProp = new LongProperty("timeout", -1);
   private final IntegerProperty retriesProp = new IntegerProperty(RETRIES, -1);
@@ -72,7 +72,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     declareProperty(deadlineProp)
         .declareProperty(timeoutProp)
         .declareProperty(workerProp)
-        .declareProperty(associatedTo)
+        .declareProperty(activityType)
         .declareProperty(retriesProp)
         .declareProperty(retryBackoffProp)
         .declareProperty(recurringTimeProp)
@@ -94,7 +94,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     deadlineProp.setValue(record.getDeadline());
     timeoutProp.setValue(record.getTimeout());
     workerProp.setValue(record.getWorkerBuffer());
-    associatedTo.setValue(record.getAssociatedTo());
+    activityType.setValue(record.getActivityType());
     retriesProp.setValue(record.getRetries());
     retryBackoffProp.setValue(record.getRetryBackoff());
     recurringTimeProp.setValue(record.getRecurringTime());
@@ -153,8 +153,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   }
 
   @Override
-  public AssociatedJobType getAssociatedTo() {
-    return associatedTo.getValue();
+  public ActivityType getActivityType() {
+    return activityType.getValue();
   }
 
   @Override
@@ -290,8 +290,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return this;
   }
 
-  public JobRecord setAssociatedTo(final AssociatedJobType associatedJobType) {
-    associatedTo.setValue(associatedJobType);
+  public JobRecord setActivityType(final ActivityType associatedJobType) {
+    activityType.setValue(associatedJobType);
     return this;
   }
 

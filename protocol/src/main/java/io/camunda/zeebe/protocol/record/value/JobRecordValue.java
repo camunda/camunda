@@ -46,7 +46,7 @@ public interface JobRecordValue
    */
   String getWorker();
 
-  AssociatedJobType getAssociatedTo();
+  ActivityType getActivityType();
 
   /**
    * @return remaining retries
@@ -116,7 +116,7 @@ public interface JobRecordValue
    */
   long getProcessDefinitionKey();
 
-  enum AssociatedJobType {
+  enum ActivityType {
     REGULAR,
     EXECUTION_LISTENER,
     TASK_LISTENER
