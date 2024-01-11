@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionList
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -96,20 +97,14 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
     final List<ExecutionListener> startExecutionListeners =
         getExecutionListenersByEventType(element, ZeebeExecutionListenerEventType.start);
 
-    final List<String> types =
-        startExecutionListeners.stream()
-            .map(el -> el.getJobWorkerProperties().getType().getExpression())
-            .toList();
-
-    final int nextElement = types.indexOf(currentExecutionListenerType) + 1;
-
-    if (nextElement < startExecutionListeners.size()) {
-      createExecutionListenerJob(element, context, startExecutionListeners.get(nextElement));
-    } else {
-      regularJobExecution(element, context)
-          .ifRightOrLeft(
-              ignore -> {}, failure -> incidentBehavior.createIncident(failure, context));
-    }
+    findNextExecutionListener(startExecutionListeners, currentExecutionListenerType)
+        .ifPresentOrElse(
+            el -> createExecutionListenerJob(element, context, el),
+            () ->
+                regularJobExecution(element, context)
+                    .ifRightOrLeft(
+                        ignore -> {},
+                        failure -> incidentBehavior.createIncident(failure, context)));
   }
 
   @Override
@@ -139,6 +134,14 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
                   stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
               stateTransitionBehavior.onElementTerminated(element, terminated);
             });
+  }
+
+  private Optional<ExecutionListener> findNextExecutionListener(
+      final List<ExecutionListener> listeners, final String currentType) {
+    return listeners.stream()
+        .dropWhile(el -> !el.getJobWorkerProperties().getType().getExpression().equals(currentType))
+        .skip(1) // Skip current listener
+        .findFirst();
   }
 
   private List<ExecutionListener> getExecutionListenersByEventType(
