@@ -15,7 +15,7 @@ import {loadProcessDefinitionXml} from 'services';
 
 import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
 
-import {NodeSelection} from './NodeSelection';
+import NodeSelection from './NodeSelection';
 
 jest.mock('hooks', () => ({
   ...jest.requireActual('hooks'),
@@ -154,15 +154,15 @@ it('should disable create filter button if all nodes are selected', async () => 
   expect(node.find(Modal.Footer).find('.confirm').prop('disabled')).toBeTruthy();
 });
 
-it('should deselect/select All nodes when toggling the checkbox', async () => {
+it('should deselect/select All nodes using the provided buttons', async () => {
   const node = shallow(<NodeSelection {...props} />);
 
   await runAllEffects();
 
-  node.find('.diagramActions Checkbox').simulate('change', {}, {checked: false});
+  node.find('.diagramActions Button').at(1).simulate('click');
   expect(node.find(ClickBehavior).prop('selectedNodes')).toEqual([]);
 
-  node.find('.diagramActions Checkbox').simulate('change', {}, {checked: true});
+  node.find('.diagramActions Button').at(0).simulate('click');
   expect(node.find(ClickBehavior).prop('selectedNodes')).toEqual(['a', 'b', 'c']);
 });
 

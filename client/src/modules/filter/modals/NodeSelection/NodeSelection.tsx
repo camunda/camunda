@@ -7,7 +7,7 @@
 
 import {useEffect, useState} from 'react';
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
-import {Button, Checkbox, Loading} from '@carbon/react';
+import {Button, ButtonSet, Loading} from '@carbon/react';
 
 import {Modal, BPMNDiagram, ClickBehavior, RegistryElement, ModdleElement} from 'components';
 import {loadProcessDefinitionXml} from 'services';
@@ -29,7 +29,12 @@ interface NodeSelectionProps
   filterType: 'executedFlowNodes' | 'executingFlowNodes' | 'canceledFlowNodes';
 }
 
-export function NodeSelection({filterData, definitions, close, addFilter}: NodeSelectionProps) {
+export default function NodeSelection({
+  filterData,
+  definitions,
+  close,
+  addFilter,
+}: NodeSelectionProps) {
   const [allFlowNodes, setAllFlowNodes] = useState<string[]>([]);
   const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
   const [applyTo, setApplyTo] = useState(() => {
@@ -120,14 +125,14 @@ export function NodeSelection({filterData, definitions, close, addFilter}: NodeS
           <>
             <p>{t('common.filter.UnselectFlowNodes')}</p>
             <div className="diagramActions">
-              <Checkbox
-                id="nodeSelectionSelectAll"
-                checked={isAllSelected()}
-                labelText={t('common.selectAll')}
-                onChange={(_, {checked}) => {
-                  setSelectedNodes(checked ? allFlowNodes : []);
-                }}
-              />
+              <ButtonSet>
+                <Button size="md" kind="tertiary" onClick={() => setSelectedNodes(allFlowNodes)}>
+                  {t('common.selectAll')}
+                </Button>
+                <Button size="md" kind="tertiary" onClick={() => setSelectedNodes([])}>
+                  {t('common.deselectAll')}
+                </Button>
+              </ButtonSet>
             </div>
             <div className="diagramContainer">
               <BPMNDiagram xml={xml}>
@@ -152,5 +157,3 @@ export function NodeSelection({filterData, definitions, close, addFilter}: NodeS
     </Modal>
   );
 }
-
-export default NodeSelection;
