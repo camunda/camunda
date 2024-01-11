@@ -37,7 +37,10 @@ import io.camunda.zeebe.backup.azure.manifest.Manifest.StatusCode;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class ManifestManager {
   public static final int PRECONDITION_FAILED = 412;
@@ -209,7 +212,7 @@ public final class ManifestManager {
   public Collection<Manifest> listManifests(final BackupIdentifierWildcard wildcard) {
 
     return blobContainerClient
-        .listBlobs(new ListBlobsOptions().setPrefix("manifests/"), null)
+        .listBlobs(new ListBlobsOptions().setPrefix(wildcardPrefix(wildcard)), null)
         .stream()
         .map(BlobItem::getName)
         .filter(path -> filterBlobsByWildcard(wildcard, path))
@@ -236,6 +239,20 @@ public final class ManifestManager {
                     wildcard.nodeId().map(Number::toString).orElse("\\d+")))
             .asMatchPredicate();
     return pattern.test(path);
+  }
+
+  /**
+   * Tries to build the longest possible prefix based on the given wildcard. If the first component
+   * of prefix is not present in the wildcard, the prefix will be empty. If the second component of
+   * the prefix is empty, the prefix will only contain the first prefix component and so forth.
+   */
+  private String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
+    //noinspection OptionalGetWithoutIsPresent -- checked by takeWhile
+    return Stream.of(wildcard.partitionId(), wildcard.checkpointId(), wildcard.nodeId())
+        .takeWhile(Optional::isPresent)
+        .map(Optional::get)
+        .map(Number::toString)
+        .collect(Collectors.joining("/", "manifests/", ""));
   }
 
   void assureContainerCreated() {

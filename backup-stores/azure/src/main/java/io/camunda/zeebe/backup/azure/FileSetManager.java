@@ -24,8 +24,8 @@ import java.nio.file.Path;
 import java.util.stream.Collectors;
 
 final class FileSetManager {
-  // The path format is constructed by backups/partitionId/checkpointId/nodeId/nameOfFile
-  private static final String PATH_FORMAT = "backups/%s/%s/%s/%s/";
+  // The path format is constructed by contents/partitionId/checkpointId/nodeId/nameOfFile
+  private static final String PATH_FORMAT = "contents/%s/%s/%s/%s/";
   private final BlobContainerClient containerClient;
   private boolean containerCreated = false;
 
