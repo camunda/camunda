@@ -27,6 +27,13 @@ const MOCK_TASK_ID = 'task-0';
 const REQUESTED_VARIABLES = ['myVar', 'isCool'];
 const DYNAMIC_FORM_REQUESTED_VARIABLES = ['radio_field', 'radio_field_options'];
 
+type VariableSearchRequestBody = {
+  includeVariables?: Array<{
+    name: string;
+    alwaysReturnFullValue: boolean;
+  }>;
+};
+
 const getWrapper = () => {
   const mockClient = getMockQueryClient();
 
@@ -41,13 +48,25 @@ const getWrapper = () => {
   return Wrapper;
 };
 
-function areArraysEqual(firstArray: unknown[], secondArray: unknown[]) {
+function arraysContainSameValues(
+  firstArray: unknown[],
+  secondArray: unknown[],
+) {
   return (
     firstArray.length === secondArray.length &&
     firstArray
       .map((item) => secondArray.includes(item))
       .every((result) => result)
   );
+}
+
+function hasRequestedVariables(
+  req: VariableSearchRequestBody,
+  expectedVariableNames: string[],
+) {
+  const requestedVariables = req.includeVariables ?? [];
+  const names = requestedVariables.map((variable) => variable.name);
+  return arraysContainSameValues(expectedVariableNames, names);
 }
 
 describe('<FormJS />', () => {
@@ -65,8 +84,7 @@ describe('<FormJS />', () => {
   it('should render form for unassigned task', async () => {
     nodeMockServer.use(
       rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
-        const body = await req.json();
-        if (areArraysEqual(REQUESTED_VARIABLES, body.variableNames)) {
+        if (hasRequestedVariables(await req.json(), REQUESTED_VARIABLES)) {
           return res.once(ctx.json(variableMocks.variables));
         }
 
@@ -114,8 +132,7 @@ describe('<FormJS />', () => {
   it('should render form for assigned task', async () => {
     nodeMockServer.use(
       rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
-        const body = await req.json();
-        if (areArraysEqual(REQUESTED_VARIABLES, body.variableNames)) {
+        if (hasRequestedVariables(await req.json(), REQUESTED_VARIABLES)) {
           return res.once(ctx.json(variableMocks.variables));
         }
 
@@ -162,8 +179,7 @@ describe('<FormJS />', () => {
   it('should render a prefilled form', async () => {
     nodeMockServer.use(
       rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
-        const body = await req.json();
-        if (areArraysEqual(REQUESTED_VARIABLES, body.variableNames)) {
+        if (hasRequestedVariables(await req.json(), REQUESTED_VARIABLES)) {
           return res.once(ctx.json(variableMocks.variables));
         }
 
@@ -207,8 +223,7 @@ describe('<FormJS />', () => {
   it('should submit prefilled form', async () => {
     nodeMockServer.use(
       rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
-        const body = await req.json();
-        if (areArraysEqual(REQUESTED_VARIABLES, body.variableNames)) {
+        if (hasRequestedVariables(await req.json(), REQUESTED_VARIABLES)) {
           return res.once(ctx.json(variableMocks.variables));
         }
 
@@ -268,8 +283,7 @@ describe('<FormJS />', () => {
   it('should submit edited form', async () => {
     nodeMockServer.use(
       rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
-        const body = await req.json();
-        if (areArraysEqual(REQUESTED_VARIABLES, body.variableNames)) {
+        if (hasRequestedVariables(await req.json(), REQUESTED_VARIABLES)) {
           return res.once(ctx.json(variableMocks.variables));
         }
 
@@ -337,10 +351,11 @@ describe('<FormJS />', () => {
         return res(ctx.json(formMocks.dynamicForm));
       }),
       rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
-        const body = await req.json();
-
         if (
-          areArraysEqual(DYNAMIC_FORM_REQUESTED_VARIABLES, body.variableNames)
+          hasRequestedVariables(
+            await req.json(),
+            DYNAMIC_FORM_REQUESTED_VARIABLES,
+          )
         ) {
           return res.once(ctx.json(variableMocks.dynamicFormVariables));
         }

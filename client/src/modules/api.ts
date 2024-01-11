@@ -158,6 +158,16 @@ const api = {
       },
     });
   },
+  getAllVariables: ({taskId}: {taskId: Task['id']}) => {
+    return new Request(getFullURL(`/v1/tasks/${taskId}/variables/search`), {
+      ...BASE_REQUEST_OPTIONS,
+      method: 'POST',
+      body: JSON.stringify({variableNames: []}),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  },
   searchVariables: ({
     taskId,
     variableNames,
@@ -165,10 +175,17 @@ const api = {
     taskId: Task['id'];
     variableNames: Task['name'][];
   }) => {
+    const body = {
+      includeVariables: variableNames.map((name) => ({
+        name,
+        alwaysReturnFullValue: true,
+      })),
+    };
+
     return new Request(getFullURL(`/v1/tasks/${taskId}/variables/search`), {
       ...BASE_REQUEST_OPTIONS,
       method: 'POST',
-      body: JSON.stringify({variableNames}),
+      body: JSON.stringify(body),
       headers: {
         'Content-Type': 'application/json',
       },

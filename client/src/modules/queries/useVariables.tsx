@@ -5,31 +5,25 @@
  * except in compliance with the proprietary license.
  */
 
-import {useQuery, useQueryClient, UseQueryOptions} from '@tanstack/react-query';
+import {useQuery, UseQueryOptions} from '@tanstack/react-query';
 import {api} from 'modules/api';
 import {request, RequestError} from 'modules/request';
-import {FullVariable, Task, Variable} from 'modules/types';
-import {useState} from 'react';
+import {Task, Variable} from 'modules/types';
 
 type Params = {
   taskId: Task['id'];
-  variableNames?: Variable['name'][];
+  variableNames: Variable['name'][];
 };
 
-function useVariables(
-  params: Params,
-  options: Pick<
-    UseQueryOptions<Variable[], RequestError | Error>,
-    'enabled' | 'refetchOnWindowFocus' | 'refetchOnReconnect'
-  > = {},
-) {
-  const client = useQueryClient();
-  const [variablesLoadingFullValue, setVariablesLoadingFullValue] = useState<
-    Variable['id'][]
-  >([]);
-  const {taskId, variableNames = []} = params;
+type Options = Pick<
+  UseQueryOptions<Variable[], RequestError | Error>,
+  'enabled' | 'refetchOnWindowFocus' | 'refetchOnReconnect'
+>;
+
+function useVariables(params: Params, options: Options = {}) {
+  const {taskId, variableNames} = params;
   const variablesQueryKey = ['variables', taskId, ...variableNames];
-  const queryResult = useQuery<Variable[], RequestError | Error>({
+  return useQuery<Variable[], RequestError | Error>({
     ...options,
     queryKey: variablesQueryKey,
     queryFn: async () => {
@@ -41,54 +35,9 @@ function useVariables(
         return response.json();
       }
 
-      throw error ?? new Error('Could not fetch variables');
+      throw error;
     },
   });
-
-  async function fetchFullVariable(id: Variable['id']) {
-    setVariablesLoadingFullValue((variables) => [...variables, id]);
-    const fullVariable = await client.fetchQuery<
-      Pick<Variable, 'id' | 'name' | 'value'>,
-      RequestError | Error
-    >({
-      queryKey: ['variable', id],
-      queryFn: async () => {
-        const {response, error} = await request(api.getFullVariable(id));
-
-        if (response !== null) {
-          return response.json();
-        }
-
-        throw error ?? new Error('Could not fetch variable');
-      },
-    });
-
-    setVariablesLoadingFullValue((variables) =>
-      variables.filter((variable) => variable !== id),
-    );
-
-    client.setQueryData<Variable[]>(
-      variablesQueryKey,
-      (cachedVariables) =>
-        cachedVariables?.map((variable) => {
-          if (variable.id === id) {
-            return {
-              ...variable,
-              ...fullVariable,
-              isValueTruncated: false,
-            } as FullVariable;
-          }
-
-          return variable;
-        }),
-    );
-  }
-
-  return {
-    ...queryResult,
-    fetchFullVariable,
-    variablesLoadingFullValue,
-  };
 }
 
 export {useVariables};

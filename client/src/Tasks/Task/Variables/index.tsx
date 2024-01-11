@@ -67,7 +67,7 @@ import {
 } from 'modules/components/TaskDetailsLayout';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
 import {Separator} from 'modules/components/Separator';
-import {useVariables} from 'modules/queries/useVariables';
+import {useAllVariables} from 'modules/queries/useAllVariables';
 import {match, Pattern} from 'ts-pattern';
 import {FailedVariableFetchError} from 'modules/components/FailedVariableFetchError';
 
@@ -116,7 +116,7 @@ const Variables: React.FC<Props> = ({
     fetchFullVariable,
     variablesLoadingFullValue,
     status,
-  } = useVariables(
+  } = useAllVariables(
     {
       taskId: task.id,
     },

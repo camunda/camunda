@@ -20,6 +20,10 @@ import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 
+type VariableSearchRequestBody = {
+  variableNames?: string[];
+};
+
 const getWrapper = () => {
   const mockClient = getMockQueryClient();
 
@@ -33,6 +37,10 @@ const getWrapper = () => {
 
   return Wrapper;
 };
+
+function isRequestingAllVariables(req: VariableSearchRequestBody) {
+  return req.variableNames !== undefined && req.variableNames.length == 0;
+}
 
 describe('<Variables />', () => {
   beforeEach(() => {
@@ -81,8 +89,18 @@ describe('<Variables />', () => {
 
   it('should show existing variables for unassigned tasks', async () => {
     nodeMockServer.use(
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res(ctx.json(variableMocks.variables));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        if (isRequestingAllVariables(await req.json())) {
+          return res(ctx.json(variableMocks.variables));
+        }
+        return res(
+          ctx.json([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+          ctx.status(400),
+        );
       }),
     );
 
@@ -108,8 +126,18 @@ describe('<Variables />', () => {
 
   it('should show a message when the tasks has no variables', async () => {
     nodeMockServer.use(
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res(ctx.json([]));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        if (isRequestingAllVariables(await req.json())) {
+          return res(ctx.json([]));
+        }
+        return res(
+          ctx.json([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+          ctx.status(400),
+        );
       }),
     );
 
@@ -136,8 +164,18 @@ describe('<Variables />', () => {
 
   it('should edit variable', async () => {
     nodeMockServer.use(
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res(ctx.json(variableMocks.variables));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        if (isRequestingAllVariables(await req.json())) {
+          return res(ctx.json(variableMocks.variables));
+        }
+        return res(
+          ctx.json([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+          ctx.status(400),
+        );
       }),
     );
 
@@ -171,8 +209,18 @@ describe('<Variables />', () => {
 
   it('should add two variables and remove one', async () => {
     nodeMockServer.use(
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        if (isRequestingAllVariables(await req.json())) {
+          return res(ctx.json(variableMocks.variables));
+        }
+        return res(
+          ctx.json([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+          ctx.status(400),
+        );
       }),
     );
 
@@ -218,8 +266,18 @@ describe('<Variables />', () => {
 
   it('should add variable on task without variables', async () => {
     nodeMockServer.use(
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        if (isRequestingAllVariables(await req.json())) {
+          return res(ctx.json(variableMocks.variables));
+        }
+        return res(
+          ctx.json([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+          ctx.status(400),
+        );
       }),
     );
 
@@ -246,8 +304,18 @@ describe('<Variables />', () => {
 
   it('should validate an empty variable name', async () => {
     nodeMockServer.use(
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        if (isRequestingAllVariables(await req.json())) {
+          return res(ctx.json(variableMocks.variables));
+        }
+        return res(
+          ctx.json([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+          ctx.status(400),
+        );
       }),
     );
 
@@ -281,8 +349,18 @@ describe('<Variables />', () => {
 
   it('should validate an invalid variable name', async () => {
     nodeMockServer.use(
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        if (isRequestingAllVariables(await req.json())) {
+          return res(ctx.json(variableMocks.variables));
+        }
+        return res(
+          ctx.json([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+          ctx.status(400),
+        );
       }),
     );
 
@@ -333,8 +411,18 @@ describe('<Variables />', () => {
 
   it('should validate an empty variable value', async () => {
     nodeMockServer.use(
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        if (isRequestingAllVariables(await req.json())) {
+          return res(ctx.json(variableMocks.variables));
+        }
+        return res(
+          ctx.json([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+          ctx.status(400),
+        );
       }),
     );
 
@@ -365,8 +453,18 @@ describe('<Variables />', () => {
 
   it('should validate an invalid variable value', async () => {
     nodeMockServer.use(
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        if (isRequestingAllVariables(await req.json())) {
+          return res(ctx.json(variableMocks.variables));
+        }
+        return res(
+          ctx.json([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+          ctx.status(400),
+        );
       }),
     );
 
@@ -404,8 +502,18 @@ describe('<Variables />', () => {
 
   it('should not validate valid variables', async () => {
     nodeMockServer.use(
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        if (isRequestingAllVariables(await req.json())) {
+          return res(ctx.json(variableMocks.variables));
+        }
+        return res(
+          ctx.json([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+          ctx.status(400),
+        );
       }),
     );
 
@@ -450,11 +558,31 @@ describe('<Variables />', () => {
 
   it('should handle submission', async () => {
     nodeMockServer.use(
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        if (isRequestingAllVariables(await req.json())) {
+          return res(ctx.json(variableMocks.variables));
+        }
+        return res(
+          ctx.json([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+          ctx.status(400),
+        );
       }),
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        if (isRequestingAllVariables(await req.json())) {
+          return res(ctx.json(variableMocks.variables));
+        }
+        return res(
+          ctx.json([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+          ctx.status(400),
+        );
       }),
     );
 
@@ -540,8 +668,18 @@ describe('<Variables />', () => {
 
   it('should change variable and complete task', async () => {
     nodeMockServer.use(
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        if (isRequestingAllVariables(await req.json())) {
+          return res(ctx.json(variableMocks.variables));
+        }
+        return res(
+          ctx.json([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+          ctx.status(400),
+        );
       }),
     );
 
@@ -590,8 +728,18 @@ describe('<Variables />', () => {
       rest.get('/v1/internal/users/current', (_, res, ctx) => {
         return res.once(ctx.json(userMocks.currentRestrictedUser));
       }),
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        if (isRequestingAllVariables(await req.json())) {
+          return res(ctx.json(variableMocks.variables));
+        }
+        return res(
+          ctx.json([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+          ctx.status(400),
+        );
       }),
     );
 
@@ -623,8 +771,18 @@ describe('<Variables />', () => {
 
   it('should add new variable and complete task', async () => {
     nodeMockServer.use(
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        if (isRequestingAllVariables(await req.json())) {
+          return res(ctx.json(variableMocks.variables));
+        }
+        return res(
+          ctx.json([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+          ctx.status(400),
+        );
       }),
     );
 
@@ -672,8 +830,18 @@ describe('<Variables />', () => {
 
   it('should hide add variable button on completed tasks', async () => {
     nodeMockServer.use(
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        if (isRequestingAllVariables(await req.json())) {
+          return res(ctx.json(variableMocks.variables));
+        }
+        return res(
+          ctx.json([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+          ctx.status(400),
+        );
       }),
     );
 
@@ -697,8 +865,18 @@ describe('<Variables />', () => {
 
   it('should disable submit button on form errors for existing variables', async () => {
     nodeMockServer.use(
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        if (isRequestingAllVariables(await req.json())) {
+          return res(ctx.json(variableMocks.variables));
+        }
+        return res(
+          ctx.json([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+          ctx.status(400),
+        );
       }),
     );
 
@@ -729,8 +907,18 @@ describe('<Variables />', () => {
 
   it('should disable submit button on form errors for new variables', async () => {
     nodeMockServer.use(
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        if (isRequestingAllVariables(await req.json())) {
+          return res(ctx.json(variableMocks.variables));
+        }
+        return res(
+          ctx.json([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+          ctx.status(400),
+        );
       }),
     );
 
@@ -765,8 +953,18 @@ describe('<Variables />', () => {
 
   it('should disable completion button', async () => {
     nodeMockServer.use(
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        if (isRequestingAllVariables(await req.json())) {
+          return res(ctx.json(variableMocks.variables));
+        }
+        return res(
+          ctx.json([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+          ctx.status(400),
+        );
       }),
     );
 
@@ -790,8 +988,18 @@ describe('<Variables />', () => {
 
   it('should hide completion button on completed tasks', async () => {
     nodeMockServer.use(
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        if (isRequestingAllVariables(await req.json())) {
+          return res(ctx.json(variableMocks.variables));
+        }
+        return res(
+          ctx.json([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+          ctx.status(400),
+        );
       }),
     );
 
@@ -819,8 +1027,18 @@ describe('<Variables />', () => {
       rest.get('/v1/internal/users/current', (_, res, ctx) => {
         return res.once(ctx.json(userMocks.currentUser));
       }),
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.truncatedVariables));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        if (isRequestingAllVariables(await req.json())) {
+          return res(ctx.json(variableMocks.truncatedVariables));
+        }
+        return res(
+          ctx.json([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+          ctx.status(400),
+        );
       }),
       rest.get('/v1/variables/:variableId', (_, res, ctx) => {
         return res.once(ctx.json(variableMocks.fullVariable()));
@@ -877,8 +1095,18 @@ describe('<Variables />', () => {
       rest.get('/v1/internal/users/current', (_, res, ctx) => {
         return res.once(ctx.json(userMocks.currentUser));
       }),
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.truncatedVariables));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        if (isRequestingAllVariables(await req.json())) {
+          return res(ctx.json(variableMocks.truncatedVariables));
+        }
+        return res(
+          ctx.json([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+          ctx.status(400),
+        );
       }),
       rest.get('/v1/variables/:variableId', (req, res, ctx) => {
         switch (req.params.variableId) {
@@ -929,14 +1157,34 @@ describe('<Variables />', () => {
       rest.get('/v1/internal/users/current', (_, res, ctx) => {
         return res.once(ctx.json(userMocks.currentUser));
       }),
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.truncatedVariables));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        if (isRequestingAllVariables(await req.json())) {
+          return res(ctx.json(variableMocks.truncatedVariables));
+        }
+        return res(
+          ctx.json([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+          ctx.status(400),
+        );
       }),
       rest.get('/v1/internal/users/current', (_, res, ctx) => {
         return res.once(ctx.json(userMocks.currentUser));
       }),
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.truncatedVariables));
+      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
+        if (isRequestingAllVariables(await req.json())) {
+          return res(ctx.json(variableMocks.truncatedVariables));
+        }
+        return res(
+          ctx.json([
+            {
+              message: 'Invalid variables',
+            },
+          ]),
+          ctx.status(400),
+        );
       }),
     );
     const mockOnSubmit = vi.fn();
@@ -971,9 +1219,22 @@ describe('<Variables />', () => {
   describe('Duplicate variable validations', () => {
     it('should display error if name is the same with one of the existing variables', async () => {
       nodeMockServer.use(
-        rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-          return res.once(ctx.json(variableMocks.variables));
-        }),
+        rest.post(
+          '/v1/tasks/:taskId/variables/search',
+          async (req, res, ctx) => {
+            if (isRequestingAllVariables(await req.json())) {
+              return res(ctx.json(variableMocks.variables));
+            }
+            return res(
+              ctx.json([
+                {
+                  message: 'Invalid variables',
+                },
+              ]),
+              ctx.status(400),
+            );
+          },
+        ),
       );
 
       const {user} = render(
@@ -1065,9 +1326,22 @@ describe('<Variables />', () => {
 
     it('should display error if duplicate name is used and immediately started typing on to the value field', async () => {
       nodeMockServer.use(
-        rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-          return res.once(ctx.json(variableMocks.variables));
-        }),
+        rest.post(
+          '/v1/tasks/:taskId/variables/search',
+          async (req, res, ctx) => {
+            if (isRequestingAllVariables(await req.json())) {
+              return res(ctx.json(variableMocks.variables));
+            }
+            return res(
+              ctx.json([
+                {
+                  message: 'Invalid variables',
+                },
+              ]),
+              ctx.status(400),
+            );
+          },
+        ),
       );
 
       const {user} = render(
@@ -1114,9 +1388,22 @@ describe('<Variables />', () => {
 
     it('should continue to display existing duplicate name error', async () => {
       nodeMockServer.use(
-        rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-          return res.once(ctx.json(variableMocks.variables));
-        }),
+        rest.post(
+          '/v1/tasks/:taskId/variables/search',
+          async (req, res, ctx) => {
+            if (isRequestingAllVariables(await req.json())) {
+              return res(ctx.json(variableMocks.variables));
+            }
+            return res(
+              ctx.json([
+                {
+                  message: 'Invalid variables',
+                },
+              ]),
+              ctx.status(400),
+            );
+          },
+        ),
       );
 
       const {user} = render(

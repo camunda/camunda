@@ -100,7 +100,10 @@ const FormJS: React.FC<Props> = ({
       refetchOnWindowFocus: assignee === null,
     },
   );
-  const variables = useMemo(() => variablesData ?? [], [variablesData]);
+  const formattedData = useMemo(
+    () => formatVariablesToFormData(variablesData ?? []),
+    [variablesData],
+  );
   const hasFetchedVariables =
     extractedVariables.length === 0 || status === 'success';
   const canCompleteTask =
@@ -137,7 +140,7 @@ const FormJS: React.FC<Props> = ({
                 ({schema}) => (
                   <FormJSRenderer
                     schema={schema}
-                    data={formatVariablesToFormData(variables)}
+                    data={formattedData}
                     readOnly={!canCompleteTask}
                     onMount={(formManager) => {
                       formManagerRef.current = formManager;
