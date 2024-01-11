@@ -44,9 +44,9 @@ worker:
 # Starter configuration for the to be deployed starter application
 starter:
   # Starter.replicas defines how many replicas of the application should be deployed
-  replicas: 1
+  replicas: 2
   # Starter.rate defines with which rate process instances should be created by the starter
-  rate: 500
+  rate: 250
 
 # Publisher configuration for the to be deployed publisher application
 publisher:
