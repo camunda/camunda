@@ -11,6 +11,7 @@ on:
   pull_request: { }
   workflow_dispatch: { }
   workflow_call: { }
+  merge_group: { }
 
 defaults:
   run:
