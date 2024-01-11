@@ -91,7 +91,7 @@ services:
       - elasticsearch
   keycloak:
     container_name: keycloak
-    image: bitnami/keycloak:23.0.3@sha256:c99ac6991c6972c6edd47e8d72d34446bb6cb97e8f4db02f48d69488e392eb3b
+    image: bitnami/keycloak:23.0.4@sha256:6e8eed9c099545a5e2da0bd779bbe01a8a176e8c2dcfd3013404fd5a39846dc8
     profiles: ['self-managed']
     ports:
       - "18080:8080"
