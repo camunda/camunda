@@ -599,3 +599,45 @@ test('copy instant preview dashboard', async (t) => {
   await t.expect(Common.collectionItem.nth(0).textContent).contains('Analysis Testing Process');
   await t.expect(Common.collectionItem.nth(1).textContent).contains('another Collection Name');
 });
+
+test('copy dashboard tiles', async (t) => {
+  await t.click(Common.createNewButton);
+  await t.click(Common.menuOption('Dashboard'));
+
+  await t.click(Common.templateModalProcessField);
+  await t.click(Common.carbonOption('Invoice Receipt with alternative correlation variable'));
+  await t.click(e.templateOption('Improve productivity'));
+  await t.click(Common.modalConfirmButton);
+
+  // Text tile
+  await t.expect(e.textTile.count).eql(6);
+
+  await t.click(e.textTile.nth(0).find('.CopyButton'));
+  await t.click('.DashboardRenderer');
+  await t.expect(e.textTile.count).eql(7);
+
+  // External URL tile
+  await t.expect(e.externalUrlTile.count).eql(0);
+
+  await t.click(Common.addButton);
+  await t.click(e.externalSourceLink);
+  await t.typeText(e.externalSourceInput, 'http://example.com/');
+  await t.click(e.addTileButton);
+  await t.click('.DashboardRenderer');
+
+  await t.expect(e.externalUrlTile.count).eql(1);
+
+  // Optimize report tile
+  await t.expect(e.reportTile.count).eql(8);
+
+  await t.click(e.reportTile.nth(0).find('.CopyButton'));
+  await t.click('.DashboardRenderer');
+  await t.expect(e.reportTile.count).eql(9);
+
+  await u.save(t);
+  await t.click(Common.editButton);
+
+  await t.click(e.reportTile.nth(0).find('.CopyButton'));
+  await t.click('.DashboardRenderer');
+  await t.expect(e.reportTile.count).eql(10);
+});

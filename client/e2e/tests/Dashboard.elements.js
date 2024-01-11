@@ -47,6 +47,8 @@ export const templateModalProcessTag = Selector('.TemplateModal .Tag');
 export const templateOption = (text) =>
   Selector('.Modal .templateContainer .Button').withText(text);
 export const reportTile = Selector('.OptimizeReportTile');
+export const textTile = Selector('.TextTile');
+export const externalUrlTile = Selector('.ExternalUrlTile');
 export const customValueAddButton = Selector('.customValueAddButton');
 export const typeaheadInput = Selector('.Typeahead .Input');
 export const alertsDropdown = Selector('.AlertsDropdown button');
