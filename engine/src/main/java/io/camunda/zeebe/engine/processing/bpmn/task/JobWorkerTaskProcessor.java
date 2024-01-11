@@ -74,18 +74,8 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
               compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
               return stateTransitionBehavior.transitionToCompleted(element, context);
             })
-        .ifRightOrLeft(
-            completed -> {
-              final List<ExecutionListener> endExecutionListeners =
-                  getExecutionListenersByEventType(element, ZeebeExecutionListenerEventType.end);
-
-              if (endExecutionListeners.isEmpty()) {
-                stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
-              } else {
-                createExecutionListenerJob(element, context, endExecutionListeners.getFirst());
-              }
-            },
-            failure -> incidentBehavior.createIncident(failure, context));
+        .flatMap(ignore -> handleEndExecutionListenersOrTaskCompletion(element, context))
+        .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
   }
 
   @Override
@@ -140,7 +130,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
       final List<ExecutionListener> listeners, final String currentType) {
     return listeners.stream()
         .dropWhile(el -> !el.getJobWorkerProperties().getType().getExpression().equals(currentType))
-        .skip(1) // Skip current listener
+        .skip(1) // skip current listener
         .findFirst();
   }
 
@@ -172,6 +162,22 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
               stateTransitionBehavior.transitionToActivated(context, element.getEventType());
               return context;
             });
+  }
+
+  private Either<Failure, BpmnElementContext> handleEndExecutionListenersOrTaskCompletion(
+      final ExecutableJobWorkerTask element, final BpmnElementContext context) {
+    final List<ExecutionListener> endExecutionListeners =
+        getExecutionListenersByEventType(element, ZeebeExecutionListenerEventType.end);
+
+    return endExecutionListeners.isEmpty()
+        ? regularJobCompletion(element, context)
+        : createExecutionListenerJob(element, context, endExecutionListeners.getFirst());
+  }
+
+  private Either<Failure, BpmnElementContext> regularJobCompletion(
+      final ExecutableJobWorkerTask element, final BpmnElementContext context) {
+    stateTransitionBehavior.takeOutgoingSequenceFlows(element, context);
+    return Either.right(context);
   }
 
   private Either<Failure, BpmnElementContext> createExecutionListenerJob(
