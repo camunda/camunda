@@ -25,7 +25,7 @@ public final class UserTaskUpdatedApplier
 
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
-    userTaskState.update(value);
+    userTaskState.update(value.getUserTaskKey(), task -> task.wrapChangedAttributes(value, false));
     userTaskState.updateUserTaskLifecycleState(key, LifecycleState.CREATED);
   }
 }

@@ -52,7 +52,7 @@ public final class UserTaskUpdateProcessor implements TypedRecordProcessor<UserT
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final long userTaskKey = command.getKey();
 
-    userTaskRecord.wrapChangedAttributes(command.getValue());
+    userTaskRecord.wrapChangedAttributes(command.getValue(), true);
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATING, userTaskRecord);
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);

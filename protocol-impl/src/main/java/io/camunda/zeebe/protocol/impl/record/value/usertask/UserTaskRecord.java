@@ -102,9 +102,13 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     setChangedAttributesProp(record.getChangedAttributesProp());
   }
 
-  public void wrapChangedAttributes(final UserTaskRecord record) {
+  public void wrapChangedAttributes(
+      final UserTaskRecord record, final boolean includeTrackingProperties) {
     record.getChangedAttributesProp().stream()
         .forEach(attribute -> updateAttribute(attribute, record));
+    if (includeTrackingProperties) {
+      setChangedAttributesProp(record.getChangedAttributesProp());
+    }
   }
 
   private void updateAttribute(final StringValue attribute, final UserTaskRecord record) {
