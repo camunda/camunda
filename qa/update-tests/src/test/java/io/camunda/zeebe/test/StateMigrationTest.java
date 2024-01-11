@@ -9,8 +9,9 @@ package io.camunda.zeebe.test;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.zeebe.containers.ZeebeBrokerContainer;
+import io.zeebe.containers.ZeebePort;
 import io.zeebe.containers.ZeebeVolume;
-import io.zeebe.containers.cluster.ZeebeCluster;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -27,26 +28,43 @@ import org.testcontainers.utility.DockerImageName;
 @Testcontainers
 public class StateMigrationTest {
 
-  private final ZeebeVolume volume = ZeebeVolume.newVolume();
+  public static final DockerImageName OLD_IMAGE = DockerImageName.parse("camunda/zeebe:8.2.20");
+  public static final DockerImageName NEW_IMAGE = DockerImageName.parse("camunda/zeebe:8.3.5");
 
-  private final ZeebeCluster cluster =
-      ZeebeCluster.builder()
-          .withBrokersCount(1)
-          //          .withGatewaysCount(0)
-          .withPartitionsCount(1)
-          //          .withEmbeddedGateway(true)
-          .withImage(DockerImageName.parse("camunda/zeebe").withTag("8.2.20"))
-          .build();
+  private final ZeebeVolume volume = ZeebeVolume.newVolume();
+  private ZeebeBrokerContainer broker;
+
+  //  private final ZeebeCluster cluster =
+  //      ZeebeCluster.builder()
+  //          .withBrokersCount(1)
+  //          //          .withGatewaysCount(0)
+  //          .withPartitionsCount(1)
+  //          //          .withEmbeddedGateway(true)
+  //          .withImage(DockerImageName.parse("camunda/zeebe").withTag("8.2.20"))
+  //          .build();
 
   @BeforeEach
-  void setup() {
-    cluster.getBrokers().values().forEach(broker -> broker.withZeebeData(volume));
-    cluster.start();
+  void setup() throws IOException, InterruptedException {
+    //    cluster.getBrokers().values().forEach(broker -> broker.withZeebeData(volume));
+    //    cluster.start();
+
+    //    final ZeebeVolume volume = new ZeebeVolume();
+    broker =
+        new ZeebeBrokerContainer(OLD_IMAGE)
+            .withZeebeData(volume)
+            .withExposedPorts(
+                ZeebePort.GATEWAY.getPort(),
+                ZeebePort.COMMAND.getPort(),
+                ZeebePort.INTERNAL.getPort(),
+                ZeebePort.MONITORING.getPort())
+            .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
+            .withCreateContainerCmdModifier(cmd -> cmd.withUser("1000"));
+    broker.start();
   }
 
   @AfterEach
   void tearDown() {
-    cluster.stop();
+    broker.stop();
   }
 
   @Test
@@ -57,7 +75,7 @@ public class StateMigrationTest {
     volume.extract(tempDir1);
     System.out.println("start: " + getDataSize(tempDir1));
 
-    try (final ZeebeClient client = cluster.newClientBuilder().build()) {
+    try (final ZeebeClient client = newClient()) {
       for (int i = 1; i <= 100; i++) {
         final int finalI = i;
         client
@@ -94,23 +112,27 @@ public class StateMigrationTest {
           .hasSize(1);
     }
 
-    cluster.stop();
+    broker.stop();
     volume.extract(tempDir2);
     System.out.println("before migration: " + getDataSize(tempDir2));
 
     // when
-    cluster
-        .getBrokers()
-        .values()
-        .forEach(
-            broker ->
-                broker.setDockerImageName(
-                    DockerImageName.parse("camunda/zeebe")
-                        .withTag("8.3.5")
-                        .asCanonicalNameString()));
-    //                    ZeebeTestContainerDefaults.defaultTestImage().asCanonicalNameString()));
-    cluster.start();
-    try (final ZeebeClient client = cluster.newClientBuilder().build()) {
+    // do stuff on the broker, then stop it
+    broker.setDockerImageName(NEW_IMAGE.asCanonicalNameString());
+    broker.start();
+    //    cluster
+    //        .getBrokers()
+    //        .values()
+    //        .forEach(
+    //            broker ->
+    //                broker.setDockerImageName(
+    //                    DockerImageName.parse("camunda/zeebe")
+    //                        .withTag("8.3.5")
+    //                        .asCanonicalNameString()));
+    //    //
+    // ZeebeTestContainerDefaults.defaultTestImage().asCanonicalNameString()));
+    //    cluster.start();
+    try (final ZeebeClient client = newClient()) {
       Awaitility.await(
               "ensure that the cluster has completed migrating the state by awaiting a response")
           .atMost(Duration.ofMinutes(1))
@@ -130,6 +152,15 @@ public class StateMigrationTest {
     // then
     volume.extract(tempDir3);
     System.out.println("after migration: " + getDataSize(tempDir3));
+  }
+
+  private ZeebeClient newClient() {
+    //    return broker.newClientBuilder().build();
+
+    return ZeebeClient.newClientBuilder()
+        .gatewayAddress(broker.getExternalAddress(ZeebePort.GATEWAY.getPort()))
+        .usePlaintext()
+        .build();
   }
 
   private static String getDataSize(final Path tempDir) {
