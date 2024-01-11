@@ -169,4 +169,13 @@
       datasourceTemplate: "docker",
     },
   ],
+  patch: {
+    automerge: true,
+  },
+  pin: {
+    automerge: true,
+  },
+  digest: {
+    automerge: true,
+  },
 }
