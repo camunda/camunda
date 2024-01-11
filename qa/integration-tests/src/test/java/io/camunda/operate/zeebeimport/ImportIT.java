@@ -16,7 +16,6 @@ import io.camunda.operate.entities.SequenceFlowEntity;
 import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.SequenceFlowStore;
@@ -25,7 +24,6 @@ import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
-import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
@@ -55,9 +53,6 @@ public class ImportIT extends OperateZeebeAbstractIT {
   private ProcessInstanceReader processInstanceReader;
 
   @Autowired
-  private FlowNodeInstanceReader flowNodeInstanceReader;
-
-  @Autowired
   private IncidentReader incidentReader;
 
   @Autowired
@@ -68,9 +63,6 @@ public class ImportIT extends OperateZeebeAbstractIT {
 
   @Autowired
   private TestSearchRepository testSearchRepository;
-
-  @Autowired
-  private ListViewTemplate listViewTemplate;
 
   @Autowired
   private VariableTemplate variableTemplate;

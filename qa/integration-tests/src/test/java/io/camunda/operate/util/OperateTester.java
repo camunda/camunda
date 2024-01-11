@@ -36,6 +36,7 @@ import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
+import io.camunda.operate.webapp.security.oauth2.IdentityJwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -48,6 +49,10 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.stereotype.Component;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -87,6 +92,9 @@ public class OperateTester {
   private Long processDefinitionKey;
   private Long processInstanceKey;
   private Long jobKey;
+  private JwtDecoder jwtDecoder;
+  @Autowired(required = false)
+  private IdentityJwt2AuthenticationTokenConverter jwtAuthenticationConverter;
 
   @Autowired
   @Qualifier("processIsDeployedCheck")
@@ -216,6 +224,12 @@ public class OperateTester {
     this.searchTestRule = searchTestRule;
   }
 
+  public OperateTester(ZeebeClient zeebeClient, MockMvcTestRule mockMvcTestRule, SearchTestRule searchTestRule,
+      JwtDecoder jwtDecoder) {
+    this(zeebeClient, mockMvcTestRule, searchTestRule);
+    this.jwtDecoder = jwtDecoder;
+  }
+
   public Long getProcessInstanceKey() {
     return processInstanceKey;
   }
@@ -283,14 +297,18 @@ public class OperateTester {
   }
 
   public OperateTester startProcessInstance(String bpmnProcessId, String payload) {
-    logger.debug("Start process instance '{}' with payload '{}'", bpmnProcessId, payload);
-    processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, payload);
-    return this;
+    return startProcessInstance(bpmnProcessId, null, payload);
   }
 
-  public OperateTester startProcessInstance(String bpmnProcessId, int processVersion, String payload) {
-    logger.debug("Start process instance '{}' version '{}' with payload '{}'", bpmnProcessId, processVersion, payload);
-    processInstanceKey = ZeebeTestUtil. startProcessInstance(false, zeebeClient, null, bpmnProcessId, processVersion, payload);
+  public OperateTester startProcessInstance(String bpmnProcessId, Integer processVersion, String payload) {
+    return startProcessInstance(bpmnProcessId, processVersion, payload, null);
+  }
+
+  public OperateTester startProcessInstance(String bpmnProcessId, Integer processVersion, String payload, String tenantId) {
+    logger.debug("Start process instance '{}' version '{}' with payload '{}' and tenant '{}'", bpmnProcessId,
+        processVersion, payload, tenantId);
+    processInstanceKey = ZeebeTestUtil.startProcessInstance(false, zeebeClient, tenantId, bpmnProcessId, processVersion,
+        payload);
     return this;
   }
 
@@ -843,4 +861,16 @@ public class OperateTester {
 
     assertTrue(format("Index %s was not deleted after %s ms!", index, maxWaitMillis), deleted);
   }
+
+  public OperateTester withAuthenticationToken(String token) {
+    final Jwt jwt;
+    try {
+      jwt = jwtDecoder.decode(token);
+    } catch (JwtException e) {
+      throw new RuntimeException(e);
+    }
+    SecurityContextHolder.getContext().setAuthentication(jwtAuthenticationConverter.convert(jwt));
+    return this;
+  }
+
 }

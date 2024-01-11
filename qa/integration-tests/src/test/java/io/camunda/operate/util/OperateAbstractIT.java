@@ -33,6 +33,7 @@ import org.junit.runner.RunWith;
 import static org.assertj.core.api.Assertions.assertThat;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -48,7 +49,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
   properties = {OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
     OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
     "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
-    OperateProperties.PREFIX + ".multiTenancy.enabled = true"})
+    OperateProperties.PREFIX + ".multiTenancy.enabled = false"})
 @WebAppConfiguration
 @TestExecutionListeners(listeners = DependencyInjectionTestExecutionListener.class, mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 @WithMockUser(DEFAULT_USER)
@@ -76,14 +77,22 @@ public abstract class OperateAbstractIT {
     when(userService.getCurrentUser()).thenReturn(
         new UserDto().setUserId(DEFAULT_USER)
             .setPermissions(List.of(Permission.WRITE)));
+    mockTenantResponse();
+  }
+
+  protected void mockTenantResponse() {
     doReturn(TenantService.AuthenticatedTenants.allTenants()).when(tenantService).getAuthenticatedTenants();
   }
 
   protected MvcResult getRequest(String requestUrl) throws Exception {
-    MockHttpServletRequestBuilder request = get(requestUrl).accept(mockMvcTestRule.getContentType());
+    return getRequest(requestUrl, mockMvcTestRule.getContentType());
+  }
+
+  protected MvcResult getRequest(String requestUrl, MediaType responseMediaType) throws Exception {
+    MockHttpServletRequestBuilder request = get(requestUrl).accept(responseMediaType);
     MvcResult mvcResult = mockMvc.perform(request)
       .andExpect(status().isOk())
-      .andExpect(content().contentTypeCompatibleWith(mockMvcTestRule.getContentType()))
+      .andExpect(content().contentTypeCompatibleWith(responseMediaType))
       .andReturn();
 
     return mvcResult;

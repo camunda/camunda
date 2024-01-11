@@ -8,6 +8,8 @@ package io.camunda.operate.util;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.qa.util.ContainerVersionsUtil;
+import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.Topology;
@@ -35,7 +37,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
-import static io.camunda.operate.util.ZeebeVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
+import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Conditional(ElasticsearchCondition.class)
@@ -53,6 +55,9 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
   @Autowired
   @Qualifier("zeebeEsClient")
   protected RestHighLevelClient zeebeEsClient;
+
+  @Autowired
+  private TestContainerUtil testContainerUtil;
 
   protected ZeebeContainer zeebeContainer;
   private ZeebeClient client;
@@ -118,8 +123,8 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
    */
   public void startZeebe() {
 
-    final String zeebeVersion = ZeebeVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_PROPERTY_NAME);
-    zeebeContainer = TestContainerUtil.startZeebe(zeebeVersion, prefix, 2);
+    final String zeebeVersion = ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_PROPERTY_NAME);
+    zeebeContainer = testContainerUtil.startZeebe(zeebeVersion, prefix, 2, isMultitTenancyEnabled());
 
     client = ZeebeClient.newClientBuilder()
         .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
@@ -139,13 +144,19 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
         topology = client.newTopologyRequest().send().join();
       } catch (ClientException ex) {
         ex.printStackTrace();
+        //retry
+      } catch (Exception e) {
+        logger.error("Topology cannot be retrieved.");
+        e.printStackTrace();
+        break;
+        //exit
       }
     }
   }
 
   /** Stops the broker and destroys the client. Does nothing if not started yet. */
   public void stop() {
-    zeebeContainer.stop();
+    testContainerUtil.stopZeebe(null);
 
     if (client != null) {
       client.close();
@@ -167,5 +178,10 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
 
   public ZeebeClient getClient() {
     return client;
+  }
+
+  @Override
+  public boolean isMultitTenancyEnabled() {
+    return operateProperties.getMultiTenancy().isEnabled();
   }
 }

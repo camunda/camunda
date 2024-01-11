@@ -35,7 +35,6 @@ import static org.assertj.core.api.Assertions.assertThat;
     properties = { OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
         OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
         "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
-        OperateProperties.PREFIX + ".multiTenancy.enabled = true",
         //make batch size smaller
         OperateProperties.PREFIX + ".zeebeElasticsearch.batchSize = 2"})
 public class ImportWithMissedDataIT extends OperateZeebeAbstractIT {

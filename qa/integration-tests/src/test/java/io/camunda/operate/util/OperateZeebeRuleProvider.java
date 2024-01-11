@@ -32,4 +32,6 @@ public interface OperateZeebeRuleProvider {
   ZeebeContainer getZeebeContainer();
 
   ZeebeClient getClient();
+
+  boolean isMultitTenancyEnabled();
 }

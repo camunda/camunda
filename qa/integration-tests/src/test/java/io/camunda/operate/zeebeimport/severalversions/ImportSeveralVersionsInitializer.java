@@ -8,14 +8,14 @@ package io.camunda.operate.zeebeimport.severalversions;
 
 import static io.camunda.operate.qa.util.TestContainerUtil.PROPERTIES_PREFIX;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
-import static io.camunda.operate.util.ZeebeVersionsUtil.VERSIONS_DELIMITER;
-import static io.camunda.operate.util.ZeebeVersionsUtil.ZEEBE_VERSIONS_PROPERTY_NAME;
+import static io.camunda.operate.qa.util.ContainerVersionsUtil.VERSIONS_DELIMITER;
+import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_VERSIONS_PROPERTY_NAME;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.operate.qa.util.ElasticsearchUtil;
+import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.operate.qa.util.ZeebeTestUtil;
-import io.camunda.operate.util.TestContainerUtil;
-import io.camunda.operate.util.ZeebeVersionsUtil;
+import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 import org.elasticsearch.ElasticsearchStatusException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.test.context.support.TestPropertySourceUtils;
@@ -49,6 +50,9 @@ public class ImportSeveralVersionsInitializer implements ApplicationContextIniti
   private int incidentCount;
   private String processId;
 
+  @Autowired
+  private TestContainerUtil testContainerUtil;
+
   public void initialize(ConfigurableApplicationContext configurableApplicationContext) {
 
     tmpFolder = createTemporaryFolder();
@@ -64,7 +68,7 @@ public class ImportSeveralVersionsInitializer implements ApplicationContextIniti
         "test.incidentCount=" + incidentCount);
 
     closeClient();
-    TestContainerUtil.stopZeebe(zeebeContainer, tmpFolder);
+    testContainerUtil.stopZeebe(tmpFolder);
   }
 
   private String[] getOperateProperties(final String gatewayAddress) {
@@ -89,13 +93,13 @@ public class ImportSeveralVersionsInitializer implements ApplicationContextIniti
 
   private void generateDataForAllVersions() {
     //read list of supported zeebeVersions
-    String[] zeebeVersions = ZeebeVersionsUtil.readProperty(ZEEBE_VERSIONS_PROPERTY_NAME)
+    String[] zeebeVersions = ContainerVersionsUtil.readProperty(ZEEBE_VERSIONS_PROPERTY_NAME)
         .split(VERSIONS_DELIMITER);
 
     for (String version : zeebeVersions) {
       closeClient();
-      TestContainerUtil.stopZeebe(zeebeContainer, tmpFolder);
-      zeebeContainer = TestContainerUtil.startZeebe(tmpFolder.getPath(), version, ZEEBE_PREFIX, 1);
+      testContainerUtil.stopZeebe(tmpFolder);
+      zeebeContainer = testContainerUtil.startZeebe(tmpFolder.getPath(), version, ZEEBE_PREFIX, 1);
       client = ZeebeClient.newClientBuilder()
           .gatewayAddress(zeebeContainer.getExternalGatewayAddress()).usePlaintext().build();
       generateDataForCurrentVersion();
@@ -121,11 +125,11 @@ public class ImportSeveralVersionsInitializer implements ApplicationContextIniti
   private void waitForDataToBeExported() {
     int exported = 0;
     int attempts = 0;
-    ElasticsearchUtil.flushData(TestContainerUtil.getEsClient());
+    ElasticsearchUtil.flushData(testContainerUtil.getEsClient());
     while (exported < wiCount && attempts < 10) {
       sleepFor(1000);
       try {
-        exported = ElasticsearchUtil.getFieldCardinality(TestContainerUtil.getEsClient(),
+        exported = ElasticsearchUtil.getFieldCardinality(testContainerUtil.getEsClient(),
             getZeebeAliasName("process-instance"), "value.processInstanceKey");
       } catch (IOException e) {
         fail("Unable to check for exported data", e);

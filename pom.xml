@@ -67,6 +67,8 @@
     <version.awssdk>2.21.43</version.awssdk>
     <zeebe-test-container.version>3.6.0</zeebe-test-container.version>
     <elasticsearch-test-container.version>1.19.3</elasticsearch-test-container.version>
+    <postgres-test-container.version>1.17.6</postgres-test-container.version>
+    <keycloak-client.version>22.0.1</keycloak-client.version>
 
     <!-- Auth0 Dependencies -->
     <!-- If any of the following version changes, -->
@@ -170,6 +172,18 @@
         <groupId>org.testcontainers</groupId>
         <artifactId>elasticsearch</artifactId>
         <version>${elasticsearch-test-container.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>postgresql</artifactId>
+        <version>${postgres-test-container.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.keycloak</groupId>
+        <artifactId>keycloak-admin-client</artifactId>
+        <version>${keycloak-client.version}</version>
       </dependency>
 
       <!-- Auth0 and it's direct dependencies -->

@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.property.ZeebeProperties;
-import io.camunda.operate.util.ZeebeVersionsUtil;
+import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.zeebe.ZeebeConnector;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.BrokerInfo;
@@ -50,7 +50,7 @@ public class ZeebeConnectorSecureIT {
   public ZeebeContainer zeebeContainer = new ZeebeContainer(
       DockerImageName.parse(String.format("%s:%s",
           ZeebeDefaults.getInstance().getDefaultImage(),
-          ZeebeVersionsUtil.readProperty(ZeebeVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME))))
+          ContainerVersionsUtil.readProperty(ContainerVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME))))
       .withFileSystemBind(certsDir
           .getFilesystemPath(), "/usr/local/zeebe/certs")
       .withEnv(Map.of(

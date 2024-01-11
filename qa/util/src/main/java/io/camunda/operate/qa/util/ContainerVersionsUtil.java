@@ -4,22 +4,24 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.util;
+package io.camunda.operate.qa.util;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-public class ZeebeVersionsUtil {
+public class ContainerVersionsUtil {
 
-  private static final String VERSIONS_FILE = "/zeebe-versions.properties";
+  private static final String VERSIONS_FILE = "/container-versions.properties";
   public static final String ZEEBE_VERSIONS_PROPERTY_NAME = "zeebe.versions";
   public static final String ZEEBE_CURRENTVERSION_PROPERTY_NAME = "zeebe.currentVersion";
+  public static final String IDENTITY_CURRENTVERSION_DOCKER_PROPERTY_NAME =
+      "identity.currentVersion";
   public static final String VERSIONS_DELIMITER = ",";
 
   public static String readProperty(String propertyName) {
-    try (InputStream propsFile = ZeebeVersionsUtil.class.getResourceAsStream(VERSIONS_FILE)) {
+    try (InputStream propsFile = ContainerVersionsUtil.class.getResourceAsStream(VERSIONS_FILE)) {
       Properties props = new Properties();
       props.load(propsFile);
       return props.getProperty(propertyName);

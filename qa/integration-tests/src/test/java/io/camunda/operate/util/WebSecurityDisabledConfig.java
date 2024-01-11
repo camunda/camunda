@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.util;
 
+import io.camunda.operate.OperateProfileService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -13,7 +14,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.stereotype.Component;
 
-@Profile("!auth")
+@Profile("!" + OperateProfileService.AUTH_PROFILE + " && !" + OperateProfileService.IDENTITY_AUTH_PROFILE)
 @EnableWebSecurity
 @Component("webSecurityConfig")
 public class WebSecurityDisabledConfig {

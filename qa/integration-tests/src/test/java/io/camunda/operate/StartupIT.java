@@ -9,8 +9,7 @@ package io.camunda.operate;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.operate.qa.util.TestContext;
-import io.camunda.operate.util.ZeebeVersionsUtil;
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -25,7 +24,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 
-import static io.camunda.operate.util.ZeebeVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
+import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(SpringRunner.class)
@@ -50,7 +49,7 @@ public class StartupIT {
     testContext = new TestContext();
     testContainerUtil.startElasticsearch(testContext);
 
-    testContainerUtil.startZeebe(ZeebeVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_PROPERTY_NAME), testContext);
+    testContainerUtil.startZeebe(ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_PROPERTY_NAME), testContext);
 
     operateContainer = testContainerUtil.createOperateContainer(OPERATE_TEST_DOCKER_IMAGE, VERSION, testContext)
         .withCreateContainerCmdModifier(cmd -> ((CreateContainerCmd)cmd).withUser("1000620000:0"))

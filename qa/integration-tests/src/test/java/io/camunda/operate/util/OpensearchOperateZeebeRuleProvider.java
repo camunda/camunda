@@ -8,6 +8,8 @@ package io.camunda.operate.util;
 
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.qa.util.ContainerVersionsUtil;
+import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ClientException;
@@ -29,7 +31,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.componentTemplateRequestBuilder;
-import static io.camunda.operate.util.ZeebeVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
+import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
 import static org.junit.Assert.assertTrue;
 
 @Conditional(OpensearchCondition.class)
@@ -46,6 +48,9 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
 
   @Autowired
   protected ZeebeRichOpenSearchClient zeebeRichOpenSearchClient;
+
+  @Autowired
+  private static TestContainerUtil testContainerUtil;
 
   protected ZeebeContainer zeebeContainer;
   private ZeebeClient client;
@@ -97,8 +102,8 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
    */
   public void startZeebe() {
 
-    final String zeebeVersion = ZeebeVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_PROPERTY_NAME);
-    zeebeContainer = TestContainerUtil.startZeebe(zeebeVersion, prefix, 2);
+    final String zeebeVersion = ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_PROPERTY_NAME);
+    zeebeContainer = testContainerUtil.startZeebe(zeebeVersion, prefix, 2, isMultitTenancyEnabled());
 
     client = ZeebeClient.newClientBuilder()
         .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
@@ -146,5 +151,10 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
 
   public ZeebeClient getClient() {
     return client;
+  }
+
+  @Override
+  public boolean isMultitTenancyEnabled() {
+    return operateProperties.getMultiTenancy().isEnabled();
   }
 }

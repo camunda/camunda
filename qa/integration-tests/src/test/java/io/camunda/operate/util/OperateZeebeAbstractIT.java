@@ -268,6 +268,12 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     return jobKey;
   }
 
+  protected Long deployProcessWithTenant(String tenantId, String... classpathResources) {
+    final Long processDefinitionKey = ZeebeTestUtil.deployProcess(getClient(), tenantId, classpathResources);
+    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
+    return processDefinitionKey;
+  }
+
   protected Long deployProcess(String... classpathResources) {
     final Long processDefinitionKey = ZeebeTestUtil.deployProcess(getClient(), null, classpathResources);
     searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
