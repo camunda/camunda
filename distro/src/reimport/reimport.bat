@@ -1,14 +1,14 @@
 @echo off
 
-:: ####################################################################################################################
-:: #                                                                                                                  #
-:: #                                        Optimize Reimport Script                                                  #
-:: #                                                                                                                  #
-:: #   Purges imported engine data from the Optimize database in order to perform a reimport of engine data           #
-:: #   without losing your Optimize data (e.g. report definitions). See:                                              #
-:: #   https://docs.camunda.org/optimize/latest/technical-guide/update/#force-reimport-of-engine-data-in-optimize     #
-:: #                                                                                                                  #
-:: ####################################################################################################################
+:: #####################################################################################################################################################################
+:: #                                                                                                                                                                   #
+:: #                                        Optimize Reimport Script                                                                                                   #
+:: #                                                                                                                                                                   #
+:: #   Purges imported engine data from the Optimize database in order to perform a reimport of engine data                                                            #
+:: #   without losing your Optimize data (e.g. report definitions). See:                                                                                               #
+:: #   https://docs.camunda.io/optimize/${docs.version}/self-managed/optimize-deployment/migration-update/instructions/#force-reimport-of-engine-data-in-optimize      #
+:: #                                                                                                                                                                   #
+:: #####################################################################################################################################################################
 
 set BASEDIR=%~dp0
 cd "%BASEDIR%"

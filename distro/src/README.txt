@@ -3,7 +3,7 @@ This is a distribution of
        Camunda Optimize v${project.version}
 
 visit
-       https://docs.camunda.org/optimize
+       https://docs.camunda.io/optimize/components/what-is-optimize/
 
 ==================
 

@@ -33,7 +33,7 @@ data:
 
     # Note: for all possible configuration options please have a look
     #       at the Optimize documentation:
-    #       https://docs.camunda.org/optimize/latest/technical-guide/configuration/
+    #       https://docs.camunda.io/optimize/${docs.version}/self-managed/optimize-deployment/configuration/getting-started/
     security:
       # everything that's related to authentication
       auth:

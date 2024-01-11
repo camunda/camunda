@@ -10,7 +10,7 @@
 :: play around with Optimize. This script starts Elasticsearch, waits for it,
 :: starts Optimize, waits for it and opens a browser tab with Optimize for you.
 :: For further information please consult
-:: the documentation: https://docs.camunda.org/optimize/${docs.version}/technical-guide/setup/installation/
+:: the documentation: https://docs.camunda.io/optimize/${docs.version}/self-managed/optimize-deployment/install-and-start/
 
 echo Setting up environment variables...
 
