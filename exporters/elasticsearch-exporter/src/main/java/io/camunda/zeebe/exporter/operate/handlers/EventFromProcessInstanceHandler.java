@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 public class EventFromProcessInstanceHandler
     implements ExportHandler<EventEntity, ProcessInstanceRecordValue> {
 
-  private static final String ID_PATTERN = "%s_%s";
   private static final Logger LOGGER =
       LoggerFactory.getLogger(EventFromProcessInstanceHandler.class);
 
@@ -73,7 +72,15 @@ public class EventFromProcessInstanceHandler
 
   @Override
   public String generateId(Record<ProcessInstanceRecordValue> record) {
-    return String.format(ID_PATTERN, record.getValue().getProcessInstanceKey(), record.getKey());
+
+    final ProcessInstanceRecordValue recordValue = record.getValue();
+
+    final StringBuilder sb = new StringBuilder();
+    sb.append(recordValue.getProcessInstanceKey());
+    sb.append("_");
+    sb.append(record.getKey());
+
+    return sb.toString();
   }
 
   @Override

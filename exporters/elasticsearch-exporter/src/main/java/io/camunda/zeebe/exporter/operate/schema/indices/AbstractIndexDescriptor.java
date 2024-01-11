@@ -9,16 +9,16 @@ package io.camunda.zeebe.exporter.operate.schema.indices;
 
 public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
-  protected String indexPrefix;
+  protected String fullQualifiedName;
 
   public AbstractIndexDescriptor(String indexPrefix) {
-    this.indexPrefix = indexPrefix;
+    this.fullQualifiedName = String.format("%s-%s-%s_", indexPrefix, getIndexName(), getVersion());
   }
 
   @Override
   public String getFullQualifiedName() {
     // if(DatabaseInfo.isElasticsearch()) {
-    return String.format("%s-%s-%s_", indexPrefix, getIndexName(), getVersion());
+    return fullQualifiedName;
     // } else{
     // return String.format("%s-%s-%s_", operateProperties.getOpensearch().getIndexPrefix(),
     // getIndexName(), getVersion());

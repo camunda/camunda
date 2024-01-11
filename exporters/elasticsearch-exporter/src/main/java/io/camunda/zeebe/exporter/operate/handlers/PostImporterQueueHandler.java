@@ -44,7 +44,13 @@ public class PostImporterQueueHandler
 
   @Override
   public String generateId(Record<IncidentRecordValue> record) {
-    return String.format("%d-%s", record.getKey(), record.getIntent().name());
+
+    final StringBuilder sb = new StringBuilder();
+    sb.append(record.getKey());
+    sb.append("-");
+    sb.append(record.getIntent().name());
+
+    return sb.toString();
   }
 
   @Override

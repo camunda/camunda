@@ -9,10 +9,10 @@ package io.camunda.zeebe.exporter.operate.schema.templates;
 
 public abstract class AbstractTemplateDescriptor implements TemplateDescriptor {
 
-  private String indexPrefix;
+  private String fullQualifiedName;
 
   public AbstractTemplateDescriptor(String indexPrefix) {
-    this.indexPrefix = indexPrefix;
+    this.fullQualifiedName = String.format("%s-%s-%s_", indexPrefix, getIndexName(), getVersion());
   }
 
   @Override
@@ -20,6 +20,6 @@ public abstract class AbstractTemplateDescriptor implements TemplateDescriptor {
     // var indexPrefix = DatabaseInfo.isOpensearch() ?
     // operateProperties.getOpensearch().getIndexPrefix() :
     // operateProperties.getElasticsearch().getIndexPrefix();
-    return String.format("%s-%s-%s_", indexPrefix, getIndexName(), getVersion());
+    return fullQualifiedName;
   }
 }

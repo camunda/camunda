@@ -33,7 +33,6 @@ import org.springframework.util.StringUtils;
 public class EventFromIncidentHandler implements ExportHandler<EventEntity, IncidentRecordValue> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(EventFromIncidentHandler.class);
-  private static final String ID_PATTERN = "%s_%s";
 
   private EventTemplate eventTemplate;
 
@@ -59,8 +58,13 @@ public class EventFromIncidentHandler implements ExportHandler<EventEntity, Inci
   @Override
   public String generateId(Record<IncidentRecordValue> record) {
     final IncidentRecordValue recordValue = record.getValue();
-    return String.format(
-        ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementInstanceKey());
+
+    final StringBuilder sb = new StringBuilder();
+    sb.append(recordValue.getProcessInstanceKey());
+    sb.append("_");
+    sb.append(recordValue.getElementInstanceKey());
+
+    return sb.toString();
   }
 
   @Override

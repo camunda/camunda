@@ -38,7 +38,6 @@ public class EventFromMessageSubscriptionHandler
   private static final Logger LOGGER =
       LoggerFactory.getLogger(EventFromMessageSubscriptionHandler.class);
 
-  private static final String ID_PATTERN = "%s_%s";
   private static final Set<Intent> PROCESS_MESSAGE_SUBSCRIPTION_STATES = new HashSet<>();
 
   private EventTemplate eventTemplate;
@@ -69,8 +68,13 @@ public class EventFromMessageSubscriptionHandler
   @Override
   public String generateId(Record<ProcessMessageSubscriptionRecordValue> record) {
     final ProcessMessageSubscriptionRecordValue recordValue = record.getValue();
-    return String.format(
-        ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementInstanceKey());
+
+    final StringBuilder sb = new StringBuilder();
+    sb.append(recordValue.getProcessInstanceKey());
+    sb.append("_");
+    sb.append(recordValue.getElementInstanceKey());
+
+    return sb.toString();
   }
 
   @Override

@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 public class SequenceFlowHandler
     implements ExportHandler<SequenceFlowEntity, ProcessInstanceRecordValue> {
 
-  private static final String ID_PATTERN = "%s_%s";
   private static final Logger LOGGER = LoggerFactory.getLogger(SequenceFlowHandler.class);
 
   private SequenceFlowTemplate sequenceFlowTemplate;
@@ -52,8 +51,13 @@ public class SequenceFlowHandler
   @Override
   public String generateId(Record<ProcessInstanceRecordValue> record) {
     final ProcessInstanceRecordValue recordValue = record.getValue();
-    return String.format(
-        ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementId());
+
+    final StringBuilder sb = new StringBuilder();
+    sb.append(recordValue.getProcessInstanceKey());
+    sb.append("_");
+    sb.append(recordValue.getElementId());
+
+    return sb.toString();
   }
 
   @Override
