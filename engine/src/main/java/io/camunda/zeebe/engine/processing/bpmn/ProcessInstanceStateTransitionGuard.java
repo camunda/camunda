@@ -63,7 +63,9 @@ public final class ProcessInstanceStateTransitionGuard {
           ProcessInstanceIntent.ELEMENT_ACTIVATED,
           ProcessInstanceIntent.ELEMENT_COMPLETING);
       case EXECUTION_LISTENER_COMPLETE -> hasElementInstanceWithState(
-          context, ProcessInstanceIntent.ELEMENT_ACTIVATING);
+          context,
+          ProcessInstanceIntent.ELEMENT_ACTIVATING,
+          ProcessInstanceIntent.ELEMENT_COMPLETING);
       default -> Either.left(
           String.format(
               "Expected the check of the preconditions of a command with intent [activate,complete,terminate] but the intent was '%s'",

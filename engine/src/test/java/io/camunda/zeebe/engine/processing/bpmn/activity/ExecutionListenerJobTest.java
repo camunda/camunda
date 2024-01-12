@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
+
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
@@ -16,6 +19,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue.ActivityType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.test.util.record.ProcessInstanceRecordStream;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.ClassRule;
@@ -120,6 +124,31 @@ public class ExecutionListenerJobTest {
         "dmk_task_end_type_1",
         JobIntent.COMPLETED,
         ActivityType.EXECUTION_LISTENER);
+
+    // then
+    assertJobLifecycle(
+        processInstanceKey,
+        5,
+        "dmk_task_end_type_2",
+        JobIntent.CREATED,
+        ActivityType.EXECUTION_LISTENER);
+    ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_end_type_2").complete();
+    assertJobLifecycle(
+        processInstanceKey,
+        5,
+        "dmk_task_end_type_2",
+        JobIntent.COMPLETED,
+        ActivityType.EXECUTION_LISTENER);
+
+    final ProcessInstanceRecordStream processInstanceRecordStream = RecordingExporter.processInstanceRecords()
+        .withProcessInstanceKey(processInstanceKey)
+        .limitToProcessInstanceCompleted();
+    assertThat(processInstanceRecordStream)
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   void assertJobLifecycle(

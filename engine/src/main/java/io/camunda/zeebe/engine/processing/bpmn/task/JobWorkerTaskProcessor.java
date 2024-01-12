@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.task;
 
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -25,12 +26,14 @@ import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
 
 /**
  * A BPMN processor for tasks that are based on jobs and should be processed by job workers. For
  * example, service tasks.
  */
 public final class JobWorkerTaskProcessor implements BpmnElementProcessor<ExecutableJobWorkerTask> {
+  private static final Logger LOGGER = Loggers.PROCESS_PROCESSOR_LOGGER;
 
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
@@ -66,15 +69,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
 
   @Override
   public void onComplete(final ExecutableJobWorkerTask element, final BpmnElementContext context) {
-    variableMappingBehavior
-        .applyOutputMappings(context, element)
-        .flatMap(
-            ok -> {
-              eventSubscriptionBehavior.unsubscribeFromEvents(context);
-              compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
-              return stateTransitionBehavior.transitionToCompleted(element, context);
-            })
-        .flatMap(ignore -> handleEndExecutionListenersOrTaskCompletion(element, context))
+      handleEndExecutionListenersOrTaskCompletion(element, context)
         .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
   }
 
@@ -82,19 +77,35 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   public void onExecutionListenerComplete(
       final ExecutableJobWorkerTask element, final BpmnElementContext context) {
 
+    final ExecutionListenerEventType eventType =
+        stateBehavior.getElementInstance(context).getExecutionListenerEventType();
     final String currentExecutionListenerType =
         stateBehavior.getElementInstance(context).getExecutionListenerType();
-    final List<ExecutionListener> startExecutionListeners =
-        getExecutionListenersByEventType(element, ExecutionListenerEventType.START);
 
-    findNextExecutionListener(startExecutionListeners, currentExecutionListenerType)
-        .ifPresentOrElse(
-            el -> createExecutionListenerJob(element, context, el),
-            () ->
-                regularJobExecution(element, context)
-                    .ifRightOrLeft(
-                        ignore -> {},
-                        failure -> incidentBehavior.createIncident(failure, context)));
+    switch (eventType) {
+      case START -> {
+        final List<ExecutionListener> startExecutionListeners =
+            getExecutionListenersByEventType(element, ExecutionListenerEventType.START);
+        findNextExecutionListener(startExecutionListeners, currentExecutionListenerType)
+            .ifPresentOrElse(
+                el -> createExecutionListenerJob(element, context, el),
+                () ->
+                    regularJobExecution(element, context)
+                        .ifLeft(failure -> incidentBehavior.createIncident(failure, context)));
+      }
+      case END -> {
+        final List<ExecutionListener> endExecutionListeners =
+            getExecutionListenersByEventType(element, ExecutionListenerEventType.END);
+        findNextExecutionListener(endExecutionListeners, currentExecutionListenerType)
+            .ifPresentOrElse(
+                el -> createExecutionListenerJob(element, context, el),
+                () ->
+                    regularJobCompletion(element, context)
+                        .ifLeft(failure -> incidentBehavior.createIncident(failure, context)));
+      }
+      case null, default ->
+          LOGGER.warn("Unexpected ExecutionListenerEventType='{}' value received", eventType); // Create incident also?
+    }
   }
 
   @Override
@@ -176,8 +187,18 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
 
   private Either<Failure, BpmnElementContext> regularJobCompletion(
       final ExecutableJobWorkerTask element, final BpmnElementContext context) {
-    stateTransitionBehavior.takeOutgoingSequenceFlows(element, context);
-    return Either.right(context);
+    return variableMappingBehavior
+        .applyOutputMappings(context, element)
+        .flatMap(
+            ok -> {
+              eventSubscriptionBehavior.unsubscribeFromEvents(context);
+              compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
+              return stateTransitionBehavior.transitionToCompleted(element, context);
+            })
+        .flatMap(completionContext -> {
+          stateTransitionBehavior.takeOutgoingSequenceFlows(element, completionContext);
+          return Either.right(context);
+        });
   }
 
   private Either<Failure, BpmnElementContext> createExecutionListenerJob(
@@ -188,7 +209,8 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
         .evaluateJobExpressions(listener.getJobWorkerProperties(), context)
         .map(
             elJobProperties -> {
-              jobBehavior.createNewExecutionListenerJob(context, element, elJobProperties);
+              jobBehavior.createNewExecutionListenerJob(
+                  context, element, elJobProperties, listener.getEventType());
               return context;
             });
   }

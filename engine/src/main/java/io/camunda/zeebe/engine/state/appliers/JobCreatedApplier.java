@@ -38,6 +38,7 @@ final class JobCreatedApplier implements TypedEventApplier<JobIntent, JobRecord>
         elementInstance.setJobKey(key);
         if (value.getActivityType() == ActivityType.EXECUTION_LISTENER) {
           elementInstance.setExecutionListenerType(value.getType());
+          elementInstance.setExecutionListenerEventType(value.executionListenerEventType());
         }
         elementInstanceState.updateInstance(elementInstance);
       }

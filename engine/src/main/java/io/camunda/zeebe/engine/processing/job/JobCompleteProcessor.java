@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
@@ -23,8 +24,10 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue.ActivityType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import org.slf4j.Logger;
 
 public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
+  private static final Logger LOGGER = Loggers.PROCESS_PROCESSOR_LOGGER;
 
   private static final String NO_JOB_FOUND_MESSAGE =
       "Expected to update retries for job with key '%d', but no such job was found";
@@ -65,6 +68,8 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
     if (serviceTask != null) {
       if (value.getActivityType() == ActivityType.EXECUTION_LISTENER) {
+        LOGGER.info(
+            "DMK::ExecutionListener='{}_{}'", value.getType(), value.executionListenerEventType());
         commandWriter.appendFollowUpCommand(
             serviceTaskKey,
             ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE,
@@ -72,6 +77,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
         return;
       }
 
+      LOGGER.info("DMK::RegularJob='{}_{}'", value.getType(), value.executionListenerEventType());
       final long scopeKey = serviceTask.getValue().getFlowScopeKey();
       final ElementInstance scopeInstance = elementInstanceState.getInstance(scopeKey);
 

@@ -10,12 +10,14 @@ package io.camunda.zeebe.engine.state.instance;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.ExecutionListenerEventType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
@@ -44,8 +46,14 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   private final StringProperty executionListenerTypeProp =
       new StringProperty("executionListenerType", "");
 
+  private final EnumProperty<ExecutionListenerEventType> executionListenerEventTypeProp =
+      new EnumProperty<>(
+          "executionListenerEventType",
+          ExecutionListenerEventType.class,
+          ExecutionListenerEventType.UNSPECIFIED);
+
   public ElementInstance() {
-    super(13);
+    super(14);
     declareProperty(parentKeyProp)
         .declareProperty(childCountProp)
         .declareProperty(childActivatedCountProp)
@@ -58,7 +66,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
         .declareProperty(recordProp)
         .declareProperty(activeSequenceFlowsProp)
         .declareProperty(userTaskKeyProp)
-        .declareProperty(executionListenerTypeProp);
+        .declareProperty(executionListenerTypeProp)
+        .declareProperty(executionListenerEventTypeProp);
   }
 
   public ElementInstance(
@@ -241,5 +250,14 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
 
   public void setExecutionListenerType(final String executionListenerType) {
     executionListenerTypeProp.setValue(executionListenerType);
+  }
+
+  public ExecutionListenerEventType getExecutionListenerEventType() {
+    return executionListenerEventTypeProp.getValue();
+  }
+
+  public void setExecutionListenerEventType(
+      final ExecutionListenerEventType executionListenerEventType) {
+    executionListenerEventTypeProp.setValue(executionListenerEventType);
   }
 }

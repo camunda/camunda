@@ -21,6 +21,7 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.value.ExecutionListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Map;
@@ -40,8 +41,13 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private final StringProperty typeProp = new StringProperty(TYPE, EMPTY_STRING);
 
   private final StringProperty workerProp = new StringProperty("worker", EMPTY_STRING);
-  private final EnumProperty<ActivityType> activityType =
+  private final EnumProperty<ActivityType> activityTypeProp =
       new EnumProperty<>("activityType", ActivityType.class, ActivityType.REGULAR);
+  private final EnumProperty<ExecutionListenerEventType> executionListenerEventTypeProp =
+      new EnumProperty<>(
+          "executionListenerEventType",
+          ExecutionListenerEventType.class,
+          ExecutionListenerEventType.UNSPECIFIED);
   private final LongProperty deadlineProp = new LongProperty("deadline", -1);
   private final LongProperty timeoutProp = new LongProperty("timeout", -1);
   private final IntegerProperty retriesProp = new IntegerProperty(RETRIES, -1);
@@ -68,11 +74,12 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public JobRecord() {
-    super(19);
+    super(20);
     declareProperty(deadlineProp)
         .declareProperty(timeoutProp)
         .declareProperty(workerProp)
-        .declareProperty(activityType)
+        .declareProperty(activityTypeProp)
+        .declareProperty(executionListenerEventTypeProp)
         .declareProperty(retriesProp)
         .declareProperty(retryBackoffProp)
         .declareProperty(recurringTimeProp)
@@ -94,7 +101,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     deadlineProp.setValue(record.getDeadline());
     timeoutProp.setValue(record.getTimeout());
     workerProp.setValue(record.getWorkerBuffer());
-    activityType.setValue(record.getActivityType());
+    activityTypeProp.setValue(record.getActivityType());
+    executionListenerEventTypeProp.setValue(record.executionListenerEventType());
     retriesProp.setValue(record.getRetries());
     retryBackoffProp.setValue(record.getRetryBackoff());
     recurringTimeProp.setValue(record.getRecurringTime());
@@ -154,7 +162,12 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   @Override
   public ActivityType getActivityType() {
-    return activityType.getValue();
+    return activityTypeProp.getValue();
+  }
+
+  @Override
+  public ExecutionListenerEventType executionListenerEventType() {
+    return executionListenerEventTypeProp.getValue();
   }
 
   @Override
@@ -290,8 +303,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return this;
   }
 
-  public JobRecord setActivityType(final ActivityType associatedJobType) {
-    activityType.setValue(associatedJobType);
+  public JobRecord setActivityType(final ActivityType activityType) {
+    activityTypeProp.setValue(activityType);
     return this;
   }
 
@@ -316,6 +329,12 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   public JobRecord setType(final DirectBuffer buf) {
     return setType(buf, 0, buf.capacity());
+  }
+
+  public JobRecord setExecutionListenerEventType(
+      final ExecutionListenerEventType executionListenerEventType) {
+    executionListenerEventTypeProp.setValue(executionListenerEventType);
+    return this;
   }
 
   @JsonIgnore
