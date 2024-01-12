@@ -17,6 +17,11 @@
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1hhbqbg" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.16.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.3.0">
   <bpmn:process id="process" isExecutable="true">
     <bpmn:startEvent id="dmk_start_event">
+      <bpmn:extensionElements>
+        <zeebe:ioMapping>
+          <zeebe:output source="=&#34;a&#34;" target="se_output_a" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
       <bpmn:outgoing>Flow_1du2tni</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="Flow_1du2tni" sourceRef="dmk_start_event" targetRef="dmk_service_task" />
@@ -35,8 +40,9 @@
         </zeebe:executionListeners>
         <zeebe:taskDefinition type="dmk_task_type" retries="8" />
         <zeebe:ioMapping>
-          <zeebe:input source="=&#34;a&#34;" target="dmk_a" />
-          <zeebe:input source="=&#34;b&#34;" target="dmk_b" />
+          <zeebe:input source="=&#34;b&#34;" target="st_input_var_b" />
+          <zeebe:output source="=se_output_a + &#34;+&#34; + st_input_var_b" target="merged_es_out_var_and_st_input_var" />
+          <zeebe:output source="=se_output_a + &#34;+&#34; + el_var_c" target="merged_es_out_var_and_el_var" />
         </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1du2tni</bpmn:incoming>

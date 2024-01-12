@@ -15,13 +15,16 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue.ActivityType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.ProcessInstanceRecordStream;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -53,7 +56,7 @@ public class ExecutionListenerJobTest {
   }
 
   @Test
-  public void shouldCompleteExecutionListenerJob() {
+  public void shouldCompleteProcessWithExecutionListenerJob() {
     // given
     ENGINE.deployment().withXmlClasspathResource("/processes/execution-listeners.bpmn").deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -140,15 +143,92 @@ public class ExecutionListenerJobTest {
         JobIntent.COMPLETED,
         ActivityType.EXECUTION_LISTENER);
 
-    final ProcessInstanceRecordStream processInstanceRecordStream = RecordingExporter.processInstanceRecords()
-        .withProcessInstanceKey(processInstanceKey)
-        .limitToProcessInstanceCompleted();
+    final ProcessInstanceRecordStream processInstanceRecordStream =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .limitToProcessInstanceCompleted();
     assertThat(processInstanceRecordStream)
         .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
         .containsSubsequence(
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.COMPLETE_ELEMENT),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldCompleteExecutionListenerJobWithVariables() {
+    // given
+    ENGINE.deployment().withXmlClasspathResource("/processes/execution-listeners.bpmn").deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertVariable(processInstanceKey, VariableIntent.CREATED, "se_output_a", "\"a\"");
+    assertVariable(processInstanceKey, VariableIntent.CREATED, "st_input_var_b", "\"b\"");
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("dmk_task_start_type_1")
+        .withVariables(Map.of("el_var_c", "c", "st_input_var_b", "b_updated"))
+        .complete();
+
+    // then
+    assertVariable(processInstanceKey, VariableIntent.UPDATED, "st_input_var_b", "\"b_updated\"");
+    assertVariable(processInstanceKey, VariableIntent.CREATED, "el_var_c", "\"c\"");
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_start_type_2").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_start_type_3").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_type").complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("dmk_task_end_type_1")
+        .withVariable("se_output_a", "a_updated")
+        .complete();
+
+    // then
+    assertVariable(processInstanceKey, VariableIntent.UPDATED, "se_output_a", "\"a_updated\"");
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_end_type_2").complete();
+
+    // then
+    assertVariable(
+        processInstanceKey,
+        VariableIntent.CREATED,
+        "merged_es_out_var_and_st_input_var",
+        "\"a_updated+b_updated\"");
+    assertVariable(
+        processInstanceKey,
+        VariableIntent.CREATED,
+        "merged_es_out_var_and_el_var",
+        "\"a_updated+c\"");
+  }
+
+  void assertVariable(
+      final long processInstanceKey,
+      final VariableIntent intent,
+      final String varName,
+      final String expectedVarValue) {
+    final Record<VariableRecordValue> variableRecordValueRecord =
+        RecordingExporter.variableRecords(intent)
+            .withProcessInstanceKey(processInstanceKey)
+            .withName(varName)
+            .getFirst();
+
+    Assertions.assertThat(variableRecordValueRecord.getValue())
+        .hasName(varName)
+        .hasValue(expectedVarValue);
   }
 
   void assertJobLifecycle(

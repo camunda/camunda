@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue.ActivityType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.slf4j.Logger;
 
 public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
@@ -35,15 +37,20 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
   private final JobState jobState;
   private final ElementInstanceState elementInstanceState;
   private final DefaultJobCommandPreconditionGuard defaultProcessor;
+  private final VariableBehavior variableBehavior;
   private final JobMetrics jobMetrics;
   private final EventHandle eventHandle;
 
   public JobCompleteProcessor(
-      final ProcessingState state, final JobMetrics jobMetrics, final EventHandle eventHandle) {
+      final ProcessingState state,
+      final VariableBehavior variableBehavior,
+      final JobMetrics jobMetrics,
+      final EventHandle eventHandle) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
     defaultProcessor =
         new DefaultJobCommandPreconditionGuard("complete", jobState, this::acceptCommand);
+    this.variableBehavior = variableBehavior;
     this.jobMetrics = jobMetrics;
     this.eventHandle = eventHandle;
   }
@@ -74,6 +81,14 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
             serviceTaskKey,
             ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE,
             serviceTask.getValue());
+
+        variableBehavior.mergeDocument(
+            serviceTask.getKey(),
+            value.getProcessDefinitionKey(),
+            value.getProcessInstanceKey(),
+            BufferUtil.wrapString(value.getBpmnProcessId()),
+            value.getTenantId(),
+            value.getVariablesBuffer());
         return;
       }
 
