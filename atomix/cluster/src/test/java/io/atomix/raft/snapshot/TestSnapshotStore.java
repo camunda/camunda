@@ -114,17 +114,19 @@ public class TestSnapshotStore implements ReceivableSnapshotStore {
   }
 
   @Override
-  public ReceivedSnapshot newReceivedSnapshot(final String snapshotId) {
+  public ActorFuture<ReceivedSnapshot> newReceivedSnapshot(final String snapshotId) {
     if (Optional.ofNullable(currentPersistedSnapshot.get())
         .map(PersistedSnapshot::getId)
         .orElse("")
         .equals(snapshotId)) {
-      throw new SnapshotAlreadyExistsException("Snapshot with this ID is already persisted");
+      CompletableActorFuture.completedExceptionally(
+          new SnapshotAlreadyExistsException("Snapshot with this ID is already persisted"));
     }
 
     final var newSnapshot = new InMemorySnapshot(this, snapshotId);
     receivedSnapshots.add(newSnapshot);
-    return newSnapshot;
+
+    return CompletableActorFuture.completed(newSnapshot);
   }
 
   @Override

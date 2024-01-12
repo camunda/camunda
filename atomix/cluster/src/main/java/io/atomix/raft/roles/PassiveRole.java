@@ -53,6 +53,7 @@ import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /** Passive state. */
@@ -193,14 +194,24 @@ public class PassiveRole extends InactiveRole {
 
       try {
         pendingSnapshot =
-            raft.getPersistedSnapshotStore().newReceivedSnapshot(snapshotChunk.getSnapshotId());
-      } catch (final SnapshotAlreadyExistsException snapshotAlreadyExists) {
-        // This should not happen because we previously check for the latest snapshot. But, if it
-        // happens, instead of crashing raft thread, we respond with success because we already have
-        // the snapshot.
+            raft.getPersistedSnapshotStore()
+                .newReceivedSnapshot(snapshotChunk.getSnapshotId())
+                .get();
+      } catch (final ExecutionException errorCreatingPendingSnapshot) {
+        return failIfSnapshotAlreadyExists(errorCreatingPendingSnapshot, snapshotChunk);
+      } catch (final InterruptedException e) {
+        log.warn(
+            "Failed to create pending snapshot when receiving snapshot {}",
+            snapshotChunk.getSnapshotId(),
+            e);
         return CompletableFuture.completedFuture(
-            logResponse(InstallResponse.builder().withStatus(RaftResponse.Status.OK).build()));
+            logResponse(
+                InstallResponse.builder()
+                    .withStatus(Status.ERROR)
+                    .withError(Type.APPLICATION_ERROR, "Failed to create pending snapshot")
+                    .build()));
       }
+
       log.info("Started receiving new snapshot {} from {}", pendingSnapshot, request.leader());
       pendingSnapshotStartTimestamp = System.currentTimeMillis();
       snapshotReplicationMetrics.incrementCount();
@@ -378,6 +389,29 @@ public class PassiveRole extends InactiveRole {
                 .withError(
                     RaftError.Type.ILLEGAL_MEMBER_STATE, "Cannot request vote from RESERVE member")
                 .build()));
+  }
+
+  private CompletableFuture<InstallResponse> failIfSnapshotAlreadyExists(
+      final ExecutionException errorCreatingPendingSnapshot,
+      final SnapshotChunkImpl snapshotChunk) {
+    if (errorCreatingPendingSnapshot.getCause() instanceof SnapshotAlreadyExistsException) {
+      // This should not happen because we previously check for the latest snapshot. But, if it
+      // happens, instead of crashing raft thread, we respond with success because we already
+      // have the snapshot.
+      return CompletableFuture.completedFuture(
+          logResponse(InstallResponse.builder().withStatus(Status.OK).build()));
+    } else {
+      log.warn(
+          "Failed to create pending snapshot when receiving snapshot {}",
+          snapshotChunk.getSnapshotId(),
+          errorCreatingPendingSnapshot);
+      return CompletableFuture.completedFuture(
+          logResponse(
+              InstallResponse.builder()
+                  .withStatus(Status.ERROR)
+                  .withError(Type.APPLICATION_ERROR, "Failed to create pending snapshot")
+                  .build()));
+    }
   }
 
   private void onSnapshotReceiveCompletedOrAborted() {
