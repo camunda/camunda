@@ -9,8 +9,7 @@ import {MenuButton, MenuItemSelectable} from '@carbon/react';
 import {
   $createParagraphNode,
   $getSelection,
-  $isRangeSelection,
-  DEPRECATED_$isGridSelection,
+  $INTERNAL_isPointSelection,
   LexicalEditor,
 } from 'lexical';
 import {
@@ -35,21 +34,19 @@ export default function BlockTypeDropdown({
   disabled?: boolean;
 }) {
   const formatParagraph = () => {
-    if (blockType !== 'paragraph') {
-      editor.update(() => {
-        const selection = $getSelection();
-        if ($isRangeSelection(selection) || DEPRECATED_$isGridSelection(selection)) {
-          $setBlocksType(selection, () => $createParagraphNode());
-        }
-      });
-    }
+    editor.update(() => {
+      const selection = $getSelection();
+      if ($INTERNAL_isPointSelection(selection)) {
+        $setBlocksType(selection, () => $createParagraphNode());
+      }
+    });
   };
 
   const formatHeading = (headingSize: HeadingTagType) => () => {
     if (blockType !== headingSize) {
       editor.update(() => {
         const selection = $getSelection();
-        if ($isRangeSelection(selection) || DEPRECATED_$isGridSelection(selection)) {
+        if ($INTERNAL_isPointSelection(selection)) {
           $setBlocksType(selection, () => $createHeadingNode(headingSize));
         }
       });
