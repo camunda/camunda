@@ -17,6 +17,7 @@ const NetworkStatusWatcher: React.FC = () => {
         kind: 'info',
         title: 'Internet connection lost',
         isDismissable: false,
+        autoRemove: false,
       });
     }
 

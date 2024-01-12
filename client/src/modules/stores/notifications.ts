@@ -22,6 +22,7 @@ type Notification = {
   isActionable?: boolean;
   actionButtonLabel?: string;
   onActionButtonClick?: () => void;
+  autoRemove?: boolean;
 };
 
 class Notifications {
@@ -45,6 +46,7 @@ class Notifications {
       this.hideNotification(notificationId);
     };
     const newNotification: Notification = {
+      autoRemove: true,
       ...notification,
       date: Date.now(),
       id: notificationId,
@@ -54,7 +56,9 @@ class Notifications {
     if (this.notifications.length >= MAX_VISIBLE_NOTIFICATIONS) {
       this.#enqueueNotification(newNotification);
     } else {
-      this.#addAutoRemovalInterval(newNotification);
+      if (newNotification.autoRemove) {
+        this.#addAutoRemovalInterval(newNotification);
+      }
       this.notifications.unshift(newNotification);
     }
 
@@ -95,7 +99,9 @@ class Notifications {
     );
 
     if (queuedNotification !== undefined) {
-      this.#addAutoRemovalInterval(queuedNotification);
+      if (queuedNotification.autoRemove) {
+        this.#addAutoRemovalInterval(queuedNotification);
+      }
       this.notifications.unshift(queuedNotification);
     }
   };
