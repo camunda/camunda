@@ -34,7 +34,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import org.springframework.util.unit.DataSize;
 
 /**
  * Iterates in round-robin fashion over partitions to activate jobs. Uses a map from job type to
@@ -52,15 +51,14 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
       new ConcurrentHashMap<>();
   private final BrokerClient brokerClient;
   private final BrokerTopologyManager topologyManager;
-  private final int maxMessageSize;
+  private final long maxMessageSize;
 
   private ActorControl actor;
 
-  public RoundRobinActivateJobsHandler(
-      final BrokerClient brokerClient, final DataSize maxMessageSize) {
+  public RoundRobinActivateJobsHandler(final BrokerClient brokerClient, final long maxMessageSize) {
     this.brokerClient = brokerClient;
     topologyManager = brokerClient.getTopologyManager();
-    this.maxMessageSize = (int) maxMessageSize.toBytes();
+    this.maxMessageSize = maxMessageSize;
   }
 
   @Override
