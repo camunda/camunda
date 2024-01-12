@@ -78,7 +78,7 @@ public class NoopSnapshotStore implements ReceivableSnapshotStore {
   }
 
   @Override
-  public ReceivedSnapshot newReceivedSnapshot(final String snapshotId) {
+  public ActorFuture<ReceivedSnapshot> newReceivedSnapshot(final String snapshotId) {
     return null;
   }
 
