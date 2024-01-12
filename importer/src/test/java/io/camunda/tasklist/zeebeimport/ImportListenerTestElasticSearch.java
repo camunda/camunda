@@ -23,7 +23,6 @@ import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.es.ImportBatchElasticSearch;
 import io.camunda.tasklist.zeebeimport.es.ImportJobElasticSearch;
-import io.camunda.tasklist.zeebeimport.v830.processors.es.BulkProcessorElasticSearch;
 import java.util.ArrayList;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,7 +46,7 @@ public class ImportListenerTestElasticSearch extends NoBeansTest {
 
   @MockBean private ImportBatchProcessorFactory importBatchProcessorFactory;
 
-  @MockBean private BulkProcessorElasticSearch elasticsearchBulkProcessor;
+  @MockBean private ImportBatchProcessor elasticsearchBulkProcessor;
 
   @MockBean private ImportPositionHolder importPositionHolder;
 

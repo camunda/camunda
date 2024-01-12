@@ -62,7 +62,7 @@
           <relocations>
             <relocation>
               <pattern>io.camunda.zeebe.protocol</pattern>
-              <shadedPattern>io.camunda.zeebe.protocol.v840</shadedPattern>
+              <shadedPattern>io.camunda.zeebe.protocol.v850</shadedPattern>
             </relocation>
           </relocations>
         </configuration>
