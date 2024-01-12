@@ -218,14 +218,14 @@ public final class Gateway {
       return buildLongPollingHandler(brokerClient);
     } else {
       return new RoundRobinActivateJobsHandler(
-          brokerClient, gatewayCfg.getNetwork().getMaxMessageSize());
+          brokerClient, gatewayCfg.getNetwork().getMaxMessageSize().toBytes());
     }
   }
 
   private LongPollingActivateJobsHandler buildLongPollingHandler(final BrokerClient brokerClient) {
     return LongPollingActivateJobsHandler.newBuilder()
         .setBrokerClient(brokerClient)
-        .setMaxMessageSize(gatewayCfg.getNetwork().getMaxMessageSize())
+        .setMaxMessageSize(gatewayCfg.getNetwork().getMaxMessageSize().toBytes())
         .build();
   }
 

@@ -19,7 +19,6 @@ import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.ByteValue;
@@ -185,16 +184,16 @@ public final class LargeMessageSizeTest {
               .variables(Map.of("message_content", message))
               .send()
               .join();
-
-      RecordingExporter.processInstanceRecords()
-          .withProcessInstanceKey(event.getProcessInstanceKey())
-          .withElementType(BpmnElementType.PROCESS)
-          .await();
     }
 
     // when
     final JobWorkerBuilderStep3 builder =
         CLIENT_RULE.getClient().newWorker().jobType("foo").handler(COMPLETING_JOB_HANDLER);
+
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withType("foo")
+        .limit(numberOfJobsToActivate)
+        .await();
 
     // then
     try (final JobWorker ignored = builder.open()) {
@@ -210,5 +209,80 @@ public final class LargeMessageSizeTest {
                               .count())
                       .isEqualTo(numberOfJobsToActivate));
     }
+  }
+
+  @Test
+  public void
+      shouldActivateJobsByRespectingMaxMessageSizeWhenActualSizeIsBiggerThanMaxMessageSize() {
+    // Numbers to test ResponseMapper.toActivateJobsResponse() method's if check where the actual
+    // response size is bigger than the max message size when the response is built with metadata.
+    // When we set jobVariableSize to 144, it produces ActivatedJob of size 1020 bytes.
+    // 5 jobs of 1020 bytes equals to 5100 bytes (the configured maxMessageSize).
+    // But when we build the actual response it exceeds 5100 bytes and fall into our case.
+    final DataSize maxMessageSize = DataSize.ofBytes(5100);
+    final int jobVariableSize = 144;
+
+    BROKER_RULE.getBrokerCfg().getGateway().getNetwork().setMaxMessageSize(maxMessageSize);
+    BROKER_RULE.restartBroker();
+
+    // given
+    final var modelInstance =
+        Bpmn.createExecutableProcess("foo")
+            .startEvent()
+            .serviceTask()
+            .zeebeJobType("foo")
+            .endEvent()
+            .done();
+
+    CLIENT_RULE
+        .getClient()
+        .newDeployResourceCommand()
+        .addProcessModel(modelInstance, "foo.bpmn")
+        .send()
+        .join();
+
+    final var byteArray = new byte[jobVariableSize];
+    final var message = new String(byteArray, StandardCharsets.UTF_8);
+
+    final int numberOfJobsToActivate = 5;
+    for (int i = 0; i < numberOfJobsToActivate; i++) {
+      final ProcessInstanceEvent event =
+          CLIENT_RULE
+              .getClient()
+              .newCreateInstanceCommand()
+              .bpmnProcessId("foo")
+              .latestVersion()
+              .variables(Map.of("message_content", message))
+              .send()
+              .join();
+    }
+
+    // when
+    final JobWorkerBuilderStep3 builder =
+        CLIENT_RULE.getClient().newWorker().jobType("foo").handler(COMPLETING_JOB_HANDLER);
+
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withType("foo")
+        .limit(numberOfJobsToActivate)
+        .await();
+
+    // then
+    try (final JobWorker ignored = builder.open()) {
+      Awaitility.await("until all jobs are completed")
+          .pollInterval(Duration.ofMillis(100))
+          .atMost(Duration.ofSeconds(5))
+          .untilAsserted(
+              () ->
+                  assertThat(
+                          RecordingExporter.jobRecords(JobIntent.COMPLETED)
+                              .withType("foo")
+                              .limit(numberOfJobsToActivate)
+                              .count())
+                      .isEqualTo(numberOfJobsToActivate));
+    }
+
+    // reset max message size to the initial value
+    BROKER_RULE.getBrokerCfg().getGateway().getNetwork().setMaxMessageSize(MAX_MESSAGE_SIZE);
+    BROKER_RULE.restartBroker();
   }
 }
