@@ -30,11 +30,8 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.AtomicMoveNotSupportedException;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.HashSet;
@@ -44,7 +41,6 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -291,10 +287,7 @@ public final class FileBasedSnapshotStore extends Actor
     final CompletableActorFuture<Void> abortFuture = new CompletableActorFuture<>();
     actor.run(
         () -> {
-          final var abortedAll =
-              pendingSnapshots.stream()
-                  .map(PersistableSnapshot::abort)
-                  .collect(Collectors.toList());
+          final var abortedAll = pendingSnapshots.stream().map(PersistableSnapshot::abort).toList();
           actor.runOnCompletion(
               abortedAll,
               error -> {
@@ -594,21 +587,6 @@ public final class FileBasedSnapshotStore extends Actor
     purgePendingSnapshots(newPersistedSnapshot.getSnapshotId());
   }
 
-  private void moveToSnapshotDirectory(final Path directory, final Path destination) {
-    try {
-      tryAtomicDirectoryMove(directory, destination);
-    } catch (final FileAlreadyExistsException e) {
-      LOGGER.debug(
-          "Expected to move snapshot from {} to {}, but it already exists",
-          directory,
-          destination,
-          e);
-    } catch (final IOException e) {
-      rollbackPartialSnapshot(destination);
-      throw new UncheckedIOException(e);
-    }
-  }
-
   private void rollbackPartialSnapshot(final Path destination) {
     try {
       FileUtil.deleteFolderIfExists(destination);
@@ -628,20 +606,6 @@ public final class FileBasedSnapshotStore extends Actor
     } catch (final IOException e) {
       LOGGER.warn("Failed to delete not completed (orphaned) snapshot {}", pendingSnapshot, e);
     }
-  }
-
-  private void tryAtomicDirectoryMove(final Path directory, final Path destination)
-      throws IOException {
-    try {
-      FileUtil.moveDurably(directory, destination, StandardCopyOption.ATOMIC_MOVE);
-    } catch (final AtomicMoveNotSupportedException e) {
-      LOGGER.warn("Atomic move not supported. Moving the snapshot files non-atomically", e);
-      FileUtil.moveDurably(directory, destination);
-    }
-  }
-
-  private Path buildPendingSnapshotDirectory(final SnapshotId id) {
-    return pendingDirectory.resolve(id.getSnapshotIdAsString());
   }
 
   private Path buildSnapshotDirectory(final FileBasedSnapshotId snapshotId) {
