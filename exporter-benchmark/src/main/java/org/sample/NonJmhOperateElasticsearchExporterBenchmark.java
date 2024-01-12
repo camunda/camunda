@@ -16,7 +16,7 @@ public class NonJmhOperateElasticsearchExporterBenchmark {
 
     System.out.println("Setting up benchmark");
 
-    Duration benchmarkDuration = Duration.ofSeconds(180);
+    Duration benchmarkDuration = Duration.ofSeconds(60);
 
     OperateElasticsearchExporterState exporterState = new OperateElasticsearchExporterState();
 

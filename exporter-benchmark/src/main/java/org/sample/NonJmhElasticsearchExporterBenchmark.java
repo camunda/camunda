@@ -16,7 +16,7 @@ public class NonJmhElasticsearchExporterBenchmark {
 
     System.out.println("Setting up benchmark");
 
-    Duration benchmarkDuration = Duration.ofSeconds(180);
+    Duration benchmarkDuration = Duration.ofSeconds(60);
 
     ElasticsearchExporterState exporterState = new ElasticsearchExporterState();
 
