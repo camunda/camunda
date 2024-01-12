@@ -34,7 +34,7 @@ async function request(
       authenticationStore.activateSession();
     }
 
-    if (!skipSessionCheck && [401, 403].includes(response.status)) {
+    if (!skipSessionCheck && response.status === 401) {
       authenticationStore.disableSession();
       reactQueryClient.clear();
     }
