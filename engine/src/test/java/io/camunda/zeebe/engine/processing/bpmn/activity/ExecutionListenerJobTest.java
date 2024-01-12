@@ -13,10 +13,12 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue.ActivityType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
@@ -161,6 +163,81 @@ public class ExecutionListenerJobTest {
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldRetryExecutionListener() {
+    // given
+    ENGINE.deployment().withXmlClasspathResource("/processes/execution-listeners.bpmn").deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("dmk_task_start_type_1")
+        .withRetries(1)
+        .fail();
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_start_type_1").complete();
+
+    assertJobLifecycle(
+        processInstanceKey,
+        1,
+        "dmk_task_start_type_2",
+        JobIntent.CREATED,
+        ActivityType.EXECUTION_LISTENER);
+  }
+
+  @Test
+  public void shouldCreateIncidentForExecutionListener() {
+    // given
+    ENGINE.deployment().withXmlClasspathResource("/processes/execution-listeners.bpmn").deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("dmk_task_start_type_1")
+        .withRetries(0)
+        .fail();
+
+    final Record<IncidentRecordValue> firstIncident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(firstIncident.getKey()).resolve();
+    ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_start_type_1").complete();
+
+    assertJobLifecycle(
+        processInstanceKey,
+        1,
+        "dmk_task_start_type_2",
+        JobIntent.CREATED,
+        ActivityType.EXECUTION_LISTENER);
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("dmk_task_start_type_2")
+        .withRetries(0)
+        .fail();
+
+    final Record<IncidentRecordValue> secondIncident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .skip(1)
+            .getFirst();
+
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(secondIncident.getKey()).resolve();
+    ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_start_type_2").complete();
+
+    assertJobLifecycle(
+        processInstanceKey,
+        2,
+        "dmk_task_start_type_3",
+        JobIntent.CREATED,
+        ActivityType.EXECUTION_LISTENER);
   }
 
   @Test

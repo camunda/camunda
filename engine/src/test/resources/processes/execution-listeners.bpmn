@@ -32,7 +32,7 @@
     <bpmn:serviceTask id="dmk_service_task">
       <bpmn:extensionElements>
         <zeebe:executionListeners>
-          <zeebe:executionListener eventType="start" type="dmk_task_start_type_1" retries="4" />
+          <zeebe:executionListener eventType="start" type="dmk_task_start_type_1" retries="1" />
           <zeebe:executionListener eventType="start" type="dmk_task_start_type_2" retries="8" />
           <zeebe:executionListener eventType="start" type="dmk_task_start_type_3" retries="2" />
           <zeebe:executionListener eventType="end" type="dmk_task_end_type_1" retries="5" />
