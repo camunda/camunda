@@ -129,7 +129,7 @@
     <version.swagger-annotations>2.2.20</version.swagger-annotations>
     <version.checker-qual>3.32.0</version.checker-qual>
     <version.reactive-streams>1.0.4</version.reactive-streams>
-    <version.tomcat>10.1.17</version.tomcat>
+    <version.tomcat>10.1.18</version.tomcat>
     <version.jakarta.json-api>2.1.3</version.jakarta.json-api>
 
     <!-- maven plugins -->
