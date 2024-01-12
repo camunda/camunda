@@ -344,7 +344,8 @@ public final class FileBasedSnapshotStore extends Actor
   }
 
   @Override
-  public FileBasedReceivedSnapshot newReceivedSnapshot(final String snapshotId) {
+  public ActorFuture<FileBasedReceivedSnapshot> newReceivedSnapshot(final String snapshotId) {
+    final var newSnapshotFuture = new CompletableActorFuture<FileBasedReceivedSnapshot>();
     final var optSnapshotId = FileBasedSnapshotId.ofFileName(snapshotId);
     final var parsedSnapshotId =
         optSnapshotId.orElseThrow(
@@ -355,6 +356,34 @@ public final class FileBasedSnapshotStore extends Actor
                         + "'."));
 
     final var directory = buildSnapshotDirectory(parsedSnapshotId);
+    if (directory.toFile().exists()) {
+      actor.run(
+          () -> {
+            try {
+              checkAndCleanupExistingDirectory(snapshotId, parsedSnapshotId, directory);
+              createReceivedSnapshot(parsedSnapshotId, directory, newSnapshotFuture);
+            } catch (final Exception e) {
+              newSnapshotFuture.completeExceptionally(e);
+            }
+          });
+    } else {
+      createReceivedSnapshot(parsedSnapshotId, directory, newSnapshotFuture);
+    }
+    return newSnapshotFuture;
+  }
+
+  private void createReceivedSnapshot(
+      final FileBasedSnapshotId parsedSnapshotId,
+      final Path directory,
+      final CompletableActorFuture<FileBasedReceivedSnapshot> newSnapshotFuture) {
+    final var newPendingSnapshot =
+        new FileBasedReceivedSnapshot(parsedSnapshotId, directory, this, actor);
+    addPendingSnapshot(newPendingSnapshot);
+    newSnapshotFuture.complete(newPendingSnapshot);
+  }
+
+  private void checkAndCleanupExistingDirectory(
+      final String snapshotId, final FileBasedSnapshotId parsedSnapshotId, final Path directory) {
     if (directory.toFile().exists()) {
       if (!buildSnapshotsChecksumPath(parsedSnapshotId).toFile().exists()) {
         try {
@@ -374,10 +403,6 @@ public final class FileBasedSnapshotStore extends Actor
                 snapshotId));
       }
     }
-    final var newPendingSnapshot =
-        new FileBasedReceivedSnapshot(parsedSnapshotId, directory, this, actor);
-    addPendingSnapshot(newPendingSnapshot);
-    return newPendingSnapshot;
   }
 
   @Override

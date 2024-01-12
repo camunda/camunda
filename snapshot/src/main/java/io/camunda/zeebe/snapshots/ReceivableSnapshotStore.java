@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.snapshots;
 
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+
 public interface ReceivableSnapshotStore extends PersistedSnapshotStore {
 
   /**
@@ -16,5 +18,5 @@ public interface ReceivableSnapshotStore extends PersistedSnapshotStore {
    *     index-term-timestamp-processedposition-exportedposition}
    * @return the new volatile received snapshot
    */
-  ReceivedSnapshot newReceivedSnapshot(String snapshotId);
+  ActorFuture<? extends ReceivedSnapshot> newReceivedSnapshot(String snapshotId);
 }
