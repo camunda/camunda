@@ -24,6 +24,7 @@ import {processStatisticsStore} from 'modules/stores/processStatistics/processSt
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {ProcessInstancesDto} from 'modules/api/processInstances/fetchProcessInstances';
+import {tracking} from 'modules/tracking';
 
 const PROCESS_DEFINITION_ID = '2251799813685249';
 const PROCESS_ID = 'eventBasedGatewayProcess';
@@ -283,5 +284,43 @@ describe('<MigrateAction />', () => {
     });
 
     locationSpy.mockRestore();
+  });
+
+  it('should track migrate click', async () => {
+    const trackSpy = jest.spyOn(tracking, 'track');
+
+    const {user} = render(<MigrateAction />, {
+      wrapper: getWrapper(
+        `/processes?process=eventBasedGatewayProcess&version=1`,
+      ),
+    });
+
+    mockFetchProcessInstances().withSuccess(mockProcessInstances);
+    await fetchProcessInstances(user);
+
+    const instance = getProcessInstance('ACTIVE', mockProcessInstances);
+    act(() => {
+      processInstancesSelectionStore.selectProcessInstance(instance.id);
+    });
+    await user.click(screen.getByRole('button', {name: /migrate/i}));
+
+    expect(trackSpy).toHaveBeenCalledWith({
+      eventName: 'process-instance-migration-button-clicked',
+    });
+
+    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
+    await user.click(screen.getByRole('button', {name: /continue/i}));
+
+    expect(trackSpy).toHaveBeenCalledWith({
+      eventName: 'process-instance-migration-mode-entered',
+    });
+
+    await waitFor(() =>
+      expect(processStatisticsStore.state.statistics).toEqual(
+        mockProcessStatistics,
+      ),
+    );
+
+    trackSpy.mockRestore();
   });
 });

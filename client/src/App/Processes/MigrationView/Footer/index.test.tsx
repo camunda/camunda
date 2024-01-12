@@ -10,6 +10,7 @@ import {Footer} from '.';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {useEffect} from 'react';
 import {MemoryRouter} from 'react-router-dom';
+import {tracking} from 'modules/tracking';
 
 type Props = {
   children?: React.ReactNode;
@@ -108,5 +109,19 @@ describe('Footer', () => {
 
     await user.click(screen.getByRole('button', {name: 'danger Exit'}));
     expect(processInstanceMigrationStore.isEnabled).toBe(false);
+  });
+
+  it('should track confirm button click', async () => {
+    const trackSpy = jest.spyOn(tracking, 'track');
+
+    const {user} = render(<Footer />, {wrapper: Wrapper});
+
+    await user.click(screen.getByRole('button', {name: /map element/i}));
+    await user.click(screen.getByRole('button', {name: /next/i}));
+    await user.click(screen.getByRole('button', {name: /confirm/i}));
+
+    expect(trackSpy).toHaveBeenCalledWith({
+      eventName: 'process-instance-migration-confirmed',
+    });
   });
 });

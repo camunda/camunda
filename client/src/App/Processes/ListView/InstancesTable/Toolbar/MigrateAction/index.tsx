@@ -22,6 +22,7 @@ import {processStatisticsStore as processStatisticsMigrationSourceStore} from 'm
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {ListItem, Modal} from './styled';
 import isNil from 'lodash/isNil';
+import {tracking} from 'modules/tracking';
 
 const MigrateAction: React.FC = observer(() => {
   const location = useLocation();
@@ -91,6 +92,9 @@ const MigrateAction: React.FC = observer(() => {
             renderIcon={MigrateAlt}
             onClick={() => {
               setOpen(true);
+              tracking.track({
+                eventName: 'process-instance-migration-button-clicked',
+              });
             }}
             disabled={isDisabled}
             title={getTooltipText()}
@@ -127,6 +131,10 @@ const MigrateAction: React.FC = observer(() => {
                 requestFilterParameters,
               );
               processInstanceMigrationStore.enable();
+
+              tracking.track({
+                eventName: 'process-instance-migration-mode-entered',
+              });
             }}
             onRequestClose={() => setOpen(false)}
             onSecondarySubmit={() => setOpen(false)}

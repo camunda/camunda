@@ -259,6 +259,15 @@ type Events =
     }
   | {
       eventName: 'open-tasklist-link-clicked';
+    }
+  | {
+      eventName: 'process-instance-migration-button-clicked';
+    }
+  | {
+      eventName: 'process-instance-migration-mode-entered';
+    }
+  | {
+      eventName: 'process-instance-migration-confirmed';
     };
 
 const STAGE_ENV = getStage(window.location.host);

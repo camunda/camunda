@@ -13,6 +13,7 @@ import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {processesStore} from 'modules/stores/processes/processes.migration';
 import {useNavigate} from 'react-router-dom';
 import {Locations} from 'modules/Routes';
+import {tracking} from 'modules/tracking';
 
 const Footer: React.FC = observer(() => {
   const navigate = useNavigate();
@@ -91,6 +92,10 @@ const Footer: React.FC = observer(() => {
 
               processInstanceMigrationStore.setHasPendingRequest();
               processInstanceMigrationStore.disable();
+
+              tracking.track({
+                eventName: 'process-instance-migration-confirmed',
+              });
 
               navigate(
                 Locations.processes({
