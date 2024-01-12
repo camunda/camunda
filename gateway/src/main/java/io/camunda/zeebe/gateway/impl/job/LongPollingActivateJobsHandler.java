@@ -27,7 +27,6 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
-import org.springframework.util.unit.DataSize;
 
 /**
  * Adds long polling to the handling of activate job requests. When there are no jobs available to
@@ -55,7 +54,7 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
 
   private LongPollingActivateJobsHandler(
       final BrokerClient brokerClient,
-      final DataSize maxMessageSize,
+      final long maxMessageSize,
       final long longPollingTimeout,
       final long probeTimeoutMillis,
       final int failedAttemptThreshold) {
@@ -358,7 +357,7 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
     private static final int EMPTY_RESPONSE_THRESHOLD = 3;
 
     private BrokerClient brokerClient;
-    private DataSize maxMessageSize;
+    private long maxMessageSize;
     private long longPollingTimeout = DEFAULT_LONG_POLLING_TIMEOUT;
     private long probeTimeoutMillis = DEFAULT_PROBE_TIMEOUT;
     private int minEmptyResponses = EMPTY_RESPONSE_THRESHOLD;
@@ -368,7 +367,7 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
       return this;
     }
 
-    public Builder setMaxMessageSize(final DataSize maxMessageSize) {
+    public Builder setMaxMessageSize(final long maxMessageSize) {
       this.maxMessageSize = maxMessageSize;
       return this;
     }
@@ -390,7 +389,6 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
 
     public LongPollingActivateJobsHandler build() {
       Objects.requireNonNull(brokerClient, "brokerClient");
-      Objects.requireNonNull(maxMessageSize, "maxMessageSize");
       return new LongPollingActivateJobsHandler(
           brokerClient, maxMessageSize, longPollingTimeout, probeTimeoutMillis, minEmptyResponses);
     }
