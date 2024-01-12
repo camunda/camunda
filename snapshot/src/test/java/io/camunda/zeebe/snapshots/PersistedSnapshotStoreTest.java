@@ -70,7 +70,7 @@ public class PersistedSnapshotStoreTest {
     final var index = 1L;
 
     // when
-    final var transientSnapshot = persistedSnapshotStore.newReceivedSnapshot("1-0-123-121");
+    final var transientSnapshot = persistedSnapshotStore.newReceivedSnapshot("1-0-123-121").join();
 
     // then
     assertThat(transientSnapshot.index()).isEqualTo(index);
