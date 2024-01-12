@@ -1,0 +1,86 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Zeebe Community License 1.1. You may not use this file
+ * except in compliance with the Zeebe Community License 1.1.
+ */
+package io.camunda.operate.json;
+
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import io.camunda.operate.connect.CustomInstantDeserializer;
+import io.camunda.operate.connect.CustomOffsetDateTimeDeserializer;
+import io.camunda.operate.connect.CustomOffsetDateTimeSerializer;
+import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.operate.property.ElasticsearchProperties;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+
+public class Example {
+
+  public static void main(String[] args) throws IOException {
+
+    // TODO: configure like the actual one
+    ObjectMapper objectMapper = buildObjectMapper();
+
+    ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+    JsonGenerator jsonGenerator = objectMapper.createGenerator(outStream);
+
+    OperateEntityFactory generator = new OperateEntityFactory();
+    ProcessInstanceForListViewEntity entity = generator.buildProcessInstanceForListViewEntity();
+
+    ProcessInstanceForListViewEntityWriter writer = new ProcessInstanceForListViewEntityWriter();
+    writer.writeTo(entity, jsonGenerator);
+
+    jsonGenerator.flush();
+    jsonGenerator.close();
+
+    System.out.println(new String(outStream.toByteArray(), StandardCharsets.UTF_8));
+
+    System.out.println(objectMapper.writeValueAsString(entity));
+  }
+
+  private static ObjectMapper buildObjectMapper() {
+
+    final SimpleModule customDateTimeOverrides = new SimpleModule();
+    customDateTimeOverrides.addSerializer(
+        OffsetDateTime.class, new CustomOffsetDateTimeSerializer(dateTimeFormatter()));
+    customDateTimeOverrides.addDeserializer(
+        OffsetDateTime.class, new CustomOffsetDateTimeDeserializer(dateTimeFormatter()));
+    customDateTimeOverrides.addDeserializer(Instant.class, new CustomInstantDeserializer());
+
+    return Jackson2ObjectMapperBuilder.json()
+        .modules(customDateTimeOverrides, new Jdk8Module())
+        .featuresToDisable(
+            SerializationFeature.INDENT_OUTPUT,
+            SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
+            DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
+            DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+            DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+        .featuresToEnable(JsonParser.Feature.ALLOW_COMMENTS)
+        // make sure that Jackson uses setters and getters, not fields
+        .visibility(PropertyAccessor.GETTER, Visibility.ANY)
+        .visibility(PropertyAccessor.IS_GETTER, Visibility.ANY)
+        .visibility(PropertyAccessor.SETTER, Visibility.ANY)
+        .visibility(PropertyAccessor.FIELD, Visibility.NONE)
+        .visibility(PropertyAccessor.CREATOR, Visibility.ANY)
+        .build();
+  }
+
+  public static DateTimeFormatter dateTimeFormatter() {
+    return DateTimeFormatter.ofPattern(ElasticsearchProperties.DATE_FORMAT_DEFAULT);
+  }
+}

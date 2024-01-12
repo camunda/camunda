@@ -72,6 +72,8 @@
     <module>exporter-test</module>
 
     <module>protocol-asserts</module>
+    
+    <module>exporters/operate-json-schema</module>
 
     <module>exporters/elasticsearch-exporter</module>
 
