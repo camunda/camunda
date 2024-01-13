@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.security.sso;
 
+import io.camunda.operate.webapp.security.AbstractUserService;
 import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.UserService;
 
@@ -26,7 +27,7 @@ import static io.camunda.operate.OperateProfileService.SSO_AUTH_PROFILE;
 
 @Component
 @Profile(SSO_AUTH_PROFILE)
-public class SSOUserService implements UserService<AbstractAuthenticationToken> {
+public class SSOUserService extends AbstractUserService<AbstractAuthenticationToken> {
 
   @Autowired
   private OperateProperties operateProperties;
@@ -43,6 +44,15 @@ public class SSOUserService implements UserService<AbstractAuthenticationToken> 
       return getUserDtoFor((JwtAuthenticationToken) abstractAuthentication);
     } else {
       return null;
+    }
+  }
+
+  @Override
+  public String getUserToken(final AbstractAuthenticationToken authentication) {
+    if (authentication instanceof TokenAuthentication) {
+      return ((TokenAuthentication)authentication).getNewTokenByRefreshToken();
+    } else {
+      throw new UnsupportedOperationException("Not supported for token class: " + authentication.getClass().getName());
     }
   }
 

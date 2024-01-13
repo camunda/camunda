@@ -9,6 +9,7 @@ package io.camunda.operate.webapp.security.identity;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.operate.webapp.rest.dto.UserDto;
+import io.camunda.operate.webapp.security.AbstractUserService;
 import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.UserService;
 import java.util.List;
@@ -24,7 +25,7 @@ import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
 
 @Component
 @Profile(IDENTITY_AUTH_PROFILE)
-public class IdentityUserService implements UserService<AbstractAuthenticationToken> {
+public class IdentityUserService extends AbstractUserService<AbstractAuthenticationToken> {
 
   private final Identity identity;
 
@@ -59,6 +60,11 @@ public class IdentityUserService implements UserService<AbstractAuthenticationTo
     } else {
       return null;
     }
+  }
+
+  @Override
+  public String getUserToken(final AbstractAuthenticationToken authentication) {
+    throw new UnsupportedOperationException("Get token is not supported for Identity authentication");
   }
 
 }

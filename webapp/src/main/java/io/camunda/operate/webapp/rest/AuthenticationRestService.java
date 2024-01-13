@@ -24,6 +24,8 @@ public class AuthenticationRestService extends InternalAPIErrorController {
   public static final String AUTHENTICATION_URL = "/api/authentications";
   public static final String USER_ENDPOINT = "/user";
 
+  public static final String TOKEN_ENDPOINT = "/token";
+
   @Autowired
   private UserService userService;
 
@@ -35,6 +37,11 @@ public class AuthenticationRestService extends InternalAPIErrorController {
     catch (UsernameNotFoundException e) {
       throw new UserNotFoundException("Current user couldn't be found", e);
     }
+  }
+
+  @GetMapping(path = TOKEN_ENDPOINT)
+  public String getCurrentUserToken() {
+    return userService.getUserToken();
   }
 
 }

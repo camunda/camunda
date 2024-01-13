@@ -8,6 +8,7 @@ package io.camunda.operate.webapp.security.auth;
 
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
+import io.camunda.operate.webapp.security.AbstractUserService;
 import io.camunda.operate.webapp.security.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
@@ -20,7 +21,7 @@ import org.springframework.stereotype.Component;
     + " & ! " + OperateProfileService.SSO_AUTH_PROFILE
     + " & !"  + OperateProfileService.IDENTITY_AUTH_PROFILE
 )
-public class AuthUserService implements UserService<UsernamePasswordAuthenticationToken> {
+public class AuthUserService extends AbstractUserService<UsernamePasswordAuthenticationToken> {
 
   @Autowired
   private RolePermissionService rolePermissionService;
@@ -34,5 +35,10 @@ public class AuthUserService implements UserService<UsernamePasswordAuthenticati
         .setDisplayName(user.getDisplayName())
         .setCanLogout(true)
         .setPermissions(rolePermissionService.getPermissions(user.getRoles()));
+  }
+
+  @Override
+  public String getUserToken(final UsernamePasswordAuthenticationToken authentication) {
+    throw new UnsupportedOperationException("Get token is not supported for Elasticsearch authentication");
   }
 }

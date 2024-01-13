@@ -7,6 +7,7 @@
 package io.camunda.operate.webapp.security.ldap;
 
 import io.camunda.operate.webapp.rest.exception.UserNotFoundException;
+import io.camunda.operate.webapp.security.AbstractUserService;
 import io.camunda.operate.webapp.security.UserService;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +33,7 @@ import static io.camunda.operate.webapp.security.Permission.WRITE;
 
 @Component
 @Profile(LDAP_AUTH_PROFILE)
-public class LDAPUserService implements UserService<Authentication> {
+public class LDAPUserService extends AbstractUserService<Authentication> {
 
   private static final Logger logger = LoggerFactory.getLogger(LDAPUserService.class);
 
@@ -85,5 +86,10 @@ public class LDAPUserService implements UserService<Authentication> {
       userDto.setPermissions(List.of(READ, WRITE));
       return userDto;
     }
+  }
+
+  @Override
+  public String getUserToken(final Authentication authentication) {
+    throw new UnsupportedOperationException("Get token is not supported for LDAP authentication");
   }
 }

@@ -138,15 +138,17 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     }
   }
 
-  private void getNewTokenByRefreshToken() {
+  public String getNewTokenByRefreshToken() {
     try {
       final TokenRequest tokenRequest = getAuthAPI().renewAuth(refreshToken);
       final TokenHolder tokenHolder = tokenRequest.execute();
       authenticate(tokenHolder.getIdToken(), tokenHolder.getRefreshToken(), tokenHolder.getAccessToken());
       logger.info("New tokens received and validated.");
+      return accessToken;
     } catch (Auth0Exception e) {
       logger.error(e.getMessage(), e.getCause());
       setAuthenticated(false);
+      return null;
     }
   }
 

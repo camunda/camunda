@@ -16,15 +16,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 public interface UserService<T extends Authentication> {
     Logger logger = LoggerFactory.getLogger(UserService.class);
-  default UserDto getCurrentUser() {
-    SecurityContext context = SecurityContextHolder.getContext();
-    try{
-        return createUserDtoFrom((T) context.getAuthentication());
-    }catch (ClassCastException e){
-        logger.error(String.format("Couldn't get matching authentication for %s. Throw UserNotFound exception.", context.getAuthentication()), e);
-        throw new UserNotFoundException("Couldn't get authentication for user.");
-    }
-  }
+  UserDto getCurrentUser();
 
-  UserDto createUserDtoFrom(T authentication);
+  UserDto createUserDtoFrom(final T authentication);
+
+  String getUserToken();
+
 }
