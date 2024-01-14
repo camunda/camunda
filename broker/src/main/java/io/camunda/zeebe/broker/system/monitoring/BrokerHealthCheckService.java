@@ -112,7 +112,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
                 String.format(PARTITION_COMPONENT_NAME_FORMAT, metadata.id().id())));
   }
 
-  boolean isBrokerReady() {
+  public boolean isBrokerReady() {
     return brokerStarted && allPartitionsInstalled;
   }
 
