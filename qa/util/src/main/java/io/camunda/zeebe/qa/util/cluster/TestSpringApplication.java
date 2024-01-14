@@ -43,9 +43,9 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     this.beans = beans;
     this.propertyOverrides = propertyOverrides;
 
-    if (!propertyOverrides.containsKey("server.port")) {
-      propertyOverrides.put("server.port", SocketUtil.getNextAddress().getPort());
-    }
+    // randomize ports to allow multiple concurrent instances
+    overridePropertyIfAbsent("server.port", SocketUtil.getNextAddress().getPort());
+    overridePropertyIfAbsent("management.server.port", SocketUtil.getNextAddress().getPort());
 
     if (!beans.containsKey("collectorRegistry")) {
       beans.put(
@@ -97,12 +97,12 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
 
   @Override
   public int mappedPort(final TestZeebePort port) {
-    if (port != TestZeebePort.MONITORING) {
-      throw new IllegalArgumentException(
+    return switch (port) {
+      case REST -> restPort();
+      case MONITORING -> monitoringPort();
+      default -> throw new IllegalArgumentException(
           "No known port %s; must one of MONITORING".formatted(port));
-    }
-
-    return monitoringPort();
+    };
   }
 
   @Override
@@ -135,17 +135,36 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
         .sources(springApplication);
   }
 
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "{nodeId = " + nodeId() + "}";
+  }
+
+  private void overridePropertyIfAbsent(final String key, final Object value) {
+    if (!propertyOverrides.containsKey(key)) {
+      propertyOverrides.put(key, value);
+    }
+  }
+
   private int monitoringPort() {
+    return serverPort("management.server.port");
+  }
+
+  private int restPort() {
+    return serverPort("server.port");
+  }
+
+  private int serverPort(final String property) {
     final Object portProperty;
     if (springContext != null) {
-      portProperty = springContext.getEnvironment().getProperty("server.port");
+      portProperty = springContext.getEnvironment().getProperty(property);
     } else {
-      portProperty = propertyOverrides.get("server.port");
+      portProperty = propertyOverrides.get(property);
     }
 
     if (portProperty == null) {
       throw new IllegalStateException(
-          "No property server.port defined anywhere, cannot infer monitoring port");
+          "No property '%s' defined anywhere, cannot infer monitoring port".formatted(property));
     }
 
     if (portProperty instanceof final Integer port) {
@@ -153,10 +172,5 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     }
 
     return Integer.parseInt(portProperty.toString());
-  }
-
-  @Override
-  public String toString() {
-    return getClass().getSimpleName() + "{nodeId = " + nodeId() + "}";
   }
 }
