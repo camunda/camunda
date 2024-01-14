@@ -32,12 +32,6 @@ public final class MainSupport {
     Thread.setDefaultUncaughtExceptionHandler(
         FatalErrorHandler.uncaughtExceptionHandler(Loggers.SYSTEM_LOGGER));
 
-    // some of the health indicators use scheduled tasks which rely on the reactor schedulers, which
-    // by default have a very high bound. we only use the embedded server for management purposes,
-    // not for actual business logic, so we don't need so many
-    putSystemPropertyIfAbsent(
-        "reactor.schedulers.defaultBoundedElasticSize",
-        String.valueOf(2 * Runtime.getRuntime().availableProcessors()));
     // simplify bounding direct memory usage of Netty by ensuring all servers use the same allocator
     putSystemPropertyIfAbsent("io.grpc.netty.useCustomAllocator", Boolean.toString(false));
   }
