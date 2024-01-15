@@ -355,20 +355,16 @@ public final class FileBasedSnapshotStore extends Actor
                         + snapshotId
                         + "'."));
 
-    final var directory = buildSnapshotDirectory(parsedSnapshotId);
-    if (directory.toFile().exists()) {
-      actor.run(
-          () -> {
-            try {
-              checkAndCleanupExistingDirectory(snapshotId, parsedSnapshotId, directory);
-              createReceivedSnapshot(parsedSnapshotId, directory, newSnapshotFuture);
-            } catch (final Exception e) {
-              newSnapshotFuture.completeExceptionally(e);
-            }
-          });
-    } else {
-      createReceivedSnapshot(parsedSnapshotId, directory, newSnapshotFuture);
-    }
+    actor.run(
+        () -> {
+          final var directory = buildSnapshotDirectory(parsedSnapshotId);
+          try {
+            checkAndCleanupExistingDirectory(snapshotId, parsedSnapshotId, directory);
+            createReceivedSnapshot(parsedSnapshotId, directory, newSnapshotFuture);
+          } catch (final Exception e) {
+            newSnapshotFuture.completeExceptionally(e);
+          }
+        });
     return newSnapshotFuture;
   }
 
