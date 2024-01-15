@@ -19,14 +19,26 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ElasticsearchExporter implements Exporter {
 
+  /**
+   * Supported pattern for min_age property of ILM, we only support: days, hours, minutes and
+   * seconds. Everything below seconds we don't expect as useful.
+   *
+   * <p>See reference
+   * https://www.elastic.co/guide/en/elasticsearch/reference/current/api-conventions.html#time-units
+   */
+  private static final String PATTERN_MIN_AGE_FORMAT = "^[0-9]+[dhms]$";
+
+  private static final Predicate<String> CHECKER_MIN_AGE =
+      Pattern.compile(PATTERN_MIN_AGE_FORMAT).asPredicate();
   // by default, the bulk request may not be bigger than 100MB
   private static final int RECOMMENDED_MAX_BULK_MEMORY_LIMIT = 100 * 1024 * 1024;
-
   private Logger log = LoggerFactory.getLogger(getClass().getPackageName());
   private final ObjectMapper exporterMetadataObjectMapper = new ObjectMapper();
 
@@ -139,6 +151,14 @@ public class ElasticsearchExporter implements Exporter {
       throw new ExporterException(
           String.format(
               "Elasticsearch numberOfReplicas must be >= 0. Current value: %d", numberOfReplicas));
+    }
+
+    final String minimumAge = configuration.retention.getMinimumAge();
+    if (minimumAge != null && !CHECKER_MIN_AGE.test(minimumAge)) {
+      throw new ExporterException(
+          String.format(
+              "Elasticsearch minimumAge '%s' must match pattern '%s', but didn't.",
+              minimumAge, PATTERN_MIN_AGE_FORMAT));
     }
   }
 
