@@ -20,12 +20,12 @@
     "@jridgewell/gen-mapping" "^0.3.0"
     "@jridgewell/trace-mapping" "^0.3.9"
 
-"@axe-core/playwright@4.8.2":
-  version "4.8.2"
-  resolved "https://registry.yarnpkg.com/@axe-core/playwright/-/playwright-4.8.2.tgz#5d5c47d859c8fccbbebda5b8b144fd789a979ee1"
-  integrity sha512-9KOhX2tNuvqn9DzpBNyqoqNKRZBrexeSiN9irQ0sEdq8zH13JnatepCJxobuXn4UopNy6iIpP4342beMiH+MSQ==
+"@axe-core/playwright@4.8.3":
+  version "4.8.3"
+  resolved "https://registry.yarnpkg.com/@axe-core/playwright/-/playwright-4.8.3.tgz#14f35701d9fd13ecab763d398ffd8663ee9312de"
+  integrity sha512-YtbkAWeOp5oQeI8vS6KYqJDa5yTl5O1wJP8KOZAAVjhxeiK/Y1ssxnZuGRobARyVh3eS6O3jdxTv/iCK1RfgaA==
   dependencies:
-    axe-core "~4.8.2"
+    axe-core "~4.8.3"
 
 "@babel/code-frame@^7.0.0", "@babel/code-frame@^7.10.4", "@babel/code-frame@^7.22.13", "@babel/code-frame@^7.23.5":
   version "7.23.5"
@@ -1746,7 +1746,7 @@ available-typed-arrays@^1.0.5:
   resolved "https://registry.yarnpkg.com/available-typed-arrays/-/available-typed-arrays-1.0.5.tgz#92f95616501069d07d10edb2fc37d3e1c65123b7"
   integrity sha512-DMD0KiN46eipeziST1LPP/STfDU0sufISXmjSgvVsoU2tqxctQeASejWcfNtxYKqETM1UxQ8sp2OrSBWpHY6sw==
 
-axe-core@4.8.3, axe-core@~4.8.2:
+axe-core@4.8.3, axe-core@~4.8.3:
   version "4.8.3"
   resolved "https://registry.yarnpkg.com/axe-core/-/axe-core-4.8.3.tgz#205df863dd9917d5979e9435dab4d47692759051"
   integrity sha512-d5ZQHPSPkF9Tw+yfyDcRoUOc4g/8UloJJe5J8m4L5+c7AtDdjDLRxew/knnI4CxvtdxEUVgWz4x3OIQUIFiMfw==
