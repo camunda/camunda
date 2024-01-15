@@ -100,8 +100,9 @@ abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     return switch (port) {
       case REST -> restPort();
       case MONITORING -> monitoringPort();
-      default -> throw new IllegalArgumentException(
-          "No known port %s; must one of MONITORING".formatted(port));
+      default ->
+          throw new IllegalArgumentException(
+              "No known port %s; must one of MONITORING".formatted(port));
     };
   }
 
