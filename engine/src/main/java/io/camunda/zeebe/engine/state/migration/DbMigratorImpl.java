@@ -56,7 +56,6 @@ public class DbMigratorImpl implements DbMigrator {
   private final MutableProcessingState processingState;
   private final TransactionContext zeebeDbContext;
   private final Supplier<List<MigrationTask>> migrationSupplier;
-  private boolean abortRequested = false;
 
   private MigrationTask currentMigration;
 
@@ -81,7 +80,7 @@ public class DbMigratorImpl implements DbMigrator {
     logPreview(migrationTasks);
 
     final var executedMigrations = new ArrayList<MigrationTask>();
-    for (int index = 1; index <= migrationTasks.size() && !abortRequested; index++) {
+    for (int index = 1; index <= migrationTasks.size(); index++) {
       // one based index looks nicer in logs
 
       final var migration = migrationTasks.get(index - 1);
@@ -94,19 +93,7 @@ public class DbMigratorImpl implements DbMigrator {
             }
           });
     }
-    if (!abortRequested) {
-      logSummary(executedMigrations);
-    }
-  }
-
-  @Override
-  public void abort() {
-    final var message =
-        currentMigration == null
-            ? "Received abort signal (no migration running)"
-            : "Aborting " + currentMigration.getIdentifier() + " migration as requested";
-    LOGGER.info(message);
-    abortRequested = true;
+    logSummary(executedMigrations);
   }
 
   private void logPreview(final List<MigrationTask> migrationTasks) {
