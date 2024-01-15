@@ -9,8 +9,8 @@ package io.camunda.zeebe.exporter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
-import io.camunda.zeebe.exporter.dto.BulkIndexResponse;
-import io.camunda.zeebe.exporter.dto.BulkIndexResponse.Error;
+import io.camunda.zeebe.exporter.dto.BulkResponse;
+import io.camunda.zeebe.exporter.dto.BulkResponse.Error;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Actions;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Delete;
@@ -150,14 +150,14 @@ class ElasticsearchClient implements AutoCloseable {
   }
 
   private void exportBulk() {
-    final BulkIndexResponse response;
+    final BulkResponse response;
     try {
       final var request = new Request("POST", "/_bulk");
       final var body = new EntityTemplate(bulkIndexRequest);
       body.setContentType("application/x-ndjson");
       request.setEntity(body);
 
-      response = sendRequest(request, BulkIndexResponse.class);
+      response = sendRequest(request, BulkResponse.class);
     } catch (final IOException e) {
       throw new ElasticsearchExporterException("Failed to flush bulk", e);
     }
@@ -167,7 +167,7 @@ class ElasticsearchClient implements AutoCloseable {
     }
   }
 
-  private void throwCollectedBulkError(final BulkIndexResponse bulkResponse) {
+  private void throwCollectedBulkError(final BulkResponse bulkResponse) {
     final var collectedErrors = new ArrayList<String>();
     bulkResponse.items().stream()
         .flatMap(item -> Optional.ofNullable(item.index()).stream())

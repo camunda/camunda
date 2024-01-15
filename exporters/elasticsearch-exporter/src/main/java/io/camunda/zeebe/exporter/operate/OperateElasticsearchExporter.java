@@ -14,8 +14,8 @@ import io.camunda.zeebe.exporter.ElasticsearchMetrics;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
-import io.camunda.zeebe.exporter.dto.BulkIndexResponse;
-import io.camunda.zeebe.exporter.dto.BulkIndexResponse.Error;
+import io.camunda.zeebe.exporter.dto.BulkResponse;
+import io.camunda.zeebe.exporter.dto.BulkResponse.Error;
 import io.camunda.zeebe.exporter.operate.handlers.DecisionDefinitionHandler;
 import io.camunda.zeebe.exporter.operate.handlers.DecisionInstanceHandler;
 import io.camunda.zeebe.exporter.operate.handlers.DecisionRequirementsHandler;
@@ -189,14 +189,14 @@ public class OperateElasticsearchExporter implements Exporter {
   }
 
   private void sendRequest(OperateElasticsearchBulkRequest request) {
-    final BulkIndexResponse response;
+    final BulkResponse response;
     try {
       final var lowLevelRequest = new Request("POST", "/_bulk");
       final var body = new EntityTemplate(request);
       body.setContentType("application/x-ndjson");
       lowLevelRequest.setEntity(body);
 
-      response = sendLowLevelRequest(lowLevelRequest, BulkIndexResponse.class);
+      response = sendLowLevelRequest(lowLevelRequest, BulkResponse.class);
 
     } catch (final IOException e) {
       throw new ElasticsearchExporterException("Failed to flush bulk", e);
@@ -218,11 +218,11 @@ public class OperateElasticsearchExporter implements Exporter {
     return MAPPER.readValue(responseBody, responseType);
   }
 
-  private void throwCollectedBulkError(final BulkIndexResponse bulkResponse) {
+  private void throwCollectedBulkError(final BulkResponse bulkResponse) {
     final var collectedErrors = new ArrayList<String>();
     bulkResponse.items().stream()
-        .flatMap(item -> Optional.ofNullable(item.index()).stream())
-        .flatMap(index -> Optional.ofNullable(index.error()).stream())
+        .flatMap(item -> Optional.ofNullable(item.index()).or(() -> Optional.ofNullable(item.update())).stream())
+        .flatMap(result -> Optional.ofNullable(result.error()).stream())
         .collect(Collectors.groupingBy(Error::type))
         .forEach(
             (errorType, errors) ->

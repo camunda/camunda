@@ -19,7 +19,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.exporter.dto.BulkIndexResponse;
+import io.camunda.zeebe.exporter.dto.BulkResponse;
 import io.camunda.zeebe.exporter.dto.PutIndexTemplateResponse;
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
@@ -202,7 +202,7 @@ final class ElasticsearchClientTest {
       // given
       config.bulk.size = 1;
       final ArgumentCaptor<Request> requestCaptor =
-          mockClientResponse(new BulkIndexResponse(false, List.of()));
+          mockClientResponse(new BulkResponse(false, List.of()));
 
       // when
       client.index(factory.generateRecord(), new RecordSequence(PARTITION_ID, 1));
@@ -222,7 +222,7 @@ final class ElasticsearchClientTest {
     void shouldClearBulkOnSuccess() throws IOException {
       // given
       config.bulk.size = 1;
-      mockClientResponse(new BulkIndexResponse(false, List.of()));
+      mockClientResponse(new BulkResponse(false, List.of()));
 
       // when
       client.index(factory.generateRecord(), new RecordSequence(PARTITION_ID, 1));
