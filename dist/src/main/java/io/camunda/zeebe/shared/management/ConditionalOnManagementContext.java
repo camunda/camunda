@@ -47,9 +47,10 @@ public @interface ConditionalOnManagementContext {
       return switch (managementPortType) {
         case DISABLED -> ConditionOutcome.noMatch("no management application defined");
         case SAME -> ConditionOutcome.match();
-        case DIFFERENT -> context.getRegistry().containsBeanDefinition(MANAGEMENT_ONLY_BEAN_NAME)
-            ? ConditionOutcome.match()
-            : ConditionOutcome.noMatch("not the management context");
+        case DIFFERENT ->
+            context.getRegistry().containsBeanDefinition(MANAGEMENT_ONLY_BEAN_NAME)
+                ? ConditionOutcome.match()
+                : ConditionOutcome.noMatch("not the management context");
       };
     }
   }
