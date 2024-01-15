@@ -89,7 +89,10 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
               return stateTransitionBehavior.transitionToCompleted(element, context);
             })
         .ifRightOrLeft(
-            completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
+            completed -> {
+              compensationSubscriptionBehaviour.completeCompensationHandler(context, element);
+              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+            },
             failure -> incidentBehavior.createIncident(failure, context));
   }
 

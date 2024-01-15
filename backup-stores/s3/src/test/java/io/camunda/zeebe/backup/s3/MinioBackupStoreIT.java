@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.s3;
 
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
+import java.nio.file.NoSuchFileException;
 import java.time.Duration;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -103,5 +104,10 @@ final class MinioBackupStoreIT implements S3BackupStoreTests {
   @Override
   public S3BackupStore getStore() {
     return store;
+  }
+
+  @Override
+  public Class<? extends Exception> getFileNotFoundExceptionClass() {
+    return NoSuchFileException.class;
   }
 }

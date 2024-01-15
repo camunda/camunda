@@ -77,6 +77,7 @@ public abstract class StreamWrapper<T, S extends StreamWrapper<T, S>> implements
 
   // Helper to extract values
 
+  /** This is a short-circuiting terminal operation. */
   public boolean exists() {
     return wrappedStream.findFirst().isPresent();
   }

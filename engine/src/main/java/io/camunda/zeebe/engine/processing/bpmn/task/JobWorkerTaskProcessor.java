@@ -69,7 +69,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
 
   @Override
   public void onComplete(final ExecutableJobWorkerTask element, final BpmnElementContext context) {
-      handleEndExecutionListenersOrTaskCompletion(element, context)
+    handleEndExecutionListenersOrTaskCompletion(element, context)
         .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
   }
 
@@ -104,7 +104,9 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
                         .ifLeft(failure -> incidentBehavior.createIncident(failure, context)));
       }
       case null, default ->
-          LOGGER.warn("Unexpected ExecutionListenerEventType='{}' value received", eventType); // Create incident also?
+          LOGGER.warn(
+              "Unexpected ExecutionListenerEventType='{}' value received",
+              eventType); // Create incident also?
     }
   }
 
@@ -196,6 +198,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
               return stateTransitionBehavior.transitionToCompleted(element, context);
             })
         .flatMap(completionContext -> {
+          compensationSubscriptionBehaviour.completeCompensationHandler(context, element);
           stateTransitionBehavior.takeOutgoingSequenceFlows(element, completionContext);
           return Either.right(context);
         });

@@ -37,7 +37,9 @@ public class ActorTask {
           AtomicReferenceFieldUpdater.newUpdater(
               ActorTask.class, ActorLifecyclePhase.class, "lifecyclePhase");
 
-  public final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
+  // Start with a completed future to allow closing unscheduled tasks. The future is reset to
+  // uncompleted in `onTaskScheduled`.
+  public final CompletableActorFuture<Void> closeFuture = CompletableActorFuture.completed(null);
   final Actor actor;
   ActorJob currentJob;
   boolean shouldYield;

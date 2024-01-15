@@ -18,7 +18,10 @@ import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.state.mutable.MutableCompensationSubscriptionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public class DbCompensationSubscriptionState implements MutableCompensationSubscriptionState {
@@ -76,6 +79,41 @@ public class DbCompensationSubscriptionState implements MutableCompensationSubsc
   }
 
   @Override
+  public Optional<CompensationSubscription> findSubscriptionByCompensationHandlerId(
+      final String tenantId, final long piKey, final String compensationHandlerId) {
+    tenantIdKey.wrapString(tenantId);
+    processInstanceKey.wrapLong(piKey);
+
+    final List<CompensationSubscription> compensationSubscription = new ArrayList<>();
+    compensationSubscriptionColumnFamily.whileEqualPrefix(
+        new DbCompositeKey<>(tenantIdKey, processInstanceKey),
+        ((key, value) -> {
+          if (value.getRecord().getCompensationHandlerId().equals(compensationHandlerId)) {
+            compensationSubscription.add(value.copy());
+          }
+        }));
+
+    return compensationSubscription.stream().findFirst();
+  }
+
+  @Override
+  public Set<CompensationSubscription> findSubscriptionsByThrowEventInstanceKey(
+      final String tenantId, final long piKey, final long throwEventInstanceKey) {
+    tenantIdKey.wrapString(tenantId);
+    processInstanceKey.wrapLong(piKey);
+
+    final Set<CompensationSubscription> compensations = new HashSet<>();
+    compensationSubscriptionColumnFamily.whileEqualPrefix(
+        new DbCompositeKey<>(tenantIdKey, processInstanceKey),
+        ((key, value) -> {
+          if (value.getRecord().getThrowEventInstanceKey() == throwEventInstanceKey) {
+            compensations.add(value.copy());
+          }
+        }));
+    return compensations;
+  }
+
+  @Override
   public void put(final long key, final CompensationSubscriptionRecord compensation) {
     compensationSubscription.setKey(key).setRecord(compensation);
 
@@ -97,6 +135,15 @@ public class DbCompensationSubscriptionState implements MutableCompensationSubsc
         compensation.getTenantId());
     compensationSubscriptionColumnFamily.update(
         tenantAwareProcessInstanceKeyCompensableActivityId, compensationSubscription);
+  }
+
+  @Override
+  public void delete(
+      final String tenantId, final long processInstanceKey, final String compensableActivityId) {
+    wrapCompensationKeys(processInstanceKey, compensableActivityId, tenantId);
+
+    compensationSubscriptionColumnFamily.deleteExisting(
+        tenantAwareProcessInstanceKeyCompensableActivityId);
   }
 
   private void wrapCompensationKeys(

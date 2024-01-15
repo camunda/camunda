@@ -25,7 +25,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -63,7 +65,7 @@ public class ReceivedSnapshotTest {
     // given
 
     // when
-    assertThatThrownBy(() -> receiverSnapshotStore.newReceivedSnapshot("invalid"))
+    assertThatThrownBy(() -> receiverSnapshotStore.newReceivedSnapshot("invalid").join())
         .isInstanceOf(IllegalArgumentException.class);
   }
 
@@ -72,7 +74,7 @@ public class ReceivedSnapshotTest {
     // given
 
     // when
-    final var receivedSnapshot = receiverSnapshotStore.newReceivedSnapshot("1-0-123-121");
+    final var receivedSnapshot = receiverSnapshotStore.newReceivedSnapshot("1-0-123-121").join();
 
     // then
     assertThat(receivedSnapshot.index()).isEqualTo(1L);
@@ -154,7 +156,7 @@ public class ReceivedSnapshotTest {
 
     // when
     final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
 
     try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
       final SnapshotChunk chunk = snapshotChunkReader.next();
@@ -182,9 +184,11 @@ public class ReceivedSnapshotTest {
     final var firstPersistedSnapshot = firstReceivedSnapshot.persist().join();
 
     // when then throw - receives same snapshot again
-    assertThatThrownBy(() -> receiveSnapshot(persistedSnapshot))
-        .isInstanceOf(SnapshotAlreadyExistsException.class)
-        .hasMessageContaining(
+    assertThat(receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()))
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(SnapshotAlreadyExistsException.class)
+        .withMessageContaining(
             "Expected to receive snapshot with id 1-0-1-0, but was already persisted");
   }
 
@@ -193,7 +197,7 @@ public class ReceivedSnapshotTest {
     // given
     final var persistedSnapshot = takePersistedSnapshot();
     final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
 
     // when
     assertThatThrownBy(() -> receivedSnapshot.persist().join())
@@ -205,7 +209,7 @@ public class ReceivedSnapshotTest {
     // given
     final var persistedSnapshot = takePersistedSnapshot();
     final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
     try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
       receivedSnapshot.apply(snapshotChunkReader.next()).join();
     }
@@ -227,7 +231,7 @@ public class ReceivedSnapshotTest {
     // given
     final var persistedSnapshot = takePersistedSnapshot();
     final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
 
     // when - then
     assertThatCode(receivedSnapshot::abort).doesNotThrowAnyException();
@@ -286,7 +290,7 @@ public class ReceivedSnapshotTest {
 
     // when
     final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
 
     try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
       receivedSnapshot.apply(snapshotChunkReader.next()).join();
@@ -309,7 +313,7 @@ public class ReceivedSnapshotTest {
 
     // when
     final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
     try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
       final SnapshotChunk originalChunk = snapshotChunkReader.next();
       final SnapshotChunk corruptedChunk =
@@ -329,7 +333,7 @@ public class ReceivedSnapshotTest {
 
     // when
     final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
     try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
       while (snapshotChunkReader.hasNext()) {
         final var originalChunk = snapshotChunkReader.next();
@@ -353,7 +357,7 @@ public class ReceivedSnapshotTest {
 
     // when
     final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
     try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
       final var firstChunk = snapshotChunkReader.next();
       receivedSnapshot.apply(firstChunk).join();
@@ -372,7 +376,7 @@ public class ReceivedSnapshotTest {
 
     // when
     final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
     try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
       final var firstChunk = snapshotChunkReader.next();
       receivedSnapshot.apply(firstChunk).join();
@@ -394,7 +398,7 @@ public class ReceivedSnapshotTest {
 
     // when
     final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
     try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
       while (snapshotChunkReader.hasNext()) {
         final var corruptedChunk =
@@ -419,7 +423,7 @@ public class ReceivedSnapshotTest {
 
     // when
     final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
     try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
       final var originalChunk = snapshotChunkReader.next();
       final SnapshotChunk corruptedChunk = SnapshotChunkWrapper.withSnapshotId(originalChunk, "id");
@@ -433,7 +437,7 @@ public class ReceivedSnapshotTest {
 
   private ReceivedSnapshot receiveSnapshot(final PersistedSnapshot persistedSnapshot) {
     final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId());
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
 
     try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
       while (snapshotChunkReader.hasNext()) {

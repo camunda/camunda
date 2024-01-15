@@ -61,6 +61,11 @@ public interface CompensationSubscriptionRecordValue extends RecordValue {
   long getThrowEventInstanceKey();
 
   /**
+   * @return the element id of the compensation handler
+   */
+  String getCompensationHandlerId();
+
+  /**
    * @return the local variables of activity with compensation handler
    */
   Map<String, Object> getVariables();

@@ -12,6 +12,7 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.gcs.util.GcsContainer;
 import io.camunda.zeebe.backup.testkit.BackupStoreTestKit;
+import java.nio.file.NoSuchFileException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -71,6 +72,11 @@ public class GcsBackupStoreIT {
     public Class<? extends Exception> getBackupInInvalidStateExceptionClass() {
       return UnexpectedManifestState.class;
     }
+
+    @Override
+    public Class<? extends Exception> getFileNotFoundExceptionClass() {
+      return NoSuchFileException.class;
+    }
   }
 
   @Nested
@@ -109,6 +115,11 @@ public class GcsBackupStoreIT {
     @Override
     public Class<? extends Exception> getBackupInInvalidStateExceptionClass() {
       return UnexpectedManifestState.class;
+    }
+
+    @Override
+    public Class<? extends Exception> getFileNotFoundExceptionClass() {
+      return NoSuchFileException.class;
     }
   }
 }

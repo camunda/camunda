@@ -13,7 +13,7 @@
 
   <groupId>io.camunda</groupId>
   <artifactId>zeebe-bom</artifactId>
-  <version>8.4.0-SNAPSHOT</version>
+  <version>8.5.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Zeebe BOM</name>
@@ -42,10 +42,10 @@
     <!-- Zeebe Community License v1.1 header -->
     <license.header>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</license.header>
 
-    <plugin.version.flatten>1.5.0</plugin.version.flatten>
+    <plugin.version.flatten>1.6.0</plugin.version.flatten>
     <plugin.version.javadoc>3.6.3</plugin.version.javadoc>
     <plugin.version.license>4.3</plugin.version.license>
-    <plugin.version.spotless>2.41.1</plugin.version.spotless>
+    <plugin.version.spotless>2.42.0</plugin.version.spotless>
 
     <!--
       Define the skipChecks property here ONLY for the plugins defined in this module;
@@ -228,6 +228,14 @@
             <phase>clean</phase>
           </execution>
         </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
+        <configuration>
+          <stagingProgressTimeoutMinutes>40</stagingProgressTimeoutMinutes>
+        </configuration>
       </plugin>
     </plugins>
   </build>
