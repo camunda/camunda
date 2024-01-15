@@ -54,7 +54,7 @@
     <version.apache.http5>5.2.3</version.apache.http5>
     <version.aws-sdk>2.22.13</version.aws-sdk>
 
-    <version.node>v20.10.0</version.node>
+    <version.node>v20.11.0</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
     <zeebe-test-container.version>3.6.2</zeebe-test-container.version>
