@@ -43,20 +43,20 @@ public final class BrokerMonitoringEndpointTest {
   void shouldGetReadyStatus() {
     await("Ready Status")
         .atMost(60, TimeUnit.SECONDS)
-        .until(() -> given().spec(brokerServerSpec).when().get("ready").statusCode() == 204);
+        .until(() -> given().spec(brokerServerSpec).when().get("ready").statusCode() == 200);
   }
 
   @Test
   void shouldGetHealthStatus() {
     await("Health Status")
         .atMost(60, TimeUnit.SECONDS)
-        .until(() -> given().spec(brokerServerSpec).when().get("health").statusCode() == 204);
+        .until(() -> given().spec(brokerServerSpec).when().get("health").statusCode() == 200);
   }
 
   @Test
   void shouldGetStartupStatus() {
     await("Startup Status")
         .atMost(60, TimeUnit.SECONDS)
-        .until(() -> given().spec(brokerServerSpec).when().get("startup").statusCode() == 204);
+        .until(() -> given().spec(brokerServerSpec).when().get("startup").statusCode() == 200);
   }
 }
