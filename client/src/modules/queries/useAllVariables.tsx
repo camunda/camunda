@@ -53,20 +53,18 @@ function useFetchFullVariable(variablesQueryKey: QueryKey) {
       variables.filter((variable) => variable !== id),
     );
 
-    client.setQueryData<Variable[]>(
-      variablesQueryKey,
-      (cachedVariables) =>
-        cachedVariables?.map((variable) => {
-          if (variable.id === id) {
-            return {
-              ...variable,
-              ...fullVariable,
-              isValueTruncated: false,
-            } satisfies FullVariable;
-          }
+    client.setQueryData<Variable[]>(variablesQueryKey, (cachedVariables) =>
+      cachedVariables?.map((variable) => {
+        if (variable.id === id) {
+          return {
+            ...variable,
+            ...fullVariable,
+            isValueTruncated: false,
+          } satisfies FullVariable;
+        }
 
-          return variable;
-        }),
+        return variable;
+      }),
     );
   }
 
