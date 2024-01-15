@@ -189,11 +189,13 @@ public class ExecutionListenerJobTest {
   }
 
   @Test
-  public void shouldCreateIncidentForExecutionListener() {
+  public void shouldCreateIncidentForExecutionListenerWhenNoRetriesLeft() {
     // given
     ENGINE.deployment().withXmlClasspathResource("/processes/execution-listeners.bpmn").deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
+    // when
+    // fail 1st EL[start] job
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
@@ -206,9 +208,10 @@ public class ExecutionListenerJobTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
+    // then
+    // resolve first incident & complete 1st EL[start] job
     ENGINE.incident().ofInstance(processInstanceKey).withKey(firstIncident.getKey()).resolve();
     ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_start_type_1").complete();
-
     assertJobLifecycle(
         processInstanceKey,
         1,
@@ -216,6 +219,8 @@ public class ExecutionListenerJobTest {
         JobIntent.CREATED,
         ActivityType.EXECUTION_LISTENER);
 
+    // when
+    // fail 2nd EL[start] job
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
@@ -229,13 +234,81 @@ public class ExecutionListenerJobTest {
             .skip(1)
             .getFirst();
 
+    // then
+    // resolve 2nd incident & complete 2nd EL[start] job
     ENGINE.incident().ofInstance(processInstanceKey).withKey(secondIncident.getKey()).resolve();
     ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_start_type_2").complete();
 
+    // 3rd EL[start] job should be created
     assertJobLifecycle(
         processInstanceKey,
         2,
         "dmk_task_start_type_3",
+        JobIntent.CREATED,
+        ActivityType.EXECUTION_LISTENER);
+  }
+
+  @Test
+  public void
+      shouldCreateIncidentWhenCorrelationKeyNotProvidedBeforeProcessingTaskWithMessageBoundaryEvent() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlClasspathResource("/processes/execution-listeners-with-message-event.bpmn")
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    // complete EL[start] job
+    ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_start_type").complete();
+    final Record<IncidentRecordValue> firstIncident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .skip(0)
+            .getFirst();
+
+    // then
+    // incident created
+    Assertions.assertThat(firstIncident.getValue())
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasErrorMessage(
+            "Failed to extract the correlation key for 'order_id': The value must be either a string or a number, but was 'NULL'. "
+                + "The evaluation reported the following warnings:\n"
+                + "[NO_VARIABLE_FOUND] No variable found with name 'order_id'");
+
+    // fix issue with missing `correlationKey` variable
+    ENGINE.variables().ofScope(processInstanceKey).withDocument(Map.of("order_id", 123)).update();
+
+    // resolve incident
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(firstIncident.getKey()).resolve();
+
+    // EL[start] job recreated
+    final long recreatedExecutionListenerJobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType("dmk_task_start_type")
+            .skip(1)
+            .getFirst()
+            .getKey();
+
+    // complete recreated EL[start] job
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withKey(recreatedExecutionListenerJobKey)
+        .complete();
+
+    // Job for service task should be created
+    assertJobLifecycle(
+        processInstanceKey, 2, "dmk_task_type", JobIntent.CREATED, ActivityType.REGULAR);
+    // complete service task job
+    ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_type").complete();
+
+    // job for EL[end] should be created
+    assertJobLifecycle(
+        processInstanceKey,
+        3,
+        "dmk_task_end_type",
         JobIntent.CREATED,
         ActivityType.EXECUTION_LISTENER);
   }

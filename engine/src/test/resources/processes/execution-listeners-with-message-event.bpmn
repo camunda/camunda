@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Zeebe Community License 1.1. You may not use this file
+  ~ except in compliance with the Zeebe Community License 1.1.
+  -->
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1hhbqbg" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.16.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.3.0">
+  <bpmn:process id="process" isExecutable="true">
+    <bpmn:startEvent id="dmk_start_event">
+      <bpmn:extensionElements />
+      <bpmn:outgoing>Flow_1du2tni</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_1du2tni" sourceRef="dmk_start_event" targetRef="dmk_service_task" />
+    <bpmn:sequenceFlow id="Flow_029v1e2" sourceRef="dmk_service_task" targetRef="dmk_end_event" />
+    <bpmn:endEvent id="dmk_end_event">
+      <bpmn:incoming>Flow_029v1e2</bpmn:incoming>
+      <bpmn:incoming>Flow_0t4ach8</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="dmk_service_task">
+      <bpmn:extensionElements>
+        <zeebe:executionListeners>
+         <zeebe:executionListener eventType="start" type="dmk_task_start_type" retries="1" />
+         <zeebe:executionListener eventType="end" type="dmk_task_end_type" retries="1" />
+        </zeebe:executionListeners>
+        <zeebe:taskDefinition type="dmk_task_type" retries="8" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1du2tni</bpmn:incoming>
+      <bpmn:outgoing>Flow_029v1e2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="Event_0fov66h" attachedToRef="dmk_service_task">
+      <bpmn:outgoing>Flow_0t4ach8</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_159z8vq" messageRef="Message_2kqkfhi" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_0t4ach8" sourceRef="Event_0fov66h" targetRef="dmk_end_event" />
+  </bpmn:process>
+  <bpmn:message id="Message_2kqkfhi" name="dmk_service_task_event">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=order_id" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1a53s9c">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="dmk_start_event">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_05j5qkv_di" bpmnElement="dmk_service_task">
+        <dc:Bounds x="290" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_068g3bp_di" bpmnElement="dmk_end_event">
+        <dc:Bounds x="492" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0cql3ag_di" bpmnElement="Event_0fov66h">
+        <dc:Bounds x="372" y="139" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1du2tni_di" bpmnElement="Flow_1du2tni">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="290" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_029v1e2_di" bpmnElement="Flow_029v1e2">
+        <di:waypoint x="390" y="117" />
+        <di:waypoint x="492" y="117" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
