@@ -10,7 +10,6 @@ package io.camunda.zeebe.exporter.operate.handlers;
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
-import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
 import io.camunda.zeebe.exporter.operate.OperateElasticsearchBulkRequest;
 import io.camunda.zeebe.exporter.operate.schema.templates.ListViewTemplate;
@@ -82,8 +81,7 @@ public class ListViewFromVariableHandler
 
   @Override
   public void flush(
-      VariableForListViewEntity variableEntity, OperateElasticsearchBulkRequest batchRequest)
-      throws PersistenceException {
+      VariableForListViewEntity variableEntity, OperateElasticsearchBulkRequest batchRequest) {
     // TODO: restore insert or upsert behavior
     // final var initialIntent = cachedVariable.getLeft();
 

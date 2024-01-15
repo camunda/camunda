@@ -11,7 +11,6 @@ import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
 import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
-import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.ImportProperties;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
 import io.camunda.zeebe.exporter.operate.OperateElasticsearchBulkRequest;
@@ -90,8 +89,7 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
   }
 
   @Override
-  public void flush(VariableEntity variableEntity, OperateElasticsearchBulkRequest batchRequest)
-      throws PersistenceException {
+  public void flush(VariableEntity variableEntity, OperateElasticsearchBulkRequest batchRequest) {
 
     // TODO: restore the distinction between insert and upsert
     // final var initialIntent = cachedVariable.getLeft();

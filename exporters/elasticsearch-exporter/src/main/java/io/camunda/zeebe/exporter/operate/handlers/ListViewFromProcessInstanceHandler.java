@@ -20,7 +20,6 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.operate.util.TreePath;
@@ -318,8 +317,7 @@ public class ListViewFromProcessInstanceHandler
 
   @Override
   public void flush(
-      ProcessInstanceForListViewEntity piEntity, OperateElasticsearchBulkRequest batchRequest)
-      throws PersistenceException {
+      ProcessInstanceForListViewEntity piEntity, OperateElasticsearchBulkRequest batchRequest) {
 
     LOGGER.debug("Process instance for list view: id {}", piEntity.getId());
 

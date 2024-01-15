@@ -15,7 +15,6 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
-import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
 import io.camunda.zeebe.exporter.operate.OperateElasticsearchBulkRequest;
@@ -142,8 +141,7 @@ public class ListViewFromActivityInstanceHandler
 
   @Override
   public void flush(
-      FlowNodeInstanceForListViewEntity actEntity, OperateElasticsearchBulkRequest batchRequest)
-      throws PersistenceException {
+      FlowNodeInstanceForListViewEntity actEntity, OperateElasticsearchBulkRequest batchRequest) {
 
     final Long processInstanceKey = actEntity.getProcessInstanceKey();
 

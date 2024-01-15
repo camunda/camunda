@@ -7,6 +7,13 @@
  */
 package org.sample;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.exporter.test.ExporterTestController;
+import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
+import io.camunda.zeebe.protocol.record.Record;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -17,13 +24,6 @@ import java.util.function.Function;
 import org.apache.commons.io.IOUtils;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.exporter.api.Exporter;
-import io.camunda.zeebe.exporter.api.context.Controller;
-import io.camunda.zeebe.exporter.test.ExporterTestController;
-import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
-import io.camunda.zeebe.protocol.record.Record;
 
 public abstract class ExporterState {
 

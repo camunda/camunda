@@ -10,7 +10,6 @@ package io.camunda.zeebe.exporter.operate.handlers;
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
 import io.camunda.operate.entities.ProcessEntity;
-import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.zeebeimport.util.XMLUtil;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
 import io.camunda.zeebe.exporter.operate.OperateElasticsearchBulkRequest;
@@ -97,8 +96,7 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
   }
 
   @Override
-  public void flush(ProcessEntity processEntity, OperateElasticsearchBulkRequest batchRequest)
-      throws PersistenceException {
+  public void flush(ProcessEntity processEntity, OperateElasticsearchBulkRequest batchRequest) {
     LOGGER.debug(
         "Process: key {}, bpmnProcessId {}",
         processEntity.getKey(),

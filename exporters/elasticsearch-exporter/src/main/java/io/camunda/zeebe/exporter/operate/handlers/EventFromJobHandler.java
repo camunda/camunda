@@ -14,7 +14,6 @@ import io.camunda.operate.entities.EventEntity;
 import io.camunda.operate.entities.EventMetadataEntity;
 import io.camunda.operate.entities.EventSourceType;
 import io.camunda.operate.entities.EventType;
-import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
 import io.camunda.zeebe.exporter.operate.OperateElasticsearchBulkRequest;
@@ -122,8 +121,7 @@ public class EventFromJobHandler implements ExportHandler<EventEntity, JobRecord
   }
 
   @Override
-  public void flush(EventEntity entity, OperateElasticsearchBulkRequest batchRequest)
-      throws PersistenceException {
+  public void flush(EventEntity entity, OperateElasticsearchBulkRequest batchRequest) {
     LOGGER.debug(
         "Event: id {}, eventSourceType {}, eventType {}, processInstanceKey {}",
         entity.getId(),

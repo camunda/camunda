@@ -7,6 +7,10 @@
  */
 package org.sample;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.operate.json.ProcessInstanceForListViewEntityWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -16,10 +20,6 @@ import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Warmup;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.json.ProcessInstanceForListViewEntityWriter;
 
 public class JsonSerializationBenchmark {
 
@@ -29,19 +29,19 @@ public class JsonSerializationBenchmark {
   @Measurement(iterations = 3, time = 30, timeUnit = TimeUnit.SECONDS)
   @Fork(value = 1, warmups = 1)
   public void testGeneratorSerialization(JsonSerializationState state) throws IOException {
-    ProcessInstanceForListViewEntity entity = state.getEntityFactory().buildProcessInstanceForListViewEntity();
-    
+    ProcessInstanceForListViewEntity entity =
+        state.getEntityFactory().buildProcessInstanceForListViewEntity();
+
     ByteArrayOutputStream outStream = new ByteArrayOutputStream();
     JsonGenerator jsonGenerator = state.getObjectMapper().createGenerator(outStream);
-    
+
     ProcessInstanceForListViewEntityWriter writer = new ProcessInstanceForListViewEntityWriter();
     writer.writeTo(entity, jsonGenerator);
-    
+
     jsonGenerator.flush();
     jsonGenerator.close();
-    
+
     outStream.toByteArray();
-    
   }
 
   @Benchmark
@@ -50,13 +50,14 @@ public class JsonSerializationBenchmark {
   @Measurement(iterations = 3, time = 30, timeUnit = TimeUnit.SECONDS)
   @Fork(value = 1, warmups = 1)
   public void testMapperSerialization(JsonSerializationState state) throws IOException {
-    ProcessInstanceForListViewEntity entity = state.getEntityFactory().buildProcessInstanceForListViewEntity();
-    
+    ProcessInstanceForListViewEntity entity =
+        state.getEntityFactory().buildProcessInstanceForListViewEntity();
+
     ByteArrayOutputStream outStream = new ByteArrayOutputStream();
     ObjectMapper objectMapper = state.getObjectMapper();
 
     objectMapper.writeValue(outStream, entity);
-    
+
     outStream.toByteArray();
   }
 }

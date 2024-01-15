@@ -14,7 +14,6 @@ import io.camunda.operate.entities.dmn.DecisionInstanceInputEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceOutputEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceState;
 import io.camunda.operate.entities.dmn.DecisionType;
-import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.zeebe.exporter.operate.OperateElasticsearchBulkRequest;
 import io.camunda.zeebe.exporter.operate.schema.templates.DecisionInstanceTemplate;
@@ -133,8 +132,7 @@ public class DecisionInstanceHandler {
     return outputs;
   }
 
-  public void flush(DecisionInstanceEntity entity, OperateElasticsearchBulkRequest batchRequest)
-      throws PersistenceException {
+  public void flush(DecisionInstanceEntity entity, OperateElasticsearchBulkRequest batchRequest) {
     batchRequest.index(decisionInstanceTemplate.getFullQualifiedName(), entity);
   }
 

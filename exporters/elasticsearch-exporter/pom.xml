@@ -28,7 +28,7 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-   	  <artifactId>operate-json-schema</artifactId>
+      <artifactId>operate-json-schema</artifactId>
       <version>8.4.0-SNAPSHOT</version>
     </dependency>
 

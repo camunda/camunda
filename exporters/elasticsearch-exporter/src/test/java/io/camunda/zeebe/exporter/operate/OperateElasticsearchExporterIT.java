@@ -217,7 +217,7 @@ public class OperateElasticsearchExporterIT {
 
     // when
     records.forEach(record -> exporter.export(record));
-    exporter.flush();
+    exporter.flushSync();
 
     // then
     // there should be a process instance record in the list view index
@@ -335,7 +335,7 @@ public class OperateElasticsearchExporterIT {
 
     // when
     records.forEach(record -> exporter.export(record));
-    exporter.flush();
+    exporter.flushSync();
 
     // then
     // there should be a process instance record in the list view index
@@ -368,7 +368,7 @@ public class OperateElasticsearchExporterIT {
 
     // when
     records.forEach(record -> exporter.export(record));
-    exporter.flush();
+    exporter.flushSync();
 
     // then
     // there should be a process instance record in the list view index

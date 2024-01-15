@@ -10,7 +10,6 @@ package io.camunda.zeebe.exporter.operate.handlers;
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
-import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
 import io.camunda.zeebe.exporter.operate.OperateElasticsearchBulkRequest;
 import io.camunda.zeebe.exporter.operate.schema.indices.DecisionIndex;
@@ -81,8 +80,7 @@ public class DecisionDefinitionHandler
   }
 
   @Override
-  public void flush(DecisionDefinitionEntity entity, OperateElasticsearchBulkRequest batchRequest)
-      throws PersistenceException {
+  public void flush(DecisionDefinitionEntity entity, OperateElasticsearchBulkRequest batchRequest) {
     LOGGER.debug("Decision: key {}, decisionId {}", entity.getKey(), entity.getDecisionId());
     batchRequest.index(decisionIndex.getFullQualifiedName(), entity);
   }

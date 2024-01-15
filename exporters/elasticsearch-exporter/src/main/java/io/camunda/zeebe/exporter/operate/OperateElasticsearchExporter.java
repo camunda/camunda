@@ -8,7 +8,6 @@
 package io.camunda.zeebe.exporter.operate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.zeebe.exporter.ElasticsearchExporterException;
 import io.camunda.zeebe.exporter.ElasticsearchMetrics;
 import io.camunda.zeebe.exporter.api.Exporter;
@@ -76,9 +75,9 @@ public class OperateElasticsearchExporter implements Exporter {
 
   private OperateElasticsearchExporterConfiguration configuration;
   private int batchSize; // stored separately so that we can change it easily in tests
-  private RestHighLevelClient esClient;
-
   private Controller controller;
+  private RestHighLevelClient esClient;
+  private RequestManager requestManager;
 
   // dynamic state for the lifetime of the exporter
   private long lastExportedPosition = -1;
@@ -109,6 +108,31 @@ public class OperateElasticsearchExporter implements Exporter {
     this.writer = createBatchWriter();
 
     scheduleDelayedFlush();
+
+    this.requestManager =
+        new RequestManager(
+            esClient.getLowLevelClient(),
+            r -> {
+              final BulkResponse response;
+              try {
+                // buffer the complete response in memory before parsing it; this will give us a
+                // better error
+                // message which contains the raw response should the deserialization fail
+                final var responseBody = r.getEntity().getContent().readAllBytes();
+                response = MAPPER.readValue(responseBody, BulkResponse.class);
+              } catch (IOException e) {
+                return new ElasticsearchExporterException("Failed to read bulk response", e);
+              }
+
+              if (response.errors()) {
+                return createBulkErrorException(response);
+              } else {
+                return null;
+              }
+            },
+            e -> new ElasticsearchExporterException("Could not send bulk request", e),
+            e -> LOGGER.warn("Elasticsearch bulk request failed", e),
+            configuration.getNumConcurrentRequests());
   }
 
   /*
@@ -126,23 +150,14 @@ public class OperateElasticsearchExporter implements Exporter {
       metrics = new ElasticsearchMetrics(record.getPartitionId());
     }
 
+    requestManager.resolveResponses();
+
     writer.addRecord(record);
 
     this.lastExportedPosition = record.getPosition();
 
     if (writer.hasAtLeastEntities(batchSize)) {
-      try {
-        flush();
-        // TODO: call updateLastExportedPosition
-      } catch (PersistenceException e) {
-        // TODO: in this case we would send an entity with the same ID twice, not sure what happens
-        // then
-        // risk is acceptable for a prototype
-        throw new RuntimeException(
-            "Could not flush during regular export. "
-                + "This indicates a bug because this exporter is not retryable",
-            e);
-      }
+      flush();
     }
   }
 
@@ -162,7 +177,6 @@ public class OperateElasticsearchExporter implements Exporter {
   private void flushAndReschedule() {
     try {
       flush();
-      updateLastExportedPosition();
     } catch (final Exception e) {
       LOGGER.warn(
           "Unexpected exception occurred on periodically flushing bulk, will retry later.", e);
@@ -173,55 +187,43 @@ public class OperateElasticsearchExporter implements Exporter {
   /*
    * Public so that we can flush from tests at any point
    */
-  public void flush() throws PersistenceException {
+  public void flush() {
 
-    final RestClient lowLevelClient = esClient.getLowLevelClient();
-
-    OperateElasticsearchBulkRequest request = new OperateElasticsearchBulkRequest();
+    final OperateElasticsearchBulkRequest request = new OperateElasticsearchBulkRequest();
 
     try (final Histogram.Timer ignored = metrics.measureFlushDuration()) {
       writer.flush(request);
 
       // TODO: restore request size metric
       //      metrics.recordBulkMemorySize(request.sizeInBytes());
-      sendRequest(request);
+      sendRequest(request, lastExportedPosition);
     }
   }
 
-  private void sendRequest(OperateElasticsearchBulkRequest request) {
-    final BulkResponse response;
-    try {
-      final var lowLevelRequest = new Request("POST", "/_bulk");
-      final var body = new EntityTemplate(request);
-      body.setContentType("application/x-ndjson");
-      lowLevelRequest.setEntity(body);
-
-      response = sendLowLevelRequest(lowLevelRequest, BulkResponse.class);
-
-    } catch (final IOException e) {
-      throw new ElasticsearchExporterException("Failed to flush bulk", e);
-    }
-
-    if (response.errors()) {
-      throwCollectedBulkError(response);
-    }
+  /** for testing */
+  public void flushSync() {
+    flush();
+    requestManager.resolveResponsesBlocking(20);
   }
 
-  private <T> T sendLowLevelRequest(final Request request, final Class<T> responseType)
-      throws IOException {
-    RestClient lowLevelClient = esClient.getLowLevelClient();
+  private void sendRequest(OperateElasticsearchBulkRequest request, long positionToAcknowledge) {
+    final var lowLevelRequest = new Request("POST", "/_bulk");
+    final var body = new EntityTemplate(request);
+    body.setContentType("application/x-ndjson");
+    lowLevelRequest.setEntity(body);
 
-    final var lowLevelResponse = lowLevelClient.performRequest(request);
-    // buffer the complete response in memory before parsing it; this will give us a better error
-    // message which contains the raw response should the deserialization fail
-    final var responseBody = lowLevelResponse.getEntity().getContent().readAllBytes();
-    return MAPPER.readValue(responseBody, responseType);
+    requestManager.send(
+        lowLevelRequest, r -> controller.updateLastExportedRecordPosition(positionToAcknowledge));
   }
 
-  private void throwCollectedBulkError(final BulkResponse bulkResponse) {
+  private ElasticsearchExporterException createBulkErrorException(final BulkResponse bulkResponse) {
     final var collectedErrors = new ArrayList<String>();
     bulkResponse.items().stream()
-        .flatMap(item -> Optional.ofNullable(item.index()).or(() -> Optional.ofNullable(item.update())).stream())
+        .flatMap(
+            item ->
+                Optional.ofNullable(item.index())
+                    .or(() -> Optional.ofNullable(item.update()))
+                    .stream())
         .flatMap(result -> Optional.ofNullable(result.error()).stream())
         .collect(Collectors.groupingBy(Error::type))
         .forEach(
@@ -231,7 +233,7 @@ public class OperateElasticsearchExporter implements Exporter {
                         "Failed to flush %d item(s) of bulk request [type: %s, reason: %s]",
                         errors.size(), errorType, errors.get(0).reason())));
 
-    throw new ElasticsearchExporterException("Failed to flush bulk request: " + collectedErrors);
+    return new ElasticsearchExporterException("Failed to flush bulk request: " + collectedErrors);
   }
 
   @Override
@@ -281,7 +283,10 @@ public class OperateElasticsearchExporter implements Exporter {
 
   private HttpAsyncClientBuilder configureHttpClient(final HttpAsyncClientBuilder builder) {
     // use single thread for rest client
-    builder.setDefaultIOReactorConfig(IOReactorConfig.custom().setIoThreadCount(1).build());
+    builder.setDefaultIOReactorConfig(
+        IOReactorConfig.custom()
+            .setIoThreadCount(configuration.getNumConcurrentRequests())
+            .build());
 
     if (configuration.hasAuthenticationPresent()) {
       setupBasicAuthentication(builder);

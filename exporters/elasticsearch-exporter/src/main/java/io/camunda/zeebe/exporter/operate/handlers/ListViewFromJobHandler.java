@@ -10,7 +10,6 @@ package io.camunda.zeebe.exporter.operate.handlers;
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
 import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
-import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
 import io.camunda.zeebe.exporter.operate.OperateElasticsearchBulkRequest;
@@ -95,8 +94,7 @@ public class ListViewFromJobHandler
 
   @Override
   public void flush(
-      FlowNodeInstanceForListViewEntity entity, OperateElasticsearchBulkRequest batchRequest)
-      throws PersistenceException {
+      FlowNodeInstanceForListViewEntity entity, OperateElasticsearchBulkRequest batchRequest) {
 
     LOGGER.debug(
         "Update job state for flow node instance: id {} JobFailedWithRetriesLeft {}",

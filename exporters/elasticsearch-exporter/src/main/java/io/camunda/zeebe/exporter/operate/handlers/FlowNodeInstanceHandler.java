@@ -17,7 +17,6 @@ import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.zeebe.exporter.operate.ExportHandler;
@@ -244,8 +243,8 @@ public class FlowNodeInstanceHandler
   }
 
   @Override
-  public void flush(FlowNodeInstanceEntity fniEntity, OperateElasticsearchBulkRequest batchRequest)
-      throws PersistenceException {
+  public void flush(
+      FlowNodeInstanceEntity fniEntity, OperateElasticsearchBulkRequest batchRequest) {
     LOGGER.debug("Flow node instance: id {}", fniEntity.getId());
     if (canOptimizeFlowNodeInstanceIndexing(fniEntity)) {
       batchRequest.index(flowNodeInstanceTemplate.getFullQualifiedName(), fniEntity);
