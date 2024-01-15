@@ -42,7 +42,7 @@
     <apache.http5-core.version>5.2.4</apache.http5-core.version>
     <guava.version>33.0.0-jre</guava.version>
     <spring.boot.version>3.1.7</spring.boot.version>
-    <spring.version>6.1.2</spring.version>
+    <spring.version>6.1.3</spring.version>
     <httpclient.version>4.5.14</httpclient.version>
     <quartz.version>2.3.2</quartz.version>
     <jakarta.rs-api.version>3.1.0</jakarta.rs-api.version>
