@@ -148,6 +148,14 @@ public class ElasticsearchExporterConfiguration {
     // prefix for index and templates
     public String prefix = "zeebe-record";
 
+    /**
+     * Suffix for indices. Pattern is used together with the current date, to create a suffix for
+     * the index. Useful to define whether an index should be created per month, day or even hour.
+     *
+     * <p>Example: yyyy-MM-dd -> 2023-12-03
+     */
+    public String indexSuffixDatePattern = "yyyy-MM-dd";
+
     // update index template on startup
     public boolean createTemplate = true;
 

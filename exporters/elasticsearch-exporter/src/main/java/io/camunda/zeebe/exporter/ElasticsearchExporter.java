@@ -19,6 +19,8 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.io.IOException;
 import java.time.Duration;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -159,6 +161,17 @@ public class ElasticsearchExporter implements Exporter {
           String.format(
               "Elasticsearch minimumAge '%s' must match pattern '%s', but didn't.",
               minimumAge, PATTERN_MIN_AGE_FORMAT));
+    }
+
+    final String indexSuffixDatePattern = configuration.index.indexSuffixDatePattern;
+    try {
+      DateTimeFormatter.ofPattern(indexSuffixDatePattern).withZone(ZoneOffset.UTC);
+    } catch (final IllegalArgumentException iae) {
+      throw new ExporterException(
+          String.format(
+              "Expected a valid date format pattern for the given elasticsearch indexSuffixDatePattern, but '%s' was not. Examples are: 'yyyy-MM-dd' or 'yyyy-MM-dd_HH'",
+              indexSuffixDatePattern),
+          iae);
     }
   }
 

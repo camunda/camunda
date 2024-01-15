@@ -749,6 +749,7 @@
         #   index:
         #     prefix: zeebe-record
         #     createTemplate: true
+        #     indexSuffixDatePattern = "yyyy-MM-dd"
         #
         #     numberOfShards: 3
         #     numberOfReplicas: 0
