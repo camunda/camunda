@@ -10,6 +10,4 @@ package io.camunda.zeebe.engine.state.migration;
 public interface DbMigrator {
 
   void runMigrations();
-
-  void abort();
 }
