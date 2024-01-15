@@ -28,7 +28,9 @@ public class PersistedSnapshotStoreTest {
     final var partitionId = 1;
     final var root = temporaryFolder.getRoot();
 
-    persistedSnapshotStore = new FileBasedSnapshotStore(partitionId, root.toPath());
+    final var snapshotStore = new FileBasedSnapshotStore(partitionId, root.toPath());
+    scheduler.submitActor(snapshotStore).join();
+    persistedSnapshotStore = snapshotStore;
   }
 
   @Test
