@@ -334,6 +334,19 @@ final class ElasticsearchExporterTest {
       assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
     }
 
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"1", "-1", "1ms"})
+    void shouldNotAllowInvalidMinimumAge(final String invalidMinAge) {
+      // given
+      config.retention.setMinimumAge(invalidMinAge);
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context))
+          .isInstanceOf(ExporterException.class)
+          .hasMessageContaining("must match pattern '^[0-9]+[dhms]$'")
+          .hasMessageContaining("minimumAge '" + invalidMinAge + "'");
+    }
+
     @Test
     void shouldForbidNegativeNumberOfReplicas() {
       // given
