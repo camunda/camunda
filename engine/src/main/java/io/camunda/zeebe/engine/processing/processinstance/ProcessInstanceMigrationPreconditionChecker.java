@@ -97,6 +97,10 @@ public final class ProcessInstanceMigrationPreconditionChecker {
       "Expected to migrate process instance '%s' but a concurrent command was executed on the process instance. Please retry the migration.";
   private static final long NO_PARENT = -1L;
 
+  /**
+   * Exception that can be thrown during the migration of a process instance, in case no process
+   * instance with the given key exists.
+   */
   public static void requireNonNullProcessInstance(
       final ElementInstance record, final long processInstanceKey) {
     if (record == null) {
@@ -107,6 +111,10 @@ public final class ProcessInstanceMigrationPreconditionChecker {
     }
   }
 
+  /**
+   * Exception that can be thrown during the migration of a process instance, in case given tenant
+   * is not authorized to migrate the process instance.
+   */
   public static void requireAuthorizedTenant(
       final Map<String, Object> authorizations,
       final String tenantId,
@@ -122,8 +130,8 @@ public final class ProcessInstanceMigrationPreconditionChecker {
   }
 
   /**
-   * Exception that can be thrown during the migration of a process instance, in case any of the
-   * process instance is a child process instance.
+   * Exception that can be thrown during the migration of a process instance, in case the process to
+   * migrate instance is a child process instance.
    */
   public static void requireNullParent(
       final long parentProcessInstanceKey, final long processInstanceKey) {
@@ -134,6 +142,10 @@ public final class ProcessInstanceMigrationPreconditionChecker {
     }
   }
 
+  /**
+   * Exception that can be thrown during the migration of a process instance, in case no target
+   * process definition exist with given definition key.
+   */
   public static void requireNonNullTargetProcessDefinition(
       final DeployedProcess targetProcessDefinition, final long targetProcessDefinitionKey) {
     if (targetProcessDefinition == null) {
@@ -144,6 +156,10 @@ public final class ProcessInstanceMigrationPreconditionChecker {
     }
   }
 
+  /**
+   * Exception that can be thrown during the migration of a process instance, in case the mapping
+   * instructions contains duplicated element ids.
+   */
   public static void requireNonDuplicateSourceElementIds(
       final List<ProcessInstanceMigrationMappingInstructionValue> mappingInstructions,
       final long processInstanceKey) {
@@ -212,6 +228,18 @@ public final class ProcessInstanceMigrationPreconditionChecker {
         });
   }
 
+  /**
+   * Exception that can be thrown during the migration of a process instance, in following cases:
+   *
+   * <p>
+   *
+   * <ul>
+   *   <li>Source process definition contains an event subprocess.
+   *   <li>Target process definition contains an event subprocess.
+   * </ul>
+   *
+   * <p>
+   */
   public static void requireNoEventSubprocess(
       final DeployedProcess sourceProcessDefinition,
       final DeployedProcess targetProcessDefinition) {
