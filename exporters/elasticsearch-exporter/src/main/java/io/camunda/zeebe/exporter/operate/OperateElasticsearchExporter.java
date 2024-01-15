@@ -286,6 +286,8 @@ public class OperateElasticsearchExporter implements Exporter {
     builder.setDefaultIOReactorConfig(
         IOReactorConfig.custom()
             .setIoThreadCount(configuration.getNumConcurrentRequests())
+            .setConnectTimeout(5000)
+            .setSoTimeout(5000)
             .build());
 
     if (configuration.hasAuthenticationPresent()) {

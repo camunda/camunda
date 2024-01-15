@@ -16,9 +16,13 @@ import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.ResponseListener;
 import org.elasticsearch.client.RestClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RequestManager {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(RequestManager.class);
+  
   private Semaphore requestAccess;
   private LinkedList<InflightRequest> inflightRequests;
   private RestClient esRestClient;
@@ -91,6 +95,10 @@ public class RequestManager {
 
   private void sendInflightRequest(InflightRequest inflightRequest) {
     try {
+      if (requestAccess.availablePermits() <= 0) {
+        LOGGER.warn("All inflight requests saturated; need to block until one becomes available");
+      }
+
       requestAccess.acquire();
     } catch (InterruptedException e) {
       throw new ElasticsearchExporterException("Could not acquire a concurrent request", e);
@@ -114,6 +122,10 @@ public class RequestManager {
 
           @Override
           public void onFailure(Exception exception) {
+            if (inflightRequest.getResponse() != null) {
+              LOGGER.warn("Response failure callback was invoked after success callback");
+            }
+
             inflightRequest.setError(failureMapper.apply(exception));
             requestAccess.release();
           }
