@@ -185,6 +185,7 @@
     <spotless.checks.skip>${skipChecks}</spotless.checks.skip>
 
     <!-- disable other non-essential goals -->
+    <flatten.skip>${quickly}</flatten.skip>
     <assembly.skipAssembly>${quickly}</assembly.skipAssembly>
   </properties>
 
