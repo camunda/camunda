@@ -13,9 +13,11 @@ import org.springframework.boot.actuate.autoconfigure.web.ManagementContextConfi
 import org.springframework.boot.actuate.autoconfigure.web.ManagementContextType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerResponse;
+import reactor.core.publisher.Mono;
 
 @Profile("broker")
 @ManagementContextConfiguration(value = ManagementContextType.ANY, proxyBeanMethods = false)
@@ -25,17 +27,13 @@ public class BrokerHealthRoutes {
   @ConditionalOnManagementContext
   public RouterFunction<ServerResponse> routes() {
     return RouterFunctions.route()
-        .GET(
-            "/health",
-            req ->
-                ServerResponse.permanentRedirect(URI.create("/actuator/health/liveness")).build())
-        .GET(
-            "/ready",
-            req ->
-                ServerResponse.permanentRedirect(URI.create("/actuator/health/readiness")).build())
-        .GET(
-            "/startup",
-            req -> ServerResponse.permanentRedirect(URI.create("/actuator/health/startup")).build())
+        .GET("/health", req -> movedPermanently("/actuator/health/liveness"))
+        .GET("/ready", req -> movedPermanently("/actuator/health/readiness"))
+        .GET("/startup", req -> movedPermanently("/actuator/health/startup"))
         .build();
+  }
+
+  private Mono<ServerResponse> movedPermanently(final String path) {
+    return ServerResponse.status(HttpStatus.MOVED_PERMANENTLY).location(URI.create(path)).build();
   }
 }
