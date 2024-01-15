@@ -97,12 +97,22 @@ public final class ProcessInstanceMigrationPreconditionChecker {
       "Expected to migrate process instance '%s' but a concurrent command was executed on the process instance. Please retry the migration.";
   private static final long NO_PARENT = -1L;
 
+  private long processInstanceKey;
+  private long targetProcessDefinitionKey;
+
+  public void setProcessInstanceKey(final long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
+  }
+
+  public void setTargetProcessDefinitionKey(final long targetProcessDefinitionKey) {
+    this.targetProcessDefinitionKey = targetProcessDefinitionKey;
+  }
+
   /**
    * Exception that can be thrown during the migration of a process instance, in case no process
    * instance with the given key exists.
    */
-  public static void requireNonNullProcessInstance(
-      final ElementInstance record, final long processInstanceKey) {
+  public void requireNonNullProcessInstance(final ElementInstance record) {
     if (record == null) {
       final String reason =
           String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, processInstanceKey);
@@ -115,10 +125,8 @@ public final class ProcessInstanceMigrationPreconditionChecker {
    * Exception that can be thrown during the migration of a process instance, in case given tenant
    * is not authorized to migrate the process instance.
    */
-  public static void requireAuthorizedTenant(
-      final Map<String, Object> authorizations,
-      final String tenantId,
-      final long processInstanceKey) {
+  public void requireAuthorizedTenant(
+      final Map<String, Object> authorizations, final String tenantId) {
     final boolean isTenantAuthorized =
         TenantAuthorizationCheckerImpl.fromAuthorizationMap(authorizations).isAuthorized(tenantId);
     if (!isTenantAuthorized) {
@@ -133,8 +141,7 @@ public final class ProcessInstanceMigrationPreconditionChecker {
    * Exception that can be thrown during the migration of a process instance, in case the process to
    * migrate instance is a child process instance.
    */
-  public static void requireNullParent(
-      final long parentProcessInstanceKey, final long processInstanceKey) {
+  public void requireNullParent(final long parentProcessInstanceKey) {
     if (parentProcessInstanceKey != NO_PARENT) {
       final String reason = String.format(ERROR_CHILD_PROCESS_INSTANCE, processInstanceKey);
       throw new ProcessInstanceMigrationPreconditionFailedException(
@@ -146,8 +153,7 @@ public final class ProcessInstanceMigrationPreconditionChecker {
    * Exception that can be thrown during the migration of a process instance, in case no target
    * process definition exist with given definition key.
    */
-  public static void requireNonNullTargetProcessDefinition(
-      final DeployedProcess targetProcessDefinition, final long targetProcessDefinitionKey) {
+  public void requireNonNullTargetProcessDefinition(final DeployedProcess targetProcessDefinition) {
     if (targetProcessDefinition == null) {
       final String reason =
           String.format(ERROR_MESSAGE_PROCESS_DEFINITION_NOT_FOUND, targetProcessDefinitionKey);
@@ -160,9 +166,8 @@ public final class ProcessInstanceMigrationPreconditionChecker {
    * Exception that can be thrown during the migration of a process instance, in case the mapping
    * instructions contains duplicated element ids.
    */
-  public static void requireNonDuplicateSourceElementIds(
-      final List<ProcessInstanceMigrationMappingInstructionValue> mappingInstructions,
-      final long processInstanceKey) {
+  public void requireNonDuplicateSourceElementIds(
+      final List<ProcessInstanceMigrationMappingInstructionValue> mappingInstructions) {
     final Map<String, Long> countBySourceElementId =
         mappingInstructions.stream()
             .collect(
@@ -200,11 +205,10 @@ public final class ProcessInstanceMigrationPreconditionChecker {
    *
    * <p>
    */
-  public static void requireReferredElementsExist(
+  public void requireReferredElementsExist(
       final DeployedProcess sourceProcessDefinition,
       final DeployedProcess targetProcessDefinition,
-      final List<ProcessInstanceMigrationMappingInstructionValue> mappingInstructions,
-      final long processInstanceKey) {
+      final List<ProcessInstanceMigrationMappingInstructionValue> mappingInstructions) {
 
     mappingInstructions.forEach(
         instruction -> {
@@ -240,7 +244,7 @@ public final class ProcessInstanceMigrationPreconditionChecker {
    *
    * <p>
    */
-  public static void requireNoEventSubprocess(
+  public void requireNoEventSubprocess(
       final DeployedProcess sourceProcessDefinition,
       final DeployedProcess targetProcessDefinition) {
     if (!sourceProcessDefinition.getProcess().getEventSubprocesses().isEmpty()) {
@@ -260,8 +264,7 @@ public final class ProcessInstanceMigrationPreconditionChecker {
    * Exception that can be thrown during the migration of a process instance, in case the engine
    * attempts to migrate an element which is not supported at this time.
    */
-  public static void requireSupportedElementType(
-      final ProcessInstanceRecord elementInstanceRecord, final long processInstanceKey) {
+  public void requireSupportedElementType(final ProcessInstanceRecord elementInstanceRecord) {
     if (UNSUPPORTED_ELEMENT_TYPES.contains(elementInstanceRecord.getBpmnElementType())) {
       final String reason =
           String.format(
@@ -278,8 +281,8 @@ public final class ProcessInstanceMigrationPreconditionChecker {
    * Exception that can be thrown during the migration of a process instance, in case the engine
    * attempts to migrate an element which is not mapped.
    */
-  public static void requireNonNullTargetElementId(
-      final String targetElementId, final long processInstanceKey, final String sourceElementId) {
+  public void requireNonNullTargetElementId(
+      final String targetElementId, final String sourceElementId) {
     if (targetElementId == null) {
       final String reason =
           String.format(ERROR_UNMAPPED_ACTIVE_ELEMENT, processInstanceKey, sourceElementId);
@@ -292,7 +295,7 @@ public final class ProcessInstanceMigrationPreconditionChecker {
    * Exception that can be thrown during the migration of a process instance, in case the engine
    * attempts to migrate an element that has an incident.
    */
-  public static void requireNoIncident(
+  public void requireNoIncident(
       final IncidentState incidentState, final ElementInstance elementInstance) {
     final boolean hasIncident =
         incidentState.getProcessInstanceIncidentKey(elementInstance.getKey()) != MISSING_INCIDENT
@@ -317,11 +320,10 @@ public final class ProcessInstanceMigrationPreconditionChecker {
    * mapping instructions of the command refer to a source and a target element with different
    * element type, or different event type.
    */
-  public static void requireSameElementType(
+  public void requireSameElementType(
       final DeployedProcess targetProcessDefinition,
       final String targetElementId,
-      final ProcessInstanceRecord elementInstanceRecord,
-      final long processInstanceKey) {
+      final ProcessInstanceRecord elementInstanceRecord) {
     final BpmnElementType targetElementType =
         targetProcessDefinition.getProcess().getElementById(targetElementId).getElementType();
     if (elementInstanceRecord.getBpmnElementType() != targetElementType) {
@@ -342,7 +344,7 @@ public final class ProcessInstanceMigrationPreconditionChecker {
    * Exception that can be thrown during the migration of a process instance, in case the engine
    * attempts to change element flow scope in the target process definition.
    */
-  public static void requireUnchangedFlowScope(
+  public void requireUnchangedFlowScope(
       final ElementInstanceState elementInstanceState,
       final ProcessInstanceRecord elementInstanceRecord,
       final DeployedProcess targetProcessDefinition,
@@ -377,7 +379,7 @@ public final class ProcessInstanceMigrationPreconditionChecker {
    * Exception that can be thrown during the migration of a process instance, in case process
    * instance has an active element with a boundary event
    */
-  public static void requireNoBoundaryEventInSource(
+  public void requireNoBoundaryEventInSource(
       final DeployedProcess sourceProcessDefinition,
       final ProcessInstanceRecord elementInstanceRecord) {
     final boolean hasBoundaryEventInSource =
@@ -402,7 +404,7 @@ public final class ProcessInstanceMigrationPreconditionChecker {
    * Exception that can be thrown during the migration of a process instance, in case target process
    * definition has an element with a boundary event
    */
-  public static void requireNoBoundaryEventInTarget(
+  public void requireNoBoundaryEventInTarget(
       final DeployedProcess targetProcessDefinition,
       final String targetElementId,
       final ProcessInstanceRecord elementInstanceRecord) {
@@ -430,10 +432,9 @@ public final class ProcessInstanceMigrationPreconditionChecker {
    * timer trigger, or a message correlation. Since the concurrent command modifies the process
    * instance, it is not safe to apply the migration in between.
    */
-  public static void requireNoConcurrentCommand(
+  public void requireNoConcurrentCommand(
       final EventScopeInstanceState eventScopeInstanceState,
-      final ElementInstance elementInstance,
-      final long processInstanceKey) {
+      final ElementInstance elementInstance) {
     final EventTrigger eventTrigger =
         eventScopeInstanceState.peekEventTrigger(elementInstance.getKey());
 
