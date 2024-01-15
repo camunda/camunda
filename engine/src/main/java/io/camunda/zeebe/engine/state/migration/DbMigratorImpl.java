@@ -22,7 +22,6 @@ import io.camunda.zeebe.engine.state.migration.to_8_4.MultiTenancySignalSubscrip
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,26 +56,25 @@ public class DbMigratorImpl implements DbMigrator {
 
   private final MutableProcessingState processingState;
   private final TransactionContext zeebeDbContext;
-  private final Supplier<List<MigrationTask>> migrationSupplier;
+  private final List<MigrationTask> migrationTasks;
 
   public DbMigratorImpl(
       final MutableProcessingState processingState, final TransactionContext zeebeDbContext) {
-    this(processingState, zeebeDbContext, () -> MIGRATION_TASKS);
+    this(processingState, zeebeDbContext, MIGRATION_TASKS);
   }
 
   public DbMigratorImpl(
       final MutableProcessingState processingState,
       final TransactionContext zeebeDbContext,
-      final Supplier<List<MigrationTask>> migrationSupplier) {
+      final List<MigrationTask> migrationTasks) {
 
     this.processingState = processingState;
     this.zeebeDbContext = zeebeDbContext;
-    this.migrationSupplier = migrationSupplier;
+    this.migrationTasks = migrationTasks;
   }
 
   @Override
   public void runMigrations() {
-    final var migrationTasks = migrationSupplier.get();
     logPreview(migrationTasks);
 
     final var executedMigrations = new ArrayList<MigrationTask>();
