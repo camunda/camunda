@@ -57,8 +57,6 @@ public class DbMigratorImpl implements DbMigrator {
   private final TransactionContext zeebeDbContext;
   private final Supplier<List<MigrationTask>> migrationSupplier;
 
-  private MigrationTask currentMigration;
-
   public DbMigratorImpl(
       final MutableProcessingState processingState, final TransactionContext zeebeDbContext) {
     this(processingState, zeebeDbContext, () -> MIGRATION_TASKS);
@@ -124,10 +122,8 @@ public class DbMigratorImpl implements DbMigrator {
       final MigrationTask migrationTask, final int index, final int total) {
     if (migrationTask.needsToRun(processingState)) {
       try {
-        currentMigration = migrationTask;
         runMigration(migrationTask, index, total);
       } finally {
-        currentMigration = null;
       }
       return true;
     } else {
