@@ -16,10 +16,11 @@ import {StartProcessFromForm} from './index';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {rest} from 'msw';
+import {http, HttpResponse} from 'msw';
 import * as formMocks from 'modules/mock-schema/mocks/form';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
+import {Process, Variable} from 'modules/types';
 
 const getWrapper = ({
   initialEntries,
@@ -49,21 +50,22 @@ describe('<StartProcessFromForm />', () => {
       shouldAdvanceTime: true,
     });
     nodeMockServer.use(
-      rest.get('/v1/external/process/:bpmnProcessId/form', (_, res, ctx) =>
-        res(ctx.json(formMocks.form)),
+      http.get('/v1/external/process/:bpmnProcessId/form', () =>
+        HttpResponse.json(formMocks.form),
       ),
-      rest.patch(
+      http.patch<Pick<Process, 'bpmnProcessId'>, {variables: Variable[]}>(
         '/v1/external/process/:bpmnProcessId/start',
-        async (req, res, ctx) => {
-          const {bpmnProcessId} = req.params;
-          const {variables} = await req.json();
+        async ({request, params}) => {
+          const {bpmnProcessId} = params;
+          const {variables} = await request.json();
 
           if (bpmnProcessId !== 'foo' || !Array.isArray(variables)) {
-            return res.once(ctx.status(500));
+            return new HttpResponse(null, {status: 500});
           }
 
-          return res.once(ctx.json({id: 'foo-instance'}));
+          return HttpResponse.json({id: 'foo-instance'});
         },
+        {once: true},
       ),
     );
 
@@ -110,8 +112,8 @@ describe('<StartProcessFromForm />', () => {
 
   it('should show validation error', async () => {
     nodeMockServer.use(
-      rest.get('/v1/external/process/:bpmnProcessId/form', (_, res, ctx) =>
-        res(ctx.json(formMocks.form)),
+      http.get('/v1/external/process/:bpmnProcessId/form', () =>
+        HttpResponse.json(formMocks.form),
       ),
     );
 
@@ -140,11 +142,13 @@ describe('<StartProcessFromForm />', () => {
 
   it('should handle a submit error', async () => {
     nodeMockServer.use(
-      rest.get('/v1/external/process/:bpmnProcessId/form', (_, res, ctx) =>
-        res(ctx.json(formMocks.form)),
+      http.get('/v1/external/process/:bpmnProcessId/form', () =>
+        HttpResponse.json(formMocks.form),
       ),
-      rest.patch('/v1/external/process/:bpmnProcessId/start', (_, res, ctx) =>
-        res.once(ctx.status(500)),
+      http.patch(
+        '/v1/external/process/:bpmnProcessId/start',
+        () => new HttpResponse(null, {status: 500}),
+        {once: true},
       ),
     );
 
@@ -187,8 +191,9 @@ describe('<StartProcessFromForm />', () => {
 
   it('should show a request error message', async () => {
     nodeMockServer.use(
-      rest.get('/v1/external/process/:bpmnProcessId/form', (_, res, ctx) =>
-        res(ctx.status(500)),
+      http.get(
+        '/v1/external/process/:bpmnProcessId/form',
+        () => new HttpResponse(null, {status: 500}),
       ),
     );
 
@@ -212,8 +217,8 @@ describe('<StartProcessFromForm />', () => {
 
   it('should show a bad form schema error message', async () => {
     nodeMockServer.use(
-      rest.get('/v1/external/process/:bpmnProcessId/form', (_, res, ctx) =>
-        res(ctx.json(formMocks.invalidForm)),
+      http.get('/v1/external/process/:bpmnProcessId/form', () =>
+        HttpResponse.json(formMocks.invalidForm),
       ),
     );
 

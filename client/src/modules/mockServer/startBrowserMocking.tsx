@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {setupWorker} from 'msw';
+import {setupWorker} from 'msw/browser';
 import {handlers} from './handlers';
 
 function startBrowserMocking() {

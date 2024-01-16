@@ -8,7 +8,7 @@
 import {render, screen} from 'modules/testing-library';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {CurrentUser} from 'modules/types';
-import {rest} from 'msw';
+import {http, HttpResponse} from 'msw';
 import {Header} from '..';
 import {getWrapper} from './mocks';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
@@ -20,9 +20,15 @@ describe('Info bar', () => {
     window.open = mockOpenFn;
 
     nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUser));
-      }),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {
+          once: true,
+        },
+      ),
     );
 
     const {user} = render(<Header />, {
@@ -68,14 +74,18 @@ describe('Info bar', () => {
     'should render correct links for feedback and support - %p',
     async (salesPlanType, link) => {
       nodeMockServer.use(
-        rest.get('/v1/internal/users/current', (_, res, ctx) => {
-          return res.once(
-            ctx.json({
+        http.get(
+          '/v1/internal/users/current',
+          () => {
+            return HttpResponse.json({
               ...userMocks.currentUser,
               salesPlanType,
-            }),
-          );
-        }),
+            });
+          },
+          {
+            once: true,
+          },
+        ),
       );
 
       const originalWindowOpen = window.open;

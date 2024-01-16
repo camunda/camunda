@@ -17,7 +17,7 @@ import {
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {createMockProcess} from 'modules/queries/useProcesses';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
-import {rest} from 'msw';
+import {http, HttpResponse} from 'msw';
 import {MemoryRouter} from 'react-router-dom';
 import {Processes} from './index';
 import {notificationsStore} from 'modules/stores/notifications';
@@ -67,18 +67,26 @@ describe('Processes', () => {
 
   beforeEach(() => {
     nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUser));
-      }),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {once: true},
+      ),
     );
   });
 
   it('should render an empty state message', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     nodeMockServer.use(
-      rest.get('/v1/internal/processes', (_, res, ctx) => {
-        return res(ctx.json([]));
-      }),
+      http.get(
+        '/v1/internal/processes',
+        () => {
+          return HttpResponse.json([]);
+        },
+        {once: true},
+      ),
     );
 
     render(<Processes />, {
@@ -114,13 +122,11 @@ describe('Processes', () => {
   it('should render a list of processes', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     nodeMockServer.use(
-      rest.get('/v1/internal/processes', (_, res, ctx) => {
-        return res(
-          ctx.json([
-            createMockProcess('process-0'),
-            createMockProcess('process-1'),
-          ]),
-        );
+      http.get('/v1/internal/processes', () => {
+        return HttpResponse.json([
+          createMockProcess('process-0'),
+          createMockProcess('process-1'),
+        ]);
       }),
     );
 
@@ -139,11 +145,11 @@ describe('Processes', () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     const mockProcess = createMockProcess('process-0');
     nodeMockServer.use(
-      rest.get('/v1/internal/processes', (_, res, ctx) => {
-        return res(ctx.json([mockProcess]));
+      http.get('/v1/internal/processes', () => {
+        return HttpResponse.json([mockProcess]);
       }),
-      rest.get('/v1/forms/:formId', (_, res, ctx) => {
-        return res(ctx.json(formMocks.form));
+      http.get('/v1/forms/:formId', () => {
+        return HttpResponse.json(formMocks.form);
       }),
     );
 
@@ -174,8 +180,8 @@ describe('Processes', () => {
   it('should show an error toast when the query fails', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     nodeMockServer.use(
-      rest.get('/v1/internal/processes', (_, res) => {
-        return res.networkError('Error');
+      http.get('/v1/internal/processes', () => {
+        return HttpResponse.error();
       }),
     );
 
@@ -195,12 +201,16 @@ describe('Processes', () => {
   it('should disable the start button', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     nodeMockServer.use(
-      rest.get('/v1/internal/processes', (_, res, ctx) => {
-        return res(ctx.json([createMockProcess('process-0')]));
+      http.get('/v1/internal/processes', () => {
+        return HttpResponse.json([createMockProcess('process-0')]);
       }),
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentRestrictedUser));
-      }),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentRestrictedUser);
+        },
+        {once: true},
+      ),
     );
 
     render(<Processes />, {
@@ -225,12 +235,16 @@ describe('Processes', () => {
       isMultiTenancyEnabled: true,
     };
     nodeMockServer.use(
-      rest.get('/v1/internal/processes', (_, res, ctx) => {
-        return res(ctx.json([]));
+      http.get('/v1/internal/processes', () => {
+        return HttpResponse.json([]);
       }),
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUserWithTenants));
-      }),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUserWithTenants);
+        },
+        {once: true},
+      ),
     );
 
     render(<Processes />, {
@@ -259,12 +273,16 @@ describe('Processes', () => {
       isMultiTenancyEnabled: true,
     };
     nodeMockServer.use(
-      rest.get('/v1/internal/processes', (_, res, ctx) => {
-        return res(ctx.json([]));
+      http.get('/v1/internal/processes', () => {
+        return HttpResponse.json([]);
       }),
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUserWithTenants));
-      }),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUserWithTenants);
+        },
+        {once: true},
+      ),
     );
 
     render(<Processes />, {
@@ -292,12 +310,16 @@ describe('Processes', () => {
       isMultiTenancyEnabled: true,
     };
     nodeMockServer.use(
-      rest.get('/v1/internal/processes', (_, res, ctx) => {
-        return res(ctx.json([]));
+      http.get('/v1/internal/processes', () => {
+        return HttpResponse.json([]);
       }),
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUser));
-      }),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {once: true},
+      ),
     );
 
     render(<Processes />, {

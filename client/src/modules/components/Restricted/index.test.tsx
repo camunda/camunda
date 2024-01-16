@@ -7,7 +7,7 @@
 
 import {Restricted} from './index';
 import {render, screen} from 'modules/testing-library';
-import {rest} from 'msw';
+import {http, HttpResponse} from 'msw';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {MemoryRouter} from 'react-router-dom';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
@@ -50,9 +50,15 @@ const getWrapper = () => {
 describe('Restricted', () => {
   it('should not render content that user has no permission for', async () => {
     nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentRestrictedUser));
-      }),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentRestrictedUser);
+        },
+        {
+          once: true,
+        },
+      ),
     );
 
     render(
@@ -68,9 +74,15 @@ describe('Restricted', () => {
 
   it('should render content that user has permission for at least one scope', async () => {
     nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentRestrictedUser));
-      }),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentRestrictedUser);
+        },
+        {
+          once: true,
+        },
+      ),
     );
 
     render(
@@ -86,9 +98,15 @@ describe('Restricted', () => {
 
   it('should render content that user has permission for', async () => {
     nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUser));
-      }),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {
+          once: true,
+        },
+      ),
     );
 
     render(
@@ -104,9 +122,15 @@ describe('Restricted', () => {
 
   it('should not render content when API returns an unknown permission', async () => {
     nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUserWithUnknownRole));
-      }),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUserWithUnknownRole);
+        },
+        {
+          once: true,
+        },
+      ),
     );
 
     render(
@@ -122,9 +146,15 @@ describe('Restricted', () => {
 
   it('should not render content when API returns no permissions', async () => {
     nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUserWithoutRole));
-      }),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUserWithoutRole);
+        },
+        {
+          once: true,
+        },
+      ),
     );
 
     render(
@@ -140,9 +170,15 @@ describe('Restricted', () => {
 
   it('should render a fallback', async () => {
     nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentRestrictedUser));
-      }),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentRestrictedUser);
+        },
+        {
+          once: true,
+        },
+      ),
     );
 
     const mockFallback = 'mock fallback';

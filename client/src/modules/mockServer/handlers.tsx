@@ -5,8 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {ProcessInstance} from 'modules/types';
-import {RequestHandler, rest} from 'msw';
+import {RequestHandler, http, HttpResponse} from 'msw';
 import * as processInstancesMocks from 'modules/mock-schema/mocks/process-instances';
 import {IS_PROCESS_INSTANCES_ENABLED} from 'modules/featureFlags';
 
@@ -14,10 +13,8 @@ const handlers: RequestHandler[] = [];
 
 if (IS_PROCESS_INSTANCES_ENABLED) {
   handlers.push(
-    rest.post('/internal/users/:userId/process-instances', (_, res, ctx) => {
-      return res(
-        ctx.json<ProcessInstance[]>(processInstancesMocks.processInstances),
-      );
+    http.post('/internal/users/:userId/process-instances', () => {
+      return HttpResponse.json(processInstancesMocks.processInstances);
     }),
   );
 }

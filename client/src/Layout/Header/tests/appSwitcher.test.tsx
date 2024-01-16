@@ -7,7 +7,7 @@
 
 import {render, screen} from 'modules/testing-library';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {rest} from 'msw';
+import {http, HttpResponse} from 'msw';
 import {Header} from '..';
 import {getWrapper} from './mocks';
 import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
@@ -26,9 +26,15 @@ describe('App switcher', () => {
     };
 
     nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUserWithC8Links));
-      }),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUserWithC8Links);
+        },
+        {
+          once: true,
+        },
+      ),
     );
 
     const {user} = render(<Header />, {
@@ -73,9 +79,15 @@ describe('App switcher', () => {
     };
 
     nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUserWithC8Links));
-      }),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUserWithC8Links);
+        },
+        {
+          once: true,
+        },
+      ),
     );
 
     render(<Header />, {

@@ -14,7 +14,7 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
-import {rest} from 'msw';
+import {http, HttpResponse} from 'msw';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {notificationsStore} from 'modules/stores/notifications';
@@ -61,15 +61,27 @@ const getWrapper = (
 describe('<Task />', () => {
   it('should render created task', async () => {
     nodeMockServer.use(
-      rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
-        return res.once(ctx.json(taskMocks.assignedTask()));
-      }),
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUser));
-      }),
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
-      }),
+      http.get(
+        '/v1/tasks/:taskId',
+        () => {
+          return HttpResponse.json(taskMocks.assignedTask());
+        },
+        {once: true},
+      ),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {once: true},
+      ),
+      http.post(
+        '/v1/tasks/:taskId/variables/search',
+        () => {
+          return HttpResponse.json(variableMocks.variables);
+        },
+        {once: true},
+      ),
     );
 
     render(<Task hasRemainingTasks />, {
@@ -83,21 +95,41 @@ describe('<Task />', () => {
 
   it('should render created task with embedded form', async () => {
     nodeMockServer.use(
-      rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
-        return res.once(ctx.json(taskMocks.assignedTaskWithForm()));
-      }),
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUser));
-      }),
-      rest.get('/v1/forms/:formId', (_, res, ctx) => {
-        return res.once(ctx.json(formMocks.form));
-      }),
-      rest.post('/v1/tasks/:taskId/variables/search', async (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
-      }),
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
-      }),
+      http.get(
+        '/v1/tasks/:taskId',
+        () => {
+          return HttpResponse.json(taskMocks.assignedTaskWithForm());
+        },
+        {once: true},
+      ),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {once: true},
+      ),
+      http.get(
+        '/v1/forms/:formId',
+        () => {
+          return HttpResponse.json(formMocks.form);
+        },
+        {once: true},
+      ),
+      http.post(
+        '/v1/tasks/:taskId/variables/search',
+        () => {
+          return HttpResponse.json(variableMocks.variables);
+        },
+        {once: true},
+      ),
+      http.post(
+        '/v1/tasks/:taskId/variables/search',
+        () => {
+          return HttpResponse.json(variableMocks.variables);
+        },
+        {once: true},
+      ),
     );
 
     render(<Task hasRemainingTasks />, {
@@ -117,21 +149,41 @@ describe('<Task />', () => {
 
   it('should render created task with deployed form', async () => {
     nodeMockServer.use(
-      rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
-        return res.once(ctx.json(taskMocks.assignedTaskWithFormDeployed()));
-      }),
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUser));
-      }),
-      rest.get('/v1/forms/:formId', (_, res, ctx) => {
-        return res.once(ctx.json(formMocks.form));
-      }),
-      rest.post('/v1/tasks/:taskId/variables/search', async (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
-      }),
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
-      }),
+      http.get(
+        '/v1/tasks/:taskId',
+        () => {
+          return HttpResponse.json(taskMocks.assignedTaskWithFormDeployed());
+        },
+        {once: true},
+      ),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {once: true},
+      ),
+      http.get(
+        '/v1/forms/:formId',
+        () => {
+          return HttpResponse.json(formMocks.form);
+        },
+        {once: true},
+      ),
+      http.post(
+        '/v1/tasks/:taskId/variables/search',
+        () => {
+          return HttpResponse.json(variableMocks.variables);
+        },
+        {once: true},
+      ),
+      http.post(
+        '/v1/tasks/:taskId/variables/search',
+        () => {
+          return HttpResponse.json(variableMocks.variables);
+        },
+        {once: true},
+      ),
     );
 
     render(<Task hasRemainingTasks />, {
@@ -151,15 +203,27 @@ describe('<Task />', () => {
 
   it('should render completed task', async () => {
     nodeMockServer.use(
-      rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
-        return res.once(ctx.json(taskMocks.completedTask()));
-      }),
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUser));
-      }),
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
-      }),
+      http.get(
+        '/v1/tasks/:taskId',
+        () => {
+          return HttpResponse.json(taskMocks.completedTask());
+        },
+        {once: true},
+      ),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {once: true},
+      ),
+      http.post(
+        '/v1/tasks/:taskId/variables/search',
+        () => {
+          return HttpResponse.json(variableMocks.variables);
+        },
+        {once: true},
+      ),
     );
 
     render(<Task hasRemainingTasks />, {
@@ -176,18 +240,34 @@ describe('<Task />', () => {
 
   it('should render completed task with embedded form', async () => {
     nodeMockServer.use(
-      rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
-        return res.once(ctx.json(taskMocks.completedTaskWithForm()));
-      }),
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUser));
-      }),
-      rest.get('/v1/forms/:formId', (_, res, ctx) => {
-        return res.once(ctx.json(formMocks.form));
-      }),
-      rest.post('/v1/tasks/:taskId/variables/search', async (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
-      }),
+      http.get(
+        '/v1/tasks/:taskId',
+        () => {
+          return HttpResponse.json(taskMocks.completedTaskWithForm());
+        },
+        {once: true},
+      ),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {once: true},
+      ),
+      http.get(
+        '/v1/forms/:formId',
+        () => {
+          return HttpResponse.json(formMocks.form);
+        },
+        {once: true},
+      ),
+      http.post(
+        '/v1/tasks/:taskId/variables/search',
+        () => {
+          return HttpResponse.json(variableMocks.variables);
+        },
+        {once: true},
+      ),
     );
 
     render(<Task hasRemainingTasks />, {
@@ -202,18 +282,34 @@ describe('<Task />', () => {
 
   it('should render completed task with deployed form', async () => {
     nodeMockServer.use(
-      rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
-        return res.once(ctx.json(taskMocks.completedTaskWithFormDeployed()));
-      }),
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUser));
-      }),
-      rest.get('/v1/forms/:formId', (_, res, ctx) => {
-        return res.once(ctx.json(formMocks.form));
-      }),
-      rest.post('/v1/tasks/:taskId/variables/search', async (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
-      }),
+      http.get(
+        '/v1/tasks/:taskId',
+        () => {
+          return HttpResponse.json(taskMocks.completedTaskWithFormDeployed());
+        },
+        {once: true},
+      ),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {once: true},
+      ),
+      http.get(
+        '/v1/forms/:formId',
+        () => {
+          return HttpResponse.json(formMocks.form);
+        },
+        {once: true},
+      ),
+      http.post(
+        '/v1/tasks/:taskId/variables/search',
+        () => {
+          return HttpResponse.json(variableMocks.variables);
+        },
+        {once: true},
+      ),
     );
 
     render(<Task hasRemainingTasks />, {
@@ -228,21 +324,41 @@ describe('<Task />', () => {
 
   it('should complete task without variables', async () => {
     nodeMockServer.use(
-      rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
-        return res.once(ctx.json(taskMocks.assignedTask()));
-      }),
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUser));
-      }),
-      rest.patch('/v1/tasks/:taskId/complete', (_, res, ctx) => {
-        return res.once(ctx.json(taskMocks.completedTask()));
-      }),
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json([]));
-      }),
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json([]));
-      }),
+      http.get(
+        '/v1/tasks/:taskId',
+        () => {
+          return HttpResponse.json(taskMocks.assignedTask());
+        },
+        {once: true},
+      ),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {once: true},
+      ),
+      http.patch(
+        '/v1/tasks/:taskId/complete',
+        () => {
+          return HttpResponse.json(taskMocks.completedTask());
+        },
+        {once: true},
+      ),
+      http.post(
+        '/v1/tasks/:taskId/variables/search',
+        () => {
+          return HttpResponse.json([]);
+        },
+        {once: true},
+      ),
+      http.post(
+        '/v1/tasks/:taskId/variables/search',
+        () => {
+          return HttpResponse.json([]);
+        },
+        {once: true},
+      ),
     );
 
     const {user} = render(<Task hasRemainingTasks />, {
@@ -268,17 +384,25 @@ describe('<Task />', () => {
 
   it('should get error on complete task', async () => {
     nodeMockServer.use(
-      rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
-        return res.once(ctx.json(taskMocks.assignedTask()));
+      http.get(
+        '/v1/tasks/:taskId',
+        () => {
+          return HttpResponse.json(taskMocks.assignedTask());
+        },
+        {once: true},
+      ),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {once: true},
+      ),
+      http.patch('/v1/tasks/:taskId/complete', () => {
+        return HttpResponse.error();
       }),
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUser));
-      }),
-      rest.patch('/v1/tasks/:taskId/complete', (_, res) => {
-        return res.networkError('Network error');
-      }),
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res(ctx.json(variableMocks.variables));
+      http.post('/v1/tasks/:taskId/variables/search', () => {
+        return HttpResponse.json(variableMocks.variables);
       }),
     );
 
@@ -308,18 +432,34 @@ describe('<Task />', () => {
 
   it('should show a skeleton while loading', async () => {
     nodeMockServer.use(
-      rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
-        return res.once(ctx.json(taskMocks.assignedTask()));
-      }),
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUser));
-      }),
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
-      }),
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
-      }),
+      http.get(
+        '/v1/tasks/:taskId',
+        () => {
+          return HttpResponse.json(taskMocks.assignedTask());
+        },
+        {once: true},
+      ),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {once: true},
+      ),
+      http.post(
+        '/v1/tasks/:taskId/variables/search',
+        () => {
+          return HttpResponse.json(variableMocks.variables);
+        },
+        {once: true},
+      ),
+      http.post(
+        '/v1/tasks/:taskId/variables/search',
+        () => {
+          return HttpResponse.json(variableMocks.variables);
+        },
+        {once: true},
+      ),
     );
 
     render(<Task hasRemainingTasks />, {
@@ -335,27 +475,47 @@ describe('<Task />', () => {
 
   it('should reset variables', async () => {
     nodeMockServer.use(
-      rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
-        return res.once(ctx.json(taskMocks.assignedTask()));
+      http.get(
+        '/v1/tasks/:taskId',
+        () => {
+          return HttpResponse.json(taskMocks.assignedTask());
+        },
+        {once: true},
+      ),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {once: true},
+      ),
+      http.post(
+        '/v1/tasks/:taskId/variables/search',
+        () => {
+          return HttpResponse.json([]);
+        },
+        {once: true},
+      ),
+      http.patch('/v1/tasks/:taskId/unassign', () => {
+        return HttpResponse.json(taskMocks.unassignedTask());
       }),
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUser));
+      http.patch('/v1/tasks/:taskId/assign', () => {
+        return HttpResponse.json(taskMocks.assignedTask());
       }),
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json([]));
-      }),
-      rest.patch('/v1/tasks/:taskId/unassign', (_, res, ctx) => {
-        return res(ctx.json(taskMocks.unassignedTask()));
-      }),
-      rest.patch('/v1/tasks/:taskId/assign', (_, res, ctx) => {
-        return res(ctx.json(taskMocks.assignedTask()));
-      }),
-      rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
-        return res.once(ctx.json(taskMocks.assignedTask()));
-      }),
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json([]));
-      }),
+      http.get(
+        '/v1/tasks/:taskId',
+        () => {
+          return HttpResponse.json(taskMocks.assignedTask());
+        },
+        {once: true},
+      ),
+      http.post(
+        '/v1/tasks/:taskId/variables/search',
+        () => {
+          return HttpResponse.json([]);
+        },
+        {once: true},
+      ),
     );
 
     const {user} = render(<Task hasRemainingTasks />, {
@@ -383,21 +543,39 @@ describe('<Task />', () => {
 
   it('should render created task with variables in embedded form', async () => {
     nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUser));
-      }),
-      rest.get('/v1/tasks/:taskId', (_, res, ctx) => {
-        return res.once(ctx.json(taskMocks.assignedTaskWithForm()));
-      }),
-      rest.get('/v1/forms/:formId', (_, res, ctx) =>
-        res.once(ctx.json(formMocks.invalidForm)),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {once: true},
       ),
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
-      }),
-      rest.post('/v1/tasks/:taskId/variables/search', (_, res, ctx) => {
-        return res.once(ctx.json(variableMocks.variables));
-      }),
+      http.get(
+        '/v1/tasks/:taskId',
+        () => {
+          return HttpResponse.json(taskMocks.assignedTaskWithForm());
+        },
+        {once: true},
+      ),
+      http.get(
+        '/v1/forms/:formId',
+        () => HttpResponse.json(formMocks.invalidForm),
+        {once: true},
+      ),
+      http.post(
+        '/v1/tasks/:taskId/variables/search',
+        () => {
+          return HttpResponse.json(variableMocks.variables);
+        },
+        {once: true},
+      ),
+      http.post(
+        '/v1/tasks/:taskId/variables/search',
+        () => {
+          return HttpResponse.json(variableMocks.variables);
+        },
+        {once: true},
+      ),
     );
 
     render(<Task hasRemainingTasks />, {

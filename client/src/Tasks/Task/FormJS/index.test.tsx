@@ -13,7 +13,7 @@ import {
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {FormJS} from './index';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {rest} from 'msw';
+import {http, HttpResponse} from 'msw';
 import noop from 'lodash/noop';
 import * as formMocks from 'modules/mock-schema/mocks/form';
 import * as variableMocks from 'modules/mock-schema/mocks/variables';
@@ -72,31 +72,47 @@ function hasRequestedVariables(
 describe('<FormJS />', () => {
   beforeEach(() => {
     nodeMockServer.use(
-      rest.get('/v1/forms/:formId', (_, res, ctx) => {
-        return res.once(ctx.json(formMocks.form));
-      }),
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUser));
-      }),
+      http.get(
+        '/v1/forms/:formId',
+        () => {
+          return HttpResponse.json(formMocks.form);
+        },
+        {once: true},
+      ),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {once: true},
+      ),
     );
   });
 
   it('should render form for unassigned task', async () => {
     nodeMockServer.use(
-      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
-        if (hasRequestedVariables(await req.json(), REQUESTED_VARIABLES)) {
-          return res.once(ctx.json(variableMocks.variables));
-        }
+      http.post<never, VariableSearchRequestBody>(
+        '/v1/tasks/:taskId/variables/search',
+        async ({request}) => {
+          if (
+            hasRequestedVariables(await request.json(), REQUESTED_VARIABLES)
+          ) {
+            return HttpResponse.json(variableMocks.variables);
+          }
 
-        return res(
-          ctx.json([
+          return HttpResponse.json(
+            [
+              {
+                message: 'Invalid variables',
+              },
+            ],
             {
-              message: 'Invalid variables',
+              status: 404,
             },
-          ]),
-          ctx.status(404),
-        );
-      }),
+          );
+        },
+        {once: true},
+      ),
     );
 
     render(
@@ -131,20 +147,28 @@ describe('<FormJS />', () => {
 
   it('should render form for assigned task', async () => {
     nodeMockServer.use(
-      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
-        if (hasRequestedVariables(await req.json(), REQUESTED_VARIABLES)) {
-          return res.once(ctx.json(variableMocks.variables));
-        }
+      http.post<never, VariableSearchRequestBody>(
+        '/v1/tasks/:taskId/variables/search',
+        async ({request}) => {
+          if (
+            hasRequestedVariables(await request.json(), REQUESTED_VARIABLES)
+          ) {
+            return HttpResponse.json(variableMocks.variables);
+          }
 
-        return res(
-          ctx.json([
+          return HttpResponse.json(
+            [
+              {
+                message: 'Invalid variables',
+              },
+            ],
             {
-              message: 'Invalid variables',
+              status: 404,
             },
-          ]),
-          ctx.status(404),
-        );
-      }),
+          );
+        },
+        {once: true},
+      ),
     );
 
     render(
@@ -178,20 +202,28 @@ describe('<FormJS />', () => {
 
   it('should render a prefilled form', async () => {
     nodeMockServer.use(
-      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
-        if (hasRequestedVariables(await req.json(), REQUESTED_VARIABLES)) {
-          return res.once(ctx.json(variableMocks.variables));
-        }
+      http.post<never, VariableSearchRequestBody>(
+        '/v1/tasks/:taskId/variables/search',
+        async ({request}) => {
+          if (
+            hasRequestedVariables(await request.json(), REQUESTED_VARIABLES)
+          ) {
+            return HttpResponse.json(variableMocks.variables);
+          }
 
-        return res(
-          ctx.json([
+          return HttpResponse.json(
+            [
+              {
+                message: 'Invalid variables',
+              },
+            ],
             {
-              message: 'Invalid variables',
+              status: 404,
             },
-          ]),
-          ctx.status(404),
-        );
-      }),
+          );
+        },
+        {once: true},
+      ),
     );
 
     render(
@@ -222,20 +254,28 @@ describe('<FormJS />', () => {
 
   it('should submit prefilled form', async () => {
     nodeMockServer.use(
-      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
-        if (hasRequestedVariables(await req.json(), REQUESTED_VARIABLES)) {
-          return res.once(ctx.json(variableMocks.variables));
-        }
+      http.post<never, VariableSearchRequestBody>(
+        '/v1/tasks/:taskId/variables/search',
+        async ({request}) => {
+          if (
+            hasRequestedVariables(await request.json(), REQUESTED_VARIABLES)
+          ) {
+            return HttpResponse.json(variableMocks.variables);
+          }
 
-        return res(
-          ctx.json([
+          return HttpResponse.json(
+            [
+              {
+                message: 'Invalid variables',
+              },
+            ],
             {
-              message: 'Invalid variables',
+              status: 404,
             },
-          ]),
-          ctx.status(404),
-        );
-      }),
+          );
+        },
+        {once: true},
+      ),
     );
 
     const mockOnSubmit = vi.fn();
@@ -282,20 +322,28 @@ describe('<FormJS />', () => {
 
   it('should submit edited form', async () => {
     nodeMockServer.use(
-      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
-        if (hasRequestedVariables(await req.json(), REQUESTED_VARIABLES)) {
-          return res.once(ctx.json(variableMocks.variables));
-        }
+      http.post<never, VariableSearchRequestBody>(
+        '/v1/tasks/:taskId/variables/search',
+        async ({request}) => {
+          if (
+            hasRequestedVariables(await request.json(), REQUESTED_VARIABLES)
+          ) {
+            return HttpResponse.json(variableMocks.variables);
+          }
 
-        return res(
-          ctx.json([
+          return HttpResponse.json(
+            [
+              {
+                message: 'Invalid variables',
+              },
+            ],
             {
-              message: 'Invalid variables',
+              status: 404,
             },
-          ]),
-          ctx.status(404),
-        );
-      }),
+          );
+        },
+        {once: true},
+      ),
     );
 
     const mockOnSubmit = vi.fn();
@@ -347,28 +395,34 @@ describe('<FormJS />', () => {
   // TODO: #3957
   it.skip('should render a prefilled dynamic form', async () => {
     nodeMockServer.use(
-      rest.get('/v1/forms/:formId', (_, res, ctx) => {
-        return res(ctx.json(formMocks.dynamicForm));
+      http.get('/v1/forms/:formId', () => {
+        return HttpResponse.json(formMocks.dynamicForm);
       }),
-      rest.post('/v1/tasks/:taskId/variables/search', async (req, res, ctx) => {
-        if (
-          hasRequestedVariables(
-            await req.json(),
-            DYNAMIC_FORM_REQUESTED_VARIABLES,
-          )
-        ) {
-          return res.once(ctx.json(variableMocks.dynamicFormVariables));
-        }
+      http.post<never, VariableSearchRequestBody>(
+        '/v1/tasks/:taskId/variables/search',
+        async ({request}) => {
+          if (
+            hasRequestedVariables(
+              await request.json(),
+              DYNAMIC_FORM_REQUESTED_VARIABLES,
+            )
+          ) {
+            return HttpResponse.json(variableMocks.dynamicFormVariables);
+          }
 
-        return res(
-          ctx.json([
+          return HttpResponse.json(
+            [
+              {
+                message: 'Invalid variables',
+              },
+            ],
             {
-              message: 'Invalid variables',
+              status: 404,
             },
-          ]),
-          ctx.status(404),
-        );
-      }),
+          );
+        },
+        {once: true},
+      ),
     );
 
     render(
@@ -398,11 +452,12 @@ describe('<FormJS />', () => {
 
   it("should show an error message if variables can't be loaded", async () => {
     nodeMockServer.use(
-      rest.post('/v1/tasks/:taskId/variables/search', async (_, res, ctx) => {
-        return res(ctx.status(404));
+      http.post('/v1/tasks/:taskId/variables/search', () => {
+        return HttpResponse.json(null, {
+          status: 404,
+        });
       }),
     );
-
     render(
       <FormJS
         id={MOCK_FORM_ID}
@@ -428,12 +483,22 @@ describe('<FormJS />', () => {
 
   it('should enable completion buttton when form has no inputs', async () => {
     nodeMockServer.use(
-      rest.get('/v1/forms/:formId', (_, res, ctx) => {
-        return res.once(ctx.json(formMocks.noInputForm));
-      }),
-      rest.post('/v1/tasks/:taskId/variables/search', async (_, res, ctx) => {
-        return res.once(ctx.json([]));
-      }),
+      http.get(
+        '/v1/forms/:formId',
+        () => {
+          return HttpResponse.json(formMocks.noInputForm);
+        },
+        {
+          once: true,
+        },
+      ),
+      http.post(
+        '/v1/tasks/:taskId/variables/search',
+        () => {
+          return HttpResponse.json([]);
+        },
+        {once: true},
+      ),
     );
 
     render(

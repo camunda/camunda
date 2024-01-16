@@ -8,7 +8,7 @@
 import {render, screen} from 'modules/testing-library';
 import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {rest} from 'msw';
+import {http, HttpResponse} from 'msw';
 import {Header} from '..';
 import {getWrapper} from './mocks';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
@@ -20,9 +20,15 @@ describe('license note', () => {
 
   beforeEach(() => {
     nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res(ctx.json(userMocks.currentUser));
-      }),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {
+          once: true,
+        },
+      ),
     );
   });
 

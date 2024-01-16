@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {rest} from 'msw';
+import {http, HttpResponse} from 'msw';
 import {authenticationStore} from './authentication';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {getStateLocally} from 'modules/utils/localStorage';
@@ -21,7 +21,7 @@ describe('authentication store', () => {
 
   it('should login', async () => {
     nodeMockServer.use(
-      rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
+      http.post('/api/login', () => new HttpResponse(''), {once: true}),
     );
 
     authenticationStore.disableSession();
@@ -35,9 +35,9 @@ describe('authentication store', () => {
 
   it('should handle login failure', async () => {
     nodeMockServer.use(
-      rest.post('/api/login', (_, res, ctx) =>
-        res.once(ctx.status(401), ctx.text('')),
-      ),
+      http.post('/api/login', () => new HttpResponse('', {status: 401}), {
+        once: true,
+      }),
     );
 
     expect(await authenticationStore.handleLogin('demo', 'demo')).toStrictEqual(
@@ -67,10 +67,8 @@ describe('authentication store', () => {
     };
 
     nodeMockServer.use(
-      rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
-    );
-    nodeMockServer.use(
-      rest.post('/api/logout', (_, res, ctx) => res.once(ctx.text(''))),
+      http.post('/api/login', () => new HttpResponse(''), {once: true}),
+      http.post('/api/logout', () => new HttpResponse(''), {once: true}),
     );
 
     await authenticationStore.handleLogin('demo', 'demo');
@@ -87,9 +85,9 @@ describe('authentication store', () => {
 
   it('should throw an error on logout failure', async () => {
     nodeMockServer.use(
-      rest.post('/api/logout', (_, res, ctx) =>
-        res.once(ctx.status(500), ctx.text('')),
-      ),
+      http.post('/api/logout', () => new HttpResponse('', {status: 500}), {
+        once: true,
+      }),
     );
 
     expect(await authenticationStore.handleLogout()).not.toBeUndefined();
@@ -182,13 +180,9 @@ describe('authentication store', () => {
           };
 
           nodeMockServer.use(
-            rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
-          );
-          nodeMockServer.use(
-            rest.post('/api/logout', (_, res, ctx) => res.once(ctx.text(''))),
-          );
-          nodeMockServer.use(
-            rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
+            http.post('/api/login', () => new HttpResponse(''), {once: true}),
+            http.post('/api/logout', () => new HttpResponse(''), {once: true}),
+            http.post('/api/login', () => new HttpResponse(''), {once: true}),
           );
 
           await authenticationStore.handleLogin('demo', 'demo');

@@ -15,7 +15,7 @@ import {AvailableTasks} from './index';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Link, MemoryRouter} from 'react-router-dom';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {rest} from 'msw';
+import {http, HttpResponse} from 'msw';
 import * as tasksMocks from 'modules/mock-schema/mocks/tasks';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -51,9 +51,13 @@ const getWrapper = (
 describe('<Tasks />', () => {
   beforeEach(() => {
     nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUser));
-      }),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {once: true},
+      ),
     );
   });
 

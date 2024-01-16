@@ -7,7 +7,7 @@
 
 import {fireEvent, render, screen, waitFor} from 'modules/testing-library';
 import {Link, MemoryRouter} from 'react-router-dom';
-import {rest} from 'msw';
+import {http, HttpResponse} from 'msw';
 import {Login} from './index';
 import {authenticationStore} from 'modules/stores/authentication';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
@@ -54,7 +54,15 @@ describe('<Login />', () => {
 
   it('should redirect to the initial page on success', async () => {
     nodeMockServer.use(
-      rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
+      http.post(
+        '/api/login',
+        () => {
+          return new HttpResponse('');
+        },
+        {
+          once: true,
+        },
+      ),
     );
 
     const {user} = render(<Login />, {
@@ -76,7 +84,15 @@ describe('<Login />', () => {
 
   it('should redirect to the referrer page', async () => {
     nodeMockServer.use(
-      rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
+      http.post(
+        '/api/login',
+        () => {
+          return new HttpResponse('');
+        },
+        {
+          once: true,
+        },
+      ),
     );
     const {user} = render(<Login />, {
       wrapper: createWrapper(),
@@ -96,8 +112,16 @@ describe('<Login />', () => {
 
   it('should show an error for wrong credentials', async () => {
     nodeMockServer.use(
-      rest.post('/api/login', (_, res, ctx) =>
-        res.once(ctx.status(401), ctx.text('')),
+      http.post(
+        '/api/login',
+        () => {
+          return new HttpResponse('', {
+            status: 401,
+          });
+        },
+        {
+          once: true,
+        },
       ),
     );
     const {user} = render(<Login />, {
@@ -115,8 +139,16 @@ describe('<Login />', () => {
 
   it('should show a generic error message', async () => {
     nodeMockServer.use(
-      rest.post('/api/login', (_, res, ctx) =>
-        res.once(ctx.status(404), ctx.text('')),
+      http.post(
+        '/api/login',
+        () => {
+          return new HttpResponse('', {
+            status: 404,
+          });
+        },
+        {
+          once: true,
+        },
       ),
     );
     const {user} = render(<Login />, {
@@ -132,7 +164,9 @@ describe('<Login />', () => {
     ).toBeInTheDocument();
 
     nodeMockServer.use(
-      rest.post('/api/login', (_, res) => res.networkError('A network error')),
+      http.post('/api/login', () => {
+        return HttpResponse.error();
+      }),
     );
 
     await user.type(screen.getByLabelText(/username/i), 'demo');
@@ -146,7 +180,15 @@ describe('<Login />', () => {
 
   it('should show a loading state while the login form is submitting', async () => {
     nodeMockServer.use(
-      rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
+      http.post(
+        '/api/login',
+        () => {
+          return new HttpResponse('');
+        },
+        {
+          once: true,
+        },
+      ),
     );
 
     const {user} = render(<Login />, {
@@ -182,8 +224,24 @@ describe('<Login />', () => {
 
   it('should not allow the form to be submitted with empty fields', async () => {
     nodeMockServer.use(
-      rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
-      rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
+      http.post(
+        '/api/login',
+        () => {
+          return new HttpResponse('');
+        },
+        {
+          once: true,
+        },
+      ),
+      http.post(
+        '/api/login',
+        () => {
+          return new HttpResponse('');
+        },
+        {
+          once: true,
+        },
+      ),
     );
 
     const {user} = render(<Login />, {

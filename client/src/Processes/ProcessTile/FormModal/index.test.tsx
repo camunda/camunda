@@ -15,7 +15,7 @@ import {
 import {FormModal} from '.';
 import {createMockProcess} from 'modules/queries/useProcesses';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {rest} from 'msw';
+import {http, HttpResponse} from 'msw';
 import * as formMocks from 'modules/mock-schema/mocks/form';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -45,8 +45,8 @@ describe('<FormModal />', () => {
       shouldAdvanceTime: true,
     });
     nodeMockServer.use(
-      rest.get('/v1/forms/:formId', (_, res, ctx) => {
-        return res(ctx.json(formMocks.form));
+      http.get('/v1/forms/:formId', () => {
+        return HttpResponse.json(formMocks.form);
       }),
     );
 
@@ -97,8 +97,8 @@ describe('<FormModal />', () => {
 
   it('should handle closing', async () => {
     nodeMockServer.use(
-      rest.get('/v1/forms/:formId', (_, res, ctx) => {
-        return res(ctx.json(formMocks.form));
+      http.get('/v1/forms/:formId', () => {
+        return HttpResponse.json(formMocks.form);
       }),
     );
 
@@ -138,8 +138,8 @@ describe('<FormModal />', () => {
 
   it('should handle invalid forms', async () => {
     nodeMockServer.use(
-      rest.get('/v1/forms/:formId', (_, res, ctx) => {
-        return res(ctx.json(formMocks.invalidForm));
+      http.get('/v1/forms/:formId', () => {
+        return HttpResponse.json(formMocks.invalidForm);
       }),
     );
 
@@ -170,8 +170,8 @@ describe('<FormModal />', () => {
 
   it('should handle form fetching failure', async () => {
     nodeMockServer.use(
-      rest.get('/v1/forms/:formId', (_, res, ctx) => {
-        return res(ctx.status(500));
+      http.get('/v1/forms/:formId', () => {
+        return new HttpResponse(null, {status: 500});
       }),
     );
 
@@ -202,8 +202,8 @@ describe('<FormModal />', () => {
 
   it('should handle submission failure', async () => {
     nodeMockServer.use(
-      rest.get('/v1/forms/:formId', (_, res, ctx) => {
-        return res(ctx.json(formMocks.form));
+      http.get('/v1/forms/:formId', () => {
+        return HttpResponse.json(formMocks.form);
       }),
     );
 
@@ -254,8 +254,8 @@ describe('<FormModal />', () => {
 
   it('should handle missing tenant', async () => {
     nodeMockServer.use(
-      rest.get('/v1/forms/:formId', (_, res, ctx) => {
-        return res(ctx.json(formMocks.form));
+      http.get('/v1/forms/:formId', () => {
+        return HttpResponse.json(formMocks.form);
       }),
     );
 
@@ -345,8 +345,8 @@ describe('<FormModal />', () => {
 
   it('should hide submission when reopening modal', async () => {
     nodeMockServer.use(
-      rest.get('/v1/forms/:formId', (_, res, ctx) => {
-        return res(ctx.json(formMocks.form));
+      http.get('/v1/forms/:formId', () => {
+        return HttpResponse.json(formMocks.form);
       }),
     );
 

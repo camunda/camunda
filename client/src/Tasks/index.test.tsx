@@ -10,7 +10,7 @@ import {MemoryRouter} from 'react-router-dom';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {generateTask} from 'modules/mock-schema/mocks/tasks';
 import {Tasks} from './index';
-import {rest} from 'msw';
+import {http, HttpResponse} from 'msw';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -50,17 +50,24 @@ function getWrapper(
 describe('<Tasks />', () => {
   it('should load more tasks', async () => {
     nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUser));
-      }),
-      rest.post('/v1/tasks/search', async (req, res, ctx) => {
-        const {searchAfter} = await req.json();
-        if (searchAfter === undefined) {
-          return res(ctx.json(FIRST_PAGE));
-        }
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {once: true},
+      ),
+      http.post<never, {searchAfter: [string, string]}>(
+        '/v1/tasks/search',
+        async ({request}) => {
+          const {searchAfter} = await request.json();
+          if (searchAfter === undefined) {
+            return HttpResponse.json(FIRST_PAGE);
+          }
 
-        return res(ctx.json(SECOND_PAGE));
-      }),
+          return HttpResponse.json(SECOND_PAGE);
+        },
+      ),
     );
 
     render(<Tasks />, {
@@ -86,18 +93,21 @@ describe('<Tasks />', () => {
 
   it('should use tasklist api raw filters', async () => {
     nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUser));
+      http.get('/v1/internal/users/current', () => {
+        return HttpResponse.json(userMocks.currentUser);
       }),
-      rest.post('/v1/tasks/search', async (req, res, ctx) => {
-        const {candidateUser, foo} = await req.json();
+      http.post<never, {candidateUser: string; foo: unknown}>(
+        '/v1/tasks/search',
+        async ({request}) => {
+          const {candidateUser, foo} = await request.json();
 
-        if (candidateUser === 'demo' && foo === undefined) {
-          return res(ctx.json(FIRST_PAGE));
-        }
+          if (candidateUser === 'demo' && foo === undefined) {
+            return HttpResponse.json(FIRST_PAGE);
+          }
 
-        return res.networkError('Wrong params');
-      }),
+          return HttpResponse.error();
+        },
+      ),
     );
 
     render(<Tasks />, {

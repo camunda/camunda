@@ -10,7 +10,7 @@ import {render, screen} from 'modules/testing-library';
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {rest} from 'msw';
+import {http, HttpResponse} from 'msw';
 import noop from 'lodash/noop';
 import * as taskMocks from 'modules/mock-schema/mocks/task';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
@@ -53,8 +53,8 @@ describe('<Details />', () => {
 
   it('should render completed task details', async () => {
     nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res(ctx.json(userMocks.currentUser));
+      http.get('/v1/internal/users/current', () => {
+        return HttpResponse.json(userMocks.currentUser);
       }),
     );
 
@@ -82,8 +82,8 @@ describe('<Details />', () => {
 
   it('should render unassigned task details', async () => {
     nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res(ctx.json(userMocks.currentUser));
+      http.get('/v1/internal/users/current', () => {
+        return HttpResponse.json(userMocks.currentUser);
       }),
     );
 
@@ -113,11 +113,11 @@ describe('<Details />', () => {
 
   it('should render unassigned task and assign it', async () => {
     nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res(ctx.json(userMocks.currentUser));
+      http.get('/v1/internal/users/current', () => {
+        return HttpResponse.json(userMocks.currentUser);
       }),
-      rest.patch('/v1/tasks/:taskId/assign', (_, res, ctx) => {
-        return res(ctx.json(taskMocks.assignedTask('0')));
+      http.patch('/v1/tasks/:taskId/assign', () => {
+        return HttpResponse.json(taskMocks.assignedTask('0'));
       }),
     );
 
@@ -163,11 +163,11 @@ describe('<Details />', () => {
 
   it('should render assigned task and unassign it', async () => {
     nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res(ctx.json(userMocks.currentUser));
+      http.get('/v1/internal/users/current', () => {
+        return HttpResponse.json(userMocks.currentUser);
       }),
-      rest.patch('/v1/tasks/:taskId/unassign', (_, res, ctx) => {
-        return res(ctx.json(taskMocks.unassignedTask('0')));
+      http.patch('/v1/tasks/:taskId/unassign', () => {
+        return HttpResponse.json(taskMocks.unassignedTask('0'));
       }),
     );
 
@@ -216,11 +216,11 @@ describe('<Details />', () => {
 
   it('should not render assignment button on assigned tasks', async () => {
     nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res(ctx.json(userMocks.currentRestrictedUser));
+      http.get('/v1/internal/users/current', () => {
+        return HttpResponse.json(userMocks.currentRestrictedUser);
       }),
-      rest.patch('/v1/tasks/:taskId/unassign', (_, res, ctx) => {
-        return res(ctx.json(taskMocks.unassignedTask));
+      http.patch('/v1/tasks/:taskId/unassign', () => {
+        return HttpResponse.json(taskMocks.unassignedTask);
       }),
     );
 
@@ -244,11 +244,11 @@ describe('<Details />', () => {
 
   it('should not render assignment on unassigned tasks', async () => {
     nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res(ctx.json(userMocks.currentRestrictedUser));
+      http.get('/v1/internal/users/current', () => {
+        return HttpResponse.json(userMocks.currentRestrictedUser);
       }),
-      rest.patch('/v1/tasks/:taskId/assign', (_, res, ctx) => {
-        return res(ctx.json(taskMocks.assignedTask));
+      http.patch('/v1/tasks/:taskId/assign', () => {
+        return HttpResponse.json(taskMocks.assignedTask);
       }),
     );
 
@@ -272,8 +272,8 @@ describe('<Details />', () => {
 
   it('should render a task assigned to someone else', async () => {
     nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res(ctx.json(userMocks.currentUser));
+      http.get('/v1/internal/users/current', () => {
+        return HttpResponse.json(userMocks.currentUser);
       }),
     );
 
@@ -302,8 +302,8 @@ describe('<Details />', () => {
     };
 
     nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res(ctx.json(userMocks.currentUserWithTenants));
+      http.get('/v1/internal/users/current', () => {
+        return HttpResponse.json(userMocks.currentUserWithTenants);
       }),
     );
 
@@ -336,8 +336,8 @@ describe('<Details />', () => {
     };
 
     nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res(ctx.json(currentUserWithSingleTenant));
+      http.get('/v1/internal/users/current', () => {
+        return HttpResponse.json(currentUserWithSingleTenant);
       }),
     );
 

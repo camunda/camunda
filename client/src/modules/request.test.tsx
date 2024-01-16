@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {rest} from 'msw';
+import {http, HttpResponse} from 'msw';
 import {nodeMockServer} from './mockServer/nodeMockServer';
 import {request} from './request';
 
@@ -14,8 +14,14 @@ const MOCK_URL = '/api/login';
 describe('request', () => {
   it('should handle a successful request', async () => {
     nodeMockServer.use(
-      rest.post(MOCK_URL, (_, res, ctx) =>
-        res.once(ctx.status(200), ctx.json({})),
+      http.post(
+        MOCK_URL,
+        () => {
+          return HttpResponse.json();
+        },
+        {
+          once: true,
+        },
       ),
     );
 
@@ -36,9 +42,9 @@ describe('request', () => {
 
   it('should handle a failed request', async () => {
     nodeMockServer.use(
-      rest.post(MOCK_URL, (_, res, ctx) =>
-        res.once(ctx.status(401), ctx.text('')),
-      ),
+      http.post(MOCK_URL, () => new HttpResponse('', {status: 401}), {
+        once: true,
+      }),
     );
 
     const response = await request(
@@ -62,7 +68,9 @@ describe('request', () => {
 
   it('should handle a network errors', async () => {
     nodeMockServer.use(
-      rest.post(MOCK_URL, (_, res) => res.networkError('Failed to fetch')),
+      http.post(MOCK_URL, () => HttpResponse.error(), {
+        once: true,
+      }),
     );
 
     const response = await request(

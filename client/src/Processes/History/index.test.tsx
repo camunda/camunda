@@ -13,7 +13,7 @@ import {
 import {History} from './index';
 import {MemoryRouter} from 'react-router-dom';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {rest} from 'msw';
+import {http, HttpResponse} from 'msw';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import * as processInstancesMocks from 'modules/mock-schema/mocks/process-instances';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -40,17 +40,25 @@ const getWrapper = () => {
 describe('<History />', () => {
   beforeEach(() => {
     nodeMockServer.use(
-      rest.get('/v1/internal/users/current', (_, res, ctx) => {
-        return res.once(ctx.json(userMocks.currentUser));
-      }),
+      http.get(
+        '/v1/internal/users/current',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {once: true},
+      ),
     );
   });
 
   it('should fetch process instances', async () => {
     nodeMockServer.use(
-      rest.post('/internal/users/:userId/process-instances', (_, res, ctx) => {
-        return res.once(ctx.json(processInstancesMocks.processInstances));
-      }),
+      http.post(
+        '/internal/users/:userId/process-instances',
+        () => {
+          return HttpResponse.json(processInstancesMocks.processInstances);
+        },
+        {once: true},
+      ),
     );
 
     render(<History />, {
@@ -77,9 +85,13 @@ describe('<History />', () => {
 
   it('should show error message when fetching process instances fails', async () => {
     nodeMockServer.use(
-      rest.post('/internal/users/:userId/process-instances', (_, res, ctx) => {
-        return res.once(ctx.status(500));
-      }),
+      http.post(
+        '/internal/users/:userId/process-instances',
+        () => {
+          return new HttpResponse(null, {status: 500});
+        },
+        {once: true},
+      ),
     );
 
     render(<History />, {
@@ -100,9 +112,13 @@ describe('<History />', () => {
 
   it('should show a message when no process instances are found', async () => {
     nodeMockServer.use(
-      rest.post('/internal/users/:userId/process-instances', (_, res, ctx) => {
-        return res.once(ctx.json([]));
-      }),
+      http.post(
+        '/internal/users/:userId/process-instances',
+        () => {
+          return HttpResponse.json([]);
+        },
+        {once: true},
+      ),
     );
 
     render(<History />, {
