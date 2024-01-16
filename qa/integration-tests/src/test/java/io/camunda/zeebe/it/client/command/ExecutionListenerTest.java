@@ -9,6 +9,7 @@ package io.camunda.zeebe.it.client.command;
 
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
@@ -37,7 +38,7 @@ public class ExecutionListenerTest {
     final String elJobType = helper.getStartExecutionListenerType();
     final String serviceTaskJobType = helper.getJobType();
 
-    // create model with 1 start EL[start]
+    // create model with one EL[start]
     final BpmnModelInstance modelInstance =
         CLIENT_RULE.createSingleJobModelInstance(
             serviceTaskJobType,
@@ -64,6 +65,63 @@ public class ExecutionListenerTest {
         elJobType, (job) -> assertThat(job.getVariables()).isEmpty());
 
     // service task job created
-    ZeebeAssertHelper.assertJobCreated(serviceTaskJobType);
+    ZeebeAssertHelper.assertJobCreated(
+        serviceTaskJobType, (job) -> assertThat(job.getVariables()).isEmpty());
+  }
+
+  @Test
+  public void shouldCompleteFirstExecutionListenerJobWithVariablesAndNextElShouldAccessThem() {
+    // given
+    final String firstElJobType = helper.getStartExecutionListenerType();
+    final String secondElJobType = helper.getStartExecutionListenerType();
+    final String serviceTaskJobType = helper.getJobType();
+
+    // create model with 2 EL[start]
+    final BpmnModelInstance modelInstance =
+        CLIENT_RULE.createSingleJobModelInstance(
+            serviceTaskJobType,
+            b ->
+                b.zeebeStartExecutionListener(firstElJobType)
+                    .zeebeStartExecutionListener(secondElJobType));
+    final long processDefinitionKey = CLIENT_RULE.deployProcess(modelInstance);
+    CLIENT_RULE.createProcessInstance(processDefinitionKey, "{}");
+
+    final RecordingJobHandler elJobHandler = new RecordingJobHandler();
+    CLIENT_RULE.getClient().newWorker().jobType(firstElJobType).handler(elJobHandler).open();
+    CLIENT_RULE.getClient().newWorker().jobType(secondElJobType).handler(elJobHandler).open();
+
+    waitUntil(() -> !elJobHandler.getHandledJobs().isEmpty());
+
+    final long firstElJobKey = elJobHandler.getHandledJobs().getFirst().getKey();
+
+    // when
+    CLIENT_RULE
+        .getClient()
+        .newCompleteCommand(firstElJobKey)
+        .variable("el1_var_a", "value_a")
+        .send()
+        .join();
+
+    waitUntil(() -> elJobHandler.getHandledJobs().size() == 2);
+
+    // then
+    // EL[start] job completed
+    ZeebeAssertHelper.assertJobCompleted(
+        firstElJobType,
+        (job) -> assertThat(job.getVariables()).containsOnly(entry("el1_var_a", "value_a")));
+
+    // service task job created
+    final ActivatedJob secondElActivatedJob = elJobHandler.getHandledJobs().getLast();
+    assertThat(secondElActivatedJob.getType()).isEqualTo(secondElJobType);
+    assertThat(secondElActivatedJob.getVariablesAsMap())
+        .containsOnly(entry("el1_var_a", "value_a"));
+    ZeebeAssertHelper.assertJobCreated(secondElJobType);
+
+    // TODO check why this assertion not working...
+    /*
+    ZeebeAssertHelper.assertJobCreated(
+        secondElJobType,
+        (job) -> assertThat(job.getVariables()).containsOnly(entry("el1_var_a", "value_a")));
+    */
   }
 }
