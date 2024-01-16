@@ -183,18 +183,18 @@ public class DashboardFilterHandlingIT extends AbstractPlatformIT {
     final String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
 
     // when removing the filters from dashboard fails
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + DASHBOARD_INDEX_NAME + "/_update/" + dashboardId)
       .withMethod(POST);
-    esMockServer.when(requestMatcher, Times.once())
+    dbMockServer.when(requestMatcher, Times.once())
       .error(error().withDropConnection(true));
     final Response response = reportClient.deleteReport(reportId, true);
     final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(dashboardId);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    dbMockServer.verify(requestMatcher, VerificationTimes.once());
 
     // then the filters still exist on the dashboard
     assertThat(dashboard.getAvailableFilters()).containsExactlyInAnyOrderElementsOf(dashboardFilters);
@@ -474,18 +474,18 @@ public class DashboardFilterHandlingIT extends AbstractPlatformIT {
     // when
     final SingleProcessReportDefinitionRequestDto updatedDefinition =
       createReportDefinitionForKey(deployedInstance.getProcessDefinitionKey());
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + DASHBOARD_INDEX_NAME + "/_update/" + dashboardId)
       .withMethod(POST);
-    esMockServer.when(requestMatcher, Times.once())
+    dbMockServer.when(requestMatcher, Times.once())
       .error(error().withDropConnection(true));
     final Response response = reportClient.updateSingleProcessReport(originalDefinition.getId(), updatedDefinition);
     final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(dashboardId);
 
     // then the request fails
     assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    dbMockServer.verify(requestMatcher, VerificationTimes.once());
 
     // then the filters still exist on the dashboard
     assertThat(dashboard.getAvailableFilters()).containsExactlyInAnyOrderElementsOf(dashboardFilters);

@@ -107,8 +107,8 @@ public interface RequestDSL {
     return new GetRepositoryRequest.Builder().name(name);
   }
 
-  static SearchRequest.Builder searchRequestBuilder(String index) {
-    return new SearchRequest.Builder().index(index);
+  static SearchRequest.Builder searchRequestBuilder(String... index) {
+    return new SearchRequest.Builder().index(List.of(index));
   }
 
   static GetSnapshotRequest.Builder getSnapshotRequestBuilder(String repository, String snapshot) {

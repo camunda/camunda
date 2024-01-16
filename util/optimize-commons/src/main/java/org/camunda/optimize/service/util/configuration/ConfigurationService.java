@@ -10,12 +10,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.jayway.jsonpath.ReadContext;
 import com.jayway.jsonpath.TypeRef;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.SchedulerConfig;
 import org.camunda.optimize.dto.optimize.ZeebeConfigDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.datasource.IngestedDataSourceDto;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.analytics.AnalyticsConfiguration;
 import org.camunda.optimize.service.util.configuration.archive.DataArchiveConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
@@ -44,6 +46,8 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationParse
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ANALYTICS_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.AVAILABLE_LOCALES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CACHES_CONFIGURATION;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CAMUNDA_OPTIMIZE_DATABASE;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_DATABASE_PROPERTY;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.EVENT_BASED_PROCESS_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.EXTERNAL_VARIABLE_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
@@ -51,11 +55,11 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IMPORT_USER_TASK_IDENTITY_META_DATA;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.M2M_CLIENT_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ONBOARDING_CONFIGURATION;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPENSEARCH_DATABASE_PROPERTY;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPTIMIZE_API_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PANEL_NOTIFICATION_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.TELEMETRY_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.optimizeDatabaseProfiles;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.optimizeModeProfiles;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.getLocationsAsInputStream;
@@ -63,6 +67,7 @@ import static org.camunda.optimize.util.SuppressionConstants.OPTIONAL_ASSIGNED_T
 import static org.camunda.optimize.util.SuppressionConstants.OPTIONAL_FIELD_OR_PARAM;
 
 @Setter
+@Slf4j
 public class ConfigurationService {
 
   private static final String ERROR_NO_ENGINE_WITH_ALIAS = "No Engine configured with alias ";
@@ -238,18 +243,25 @@ public class ConfigurationService {
     }
   }
 
-  public static DatabaseProfile getDatabaseProfile(Environment environment) {
-    final List<DatabaseProfile> specifiedProfiles = Arrays.stream(environment.getActiveProfiles())
-      .filter(optimizeDatabaseProfiles::contains)
-      .map(DatabaseProfile::toProfile)
-      .toList();
-    if (specifiedProfiles.size() > 1) {
-      throw new OptimizeConfigurationException("Cannot configure more than one Database profile");
-    } else if (specifiedProfiles.isEmpty()) {
-      return DatabaseProfile.ELASTICSEARCH;
-    } else {
-      return specifiedProfiles.get(0);
+  public static DatabaseType getDatabaseType(Environment environment) {
+    final String configuredProperty = environment.getProperty(CAMUNDA_OPTIMIZE_DATABASE);
+    return convertToDatabaseProperty(configuredProperty);
+  }
+
+  public static DatabaseType convertToDatabaseProperty(final String configuredProperty) {
+    if (configuredProperty != null) {
+      if (configuredProperty.equalsIgnoreCase(OPENSEARCH_DATABASE_PROPERTY)) {
+        return DatabaseType.OPENSEARCH;
+      } else if (configuredProperty.equalsIgnoreCase(ELASTICSEARCH_DATABASE_PROPERTY)) {
+        return DatabaseType.ELASTICSEARCH;
+      } else {
+        final String reason = String.format("Cannot start Optimize. Invalid database configured %s", configuredProperty);
+        log.error(reason);
+        throw new OptimizeConfigurationException(reason);
+      }
     }
+    log.info("The database type was not specified. Reverting to default of Elasticsearch");
+    return DatabaseType.ELASTICSEARCH;
   }
 
   public ElasticSearchConfiguration getElasticSearchConfiguration() {
@@ -905,7 +917,7 @@ public class ConfigurationService {
 
   public Boolean getNotificationEmailCheckServerIdentity() {
     return Optional.ofNullable(notificationEmailCheckServerIdentity)
-            .orElse(configJsonContext.read(ConfigurationServiceConstants.CHECK_SERVER_IDENTITY, Boolean.class));
+      .orElse(configJsonContext.read(ConfigurationServiceConstants.CHECK_SERVER_IDENTITY, Boolean.class));
   }
 
   public String getNotificationEmailCompanyBranding() {

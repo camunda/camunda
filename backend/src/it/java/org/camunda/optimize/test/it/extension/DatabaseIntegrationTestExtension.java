@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
@@ -27,9 +26,10 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDt
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
-import org.camunda.optimize.service.util.configuration.DatabaseProfile;
+import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.camunda.optimize.test.it.extension.db.DatabaseTestService;
 import org.camunda.optimize.test.it.extension.db.ElasticsearchDatabaseTestService;
+import org.camunda.optimize.test.it.extension.db.OpenSearchDatabaseTestService;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -78,13 +78,10 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
 
   private DatabaseIntegrationTestExtension(final String customIndexPrefix,
                                            final boolean haveToClean) {
-    if (DatabaseProfile.toProfile(IntegrationTestConfigurationUtil.getDatabaseProfile()).equals(DatabaseProfile.ELASTICSEARCH)) {
-      this.databaseTestService = new ElasticsearchDatabaseTestService(
-        customIndexPrefix, haveToClean
-      );
+    if (IntegrationTestConfigurationUtil.getDatabaseType().equals(DatabaseType.ELASTICSEARCH)) {
+      this.databaseTestService = new ElasticsearchDatabaseTestService(customIndexPrefix, haveToClean);
     } else {
-      // TODO Write a new OpenSearch extension
-      throw new NotImplementedException("Cannot start Integration tests with the OpenSearch profile");
+      this.databaseTestService = new OpenSearchDatabaseTestService(customIndexPrefix, haveToClean);
     }
   }
 

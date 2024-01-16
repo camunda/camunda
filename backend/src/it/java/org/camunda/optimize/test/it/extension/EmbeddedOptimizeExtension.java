@@ -76,7 +76,6 @@ import org.camunda.optimize.service.tenant.CamundaPlatformTenantService;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
-import org.elasticsearch.client.RequestOptions;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -105,6 +104,7 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CAMUNDA_OPTIMIZE_DATABASE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 
@@ -142,6 +142,8 @@ public class EmbeddedOptimizeExtension
   @SneakyThrows
   @Override
   public void beforeAll(final ExtensionContext extensionContext) {
+    log.info("Running tests with database {}", IntegrationTestConfigurationUtil.getDatabaseType());
+    System.setProperty(CAMUNDA_OPTIMIZE_DATABASE, IntegrationTestConfigurationUtil.getDatabaseType().getId());
     setApplicationContext(SpringExtension.getApplicationContext(extensionContext));
 
     if (serializedDefaultConfiguration == null) {
@@ -219,9 +221,11 @@ public class EmbeddedOptimizeExtension
     }
   }
 
-  public void configureEsHostAndPort(final String host, final int esPort) {
+  public void configureDbHostAndPort(final String host, final int esPort) {
     getConfigurationService().getElasticSearchConfiguration().getConnectionNodes().get(0).setHost(host);
     getConfigurationService().getElasticSearchConfiguration().getConnectionNodes().get(0).setHttpPort(esPort);
+    getConfigurationService().getOpenSearchConfiguration().getConnectionNodes().get(0).setHost(host);
+    getConfigurationService().getOpenSearchConfiguration().getConnectionNodes().get(0).setHttpPort(esPort);
     reloadConfiguration();
   }
 

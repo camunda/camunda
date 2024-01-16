@@ -40,13 +40,13 @@ public class DatabaseCustomHeaderSupplierPluginIT extends AbstractPlatformIT {
     // given
     String basePackage = "org.camunda.optimize.testplugin.elasticsearch.authorization.fixed";
     addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(basePackage);
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
 
     // when
     statusClient.getStatus();
 
     // then
-    esMockServer.verify(request().withHeader(new Header("Authorization", "Bearer fixedToken")));
+    dbMockServer.verify(request().withHeader(new Header("Authorization", "Bearer fixedToken")));
   }
 
   @Test
@@ -54,23 +54,23 @@ public class DatabaseCustomHeaderSupplierPluginIT extends AbstractPlatformIT {
     // given
     String basePackage = "org.camunda.optimize.testplugin.elasticsearch.authorization.fixed";
     addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(basePackage);
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     // clear all mock recordings that happen during setup
-    esMockServer.clear(request());
+    dbMockServer.clear(request());
 
     // when
     embeddedOptimizeExtension.getBean(OptimizeElasticsearchClientConfiguration.class)
       .createOptimizeElasticsearchClient(new BackoffCalculator(1, 1));
     // clear the version validation request the client does on first use, which bypasses our plugins
     // see RestHighLevelClient#versionValidationFuture
-    esMockServer.clear(request("/").withMethod(GET));
+    dbMockServer.clear(request("/").withMethod(GET));
 
     // then
-    esMockServer.verify(
+    dbMockServer.verify(
       request().withHeader(new Header("Authorization", "Bearer fixedToken")), VerificationTimes.atLeast(1)
     );
     // ensure there was no request without the header
-    esMockServer.verify(
+    dbMockServer.verify(
       request().withHeader(NottableString.not("Authorization")), VerificationTimes.exactly(0)
     );
   }
@@ -81,7 +81,7 @@ public class DatabaseCustomHeaderSupplierPluginIT extends AbstractPlatformIT {
     String basePackage = "org.camunda.optimize.testplugin.elasticsearch.authorization.dynamic";
     addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(basePackage);
     embeddedOptimizeExtension.reloadConfiguration();
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
 
     // when
     statusClient.getStatus();
@@ -89,10 +89,10 @@ public class DatabaseCustomHeaderSupplierPluginIT extends AbstractPlatformIT {
     statusClient.getStatus();
 
     // then
-    final RequestDefinition[] allRequests = esMockServer.retrieveRecordedRequests(null);
+    final RequestDefinition[] allRequests = dbMockServer.retrieveRecordedRequests(null);
     assertThat(allRequests).hasSizeGreaterThan(1);
     IntStream.range(0, allRequests.length)
-      .forEach(integerSuffix -> esMockServer.verify(
+      .forEach(integerSuffix -> dbMockServer.verify(
         request().withHeader(new Header("Authorization", "Bearer dynamicToken_" + integerSuffix)),
         VerificationTimes.once()
       ));
@@ -107,13 +107,13 @@ public class DatabaseCustomHeaderSupplierPluginIT extends AbstractPlatformIT {
     };
     addElasticsearchCustomHeaderPluginBasePackagesToConfiguration(basePackages);
     embeddedOptimizeExtension.reloadConfiguration();
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
 
     // when
     statusClient.getStatus();
 
     // then
-    esMockServer.verify(request().withHeaders(
+    dbMockServer.verify(request().withHeaders(
       new Header("Authorization", "Bearer fixedToken"),
       new Header("CustomHeader", "customValue")
     ), VerificationTimes.atLeast(1));

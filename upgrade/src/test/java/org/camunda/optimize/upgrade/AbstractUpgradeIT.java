@@ -95,7 +95,7 @@ public abstract class AbstractUpgradeIT {
   protected static final IndexMappingCreator TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING_V2 =
     new UserTestWithTemplateUpdatedMappingIndex();
 
-  protected ClientAndServer esMockServer;
+  protected ClientAndServer dbMockServer;
   protected ObjectMapper objectMapper;
   protected OptimizeElasticsearchClient prefixAwareClient;
   protected OptimizeIndexNameService indexNameService;
@@ -110,9 +110,9 @@ public abstract class AbstractUpgradeIT {
     final DatabaseConnectionNodeConfiguration elasticConfig =
       this.configurationService.getElasticSearchConfiguration().getFirstConnectionNode();
 
-    this.esMockServer = createElasticMock(elasticConfig);
+    this.dbMockServer = createElasticMock(elasticConfig);
     elasticConfig.setHost(MockServerUtil.MOCKSERVER_HOST);
-    elasticConfig.setHttpPort(IntegrationTestConfigurationUtil.getElasticsearchMockServerPort());
+    elasticConfig.setHttpPort(IntegrationTestConfigurationUtil.getDatabaseMockServerPort());
 
     setUpUpgradeDependenciesWithConfiguration(configurationService);
     cleanAllDataFromElasticsearch();
@@ -142,7 +142,7 @@ public abstract class AbstractUpgradeIT {
   public void after() throws Exception {
     cleanAllDataFromElasticsearch();
     deleteEnvConfig();
-    this.esMockServer.close();
+    this.dbMockServer.close();
   }
 
   protected void initSchema(List<IndexMappingCreator<XContentBuilder>> mappingCreators) {
@@ -260,7 +260,7 @@ public abstract class AbstractUpgradeIT {
     return MockServerUtil.createProxyMockServer(
       elasticConfig.getHost(),
       elasticConfig.getHttpPort(),
-      IntegrationTestConfigurationUtil.getElasticsearchMockServerPort()
+      IntegrationTestConfigurationUtil.getDatabaseMockServerPort()
     );
   }
 

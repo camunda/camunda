@@ -342,19 +342,19 @@ public class IncidentImportIT extends AbstractImportIT {
 
     // when updates to ES fails the first and succeeds the second time
     incidentClient.deployAndStartProcessInstanceWithOpenIncident();
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest processInstanceIndexMatcher = request()
       .withPath("/_bulk")
       .withMethod(POST)
       .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeDatabaseClient()
         .getIndexNameService()
         .getIndexPrefix() + "-" + PROCESS_INSTANCE_INDEX_PREFIX));
-    esMockServer
+    dbMockServer
       .when(processInstanceIndexMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
     importOpenIncidents();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
-    esMockServer.verify(processInstanceIndexMatcher);
+    dbMockServer.verify(processInstanceIndexMatcher);
 
     // then the incident is stored after successful write
     assertThat(getIncidentCount()).isEqualTo(1L);
@@ -370,19 +370,19 @@ public class IncidentImportIT extends AbstractImportIT {
 
     // when updates to ES fails the first and succeeds the second time
     incidentClient.deployAndStartProcessInstanceWithResolvedIncident();
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest processInstanceIndexMatcher = request()
       .withPath("/_bulk")
       .withMethod(POST)
       .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeDatabaseClient()
         .getIndexNameService()
         .getIndexPrefix() + "-" + PROCESS_INSTANCE_INDEX_PREFIX));
-    esMockServer
+    dbMockServer
       .when(processInstanceIndexMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
     importResolvedIncidents();
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
-    esMockServer.verify(processInstanceIndexMatcher);
+    dbMockServer.verify(processInstanceIndexMatcher);
 
     // then the incident is stored after successful write
     assertThat(getIncidentCount()).isEqualTo(1L);

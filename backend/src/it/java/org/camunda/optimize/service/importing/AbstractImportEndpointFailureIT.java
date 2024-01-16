@@ -44,13 +44,13 @@ import java.util.stream.Stream;
 import static jakarta.ws.rs.HttpMethod.GET;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
-import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
-import static org.camunda.optimize.test.it.extension.MockServerUtil.MOCKSERVER_HOST;
 import static org.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static org.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
+import static org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
+import static org.camunda.optimize.test.it.extension.MockServerUtil.MOCKSERVER_HOST;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.mockserver.model.HttpRequest.request;
 

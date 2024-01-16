@@ -45,15 +45,6 @@ public class OpenSearchConfiguration {
   }
 
   @JsonIgnore
-  public ProxyConfiguration getProxyConfig() {
-    ProxyConfiguration proxyConfiguration = connection.getProxy();
-    if (proxyConfiguration != null) {
-      proxyConfiguration.validate();
-    }
-    return proxyConfiguration;
-  }
-
-  @JsonIgnore
   public Boolean getSkipHostnameVerification() {
     return connection.getSkipHostnameVerification();
   }

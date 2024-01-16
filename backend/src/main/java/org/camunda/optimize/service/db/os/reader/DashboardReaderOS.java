@@ -17,7 +17,6 @@ import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
 import org.opensearch.client.opensearch._types.query_dsl.NestedQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch.core.CountRequest;
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
@@ -43,12 +42,11 @@ public class DashboardReaderOS implements DashboardReader {
 
   @Override
   public long getDashboardCount() {
-    final CountRequest.Builder countRequest = new CountRequest.Builder()
-      .index(List.of(DASHBOARD_INDEX_NAME))
-      .query(QueryDSL.term(DashboardIndex.MANAGEMENT_DASHBOARD, false)
-      );
     String errorMessage = "Was not able to retrieve dashboard count!";
-    return osClient.countOs(countRequest, errorMessage).count();
+    return osClient.count(
+      new String[]{DASHBOARD_INDEX_NAME},
+      QueryDSL.term(DashboardIndex.MANAGEMENT_DASHBOARD, false),
+      errorMessage);
   }
 
   @Override

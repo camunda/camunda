@@ -357,15 +357,6 @@ opensearch:
       - host: '${CAMUNDA_OPTIMIZE_OPENSEARCH_HOST:localhost}'
         # A port number used by OpenSearch to accept HTTP connections.
         httpPort: ${CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT:9205}
-    proxy:
-      # whether an HTTP proxy should be used for requests to opensearch
-      enabled: false
-      # the host of the proxy to use
-      host: null
-      # the port of the proxy to use
-      port: null
-      # whether this proxy is using a secured connection
-      sslEnabled: false
     # Determines whether the hostname verification should be skipped
     skipHostnameVerification: ${CAMUNDA_OPTIMIZE_OPENSEARCH_CONNECTION_SKIP_HOSTNAME_VERIFICATION:false}
     # Configuration relating to OS backup

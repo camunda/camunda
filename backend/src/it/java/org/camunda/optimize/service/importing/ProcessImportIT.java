@@ -355,7 +355,7 @@ public class ProcessImportIT extends AbstractImportIT {
     // deploy another not yet imported instance
     final ProcessInstanceEngineDto instance2 = deployAndStartSimpleServiceTaskProcess();
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final ScheduledExecutorService importExecutor = Executors.newSingleThreadScheduledExecutor();
     try {
       // make any new instance data bulk requests fail
@@ -363,7 +363,7 @@ public class ProcessImportIT extends AbstractImportIT {
         .withPath("/_bulk")
         .withMethod(POST)
         .withBody(subString("\"_index\":\"" + getInstanceIndexAlias(instance2.getProcessDefinitionKey()) + "\""));
-      esMockServer.when(bulkIndexRequest).error(HttpError.error().withDropConnection(true));
+      dbMockServer.when(bulkIndexRequest).error(HttpError.error().withDropConnection(true));
 
       // when
       // run the import runs in a separate thread (as we expect it to block on failure)
@@ -372,7 +372,7 @@ public class ProcessImportIT extends AbstractImportIT {
       // and wait for the request to hit elastic (and fail)
       Awaitility.await().ignoreExceptions()
         .timeout(10, TimeUnit.SECONDS)
-        .untilAsserted(() -> esMockServer.verify(bulkIndexRequest, VerificationTimes.atLeast(1)));
+        .untilAsserted(() -> dbMockServer.verify(bulkIndexRequest, VerificationTimes.atLeast(1)));
 
       // and the import index is explicitly updated in elastic
       embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
@@ -381,7 +381,7 @@ public class ProcessImportIT extends AbstractImportIT {
       assertThat(getLastProcessInstanceImportTimestamp()).isEqualTo(firstInstanceEndTime);
 
       // when the mock is reset so the instance bulk requests can succeed again
-      esMockServer.reset();
+      dbMockServer.reset();
 
       // and the import eventually completes
       importExecutor.shutdown();
@@ -399,7 +399,7 @@ public class ProcessImportIT extends AbstractImportIT {
       assertThat(getLastProcessInstanceImportTimestamp()).isEqualTo(secondInstanceEndTime);
     } finally {
       // reset the mockserver so the import job can eventually complete regardless what happened
-      esMockServer.reset();
+      dbMockServer.reset();
       importExecutor.shutdown();
       assertThat(importExecutor.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
     }

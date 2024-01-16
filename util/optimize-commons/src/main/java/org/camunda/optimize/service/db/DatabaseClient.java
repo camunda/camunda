@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.db;
 
 import lombok.Getter;
-import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.elasticsearch.action.search.ClearScrollRequest;
@@ -14,8 +13,6 @@ import org.elasticsearch.action.search.ClearScrollResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
-import org.elasticsearch.client.core.CountRequest;
-import org.elasticsearch.client.core.CountResponse;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -43,8 +40,7 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
   @Getter
   protected OptimizeIndexNameService indexNameService;
 
-  //todo will be handle in the OPT-7469
-  public abstract CountResponse count(final CountRequest unfilteredTotalInstanceCountRequest) throws IOException;
+  public abstract <T> long count(final String[] indexNames, final T query) throws IOException;
 
   //todo will be handle in the OPT-7469
   public abstract SearchResponse scroll(final SearchScrollRequest scrollRequest) throws IOException;

@@ -1,0 +1,28 @@
+version: "3.9"
+services:
+  opensearch:
+    container_name: opensearch-${OPENSEARCH_HTTP_PORT:-9205}
+    image: opensearchproject/opensearch:${OPENSEARCH_VERSION:-2.8.0}
+    environment:
+      - TZ=Europe/Berlin
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - cluster.name=opensearch
+      - action.destructive_requires_name=false
+      # We usually run our integration tests concurrently, as some cleanup methods like #deleteAllOptimizeData
+      # internally make usage of scroll contexts this lead to hits on the scroll limit.
+      # Thus this increased scroll context limit.
+      - search.max_open_scroll_context=1000
+      - http.port=${OPENSEARCH_HTTP_PORT:-9205}
+      - OS_JAVA_OPTS=-Xms${OPENSEARCH_JVM_MEMORY:-1}g -Xmx${OPENSEARCH_JVM_MEMORY:-1}g
+      - path.repo=/var/tmp
+    ports:
+      - ${OPENSEARCH_HTTP_PORT:-9205}:${OPENSEARCH_HTTP_PORT:-9205}
+    healthcheck:
+      # TODO for some reason all checks fail here, so just putting a dummy check, resolve with OPT-7247
+      test: ["CMD-SHELL", "ls"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - /var/tmp:/var/tmp

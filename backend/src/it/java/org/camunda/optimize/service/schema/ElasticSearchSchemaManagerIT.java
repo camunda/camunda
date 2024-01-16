@@ -19,6 +19,7 @@ import org.camunda.optimize.service.schema.type.MyUpdatedEventIndex;
 import org.camunda.optimize.service.schema.type.MyUpdatedEventIndexES;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.util.BpmnModels;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.client.Request;
@@ -33,8 +34,8 @@ import org.elasticsearch.xcontent.XContentBuilder;
 import org.elasticsearch.xcontent.XContentType;
 import org.elasticsearch.xcontent.json.JsonXContent;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.mockserver.integration.ClientAndServer;
-import org.springframework.test.context.junit.jupiter.EnabledIf;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -54,10 +55,9 @@ import static org.elasticsearch.xcontent.XContentFactory.jsonBuilder;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.verify.VerificationTimes.exactly;
 
-// Here we need to negate the opensearch profile because the elasticsearch profile is the default when no database
-// profile is set, so the absence of a database profile implies elasticsearch. Moreover we can unfortunately not use
-// constants in this expression, so it needs to be the literal text "opensearch".
-@EnabledIf(expression = "#{!environment.acceptsProfiles('opensearch')}", loadContext = true)
+// Here we need to negate the opensearch profile because the elasticsearch profile is the default when no database profile is set.
+// Moreover we can unfortunately not use constants in this expression, so it needs to be the literal text "opensearch".
+@DisabledIfSystemProperty(named = "CAMUNDA_OPTIMIZE_DATABASE", matches = "opensearch")
 public class ElasticSearchSchemaManagerIT extends AbstractSchemaManagerIT {
 
   @Test
@@ -138,14 +138,14 @@ public class ElasticSearchSchemaManagerIT extends AbstractSchemaManagerIT {
     final int expectedExistQueryBatchExecutionCount =
       (int) Math.ceil((double) getSchemaManager().getMappings().size() / INDEX_EXIST_BATCH_SIZE);
     assertThat(expectedExistQueryBatchExecutionCount).isGreaterThan(1);
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
 
     // when
     embeddedOptimizeExtension.getDatabaseSchemaManager()
       .schemaExists(embeddedOptimizeExtension.getOptimizeDatabaseClient());
 
     // then the index exist check was performed in batches
-    esMockServer.verify(
+    dbMockServer.verify(
       request().withPath(String.format(
         "/(%s.*){2,%s}",
         embeddedOptimizeExtension.getOptimizeDatabaseClient().getIndexNameService().getIndexPrefix(),
@@ -157,9 +157,15 @@ public class ElasticSearchSchemaManagerIT extends AbstractSchemaManagerIT {
 
   @Test
   public void dynamicSettingsAreAppliedToStaticIndices() throws IOException {
-    final String oldRefreshInterval = embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().getRefreshInterval();
-    final int oldReplicaCount = embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().getNumberOfReplicas();
-    final int oldNestedDocumentLimit = embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().getNestedDocumentsLimit();
+    final String oldRefreshInterval = embeddedOptimizeExtension.getConfigurationService()
+      .getElasticSearchConfiguration()
+      .getRefreshInterval();
+    final int oldReplicaCount = embeddedOptimizeExtension.getConfigurationService()
+      .getElasticSearchConfiguration()
+      .getNumberOfReplicas();
+    final int oldNestedDocumentLimit = embeddedOptimizeExtension.getConfigurationService()
+      .getElasticSearchConfiguration()
+      .getNestedDocumentsLimit();
 
     // given schema exists
     embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setRefreshInterval("100s");
@@ -182,15 +188,23 @@ public class ElasticSearchSchemaManagerIT extends AbstractSchemaManagerIT {
     // cleanup
     embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setRefreshInterval(oldRefreshInterval);
     embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setNumberOfReplicas(oldReplicaCount);
-    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setNestedDocumentsLimit(oldNestedDocumentLimit);
+    embeddedOptimizeExtension.getConfigurationService()
+      .getElasticSearchConfiguration()
+      .setNestedDocumentsLimit(oldNestedDocumentLimit);
     initializeSchema();
   }
 
   @Test
   public void dynamicSettingsAreAppliedToExistingDynamicIndices() throws IOException {
-    final String oldRefreshInterval = embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().getRefreshInterval();
-    final int oldReplicaCount = embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().getNumberOfReplicas();
-    final int oldNestedDocumentLimit = embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().getNestedDocumentsLimit();
+    final String oldRefreshInterval = embeddedOptimizeExtension.getConfigurationService()
+      .getElasticSearchConfiguration()
+      .getRefreshInterval();
+    final int oldReplicaCount = embeddedOptimizeExtension.getConfigurationService()
+      .getElasticSearchConfiguration()
+      .getNumberOfReplicas();
+    final int oldNestedDocumentLimit = embeddedOptimizeExtension.getConfigurationService()
+      .getElasticSearchConfiguration()
+      .getNestedDocumentsLimit();
 
     // given a dynamic index is created by the import of process instance data
     final ProcessInstanceEngineDto processInstanceEngineDto = engineIntegrationExtension.deployAndStartProcess(
@@ -218,7 +232,9 @@ public class ElasticSearchSchemaManagerIT extends AbstractSchemaManagerIT {
     // cleanup
     embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setRefreshInterval(oldRefreshInterval);
     embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setNumberOfReplicas(oldReplicaCount);
-    embeddedOptimizeExtension.getConfigurationService().getElasticSearchConfiguration().setNestedDocumentsLimit(oldNestedDocumentLimit);
+    embeddedOptimizeExtension.getConfigurationService()
+      .getElasticSearchConfiguration()
+      .setNestedDocumentsLimit(oldNestedDocumentLimit);
     initializeSchema();
   }
 
@@ -249,6 +265,11 @@ public class ElasticSearchSchemaManagerIT extends AbstractSchemaManagerIT {
     getSchemaManager().initializeSchema(getElasticSearchOptimizeClient());
   }
 
+  @Override
+  protected Class<? extends Exception> expectedDatabaseExtensionStatusException() {
+    return ElasticsearchStatusException.class;
+  }
+
   private static Settings buildStaticSettings(IndexMappingCreator<XContentBuilder> indexMappingCreator,
                                               ConfigurationService configurationService) throws IOException {
     XContentBuilder builder = jsonBuilder();
@@ -260,6 +281,7 @@ public class ElasticSearchSchemaManagerIT extends AbstractSchemaManagerIT {
     // @formatter:on
     return Settings.builder().loadFromSource(Strings.toString(builder), XContentType.JSON).build();
   }
+
   protected ElasticSearchSchemaManager getSchemaManager() {
     return getBean(ElasticSearchSchemaManager.class);
   }
@@ -314,6 +336,7 @@ public class ElasticSearchSchemaManagerIT extends AbstractSchemaManagerIT {
         });
     }
   }
+
   private GetSettingsResponse getIndexSettingsFor(final List<IndexMappingCreator<XContentBuilder>> mappings) throws IOException {
     final String indices = mappings.stream()
       .map(indexNameService::getOptimizeIndexNameWithVersion)
@@ -338,7 +361,7 @@ public class ElasticSearchSchemaManagerIT extends AbstractSchemaManagerIT {
         .indices().putSettings(updateSettingsRequest, getElasticSearchOptimizeClient().requestOptions());
     }
   }
-  
+
   private OptimizeElasticsearchClient getElasticSearchOptimizeClient() {
     return (OptimizeElasticsearchClient) prefixAwareDatabaseClient;
   }

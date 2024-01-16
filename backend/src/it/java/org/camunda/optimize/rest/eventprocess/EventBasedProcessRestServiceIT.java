@@ -226,7 +226,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   @Test
   public void createEventProcessMapping() {
     // given
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
 
     // when
     Response response = eventProcessClient
@@ -237,7 +237,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    esMockServer.verify(
+    dbMockServer.verify(
       request()
         .withPath("/.*-" + EVENT_PROCESS_MAPPING_INDEX_NAME + "/_doc/.*")
         .withMethod(PUT),
@@ -277,11 +277,11 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   @Test
   public void createEventProcessMapping_elasticsearchConnectionError() {
     // given
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + EVENT_PROCESS_MAPPING_INDEX_NAME + "/_doc/.*")
       .withMethod(PUT);
-    esMockServer
+    dbMockServer
       .when(requestMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
 
@@ -292,7 +292,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
       ).execute();
 
     // then
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    dbMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(createResponse.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 

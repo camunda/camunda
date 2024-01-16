@@ -101,11 +101,11 @@ public class OpenSearchWriterUtil {
     return createDefaultScriptWithPrimitiveParams(inlineUpdateScript, Collections.emptyMap());
   }
 
-  private static void doBulkRequest(final OptimizeOpenSearchClient osClient,
-                                    final BulkRequest.Builder bulkReqBuilder,
-                                    final List<BulkOperation> operations,
-                                    final String itemName,
-                                    final boolean retryRequestIfNestedDocLimitReached) {
+  public static void doBulkRequest(final OptimizeOpenSearchClient osClient,
+                                   final BulkRequest.Builder bulkReqBuilder,
+                                   final List<BulkOperation> operations,
+                                   final String itemName,
+                                   final boolean retryRequestIfNestedDocLimitReached) {
     if (retryRequestIfNestedDocLimitReached) {
       doBulkRequestWithNestedDocHandling(osClient, bulkReqBuilder, operations, itemName);
     } else {

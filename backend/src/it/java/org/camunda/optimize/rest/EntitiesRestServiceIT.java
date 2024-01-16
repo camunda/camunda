@@ -827,11 +827,11 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
       Collections.emptyList()
     );
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*" + SINGLE_PROCESS_REPORT_INDEX_NAME + ".*/_delete_by_query")
       .withMethod(POST);
-    esMockServer
+    dbMockServer
       .when(requestMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
 
@@ -839,7 +839,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     Response response = buildAndExecuteBulkDeleteEntitiesRequest(entitiesDeleteRequestDto);
 
     // then
-    esMockServer.verify(requestMatcher, VerificationTimes.atLeast(1));
+    dbMockServer.verify(requestMatcher, VerificationTimes.atLeast(1));
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
     assertThat(reportClient.getAllReportsAsUser()).hasSize(1);
     assertThat(reportClient.getReportById(reportId1)).isNotNull();
@@ -857,11 +857,11 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
       Collections.emptyList()
     );
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*" + COLLECTION_INDEX_NAME + ".*")
       .withMethod(DELETE);
-    esMockServer
+    dbMockServer
       .when(requestMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
 
@@ -869,7 +869,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     Response response = buildAndExecuteBulkDeleteEntitiesRequest(entitiesDeleteRequestDto);
 
     // then
-    esMockServer.verify(requestMatcher, VerificationTimes.atLeast(1));
+    dbMockServer.verify(requestMatcher, VerificationTimes.atLeast(1));
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
     assertThat(databaseIntegrationTestExtension.getDocumentCountOf(
       COLLECTION_INDEX_NAME
@@ -889,11 +889,11 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
       Arrays.asList(dashboardId1, dashboardId2)
     );
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*" + DASHBOARD_INDEX_NAME + ".*")
       .withMethod(DELETE);
-    esMockServer
+    dbMockServer
       .when(requestMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
 
@@ -901,7 +901,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
     Response response = buildAndExecuteBulkDeleteEntitiesRequest(entitiesDeleteRequestDto);
 
     // then
-    esMockServer.verify(requestMatcher, VerificationTimes.atLeast(1));
+    dbMockServer.verify(requestMatcher, VerificationTimes.atLeast(1));
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
     assertThat(databaseIntegrationTestExtension.getDocumentCountOf(
       DASHBOARD_INDEX_NAME

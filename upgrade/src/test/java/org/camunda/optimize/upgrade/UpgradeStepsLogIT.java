@@ -124,12 +124,12 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
     final HttpRequest indexDeleteRequest = createIndexDeleteRequest(
       getIndexNameWithVersion(TEST_INDEX_V1)
     );
-    esMockServer
+    dbMockServer
       .when(indexDeleteRequest, Times.exactly(1))
       .error(HttpError.error().withDropConnection(true));
 
     assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan)).isInstanceOf(UpgradeRuntimeException.class);
-    esMockServer.verify(indexDeleteRequest, exactly(1));
+    dbMockServer.verify(indexDeleteRequest, exactly(1));
 
     // then only the successful first step is logged
     logs.assertContains("Starting step 1/2: CreateIndexStep on index: " + getIndexNameWithVersion(TEST_INDEX_V1));
@@ -164,13 +164,13 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
     final HttpRequest indexDeleteRequest = createIndexDeleteRequest(
       getIndexNameWithVersion(TEST_INDEX_V1)
     );
-    esMockServer
+    dbMockServer
       .when(indexDeleteRequest, Times.exactly(1))
       .error(HttpError.error().withDropConnection(true));
 
     // the upgrade is executed and failed
     assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan)).isInstanceOf(UpgradeRuntimeException.class);
-    esMockServer.verify(indexDeleteRequest, exactly(1));
+    dbMockServer.verify(indexDeleteRequest, exactly(1));
 
     // when it is retried
     final OffsetDateTime frozenDate2 = DateCreationFreezer.dateFreezer()
@@ -221,13 +221,13 @@ public class UpgradeStepsLogIT extends AbstractUpgradeIT {
         .addUpgradeStep(buildUpdateIndexStep(TEST_INDEX_V2))
         .build();
     final HttpRequest stepOneLogUpsertRequest = createUpdateLogUpsertRequest(createIndexStep);
-    esMockServer
+    dbMockServer
       .when(stepOneLogUpsertRequest, Times.exactly(1))
       .error(HttpError.error().withDropConnection(true));
 
     // the upgrade is executed and failed
     assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan)).isInstanceOf(UpgradeRuntimeException.class);
-    esMockServer.verify(stepOneLogUpsertRequest, exactly(1));
+    dbMockServer.verify(stepOneLogUpsertRequest, exactly(1));
 
     // when it is retried
     final OffsetDateTime frozenDate2 = DateCreationFreezer.dateFreezer()

@@ -239,14 +239,14 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     deployAndStartTwoUserTasksProcess();
     engineIntegrationExtension.finishAllRunningUserTasks();
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest userTaskImportMatcher = request()
       .withPath("/_bulk")
       .withMethod(POST)
       .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeDatabaseClient()
         .getIndexNameService()
         .getIndexPrefix() + "-" + PROCESS_INSTANCE_INDEX_PREFIX));
-    esMockServer
+    dbMockServer
       .when(userTaskImportMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
 
@@ -270,7 +270,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
           }
         });
       });
-    esMockServer.verify(userTaskImportMatcher);
+    dbMockServer.verify(userTaskImportMatcher);
   }
 
   @Test

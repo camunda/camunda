@@ -70,14 +70,14 @@ public class BusinessKeyImportIT extends AbstractImportIT {
 
     // when updates to ES fail
     ProcessInstanceEngineDto runningProcess = deployAndStartUserTaskProcess();
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest businessKeyImportMatcher = request()
       .withPath("/_bulk")
       .withMethod(POST)
       .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeDatabaseClient()
         .getIndexNameService()
         .getIndexPrefix() + "-" + BUSINESS_KEY_INDEX_NAME + "\""));
-    esMockServer
+    dbMockServer
       .when(businessKeyImportMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
     importAllEngineEntitiesFromLastIndex();
@@ -85,7 +85,7 @@ public class BusinessKeyImportIT extends AbstractImportIT {
     // then the key gets stored after successful write
     assertThat(getAllStoredBusinessKeys())
       .containsExactlyInAnyOrder(new BusinessKeyDto(runningProcess.getId(), runningProcess.getBusinessKey()));
-    esMockServer.verify(businessKeyImportMatcher);
+    dbMockServer.verify(businessKeyImportMatcher);
   }
 
   @Test
@@ -101,14 +101,14 @@ public class BusinessKeyImportIT extends AbstractImportIT {
     ProcessInstanceEngineDto process = deployAndStartUserTaskProcess();
     engineIntegrationExtension.finishAllRunningUserTasks(process.getId());
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest businessKeyImportMatcher = request()
       .withPath("/_bulk")
       .withMethod(POST)
       .withBody(subString("\"_index\":\"" + embeddedOptimizeExtension.getOptimizeDatabaseClient()
         .getIndexNameService()
         .getIndexPrefix() + "-" + BUSINESS_KEY_INDEX_NAME + "\""));
-    esMockServer
+    dbMockServer
       .when(businessKeyImportMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
     importAllEngineEntitiesFromLastIndex();
@@ -116,7 +116,7 @@ public class BusinessKeyImportIT extends AbstractImportIT {
     // then the key gets stored after successful write
     assertThat(getAllStoredBusinessKeys())
       .containsExactlyInAnyOrder(new BusinessKeyDto(process.getId(), process.getBusinessKey()));
-    esMockServer.verify(businessKeyImportMatcher);
+    dbMockServer.verify(businessKeyImportMatcher);
   }
 
   @Test

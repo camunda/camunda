@@ -242,11 +242,11 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
         Collections.emptyList()
       ));
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*" + SINGLE_PROCESS_REPORT_INDEX_NAME + ".*/_delete_by_query")
       .withMethod(POST);
-    esMockServer
+    dbMockServer
       .when(requestMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
 
@@ -255,7 +255,7 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
       .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
 
     // then
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    dbMockServer.verify(requestMatcher, VerificationTimes.once());
     assertGetMappingRequestStatusCode(eventProcessDefinitionKey, Response.Status.OK.getStatusCode());
     assertThat(collectionClient.getReportsForCollection(collectionId))
       .extracting(AuthorizedReportDefinitionResponseDto.Fields.definitionDto + "." + ReportDefinitionDto.Fields.id)
@@ -276,11 +276,11 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
       new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey)
     );
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*" + COLLECTION_INDEX_NAME + ".*/_update_by_query")
       .withMethod(POST);
-    esMockServer
+    dbMockServer
       .when(requestMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
 
@@ -289,7 +289,7 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
       .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
 
     // then
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    dbMockServer.verify(requestMatcher, VerificationTimes.once());
     assertGetMappingRequestStatusCode(eventProcessDefinitionKey, Response.Status.OK.getStatusCode());
     assertThat(collectionClient.getCollectionById(collectionId).getData().getScope())
       .extracting(CollectionScopeEntryDto::getDefinitionKey)
@@ -304,11 +304,11 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     String eventProcessDefinitionKey = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
     eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey);
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME + "/_update_by_query")
       .withMethod(POST);
-    esMockServer
+    dbMockServer
       .when(requestMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
 
@@ -317,7 +317,7 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
       .execute(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
 
     // then
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    dbMockServer.verify(requestMatcher, VerificationTimes.once());
     assertGetMappingRequestStatusCode(eventProcessDefinitionKey, Response.Status.OK.getStatusCode());
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessDefinitionKey)).isNotEmpty();
   }
@@ -440,11 +440,11 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     String reportUsingMapping = reportClient.createAndStoreProcessReport(eventProcessDefinitionKey1);
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*" + SINGLE_PROCESS_REPORT_INDEX_NAME + ".*/_delete_by_query")
       .withMethod(POST);
-    esMockServer
+    dbMockServer
       .when(requestMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
 
@@ -459,7 +459,7 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
       .execute();
 
     // then
-    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    dbMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
     assertGetMappingRequestStatusCode(eventProcessDefinitionKey1, Response.Status.OK.getStatusCode());
     assertThat(reportClient.getReportById(reportUsingMapping)).isNotNull();
@@ -503,11 +503,11 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     String eventProcessDefinitionKey2 = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
     eventProcessClient.publishEventProcessMapping(eventProcessDefinitionKey1);
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*-" + EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME + "/_update_by_query")
       .withMethod(POST);
-    esMockServer
+    dbMockServer
       .when(requestMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
 
@@ -517,7 +517,7 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     Response response = eventProcessClient.createBulkDeleteEventProcessMappingsRequest(eventProcessIds).execute();
 
     // then
-    esMockServer.verify(requestMatcher, VerificationTimes.exactly(2));
+    dbMockServer.verify(requestMatcher, VerificationTimes.exactly(2));
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
     assertGetMappingRequestStatusCode(eventProcessDefinitionKey1, Response.Status.OK.getStatusCode());
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessDefinitionKey1)).isNotEmpty();
@@ -542,11 +542,11 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
       new CollectionScopeEntryDto(PROCESS, eventProcessDefinitionKey1)
     );
 
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*" + COLLECTION_INDEX_NAME + ".*/_update_by_query")
       .withMethod(POST);
-    esMockServer
+    dbMockServer
       .when(requestMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
 
@@ -556,7 +556,7 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
     eventProcessClient.createBulkDeleteEventProcessMappingsRequest(eventProcessIds).execute();
 
     // then
-    esMockServer.verify(requestMatcher, VerificationTimes.exactly(2));
+    dbMockServer.verify(requestMatcher, VerificationTimes.exactly(2));
     assertGetMappingRequestStatusCode(eventProcessDefinitionKey1, Response.Status.OK.getStatusCode());
     assertThat(collectionClient.getCollectionById(collectionId).getData().getScope())
       .extracting(CollectionScopeEntryDto::getDefinitionKey)

@@ -22,8 +22,6 @@ import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
-import org.elasticsearch.client.core.CountRequest;
-import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -75,12 +73,12 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
 
   protected CommandEvaluationResult<T> evaluate(final ExecutionContext<D> executionContext) {
     SearchRequest searchRequest = createBaseQuerySearchRequest(executionContext);
-    CountRequest unfilteredTotalInstanceCountRequest =
-      new CountRequest(getIndexNames(executionContext)).query(setupUnfilteredBaseQuery(executionContext));
-
     SearchResponse response;
     try {
-      response = executeRequests(executionContext, searchRequest, unfilteredTotalInstanceCountRequest);
+      response = executeRequests(
+        executionContext,
+        searchRequest
+      );
     } catch (ElasticsearchStatusException e) {
       if (isInstanceIndexNotFoundException(e)) {
         if (executionContext.getReportData().getDefinitions().size() > 1) {
@@ -91,9 +89,8 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
             Arrays.asList(getIndexNames(executionContext))
           );
           searchRequest.indices(getMultiIndexAlias());
-          unfilteredTotalInstanceCountRequest.indices(getMultiIndexAlias());
           try {
-            response = executeRequests(executionContext, searchRequest, unfilteredTotalInstanceCountRequest);
+            response = executeRequests(executionContext, searchRequest);
           } catch (ElasticsearchStatusException ex) {
             return returnEmptyResult(executionContext);
           } catch (IOException ex) {
@@ -135,13 +132,13 @@ public abstract class ReportCmdExecutionPlan<T, D extends SingleReportDataDto> {
     ));
   }
 
-  private SearchResponse executeRequests(final ExecutionContext<D> executionContext, final SearchRequest searchRequest,
-                                         final CountRequest unfilteredTotalInstanceCountRequest) throws IOException {
+  private SearchResponse executeRequests(final ExecutionContext<D> executionContext, final SearchRequest searchRequest) throws
+                                                                                                                        IOException {
     SearchResponse response;
-    CountResponse unfilteredInstanceCountResponse;
     response = executeElasticSearchCommand(executionContext, searchRequest);
-    unfilteredInstanceCountResponse = databaseClient.count(unfilteredTotalInstanceCountRequest);
-    executionContext.setUnfilteredTotalInstanceCount(unfilteredInstanceCountResponse.getCount());
+    String[] indices = getIndexNames(executionContext);
+    BoolQueryBuilder countQuery = setupUnfilteredBaseQuery(executionContext);
+    executionContext.setUnfilteredTotalInstanceCount(databaseClient.count(indices, countQuery));
     return response;
   }
 

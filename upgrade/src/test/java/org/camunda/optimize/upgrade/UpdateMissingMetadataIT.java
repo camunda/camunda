@@ -66,7 +66,7 @@ public class UpdateMissingMetadataIT extends AbstractUpgradeIT {
   public void updateFailsIfMetadataDocReadFails() {
     // given
     final UpgradePlan upgradePlan = new CurrentVersionNoOperationUpgradePlanFactory().createUpgradePlan();
-    esMockServer
+    dbMockServer
       .when(request().withPath("/.*-" + METADATA_INDEX_NAME + ".*/_doc/" + MetadataIndex.ID))
       .respond(HttpResponse.response().withStatusCode(HttpStatusCode.INTERNAL_SERVER_ERROR_500.code()));
 

@@ -49,7 +49,7 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
   }
 
   public Set<String> getIndexNamesWithRetries(String namePattern) {
-    String prefixedNamePattern = applyIndexPrefix(namePattern).get(0);
+    String prefixedNamePattern = applyIndexPrefix(namePattern);
     return executeWithRetries(
       "Get indices for " + prefixedNamePattern,
       () -> {
@@ -94,23 +94,23 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
   }
 
   public boolean indexExists(String unprefixedIndex) {
-    String index = applyIndexPrefix(unprefixedIndex).get(0);
+    String index = applyIndexPrefix(unprefixedIndex);
     return safe(
       () -> openSearchClient.indices().exists(r -> r.index(getIndexAliasFor(index))).value(),
       e -> defaultIndexErrorMessage(index)
     );
   }
 
-  public void refresh(String unprefixedIndexPatterns) {
-    List<String> indexPatterns = applyIndexPrefix(unprefixedIndexPatterns);
-    final RefreshRequest refreshRequest = new RefreshRequest.Builder().index(indexPatterns).build();
+  public void refresh(String unprefixedIndexPattern) {
+    String indexPattern = applyIndexPrefix(unprefixedIndexPattern);
+    final RefreshRequest refreshRequest = new RefreshRequest.Builder().index(indexPattern).build();
     try {
       final RefreshResponse refresh = openSearchClient.indices().refresh(refreshRequest);
-      if (refresh.shards().failures().isEmpty()) {
-        log.warn("Unable to refresh indices: {}", indexPatterns);
+      if (!refresh.shards().failures().isEmpty()) {
+        log.warn("Unable to refresh indices: {}", indexPattern);
       }
     } catch (Exception ex) {
-      log.warn(String.format("Unable to refresh indices: %s", indexPatterns), ex);
+      log.warn(String.format("Unable to refresh indices: %s", indexPattern), ex);
     }
   }
 
@@ -119,7 +119,7 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
     final RefreshRequest refreshRequest = new RefreshRequest.Builder().index(indexPatterns).build();
     try {
       final RefreshResponse refresh = openSearchClient.indices().refresh(refreshRequest);
-      if (refresh.shards().failures().isEmpty()) {
+      if (!refresh.shards().failures().isEmpty()) {
         log.warn("Unable to refresh indices: {}", List.of(indexPatterns));
       }
     } catch (Exception ex) {
@@ -128,7 +128,7 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
   }
 
   public void refreshWithRetries(final String unprefixedIndexPattern) {
-    String indexPattern = applyIndexPrefix(unprefixedIndexPattern).get(0);
+    String indexPattern = applyIndexPrefix(unprefixedIndexPattern);
     executeWithRetries(
       "Refresh " + indexPattern,
       () -> {
@@ -148,21 +148,28 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
     return openSearchClient.indices().get(i -> i.index(List.of(indexPattern))).result().keySet();
   }
 
-  public boolean deleteIndicesWithRetries(final String unprefixedIndexPattern) {
-    String indexPattern = applyIndexPrefix(unprefixedIndexPattern).get(0);
-    return executeWithRetries(
-      "DeleteIndices " + indexPattern,
-      () -> {
-        for (String index : getFilteredIndices(indexPattern)) {
-          openSearchClient.indices().delete(d -> d.index(List.of(index)));
+  public boolean deleteIndicesWithRetries(final String... unprefixedIndexPatterns) {
+    for (String unprefixedIndexPattern : unprefixedIndexPatterns) {
+      String indexPattern = applyIndexPrefix(unprefixedIndexPattern);
+      boolean success = executeWithRetries(
+        "DeleteIndices " + indexPattern,
+        () -> {
+          for (String index : getFilteredIndices(indexPattern)) {
+            openSearchClient.indices().delete(d -> d.index(List.of(index)));
+          }
+          return true;
         }
-        return true;
+      );
+      if (!success) {
+        return false;
       }
-    );
+    }
+    return true;
   }
 
+
   public IndexSettings getIndexSettingsWithRetries(String unprefixedIndexPattern) {
-    String indexName = applyIndexPrefix(unprefixedIndexPattern).get(0);
+    String indexName = applyIndexPrefix(unprefixedIndexPattern);
     return executeWithRetries(
       "GetIndexSettings " + indexName,
       () -> {

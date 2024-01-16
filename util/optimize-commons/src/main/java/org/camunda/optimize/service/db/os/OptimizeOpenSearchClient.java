@@ -52,6 +52,7 @@ import org.opensearch.client.opensearch.indices.rollover.RolloverConditions;
 import org.springframework.context.ApplicationContext;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -195,15 +196,21 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   }
 
   @Override
-  public org.elasticsearch.client.core.CountResponse count(final org.elasticsearch.client.core.CountRequest unfilteredTotalInstanceCountRequest) throws
-                                                                                                                                                 IOException {
-    //todo will be handle in the OPT-7469
-    return new org.elasticsearch.client.core.CountResponse(0L, true, null);
+  public <T> long count(final String[] indexNames, final T query) throws IOException {
+    return count(indexNames, query, "Could not execute count request for " + Arrays.toString(indexNames));
   }
 
-  //todo rename it in scope of OPT-7469
-  public CountResponse countOs(final CountRequest.Builder requestBuilder, final String errorMessage) {
-    return richOpenSearchClient.doc().count(requestBuilder, e -> errorMessage);
+  public <T> long count(final String[] indexNames, final T query, final String errorMessage) {
+    if (query instanceof Query openSearchQuery) {
+      final CountRequest.Builder countReqBuilder = new CountRequest.Builder()
+        .index(List.of(indexNames))
+        .query(openSearchQuery);
+      final CountResponse response = richOpenSearchClient.doc().count(countReqBuilder, e -> errorMessage);
+      return response.count();
+    } else {
+      throw new IllegalArgumentException("The count method requires an OpenSearch object of type Query, " +
+                                           "instead got " + query.getClass().getSimpleName());
+    }
   }
 
   //todo rename it in scope of OPT-7469

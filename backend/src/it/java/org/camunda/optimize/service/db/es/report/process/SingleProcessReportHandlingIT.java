@@ -524,12 +524,12 @@ public class SingleProcessReportHandlingIT extends AbstractPlatformIT {
   public void elasticsearchStatusExceptionIsMapped() {
     // given a report evaluation that throws an ElasticsearchStatusException
     final String definitionKey = "someKey";
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
     final HttpRequest requestMatcher = request()
       .withPath("/.*" + getProcessInstanceIndexAliasName(definitionKey) + "/_search")
       .withMethod(POST);
     // the request throws an exception which results in an ElasticsearchStatusException
-    esMockServer
+    dbMockServer
       .when(requestMatcher, Times.once())
       .respond((new HttpResponse()).withStatusCode(HttpStatusCode.BAD_REQUEST_400.code())
                  .withReasonPhrase(HttpStatusCode.BAD_REQUEST_400.reasonPhrase()));

@@ -28,7 +28,7 @@ import org.camunda.optimize.service.db.es.schema.index.index.TimestampBasedImpor
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
-import org.camunda.optimize.service.util.configuration.DatabaseProfile;
+import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.util.jetty.LoggingConfigurationReader;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -89,7 +89,7 @@ public class ReimportPreparation {
       customHeaderProvider.initPlugins();
       final OptimizeElasticsearchClient prefixAwareClient = new OptimizeElasticsearchClient(
         restHighLevelClient,
-        new OptimizeIndexNameService(configurationService, DatabaseProfile.ELASTICSEARCH),
+        new OptimizeIndexNameService(configurationService, DatabaseType.ELASTICSEARCH),
         new RequestOptionsProvider(customHeaderProvider.getPlugins(), configurationService)
       );
 

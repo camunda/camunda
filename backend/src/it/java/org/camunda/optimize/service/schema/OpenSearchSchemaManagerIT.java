@@ -20,9 +20,10 @@ import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
 import org.elasticsearch.common.settings.Settings;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.mockserver.integration.ClientAndServer;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.indices.IndexSettings;
-import org.springframework.test.context.junit.jupiter.EnabledIf;
 import org.testcontainers.shaded.org.apache.commons.lang3.NotImplementedException;
 
 import java.io.IOException;
@@ -41,10 +42,8 @@ import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.verify.VerificationTimes.exactly;
 
 // We can unfortunately not use constants in this expression, so it needs to be the literal text "opensearch".
-@EnabledIf(expression = "#{environment.acceptsProfiles('opensearch')}", loadContext = true)
+@EnabledIfSystemProperty(named = "CAMUNDA_OPTIMIZE_DATABASE", matches = "opensearch")
 public class OpenSearchSchemaManagerIT extends AbstractSchemaManagerIT {
-
-  private OptimizeOpenSearchClient prefixAwareOpenSearchClient = (OptimizeOpenSearchClient) prefixAwareDatabaseClient;
 
   @Test
   public void doNotFailIfSomeIndexesAlreadyExist() {
@@ -58,14 +57,14 @@ public class OpenSearchSchemaManagerIT extends AbstractSchemaManagerIT {
     initializeSchema();
 
     // then
-    assertThat(getSchemaManager().schemaExists(prefixAwareOpenSearchClient)).isTrue();
+    assertThat(getSchemaManager().schemaExists(getOpenSearchOptimizeClient())).isTrue();
   }
 
   @Test
   public void optimizeIndexExistsAfterSchemaInitialization() {
     // when
     initializeSchema();
-    assertThat(getSchemaManager().indexExists(prefixAwareOpenSearchClient, METADATA_INDEX_NAME)).isTrue();
+    assertThat(getSchemaManager().indexExists(getOpenSearchOptimizeClient(), METADATA_INDEX_NAME)).isTrue();
   }
 
   @Test
@@ -125,14 +124,14 @@ public class OpenSearchSchemaManagerIT extends AbstractSchemaManagerIT {
       (int) Math.ceil((double) getSchemaManager().getMappings().size() / INDEX_EXIST_BATCH_SIZE);
     assertThat(expectedExistQueryBatchExecutionCount).isGreaterThan(1);
     // TODO fix with OPT-7455
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
 
     // when
     embeddedOptimizeExtension.getDatabaseSchemaManager()
       .schemaExists(embeddedOptimizeExtension.getOptimizeDatabaseClient());
 
     // then the index exist check was performed in batches
-    esMockServer.verify(
+    dbMockServer.verify(
       request().withPath(String.format(
         "/(%s.*){2,%s}",
         embeddedOptimizeExtension.getOptimizeDatabaseClient().getIndexNameService().getIndexPrefix(),
@@ -144,9 +143,15 @@ public class OpenSearchSchemaManagerIT extends AbstractSchemaManagerIT {
 
   @Test
   public void dynamicSettingsAreAppliedToStaticIndices() throws IOException {
-    final String oldRefreshInterval = embeddedOptimizeExtension.getConfigurationService().getOpenSearchConfiguration().getRefreshInterval();
-    final int oldReplicaCount = embeddedOptimizeExtension.getConfigurationService().getOpenSearchConfiguration().getNumberOfReplicas();
-    final int oldNestedDocumentLimit = embeddedOptimizeExtension.getConfigurationService().getOpenSearchConfiguration().getNestedDocumentsLimit();
+    final String oldRefreshInterval = embeddedOptimizeExtension.getConfigurationService()
+      .getOpenSearchConfiguration()
+      .getRefreshInterval();
+    final int oldReplicaCount = embeddedOptimizeExtension.getConfigurationService()
+      .getOpenSearchConfiguration()
+      .getNumberOfReplicas();
+    final int oldNestedDocumentLimit = embeddedOptimizeExtension.getConfigurationService()
+      .getOpenSearchConfiguration()
+      .getNestedDocumentsLimit();
 
     // given schema exists
     embeddedOptimizeExtension.getConfigurationService().getOpenSearchConfiguration().setRefreshInterval("100s");
@@ -169,15 +174,23 @@ public class OpenSearchSchemaManagerIT extends AbstractSchemaManagerIT {
     // cleanup
     embeddedOptimizeExtension.getConfigurationService().getOpenSearchConfiguration().setRefreshInterval(oldRefreshInterval);
     embeddedOptimizeExtension.getConfigurationService().getOpenSearchConfiguration().setNumberOfReplicas(oldReplicaCount);
-    embeddedOptimizeExtension.getConfigurationService().getOpenSearchConfiguration().setNestedDocumentsLimit(oldNestedDocumentLimit);
+    embeddedOptimizeExtension.getConfigurationService()
+      .getOpenSearchConfiguration()
+      .setNestedDocumentsLimit(oldNestedDocumentLimit);
     initializeSchema();
   }
 
   @Test
   public void dynamicSettingsAreAppliedToExistingDynamicIndices() throws IOException {
-    final String oldRefreshInterval = embeddedOptimizeExtension.getConfigurationService().getOpenSearchConfiguration().getRefreshInterval();
-    final int oldReplicaCount = embeddedOptimizeExtension.getConfigurationService().getOpenSearchConfiguration().getNumberOfReplicas();
-    final int oldNestedDocumentLimit = embeddedOptimizeExtension.getConfigurationService().getOpenSearchConfiguration().getNestedDocumentsLimit();
+    final String oldRefreshInterval = embeddedOptimizeExtension.getConfigurationService()
+      .getOpenSearchConfiguration()
+      .getRefreshInterval();
+    final int oldReplicaCount = embeddedOptimizeExtension.getConfigurationService()
+      .getOpenSearchConfiguration()
+      .getNumberOfReplicas();
+    final int oldNestedDocumentLimit = embeddedOptimizeExtension.getConfigurationService()
+      .getOpenSearchConfiguration()
+      .getNestedDocumentsLimit();
 
     // given a dynamic index is created by the import of process instance data
     final ProcessInstanceEngineDto processInstanceEngineDto = engineIntegrationExtension.deployAndStartProcess(
@@ -205,7 +218,9 @@ public class OpenSearchSchemaManagerIT extends AbstractSchemaManagerIT {
     // cleanup
     embeddedOptimizeExtension.getConfigurationService().getOpenSearchConfiguration().setRefreshInterval(oldRefreshInterval);
     embeddedOptimizeExtension.getConfigurationService().getOpenSearchConfiguration().setNumberOfReplicas(oldReplicaCount);
-    embeddedOptimizeExtension.getConfigurationService().getOpenSearchConfiguration().setNestedDocumentsLimit(oldNestedDocumentLimit);
+    embeddedOptimizeExtension.getConfigurationService()
+      .getOpenSearchConfiguration()
+      .setNestedDocumentsLimit(oldNestedDocumentLimit);
     initializeSchema();
   }
 
@@ -233,7 +248,12 @@ public class OpenSearchSchemaManagerIT extends AbstractSchemaManagerIT {
 
   @Override
   protected void initializeSchema() {
-    getSchemaManager().initializeSchema(prefixAwareOpenSearchClient);
+    getSchemaManager().initializeSchema(getOpenSearchOptimizeClient());
+  }
+
+  @Override
+  protected Class<? extends Exception> expectedDatabaseExtensionStatusException() {
+    return OpenSearchException.class;
   }
 
   private static Settings buildStaticSettings(IndexMappingCreator<IndexSettings.Builder> indexMappingCreator,
@@ -249,6 +269,7 @@ public class OpenSearchSchemaManagerIT extends AbstractSchemaManagerIT {
 //    // @formatter:on
 //    return Settings.builder().loadFromSource(Strings.toString(builder), XContentType.JSON).build();
   }
+
   protected OpenSearchSchemaManager getSchemaManager() {
     return getBean(OpenSearchSchemaManager.class);
   }
@@ -307,7 +328,9 @@ public class OpenSearchSchemaManagerIT extends AbstractSchemaManagerIT {
 //        });
 //    }
   }
-  private GetSettingsResponse getIndexSettingsFor(final List<IndexMappingCreator<IndexSettings.Builder>> mappings) throws IOException {
+
+  private GetSettingsResponse getIndexSettingsFor(final List<IndexMappingCreator<IndexSettings.Builder>> mappings) throws
+                                                                                                                   IOException {
     // TODO fix with OPT-7455
     throw new NotImplementedException("Will be implemented with OPT-7455");
 //    final String indices = mappings.stream()
@@ -336,4 +359,9 @@ public class OpenSearchSchemaManagerIT extends AbstractSchemaManagerIT {
 //        .indices().putSettings(updateSettingsRequest, prefixAwareDatabaseClient.requestOptions());
 //    }
 //  }
+
+  private OptimizeOpenSearchClient getOpenSearchOptimizeClient() {
+    return (OptimizeOpenSearchClient) prefixAwareDatabaseClient;
+  }
+
 }

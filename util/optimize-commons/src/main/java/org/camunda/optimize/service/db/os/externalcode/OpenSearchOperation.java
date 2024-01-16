@@ -53,6 +53,10 @@ public class OpenSearchOperation {
     return Arrays.stream(indexes).map(this::getIndexAliasFor).toList();
   }
 
+  protected String applyIndexPrefix(String index) {
+    return getIndexAliasFor(index);
+  }
+
   protected String getIndexAliasFor(String indexName) {
     return indexNameService.getOptimizeIndexAliasForIndex(indexName);
   }
@@ -75,7 +79,7 @@ public class OpenSearchOperation {
     } catch (OpenSearchException e) {
       final String message = "An exception has occurred when trying to execute an OpenSearch operation";
       log.error(message, e);
-      throw new OptimizeRuntimeException(message, e);
+      throw e;
     } catch (Exception e) {
       final String message = errorMessage.apply(e);
       log.error(message, e);

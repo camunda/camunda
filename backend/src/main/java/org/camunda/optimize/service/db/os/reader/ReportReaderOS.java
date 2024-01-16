@@ -27,7 +27,6 @@ import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
 import org.opensearch.client.opensearch._types.query_dsl.NestedQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch.core.CountRequest;
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.MgetResponse;
@@ -218,23 +217,16 @@ public class ReportReaderOS implements ReportReader {
 
   @Override
   public long getReportCount(final ReportType reportType) {
-    final CountRequest.Builder countRequest;
+    final String errorMessage = String.format("Was not able to retrieve %s report counts!", reportType);
     if (ReportType.PROCESS.equals(reportType)) {
-
       Query query = new BoolQuery.Builder()
         .mustNot(QueryDSL.term(DATA + "." + MANAGEMENT_REPORT, true))
         .mustNot(QueryDSL.term(DATA + "." + INSTANT_PREVIEW_REPORT, true))
         .build()._toQuery();
-
-      countRequest = new CountRequest.Builder()
-        .index(List.of(SINGLE_PROCESS_REPORT_INDEX_NAME))
-        .query(query);
+      return osClient.count(new String[]{SINGLE_PROCESS_REPORT_INDEX_NAME}, query, errorMessage);
     } else {
-      countRequest = new CountRequest.Builder()
-        .index(SINGLE_DECISION_REPORT_INDEX_NAME);
+      return osClient.count(new String[]{SINGLE_DECISION_REPORT_INDEX_NAME}, QueryDSL.matchAll(), errorMessage);
     }
-    String reason = "Was not able to retrieve report counts!";
-    return osClient.countOs(countRequest, reason).count();
   }
 
   private List<ReportDefinitionDto> getAllProcessReportsForDefinitionKeyOmitXml(final String definitionKey) {

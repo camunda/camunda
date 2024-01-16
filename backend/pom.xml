@@ -561,7 +561,7 @@
                 <optimizeHttpsPort>401${surefire.forkNumber}</optimizeHttpsPort>
                 <smtpTestPort>500${surefire.forkNumber}</smtpTestPort>
                 <management.server.port>600${surefire.forkNumber}</management.server.port>
-                <elasticSearchMockServerPort>108${surefire.forkNumber}</elasticSearchMockServerPort>
+                <databaseMockServerPort>108${surefire.forkNumber}</databaseMockServerPort>
                 <engineMockServerPort>109${surefire.forkNumber}</engineMockServerPort>
                 <camunda.engine.version>${camunda.engine.version}</camunda.engine.version>
               </systemPropertyVariables>
@@ -589,6 +589,7 @@
                   <environmentVariables>
                     <CAMBPM_VERSION>${camunda.engine.version}</CAMBPM_VERSION>
                     <ES_VERSION>${elasticsearch.test.version}</ES_VERSION>
+                    <OS_VERSION>${opensearch.test.version}</OS_VERSION>
                   </environmentVariables>
                   <skip>${skip.docker}</skip>
                   <executable>docker-compose</executable>
@@ -596,6 +597,8 @@
                   <arguments>
                     <argument>-f</argument>
                     <argument>${docker.compose.file}</argument>
+                    <argument>--profile</argument>
+                    <argument>setup-integration-test</argument>
                     <argument>up</argument>
                     <argument>-d</argument>
                     <argument>--force-recreate</argument>

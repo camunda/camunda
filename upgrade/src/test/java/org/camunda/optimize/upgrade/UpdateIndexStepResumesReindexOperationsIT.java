@@ -65,7 +65,7 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     performUpgradeAndLetReindexStatusCheckFail(upgradePlan, reindexRequest);
 
     // when it is retried and any new reindex operation would get rejected
-    esMockServer
+    dbMockServer
       .when(reindexRequest, Times.unlimited())
       .error(HttpError.error().withDropConnection(true));
     final OffsetDateTime frozenDate = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
@@ -101,7 +101,7 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     performUpgradeAndLetReindexStatusCheckFail(upgradePlan, firstIndexReindexRequest);
 
     // when it is retried and any new reindex operation would get rejected
-    esMockServer
+    dbMockServer
       .when(firstIndexReindexRequest, Times.unlimited())
       .error(HttpError.error().withDropConnection(true));
     final OffsetDateTime frozenDate = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
@@ -140,7 +140,7 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     performUpgradeAndLetReindexStatusCheckFail(upgradePlan, reindexRequest);
 
     // when it is retried and any new reindex operation would get rejected
-    esMockServer
+    dbMockServer
       .when(reindexRequest, Times.unlimited())
       .error(HttpError.error().withDropConnection(true));
     final OffsetDateTime frozenDate = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
@@ -177,7 +177,7 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     performUpgradeAndLetReindexStatusCheckFail(upgradePlan, createReindexRequestMatcher());
 
     // when it is retried and any new reindex operation would get rejected
-    esMockServer
+    dbMockServer
       .when(createReindexRequestMatcher(), Times.unlimited())
       .error(HttpError.error().withDropConnection(true));
     final OffsetDateTime frozenDate = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
@@ -210,7 +210,7 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     performUpgradeAndLetReindexStatusCheckFail(upgradePlan, createReindexRequestMatcher());
 
     // when it is retried and any new reindex operation would get rejected
-    esMockServer
+    dbMockServer
       .when(createReindexRequestMatcher(), Times.unlimited())
       .error(HttpError.error().withDropConnection(true));
     final OffsetDateTime frozenDate = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
@@ -250,7 +250,7 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
     performUpgradeAndLetReindexStatusCheckFail(upgradePlan, reindexRequest);
 
     // when it is retried and any new reindex operation would get rejected
-    esMockServer
+    dbMockServer
       .when(reindexRequest, Times.unlimited())
       .error(HttpError.error().withDropConnection(true));
     final OffsetDateTime frozenDate = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
@@ -280,12 +280,12 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
   private void performUpgradeAndLetReindexStatusCheckFail(final UpgradePlan upgradePlan,
                                                           final HttpRequest reindexRequest) {
     final HttpRequest getReindexStatusRequest = createTaskStatusRequestTestMatcher();
-    esMockServer
+    dbMockServer
       .when(getReindexStatusRequest, Times.exactly(1))
       .error(HttpError.error().withDropConnection(true));
     assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan)).isInstanceOf(UpgradeRuntimeException.class);
-    esMockServer.verify(reindexRequest, atLeast(1));
-    esMockServer.verify(getReindexStatusRequest, exactly(1));
+    dbMockServer.verify(reindexRequest, atLeast(1));
+    dbMockServer.verify(getReindexStatusRequest, exactly(1));
   }
 
   private void assertUpdateLogIsComplete(final UpdateIndexStep upgradeStep, final OffsetDateTime frozenDate) {
@@ -325,7 +325,7 @@ public class UpdateIndexStepResumesReindexOperationsIT extends AbstractUpgradeIT
   private HttpRequest forwardThrottledReindexRequestWithOneDocPerSecond(final String sourceIndexName,
                                                                         final String targetIndexName) {
     final HttpRequest reindexRequest = createReindexRequestMatcher(sourceIndexName, targetIndexName);
-    esMockServer
+    dbMockServer
       .when(reindexRequest, Times.exactly(1))
       .forward(
         HttpOverrideForwardedRequest.forwardOverriddenRequest(

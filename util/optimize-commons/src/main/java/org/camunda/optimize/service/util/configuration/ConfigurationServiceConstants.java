@@ -170,9 +170,9 @@ public class ConfigurationServiceConstants {
   public static final String PLATFORM_PROFILE = "platform";
   public static final List<String> optimizeModeProfiles = List.of(CLOUD_PROFILE, CCSM_PROFILE, PLATFORM_PROFILE);
 
-  public static final String ELASTICSEARCH_PROFILE = "elasticsearch";
-  public static final String OPENSEARCH_PROFILE = "opensearch";
-  public static final List<String> optimizeDatabaseProfiles = List.of(ELASTICSEARCH_PROFILE, OPENSEARCH_PROFILE);
+  public static final String CAMUNDA_OPTIMIZE_DATABASE = "CAMUNDA_OPTIMIZE_DATABASE";
+  public static final String ELASTICSEARCH_DATABASE_PROPERTY = "elasticsearch";
+  public static final String OPENSEARCH_DATABASE_PROPERTY = "opensearch";
   public static final String MULTITENANCY_ENABLED = "$.multitenancy.enabled";
   //@formatter:on
 

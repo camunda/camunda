@@ -18,7 +18,7 @@ import org.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
-import org.camunda.optimize.service.util.configuration.DatabaseProfile;
+import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
@@ -57,7 +57,7 @@ public class UpgradeUtil {
       new OptimizeDateTimeFormatterFactory().getObject(),
       ConfigurationServiceBuilder.createDefaultConfiguration()
     ).createOptimizeMapper();
-    OptimizeIndexNameService indexNameService = new OptimizeIndexNameService(configurationService, DatabaseProfile.ELASTICSEARCH);
+    OptimizeIndexNameService indexNameService = new OptimizeIndexNameService(configurationService, DatabaseType.ELASTICSEARCH);
     ElasticsearchCustomHeaderProvider customHeaderProvider = new ElasticsearchCustomHeaderProvider(
       configurationService, new PluginJarFileLoader(configurationService));
     customHeaderProvider.initPlugins();

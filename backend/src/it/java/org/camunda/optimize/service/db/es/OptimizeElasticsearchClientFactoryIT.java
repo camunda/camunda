@@ -31,11 +31,11 @@ public class OptimizeElasticsearchClientFactoryIT extends AbstractPlatformIT {
   @SneakyThrows
   public void testWaitForElasticsearch() {
     // given
-    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final ClientAndServer dbMockServer = useAndGetDbMockServer();
 
     final HttpRequest elasticHealthRequest = request("/_cluster/health").withMethod(GET);
     // make the connectivity check fail once that is done in OptimizeElasticsearchClientFactory
-    esMockServer.when(elasticHealthRequest, Times.once()).error(HttpError.error().withDropConnection(true));
+    dbMockServer.when(elasticHealthRequest, Times.once()).error(HttpError.error().withDropConnection(true));
 
     // when the client is created the factory should retry and wait for a connection to be established
     OptimizeElasticsearchClient optimizeElasticsearchClient = null;

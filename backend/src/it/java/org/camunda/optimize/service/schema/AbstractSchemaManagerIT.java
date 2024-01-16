@@ -9,7 +9,6 @@ import org.camunda.optimize.AbstractPlatformIT;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.DatabaseConstants;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
-import org.elasticsearch.ElasticsearchStatusException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -23,6 +22,8 @@ public abstract class AbstractSchemaManagerIT extends AbstractPlatformIT {
   protected OptimizeIndexNameService indexNameService;
 
   protected abstract void initializeSchema();
+
+  protected abstract <T extends Exception> Class<T> expectedDatabaseExtensionStatusException();
 
   @BeforeEach
   public void setUp() {
@@ -53,7 +54,7 @@ public abstract class AbstractSchemaManagerIT extends AbstractPlatformIT {
       DatabaseConstants.METADATA_INDEX_NAME,
       "12312412",
       extendedEventDto
-    )).isInstanceOf(ElasticsearchStatusException.class);
+    )).isInstanceOf(expectedDatabaseExtensionStatusException());
   }
 
   protected void assertIndexExists(String indexName) {

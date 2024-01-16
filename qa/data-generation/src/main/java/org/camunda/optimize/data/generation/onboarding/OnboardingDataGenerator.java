@@ -19,13 +19,12 @@ import org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
-import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.es.schema.index.ProcessDefinitionIndexES;
 import org.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import org.camunda.optimize.service.exceptions.DataGenerationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
-import org.camunda.optimize.service.util.configuration.DatabaseProfile;
+import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
@@ -59,7 +58,7 @@ public class OnboardingDataGenerator {
 
   public OnboardingDataGenerator() {
     final ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
-    this.optimizeIndexNameService = new OptimizeIndexNameService(configurationService, DatabaseProfile.ELASTICSEARCH);
+    this.optimizeIndexNameService = new OptimizeIndexNameService(configurationService, DatabaseType.ELASTICSEARCH);
     ElasticSearchMetadataService elasticsearchMetadataService = new ElasticSearchMetadataService(OBJECT_MAPPER);
     this.elasticSearchSchemaManager = new ElasticSearchSchemaManager(
       elasticsearchMetadataService,

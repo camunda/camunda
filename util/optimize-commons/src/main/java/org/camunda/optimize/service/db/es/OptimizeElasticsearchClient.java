@@ -97,6 +97,7 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.springframework.context.ApplicationContext;
 
 import java.io.IOException;
@@ -189,8 +190,6 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
 
     return highLevelClient.bulk(bulkRequest, requestOptions());
   }
-
-  @Override
   public final CountResponse count(final CountRequest countRequest) throws IOException {
     applyIndexPrefixes(countRequest);
     return highLevelClient.count(countRequest, requestOptions());
@@ -560,6 +559,18 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
       String message = "Failed to execute rollover request";
       log.error(message, e);
       throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
+  @Override
+  public <T> long count(final String[] indexNames, final T query) throws IOException {
+    CountRequest countRequest = new CountRequest(indexNames);
+    if (query instanceof QueryBuilder elasticSearchQuery) {
+      countRequest.query(elasticSearchQuery);
+      return count(countRequest).getCount();
+    } else {
+      throw new IllegalArgumentException("The count method requires an ElasticSearch object of type QueryBuilder, " +
+                                           "instead got " + query.getClass().getSimpleName());
     }
   }
 

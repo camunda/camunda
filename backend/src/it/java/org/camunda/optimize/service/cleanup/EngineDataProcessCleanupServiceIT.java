@@ -98,7 +98,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     importAllEngineEntitiesFromScratch();
 
-    final ClientAndServer elasticsearchFacade = useAndGetElasticsearchMockServer();
+    final ClientAndServer elasticsearchFacade = useAndGetDbMockServer();
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
@@ -241,7 +241,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractCleanupIT {
 
     importAllEngineEntitiesFromScratch();
 
-    final ClientAndServer elasticsearchFacade = useAndGetElasticsearchMockServer();
+    final ClientAndServer elasticsearchFacade = useAndGetDbMockServer();
 
     // when
     embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
