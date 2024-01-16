@@ -153,6 +153,8 @@ public class ElasticsearchExporterConfiguration {
      * the index. Useful to define whether an index should be created per month, day or even hour.
      *
      * <p>Example: yyyy-MM-dd -> 2023-12-03
+     *
+     * @see java.time.format.DateTimeFormatter
      */
     public String indexSuffixDatePattern = "yyyy-MM-dd";
 
