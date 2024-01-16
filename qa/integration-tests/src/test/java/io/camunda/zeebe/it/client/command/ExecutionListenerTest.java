@@ -116,12 +116,5 @@ public class ExecutionListenerTest {
     assertThat(secondElActivatedJob.getVariablesAsMap())
         .containsOnly(entry("el1_var_a", "value_a"));
     ZeebeAssertHelper.assertJobCreated(secondElJobType);
-
-    // TODO check why this assertion not working...
-    /*
-    ZeebeAssertHelper.assertJobCreated(
-        secondElJobType,
-        (job) -> assertThat(job.getVariables()).containsOnly(entry("el1_var_a", "value_a")));
-    */
   }
 }
