@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.impl.job;
 
-import io.camunda.zeebe.gateway.impl.broker.PartitionIdIterator;
+import io.camunda.zeebe.broker.client.impl.PartitionIdIterator;
 
 public class InflightActivateJobsRequestState {
 

@@ -11,10 +11,10 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.identity.sdk.Identity;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.zeebe.gateway.EndpointManager;
 import io.camunda.zeebe.gateway.GatewayGrpcService;
-import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;

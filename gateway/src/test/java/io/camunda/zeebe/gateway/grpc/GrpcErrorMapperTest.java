@@ -13,9 +13,9 @@ import static org.assertj.core.api.Assertions.fail;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Status;
-import io.camunda.zeebe.gateway.cmd.BrokerErrorException;
-import io.camunda.zeebe.gateway.impl.broker.RequestRetriesExhaustedException;
-import io.camunda.zeebe.gateway.impl.broker.response.BrokerError;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
+import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.util.logging.RecordingAppender;
@@ -61,8 +61,7 @@ final class GrpcErrorMapperTest {
   @Test
   void shouldLogResourceExhaustedErrorOnTrace() {
     // given
-    final BrokerError brokerError =
-        new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "Resources exhausted");
+    final var brokerError = new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "Resources exhausted");
     final BrokerErrorException exception = new BrokerErrorException(brokerError);
 
     // when
@@ -79,7 +78,7 @@ final class GrpcErrorMapperTest {
   @Test
   void shouldAddDetailsForRequestRetriesExhaustedException() throws InvalidProtocolBufferException {
     // given
-    final RequestRetriesExhaustedException exception = new RequestRetriesExhaustedException();
+    final var exception = new RequestRetriesExhaustedException();
     final BrokerError brokerError =
         new BrokerError(ErrorCode.PARTITION_LEADER_MISMATCH, "Wrong partition");
     final BrokerErrorException detailException = new BrokerErrorException(brokerError);

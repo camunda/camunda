@@ -7,18 +7,24 @@
  */
 package io.camunda.zeebe.gateway.impl.broker.request;
 
+import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
+import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
+import io.camunda.zeebe.gateway.impl.broker.PublishMessageDispatchStrategy;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 
 public final class BrokerPublishMessageRequest extends BrokerExecuteCommand<MessageRecord> {
 
   private final MessageRecord requestDto = new MessageRecord();
+  private final PublishMessageDispatchStrategy dispatchStrategy;
 
   public BrokerPublishMessageRequest(final String messageName, final String correlationKey) {
     super(ValueType.MESSAGE, MessageIntent.PUBLISH);
     requestDto.setName(messageName).setCorrelationKey(correlationKey);
+    dispatchStrategy = new PublishMessageDispatchStrategy(correlationKey);
   }
 
   public DirectBuffer getCorrelationKey() {
@@ -55,5 +61,10 @@ public final class BrokerPublishMessageRequest extends BrokerExecuteCommand<Mess
     final MessageRecord responseDto = new MessageRecord();
     responseDto.wrap(buffer);
     return responseDto;
+  }
+
+  @Override
+  public Optional<RequestDispatchStrategy> requestDispatchStrategy() {
+    return Optional.of(dispatchStrategy);
   }
 }

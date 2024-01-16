@@ -9,8 +9,8 @@ package io.camunda.zeebe.gateway.api.topology;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.broker.client.impl.BrokerClusterStateImpl;
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerHealth;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;

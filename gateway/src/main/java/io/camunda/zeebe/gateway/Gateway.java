@@ -8,10 +8,10 @@
 package io.camunda.zeebe.gateway;
 
 import io.camunda.identity.sdk.IdentityConfiguration;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.health.GatewayHealthManager;
 import io.camunda.zeebe.gateway.health.Status;
 import io.camunda.zeebe.gateway.health.impl.GatewayHealthManagerImpl;
-import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.configuration.AuthenticationCfg.AuthMode;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.IdentityCfg;

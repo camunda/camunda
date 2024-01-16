@@ -9,12 +9,12 @@ package io.camunda.zeebe.gateway.admin.backup;
 
 import static java.lang.Long.max;
 
+import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerClusterState;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
-import io.camunda.zeebe.gateway.cmd.NoTopologyAvailableException;
-import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
-import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import java.util.Collections;

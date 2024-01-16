@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.impl.broker.request;
 
+import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;

@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.query.impl;
 
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
-import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteQueryRequest;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteQueryResponse;
 import io.camunda.zeebe.protocol.record.ExecuteQueryResponseDecoder;

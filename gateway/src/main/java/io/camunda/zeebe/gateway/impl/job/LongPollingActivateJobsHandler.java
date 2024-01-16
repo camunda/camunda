@@ -11,10 +11,10 @@ import static io.camunda.zeebe.scheduler.clock.ActorClock.currentTimeMillis;
 
 import com.google.rpc.Code;
 import com.google.rpc.Status;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
-import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;

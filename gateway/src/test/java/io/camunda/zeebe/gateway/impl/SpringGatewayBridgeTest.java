@@ -9,8 +9,8 @@ package io.camunda.zeebe.gateway.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.gateway.health.Status;
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.junit.Before;
@@ -60,7 +60,7 @@ public class SpringGatewayBridgeTest {
   @Test
   public void shouldUseClusterStateSupplierWhenSet() {
     // given
-    final BrokerClusterState mockClusterState = Mockito.mock(BrokerClusterState.class);
+    final var mockClusterState = Mockito.mock(BrokerClusterState.class);
 
     final Supplier<Optional<BrokerClusterState>> testSupplier = () -> Optional.of(mockClusterState);
     sutBrigde.registerClusterStateSupplier(testSupplier);

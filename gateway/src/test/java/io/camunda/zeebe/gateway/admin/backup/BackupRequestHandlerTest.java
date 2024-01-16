@@ -9,11 +9,11 @@ package io.camunda.zeebe.gateway.admin.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerError;
+import io.camunda.zeebe.broker.client.api.dto.BrokerErrorResponse;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
-import io.camunda.zeebe.gateway.cmd.BrokerErrorException;
-import io.camunda.zeebe.gateway.impl.broker.response.BrokerError;
-import io.camunda.zeebe.gateway.impl.broker.response.BrokerErrorResponse;
-import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
