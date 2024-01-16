@@ -41,7 +41,7 @@
     <version.micrometer>1.12.1</version.micrometer>
     <version.mockito>5.0.0</version.mockito>
     <version.byte.buddy>1.14.11</version.byte.buddy>
-    <version.assertj-core>3.24.2</version.assertj-core>
+    <version.assertj-core>3.25.1</version.assertj-core>
     <version.jackson>2.16.1</version.jackson>
     <version.graphql>15.1.0</version.graphql>
     <version.graphql.tools>13.1.1</version.graphql.tools>
