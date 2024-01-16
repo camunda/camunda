@@ -43,8 +43,6 @@
     <plugin.version.license>4.3</plugin.version.license>
     <license.header>${project.baseUri}/../license/license-header</license.header>
 
-    <includeLongITNames>**/*IT.java</includeLongITNames>
-
     <!-- Version overrides from spring-boot parent pom, these should be re-reviewed anytime spring boot version is updated -->
     <commons-codec.version>1.16.0</commons-codec.version>
     <commons-lang3.version>3.13.0</commons-lang3.version>
@@ -341,10 +339,6 @@
           <artifactId>maven-failsafe-plugin</artifactId>
           <version>3.2.2</version>
           <configuration>
-            <includes>
-              <include>${includeLongITNames}</include>
-              <include>**/*ITMocked.java</include>
-            </includes>
             <forkCount>${env.LIMITS_CPU}</forkCount>
             <reuseForks>true</reuseForks>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
@@ -434,15 +428,6 @@
       </plugin>
     </plugins>
   </build>
-
-  <profiles>
-    <profile>
-      <id>skip-long-its</id>
-      <properties>
-        <includeLongITNames>none</includeLongITNames>
-      </properties>
-    </profile>
-  </profiles>
 
   <distributionManagement>
     <snapshotRepository>
