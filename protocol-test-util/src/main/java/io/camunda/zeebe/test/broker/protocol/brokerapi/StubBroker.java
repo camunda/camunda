@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.test.broker.protocol.brokerapi;
 
-import static io.camunda.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
-
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.zeebe.protocol.impl.Loggers;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -23,30 +21,25 @@ import io.camunda.zeebe.transport.TransportFactory;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.function.Predicate;
-import org.junit.rules.ExternalResource;
 
-public final class StubBrokerRule extends ExternalResource {
-  private static final int TEST_PARTITION_ID = DEPLOYMENT_PARTITION;
+public final class StubBroker implements AutoCloseable {
   private final int nodeId;
   private final InetSocketAddress socketAddress;
   private ActorScheduler scheduler;
   private MsgPackHelper msgPackHelper;
   private final ControlledActorClock clock = new ControlledActorClock();
-  private final int partitionCount;
   private StubRequestHandler channelHandler;
   private AtomixCluster cluster;
   private int currentStubPort;
   private String currentStubHost;
   private ServerTransport serverTransport;
 
-  public StubBrokerRule() {
+  public StubBroker() {
     nodeId = 0;
     socketAddress = SocketUtil.getNextAddress();
-    partitionCount = 1;
   }
 
-  @Override
-  protected void before() {
+  public StubBroker start() {
     msgPackHelper = new MsgPackHelper();
 
     final int numThreads = 2;
@@ -73,10 +66,12 @@ public final class StubBrokerRule extends ExternalResource {
 
     channelHandler = new StubRequestHandler(msgPackHelper);
     serverTransport.subscribe(1, RequestType.COMMAND, channelHandler);
+
+    return this;
   }
 
   @Override
-  protected void after() {
+  public void close() {
     try {
       serverTransport.close();
     } catch (final Exception e) {
@@ -109,10 +104,6 @@ public final class StubBrokerRule extends ExternalResource {
 
   public List<ExecuteCommandRequest> getReceivedCommandRequests() {
     return channelHandler.getReceivedCommandRequests();
-  }
-
-  public JobStubs jobs() {
-    return new JobStubs(this);
   }
 
   public InetSocketAddress getSocketAddress() {
