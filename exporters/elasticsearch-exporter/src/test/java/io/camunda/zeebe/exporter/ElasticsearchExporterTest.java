@@ -334,6 +334,32 @@ final class ElasticsearchExporterTest {
       assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
     }
 
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"1", "-1", "1ms"})
+    void shouldNotAllowInvalidMinimumAge(final String invalidMinAge) {
+      // given
+      config.retention.setMinimumAge(invalidMinAge);
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context))
+          .isInstanceOf(ExporterException.class)
+          .hasMessageContaining("must match pattern '^[0-9]+[dhms]$'")
+          .hasMessageContaining("minimumAge '" + invalidMinAge + "'");
+    }
+
+    @Test
+    void shouldNotAllowInvalidIndexSuffixDatePattern() {
+      // given
+      config.index.indexSuffixDatePattern = "l";
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context))
+          .isInstanceOf(ExporterException.class)
+          .hasMessageContaining(
+              "Expected a valid date format pattern for the given elasticsearch indexSuffixDatePattern, but 'l' was not.")
+          .hasMessageContaining("Examples are: 'yyyy-MM-dd' or 'yyyy-MM-dd_HH'");
+    }
+
     @Test
     void shouldForbidNegativeNumberOfReplicas() {
       // given
