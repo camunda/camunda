@@ -197,11 +197,12 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
               compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
               return stateTransitionBehavior.transitionToCompleted(element, context);
             })
-        .flatMap(completionContext -> {
-          compensationSubscriptionBehaviour.completeCompensationHandler(context, element);
-          stateTransitionBehavior.takeOutgoingSequenceFlows(element, completionContext);
-          return Either.right(context);
-        });
+        .flatMap(
+            completionContext -> {
+              compensationSubscriptionBehaviour.completeCompensationHandler(context, element);
+              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completionContext);
+              return Either.right(context);
+            });
   }
 
   private Either<Failure, BpmnElementContext> createExecutionListenerJob(
