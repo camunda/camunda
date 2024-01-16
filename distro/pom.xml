@@ -105,6 +105,19 @@
               <failIfNoMatch>false</failIfNoMatch>
             </configuration>
           </execution>
+          <!-- Remove -SNAPSHOT from docs version if it exists -->
+          <execution>
+            <id>regex-property3</id>
+            <goals>
+              <goal>regex-property</goal>
+            </goals>
+            <configuration>
+              <name>docs.version</name>
+              <value>${docs.version}</value>
+              <regex>-SNAPSHOT</regex>
+              <failIfNoMatch>false</failIfNoMatch>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
 
