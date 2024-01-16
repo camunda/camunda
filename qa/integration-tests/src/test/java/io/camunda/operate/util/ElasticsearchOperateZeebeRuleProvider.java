@@ -104,7 +104,11 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
 
   @Override
   public void finished(Description description) {
-    stop();
+    stopZeebe();
+    if (client != null) {
+      client.close();
+      client = null;
+    }
     if (!failed) {
       TestUtil.removeAllIndices(zeebeEsClient, prefix);
     }
@@ -155,13 +159,8 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
   }
 
   /** Stops the broker and destroys the client. Does nothing if not started yet. */
-  public void stop() {
+  public void stopZeebe() {
     testContainerUtil.stopZeebe(null);
-
-    if (client != null) {
-      client.close();
-      client = null;
-    }
   }
 
   public String getPrefix() {

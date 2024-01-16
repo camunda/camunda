@@ -25,7 +25,7 @@ public interface OperateZeebeRuleProvider {
 
   void startZeebe();
 
-  void stop();
+  void stopZeebe();
 
   String getPrefix();
 

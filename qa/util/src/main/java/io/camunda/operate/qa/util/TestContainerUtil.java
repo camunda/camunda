@@ -434,15 +434,13 @@ public class TestContainerUtil {
       logger.info("************ Starting Zeebe {} ************", version);
       long startTime = System.currentTimeMillis();
       Testcontainers.exposeHostPorts(ELS_PORT);
-      broker = new ZeebeContainer(DockerImageName.parse("camunda/zeebe:" + version))
-          .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true");
+      broker = new ZeebeContainer(DockerImageName.parse("camunda/zeebe:" + version));
       if (testContext.getNetwork() != null) {
         broker.withNetwork(testContext.getNetwork());
       }
       if (testContext.getZeebeDataFolder() != null) {
         broker.withFileSystemBind(testContext.getZeebeDataFolder().getPath(), "/usr/local/zeebe/data");
       }
-      broker.setWaitStrategy(new HostPortWaitStrategy().withStartupTimeout(Duration.ofSeconds(240L)));
       if (version.equals("SNAPSHOT")) {
         broker.withImagePullPolicy(alwaysPull());
       }
@@ -512,8 +510,6 @@ public class TestContainerUtil {
 
   public void stopZeebe(final File tmpFolder) {
     if (broker != null) {
-      broker.stop();
-      broker = null;
       try {
         if (tmpFolder != null && tmpFolder.listFiles().length > 0) {
           boolean found = false;
@@ -539,6 +535,20 @@ public class TestContainerUtil {
         }
       } catch (IOException e) {
         throw new RuntimeException(e);
+      } finally {
+        try {
+          broker.shutdownGracefully(Duration.ofSeconds(3));
+        } catch (Exception ex) {
+          logger.error("broker.shutdownGracefully failed", ex);
+          //ignore
+        }
+        try {
+          broker.stop();
+        } catch (Exception ex) {
+          logger.error("broker.stop failed", ex);
+          //ignore
+        }
+        broker = null;
       }
     }
   }

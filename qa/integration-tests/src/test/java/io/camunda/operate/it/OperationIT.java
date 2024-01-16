@@ -731,7 +731,7 @@ public class OperationIT extends OperateZeebeAbstractIT {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
 
-    zeebeContainer.stop();
+    zeebeRule.stop();
 
     //when we call CANCEL_PROCESS_INSTANCE and then RESOLVE_INCIDENT operation on one instance
     final ListViewQueryDto processInstanceQuery = createGetAllProcessInstancesQuery()

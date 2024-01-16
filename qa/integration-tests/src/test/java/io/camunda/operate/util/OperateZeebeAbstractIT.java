@@ -76,7 +76,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   @Rule
   public final OperateZeebeRule zeebeRule;
 
-  protected ZeebeContainer zeebeContainer;
+  private ZeebeContainer zeebeContainer;
 
   @Rule
   public SearchTestRule searchTestRule = new SearchTestRule();

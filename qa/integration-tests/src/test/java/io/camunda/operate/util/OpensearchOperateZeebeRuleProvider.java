@@ -83,7 +83,11 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
 
   @Override
   public void finished(Description description) {
-    stop();
+    stopZeebe();
+    if (client != null) {
+      client.close();
+      client = null;
+    }
     if (!failed) {
       TestUtil.removeAllIndices(zeebeRichOpenSearchClient.index(), zeebeRichOpenSearchClient.template(), prefix);
     }
@@ -128,13 +132,8 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   }
 
   /** Stops the broker and destroys the client. Does nothing if not started yet. */
-  public void stop() {
-    zeebeContainer.stop();
-
-    if (client != null) {
-      client.close();
-      client = null;
-    }
+  public void stopZeebe() {
+    testContainerUtil.stopZeebe(null);
   }
 
   public String getPrefix() {

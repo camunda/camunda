@@ -56,7 +56,7 @@ public class OperateZeebeRule extends TestWatcher {
 
   /** Stops the broker and destroys the client. Does nothing if not started yet. */
   public void stop() {
-    operateZeebeRuleProvider.stop();
+    operateZeebeRuleProvider.stopZeebe();
   }
 
   public String getPrefix() {
