@@ -42,7 +42,17 @@ public final class ZeebeAssertHelper {
   }
 
   public static void assertJobCreated(final String jobType) {
-    assertThat(RecordingExporter.jobRecords(JobIntent.CREATED).withType(jobType).exists()).isTrue();
+    assertThat(RecordingExporter.jobRecords(JobIntent.CREATED).withType(jobType).exists())
+        .describedAs(
+            () ->
+                String.format(
+                    "A job of type '%s' was expected to be created, but it is not present.\n"
+                        + "Jobs of the following types were created: %s",
+                    jobType,
+                    RecordingExporter.jobRecords(JobIntent.CREATED)
+                        .map(r -> r.getValue().getType())
+                        .toList()))
+        .isTrue();
   }
 
   public static void assertJobCreated(

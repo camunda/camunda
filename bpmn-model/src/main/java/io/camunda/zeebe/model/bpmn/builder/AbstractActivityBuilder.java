@@ -32,14 +32,17 @@ import java.util.function.Consumer;
  */
 public abstract class AbstractActivityBuilder<
         B extends AbstractActivityBuilder<B, E>, E extends Activity>
-    extends AbstractFlowNodeBuilder<B, E> implements ZeebeVariablesMappingBuilder<B> {
+    extends AbstractFlowNodeBuilder<B, E>
+    implements ZeebeVariablesMappingBuilder<B>, ZeebeExecutionListenersBuilder<B> {
 
   private final ZeebeVariablesMappingBuilder<B> variablesMappingBuilder;
+  private final ZeebeExecutionListenersBuilder<B> executionListenersBuilder;
 
   protected AbstractActivityBuilder(
       final BpmnModelInstance modelInstance, final E element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
     variablesMappingBuilder = new ZeebeVariableMappingBuilderImpl<>(myself);
+    executionListenersBuilder = new ZeebeExecutionListenersBuilderImpl<>(myself);
   }
 
   public BoundaryEventBuilder boundaryEvent() {
@@ -161,5 +164,25 @@ public abstract class AbstractActivityBuilder<
   @Override
   public B zeebeOutput(final String source, final String target) {
     return variablesMappingBuilder.zeebeOutput(source, target);
+  }
+
+  @Override
+  public B zeebeStartExecutionListener(final String type, final String retries) {
+    return executionListenersBuilder.zeebeStartExecutionListener(type, retries);
+  }
+
+  @Override
+  public B zeebeStartExecutionListener(final String type) {
+    return executionListenersBuilder.zeebeStartExecutionListener(type);
+  }
+
+  @Override
+  public B zeebeEndExecutionListener(final String type, final String retries) {
+    return executionListenersBuilder.zeebeEndExecutionListener(type, retries);
+  }
+
+  @Override
+  public B zeebeEndExecutionListener(final String type) {
+    return executionListenersBuilder.zeebeEndExecutionListener(type);
   }
 }

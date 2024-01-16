@@ -9,6 +9,7 @@ package io.camunda.zeebe.test.util;
 
 import io.camunda.zeebe.test.util.record.RecordLogger;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
@@ -38,6 +39,21 @@ public final class BrokerClassRuleHelper extends TestWatcher {
 
   public String getJobType() {
     return "job-" + currentTestMethod;
+  }
+
+  public String getStartExecutionListenerType() {
+    return "start-" + getExecutionListenerType();
+  }
+
+  public String getEndExecutionListenerType() {
+    return "end-" + getExecutionListenerType();
+  }
+
+  private String getExecutionListenerType() {
+    return "el-"
+        .concat(currentTestMethod)
+        .concat("-")
+        .concat(RandomStringUtils.randomAlphanumeric(3));
   }
 
   public String getBpmnProcessId() {
