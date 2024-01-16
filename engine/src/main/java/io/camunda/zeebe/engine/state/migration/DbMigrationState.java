@@ -119,6 +119,9 @@ public class DbMigrationState implements MutableMigrationState {
   private final DbProcessMessageSubscriptionMigrationState processMessageSubscriptionMigrationState;
   private final DbJobMigrationState jobMigrationState;
   private final DbSignalSubscriptionMigrationState signalSubscriptionMigrationState;
+  private final ColumnFamily<DbString, DbString> migrationsState;
+  private final DbString migratedByVersionKey = new DbString();
+  private final DbString migratedByVersionValue = new DbString();
 
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -265,6 +268,14 @@ public class DbMigrationState implements MutableMigrationState {
 
     signalSubscriptionMigrationState =
         new DbSignalSubscriptionMigrationState(zeebeDb, transactionContext);
+
+    migratedByVersionKey.wrapString("migrated-by-version");
+    migrationsState =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.MIGRATIONS_STATE,
+            transactionContext,
+            migratedByVersionKey,
+            migratedByVersionValue);
   }
 
   @Override
@@ -456,6 +467,12 @@ public class DbMigrationState implements MutableMigrationState {
   @Override
   public void migrateSignalSubscriptionStateForMultiTenancy() {
     signalSubscriptionMigrationState.migrateSignalSubscriptionStateForMultiTenancy();
+  }
+
+  @Override
+  public void setMigratedByVersion(final String version) {
+    migratedByVersionValue.wrapString(version);
+    migrationsState.upsert(migratedByVersionKey, migratedByVersionValue);
   }
 
   @Override
