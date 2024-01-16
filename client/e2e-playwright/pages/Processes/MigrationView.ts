@@ -44,6 +44,11 @@ export class MigrationView {
     await this.page.getByRole('option', {name: option}).click();
   }
 
+  async selectTargetVersion(option: string) {
+    await this.targetVersionDropdown.click();
+    await this.page.getByRole('option', {name: option}).click();
+  }
+
   mapFlowNode({
     sourceFlowNodeName,
     targetFlowNodeName,

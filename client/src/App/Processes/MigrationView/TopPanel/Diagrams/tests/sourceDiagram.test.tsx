@@ -6,7 +6,6 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {useEffect} from 'react';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {
   groupedProcessesMock,
@@ -18,39 +17,7 @@ import {SourceDiagram} from '../SourceDiagram';
 import {processXmlStore} from 'modules/stores/processXml/processXml.migration.source';
 import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
-import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-
-type Props = {
-  children?: React.ReactNode;
-};
-
-const Wrapper = ({children}: Props) => {
-  useEffect(() => {
-    return () => {
-      processesStore.reset();
-      processInstanceMigrationStore.reset();
-      processStatisticsStore.reset();
-    };
-  });
-
-  return (
-    <>
-      {children}{' '}
-      <button
-        onClick={() => processInstanceMigrationStore.setCurrentStep('summary')}
-      >
-        Summary
-      </button>
-      <button
-        onClick={() =>
-          processInstanceMigrationStore.setCurrentStep('elementMapping')
-        }
-      >
-        Element Mapping
-      </button>
-    </>
-  );
-};
+import {Wrapper} from './mocks';
 
 describe('Source Diagram', () => {
   it('should render process name and version', async () => {

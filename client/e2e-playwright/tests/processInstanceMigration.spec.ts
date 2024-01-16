@@ -49,6 +49,7 @@ test.describe('Process Instance Migration', () => {
     commonPage,
   }) => {
     const {bpmnProcessId, version} = initialData;
+    const targetVersion = '2';
 
     await processesPage.selectProcess(bpmnProcessId);
     await processesPage.selectVersion(version.toString());
@@ -69,6 +70,7 @@ test.describe('Process Instance Migration', () => {
     await processesPage.migrationModal.confirmButton.click();
 
     await migrationView.selectTargetProcess('orderProcessMigration');
+    await migrationView.selectTargetVersion(targetVersion);
 
     await migrationView.mapFlowNode({
       sourceFlowNodeName: 'Check payment',
@@ -78,9 +80,7 @@ test.describe('Process Instance Migration', () => {
     await migrationView.nextButton.click();
 
     await expect(migrationView.summaryNotification).toContainText(
-      `You are about to migrate 6 process instances from the process definition: ${bpmnProcessId} - version ${version} to the process definition: ${bpmnProcessId} - version ${
-        version + 1
-      }`,
+      `You are about to migrate 6 process instances from the process definition: ${bpmnProcessId} - version ${version} to the process definition: ${bpmnProcessId} - version ${targetVersion}`,
     );
 
     await migrationView.confirmButton.click();
@@ -102,7 +102,7 @@ test.describe('Process Instance Migration', () => {
 
     await expect(processesPage.processNameFilter).toHaveValue(bpmnProcessId);
     expect(await processesPage.processVersionFilter.innerText()).toBe(
-      (version + 1).toString(),
+      targetVersion.toString(),
     );
 
     await migrateOperationEntry
@@ -116,7 +116,7 @@ test.describe('Process Instance Migration', () => {
     // expect 6 process instances to be migrated to target version
     await expect(
       processesPage.processInstancesTable.getByRole('cell', {
-        name: (version + 1).toString(),
+        name: targetVersion.toString(),
         exact: true,
       }),
     ).toHaveCount(6);

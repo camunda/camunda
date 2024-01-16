@@ -14,6 +14,9 @@ const setup = async () => {
   await deployProcess([
     'ProcessInstanceMigration/orderProcessMigration_v_2.bpmn',
   ]);
+  await deployProcess([
+    'ProcessInstanceMigration/orderProcessMigration_v_3.bpmn',
+  ]);
 
   if (deployProcessResponse.processes[0] === undefined) {
     throw new Error('Error deploying process');

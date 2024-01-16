@@ -10,7 +10,6 @@ import {
   screen,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {useEffect} from 'react';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {
   groupedProcessesMock,
@@ -22,52 +21,9 @@ import {processesStore} from 'modules/stores/processes/processes.migration';
 import {TargetDiagram} from '../TargetDiagram';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
-import {processXmlStore} from 'modules/stores/processXml/processXml.migration.target';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
-
-type Props = {
-  children?: React.ReactNode;
-};
-
-const Wrapper = ({children}: Props) => {
-  useEffect(() => {
-    return () => {
-      processesStore.reset();
-      processInstanceMigrationStore.reset();
-      processXmlStore.reset();
-      processStatisticsStore.reset();
-    };
-  });
-
-  return (
-    <>
-      {children}
-      <button
-        onClick={() => processInstanceMigrationStore.setCurrentStep('summary')}
-      >
-        Summary
-      </button>
-      <button
-        onClick={() =>
-          processInstanceMigrationStore.setCurrentStep('elementMapping')
-        }
-      >
-        Element Mapping
-      </button>
-      <button
-        onClick={() => {
-          processInstanceMigrationStore.updateFlowNodeMapping({
-            sourceId: 'ServiceTask_0kt6c5i',
-            targetId: 'ServiceTask_0kt6c5i',
-          });
-        }}
-      >
-        map elements
-      </button>
-    </>
-  );
-};
+import {Wrapper} from './mocks';
 
 describe('Target Diagram', () => {
   it('should display initial state in the diagram header and diagram panel', async () => {
