@@ -137,9 +137,6 @@ public enum ZbColumnFamilies implements EnumValue {
 
   PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY(55),
 
-  // This was introduces in 8.3 and backported to earlier versions. As this turns out to not be safe
-  // to do we have removed the usage of this CF. We must keep it to remain backwards compatible.
-  @Deprecated
   MIGRATIONS_STATE(56),
 
   PROCESS_VERSION(57),
