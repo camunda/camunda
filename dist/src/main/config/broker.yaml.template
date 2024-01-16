@@ -722,6 +722,9 @@
         #     prefix: zeebe-record
         #     createTemplate: true
         #
+        #     # Pattern based on https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/format/DateTimeFormatter.html
+        #     indexSuffixDatePattern = "yyyy-MM-dd"
+        #
         #     numberOfShards: 3
         #     numberOfReplicas: 0
         #

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -47,6 +48,37 @@ final class RecordIndexRouterTest {
     // then
     assertThat(index)
         .isEqualTo("foo-bar_variable_" + VersionUtil.getVersionLowerCase() + "_2022-04-01");
+  }
+
+  @Test
+  void shouldReturnIndexWithHourSuffixForRecord() {
+    // given
+    config.prefix = "foo-bar";
+    config.indexSuffixDatePattern = "yyyy-MM-dd_HH";
+    final var router = new RecordIndexRouter(config);
+    final var timestamp = Instant.parse("2022-04-01T13:00:00Z");
+    final var valueType = ValueType.VARIABLE;
+    final var record =
+        recordFactory.generateRecord(
+            b -> b.withValueType(valueType).withTimestamp(timestamp.toEpochMilli()));
+
+    // when
+    final var index = router.indexFor(record);
+
+    // then
+    assertThat(index)
+        .isEqualTo("foo-bar_variable_" + VersionUtil.getVersionLowerCase() + "_2022-04-01_13");
+  }
+
+  @Test
+  void shouldFailOnInvalidPattern() {
+    // given
+    config.prefix = "foo-bar";
+    config.indexSuffixDatePattern = "yyyyy-21-d~zxqalkd_HH";
+
+    assertThatThrownBy(() -> new RecordIndexRouter(config))
+        .hasMessageContaining("Unknown pattern letter: l")
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test

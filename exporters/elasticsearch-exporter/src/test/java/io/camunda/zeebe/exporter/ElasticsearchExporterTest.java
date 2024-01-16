@@ -348,6 +348,19 @@ final class ElasticsearchExporterTest {
     }
 
     @Test
+    void shouldNotAllowInvalidIndexSuffixDatePattern() {
+      // given
+      config.index.indexSuffixDatePattern = "l";
+
+      // when - then
+      assertThatCode(() -> exporter.configure(context))
+          .isInstanceOf(ExporterException.class)
+          .hasMessageContaining(
+              "Expected a valid date format pattern for the given elasticsearch indexSuffixDatePattern, but 'l' was not.")
+          .hasMessageContaining("Examples are: 'yyyy-MM-dd' or 'yyyy-MM-dd_HH'");
+    }
+
+    @Test
     void shouldForbidNegativeNumberOfReplicas() {
       // given
       config.index.setNumberOfReplicas(-1);
