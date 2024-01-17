@@ -20,6 +20,8 @@ import io.camunda.zeebe.exporter.operate.OperateElasticsearchBulkRequest;
 import io.camunda.zeebe.exporter.operate.schema.templates.EventTemplate;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import java.time.Instant;
 import java.util.HashMap;
@@ -80,7 +82,15 @@ public class EventFromJobHandler implements ExportHandler<EventEntity, JobRecord
         EventSourceType.fromZeebeValueType(
             record.getValueType() == null ? null : record.getValueType().name()));
     eventEntity.setDateTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
-    eventEntity.setEventType(EventType.fromZeebeIntent(record.getIntent().name()));
+
+    final Intent intent = record.getIntent();
+
+    if (intent == JobIntent.YIELDED) {
+      // hack: manually handle this case so that we avoid error logging EventType#fromZeebeIntent
+      eventEntity.setEventType(EventType.UNKNOWN);
+    } else {
+      eventEntity.setEventType(EventType.fromZeebeIntent(record.getIntent().name()));
+    }
 
     final long processDefinitionKey = recordValue.getProcessDefinitionKey();
     if (processDefinitionKey > 0) {
