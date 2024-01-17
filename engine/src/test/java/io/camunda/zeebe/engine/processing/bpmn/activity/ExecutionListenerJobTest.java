@@ -365,6 +365,46 @@ public class ExecutionListenerJobTest {
         "\"a_updated+c\"");
   }
 
+  @Test
+  public void shouldInvokeExecutionListenerOnProcess() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlClasspathResource("/processes/execution-listeners-process.bpmn")
+        .deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_start_type_1").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_start_type_2").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_start_type_3").complete();
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_type").complete();
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_end_type_1").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_end_type_2").complete();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
   void assertVariable(
       final long processInstanceKey,
       final VariableIntent intent,

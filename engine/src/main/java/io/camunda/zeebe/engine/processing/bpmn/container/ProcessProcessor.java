@@ -58,26 +58,13 @@ public final class ProcessProcessor
   @Override
   public void onActivate(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
-    final var activatedContext =
-        stateTransitionBehavior.transitionToActivated(context, element.getEventType());
-    activateStartEvent(element, activatedContext);
+    // nothing to do
   }
 
   @Override
   public void onComplete(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
-
-    eventSubscriptionBehavior.unsubscribeFromEvents(context);
-    compensationSubscriptionBehaviour.deleteNotTriggeredSubscriptions(context);
-
-    // we need to send the result before we transition to completed, since the
-    // event applier will delete the element instance
-    processResultSenderBehavior.sendResult(context);
-
-    transitionTo(
-        element,
-        context,
-        completing -> stateTransitionBehavior.transitionToCompleted(element, completing));
+    // nothing to do :(
   }
 
   @Override
@@ -99,6 +86,30 @@ public final class ProcessProcessor
                   stateTransitionBehavior.transitionToTerminated(
                       terminating, element.getEventType())));
     }
+  }
+
+  @Override
+  public void completeActivating(
+      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+    final var activatedContext =
+        stateTransitionBehavior.transitionToActivated(context, element.getEventType());
+    activateStartEvent(element, activatedContext);
+  }
+
+  @Override
+  public void completeCompleting(
+      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+    eventSubscriptionBehavior.unsubscribeFromEvents(context);
+    compensationSubscriptionBehaviour.deleteNotTriggeredSubscriptions(context);
+
+    // we need to send the result before we transition to completed, since the
+    // event applier will delete the element instance
+    processResultSenderBehavior.sendResult(context);
+
+    transitionTo(
+        element,
+        context,
+        completing -> stateTransitionBehavior.transitionToCompleted(element, completing));
   }
 
   private void activateStartEvent(

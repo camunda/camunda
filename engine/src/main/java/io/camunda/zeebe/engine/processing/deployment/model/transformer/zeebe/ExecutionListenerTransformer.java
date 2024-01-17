@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
-import io.camunda.zeebe.model.bpmn.instance.FlowNode;
+import io.camunda.zeebe.model.bpmn.instance.BaseElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
@@ -27,7 +27,7 @@ public final class ExecutionListenerTransformer {
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
   public void transform(
-      final FlowNode element,
+      final BaseElement element,
       final ExecutableFlowNode executableFlowNode,
       final ZeebeExecutionListeners executionListeners,
       final ExpressionLanguage expressionLanguage) {
@@ -39,7 +39,7 @@ public final class ExecutionListenerTransformer {
   }
 
   private List<ZeebeExecutionListener> filterAndLogInvalidListeners(
-      final FlowNode element,
+      final BaseElement element,
       final Collection<ZeebeExecutionListener> listeners,
       final ExecutableFlowNode executableFlowNode) {
     final var validListeners =
