@@ -173,6 +173,7 @@ public class OperateElasticsearchExporterIT {
 
     // when
     exporter.export(record);
+    exporter.flushSync();
 
     // then
     if (valueType.equals(ValueType.DECISION_EVALUATION)) {

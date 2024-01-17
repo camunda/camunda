@@ -29,7 +29,7 @@ public class OperateElasticsearchExporterConfiguration {
    */
   public int treePathCacheSize = 1_000;
 
-  public int numConcurrentRequests = 3;
+  public int degreeOfConcurrency = 2;
 
   private final AuthenticationConfiguration authentication = new AuthenticationConfiguration();
   private final BulkConfiguration bulk = new BulkConfiguration();
@@ -82,12 +82,12 @@ public class OperateElasticsearchExporterConfiguration {
     return this;
   }
 
-  public int getNumConcurrentRequests() {
-    return numConcurrentRequests;
+  public int getDegreeOfConcurrency() {
+    return degreeOfConcurrency;
   }
 
-  public void setNumConcurrentRequests(int numConcurrentRequests) {
-    this.numConcurrentRequests = numConcurrentRequests;
+  public void setDegreeOfConcurrency(int degreeOfConcurrency) {
+    this.degreeOfConcurrency = degreeOfConcurrency;
   }
 
   public static class AuthenticationConfiguration {

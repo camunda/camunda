@@ -132,7 +132,7 @@ public class OperateElasticsearchExporter implements Exporter {
             },
             e -> new ElasticsearchExporterException("Could not send bulk request", e),
             e -> LOGGER.warn("Elasticsearch bulk request failed", e),
-            configuration.getNumConcurrentRequests());
+            configuration.getDegreeOfConcurrency());
   }
 
   /*
@@ -150,7 +150,7 @@ public class OperateElasticsearchExporter implements Exporter {
       metrics = new ElasticsearchMetrics(record.getPartitionId());
     }
 
-    requestManager.resolveResponses();
+    requestManager.eventLoop();
 
     writer.addRecord(record);
 
@@ -189,6 +189,11 @@ public class OperateElasticsearchExporter implements Exporter {
    */
   public void flush() {
 
+    if (!writer.hasAtLeastEntities(1)) {
+      // avoid empty requests
+      return;
+    }
+
     final OperateElasticsearchBulkRequest request = new OperateElasticsearchBulkRequest();
 
     try (final Histogram.Timer ignored = metrics.measureFlushDuration()) {
@@ -203,7 +208,7 @@ public class OperateElasticsearchExporter implements Exporter {
   /** for testing */
   public void flushSync() {
     flush();
-    requestManager.resolveResponsesBlocking(20);
+    requestManager.eventLoop(20);
   }
 
   private void sendRequest(OperateElasticsearchBulkRequest request, long positionToAcknowledge) {
@@ -285,7 +290,7 @@ public class OperateElasticsearchExporter implements Exporter {
     // use single thread for rest client
     builder.setDefaultIOReactorConfig(
         IOReactorConfig.custom()
-            .setIoThreadCount(configuration.getNumConcurrentRequests())
+            .setIoThreadCount(configuration.getDegreeOfConcurrency())
             .setConnectTimeout(5000)
             .setSoTimeout(5000)
             .build());
