@@ -343,11 +343,11 @@ describe('Processes', () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     const mockProcess = createMockProcess('process-0');
     nodeMockServer.use(
-      rest.get('/v1/internal/processes', (_, res, ctx) => {
-        return res(ctx.json([mockProcess]));
+      http.get('/v1/internal/processes', () => {
+        return HttpResponse.json([mockProcess]);
       }),
-      rest.get('/v1/forms/:bpmnProcessId', (_, res, ctx) => {
-        return res(ctx.json(formMocks.form));
+      http.get('/v1/forms/:bpmnProcessId', () => {
+        return HttpResponse.json(formMocks.form);
       }),
     );
 
@@ -376,8 +376,8 @@ describe('Processes', () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     const wrongBpmnProcessId = 'wrong-bpmn-process-id';
     nodeMockServer.use(
-      rest.get('/v1/internal/processes', (_, res, ctx) => {
-        return res(ctx.json([createMockProcess('process-0')]));
+      http.get('/v1/internal/processes', () => {
+        return HttpResponse.json([createMockProcess('process-0')]);
       }),
     );
 
