@@ -8,6 +8,7 @@
 package io.camunda.zeebe.exporter.operate;
 
 import io.camunda.zeebe.exporter.ElasticsearchExporterException;
+import io.prometheus.client.Histogram.Timer;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.LinkedList;
@@ -35,6 +36,7 @@ public class RequestManager {
   private Consumer<Exception> errorHandler;
   private Function<Response, Exception> errorMapper;
   private Function<Exception, Exception> failureMapper;
+  private OperateElasticsearchMetrics metrics;
 
   private ExecutorService jsonConverterPool;
 
@@ -49,6 +51,10 @@ public class RequestManager {
     this.failureMapper = failureMapper;
     this.errorHandler = errorHandler;
     this.jsonConverterPool = Executors.newFixedThreadPool(numSerializationThreads);
+  }
+
+  public void setMetrics(OperateElasticsearchMetrics metrics) {
+    this.metrics = metrics;
   }
 
   public void close() {
@@ -121,6 +127,7 @@ public class RequestManager {
         }
 
         preparingRequests.remove();
+        metrics.recordJsonProcessingQueueSize(preparingRequests.size());
 
         sendInflightRequest(nextRequest);
       }
@@ -136,11 +143,14 @@ public class RequestManager {
 
   private void submitInflightRequest(InflightRequest inflightRequest) {
 
-    jsonConverterPool.submit(new JsonConverter(inflightRequest));
+    jsonConverterPool.submit(new JsonConverter(inflightRequest, metrics));
     preparingRequests.add(inflightRequest);
+    metrics.recordJsonProcessingQueueSize(preparingRequests.size());
   }
 
   private void sendInflightRequest(InflightRequest inflightRequest) {
+
+    final Timer requestTimer = metrics.measureRequestDuration();
 
     esRestClient.performRequestAsync(
         inflightRequest.getRequest(),
@@ -150,6 +160,8 @@ public class RequestManager {
           // => can lead to more than x concurrent requests
           @Override
           public void onSuccess(Response response) {
+            requestTimer.close();
+
             final CompletableFuture<Response> responseFuture = inflightRequest.getResponseFuture();
 
             final Exception mappedError = errorMapper.apply(response);
@@ -163,6 +175,8 @@ public class RequestManager {
 
           @Override
           public void onFailure(Exception exception) {
+            requestTimer.close();
+
             final CompletableFuture<Response> responseFuture = inflightRequest.getResponseFuture();
 
             if (responseFuture.isDone()) {
@@ -179,23 +193,28 @@ public class RequestManager {
   private static class JsonConverter implements Runnable {
 
     private InflightRequest request;
+    private OperateElasticsearchMetrics metrics;
 
-    public JsonConverter(InflightRequest request) {
+    public JsonConverter(InflightRequest request, OperateElasticsearchMetrics metrics) {
       this.request = request;
+      this.metrics = metrics;
     }
 
     @Override
     public void run() {
       final HttpEntity requestEntity = request.getRequest().getEntity();
 
-      // TODO: do we want to guess a size here? or reuse buffers?
-      final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-      try {
-        requestEntity.writeTo(outStream);
-      } catch (IOException e) {
-        request.setConversionError(e);
-        request.setConverted(true);
-        return;
+      final ByteArrayOutputStream outStream;
+      try (Timer timer = metrics.measureSerializationDuration()) {
+        // TODO: do we want to guess a size here? or reuse buffers?
+        outStream = new ByteArrayOutputStream();
+        try {
+          requestEntity.writeTo(outStream);
+        } catch (IOException e) {
+          request.setConversionError(e);
+          request.setConverted(true);
+          return;
+        }
       }
 
       // TODO: not the cleanest solution to replace the entity
@@ -204,6 +223,8 @@ public class RequestManager {
       if (byteArray.length == 0) {
         throw new RuntimeException("request body is empty");
       }
+
+      metrics.recordBulkSize(byteArray.length);
 
       final ByteArrayEntity serializedBody = new ByteArrayEntity(byteArray);
       serializedBody.setContentType(requestEntity.getContentType());

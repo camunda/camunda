@@ -83,7 +83,7 @@ public class OperateElasticsearchExporter implements Exporter {
   private long lastExportedPosition = -1;
   private OperateElasticsearchManager schemaManager;
   private ExportBatchWriter writer;
-  private ElasticsearchMetrics metrics;
+  private OperateElasticsearchMetrics metrics;
 
   @Override
   public void configure(Context context) throws Exception {
@@ -147,7 +147,8 @@ public class OperateElasticsearchExporter implements Exporter {
   public void export(Record<?> record) {
     if (metrics == null) {
       // we only know the partition id here
-      metrics = new ElasticsearchMetrics(record.getPartitionId());
+      metrics = new OperateElasticsearchMetrics(record.getPartitionId());
+      requestManager.setMetrics(metrics);
     }
 
     requestManager.eventLoop();
@@ -196,13 +197,12 @@ public class OperateElasticsearchExporter implements Exporter {
 
     final OperateElasticsearchBulkRequest request = new OperateElasticsearchBulkRequest();
 
-    try (final Histogram.Timer ignored = metrics.measureFlushDuration()) {
-      writer.flush(request);
+    metrics.countCacheFlush();
+    writer.flush(request);
 
-      // TODO: restore request size metric
-      //      metrics.recordBulkMemorySize(request.sizeInBytes());
-      sendRequest(request, lastExportedPosition);
-    }
+    // TODO: restore request size metric
+    //      metrics.recordBulkMemorySize(request.sizeInBytes());
+    sendRequest(request, lastExportedPosition);
   }
 
   /** for testing */
