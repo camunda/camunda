@@ -7,21 +7,20 @@
  */
 package io.camunda.zeebe.it.backup;
 
-import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
-import io.camunda.zeebe.backup.s3.S3BackupStore;
+import com.azure.storage.blob.BlobServiceClient;
+import io.camunda.zeebe.backup.azure.AzureBackupConfig;
+import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.qa.util.testcontainers.MinioContainer;
+import io.camunda.zeebe.qa.util.testcontainers.AzuriteContainer;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
-import java.time.Duration;
 import java.util.Map;
 import org.agrona.CloseHelper;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -41,17 +40,16 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  */
 @Testcontainers
 @ZeebeIntegration
-final class S3BackupAcceptanceIT implements BackupAcceptance {
-  private final String bucketName = RandomStringUtils.randomAlphabetic(10).toLowerCase();
-
-  @Container
-  private final MinioContainer minio = new MinioContainer().withDomain("minio.local", bucketName);
+final class AzureBackupAcceptanceIT implements BackupAcceptance {
+  @Container private static final AzuriteContainer AZURITE_CONTAINER = new AzuriteContainer();
+  private static final String CONTAINER_NAME = RandomStringUtils.randomAlphabetic(10).toLowerCase();
 
   @RegisterExtension
   @SuppressWarnings("unused")
-  final ContainerLogsDumper logsWatcher = new ContainerLogsDumper(() -> Map.of("minio", minio));
+  final ContainerLogsDumper logsWatcher =
+      new ContainerLogsDumper(() -> Map.of("azurite", AZURITE_CONTAINER));
 
-  // cannot auto start, as we need minio to be started before we can configure the brokers
+  // cannot auto start, as we need azurite to be started before we can configure the brokers
   @TestZeebe(autoStart = false)
   private final TestCluster cluster =
       TestCluster.builder()
@@ -63,32 +61,20 @@ final class S3BackupAcceptanceIT implements BackupAcceptance {
           .withNodeConfig(this::configureNode)
           .build();
 
-  private S3BackupStore store;
+  private AzureBackupStore store;
 
   @BeforeEach
   void beforeEach() {
-    final var config =
-        new Builder()
-            .withBucketName(bucketName)
-            .withEndpoint(minio.externalEndpoint())
-            .withRegion(minio.region())
-            .withCredentials(minio.accessKey(), minio.secretKey())
-            .withApiCallTimeout(Duration.ofSeconds(25))
-            .forcePathStyleAccess(true)
+    final AzureBackupConfig config =
+        new AzureBackupConfig.Builder()
+            .withConnectionString(AZURITE_CONTAINER.getConnectString())
+            .withContainerName(CONTAINER_NAME)
             .build();
-    store = new S3BackupStore(config);
+    store = new AzureBackupStore(config);
+    final BlobServiceClient blobServiceClient = AzureBackupStore.buildClient(config);
+    blobServiceClient.createBlobContainerIfNotExists(CONTAINER_NAME);
 
-    try (final var client = S3BackupStore.buildClient(config)) {
-      // it's possible to query to fast and get a 503 from the server here, so simply retry after
-      Awaitility.await("unil bucket is created")
-          .untilAsserted(
-              () ->
-                  client
-                      .createBucket(builder -> builder.bucket(config.bucketName()).build())
-                      .join());
-    }
-
-    // we have to configure the cluster here, after minio is started, as otherwise we won't have
+    // we have to configure the cluster here, after azurite is started, as otherwise we won't have
     // access to the exposed port
     cluster.brokers().values().forEach(this::configureBroker);
     cluster.start().awaitCompleteTopology();
@@ -108,15 +94,11 @@ final class S3BackupAcceptanceIT implements BackupAcceptance {
     broker.withBrokerConfig(
         cfg -> {
           final var backup = cfg.getData().getBackup();
-          final var s3 = backup.getS3();
+          final var azure = backup.getAzure();
 
-          backup.setStore(BackupStoreType.S3);
-          s3.setBucketName(bucketName);
-          s3.setEndpoint(minio.externalEndpoint());
-          s3.setRegion(minio.region());
-          s3.setAccessKey(minio.accessKey());
-          s3.setSecretKey(minio.secretKey());
-          s3.setForcePathStyleAccess(true);
+          backup.setStore(BackupStoreType.AZURE);
+          azure.setBasePath(CONTAINER_NAME);
+          azure.setConnectionString(AZURITE_CONTAINER.getConnectString());
         });
   }
 
