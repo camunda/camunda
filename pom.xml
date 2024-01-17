@@ -77,7 +77,7 @@
     <!-- Auth0 Dependencies -->
     <!-- If any of the following version changes, -->
     <!-- please check if they are compatible with "mvc-auth-commons" -->
-    <version.auth0>1.44.2</version.auth0>
+    <version.auth0>1.45.1</version.auth0>
     <version.auth0.commons>1.11.0</version.auth0.commons>
     <version.auth0.jwt>4.4.0</version.auth0.jwt>
     <version.jakarta.servlet>6.0.0</version.jakarta.servlet>
