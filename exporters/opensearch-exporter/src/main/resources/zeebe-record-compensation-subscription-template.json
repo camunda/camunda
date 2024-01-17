@@ -43,6 +43,9 @@
             "compensationHandlerId": {
               "type": "keyword"
             },
+            "subprocessSubscription": {
+              "type": "boolean"
+            },
             "variables": {
               "enabled": false
             }
