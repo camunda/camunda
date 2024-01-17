@@ -77,8 +77,9 @@ public class DecisionDefinitionWriterOS implements DecisionDefinitionWriter {
   @Override
   public boolean markRedeployedDefinitionsAsDeleted(final List<DecisionDefinitionOptimizeDto> importedDefinitions) {
     final AtomicBoolean definitionsUpdated = new AtomicBoolean(false);
-    // We must partition this into batches to avoid the maximum ES boolQuery clause limit being reached
-    Lists.partition(importedDefinitions, 1000)
+    // We must partition this into batches to avoid the maximum OS boolQuery clause limit(1024) being reached
+    // OS counts the clauses in a different way to ES: 300 is roughly equivalent to 1000 in ES
+    Lists.partition(importedDefinitions, 300)
       .forEach(
         partition -> {
           final BoolQuery.Builder definitionsToDeleteQuery = new BoolQuery.Builder();

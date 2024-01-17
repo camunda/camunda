@@ -7,17 +7,31 @@ package org.camunda.optimize.service.db.os.reader;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
+import org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
+import org.camunda.optimize.service.db.reader.DefinitionReader;
 import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
+import org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
+import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.search.SourceConfig;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
+import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_ID;
+import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
 
 @AllArgsConstructor
 @Component
@@ -25,28 +39,51 @@ import java.util.Set;
 @Conditional(OpenSearchCondition.class)
 public class ProcessDefinitionReaderOS implements ProcessDefinitionReader {
 
-  @Override
-  public List<ProcessDefinitionOptimizeDto> getAllProcessDefinitions() {
-    //todo will be handled in the OPT-7230
-    return new ArrayList<>();
-  }
+  private final DefinitionReaderOS definitionReader;
+  private final OptimizeOpenSearchClient osClient;
 
   @Override
   public Optional<ProcessDefinitionOptimizeDto> getProcessDefinition(final String definitionId) {
-    //todo will be handled in the OPT-7230
-    return Optional.empty();
+    final BoolQuery query = new BoolQuery.Builder()
+      .must(QueryDSL.matchAll())
+      .must(QueryDSL.term(PROCESS_DEFINITION_ID, definitionId))
+      .build();
+    return definitionReader.getDefinitions(DefinitionType.PROCESS, query, true)
+      .stream()
+      .findFirst()
+      .map(ProcessDefinitionOptimizeDto.class::cast);
   }
 
   @Override
   public Set<String> getAllNonOnboardedProcessDefinitionKeys() {
-    //todo will be handled in the OPT-7230
-    return new HashSet<>();
+    final String defKeyAgg = "keyAgg";
+    Query query = new BoolQuery.Builder()
+      .must(QueryDSL.term(ProcessDefinitionIndex.ONBOARDED, false))
+      .must(QueryDSL.term(DEFINITION_DELETED, false))
+      .should(QueryDSL.exists(PROCESS_DEFINITION_XML))
+      .build()
+      ._toQuery();
+
+    SearchRequest.Builder searchRequest = new SearchRequest.Builder()
+      .index(PROCESS_DEFINITION_INDEX_NAME)
+      .size(MAX_RESPONSE_SIZE_LIMIT)
+      .query(query)
+      .aggregations(defKeyAgg, new TermsAggregation.Builder()
+        .field(ProcessDefinitionIndex.PROCESS_DEFINITION_KEY)
+        .build().
+        _toAggregation())
+      .source(new SourceConfig.Builder()
+                .fetch(false)
+                .build());
+
+    final String errorMessage = "Was not able to fetch non-onboarded process definition keys.";
+    SearchResponse<String> searchResponse = osClient.search(searchRequest, String.class, errorMessage);
+    return OpensearchReaderUtil.extractAggregatedResponseValues(searchResponse, defKeyAgg);
   }
 
   @Override
-  public String getLatestVersionToKey(final String key) {
-    //todo will be handled in the OPT-7230
-    return "";
+  public DefinitionReader getDefinitionReader() {
+    return definitionReader;
   }
 
 }

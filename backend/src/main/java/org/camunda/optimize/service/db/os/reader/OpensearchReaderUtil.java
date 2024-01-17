@@ -6,11 +6,13 @@
 package org.camunda.optimize.service.db.os.reader;
 
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.elasticsearch.search.SearchHit;
 import org.opensearch.client.json.JsonData;
+import org.opensearch.client.opensearch._types.aggregations.Aggregate;
+import org.opensearch.client.opensearch._types.aggregations.Buckets;
+import org.opensearch.client.opensearch._types.aggregations.MultiBucketAggregateBase;
+import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.get.GetResult;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -20,7 +22,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toSet;
 
 @Slf4j
 public class OpensearchReaderUtil {
@@ -32,6 +37,25 @@ public class OpensearchReaderUtil {
       .map(hits -> hits.stream().map(Hit::source).toList())
       .orElseThrow(() -> {
         String reason = "Was not able to parse response values from OpenSearch";
+        log.error(reason);
+        return new OptimizeRuntimeException(reason);
+      });
+  }
+
+  public static <T> Set<String> extractAggregatedResponseValues(final SearchResponse<T> searchResponse, final String aggPath) {
+    return Optional.ofNullable(searchResponse)
+      .map(response -> response.aggregations().get(aggPath))
+      .filter(Aggregate::isSterms)
+      .map(Aggregate::sterms)
+      .map(MultiBucketAggregateBase::buckets)
+      .map(Buckets::array)
+      .map(Collection::stream)
+      .map(streamBuckets -> streamBuckets.map(StringTermsBucket::key).collect(Collectors.toSet()))
+      .orElseThrow(() -> {
+        String reason = String.format(
+          "Was not able to parse aggregated sterm response values from OpenSearch with path %s",
+          aggPath
+        );
         log.error(reason);
         return new OptimizeRuntimeException(reason);
       });

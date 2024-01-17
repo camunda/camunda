@@ -9,10 +9,10 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex;
+import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.reader.DefinitionReader;
 import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
-import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.action.search.SearchRequest;
@@ -25,16 +25,15 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
+import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_ID;
 import static org.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
-import static org.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
-import static org.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -50,11 +49,6 @@ public class ProcessDefinitionReaderES implements ProcessDefinitionReader {
 
   private final DefinitionReaderES definitionReader;
   private final OptimizeElasticsearchClient esClient;
-
-  @Override
-  public List<ProcessDefinitionOptimizeDto> getAllProcessDefinitions() {
-    return definitionReader.getDefinitions(DefinitionType.PROCESS, false, false, true);
-  }
 
   @Override
   public Optional<ProcessDefinitionOptimizeDto> getProcessDefinition(final String definitionId) {
@@ -78,7 +72,8 @@ public class ProcessDefinitionReaderES implements ProcessDefinitionReader {
       .aggregation(terms(defKeyAgg).field(ProcessDefinitionIndex.PROCESS_DEFINITION_KEY))
       .fetchSource(false)
       .size(MAX_RESPONSE_SIZE_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(PROCESS_DEFINITION_INDEX_NAME).source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(PROCESS_DEFINITION_INDEX_NAME)
+      .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {
@@ -95,8 +90,8 @@ public class ProcessDefinitionReaderES implements ProcessDefinitionReader {
   }
 
   @Override
-  public String getLatestVersionToKey(String key) {
-    return definitionReader.getLatestVersionToKey(DefinitionType.PROCESS, key);
+  public DefinitionReader getDefinitionReader() {
+    return definitionReader;
   }
 
 }
