@@ -17,7 +17,24 @@ import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 import org.springframework.stereotype.Controller;
 
-/** This ArchUnit test ensures any endpoints created here is purely */
+/**
+ * This ArchUnit test ensures any endpoints created in this module is using the actuator annotations
+ * and not the normal web binding annotations. Since we have both a normal web server for the REST
+ * API and a management server, using the appropriate annotations ensure that the right endpoints
+ * will be available through the right server. This means:
+ *
+ * <ul>
+ *   <li>Endpoints with actuator annotations, like {@link
+ *       org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint} will be available
+ *       through the management server
+ *   <li>Endpoints with web stereotypes, like {@link Controller} or {@link
+ *       org.springframework.web.bind.annotation.RestController} will be available through the main
+ *       web server
+ * </ul>
+ *
+ * As all the REST endpoints will mapped in their own modules, the only endpoints in the packages
+ * below should be actuators.
+ */
 @AnalyzeClasses(
     packages = {"io.camunda.zeebe.broker", "io.camunda.zeebe.gateway", "io.camunda.zeebe.shared"},
     importOptions = {ImportOption.DoNotIncludeTests.class, ImportOption.DoNotIncludeArchives.class})
