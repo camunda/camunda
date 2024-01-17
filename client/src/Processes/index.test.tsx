@@ -27,6 +27,7 @@ import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
+import {pages} from 'modules/routing';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -38,7 +39,7 @@ const mockedNotificationsStore = notificationsStore as Mocked<
   typeof notificationsStore
 >;
 
-const getWrapper = () => {
+const getWrapper = (initialEntries = ['/']) => {
   const mockClient = getMockQueryClient();
 
   type Props = {
@@ -48,7 +49,7 @@ const getWrapper = () => {
   const Wrapper: React.FC<Props> = ({children}) => {
     return (
       <QueryClientProvider client={mockClient}>
-        <MemoryRouter initialEntries={['/']}>
+        <MemoryRouter initialEntries={initialEntries}>
           <MockThemeProvider>{children}</MockThemeProvider>
           <LocationLog />
         </MemoryRouter>
@@ -175,6 +176,9 @@ describe('Processes', () => {
       }),
     ).toBeInTheDocument();
     expect(await screen.findByText('A sample text')).toBeInTheDocument();
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      pages.interalStartProcessFromForm(mockProcess.bpmnProcessId),
+    );
   });
 
   it('should show an error toast when the query fails', async () => {
@@ -333,5 +337,66 @@ describe('Processes', () => {
     expect(
       screen.queryByRole('combobox', {name: 'Tenant'}),
     ).not.toBeInTheDocument();
+  });
+
+  it('should render the start form with the correct URL', async () => {
+    window.localStorage.setItem('hasConsentedToStartProcess', 'true');
+    const mockProcess = createMockProcess('process-0');
+    nodeMockServer.use(
+      rest.get('/v1/internal/processes', (_, res, ctx) => {
+        return res(ctx.json([mockProcess]));
+      }),
+      rest.get('/v1/forms/:bpmnProcessId', (_, res, ctx) => {
+        return res(ctx.json(formMocks.form));
+      }),
+    );
+
+    render(<Processes />, {
+      wrapper: getWrapper([
+        pages.interalStartProcessFromForm(mockProcess.bpmnProcessId),
+      ]),
+    });
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryAllByTestId('process-skeleton'),
+    );
+
+    expect(
+      screen.getByRole('dialog', {
+        name: `Start process ${mockProcess.name}`,
+      }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText('A sample text')).toBeInTheDocument();
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      pages.interalStartProcessFromForm(mockProcess.bpmnProcessId),
+    );
+  });
+
+  it('should show a toast message when opened start form process does not exist', async () => {
+    window.localStorage.setItem('hasConsentedToStartProcess', 'true');
+    const wrongBpmnProcessId = 'wrong-bpmn-process-id';
+    nodeMockServer.use(
+      rest.get('/v1/internal/processes', (_, res, ctx) => {
+        return res(ctx.json([createMockProcess('process-0')]));
+      }),
+    );
+
+    render(<Processes />, {
+      wrapper: getWrapper([
+        pages.interalStartProcessFromForm(wrongBpmnProcessId),
+      ]),
+    });
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryAllByTestId('process-skeleton'),
+    );
+
+    await waitFor(() =>
+      expect(mockedNotificationsStore.displayNotification).toBeCalledWith({
+        isDismissable: false,
+        kind: 'error',
+        title: `Process ${wrongBpmnProcessId} does not exist or has no start form`,
+      }),
+    );
   });
 });

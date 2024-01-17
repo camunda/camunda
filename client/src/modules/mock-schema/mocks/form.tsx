@@ -39,6 +39,8 @@ const form: Form = {
     ],
     type: 'default',
   }),
+  tenantId: '<default>',
+  isDeleted: false,
 };
 
 const invalidForm: Form = {
@@ -66,6 +68,8 @@ const invalidForm: Form = {
       "type": "default"
     }
   `,
+  tenantId: '<default>',
+  isDeleted: false,
 };
 
 const dynamicForm: Form = {
@@ -94,6 +98,8 @@ const dynamicForm: Form = {
     },
     schemaVersion: 4,
   }),
+  tenantId: '<default>',
+  isDeleted: false,
 };
 
 const nestedForm: Form = {
@@ -142,6 +148,8 @@ const nestedForm: Form = {
     },
     schemaVersion: 12,
   }),
+  tenantId: '<default>',
+  isDeleted: false,
 };
 
 const noInputForm: Form = {
@@ -162,6 +170,8 @@ const noInputForm: Form = {
     ],
     type: 'default',
   }),
+  tenantId: '<default>',
+  isDeleted: false,
 };
 
 export {form, invalidForm, dynamicForm, nestedForm, noInputForm};

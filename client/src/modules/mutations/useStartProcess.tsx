@@ -5,12 +5,25 @@
  * except in compliance with the proprietary license.
  */
 
-import {useMutation} from '@tanstack/react-query';
+import {useMutation, UseMutationOptions} from '@tanstack/react-query';
 import {api} from 'modules/api';
 import {request, RequestError} from 'modules/request';
 import {Process, ProcessInstance, Task, Variable} from 'modules/types';
 
-function useStartProcess() {
+function useStartProcess(
+  options: Pick<
+    UseMutationOptions<
+      ProcessInstance,
+      RequestError | Error,
+      {
+        bpmnProcessId: Process['bpmnProcessId'];
+        variables?: Variable[];
+        tenantId?: Task['tenantId'];
+      }
+    >,
+    'onSuccess'
+  > = {},
+) {
   return useMutation<
     ProcessInstance,
     RequestError | Error,
@@ -18,6 +31,7 @@ function useStartProcess() {
       tenantId?: Task['tenantId'];
     }
   >({
+    ...options,
     mutationFn: async ({bpmnProcessId, variables = [], tenantId}) => {
       const {response, error} = await request(
         api.startProcess({

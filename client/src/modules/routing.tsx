@@ -15,14 +15,23 @@ const pages = {
   taskDetails(id: string = ':id') {
     return `/${id}`;
   },
-  processes(tenantId?: string) {
+  processes(
+    options: {tenantId?: string; matchAllChilren?: boolean} = {
+      matchAllChilren: false,
+    },
+  ) {
+    const {tenantId, matchAllChilren = false} = options;
+    const baseRoute = matchAllChilren ? 'processes/*' : 'processes';
     if (tenantId !== undefined && window.clientConfig?.isMultiTenancyEnabled) {
-      return `processes?tenantId=${tenantId}`;
+      return `${baseRoute}?tenantId=${tenantId}`;
     }
 
-    return 'processes';
+    return baseRoute;
   },
   startProcessFromForm: '/new/:bpmnProcessId',
+  interalStartProcessFromForm(bpmnProcessId: string = ':bpmnProcessId') {
+    return `/processes/${bpmnProcessId}/start`;
+  },
 } as const;
 
 function useTaskDetailsParams(): {id: string} {

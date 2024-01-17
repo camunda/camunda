@@ -108,7 +108,9 @@ const Header: React.FC = observer(() => {
             key: 'processes',
             label: 'Processes',
             routeProps: {
-              to: pages.processes(getStateLocally('tenantId') ?? undefined),
+              to: pages.processes({
+                tenantId: getStateLocally('tenantId') ?? undefined,
+              }),
               onClick: () => {
                 tracking.track({
                   eventName: 'navigation',

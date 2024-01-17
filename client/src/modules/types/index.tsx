@@ -75,6 +75,8 @@ type Form = {
   schema: string;
   title: string;
   version: number | null;
+  tenantId: string;
+  isDeleted: boolean;
 };
 
 type Process = {

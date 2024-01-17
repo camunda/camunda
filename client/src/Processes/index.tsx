@@ -18,7 +18,7 @@ import {
   Dropdown,
 } from './styled';
 import debounce from 'lodash/debounce';
-import {useLocation, useNavigate, Navigate} from 'react-router-dom';
+import {useLocation, useNavigate, Navigate, useMatch} from 'react-router-dom';
 import {useEffect, useRef, useState} from 'react';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
 import EmptyMessageImage from './empty-message-image.svg';
@@ -36,6 +36,7 @@ import {IS_PROCESS_INSTANCES_ENABLED} from 'modules/featureFlags';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {CurrentUser} from 'modules/types';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
+import {pages} from 'modules/routing';
 
 function getParam(param: 'search' | 'tenantId', params: URLSearchParams) {
   return params.get(param) ?? undefined;
@@ -84,6 +85,7 @@ const Processes: React.FC = observer(() => {
   );
   const isFiltered = data?.query !== undefined && data.query !== '';
   const processes = data?.processes ?? [];
+  const match = useMatch(pages.interalStartProcessFromForm());
 
   useEffect(() => {
     if (error !== null) {
@@ -98,6 +100,33 @@ const Processes: React.FC = observer(() => {
       logger.error(error);
     }
   }, [error]);
+
+  useEffect(() => {
+    if (match === null || isInitialLoading) {
+      return;
+    }
+
+    const {bpmnProcessId = null} = match.params;
+
+    if (
+      data?.processes.find(
+        (process) => process.bpmnProcessId === bpmnProcessId,
+      ) === undefined
+    ) {
+      notificationsStore.displayNotification({
+        isDismissable: false,
+        kind: 'error',
+        title:
+          bpmnProcessId === null
+            ? 'Process does not exist or has no start form'
+            : `Process ${bpmnProcessId} does not exist or has no start form`,
+      });
+      navigate({
+        ...location,
+        pathname: `/${pages.processes()}`,
+      });
+    }
+  }, [match, data, isInitialLoading, navigate, location]);
 
   if (
     getParam('tenantId', searchParams) === undefined &&

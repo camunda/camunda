@@ -9,9 +9,9 @@ import {InlineLoadingStatus, Stack} from '@carbon/react';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
 import {notificationsStore} from 'modules/stores/notifications';
 import {newProcessInstance} from 'modules/stores/newProcessInstance';
-import {useEffect, useState} from 'react';
+import {useState} from 'react';
 import {Container, Title, Subtitle} from './styled';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate, useMatch, useLocation} from 'react-router-dom';
 import {pages} from 'modules/routing';
 import {logger} from 'modules/utils/logger';
 import {tracking} from 'modules/tracking';
@@ -69,19 +69,8 @@ const ProcessTile: React.FC<Props> = ({
   tenantId,
   ...props
 }) => {
-  const {mutateAsync: startProcess, data} = useStartProcess();
-  const [status, setStatus] = useState<LoadingStatus>('inactive');
-  const {bpmnProcessId, startEventFormId} = process;
-  const displayName = getProcessDisplayName(process);
-  const navigate = useNavigate();
-  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-
-  useEffect(() => {
-    function handleMutationSuccess() {
-      if (data === undefined) {
-        return;
-      }
-
+  const {mutateAsync: startProcess} = useStartProcess({
+    onSuccess(data) {
       tracking.track({
         eventName: 'process-started',
       });
@@ -152,10 +141,16 @@ const ProcessTile: React.FC<Props> = ({
         title: 'Process has started',
         subtitle: 'We will redirect you to the task once it is created',
       });
-    }
-
-    handleMutationSuccess();
-  }, [data, navigate]);
+    },
+  });
+  const [status, setStatus] = useState<LoadingStatus>('inactive');
+  const {bpmnProcessId, startEventFormId} = process;
+  const displayName = getProcessDisplayName(process);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const startFormModalRoute = pages.interalStartProcessFromForm(bpmnProcessId);
+  const match = useMatch(startFormModalRoute);
+  const isFormModalOpen = match !== null;
 
   return (
     <Container {...props}>
@@ -189,7 +184,10 @@ const ProcessTile: React.FC<Props> = ({
                   setStatus('error');
                 }
               } else {
-                setIsFormModalOpen(true);
+                navigate({
+                  ...location,
+                  pathname: startFormModalRoute,
+                });
               }
             },
           }}
@@ -234,7 +232,10 @@ const ProcessTile: React.FC<Props> = ({
           process={process}
           isOpen={isFormModalOpen}
           onClose={() => {
-            setIsFormModalOpen(false);
+            navigate({
+              ...location,
+              pathname: '/processes',
+            });
           }}
           onSubmit={async (variables) => {
             await startProcess({
@@ -242,7 +243,10 @@ const ProcessTile: React.FC<Props> = ({
               variables,
               tenantId,
             });
-            setIsFormModalOpen(false);
+            navigate({
+              ...location,
+              pathname: '/processes',
+            });
           }}
           isMultiTenancyEnabled={isMultiTenancyEnabled}
           tenantId={tenantId}
