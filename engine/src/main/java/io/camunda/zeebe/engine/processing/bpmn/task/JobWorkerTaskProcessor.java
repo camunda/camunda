@@ -63,7 +63,6 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   public void onActivate(final ExecutableJobWorkerTask element, final BpmnElementContext context) {
     variableMappingBehavior
         .applyInputMappings(context, element)
-        .flatMap(ignore -> handleStartExecutionListenersOrRegularJob(element, context))
         .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
   }
 
@@ -71,22 +70,6 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   public void onComplete(final ExecutableJobWorkerTask element, final BpmnElementContext context) {
     handleEndExecutionListenersOrTaskCompletion(element, context)
         .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
-  }
-
-  @Override
-  public void onStartExecutionListenerComplete(
-      final ExecutableJobWorkerTask element, final BpmnElementContext context) {
-    final String currentExecutionListenerType =
-        stateBehavior.getElementInstance(context).getExecutionListenerType();
-
-    final List<ExecutionListener> startExecutionListeners =
-        getExecutionListenersByEventType(element, ExecutionListenerEventType.START);
-    findNextExecutionListener(startExecutionListeners, currentExecutionListenerType)
-        .ifPresentOrElse(
-            el -> createExecutionListenerJob(element, context, el),
-            () ->
-                regularJobExecution(element, context)
-                    .ifLeft(failure -> incidentBehavior.createIncident(failure, context)));
   }
 
   @Override
@@ -134,6 +117,20 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
             });
   }
 
+  @Override
+  public void completeActivating(
+      final ExecutableJobWorkerTask element, final BpmnElementContext context) {
+    jobBehavior
+        .evaluateJobExpressions(element, context)
+        .flatMap(j -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> j))
+        .ifRightOrLeft(
+            jobProperties -> {
+              jobBehavior.createNewJob(context, element, jobProperties);
+              stateTransitionBehavior.transitionToActivated(context, element.getEventType());
+            },
+            failure -> incidentBehavior.createIncident(failure, context));
+  }
+
   private Optional<ExecutionListener> findNextExecutionListener(
       final List<ExecutionListener> listeners, final String currentType) {
     return listeners.stream()
@@ -147,29 +144,6 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
     return element.getExecutionListeners().stream()
         .filter(el -> eventType == el.getEventType())
         .collect(Collectors.toList());
-  }
-
-  private Either<Failure, BpmnElementContext> handleStartExecutionListenersOrRegularJob(
-      final ExecutableJobWorkerTask element, final BpmnElementContext context) {
-    final List<ExecutionListener> startExecutionListeners =
-        getExecutionListenersByEventType(element, ExecutionListenerEventType.START);
-
-    return startExecutionListeners.isEmpty()
-        ? regularJobExecution(element, context)
-        : createExecutionListenerJob(element, context, startExecutionListeners.getFirst());
-  }
-
-  private Either<Failure, BpmnElementContext> regularJobExecution(
-      final ExecutableJobWorkerTask element, final BpmnElementContext context) {
-    return jobBehavior
-        .evaluateJobExpressions(element, context)
-        .flatMap(j -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> j))
-        .map(
-            jobProperties -> {
-              jobBehavior.createNewJob(context, element, jobProperties);
-              stateTransitionBehavior.transitionToActivated(context, element.getEventType());
-              return context;
-            });
   }
 
   private Either<Failure, BpmnElementContext> handleEndExecutionListenersOrTaskCompletion(

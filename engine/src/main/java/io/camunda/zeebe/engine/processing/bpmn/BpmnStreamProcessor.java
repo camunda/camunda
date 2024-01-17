@@ -11,10 +11,13 @@ import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -25,9 +28,13 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.ExecutionListenerEventType;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
 public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessInstanceRecord> {
@@ -44,6 +51,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   private final BpmnIncidentBehavior incidentBehavior;
 
   private final BpmnStateBehavior stateBehavior;
+
+  private final BpmnJobBehavior jobBehavior;
 
   public BpmnStreamProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -64,6 +73,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             writers);
     processors = new BpmnElementProcessors(bpmnBehaviors, stateTransitionBehavior);
     stateBehavior = bpmnBehaviors.stateBehavior();
+    jobBehavior = bpmnBehaviors.jobBehavior();
   }
 
   private BpmnElementContainerProcessor<ExecutableFlowElement> getContainerProcessor(
@@ -141,7 +151,12 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         stateTransitionBehavior
             .onElementActivating(element, activatingContext)
             .ifRightOrLeft(
-                ok -> processor.onActivate(element, activatingContext),
+                ok -> {
+                  // TODO: deal with incidents
+                  processor.onActivate(element, activatingContext);
+                  // look for execution listeners
+                  afterActivating(element, processor, activatingContext);
+                },
                 failure -> incidentBehavior.createIncident(failure, activatingContext));
         break;
       case COMPLETE_ELEMENT:
@@ -150,7 +165,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         break;
       case EXECUTION_LISTENER_COMPLETE:
         switch (stateBehavior.getElementInstance(context).getState()) {
-          case ELEMENT_ACTIVATING -> processor.onStartExecutionListenerComplete(element, context);
+          case ELEMENT_ACTIVATING -> onStartExecutionListenerComplete(
+              (ExecutableFlowNode) element, processor, context);
           case ELEMENT_COMPLETING -> processor.onEndExecutionListenerComplete(element, context);
           default -> throw new UnsupportedOperationException(
               "Unexpected element state: " + context);
@@ -168,6 +184,72 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
                 "Expected the processor '%s' to handle the event but the intent '%s' is not supported",
                 processor.getClass(), intent));
     }
+  }
+
+  private void afterActivating(
+      final ExecutableFlowElement element,
+      final BpmnElementProcessor<ExecutableFlowElement> processor,
+      final BpmnElementContext context) {
+
+    if (element instanceof final ExecutableFlowNode node) {
+      final List<ExecutionListener> startExecutionListeners =
+          getExecutionListenersByEventType(node, ExecutionListenerEventType.START);
+
+      if (startExecutionListeners.isEmpty()) {
+        processor.completeActivating(element, context);
+      } else {
+        createExecutionListenerJob(node, context, startExecutionListeners.getFirst());
+        // stop the execution and wait for the job to be completed
+      }
+    }
+    // other elements, like sequence flows, do not have execution listeners
+    // assume that the element is activated already
+
+  }
+
+  private List<ExecutionListener> getExecutionListenersByEventType(
+      final ExecutableFlowNode element, final ExecutionListenerEventType eventType) {
+    return element.getExecutionListeners().stream()
+        .filter(el -> eventType == el.getEventType())
+        .collect(Collectors.toList());
+  }
+
+  private void createExecutionListenerJob(
+      final ExecutableFlowNode element,
+      final BpmnElementContext context,
+      final ExecutionListener listener) {
+    jobBehavior
+        .evaluateJobExpressions(listener.getJobWorkerProperties(), context)
+        .map(
+            elJobProperties -> {
+              jobBehavior.createNewExecutionListenerJob(
+                  context, element, elJobProperties, listener.getEventType());
+              return context;
+            });
+  }
+
+  public void onStartExecutionListenerComplete(
+      final ExecutableFlowNode element,
+      final BpmnElementProcessor<ExecutableFlowElement> processor,
+      final BpmnElementContext context) {
+
+    final String currentExecutionListenerType =
+        stateBehavior.getElementInstance(context).getExecutionListenerType();
+
+    final List<ExecutionListener> startExecutionListeners =
+        getExecutionListenersByEventType(element, ExecutionListenerEventType.START);
+    findNextExecutionListener(startExecutionListeners, currentExecutionListenerType)
+        .ifPresentOrElse(
+            el -> createExecutionListenerJob(element, context, el),
+            () -> processor.completeActivating(element, context));
+  }
+
+  private Optional<ExecutionListener> findNextExecutionListener(
+      final List<ExecutionListener> listeners, final String currentType) {
+    return listeners.stream()
+        .dropWhile(el -> !el.getJobWorkerProperties().getType().getExpression().equals(currentType))
+        .skip(1) // skip current listener
+        .findFirst();
   }
 
   private ExecutableFlowElement getElement(

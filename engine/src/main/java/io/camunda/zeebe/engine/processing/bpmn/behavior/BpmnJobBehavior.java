@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.protocol.record.value.ExecutionListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue.ActivityType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -143,7 +145,7 @@ public final class BpmnJobBehavior {
 
   public void createNewExecutionListenerJob(
       final BpmnElementContext context,
-      final ExecutableJobWorkerElement element,
+      final ExecutableFlowElement element,
       final JobProperties jobProperties,
       final ExecutionListenerEventType executionListenerEventType) {
     writeExecutionListenerJobCreatedEvent(
@@ -189,12 +191,11 @@ public final class BpmnJobBehavior {
 
   private void writeExecutionListenerJobCreatedEvent(
       final BpmnElementContext context,
-      final ExecutableJobWorkerElement jobWorkerElement,
+      final ExecutableFlowElement element,
       final JobProperties props,
       final ExecutionListenerEventType executionListenerEventType) {
 
-    final var taskHeaders = jobWorkerElement.getJobWorkerProperties().getTaskHeaders();
-    final var encodedHeaders = encodeHeaders(taskHeaders, props);
+    final var encodedHeaders = encodeHeaders(Collections.emptyMap(), props);
 
     jobRecord
         .setType(props.getType())
@@ -204,7 +205,7 @@ public final class BpmnJobBehavior {
         .setProcessDefinitionVersion(context.getProcessVersion())
         .setProcessDefinitionKey(context.getProcessDefinitionKey())
         .setProcessInstanceKey(context.getProcessInstanceKey())
-        .setElementId(jobWorkerElement.getId())
+        .setElementId(element.getId())
         .setElementInstanceKey(context.getElementInstanceKey())
         .setTenantId(context.getTenantId())
         .setActivityType(ActivityType.EXECUTION_LISTENER)

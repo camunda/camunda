@@ -74,9 +74,6 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    */
   default void onComplete(final T element, final BpmnElementContext context) {}
 
-  default void onStartExecutionListenerComplete(
-      final T element, final BpmnElementContext context) {}
-
   default void onEndExecutionListenerComplete(final T element, final BpmnElementContext context) {}
 
   /**
@@ -100,4 +97,6 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * @param context process instance-related data of the element that is executed
    */
   default void onTerminate(final T element, final BpmnElementContext context) {}
+
+  default void completeActivating(final T element, final BpmnElementContext context) {}
 }
