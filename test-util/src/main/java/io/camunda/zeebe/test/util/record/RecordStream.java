@@ -118,4 +118,9 @@ public final class RecordStream extends ExporterRecordStream<RecordValue, Record
     return new SignalSubscriptionRecordStream(
         filter(r -> r.getValueType() == ValueType.SIGNAL_SUBSCRIPTION).map(Record.class::cast));
   }
+
+  public UserTaskRecordStream userTaskRecords() {
+    return new UserTaskRecordStream(
+        filter(r -> r.getValueType() == ValueType.USER_TASK).map(Record.class::cast));
+  }
 }

@@ -369,7 +369,11 @@ public final class CancelProcessInstanceTest {
         .withElementId("task")
         .getFirst();
 
-    assertThat(RecordingExporter.userTaskRecords().withProcessInstanceKey(processInstanceKey))
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey))
         .extracting(Record::getValueType, Record::getIntent)
         .containsSubsequence(
             tuple(ValueType.USER_TASK, UserTaskIntent.CANCELING),
