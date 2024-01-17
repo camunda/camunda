@@ -44,12 +44,7 @@ public class CompensationSubscriptionStateTest {
     state.put(1L, compensation);
 
     final var storedCompensation =
-        state
-            .get(
-                compensation.getTenantId(),
-                compensation.getProcessInstanceKey(),
-                compensation.getCompensableActivityId())
-            .getRecord();
+        state.get(compensation.getTenantId(), compensation.getProcessInstanceKey(), 1L).getRecord();
 
     assertThat(storedCompensation.getTenantId()).isEqualTo(TENANT_ID);
     assertThat(storedCompensation.getProcessInstanceKey()).isEqualTo(PROCESS_INSTANCE_KEY);
@@ -88,7 +83,7 @@ public class CompensationSubscriptionStateTest {
             .get(
                 compensationToUpdate.getTenantId(),
                 compensationToUpdate.getProcessInstanceKey(),
-                compensationToUpdate.getCompensableActivityId())
+                1L)
             .getRecord();
 
     final var notUpdatedCompensation =
@@ -96,7 +91,7 @@ public class CompensationSubscriptionStateTest {
             .get(
                 compensationToNOTUpdate.getTenantId(),
                 compensationToNOTUpdate.getProcessInstanceKey(),
-                compensationToNOTUpdate.getCompensableActivityId())
+                2L)
             .getRecord();
 
     assertThat(updatedCompensation.getCompensableActivityId()).isEqualTo(COMPENSABLE_ACTIVITY_ID);
@@ -134,7 +129,7 @@ public class CompensationSubscriptionStateTest {
     final var compensation = createCompensation(PROCESS_INSTANCE_KEY);
     state.put(1L, compensation);
 
-    state.delete(TENANT_ID, PROCESS_INSTANCE_KEY, COMPENSABLE_ACTIVITY_ID);
+    state.delete(TENANT_ID, PROCESS_INSTANCE_KEY, 1L);
 
     final var compensations =
         state.findSubscriptionsByProcessInstanceKey(TENANT_ID, PROCESS_INSTANCE_KEY);
@@ -149,7 +144,7 @@ public class CompensationSubscriptionStateTest {
     state.put(1L, compensation);
     state.put(2L, compensationToRemove);
 
-    state.delete(TENANT_ID, PROCESS_INSTANCE_KEY, "anotherCompensableActivityId");
+    state.delete(TENANT_ID, PROCESS_INSTANCE_KEY, 2L);
 
     final Set<CompensationSubscription> compensations =
         state.findSubscriptionsByProcessInstanceKey(TENANT_ID, PROCESS_INSTANCE_KEY);
@@ -190,6 +185,23 @@ public class CompensationSubscriptionStateTest {
     assertThat(compensations.size()).isEqualTo(1);
     assertThat(compensations.stream().findFirst().get().getRecord().getThrowEventInstanceKey())
         .isEqualTo(THROW_EVENT_INSTANCE_KEY);
+  }
+
+  @Test
+  public void shouldFindCompensationByCompensableActivityScopeId() {
+    final var compensation = createCompensation(PROCESS_INSTANCE_KEY);
+    final var notValidCompensation = createCompensation(PROCESS_INSTANCE_KEY);
+    notValidCompensation.setCompensableActivityId("anotherCompensableActivityId");
+    notValidCompensation.setCompensableActivityScopeId("anotherCompensableActivityScopeId");
+    state.put(1L, compensation);
+    state.put(2L, notValidCompensation);
+
+    final var compensations =
+        state.findSubscriptionsByCompensableActivityScopeId(
+            TENANT_ID, PROCESS_INSTANCE_KEY, COMPENSABLE_ACTIVITY_SCOPE_ID);
+    assertThat(compensations.size()).isEqualTo(1);
+    assertThat(compensations.stream().findFirst().get().getRecord().getCompensableActivityScopeId())
+        .isEqualTo(COMPENSABLE_ACTIVITY_SCOPE_ID);
   }
 
   private CompensationSubscriptionRecord createCompensation(final long key) {
