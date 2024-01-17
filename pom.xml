@@ -38,7 +38,7 @@
     <version.log4j>2.19.0</version.log4j>
     <version.junit>5.9.3</version.junit>
     <version.jakarta.json>2.0.1</version.jakarta.json>
-    <version.micrometer>1.12.1</version.micrometer>
+    <version.micrometer>1.12.2</version.micrometer>
     <version.mockito>5.0.0</version.mockito>
     <version.byte.buddy>1.14.11</version.byte.buddy>
     <version.assertj-core>3.25.1</version.assertj-core>
@@ -57,7 +57,7 @@
     <version.node>v20.11.0</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
-    <zeebe-test-container.version>3.6.2</zeebe-test-container.version>
+    <zeebe-test-container.version>3.6.3</zeebe-test-container.version>
     <elasticsearch-test-container.version>1.19.3</elasticsearch-test-container.version>
     <opensearch-testcontainers.version>2.0.1</opensearch-testcontainers.version>
     <postgres-test-container.version>1.19.3</postgres-test-container.version>
@@ -403,7 +403,7 @@
       <dependency>
         <groupId>com.amazonaws</groupId>
         <artifactId>aws-java-sdk-sts</artifactId>
-        <version>1.12.633</version>
+        <version>1.12.638</version>
       </dependency>
 
       <dependency>
@@ -507,7 +507,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.2.3</version>
+          <version>3.2.5</version>
           <configuration>
             <forkCount>${env.LIMITS_CPU}</forkCount>
             <reuseForks>true</reuseForks>
@@ -521,7 +521,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-failsafe-plugin</artifactId>
-          <version>3.2.3</version>
+          <version>3.2.5</version>
           <configuration>
             <forkCount>${env.LIMITS_CPU}</forkCount>
             <reuseForks>true</reuseForks>
