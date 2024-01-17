@@ -13,8 +13,7 @@ import java.util.Set;
 
 public interface CompensationSubscriptionState {
 
-  CompensationSubscription get(
-      String tenantId, long processInstanceKey, String compensableActivityId);
+  CompensationSubscription get(String tenantId, long processInstanceKey, long key);
 
   Set<CompensationSubscription> findSubscriptionsByProcessInstanceKey(
       String tenantId, long processInstanceKey);
@@ -24,4 +23,10 @@ public interface CompensationSubscriptionState {
 
   Set<CompensationSubscription> findSubscriptionsByThrowEventInstanceKey(
       String tenantId, long processInstanceKey, long throwEventInstanceKey);
+
+  Set<CompensationSubscription> findSubscriptionsByCompensableActivityScopeId(
+      String tenantId, long processInstanceKey, String compensableActivityScopeId);
+
+  Set<CompensationSubscription> findSubprocessSubscriptions(
+      String tenantId, long processInstanceKey);
 }

@@ -16,5 +16,5 @@ public interface MutableCompensationSubscriptionState extends CompensationSubscr
 
   void update(final long key, CompensationSubscriptionRecord compensation);
 
-  void delete(String tenantId, long processInstanceKey, String compensableActivityId);
+  void delete(String tenantId, long processInstanceKey, long recordKey);
 }
