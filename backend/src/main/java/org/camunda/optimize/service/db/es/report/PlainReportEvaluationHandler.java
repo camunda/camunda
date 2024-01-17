@@ -8,7 +8,7 @@ package org.camunda.optimize.service.db.es.report;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.service.DefinitionService;
-import org.camunda.optimize.service.db.reader.ReportReader;
+import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.variable.ProcessVariableService;
 import org.springframework.stereotype.Component;
 
@@ -17,12 +17,12 @@ import java.util.Optional;
 @Component
 public class PlainReportEvaluationHandler extends ReportEvaluationHandler {
 
-  public PlainReportEvaluationHandler(final ReportReader reportReader,
+  public PlainReportEvaluationHandler(final ReportService reportService,
                                       final SingleReportEvaluator singleReportEvaluator,
                                       final CombinedReportEvaluator combinedReportEvaluator,
                                       final ProcessVariableService processVariableService,
                                       final DefinitionService definitionService) {
-    super(reportReader, singleReportEvaluator, combinedReportEvaluator, processVariableService, definitionService);
+    super(reportService, singleReportEvaluator, combinedReportEvaluator, processVariableService, definitionService);
   }
 
   @Override

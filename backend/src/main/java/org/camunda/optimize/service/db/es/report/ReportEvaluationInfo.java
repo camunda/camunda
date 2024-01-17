@@ -12,10 +12,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
-import org.camunda.optimize.service.db.reader.ReportReader;
+import org.camunda.optimize.service.report.ReportService;
 
-import jakarta.ws.rs.NotFoundException;
 import java.time.ZoneId;
 import java.util.Optional;
 
@@ -36,15 +36,19 @@ public class ReportEvaluationInfo {
   private boolean isJsonExport;
   private boolean isSharedReport;
 
-  public void postFetchSavedReport(final ReportReader reportReader) {
+  public void postFetchSavedReport(final ReportService reportService) {
     if (reportId != null) {
-      report = reportReader.getReport(reportId)
-        .orElseThrow(() -> new NotFoundException("Report with id [" + reportId + "] does not exist"));
+      report = reportService.getReportDefinition(reportId);
     }
   }
 
-  public Optional<PaginationDto> getPagination()
-  {
+  public void updateReportDefinitionXml(final String definitionXml) {
+    if (report.getData() instanceof ProcessReportDataDto reportData) {
+      reportData.getConfiguration().setXml(definitionXml);
+    }
+  }
+
+  public Optional<PaginationDto> getPagination() {
     return Optional.ofNullable(pagination);
   }
 

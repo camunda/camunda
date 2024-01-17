@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.rest.AuthorizationType;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.db.reader.ReportReader;
 import org.camunda.optimize.service.db.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
@@ -55,6 +56,9 @@ public class ReportServiceConflictTest {
   @Mock
   AbstractIdentityService abstractIdentityService;
 
+  @Mock
+  DefinitionService definitionService;
+
   private ReportService underTest;
 
   @BeforeEach
@@ -65,7 +69,8 @@ public class ReportServiceConflictTest {
       authorizationService,
       reportRelationService,
       collectionService,
-      abstractIdentityService
+      abstractIdentityService,
+      definitionService
     );
     when(abstractIdentityService.getUserAuthorizations(any())).thenReturn(List.of(AuthorizationType.values()));
   }

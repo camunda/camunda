@@ -7,6 +7,7 @@ package org.camunda.optimize.rest;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableMap;
+import jakarta.ws.rs.core.Response;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.Dmn;
@@ -46,13 +47,12 @@ import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
-import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
-import jakarta.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -66,6 +66,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.CONTAINS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_CONTAINS;
@@ -75,6 +77,8 @@ import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_2;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagramWithAssignees;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagramWithCandidateGroups;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
@@ -109,7 +113,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void evaluateReportById_additionalFiltersAreApplied() {
     // given
-    BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram();
+    BpmnModelInstance processModel = getSingleUserTaskDiagram();
     final String variableName = "var1";
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartInstanceForModelWithVariables(
       processModel,
@@ -292,7 +296,10 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     // when filtering for usertasks without the candidate group
     result = reportClient.evaluateMapReport(
       reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createCandidateGroupFilter(MembershipFilterOperator.NOT_IN, candidateGroupId))
+      new AdditionalProcessReportEvaluationFilterDto(createCandidateGroupFilter(
+        MembershipFilterOperator.NOT_IN,
+        candidateGroupId
+      ))
     ).getResult();
 
     // then only the usertask without the candidate group is included
@@ -354,7 +361,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void evaluateReportByIdWithAdditionalFilters_filtersCombinedWithAlreadyExistingFiltersOnReport() {
     // given a report with a running instances filter
-    BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram();
+    BpmnModelInstance processModel = getSingleUserTaskDiagram();
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartInstanceForModel(processModel);
     final String reportId = createReportForProcessUsingFilters(
       processModel,
@@ -383,7 +390,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void evaluateReportById_emptyFiltersListDoesNotImpactExistingFilters() {
     // given a report with a running instances filter
-    BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram();
+    BpmnModelInstance processModel = getSingleUserTaskDiagram();
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartInstanceForModel(processModel);
     final String reportId = createReportForProcessUsingFilters(
       processModel,
@@ -412,7 +419,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void evaluateReportByIdWithAdditionalFilters_filtersExistOnReportThatAreSameAsAdditional() {
     // given
-    BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram();
+    BpmnModelInstance processModel = getSingleUserTaskDiagram();
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartInstanceForModel(processModel);
     final String reportId = createReportForProcessUsingFilters(
       processModel,
@@ -468,7 +475,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void evaluateReportById_variableFiltersWithNameThatDoesNotExistForReportAreIgnored() {
     // given
-    BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram();
+    BpmnModelInstance processModel = getSingleUserTaskDiagram();
     final String variableName = "var1";
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartInstanceForModelWithVariables(
       processModel,
@@ -537,7 +544,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void evaluateReportById_variableFiltersWithTypeThatDoesNotExistForReportAreIgnored() {
     // given deployed instance with long type variable
-    BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram();
+    BpmnModelInstance processModel = getSingleUserTaskDiagram();
     final String variableName = "var1";
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartInstanceForModelWithVariables(
       processModel,
@@ -747,7 +754,8 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     String id;
     switch (reportType) {
       case PROCESS:
-        ProcessReportDataDto processReportDataDto = createProcessReportData(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE);
+        ProcessReportDataDto processReportDataDto =
+          createProcessReportData(ProcessReportDataType.FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE);
         processReportDataDto.setView(null);
         id = addSingleProcessReportWithDefinition(processReportDataDto);
         break;
@@ -803,6 +811,48 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {LATEST_VERSION, ALL_VERSIONS})
+  public void evaluateSavedHeatmapLatestOrAllVersionReportUpdatesXml(final String version) {
+    // given
+    final String processKey = "aProcess";
+    final BpmnModelInstance processV1 = getSimpleBpmnDiagram(processKey);
+    engineIntegrationExtension.deployAndStartProcess(processV1);
+    importAllEngineEntitiesFromScratch();
+    final String xmlV1 = definitionClient.getProcessDefinitionXml(processKey, "1", null);
+    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processKey)
+      .setProcessDefinitionVersions(List.of(version))
+      .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
+      .setVisualization(ProcessVisualization.HEAT)
+      .build();
+    final String reportId = reportClient.createSingleProcessReport(reportData);
+
+    // when
+    reportClient.evaluateReport(reportId);
+
+    // then
+    assertThat(reportClient.getSingleProcessReportById(reportId).getData().getConfiguration().getXml())
+      .isNotNull()
+      .isEqualTo(xmlV1);
+
+    // given
+    final BpmnModelInstance processV2 = getSingleUserTaskDiagram(processKey);
+    engineIntegrationExtension.deployAndStartProcess(processV2);
+    importAllEngineEntitiesFromLastIndex();
+    embeddedOptimizeExtension.reloadConfiguration(); // reload to invalidate definition cache used to look for xml updates
+    final String xmlV2 = definitionClient.getProcessDefinitionXml(processKey, "2", null);
+
+    // when
+    reportClient.evaluateReport(reportId);
+
+    // then
+    assertThat(reportClient.getSingleProcessReportById(reportId).getData().getConfiguration().getXml())
+      .isEqualTo(xmlV2)
+      .isNotEqualTo(xmlV1);
   }
 
   private String saveReport(final SingleReportDataDto reportDataDto) {
