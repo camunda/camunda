@@ -8,6 +8,7 @@
 package io.camunda.zeebe.protocol.impl.record.value.compensation;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
@@ -40,6 +41,8 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
       new LongProperty("throwEventInstanceKey", -1);
   private final StringProperty compensationHandlerIdProperty =
       new StringProperty("compensationHandlerId", EMPTY_STRING);
+  private final BooleanProperty subprocessSubscriptionProperty =
+      new BooleanProperty("subprocessSubscription", false);
   private final DocumentProperty variablesProperty = new DocumentProperty("variables");
 
   public CompensationSubscriptionRecord() {
@@ -52,6 +55,7 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(throwEventIdProperty)
         .declareProperty(throwEventInstanceKeyProperty)
         .declareProperty(compensationHandlerIdProperty)
+        .declareProperty(subprocessSubscriptionProperty)
         .declareProperty(variablesProperty);
   }
 
@@ -64,6 +68,7 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
     throwEventIdProperty.setValue(record.getThrowEventId());
     throwEventInstanceKeyProperty.setValue(record.getThrowEventInstanceKey());
     compensationHandlerIdProperty.setValue(record.getCompensationHandlerId());
+    subprocessSubscriptionProperty.setValue(record.isSubprocessSubscription());
     variablesProperty.setValue(record.getVariablesBuffer());
   }
 
@@ -123,12 +128,23 @@ public class CompensationSubscriptionRecord extends UnifiedRecordValue
   }
 
   @Override
+  public boolean isSubprocessSubscription() {
+    return subprocessSubscriptionProperty.getValue();
+  }
+
+  @Override
   public Map<String, Object> getVariables() {
     return MsgPackConverter.convertToMap(variablesProperty.getValue());
   }
 
   public CompensationSubscriptionRecord setVariables(final DirectBuffer variables) {
     variablesProperty.setValue(variables);
+    return this;
+  }
+
+  public CompensationSubscriptionRecord setSubprocessSubscription(
+      final boolean subprocessSubscription) {
+    subprocessSubscriptionProperty.setValue(subprocessSubscription);
     return this;
   }
 

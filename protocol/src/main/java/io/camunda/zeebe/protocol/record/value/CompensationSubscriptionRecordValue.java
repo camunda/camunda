@@ -66,6 +66,11 @@ public interface CompensationSubscriptionRecordValue extends RecordValue {
   String getCompensationHandlerId();
 
   /**
+   * @return true if the subscription is coming from a completed subprocess, false otherwise
+   */
+  boolean isSubprocessSubscription();
+
+  /**
    * @return the local variables of activity with compensation handler
    */
   Map<String, Object> getVariables();
