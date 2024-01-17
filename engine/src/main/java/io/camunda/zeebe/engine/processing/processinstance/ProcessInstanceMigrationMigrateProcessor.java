@@ -405,6 +405,13 @@ public class ProcessInstanceMigrationMigrateProcessor
       }
     }
 
+    if (elementInstance.getUserTaskKey() > 0) {
+      throw new UnsupportedElementMigrationException(
+          processInstanceKey,
+          elementInstanceRecord.getElementId(),
+          elementInstanceRecord.getBpmnElementType());
+    }
+
     variableState
         .getVariablesLocal(elementInstance.getKey())
         .forEach(
