@@ -98,10 +98,6 @@ camunda-platform:
       tag: 8.3.4
     env: 
       # 3-L cluster plan env vars below
-      - name: ZEEBE_BROKER_THREADS_CPUTHREADCOUNT
-        value: "5"
-      - name: ZEEBE_BROKER_THREADS_IOTHREADCOUNT
-        value: "5"
       - name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK
         value: "0.87"
       - name: ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK
@@ -115,6 +111,8 @@ camunda-platform:
         memory: 6Gi
     nodeSelector: null
     partitionCount: "3"
+    cpuThreadCount: 5
+    ioThreadCount: 5
   operate:
     enabled: true
     image:

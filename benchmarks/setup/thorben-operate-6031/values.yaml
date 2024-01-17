@@ -106,10 +106,6 @@ camunda-platform:
       - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL
         value: "{{ .Values.global.elasticsearch.protocol }}://{{ .Values.global.elasticsearch.host }}:{{ .Values.global.elasticsearch.port }}"
       # 3-L cluster plan env vars below
-      - name: ZEEBE_BROKER_THREADS_CPUTHREADCOUNT
-        value: "5"
-      - name: ZEEBE_BROKER_THREADS_IOTHREADCOUNT
-        value: "5"
       - name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK
         value: "0.87"
       - name: ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK
@@ -123,6 +119,8 @@ camunda-platform:
         memory: 6Gi
     nodeSelector: null
     partitionCount: "3"
+    cpuThreadCount: 5
+    ioThreadCount: 5
   operate:
     enabled: true
     # Image configuration to configure the zeebe image specifics
