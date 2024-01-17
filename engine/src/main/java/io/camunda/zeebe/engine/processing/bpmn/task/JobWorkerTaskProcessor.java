@@ -74,40 +74,35 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   }
 
   @Override
-  public void onExecutionListenerComplete(
+  public void onStartExecutionListenerComplete(
       final ExecutableJobWorkerTask element, final BpmnElementContext context) {
-
-    final ExecutionListenerEventType eventType =
-        stateBehavior.getElementInstance(context).getExecutionListenerEventType();
     final String currentExecutionListenerType =
         stateBehavior.getElementInstance(context).getExecutionListenerType();
 
-    switch (eventType) {
-      case START -> {
-        final List<ExecutionListener> startExecutionListeners =
-            getExecutionListenersByEventType(element, ExecutionListenerEventType.START);
-        findNextExecutionListener(startExecutionListeners, currentExecutionListenerType)
-            .ifPresentOrElse(
-                el -> createExecutionListenerJob(element, context, el),
-                () ->
-                    regularJobExecution(element, context)
-                        .ifLeft(failure -> incidentBehavior.createIncident(failure, context)));
-      }
-      case END -> {
-        final List<ExecutionListener> endExecutionListeners =
-            getExecutionListenersByEventType(element, ExecutionListenerEventType.END);
-        findNextExecutionListener(endExecutionListeners, currentExecutionListenerType)
-            .ifPresentOrElse(
-                el -> createExecutionListenerJob(element, context, el),
-                () ->
-                    regularJobCompletion(element, context)
-                        .ifLeft(failure -> incidentBehavior.createIncident(failure, context)));
-      }
-      case null, default ->
-          LOGGER.warn(
-              "Unexpected ExecutionListenerEventType='{}' value received",
-              eventType); // Create incident also?
-    }
+    final List<ExecutionListener> startExecutionListeners =
+        getExecutionListenersByEventType(element, ExecutionListenerEventType.START);
+    findNextExecutionListener(startExecutionListeners, currentExecutionListenerType)
+        .ifPresentOrElse(
+            el -> createExecutionListenerJob(element, context, el),
+            () ->
+                regularJobExecution(element, context)
+                    .ifLeft(failure -> incidentBehavior.createIncident(failure, context)));
+  }
+
+  @Override
+  public void onEndExecutionListenerComplete(
+      final ExecutableJobWorkerTask element, final BpmnElementContext context) {
+    final String currentExecutionListenerType =
+        stateBehavior.getElementInstance(context).getExecutionListenerType();
+
+    final List<ExecutionListener> endExecutionListeners =
+        getExecutionListenersByEventType(element, ExecutionListenerEventType.END);
+    findNextExecutionListener(endExecutionListeners, currentExecutionListenerType)
+        .ifPresentOrElse(
+            el -> createExecutionListenerJob(element, context, el),
+            () ->
+                regularJobCompletion(element, context)
+                    .ifLeft(failure -> incidentBehavior.createIncident(failure, context)));
   }
 
   @Override

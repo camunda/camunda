@@ -251,13 +251,4 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   public void setExecutionListenerType(final String executionListenerType) {
     executionListenerTypeProp.setValue(executionListenerType);
   }
-
-  public ExecutionListenerEventType getExecutionListenerEventType() {
-    return executionListenerEventTypeProp.getValue();
-  }
-
-  public void setExecutionListenerEventType(
-      final ExecutionListenerEventType executionListenerEventType) {
-    executionListenerEventTypeProp.setValue(executionListenerEventType);
-  }
 }

@@ -7,14 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn;
 
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTIVATE_ELEMENT;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.COMPLETE_ELEMENT;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.TERMINATE_ELEMENT;
-
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
@@ -46,6 +43,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   private final TypedRejectionWriter rejectionWriter;
   private final BpmnIncidentBehavior incidentBehavior;
 
+  private final BpmnStateBehavior stateBehavior;
+
   public BpmnStreamProcessor(
       final BpmnBehaviors bpmnBehaviors,
       final MutableProcessingState processingState,
@@ -64,6 +63,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             this::getContainerProcessor,
             writers);
     processors = new BpmnElementProcessors(bpmnBehaviors, stateTransitionBehavior);
+    stateBehavior = bpmnBehaviors.stateBehavior();
   }
 
   private BpmnElementContainerProcessor<ExecutableFlowElement> getContainerProcessor(
@@ -149,7 +149,13 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         processor.onComplete(element, completingContext);
         break;
       case EXECUTION_LISTENER_COMPLETE:
-        processor.onExecutionListenerComplete(element, context);
+        switch (stateBehavior.getElementInstance(context).getState()) {
+          case ELEMENT_ACTIVATING -> processor.onStartExecutionListenerComplete(element, context);
+          case ELEMENT_COMPLETING -> processor.onEndExecutionListenerComplete(element, context);
+          default -> throw new UnsupportedOperationException(
+              "Unexpected element state: " + context);
+        }
+
         break;
       case TERMINATE_ELEMENT:
         final var terminatingContext = stateTransitionBehavior.transitionToTerminating(context);
