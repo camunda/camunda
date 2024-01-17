@@ -35,22 +35,24 @@ public class MigrateProcessInstanceUnsupportedElementsTest {
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   @Test
-  public void shouldRejectMigrationForActiveUserTask() {
+  public void shouldRejectMigrationForActiveNativeUserTask() {
     // given
+    // method reference doesn't help readability in this builder
+    @SuppressWarnings("Convert2MethodRef")
     final var deployment =
         ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(SOURCE_PROCESS)
                     .startEvent()
-                    .userTask("A")
+                    .userTask("A", u -> u.zeebeUserTask())
                     .endEvent()
                     .done())
             .withXmlResource(
                 Bpmn.createExecutableProcess(TARGET_PROCESS)
                     .startEvent()
-                    .userTask("A")
-                    .userTask("B")
+                    .userTask("A", u -> u.zeebeUserTask())
+                    .userTask("B", u -> u.zeebeUserTask())
                     .endEvent()
                     .done())
             .deploy();
