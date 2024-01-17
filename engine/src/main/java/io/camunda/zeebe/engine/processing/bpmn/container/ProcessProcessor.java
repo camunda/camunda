@@ -69,6 +69,7 @@ public final class ProcessProcessor
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     compensationSubscriptionBehaviour.deleteNotTriggeredSubscriptions(context);
+    compensationSubscriptionBehaviour.deleteSubprocessSubscriptions(context);
 
     // we need to send the result before we transition to completed, since the
     // event applier will delete the element instance
@@ -86,6 +87,7 @@ public final class ProcessProcessor
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     incidentBehavior.resolveIncidents(context);
+    compensationSubscriptionBehaviour.deleteNotTriggeredSubscriptions(context);
     compensationSubscriptionBehaviour.deleteNotTriggeredSubscriptions(context);
 
     final var noActiveChildInstances = stateTransitionBehavior.terminateChildInstances(context);
