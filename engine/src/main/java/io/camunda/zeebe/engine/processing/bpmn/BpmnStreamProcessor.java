@@ -152,8 +152,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             .onElementActivating(element, activatingContext)
             .ifRightOrLeft(
                 ok -> {
-                  // TODO: deal with incidents
                   processor.onActivate(element, activatingContext);
+                  // TODO: deal with incidents
                   // look for execution listeners
                   afterActivating(element, processor, activatingContext);
                 },
@@ -162,12 +162,15 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       case COMPLETE_ELEMENT:
         final var completingContext = stateTransitionBehavior.transitionToCompleting(context);
         processor.onComplete(element, completingContext);
+        // TODO: deal with incidents
+        afterCompleting(element, processor, completingContext);
         break;
       case EXECUTION_LISTENER_COMPLETE:
         switch (stateBehavior.getElementInstance(context).getState()) {
           case ELEMENT_ACTIVATING -> onStartExecutionListenerComplete(
               (ExecutableFlowNode) element, processor, context);
-          case ELEMENT_COMPLETING -> processor.onEndExecutionListenerComplete(element, context);
+          case ELEMENT_COMPLETING -> onEndExecutionListenerComplete(
+              (ExecutableFlowNode) element, processor, context);
           default -> throw new UnsupportedOperationException(
               "Unexpected element state: " + context);
         }
@@ -207,6 +210,27 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
 
   }
 
+  private void afterCompleting(
+      final ExecutableFlowElement element,
+      final BpmnElementProcessor<ExecutableFlowElement> processor,
+      final BpmnElementContext context) {
+
+    if (element instanceof final ExecutableFlowNode node) {
+      final List<ExecutionListener> startExecutionListeners =
+          getExecutionListenersByEventType(node, ExecutionListenerEventType.END);
+
+      if (startExecutionListeners.isEmpty()) {
+        processor.completeCompleting(element, context);
+      } else {
+        createExecutionListenerJob(node, context, startExecutionListeners.getFirst());
+        // stop the execution and wait for the job to be completed
+      }
+    }
+    // other elements, like sequence flows, do not have execution listeners
+    // assume that the element is completed already
+
+  }
+
   private List<ExecutionListener> getExecutionListenersByEventType(
       final ExecutableFlowNode element, final ExecutionListenerEventType eventType) {
     return element.getExecutionListeners().stream()
@@ -242,6 +266,22 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         .ifPresentOrElse(
             el -> createExecutionListenerJob(element, context, el),
             () -> processor.completeActivating(element, context));
+  }
+
+  public void onEndExecutionListenerComplete(
+      final ExecutableFlowNode element,
+      final BpmnElementProcessor<ExecutableFlowElement> processor,
+      final BpmnElementContext context) {
+
+    final String currentExecutionListenerType =
+        stateBehavior.getElementInstance(context).getExecutionListenerType();
+
+    final List<ExecutionListener> endExecutionListeners =
+        getExecutionListenersByEventType(element, ExecutionListenerEventType.END);
+    findNextExecutionListener(endExecutionListeners, currentExecutionListenerType)
+        .ifPresentOrElse(
+            el -> createExecutionListenerJob(element, context, el),
+            () -> processor.completeCompleting(element, context));
   }
 
   private Optional<ExecutionListener> findNextExecutionListener(

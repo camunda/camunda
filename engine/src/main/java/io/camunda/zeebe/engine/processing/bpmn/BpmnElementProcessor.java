@@ -74,8 +74,6 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    */
   default void onComplete(final T element, final BpmnElementContext context) {}
 
-  default void onEndExecutionListenerComplete(final T element, final BpmnElementContext context) {}
-
   /**
    * The element is going to be terminated. Perform every action to terminate the element and
    * continue with the element that caused the termination (e.g. the triggered boundary event).
@@ -99,4 +97,6 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
   default void onTerminate(final T element, final BpmnElementContext context) {}
 
   default void completeActivating(final T element, final BpmnElementContext context) {}
+
+  default void completeCompleting(final T element, final BpmnElementContext context) {}
 }
