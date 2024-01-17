@@ -10,9 +10,9 @@ package io.camunda.zeebe.gateway;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.GatewayConfiguration.GatewayProperties;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
-import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;

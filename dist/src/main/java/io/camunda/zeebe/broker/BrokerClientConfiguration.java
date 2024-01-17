@@ -8,11 +8,11 @@
 package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.shared.BrokerConfiguration;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
-import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -13,9 +13,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerClusterState;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

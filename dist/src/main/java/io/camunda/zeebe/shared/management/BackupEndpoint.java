@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.gateway.admin.backup.BackupAlreadyExistException;
 import io.camunda.zeebe.gateway.admin.backup.BackupApi;
@@ -14,8 +16,6 @@ import io.camunda.zeebe.gateway.admin.backup.BackupRequestHandler;
 import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.PartitionBackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.State;
-import io.camunda.zeebe.gateway.cmd.BrokerErrorException;
-import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.management.backups.BackupInfo;
 import io.camunda.zeebe.management.backups.Error;
 import io.camunda.zeebe.management.backups.PartitionBackupInfo;
