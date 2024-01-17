@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="definitions_51c88d32-dc2c-4d83-a720-6aa1410b6644" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL" exporter="Camunda Modeler" exporterVersion="5.19.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.3.0">
+  <process id="compensation-process" name="A" isExecutable="true">
+    <startEvent id="startEvent_0aa5c6c8-21bc-4491-ad62-7e87e17c8590">
+      <outgoing>sequenceFlow_49d15526-b405-48ef-9939-8f260437e2d4</outgoing>
+    </startEvent>
+    <subProcess id="embedded-subprocess" name="embedded-subprocess">
+      <incoming>sequenceFlow_49d15526-b405-48ef-9939-8f260437e2d4</incoming>
+      <outgoing>sequenceFlow_66c420e0-5c3a-48e0-a48b-5c4018e1d2b0</outgoing>
+      <startEvent id="Event_1pb8px4">
+        <outgoing>Flow_11he4ly</outgoing>
+      </startEvent>
+      <sequenceFlow id="Flow_11he4ly" sourceRef="Event_1pb8px4" targetRef="Gateway_1shkkwu" />
+      <parallelGateway id="Gateway_1shkkwu">
+        <incoming>Flow_11he4ly</incoming>
+        <outgoing>Flow_129btpa</outgoing>
+        <outgoing>Flow_0hh8uxk</outgoing>
+      </parallelGateway>
+      <sequenceFlow id="Flow_129btpa" sourceRef="Gateway_1shkkwu" targetRef="ActivityToCompensate" />
+      <userTask id="ActivityToCompensate" name="A">
+        <incoming>Flow_129btpa</incoming>
+        <outgoing>Flow_1oin5ut</outgoing>
+      </userTask>
+      <boundaryEvent id="Event_0u821xi" attachedToRef="ActivityToCompensate">
+        <compensateEventDefinition id="CompensateEventDefinition_1o7xvwo" />
+      </boundaryEvent>
+      <userTask id="CompensationHandler" name="undo A" isForCompensation="true" />
+      <sequenceFlow id="Flow_1oin5ut" sourceRef="ActivityToCompensate" targetRef="Gateway_0sl25s5" />
+      <parallelGateway id="Gateway_0sl25s5">
+        <incoming>Flow_1oin5ut</incoming>
+        <incoming>Flow_1lv3xr8</incoming>
+        <outgoing>Flow_0hywb58</outgoing>
+      </parallelGateway>
+      <sequenceFlow id="Flow_0hywb58" sourceRef="Gateway_0sl25s5" targetRef="Event_1343itq" />
+      <endEvent id="Event_1343itq">
+        <incoming>Flow_0hywb58</incoming>
+      </endEvent>
+      <subProcess id="embedded-subprocess-2">
+        <incoming>Flow_0hh8uxk</incoming>
+        <outgoing>Flow_1lv3xr8</outgoing>
+        <startEvent id="Event_16fdhcy">
+          <outgoing>Flow_1pzsqqr</outgoing>
+        </startEvent>
+        <sequenceFlow id="Flow_1pzsqqr" sourceRef="Event_16fdhcy" targetRef="ActivityToCompensate2" />
+        <userTask id="ActivityToCompensate2" name="B">
+          <incoming>Flow_1pzsqqr</incoming>
+          <outgoing>Flow_0jrphdb</outgoing>
+        </userTask>
+        <boundaryEvent id="Event_0okfsuj" attachedToRef="ActivityToCompensate2">
+          <compensateEventDefinition id="CompensateEventDefinition_1md4gy8" />
+        </boundaryEvent>
+        <userTask id="CompensationHandler2" name="undo B" isForCompensation="true" />
+        <endEvent id="Event_01si0y9">
+          <incoming>Flow_0jrphdb</incoming>
+        </endEvent>
+        <sequenceFlow id="Flow_0jrphdb" sourceRef="ActivityToCompensate2" targetRef="Event_01si0y9" />
+        <association id="Association_0w1o7k9" associationDirection="One" sourceRef="Event_0okfsuj" targetRef="CompensationHandler2" />
+      </subProcess>
+      <sequenceFlow id="Flow_0hh8uxk" sourceRef="Gateway_1shkkwu" targetRef="embedded-subprocess-2" />
+      <sequenceFlow id="Flow_1lv3xr8" sourceRef="embedded-subprocess-2" targetRef="Gateway_0sl25s5" />
+      <association id="Association_03pbpib" associationDirection="One" sourceRef="Event_0u821xi" targetRef="CompensationHandler" />
+    </subProcess>
+    <sequenceFlow id="sequenceFlow_49d15526-b405-48ef-9939-8f260437e2d4" sourceRef="startEvent_0aa5c6c8-21bc-4491-ad62-7e87e17c8590" targetRef="embedded-subprocess" />
+    <endEvent id="CompensationEndEvent" name="compensation-end-event">
+      <incoming>sequenceFlow_66c420e0-5c3a-48e0-a48b-5c4018e1d2b0</incoming>
+      <compensateEventDefinition id="compensateEventDefinition_5d72abc1-92ff-4ae5-aa58-87e240755e2d" />
+    </endEvent>
+    <sequenceFlow id="sequenceFlow_66c420e0-5c3a-48e0-a48b-5c4018e1d2b0" sourceRef="embedded-subprocess" targetRef="CompensationEndEvent" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_d458583a-dbd3-44f4-9045-ef478ea1576c">
+    <bpmndi:BPMNPlane id="BPMNPlane_b1706292-8b4e-48dd-9ca2-e5d428c1f478" bpmnElement="compensation-process">
+      <bpmndi:BPMNShape id="BPMNShape_39875287-c8bc-4920-a2fc-c48f0596fc43" bpmnElement="startEvent_0aa5c6c8-21bc-4491-ad62-7e87e17c8590">
+        <dc:Bounds x="152" y="442" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_f95874b1-5de9-4fd7-b820-0125b9a4648e" bpmnElement="embedded-subprocess" isExpanded="true">
+        <dc:Bounds x="256" y="80" width="1034" height="810" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1pb8px4_di" bpmnElement="Event_1pb8px4">
+        <dc:Bounds x="282" y="442" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1k26t4s_di" bpmnElement="Gateway_1shkkwu">
+        <dc:Bounds x="375" y="435" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1agpnsr_di" bpmnElement="ActivityToCompensate">
+        <dc:Bounds x="580" y="270" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1xnvbuv_di" bpmnElement="CompensationHandler">
+        <dc:Bounds x="720" y="150" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0qhyflv_di" bpmnElement="Gateway_0sl25s5">
+        <dc:Bounds x="1065" y="435" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1343itq_di" bpmnElement="Event_1343itq">
+        <dc:Bounds x="1192" y="442" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1vkx6w5_di" bpmnElement="embedded-subprocess-2" isExpanded="true">
+        <dc:Bounds x="540" y="510" width="470" height="320" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_16fdhcy_di" bpmnElement="Event_16fdhcy">
+        <dc:Bounds x="580.3333333333334" y="592" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_08zvjp0_di" bpmnElement="ActivityToCompensate2">
+        <dc:Bounds x="670" y="570" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1mn0jvw_di" bpmnElement="CompensationHandler2">
+        <dc:Bounds x="810" y="690" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_01si0y9_di" bpmnElement="Event_01si0y9">
+        <dc:Bounds x="832" y="592" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1ach2mb_di" bpmnElement="Event_0okfsuj">
+        <dc:Bounds x="722" y="632" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1pzsqqr_di" bpmnElement="Flow_1pzsqqr">
+        <di:waypoint x="616" y="610" />
+        <di:waypoint x="670" y="610" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0jrphdb_di" bpmnElement="Flow_0jrphdb">
+        <di:waypoint x="770" y="610" />
+        <di:waypoint x="832" y="610" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_0w1o7k9_di" bpmnElement="Association_0w1o7k9">
+        <di:waypoint x="740" y="668" />
+        <di:waypoint x="740" y="730" />
+        <di:waypoint x="810" y="730" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_0edlw69_di" bpmnElement="Event_0u821xi">
+        <dc:Bounds x="632" y="252" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_11he4ly_di" bpmnElement="Flow_11he4ly">
+        <di:waypoint x="318" y="460" />
+        <di:waypoint x="375" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_129btpa_di" bpmnElement="Flow_129btpa">
+        <di:waypoint x="400" y="435" />
+        <di:waypoint x="400" y="310" />
+        <di:waypoint x="580" y="310" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1oin5ut_di" bpmnElement="Flow_1oin5ut">
+        <di:waypoint x="680" y="310" />
+        <di:waypoint x="1090" y="310" />
+        <di:waypoint x="1090" y="435" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0hywb58_di" bpmnElement="Flow_0hywb58">
+        <di:waypoint x="1115" y="460" />
+        <di:waypoint x="1192" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0hh8uxk_di" bpmnElement="Flow_0hh8uxk">
+        <di:waypoint x="400" y="485" />
+        <di:waypoint x="400" y="610" />
+        <di:waypoint x="540" y="610" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1lv3xr8_di" bpmnElement="Flow_1lv3xr8">
+        <di:waypoint x="1010" y="670" />
+        <di:waypoint x="1090" y="670" />
+        <di:waypoint x="1090" y="485" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_03pbpib_di" bpmnElement="Association_03pbpib">
+        <di:waypoint x="650" y="252" />
+        <di:waypoint x="650" y="190" />
+        <di:waypoint x="720" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="BPMNShape_d1c01a2c-653f-4d5a-ab99-3c3b4dad5202" bpmnElement="CompensationEndEvent">
+        <dc:Bounds x="1462" y="442" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1444" y="478" width="73" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_d542daa3-5c92-48be-9082-8fb2a0f5df1a" bpmnElement="sequenceFlow_49d15526-b405-48ef-9939-8f260437e2d4">
+        <di:waypoint x="188" y="460" />
+        <di:waypoint x="256" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_09a09196-11c6-4f3d-a22f-75c90adf2051" bpmnElement="sequenceFlow_66c420e0-5c3a-48e0-a48b-5c4018e1d2b0">
+        <di:waypoint x="1290" y="460" />
+        <di:waypoint x="1462" y="460" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

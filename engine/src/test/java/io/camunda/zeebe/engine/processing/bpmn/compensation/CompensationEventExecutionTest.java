@@ -727,6 +727,61 @@ public class CompensationEventExecutionTest {
             tuple(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionIntent.DELETED));
   }
 
+  @Test
+  public void shouldTriggerCompensationHandlerInTheRightOrderForSubprocesses() {
+    final var process =
+        createModelFromClasspathResource("/compensation/compensation-embedded-subprocess.bpmn");
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    ENGINE.job().ofInstance(processInstanceKey).withType(Protocol.USER_TASK_JOB_TYPE).complete();
+    ENGINE
+        .job()
+        .withKey(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withElementId("ActivityToCompensate2")
+                .getFirst()
+                .getKey())
+        .complete();
+
+    ENGINE
+        .job()
+        .withKey(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withElementId("CompensationHandler")
+                .getFirst()
+                .getKey())
+        .complete();
+
+    ENGINE
+        .job()
+        .withKey(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withElementId("CompensationHandler2")
+                .getFirst()
+                .getKey())
+        .complete();
+
+    // then
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(6))
+        .extracting(
+            Record::getValueType,
+            Record::getIntent,
+            r -> r.getValue().getCompensableActivityScopeId())
+        .containsSubsequence(
+            tuple(
+                ValueType.COMPENSATION_SUBSCRIPTION,
+                CompensationSubscriptionIntent.TRIGGERED,
+                "embedded-subprocess"),
+            tuple(
+                ValueType.COMPENSATION_SUBSCRIPTION,
+                CompensationSubscriptionIntent.TRIGGERED,
+                "embedded-subprocess-2"));
+  }
+
   private BpmnModelInstance createModelFromClasspathResource(final String classpath) {
     final var resourceAsStream = getClass().getResourceAsStream(classpath);
     return Bpmn.readModelFromStream(resourceAsStream);
