@@ -51,6 +51,10 @@ public class RequestManager {
     this.jsonConverterPool = Executors.newFixedThreadPool(numSerializationThreads);
   }
 
+  public void close() {
+    this.jsonConverterPool.shutdown();
+  }
+
   public void eventLoop() {
 
     resolveNextAvailableRequest();

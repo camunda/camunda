@@ -243,6 +243,8 @@ public class OperateElasticsearchExporter implements Exporter {
 
   @Override
   public void close() {
+    requestManager.close();
+
     try {
       esClient.close();
     } catch (IOException e) {
