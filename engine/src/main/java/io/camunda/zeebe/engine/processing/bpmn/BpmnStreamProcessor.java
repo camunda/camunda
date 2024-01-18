@@ -199,7 +199,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
           .ifPresentOrElse(
               firstStartEl -> createExecutionListenerJob(node, context, firstStartEl),
               () -> {
-                processor.completeActivating(element, context);
+                processor.finalizeActivation(element, context);
                 // stop the execution and wait for the job to be completed
               });
     }
@@ -218,7 +218,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
           .ifPresentOrElse(
               firstEndEl -> createExecutionListenerJob(node, context, firstEndEl),
               () -> {
-                processor.completeCompleting(element, context);
+                processor.finalizeCompletion(element, context);
                 // stop the execution and wait for the job to be completed
               });
     }
@@ -259,7 +259,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     findNextExecutionListener(startExecutionListeners, currentExecutionListenerType)
         .ifPresentOrElse(
             el -> createExecutionListenerJob(element, context, el),
-            () -> processor.completeActivating(element, context));
+            () -> processor.finalizeActivation(element, context));
   }
 
   public void onEndExecutionListenerComplete(
@@ -275,7 +275,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     findNextExecutionListener(endExecutionListeners, currentExecutionListenerType)
         .ifPresentOrElse(
             el -> createExecutionListenerJob(element, context, el),
-            () -> processor.completeCompleting(element, context));
+            () -> processor.finalizeCompletion(element, context));
   }
 
   private Optional<ExecutionListener> findNextExecutionListener(

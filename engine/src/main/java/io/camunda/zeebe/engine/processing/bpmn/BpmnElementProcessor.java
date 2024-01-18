@@ -54,6 +54,18 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
   default void onActivate(final T element, final BpmnElementContext context) {}
 
   /**
+   * Finalizes the activation of the BPMN element. This method is invoked after the element has been
+   * initialized and activated, ensuring that any additional steps required to fully establish the
+   * element's active state are completed.
+   *
+   * <p>This method is typically invoked after the processing of START Execution Listeners.
+   *
+   * @param element the instance of the BPMN element that is executed
+   * @param context process instance-related data of the element that is executed
+   */
+  default void finalizeActivation(final T element, final BpmnElementContext context) {}
+
+  /**
    * The element is going to be left. Perform every action to leave the element and continue with
    * the next element.
    *
@@ -73,6 +85,17 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * @param context process instance-related data of the element that is executed
    */
   default void onComplete(final T element, final BpmnElementContext context) {}
+
+  /**
+   * Finalizes the completion of the BPMN element. This method is called when the element has
+   * finished executing its main behavior and is ready to transition to a completed state.
+   *
+   * <p>This method is typically invoked after the processing of END Execution Listeners.
+   *
+   * @param element the instance of the BPMN element that is executed
+   * @param context process instance-related data of the element that is executed
+   */
+  default void finalizeCompletion(final T element, final BpmnElementContext context) {}
 
   /**
    * The element is going to be terminated. Perform every action to terminate the element and
@@ -95,8 +118,4 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * @param context process instance-related data of the element that is executed
    */
   default void onTerminate(final T element, final BpmnElementContext context) {}
-
-  default void completeActivating(final T element, final BpmnElementContext context) {}
-
-  default void completeCompleting(final T element, final BpmnElementContext context) {}
 }

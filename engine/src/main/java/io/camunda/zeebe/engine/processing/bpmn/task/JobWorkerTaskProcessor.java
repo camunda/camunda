@@ -58,8 +58,41 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   }
 
   @Override
+  public void finalizeActivation(
+      final ExecutableJobWorkerTask element, final BpmnElementContext context) {
+    jobBehavior
+        .evaluateJobExpressions(element, context)
+        .flatMap(j -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> j))
+        .ifRightOrLeft(
+            jobProperties -> {
+              jobBehavior.createNewJob(context, element, jobProperties);
+              stateTransitionBehavior.transitionToActivated(context, element.getEventType());
+            },
+            failure -> incidentBehavior.createIncident(failure, context));
+  }
+
+  @Override
   public void onComplete(final ExecutableJobWorkerTask element, final BpmnElementContext context) {
     // nothing to do
+  }
+
+  @Override
+  public void finalizeCompletion(
+      final ExecutableJobWorkerTask element, final BpmnElementContext context) {
+    variableMappingBehavior
+        .applyOutputMappings(context, element)
+        .flatMap(
+            ok -> {
+              eventSubscriptionBehavior.unsubscribeFromEvents(context);
+              compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
+              return stateTransitionBehavior.transitionToCompleted(element, context);
+            })
+        .flatMap(
+            completionContext -> {
+              compensationSubscriptionBehaviour.completeCompensationHandler(context, element);
+              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completionContext);
+              return Either.right(context);
+            });
   }
 
   @Override
@@ -88,39 +121,6 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
               final var terminated =
                   stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
               stateTransitionBehavior.onElementTerminated(element, terminated);
-            });
-  }
-
-  @Override
-  public void completeActivating(
-      final ExecutableJobWorkerTask element, final BpmnElementContext context) {
-    jobBehavior
-        .evaluateJobExpressions(element, context)
-        .flatMap(j -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> j))
-        .ifRightOrLeft(
-            jobProperties -> {
-              jobBehavior.createNewJob(context, element, jobProperties);
-              stateTransitionBehavior.transitionToActivated(context, element.getEventType());
-            },
-            failure -> incidentBehavior.createIncident(failure, context));
-  }
-
-  @Override
-  public void completeCompleting(
-      final ExecutableJobWorkerTask element, final BpmnElementContext context) {
-    variableMappingBehavior
-        .applyOutputMappings(context, element)
-        .flatMap(
-            ok -> {
-              eventSubscriptionBehavior.unsubscribeFromEvents(context);
-              compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
-              return stateTransitionBehavior.transitionToCompleted(element, context);
-            })
-        .flatMap(
-            completionContext -> {
-              compensationSubscriptionBehaviour.completeCompensationHandler(context, element);
-              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completionContext);
-              return Either.right(context);
             });
   }
 }
