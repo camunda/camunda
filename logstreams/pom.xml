@@ -57,6 +57,11 @@
       <artifactId>simpleclient</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-msgpack-value</artifactId>
+    </dependency>
+
     <!-- Test dependencies -->
     <dependency>
       <groupId>io.camunda</groupId>
@@ -104,6 +109,16 @@
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <ignoredNonTestScopedDependencies>
+            <dependency>io.camunda:zeebe-msgpack-value</dependency>
+          </ignoredNonTestScopedDependencies>
+        </configuration>
+      </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
