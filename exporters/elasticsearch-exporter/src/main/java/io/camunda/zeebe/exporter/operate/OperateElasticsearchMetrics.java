@@ -50,6 +50,9 @@ public class OperateElasticsearchMetrics {
           .namespace(NAMESPACE)
           .name("request_duration_seconds")
           .help("Duration of making bulk requests to Elasticsearch in seconds")
+          .buckets(
+              .025, .05, .075, .1, .125, .15, .175, .2, .225, .25, .275, .3, .325, .35,
+              .375, .4, .425, .45, .475, .5, .6, .7, .8, .9, 1)
           .labelNames(PARTITION_LABEL)
           .register();
 

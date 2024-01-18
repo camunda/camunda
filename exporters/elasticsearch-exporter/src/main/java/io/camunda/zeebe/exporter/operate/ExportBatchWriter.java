@@ -139,7 +139,11 @@ public class ExportBatchWriter {
   }
 
   public boolean hasAtLeastEntities(int size) {
-    return cachedEntities.size() + cachedDecisionInstanceEntities.size() >= size;
+    return getNumCachedEntities() >= size;
+  }
+
+  public int getNumCachedEntities() {
+    return cachedEntities.size() + cachedDecisionInstanceEntities.size();
   }
 
   public static class Builder {
