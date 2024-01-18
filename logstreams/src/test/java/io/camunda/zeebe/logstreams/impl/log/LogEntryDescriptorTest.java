@@ -36,6 +36,4 @@ public class LogEntryDescriptorTest {
     // then
     Assertions.assertThat(LogEntryDescriptor.shouldSkipProcessing(buffer, 0)).isTrue();
   }
-
-
 }
