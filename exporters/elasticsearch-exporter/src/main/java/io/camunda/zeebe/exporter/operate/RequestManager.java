@@ -59,6 +59,7 @@ public class RequestManager {
 
   public void close() {
     this.jsonConverterPool.shutdown();
+    metrics.recordJsonProcessingQueueSize(0);
   }
 
   public void eventLoop() {
@@ -224,7 +225,7 @@ public class RequestManager {
         throw new RuntimeException("request body is empty");
       }
 
-      metrics.recordBulkSize(byteArray.length);
+      metrics.recordBulkMemorySize(byteArray.length);
 
       final ByteArrayEntity serializedBody = new ByteArrayEntity(byteArray);
       serializedBody.setContentType(requestEntity.getContentType());

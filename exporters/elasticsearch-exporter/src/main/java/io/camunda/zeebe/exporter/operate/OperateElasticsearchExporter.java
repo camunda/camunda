@@ -9,7 +9,6 @@ package io.camunda.zeebe.exporter.operate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.ElasticsearchExporterException;
-import io.camunda.zeebe.exporter.ElasticsearchMetrics;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -46,7 +45,6 @@ import io.camunda.zeebe.exporter.operate.schema.templates.PostImporterQueueTempl
 import io.camunda.zeebe.exporter.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.zeebe.exporter.operate.schema.templates.VariableTemplate;
 import io.camunda.zeebe.protocol.record.Record;
-import io.prometheus.client.Histogram;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -84,6 +82,7 @@ public class OperateElasticsearchExporter implements Exporter {
   private OperateElasticsearchManager schemaManager;
   private ExportBatchWriter writer;
   private OperateElasticsearchMetrics metrics;
+  private int numCurrentlyExportedRecords = 0;
 
   @Override
   public void configure(Context context) throws Exception {
@@ -154,6 +153,7 @@ public class OperateElasticsearchExporter implements Exporter {
     requestManager.eventLoop();
 
     writer.addRecord(record);
+    numCurrentlyExportedRecords++;
 
     this.lastExportedPosition = record.getPosition();
 
@@ -198,10 +198,11 @@ public class OperateElasticsearchExporter implements Exporter {
     final OperateElasticsearchBulkRequest request = new OperateElasticsearchBulkRequest();
 
     metrics.countCacheFlush();
-    writer.flush(request);
+    metrics.recordBulkRecordsSize(numCurrentlyExportedRecords);
 
-    // TODO: restore request size metric
-    //      metrics.recordBulkMemorySize(request.sizeInBytes());
+    writer.flush(request);
+    numCurrentlyExportedRecords = 0;
+
     sendRequest(request, lastExportedPosition);
   }
 
