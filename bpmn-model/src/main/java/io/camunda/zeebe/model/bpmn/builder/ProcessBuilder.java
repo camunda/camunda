@@ -16,6 +16,8 @@
 
 package io.camunda.zeebe.model.bpmn.builder;
 
+import static io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener.DEFAULT_RETRIES;
+
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.Process;
@@ -23,6 +25,9 @@ import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
 import io.camunda.zeebe.model.bpmn.instance.dc.Bounds;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
 import java.util.Collection;
 import java.util.function.Consumer;
 
@@ -33,6 +38,38 @@ public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder> {
 
   public ProcessBuilder(final BpmnModelInstance modelInstance, final Process process) {
     super(modelInstance, process, ProcessBuilder.class);
+  }
+
+  public ProcessBuilder zeebeStartExecutionListener(final String type, final String retries) {
+    final ZeebeExecutionListeners executionListeners =
+        getCreateSingleExtensionElement(ZeebeExecutionListeners.class);
+    final ZeebeExecutionListener listener =
+        createChild(executionListeners, ZeebeExecutionListener.class);
+    listener.setEventType(ZeebeExecutionListenerEventType.start);
+    listener.setType(type);
+    listener.setRetries(retries);
+
+    return this;
+  }
+
+  public ProcessBuilder zeebeStartExecutionListener(final String type) {
+    return zeebeStartExecutionListener(type, DEFAULT_RETRIES);
+  }
+
+  public ProcessBuilder zeebeEndExecutionListener(final String type, final String retries) {
+    final ZeebeExecutionListeners executionListeners =
+        getCreateSingleExtensionElement(ZeebeExecutionListeners.class);
+    final ZeebeExecutionListener listener =
+        createChild(executionListeners, ZeebeExecutionListener.class);
+    listener.setEventType(ZeebeExecutionListenerEventType.end);
+    listener.setType(type);
+    listener.setRetries(retries);
+
+    return this;
+  }
+
+  public ProcessBuilder zeebeEndExecutionListener(final String type) {
+    return zeebeEndExecutionListener(type, DEFAULT_RETRIES);
   }
 
   public StartEventBuilder startEvent() {

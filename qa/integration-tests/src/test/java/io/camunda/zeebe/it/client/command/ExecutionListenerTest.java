@@ -10,14 +10,20 @@ package io.camunda.zeebe.it.client.command;
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.it.util.RecordingJobHandler;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -116,5 +122,91 @@ public class ExecutionListenerTest {
     assertThat(secondElActivatedJob.getVariablesAsMap())
         .containsOnly(entry("el1_var_a", "value_a"));
     ZeebeAssertHelper.assertJobCreated(secondElJobType);
+  }
+
+  @Test
+  public void shouldCompleteProcessExecutionListeners() {
+    // given
+    final String processStartElJobType = helper.getStartExecutionListenerType();
+    final String processEndElJobType = helper.getEndExecutionListenerType();
+    final String serviceTaskJobType = helper.getJobType();
+
+    // create model with one EL[start]
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .zeebeStartExecutionListener(processStartElJobType)
+            .zeebeEndExecutionListener(processEndElJobType)
+            .startEvent("start")
+            .serviceTask("task", t -> t.zeebeJobType(serviceTaskJobType))
+            .endEvent("end")
+            .done();
+    final long processDefinitionKey = CLIENT_RULE.deployProcess(modelInstance);
+    final long processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey, "{}");
+
+    final RecordingJobHandler elJobHandler = new RecordingJobHandler();
+    CLIENT_RULE.getClient().newWorker().jobType(processStartElJobType).handler(elJobHandler).open();
+    CLIENT_RULE.getClient().newWorker().jobType(serviceTaskJobType).handler(elJobHandler).open();
+    CLIENT_RULE.getClient().newWorker().jobType(processEndElJobType).handler(elJobHandler).open();
+
+    // when
+    // process EL[start] job activated
+    waitUntilJobHandled(elJobHandler, processStartElJobType);
+    final long processStartElJobKey = getHandledJobKey(elJobHandler, processStartElJobType);
+
+    // then
+    // complete EL[start] job activated
+    CLIENT_RULE.getClient().newCompleteCommand(processStartElJobKey).send().join();
+
+    // when
+    // service task job activated
+    waitUntilJobHandled(elJobHandler, serviceTaskJobType);
+    final long serviceTaskJobKey = getHandledJobKey(elJobHandler, serviceTaskJobType);
+
+    // then
+    // complete service task job
+    CLIENT_RULE.getClient().newCompleteCommand(serviceTaskJobKey).send().join();
+
+    // when
+    // process EL[end] job activated
+    waitUntilJobHandled(elJobHandler, processEndElJobType);
+    final long processEndElJobKey = getHandledJobKey(elJobHandler, processEndElJobType);
+
+    // then
+    // complete EL[end] job activated
+    CLIENT_RULE.getClient().newCompleteCommand(processEndElJobKey).send().join();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.COMPLETE_ELEMENT),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  private static long getHandledJobKey(
+      final RecordingJobHandler elJobHandler, final String jobType) {
+    return elJobHandler.getHandledJobs().stream()
+        .filter(j -> j.getType().equals(jobType))
+        .findFirst()
+        .get()
+        .getKey();
+  }
+
+  private static void waitUntilJobHandled(
+      final RecordingJobHandler elJobHandler, final String jobType) {
+    waitUntil(
+        () -> elJobHandler.getHandledJobs().stream().anyMatch(j -> j.getType().equals(jobType)));
   }
 }

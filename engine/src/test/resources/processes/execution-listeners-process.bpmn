@@ -11,11 +11,6 @@
         </zeebe:executionListeners>
       </bpmn:extensionElements>
     <bpmn:startEvent id="dmk_start_event">
-      <bpmn:extensionElements>
-        <zeebe:ioMapping>
-          <zeebe:output source="=&#34;a&#34;" target="se_output_a" />
-        </zeebe:ioMapping>
-      </bpmn:extensionElements>
       <bpmn:outgoing>Flow_1du2tni</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="Flow_1du2tni" sourceRef="dmk_start_event" targetRef="el-process" />
