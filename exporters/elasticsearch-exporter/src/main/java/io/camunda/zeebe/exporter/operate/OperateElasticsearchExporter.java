@@ -148,6 +148,7 @@ public class OperateElasticsearchExporter implements Exporter {
       // we only know the partition id here
       metrics = new OperateElasticsearchMetrics(record.getPartitionId());
       requestManager.setMetrics(metrics);
+      writer.setMetrics(metrics);
     }
 
     requestManager.eventLoop();

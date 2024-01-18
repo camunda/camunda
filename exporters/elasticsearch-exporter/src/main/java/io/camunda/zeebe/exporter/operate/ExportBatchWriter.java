@@ -14,6 +14,7 @@ import io.camunda.operate.util.Tuple;
 import io.camunda.zeebe.exporter.operate.handlers.DecisionInstanceHandler;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.prometheus.client.Histogram.Timer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,66 +37,72 @@ public class ExportBatchWriter {
 
   private List<Tuple<String, Class<?>>> idFlushOrder = new ArrayList<>();
 
+  private OperateElasticsearchMetrics metrics;
+
   public void addRecord(Record<?> record) {
     // TODO: need to filter to only handle events
 
-    final ValueType valueType = record.getValueType();
+    try (Timer timer = metrics.measureRecordConversionDuration()) {
 
-    if (valueType == decisionInstanceHandler.handlesValueType()) {
-      final List<DecisionInstanceEntity> entities =
-          decisionInstanceHandler.createEntities((Record) record);
+      final ValueType valueType = record.getValueType();
 
-      // reorganize the entities for flushing them in order of creation
-      entities.forEach(e -> cachedDecisionInstanceEntities.put(e.getId(), e));
-      idFlushOrder.addAll(
-          entities.stream()
-              .map(e -> new Tuple<String, Class<?>>(e.getId(), DecisionInstanceEntity.class))
-              .collect(Collectors.toList()));
+      if (valueType == decisionInstanceHandler.handlesValueType()) {
+        final List<DecisionInstanceEntity> entities =
+            decisionInstanceHandler.createEntities((Record) record);
+
+        // reorganize the entities for flushing them in order of creation
+        entities.forEach(e -> cachedDecisionInstanceEntities.put(e.getId(), e));
+        idFlushOrder.addAll(
+            entities.stream()
+                .map(e -> new Tuple<String, Class<?>>(e.getId(), DecisionInstanceEntity.class))
+                .collect(Collectors.toList()));
+      }
+
+      handlers
+          .getOrDefault(valueType, Collections.emptyList())
+          .forEach(
+              handler -> {
+                // TODO: lol ugly
+                final ExportHandler handler2 = (ExportHandler) handler;
+
+                if (handler.handlesRecord((Record) record)) {
+
+                  final String entityId = handler.generateId((Record) record);
+                  final Tuple<String, Class<?>> cacheKey =
+                      new Tuple<>(entityId, handler.getEntityType());
+
+                  final OperateEntity<?> cachedEntity;
+
+                  final boolean alreadyCached = cachedEntities.containsKey(cacheKey);
+                  if (alreadyCached) {
+                    cachedEntity = cachedEntities.get(cacheKey).getLeft();
+                  } else {
+                    cachedEntity = handler.createNewEntity(entityId);
+                  }
+
+                  handler2.updateEntity((Record) record, (OperateEntity) cachedEntity);
+
+                  // always store the latest handler in the tuple, because that is the one taking
+                  // care
+                  // of
+                  // flushing
+                  cachedEntities.put(cacheKey, new Tuple<>(cachedEntity, handler));
+
+                  // append the id to the end of the flush order (not particularly efficient, but
+                  // should be
+                  // fine for prototyping)
+                  // TODO: removed this to avoid the performance penalty; it's not clear to me that
+                  // this is
+                  // strictly needed, the order in which documents will appear in ES for one batch
+                  // will be
+                  // slightly different now
+                  //                idFlushOrder.remove(cacheKey);
+                  if (!alreadyCached) {
+                    idFlushOrder.add(cacheKey);
+                  }
+                }
+              });
     }
-
-    handlers
-        .getOrDefault(valueType, Collections.emptyList())
-        .forEach(
-            handler -> {
-              // TODO: lol ugly
-              final ExportHandler handler2 = (ExportHandler) handler;
-
-              if (handler.handlesRecord((Record) record)) {
-
-                final String entityId = handler.generateId((Record) record);
-                final Tuple<String, Class<?>> cacheKey =
-                    new Tuple<>(entityId, handler.getEntityType());
-
-                final OperateEntity<?> cachedEntity;
-
-                final boolean alreadyCached = cachedEntities.containsKey(cacheKey);
-                if (alreadyCached) {
-                  cachedEntity = cachedEntities.get(cacheKey).getLeft();
-                } else {
-                  cachedEntity = handler.createNewEntity(entityId);
-                }
-
-                handler2.updateEntity((Record) record, (OperateEntity) cachedEntity);
-
-                // always store the latest handler in the tuple, because that is the one taking care
-                // of
-                // flushing
-                cachedEntities.put(cacheKey, new Tuple<>(cachedEntity, handler));
-
-                // append the id to the end of the flush order (not particularly efficient, but
-                // should be
-                // fine for prototyping)
-                // TODO: removed this to avoid the performance penalty; it's not clear to me that
-                // this is
-                // strictly needed, the order in which documents will appear in ES for one batch
-                // will be
-                // slightly different now
-                //                idFlushOrder.remove(cacheKey);
-                if (!alreadyCached) {
-                  idFlushOrder.add(cacheKey);
-                }
-              }
-            });
   }
 
   public void flush(OperateElasticsearchBulkRequest request) {
@@ -144,6 +151,11 @@ public class ExportBatchWriter {
 
   public int getNumCachedEntities() {
     return cachedEntities.size() + cachedDecisionInstanceEntities.size();
+  }
+
+  public ExportBatchWriter setMetrics(final OperateElasticsearchMetrics metrics) {
+    this.metrics = metrics;
+    return this;
   }
 
   public static class Builder {

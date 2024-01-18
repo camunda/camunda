@@ -30,7 +30,18 @@ public class OperateElasticsearchMetrics {
           .name("bulk_memory_size")
           .help("Size of JSON-serialized bulk requests to Elasticsearch")
           .buckets(
-              1_000, 2_000, 3_000, 4_000, 5_000, 6_000, 7_000, 8_000, 9_000, 10_000, 11_000, 12_000)
+              1_000_000,
+              2_000_000,
+              3_000_000,
+              4_000_000,
+              5_000_000,
+              6_000_000,
+              7_000_000,
+              8_000_000,
+              9_000_000,
+              10_000_000,
+              11_000_000,
+              12_000_000)
           .labelNames(PARTITION_LABEL)
           .register();
 
@@ -56,11 +67,20 @@ public class OperateElasticsearchMetrics {
           .labelNames(PARTITION_LABEL)
           .register();
 
+  private static final Histogram RECORD_CONVERSION_DURATION =
+      Histogram.build()
+          .namespace(NAMESPACE)
+          .name("record_conversion_duration_seconds")
+          .help("Duration of conversion a Zeebe records into Operate entities in seconds")
+          .labelNames(PARTITION_LABEL)
+          .register();
+
   private static final Histogram SERIALIZATION_DURATION =
       Histogram.build()
           .namespace(NAMESPACE)
           .name("serialization_duration_seconds")
-          .help("Duration of convertion a flushed entity cache to a JSON request body in seconds")
+          .help("Duration of conversion a flushed entity cache to a JSON request body in seconds")
+          .buckets(.005, .01, .015, .02, .025, .03, .035, .04, .045, .05, .075, .1, .25, .5, .75, 1)
           .labelNames(PARTITION_LABEL)
           .register();
 
@@ -98,6 +118,10 @@ public class OperateElasticsearchMetrics {
 
   public Histogram.Timer measureSerializationDuration() {
     return SERIALIZATION_DURATION.labels(partitionIdLabel).startTimer();
+  }
+
+  public Histogram.Timer measureRecordConversionDuration() {
+    return RECORD_CONVERSION_DURATION.labels(partitionIdLabel).startTimer();
   }
 
   public void recordJsonProcessingQueueSize(final int queueSize) {
