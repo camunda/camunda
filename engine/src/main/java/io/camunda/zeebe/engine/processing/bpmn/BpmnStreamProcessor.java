@@ -167,14 +167,13 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         break;
       case EXECUTION_LISTENER_COMPLETE:
         switch (stateBehavior.getElementInstance(context).getState()) {
-          case ELEMENT_ACTIVATING -> onStartExecutionListenerComplete(
-              (ExecutableFlowNode) element, processor, context);
-          case ELEMENT_COMPLETING -> onEndExecutionListenerComplete(
-              (ExecutableFlowNode) element, processor, context);
-          default -> throw new UnsupportedOperationException(
-              "Unexpected element state: " + context);
+          case ELEMENT_ACTIVATING ->
+              onStartExecutionListenerComplete((ExecutableFlowNode) element, processor, context);
+          case ELEMENT_COMPLETING ->
+              onEndExecutionListenerComplete((ExecutableFlowNode) element, processor, context);
+          default ->
+              throw new UnsupportedOperationException("Unexpected element state: " + context);
         }
-
         break;
       case TERMINATE_ELEMENT:
         final var terminatingContext = stateTransitionBehavior.transitionToTerminating(context);
@@ -195,19 +194,17 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final BpmnElementContext context) {
 
     if (element instanceof final ExecutableFlowNode node) {
-      final List<ExecutionListener> startExecutionListeners =
-          getExecutionListenersByEventType(node, ExecutionListenerEventType.START);
-
-      if (startExecutionListeners.isEmpty()) {
-        processor.completeActivating(element, context);
-      } else {
-        createExecutionListenerJob(node, context, startExecutionListeners.getFirst());
-        // stop the execution and wait for the job to be completed
-      }
+      getExecutionListenersByEventType(node, ExecutionListenerEventType.START).stream()
+          .findFirst()
+          .ifPresentOrElse(
+              firstStartEl -> createExecutionListenerJob(node, context, firstStartEl),
+              () -> {
+                processor.completeActivating(element, context);
+                // stop the execution and wait for the job to be completed
+              });
     }
     // other elements, like sequence flows, do not have execution listeners
     // assume that the element is activated already
-
   }
 
   private void afterCompleting(
@@ -216,19 +213,17 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final BpmnElementContext context) {
 
     if (element instanceof final ExecutableFlowNode node) {
-      final List<ExecutionListener> startExecutionListeners =
-          getExecutionListenersByEventType(node, ExecutionListenerEventType.END);
-
-      if (startExecutionListeners.isEmpty()) {
-        processor.completeCompleting(element, context);
-      } else {
-        createExecutionListenerJob(node, context, startExecutionListeners.getFirst());
-        // stop the execution and wait for the job to be completed
-      }
+      getExecutionListenersByEventType(node, ExecutionListenerEventType.END).stream()
+          .findFirst()
+          .ifPresentOrElse(
+              firstEndEl -> createExecutionListenerJob(node, context, firstEndEl),
+              () -> {
+                processor.completeCompleting(element, context);
+                // stop the execution and wait for the job to be completed
+              });
     }
     // other elements, like sequence flows, do not have execution listeners
     // assume that the element is completed already
-
   }
 
   private List<ExecutionListener> getExecutionListenersByEventType(
@@ -244,12 +239,11 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final ExecutionListener listener) {
     jobBehavior
         .evaluateJobExpressions(listener.getJobWorkerProperties(), context)
-        .map(
-            elJobProperties -> {
-              jobBehavior.createNewExecutionListenerJob(
-                  context, element, elJobProperties, listener.getEventType());
-              return context;
-            });
+        .ifRightOrLeft(
+            elJobProperties ->
+                jobBehavior.createNewExecutionListenerJob(
+                    context, element, elJobProperties, listener.getEventType()),
+            failure -> incidentBehavior.createIncident(failure, context));
   }
 
   public void onStartExecutionListenerComplete(

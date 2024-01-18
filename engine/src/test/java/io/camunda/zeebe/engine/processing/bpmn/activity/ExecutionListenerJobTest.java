@@ -375,7 +375,7 @@ public class ExecutionListenerJobTest {
 
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
-    // then
+    // when
     ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_start_type_1").complete();
     ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_start_type_2").complete();
     ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_start_type_3").complete();
@@ -385,6 +385,7 @@ public class ExecutionListenerJobTest {
     ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_end_type_1").complete();
     ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_end_type_2").complete();
 
+    // then
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
