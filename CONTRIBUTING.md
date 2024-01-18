@@ -172,9 +172,8 @@ Before opening your first pull request, please have a look at this [guide](https
    1. If there are changes requested address them in a new commit. Notify the
       reviewer in a comment if the pull request is ready for review again. If
       the changes are accepted squash them again in the related commit and force push.
-      Then initiate a merge by writing a comment with the content `bors merge`.
-   2. If no changes are requested the reviewer will initiate a merge by adding a
-      comment with the content `bors merge`.
+      Then initiate a merge by adding your PR to the merge queue via the `Merge when ready` button.
+   2. If no changes are requested the reviewer will initiate a merge themselves.
 4. When a merge is initiated, a bot will merge your branch with the latest
    `main` and run the CI on it.
    1. If everything goes well the branch is merged and deleted and the issue
@@ -185,8 +184,7 @@ Before opening your first pull request, please have a look at this [guide](https
    3. If there are CI errors the author of the pull request has to check if
       they are caused by its changes and address them. If they are flaky tests, please
       have a look at this [guide](docs/ci.md#determine-flakiness) on how to handle them.
-      Once the CI errors are resolved, a merge can be retried with a comment with
-      the content `bors retry`.
+      Once the CI errors are resolved, a merge can be retried by simply enqueueing the PR again.
 
 ## Reviewing a pull request
 
@@ -225,13 +223,12 @@ Please follow these steps to backport your changes:
 
 1. **Label the pull request** with a backport label (e.g. the label `backport stable/1.0` indicates
    that we want to backport this pull request to the `stable/1.0` branch).
-   - if the pull request is _not yet_ merged, it will be automatically backported when bors has
-     finished merging the pull request.
+   - if the pull request is _not yet_ merged, it will be automatically backported when it gets merged.
    - if the pull request is _already_ merged, create a comment on the pull request that contains
      `/backport` to trigger the automatic backporting.
 2. The Github Actions bot comments on the pull request once it finishes:
-   - When _successful_, a new backport pull request was automatically created. Simply **approve and
-     merge it** by adding a review with a `bors merge` comment.
+   - When _successful_, a new backport pull request was automatically created. Simply approve the PR,
+     and enqueue it to the merge queue by clicking the `Merge when ready` button.
    - If it _failed_, please follow these **manual steps**:
      1. Locally checkout the target branch (e.g. `stable/1.0`).
      2. Make sure it's up to date with origin (i.e. `git pull`).
@@ -281,7 +278,7 @@ The commit header should be kept short, preferably under 72 chars but we allow a
 
 - `type` should be one of:
   - `build`: Changes that affect the build system (e.g. Maven, Docker, etc)
-  - `ci`: Changes to our CI configuration files and scripts (e.g. Jenkins, Bors, etc)
+  - `ci`: Changes to our CI configuration files and scripts (e.g. GitHub Actions, etc)
   - `deps`: A change to the external dependencies (was already used by Dependabot)
   - `docs`:  A change to the documentation
   - `feat`: A new feature (both internal or user-facing)
