@@ -283,20 +283,7 @@ public class ExecutionListenerJobTest {
     ENGINE.incident().ofInstance(processInstanceKey).withKey(firstIncident.getKey()).resolve();
 
     // EL[start] job recreated
-    final long recreatedExecutionListenerJobKey =
-        RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withType("dmk_task_start_type")
-            .skip(1)
-            .getFirst()
-            .getKey();
-
-    // complete recreated EL[start] job
-    ENGINE
-        .job()
-        .ofInstance(processInstanceKey)
-        .withKey(recreatedExecutionListenerJobKey)
-        .complete();
+    completeJobByType(processInstanceKey, "dmk_task_start_type", 1);
 
     // Job for service task should be created
     assertJobLifecycle(
@@ -404,6 +391,71 @@ public class ExecutionListenerJobTest {
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldInvokeExecutionListenerAroundMultiInstanceSequentialServiceTask() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlClasspathResource(
+            "/processes/execution-listeners-around-sequential-multi-instance-service-task.bpmn")
+        .deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    completeJobByType(processInstanceKey, "dmk_start_el", 0);
+    completeJobByType(processInstanceKey, "dmk_service_task", 0);
+    completeJobByType(processInstanceKey, "dmk_end_el", 0);
+
+    completeJobByType(processInstanceKey, "dmk_start_el", 1);
+    completeJobByType(processInstanceKey, "dmk_service_task", 1);
+    completeJobByType(processInstanceKey, "dmk_end_el", 1);
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            // first service task instance
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            // second service task instance
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  private static void completeJobByType(
+      final long processInstanceKey, final String dmkServiceTask, final int index) {
+    final long jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(dmkServiceTask)
+            .skip(index)
+            .getFirst()
+            .getKey();
+    ENGINE.job().ofInstance(processInstanceKey).withKey(jobKey).complete();
   }
 
   void assertVariable(
