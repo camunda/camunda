@@ -16,6 +16,8 @@
 
 package io.camunda.zeebe.model.bpmn.builder;
 
+import static io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener.DEFAULT_RETRIES;
+
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.zeebe.MessageBuilder;
 import io.camunda.zeebe.model.bpmn.builder.zeebe.SignalBuilder;
@@ -31,6 +33,9 @@ import io.camunda.zeebe.model.bpmn.instance.TimeCycle;
 import io.camunda.zeebe.model.bpmn.instance.TimeDate;
 import io.camunda.zeebe.model.bpmn.instance.TimeDuration;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
@@ -42,7 +47,8 @@ import java.util.function.Consumer;
  */
 public abstract class AbstractCatchEventBuilder<
         B extends AbstractCatchEventBuilder<B, E>, E extends CatchEvent>
-    extends AbstractEventBuilder<B, E> implements ZeebeVariablesMappingBuilder<B> {
+    extends AbstractEventBuilder<B, E>
+    implements ZeebeVariablesMappingBuilder<B>, ZeebeExecutionListenersBuilder<B> {
 
   protected AbstractCatchEventBuilder(
       final BpmnModelInstance modelInstance, final E element, final Class<?> selfType) {
@@ -307,5 +313,41 @@ public abstract class AbstractCatchEventBuilder<
     input.setTarget(target);
 
     return myself;
+  }
+
+  @Override
+  public B zeebeStartExecutionListener(final String type, final String retries) {
+    final ZeebeExecutionListeners executionListeners =
+        getCreateSingleExtensionElement(ZeebeExecutionListeners.class);
+    final ZeebeExecutionListener listener =
+        createChild(executionListeners, ZeebeExecutionListener.class);
+    listener.setEventType(ZeebeExecutionListenerEventType.start);
+    listener.setType(type);
+    listener.setRetries(retries);
+
+    return myself;
+  }
+
+  @Override
+  public B zeebeStartExecutionListener(final String type) {
+    return zeebeStartExecutionListener(type, DEFAULT_RETRIES);
+  }
+
+  @Override
+  public B zeebeEndExecutionListener(final String type, final String retries) {
+    final ZeebeExecutionListeners executionListeners =
+        getCreateSingleExtensionElement(ZeebeExecutionListeners.class);
+    final ZeebeExecutionListener listener =
+        createChild(executionListeners, ZeebeExecutionListener.class);
+    listener.setEventType(ZeebeExecutionListenerEventType.end);
+    listener.setType(type);
+    listener.setRetries(retries);
+
+    return myself;
+  }
+
+  @Override
+  public B zeebeEndExecutionListener(final String type) {
+    return zeebeEndExecutionListener(type, DEFAULT_RETRIES);
   }
 }

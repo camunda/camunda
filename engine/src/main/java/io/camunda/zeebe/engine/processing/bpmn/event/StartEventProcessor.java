@@ -44,13 +44,34 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
 
   @Override
   public void onActivate(final ExecutableStartEvent element, final BpmnElementContext context) {
+    // nothing to do
+  }
+
+  @Override
+  public void onComplete(final ExecutableStartEvent element, final BpmnElementContext context) {
+    // nothing to do
+  }
+
+  @Override
+  public void onTerminate(final ExecutableStartEvent element, final BpmnElementContext context) {
+    final var terminated =
+        stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
+
+    incidentBehavior.resolveIncidents(terminated);
+    stateTransitionBehavior.onElementTerminated(element, terminated);
+  }
+
+  @Override
+  public void completeActivating(
+      final ExecutableStartEvent element, final BpmnElementContext context) {
     final var activated =
         stateTransitionBehavior.transitionToActivated(context, element.getEventType());
     stateTransitionBehavior.completeElement(activated);
   }
 
   @Override
-  public void onComplete(final ExecutableStartEvent element, final BpmnElementContext context) {
+  public void completeCompleting(
+      final ExecutableStartEvent element, final BpmnElementContext context) {
     final var flowScope = (ExecutableCatchEventSupplier) element.getFlowScope();
 
     final BpmnElementContextImpl flowScopeInstanceContext =
@@ -64,15 +85,6 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
         .ifRightOrLeft(
             completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
             failure -> incidentBehavior.createIncident(failure, context));
-  }
-
-  @Override
-  public void onTerminate(final ExecutableStartEvent element, final BpmnElementContext context) {
-    final var terminated =
-        stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
-
-    incidentBehavior.resolveIncidents(terminated);
-    stateTransitionBehavior.onElementTerminated(element, terminated);
   }
 
   private BpmnElementContextImpl buildContextForFlowScopeInstance(

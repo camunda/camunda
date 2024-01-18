@@ -154,7 +154,7 @@ public class ExecutionListenerTest {
     final long processStartElJobKey = getHandledJobKey(elJobHandler, processStartElJobType);
 
     // then
-    // complete EL[start] job activated
+    // complete process EL[start] job activated
     CLIENT_RULE.getClient().newCompleteCommand(processStartElJobKey).send().join();
 
     // when
@@ -183,7 +183,7 @@ public class ExecutionListenerTest {
         .containsSubsequence(
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE),
-            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ACTIVATE_ELEMENT),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
@@ -192,6 +192,89 @@ public class ExecutionListenerTest {
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.COMPLETE_ELEMENT),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldCompleteStartEventExecutionListeners() {
+    // given
+    final String startEventStartElJobType = helper.getStartExecutionListenerType();
+    final String startEventEndElJobType = helper.getEndExecutionListenerType();
+    final String serviceTaskJobType = helper.getJobType();
+
+    // create model with one EL[start] for start and end event
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .zeebeStartExecutionListener(startEventStartElJobType)
+            .zeebeEndExecutionListener(startEventEndElJobType)
+            .serviceTask("task", t -> t.zeebeJobType(serviceTaskJobType))
+            .endEvent("end")
+            .done();
+    final long processDefinitionKey = CLIENT_RULE.deployProcess(modelInstance);
+    final long processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey, "{}");
+
+    final RecordingJobHandler elJobHandler = new RecordingJobHandler();
+    CLIENT_RULE
+        .getClient()
+        .newWorker()
+        .jobType(startEventStartElJobType)
+        .handler(elJobHandler)
+        .open();
+    CLIENT_RULE
+        .getClient()
+        .newWorker()
+        .jobType(startEventEndElJobType)
+        .handler(elJobHandler)
+        .open();
+    CLIENT_RULE.getClient().newWorker().jobType(serviceTaskJobType).handler(elJobHandler).open();
+
+    // when
+    // start event EL[start] job activated
+    waitUntilJobHandled(elJobHandler, startEventStartElJobType);
+    final long startEventStartElJobKey = getHandledJobKey(elJobHandler, startEventStartElJobType);
+
+    // then
+    // complete start eventEL[start] job activated
+    CLIENT_RULE.getClient().newCompleteCommand(startEventStartElJobKey).send().join();
+
+    // when
+    // start event EL[end] job activated
+    waitUntilJobHandled(elJobHandler, startEventEndElJobType);
+    final long startEventEndElJobKey = getHandledJobKey(elJobHandler, startEventEndElJobType);
+
+    // then
+    // complete start eventEL[end] job activated
+    CLIENT_RULE.getClient().newCompleteCommand(startEventEndElJobKey).send().join();
+
+    // when
+    // service task job activated
+    waitUntilJobHandled(elJobHandler, serviceTaskJobType);
+    final long serviceTaskJobKey = getHandledJobKey(elJobHandler, serviceTaskJobType);
+
+    // then
+    // complete service task job
+    CLIENT_RULE.getClient().newCompleteCommand(serviceTaskJobKey).send().join();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.COMPLETE_ELEMENT),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
