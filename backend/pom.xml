@@ -303,7 +303,7 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-test-container</artifactId>
-      <version>3.6.2</version>
+      <version>3.6.3</version>
       <scope>test</scope>
     </dependency>
     <dependency>
