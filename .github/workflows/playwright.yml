@@ -10,19 +10,16 @@ concurrency:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: gcp-core-2-default
     container:
       image: mcr.microsoft.com/playwright:v1.39.0
-      options: --user 1001:1000
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
-      - name: Setup yarn cache
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "18"
-          cache: "yarn"
-          cache-dependency-path: client/yarn.lock
       - name: Install node dependencies
         working-directory: ./client
         run: yarn
