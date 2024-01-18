@@ -13,6 +13,7 @@ import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setMetadat
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setPosition;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setSourceEventPosition;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setTimestamp;
+import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setVersion;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.skipProcessing;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.valueOffset;
 
@@ -23,7 +24,6 @@ import org.agrona.MutableDirectBuffer;
 
 /** Serializes {@link LogAppendEntry}, including legacy dispatcher framing. */
 final class LogAppendEntrySerializer {
-
   /**
    * Serializes an entry into the given destination buffer. Returns the length of the serialized
    * entry, framed but unaligned.
@@ -89,6 +89,7 @@ final class LogAppendEntrySerializer {
     final var entryOffset = writeBufferOffset + DataFrameDescriptor.HEADER_LENGTH;
 
     // Write the entry
+    setVersion(writeBuffer, entryOffset);
     if (entry.isProcessed()) {
       skipProcessing(writeBuffer, entryOffset);
     }
@@ -96,7 +97,7 @@ final class LogAppendEntrySerializer {
     setSourceEventPosition(writeBuffer, entryOffset, sourcePosition);
     setKey(writeBuffer, entryOffset, key);
     setTimestamp(writeBuffer, entryOffset, entryTimestamp);
-    setMetadataLength(writeBuffer, entryOffset, (short) metadataLength);
+    setMetadataLength(writeBuffer, entryOffset, metadataLength);
     metadata.write(writeBuffer, metadataOffset(entryOffset));
     value.write(writeBuffer, valueOffset(entryOffset, metadataLength));
 

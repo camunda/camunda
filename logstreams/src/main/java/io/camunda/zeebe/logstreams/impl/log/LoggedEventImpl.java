@@ -74,7 +74,7 @@ public final class LoggedEventImpl implements LoggedEvent {
   }
 
   @Override
-  public short getMetadataLength() {
+  public int getMetadataLength() {
     return LogEntryDescriptor.getMetadataLength(buffer, messageOffset);
   }
 
@@ -90,13 +90,13 @@ public final class LoggedEventImpl implements LoggedEvent {
 
   @Override
   public int getValueOffset() {
-    final short metadataLength = getMetadataLength();
+    final var metadataLength = getMetadataLength();
     return LogEntryDescriptor.valueOffset(messageOffset, metadataLength);
   }
 
   @Override
   public int getValueLength() {
-    final short metadataLength = getMetadataLength();
+    final var metadataLength = getMetadataLength();
 
     return getMessageLength() - LogEntryDescriptor.headerLength(metadataLength);
   }
@@ -104,6 +104,11 @@ public final class LoggedEventImpl implements LoggedEvent {
   @Override
   public void readValue(final BufferReader reader) {
     reader.wrap(buffer, getValueOffset(), getValueLength());
+  }
+
+  @Override
+  public short getVersion() {
+    return LogEntryDescriptor.getVersion(buffer, messageOffset);
   }
 
   @Override
