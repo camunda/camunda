@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {useMemo} from 'react';
 import {Row, Label, TaskLink, Stack, Container, Tag} from './styled';
 import {pages} from 'modules/routing';
 import {formatDate} from 'modules/utils/formatDate';
@@ -13,6 +13,7 @@ import {CurrentUser, Task as TaskType} from 'modules/types';
 import {useLocation, useMatch} from 'react-router-dom';
 import {useTaskFilters} from 'modules/hooks/useTaskFilters';
 import {BodyCompact} from 'modules/components/FontTokens';
+import {encodeTaskOpenedRef} from 'modules/utils/reftags';
 
 type Props = {
   taskId: TaskType['id'];
@@ -23,6 +24,7 @@ type Props = {
   followUpDate: TaskType['followUpDate'];
   dueDate: TaskType['dueDate'];
   currentUser: CurrentUser;
+  position: number;
 };
 
 const Task = React.forwardRef<HTMLElement, Props>(
@@ -36,6 +38,7 @@ const Task = React.forwardRef<HTMLElement, Props>(
       followUpDate,
       dueDate,
       currentUser,
+      position,
     },
     ref,
   ) => {
@@ -45,19 +48,35 @@ const Task = React.forwardRef<HTMLElement, Props>(
     const match = useMatch('/:id');
     const location = useLocation();
     const isActive = match?.params?.id === taskId;
-    const {sortBy} = useTaskFilters();
+    const {filter, sortBy} = useTaskFilters();
     const showFollowupDate =
       followUpDate !== null &&
       formatDate(followUpDate) !== '' &&
       sortBy === 'follow-up';
     const showDueDate =
       dueDate !== null && formatDate(dueDate) !== '' && sortBy !== 'follow-up';
+
+    const searchWithRefTag = useMemo(() => {
+      const params = new URLSearchParams(location.search);
+      params.set(
+        'ref',
+        encodeTaskOpenedRef({
+          by: 'user',
+          position,
+          filter,
+          sorting: sortBy,
+        }),
+      );
+      return params;
+    }, [location, position, filter, sortBy]);
+
     return (
       <Container className={isActive ? 'active' : undefined}>
         <TaskLink
           to={{
             ...location,
             pathname: pages.taskDetails(taskId),
+            search: searchWithRefTag.toString(),
           }}
           aria-label={
             isUnassigned

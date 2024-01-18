@@ -77,7 +77,7 @@ const AvailableTasks: React.FC<Props> = ({
               }}
               tabIndex={-1}
             >
-              {tasks.map((task) => {
+              {tasks.map((task, i) => {
                 return (
                   <Task
                     ref={taskRef}
@@ -90,6 +90,7 @@ const AvailableTasks: React.FC<Props> = ({
                     followUpDate={task.followUpDate}
                     dueDate={task.dueDate}
                     currentUser={data!}
+                    position={i}
                   />
                 );
               })}

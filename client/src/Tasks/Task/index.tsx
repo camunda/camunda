@@ -6,7 +6,7 @@
  */
 
 import {useEffect} from 'react';
-import {useLocation, useNavigate} from 'react-router-dom';
+import {useLocation, useNavigate, useSearchParams} from 'react-router-dom';
 import {useCompleteTask} from 'modules/mutations/useCompleteTask';
 import {getCompleteTaskErrorMessage} from './getCompleteTaskErrorMessage';
 import {shouldFetchMore} from './shouldFetchMore';
@@ -23,6 +23,7 @@ import {DetailsSkeleton} from './Details/DetailsSkeleton';
 import {useTask} from 'modules/queries/useTask';
 import {isRequestError} from 'modules/request';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
+import {decodeTaskOpenedRef} from 'modules/utils/reftags';
 
 const CAMUNDA_FORMS_PREFIX = 'camunda-forms:bpmn:';
 
@@ -43,6 +44,7 @@ const Task: React.FC<Props> = ({hasRemainingTasks, onCompleted}) => {
   const {id} = useTaskDetailsParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const {data: task, refetch} = useTask(id, {
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
@@ -53,10 +55,19 @@ const Task: React.FC<Props> = ({hasRemainingTasks, onCompleted}) => {
   const {formKey, processDefinitionKey, formId, id: taskId} = task ?? {id};
 
   useEffect(() => {
+    const search = new URLSearchParams(searchParams);
+    const ref = search.get('ref');
+    if (search.has('ref')) {
+      search.delete('ref');
+      setSearchParams(search, {replace: true});
+    }
+
+    const taskOpenedRef = decodeTaskOpenedRef(ref);
     tracking.track({
       eventName: 'task-opened',
+      ...(taskOpenedRef ?? {}),
     });
-  }, [taskId]);
+  }, [searchParams, setSearchParams, taskId]);
 
   async function handleSubmission(
     variables: Pick<Variable, 'name' | 'value'>[],

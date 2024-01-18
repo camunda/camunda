@@ -14,7 +14,6 @@ const EVENT_PREFIX = 'tasklist:';
 type Events =
   | {
       eventName:
-        | 'task-opened'
         | 'task-unassigned'
         | 'task-assigned'
         | 'processes-consent-refused'
@@ -31,6 +30,13 @@ type Events =
         | 'public-start-form-submitted'
         | 'public-start-form-submission-failed'
         | 'public-start-form-invalid-form-schema';
+    }
+  | {
+      eventName: 'task-opened';
+      by?: 'user';
+      position?: number;
+      filter?: TaskFilters['filter'];
+      sorting?: TaskFilters['sortBy'];
     }
   | {
       eventName: 'task-completed';

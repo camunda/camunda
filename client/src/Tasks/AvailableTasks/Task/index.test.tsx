@@ -44,6 +44,7 @@ describe('<Task />', () => {
         followUpDate={null}
         dueDate={null}
         currentUser={userMocks.currentUser}
+        position={0}
       />,
       {
         wrapper: createWrapper(),
@@ -69,6 +70,7 @@ describe('<Task />', () => {
         followUpDate={null}
         dueDate={null}
         currentUser={userMocks.currentUser}
+        position={0}
       />,
       {
         wrapper: createWrapper(),
@@ -89,6 +91,7 @@ describe('<Task />', () => {
         followUpDate={null}
         dueDate={null}
         currentUser={userMocks.currentUser}
+        position={0}
       />,
       {
         wrapper: createWrapper(),
@@ -109,6 +112,7 @@ describe('<Task />', () => {
         followUpDate={null}
         dueDate={null}
         currentUser={userMocks.currentUser}
+        position={0}
       />,
       {
         wrapper: createWrapper(),
@@ -130,6 +134,7 @@ describe('<Task />', () => {
         followUpDate={null}
         dueDate={null}
         currentUser={userMocks.currentUser}
+        position={0}
       />,
       {
         wrapper: createWrapper(['/?filter=all-open']),
@@ -140,6 +145,7 @@ describe('<Task />', () => {
 
     expect(screen.getByTestId('pathname')).toHaveTextContent('/1');
     expect(screen.getByTestId('search')).toHaveTextContent('filter=all-open');
+    expect(screen.getByTestId('search')).toHaveTextContent('ref=');
   });
 
   it('should render a task with due date', async () => {
@@ -153,6 +159,7 @@ describe('<Task />', () => {
         followUpDate={null}
         dueDate="2021-05-29T14:00:00.000Z"
         currentUser={userMocks.currentUser}
+        position={0}
       />,
       {
         wrapper: createWrapper(),
@@ -173,6 +180,7 @@ describe('<Task />', () => {
         followUpDate="2021-05-29T14:00:00.000Z"
         dueDate="2021-05-29T14:00:00.000Z"
         currentUser={userMocks.currentUser}
+        position={0}
       />,
       {
         wrapper: createWrapper(['/?sortBy=due']),
@@ -194,6 +202,7 @@ describe('<Task />', () => {
         followUpDate="2021-05-29T14:00:00.000Z"
         dueDate="2021-05-29T14:00:00.000Z"
         currentUser={userMocks.currentUser}
+        position={0}
       />,
       {
         wrapper: createWrapper(['/?sortBy=follow-up']),
