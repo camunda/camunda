@@ -80,6 +80,11 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
   }
 
   @Override
+  public PublishMessageCommandStep3 withoutCorrelationKey() {
+    return this;
+  }
+
+  @Override
   public PublishMessageCommandStep2 messageName(final String messageName) {
     builder.setName(messageName);
     return this;

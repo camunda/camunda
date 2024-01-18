@@ -619,7 +619,7 @@ public class MultiTenancyOverIdentityIT {
           client
               .newPublishMessageCommand()
               .messageName(messageName)
-              .correlationKey("")
+              .withoutCorrelationKey()
               .tenantId(TENANT_A)
               .send();
 
@@ -650,7 +650,7 @@ public class MultiTenancyOverIdentityIT {
           client
               .newPublishMessageCommand()
               .messageName(messageName)
-              .correlationKey("")
+              .withoutCorrelationKey()
               .tenantId(TENANT_B)
               .send();
 
