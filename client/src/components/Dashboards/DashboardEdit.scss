@@ -1,7 +1,7 @@
 .DashboardEdit {
   .OptimizeReportTile .visualization,
-  .ExternalReportTile iframe {
+  .ExternalReportTile iframe,
+  .TextTile .TextEditor {
     opacity: 0.5;
-    overflow: auto;
   }
 }
