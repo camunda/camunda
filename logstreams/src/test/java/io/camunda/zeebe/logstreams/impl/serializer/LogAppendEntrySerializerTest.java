@@ -24,12 +24,11 @@ final class LogAppendEntrySerializerTest {
   @Test
   void shouldSerializeEntry() {
     // given
-    final var serializer = new LogAppendEntrySerializer();
     final var event = new LoggedEventImpl();
     final var entry = TestEntry.ofKey(1);
 
     // when
-    serializer.serialize(writeBuffer, 0, entry, 2, 3, 4);
+    LogAppendEntrySerializer.serialize(writeBuffer, 0, entry, 2, 3, 4);
 
     // then
     event.wrap(writeBuffer, 0);
@@ -44,13 +43,12 @@ final class LogAppendEntrySerializerTest {
   @Test
   void shouldMarkEntryAsProcessed() {
     // given
-    final var serializer = new LogAppendEntrySerializer();
     final var event = new LoggedEventImpl();
     final var entry = TestEntry.ofKey(1);
     final var processedEntry = LogAppendEntry.ofProcessed(entry);
 
     // when
-    serializer.serialize(writeBuffer, 0, processedEntry, 2, 3, 4);
+    LogAppendEntrySerializer.serialize(writeBuffer, 0, processedEntry, 2, 3, 4);
 
     // then
     event.wrap(writeBuffer, 0);
@@ -65,44 +63,40 @@ final class LogAppendEntrySerializerTest {
   @Test
   void shouldFailWithEmptyMetadata() {
     // given
-    final var serializer = new LogAppendEntrySerializer();
     final var entry = TestEntry.builder().withRecordMetadata(null).build();
 
     // then
-    assertThatCode(() -> serializer.serialize(writeBuffer, 0, entry, 2, 3, 4))
+    assertThatCode(() -> LogAppendEntrySerializer.serialize(writeBuffer, 0, entry, 2, 3, 4))
         .isInstanceOf(NullPointerException.class);
   }
 
   @Test
   void shouldFailWithAnEmptyValue() {
     // given
-    final var serializer = new LogAppendEntrySerializer();
     final var entry = TestEntry.builder().withRecordValue(null).build();
 
     // when - then
-    assertThatCode(() -> serializer.serialize(writeBuffer, 0, entry, 2, 3, 4))
+    assertThatCode(() -> LogAppendEntrySerializer.serialize(writeBuffer, 0, entry, 2, 3, 4))
         .isInstanceOf(NullPointerException.class);
   }
 
   @Test
   void shouldFailWithANegativeTimestamp() {
     // given
-    final var serializer = new LogAppendEntrySerializer();
     final var entry = TestEntry.ofDefaults();
 
     // when - then
-    assertThatCode(() -> serializer.serialize(writeBuffer, 0, entry, 2, 3, -1))
+    assertThatCode(() -> LogAppendEntrySerializer.serialize(writeBuffer, 0, entry, 2, 3, -1))
         .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
   void shouldFailWithANegativePosition() {
     // given
-    final var serializer = new LogAppendEntrySerializer();
     final var entry = TestEntry.ofDefaults();
 
     // when - then
-    assertThatCode(() -> serializer.serialize(writeBuffer, 0, entry, -1, 3, 4))
+    assertThatCode(() -> LogAppendEntrySerializer.serialize(writeBuffer, 0, entry, -1, 3, 4))
         .isInstanceOf(IllegalArgumentException.class);
   }
 }
