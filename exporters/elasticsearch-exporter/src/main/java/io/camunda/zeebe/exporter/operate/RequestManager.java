@@ -8,6 +8,7 @@
 package io.camunda.zeebe.exporter.operate;
 
 import io.camunda.zeebe.exporter.ElasticsearchExporterException;
+import io.micrometer.core.instrument.util.NamedThreadFactory;
 import io.prometheus.client.Histogram.Timer;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -50,7 +51,9 @@ public class RequestManager {
     this.errorMapper = errorMapper;
     this.failureMapper = failureMapper;
     this.errorHandler = errorHandler;
-    this.jsonConverterPool = Executors.newFixedThreadPool(numSerializationThreads);
+    this.jsonConverterPool =
+        Executors.newFixedThreadPool(
+            numSerializationThreads, new NamedThreadFactory("json-serializer"));
   }
 
   public void setMetrics(OperateElasticsearchMetrics metrics) {
@@ -232,6 +235,8 @@ public class RequestManager {
 
       request.getRequest().setEntity(serializedBody);
       request.setConverted(true);
+
+      metrics.recordCurrentThreadCpuTime();
     }
   }
 

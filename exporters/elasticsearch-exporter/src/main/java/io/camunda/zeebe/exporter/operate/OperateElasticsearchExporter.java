@@ -200,10 +200,15 @@ public class OperateElasticsearchExporter implements Exporter {
 
     metrics.countCacheFlush();
     metrics.recordBulkRecordsSize(numCurrentlyExportedRecords);
+    metrics.recordCurrentThreadCpuTime();
+
     if (numCurrentlyExportedRecords < 600) {
-      LOGGER.warn("Unexpected exporter behavior: Flushing " +
-          writer.getNumCachedEntities() + " entities created from " +
-          numCurrentlyExportedRecords + " records");
+      LOGGER.warn(
+          "Unexpected exporter behavior: Flushing "
+              + writer.getNumCachedEntities()
+              + " entities created from "
+              + numCurrentlyExportedRecords
+              + " records");
     }
 
     writer.flush(request);

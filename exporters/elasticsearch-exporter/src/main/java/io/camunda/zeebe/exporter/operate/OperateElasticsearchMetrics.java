@@ -10,11 +10,14 @@ package io.camunda.zeebe.exporter.operate;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
 
 public class OperateElasticsearchMetrics {
 
   private static final String NAMESPACE = "zeebe_operate_elasticsearch_exporter";
   private static final String PARTITION_LABEL = "partition";
+  private static final String THREAD_NAME = "threadname";
 
   private static final Counter FLUSHED_CACHES =
       Counter.build()
@@ -62,8 +65,8 @@ public class OperateElasticsearchMetrics {
           .name("request_duration_seconds")
           .help("Duration of making bulk requests to Elasticsearch in seconds")
           .buckets(
-              .025, .05, .075, .1, .125, .15, .175, .2, .225, .25, .275, .3, .325, .35,
-              .375, .4, .425, .45, .475, .5, .6, .7, .8, .9, 1)
+              .025, .05, .075, .1, .125, .15, .175, .2, .225, .25, .275, .3, .325, .35, .375, .4,
+              .425, .45, .475, .5, .6, .7, .8, .9, 1)
           .labelNames(PARTITION_LABEL)
           .register();
 
@@ -94,10 +97,21 @@ public class OperateElasticsearchMetrics {
           .labelNames(PARTITION_LABEL)
           .register();
 
+  private static final Gauge THREAD_CPU_TIME =
+      Gauge.build()
+          .namespace(NAMESPACE)
+          .name("thread_cpu_time")
+          .help("CPU time as determined by ThreadMXBean#getThreadCpuTime")
+          .labelNames(PARTITION_LABEL, THREAD_NAME)
+          .register();
+
   private final String partitionIdLabel;
+
+  private final ThreadMXBean threadMxBean;
 
   public OperateElasticsearchMetrics(final int partitionId) {
     partitionIdLabel = String.valueOf(partitionId);
+    this.threadMxBean = ManagementFactory.getThreadMXBean();
   }
 
   public void countCacheFlush() {
@@ -126,5 +140,12 @@ public class OperateElasticsearchMetrics {
 
   public void recordJsonProcessingQueueSize(final int queueSize) {
     JSON_PROCESSING_QUEUE_SIZE.labels(partitionIdLabel).set(queueSize);
+  }
+
+  public void recordCurrentThreadCpuTime() {
+    final String threadName = Thread.currentThread().getName();
+    final long cpuTime = threadMxBean.getCurrentThreadCpuTime();
+
+    THREAD_CPU_TIME.labels(partitionIdLabel, threadName).set(cpuTime);
   }
 }
