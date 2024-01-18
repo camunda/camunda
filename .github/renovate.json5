@@ -130,7 +130,6 @@
       matchManagers: "dockerfile",
       separateMajorMinor: true,
       separateMinorPatch: true,
-      addLabels: ["docker"],
       prPriority: 100,
     },
     {
