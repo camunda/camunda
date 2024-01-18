@@ -90,3 +90,15 @@ jobs:
       fault: \"2-region-dataloss-failover\"
       maxInstanceDuration: 40m
     secrets: inherit
+
+  e2e-scaling-brokers:
+    name: Scaling brokers
+    uses: ./.github/workflows/e2e-testbench.yaml
+    with:
+      branch: main
+      generation: Zeebe SNAPSHOT
+      maxTestDuration: PT4H
+      clusterPlan: Production - M
+      fault: \"scale-brokers\"
+      maxInstanceDuration: 40m
+    secrets: inherit
