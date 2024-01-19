@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -298,6 +300,45 @@ public class ExecutionListenerJobTest {
         "dmk_task_end_type",
         JobIntent.CREATED,
         ActivityType.EXECUTION_LISTENER);
+  }
+
+  @Test
+  public void shouldCreateIncidentWhenWhenServiceTaskWithExecutionListenersFailed() {
+    // given
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType("d_service_task")
+                        .zeebeStartExecutionListener("d_start_el")
+                        .zeebeEndExecutionListener("d_end_el"))
+            .endEvent("end")
+            .done();
+    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    // complete EL[start] job
+    ENGINE.job().ofInstance(processInstanceKey).withType("d_start_el").complete();
+    // fail service task job
+    ENGINE.job().ofInstance(processInstanceKey).withType("d_service_task").withRetries(0).fail();
+
+    final Record<IncidentRecordValue> firstIncident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // and
+    // resolve first incident
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(firstIncident.getKey()).resolve();
+    ENGINE.job().ofInstance(processInstanceKey).withType("d_service_task").complete();
+
+    // then
+    // EL[end] created
+    assertJobLifecycle(
+        processInstanceKey, 2, "d_end_el", JobIntent.CREATED, ActivityType.EXECUTION_LISTENER);
   }
 
   @Test
