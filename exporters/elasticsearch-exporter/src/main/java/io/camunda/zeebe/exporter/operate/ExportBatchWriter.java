@@ -41,8 +41,8 @@ public class ExportBatchWriter {
 
   public void addRecord(Record<?> record) {
     // TODO: need to filter to only handle events
-
-    try (Timer timer = metrics.measureRecordConversionDuration()) {
+    Timer timer = metrics.measureRecordConversionDuration();
+    try {
 
       final ValueType valueType = record.getValueType();
 
@@ -102,6 +102,8 @@ public class ExportBatchWriter {
                   }
                 }
               });
+    } finally {
+      metrics.incrementRecordConversionDuration(timer.observeDuration());
     }
   }
 

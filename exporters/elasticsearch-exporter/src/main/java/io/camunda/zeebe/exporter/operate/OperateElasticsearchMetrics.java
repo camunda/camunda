@@ -74,7 +74,18 @@ public class OperateElasticsearchMetrics {
       Histogram.build()
           .namespace(NAMESPACE)
           .name("record_conversion_duration_seconds")
-          .help("Duration of conversion a Zeebe records into Operate entities in seconds")
+          .help("Duration of conversion of Zeebe record into Operate entity in seconds")
+          .buckets(
+              .000005, .00001, .000015, .00002, .000025, .00003, .000035, .00004, .000045, .00005,
+              .075, .1)
+          .labelNames(PARTITION_LABEL)
+          .register();
+
+  private static final Gauge RECORD_CONVERSION_DURATION_CUMULATIVE =
+      Gauge.build()
+          .namespace(NAMESPACE)
+          .name("record_conversion_duration_seconds_cumulative")
+          .help("Total duration of conversion of Zeebe record into Operate entity in seconds")
           .labelNames(PARTITION_LABEL)
           .register();
 
@@ -147,5 +158,9 @@ public class OperateElasticsearchMetrics {
     final long cpuTime = threadMxBean.getCurrentThreadCpuTime();
 
     THREAD_CPU_TIME.labels(partitionIdLabel, threadName).set(cpuTime);
+  }
+
+  public void incrementRecordConversionDuration(final double duration) {
+    RECORD_CONVERSION_DURATION_CUMULATIVE.labels(partitionIdLabel).inc(duration);
   }
 }
