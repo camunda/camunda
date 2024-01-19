@@ -54,7 +54,6 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final VariableState variableState;
   private final IncidentState incidentState;
   private final EventScopeInstanceState eventScopeInstanceState;
-  private final ProcessInstanceMigrationPreconditionChecker checker;
 
   public ProcessInstanceMigrationMigrateProcessor(
       final Writers writers, final ProcessingState processingState) {
@@ -67,7 +66,6 @@ public class ProcessInstanceMigrationMigrateProcessor
     variableState = processingState.getVariableState();
     incidentState = processingState.getIncidentState();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
-    checker = new ProcessInstanceMigrationPreconditionChecker();
   }
 
   @Override
@@ -77,14 +75,12 @@ public class ProcessInstanceMigrationMigrateProcessor
     final long targetProcessDefinitionKey = value.getTargetProcessDefinitionKey();
     final var mappingInstructions = value.getMappingInstructions();
     final ElementInstance processInstance = elementInstanceState.getInstance(processInstanceKey);
-    checker.setProcessInstanceKey(processInstanceKey);
-    checker.setTargetProcessDefinitionKey(targetProcessDefinitionKey);
 
-    checker.requireNonNullProcessInstance(processInstance);
-    checker.requireAuthorizedTenant(
-        command.getAuthorizations(), processInstance.getValue().getTenantId());
-    checker.requireNullParent(processInstance.getValue().getParentProcessInstanceKey());
-    checker.requireNonDuplicateSourceElementIds(mappingInstructions);
+    requireNonNullProcessInstance(processInstance, processInstanceKey);
+    requireAuthorizedTenant(
+        command.getAuthorizations(), processInstance.getValue().getTenantId(), processInstanceKey);
+    requireNullParent(processInstance.getValue().getParentProcessInstanceKey(), processInstanceKey);
+    requireNonDuplicateSourceElementIds(mappingInstructions, processInstanceKey);
 
     final DeployedProcess targetProcessDefinition =
         processState.getProcessByKeyAndTenant(
@@ -94,10 +90,10 @@ public class ProcessInstanceMigrationMigrateProcessor
             processInstance.getValue().getProcessDefinitionKey(),
             processInstance.getValue().getTenantId());
 
-    checker.requireNonNullTargetProcessDefinition(targetProcessDefinition);
-    checker.requireReferredElementsExist(
-        sourceProcessDefinition, targetProcessDefinition, mappingInstructions);
-    checker.requireNoEventSubprocess(sourceProcessDefinition, targetProcessDefinition);
+    requireNonNullTargetProcessDefinition(targetProcessDefinition, targetProcessDefinitionKey);
+    requireReferredElementsExist(
+        sourceProcessDefinition, targetProcessDefinition, mappingInstructions, processInstanceKey);
+    requireNoEventSubprocess(sourceProcessDefinition, targetProcessDefinition);
 
     final Map<String, String> mappedElementIds =
         mapElementIds(mappingInstructions, processInstance, targetProcessDefinition);
@@ -154,20 +150,24 @@ public class ProcessInstanceMigrationMigrateProcessor
       final DeployedProcess sourceProcessDefinition,
       final DeployedProcess targetProcessDefinition,
       final Map<String, String> sourceElementIdToTargetElementId) {
+
     final var elementInstanceRecord = elementInstance.getValue();
+    final long processInstanceKey = elementInstanceRecord.getProcessInstanceKey();
+
+    requireSupportedElementType(elementInstanceRecord, processInstanceKey);
+
     final String targetElementId =
         sourceElementIdToTargetElementId.get(elementInstanceRecord.getElementId());
-
-    checker.requireSupportedElementType(elementInstanceRecord);
-    checker.requireNonNullTargetElementId(targetElementId, elementInstanceRecord.getElementId());
-    checker.requireNoIncident(incidentState, elementInstance);
-    checker.requireSameElementType(targetProcessDefinition, targetElementId, elementInstanceRecord);
-    checker.requireUnchangedFlowScope(
+    requireNonNullTargetElementId(
+        targetElementId, processInstanceKey, elementInstanceRecord.getElementId());
+    requireNoIncident(incidentState, elementInstance);
+    requireSameElementType(
+        targetProcessDefinition, targetElementId, elementInstanceRecord, processInstanceKey);
+    requireUnchangedFlowScope(
         elementInstanceState, elementInstanceRecord, targetProcessDefinition, targetElementId);
-    checker.requireNoBoundaryEventInSource(sourceProcessDefinition, elementInstanceRecord);
-    checker.requireNoBoundaryEventInTarget(
-        targetProcessDefinition, targetElementId, elementInstanceRecord);
-    checker.requireNoConcurrentCommand(eventScopeInstanceState, elementInstance);
+    requireNoBoundaryEventInSource(sourceProcessDefinition, elementInstanceRecord);
+    requireNoBoundaryEventInTarget(targetProcessDefinition, targetElementId, elementInstanceRecord);
+    requireNoConcurrentCommand(eventScopeInstanceState, elementInstance, processInstanceKey);
 
     stateWriter.appendFollowUpEvent(
         elementInstance.getKey(),
