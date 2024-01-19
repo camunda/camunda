@@ -15,6 +15,8 @@ public enum TestZeebePort {
   GATEWAY(26500),
   /** Port for internal communication, i.e. what all nodes use to communicate for clustering */
   CLUSTER(26502),
+  /** The REST API server port */
+  REST(8080),
   /** Port for the management server, i.e. actuators, metrics, etc. */
   MONITORING(9600);
 
