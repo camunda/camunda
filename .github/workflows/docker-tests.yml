@@ -37,11 +37,14 @@ jobs:
           secrets: |
             secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
-      - name: Setup Maven Action
-        uses: s4u/setup-maven-action@v1.11.0
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
+          distribution: "adopt"
           java-version: "17"
-          java-distribution: "adopt"
+      - name: Setup Maven
+        uses: stCarolas/setup-maven@v4.5
+        with:
           maven-version: "3.9.6"
       # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
       - name: 'Create settings.xml'
