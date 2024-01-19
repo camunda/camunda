@@ -23,6 +23,13 @@ import org.assertj.core.groups.Tuple;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Acceptance tests for the backup management API. Tests here should interact with the backups
+ * primarily via the management API, and occasionally assert results on the configured backup store.
+ *
+ * <p>NOTE: this does not test the consistency of backups, nor that partition leaders correctly
+ * maintain consistency via checkpoint records. Other test suites should be set up for this.
+ */
 public interface BackupAcceptance {
   TestCluster getTestCluster();
 

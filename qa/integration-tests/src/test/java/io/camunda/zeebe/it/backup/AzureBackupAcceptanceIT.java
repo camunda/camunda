@@ -7,11 +7,9 @@
  */
 package io.camunda.zeebe.it.backup;
 
-import com.azure.storage.blob.BlobServiceClient;
 import io.camunda.zeebe.backup.azure.AzureBackupConfig;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
-import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -58,7 +56,6 @@ final class AzureBackupAcceptanceIT implements BackupAcceptance {
           .withReplicationFactor(1)
           .withPartitionsCount(2)
           .withEmbeddedGateway(false)
-          .withNodeConfig(this::configureNode)
           .build();
 
   private AzureBackupStore store;
@@ -71,8 +68,6 @@ final class AzureBackupAcceptanceIT implements BackupAcceptance {
             .withContainerName(CONTAINER_NAME)
             .build();
     store = new AzureBackupStore(config);
-    final BlobServiceClient blobServiceClient = AzureBackupStore.buildClient(config);
-    blobServiceClient.createBlobContainerIfNotExists(CONTAINER_NAME);
 
     // we have to configure the cluster here, after azurite is started, as otherwise we won't have
     // access to the exposed port
@@ -100,9 +95,5 @@ final class AzureBackupAcceptanceIT implements BackupAcceptance {
           azure.setBasePath(CONTAINER_NAME);
           azure.setConnectionString(AZURITE_CONTAINER.getConnectString());
         });
-  }
-
-  private void configureNode(final TestApplication<?> node) {
-    node.withProperty("management.endpoints.web.exposure.include", "*");
   }
 }
