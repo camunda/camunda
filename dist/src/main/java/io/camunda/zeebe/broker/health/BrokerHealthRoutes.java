@@ -27,7 +27,7 @@ public class BrokerHealthRoutes {
   @ConditionalOnManagementContext
   public RouterFunction<ServerResponse> routes() {
     return RouterFunctions.route()
-        .GET("/health", req -> movedPermanently("/actuator/health/liveness"))
+        .GET("/health", req -> movedPermanently("/actuator/health/status"))
         .GET("/ready", req -> movedPermanently("/actuator/health/readiness"))
         .GET("/startup", req -> movedPermanently("/actuator/health/startup"))
         .build();

@@ -10,37 +10,31 @@ package io.camunda.zeebe.broker.health;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.availability.LivenessStateHealthIndicator;
 import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.availability.ApplicationAvailability;
-import org.springframework.boot.availability.AvailabilityState;
-import org.springframework.boot.availability.LivenessState;
+import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.stereotype.Component;
 
 @Component
-public final class BrokerLiveHealthIndicator extends LivenessStateHealthIndicator {
+public final class BrokerStatusHealthIndicator implements HealthIndicator {
+
+  private static final Health HEALTHY = Health.up().build();
+  private static final Health UNHEALTHY = Health.down().build();
 
   private final SpringBrokerBridge brokerBridge;
 
   @Autowired
-  public BrokerLiveHealthIndicator(
-      final ApplicationAvailability availability, final SpringBrokerBridge brokerBridge) {
-    super(availability);
+  public BrokerStatusHealthIndicator(final SpringBrokerBridge brokerBridge) {
     this.brokerBridge = brokerBridge;
   }
 
   @Override
-  public Health getHealth(final boolean includeDetails) {
-    return super.getHealth(includeDetails);
-  }
-
-  @Override
-  protected AvailabilityState getState(final ApplicationAvailability applicationAvailability) {
-    final var isBrokerHealthy =
+  public Health health() {
+    final var isHealthy =
         brokerBridge
             .getBrokerHealthCheckService()
             .map(BrokerHealthCheckService::isBrokerHealthy)
             .orElse(false);
-    return isBrokerHealthy ? LivenessState.CORRECT : LivenessState.BROKEN;
+
+    return isHealthy ? HEALTHY : UNHEALTHY;
   }
 }
