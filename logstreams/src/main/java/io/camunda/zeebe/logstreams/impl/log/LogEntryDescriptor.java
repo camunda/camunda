@@ -10,6 +10,7 @@ package io.camunda.zeebe.logstreams.impl.log;
 import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.alignedLength;
 import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.lengthOffset;
 import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.messageOffset;
+import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.BitUtil.SIZE_OF_SHORT;
 
@@ -38,7 +39,7 @@ import org.agrona.MutableDirectBuffer;
  *  |                           TIMESTAMP                           |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |        METADATA LENGTH         |       unused                 |
+ *  |                        METADATA LENGTH                        |
  *  +---------------------------------------------------------------+
  *  |                         ...METADATA...                        |
  *  +---------------------------------------------------------------+
@@ -50,23 +51,24 @@ public final class LogEntryDescriptor {
 
   public static final long KEY_NULL_VALUE = -1;
 
-  public static final int VERSION_OFFSET;
+  private static final short VERSION = 1;
+  private static final int VERSION_OFFSET;
 
   // Contains arbitrary flags, currently only the `skipProcessing` flag.
-  public static final int FLAGS_OFFSET;
-  public static final int POSITION_OFFSET;
+  private static final int FLAGS_OFFSET;
+  private static final int POSITION_OFFSET;
 
-  public static final int SOURCE_EVENT_POSITION_OFFSET;
+  private static final int SOURCE_EVENT_POSITION_OFFSET;
 
-  public static final int KEY_OFFSET;
+  private static final int KEY_OFFSET;
 
-  public static final int TIMESTAMP_OFFSET;
+  private static final int TIMESTAMP_OFFSET;
 
-  public static final int METADATA_LENGTH_OFFSET;
+  private static final int METADATA_LENGTH_OFFSET;
 
-  public static final int HEADER_BLOCK_LENGTH;
+  private static final int HEADER_BLOCK_LENGTH;
 
-  public static final int METADATA_OFFSET;
+  private static final int METADATA_OFFSET;
 
   static {
     int offset = 0;
@@ -93,14 +95,23 @@ public final class LogEntryDescriptor {
     offset += SIZE_OF_LONG;
 
     METADATA_LENGTH_OFFSET = offset;
-    offset += SIZE_OF_SHORT;
-
-    // UNUSED BLOCK
-    offset += SIZE_OF_SHORT;
+    offset += SIZE_OF_INT;
 
     HEADER_BLOCK_LENGTH = offset;
 
     METADATA_OFFSET = offset;
+  }
+
+  public static int versionOffset(final int offset) {
+    return VERSION_OFFSET + offset;
+  }
+
+  public static void setVersion(final MutableDirectBuffer buffer, final int offset) {
+    buffer.putShort(versionOffset(offset), VERSION, Protocol.ENDIANNESS);
+  }
+
+  public static short getVersion(final DirectBuffer buffer, final int offset) {
+    return buffer.getShort(versionOffset(offset), Protocol.ENDIANNESS);
   }
 
   public static int getFragmentLength(final DirectBuffer buffer, final int offset) {
@@ -178,13 +189,13 @@ public final class LogEntryDescriptor {
     return METADATA_LENGTH_OFFSET + offset;
   }
 
-  public static short getMetadataLength(final DirectBuffer buffer, final int offset) {
-    return buffer.getShort(metadataLengthOffset(offset), Protocol.ENDIANNESS);
+  public static int getMetadataLength(final DirectBuffer buffer, final int offset) {
+    return buffer.getInt(metadataLengthOffset(offset), Protocol.ENDIANNESS);
   }
 
   public static void setMetadataLength(
-      final MutableDirectBuffer buffer, final int offset, final short metadataLength) {
-    buffer.putShort(metadataLengthOffset(offset), metadataLength, Protocol.ENDIANNESS);
+      final MutableDirectBuffer buffer, final int offset, final int metadataLength) {
+    buffer.putInt(metadataLengthOffset(offset), metadataLength, Protocol.ENDIANNESS);
   }
 
   public static int metadataOffset(final int offset) {

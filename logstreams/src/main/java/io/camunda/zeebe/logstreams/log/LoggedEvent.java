@@ -54,7 +54,7 @@ public interface LoggedEvent extends BufferWriter {
   /**
    * @return the length of the event's metadata
    */
-  short getMetadataLength();
+  int getMetadataLength();
 
   /**
    * Wraps the given buffer to read the event's metadata
@@ -85,4 +85,7 @@ public interface LoggedEvent extends BufferWriter {
    * @param reader the buffer to read from
    */
   void readValue(BufferReader reader);
+
+  /** Returns the version of the log entry descriptor used for serialization. */
+  short getVersion();
 }
