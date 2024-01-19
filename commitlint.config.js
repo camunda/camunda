@@ -18,7 +18,7 @@ module.exports = {
             'always',
             [
                 `build`, // Changes that affect the build system (e.g. Maven, Docker, etc)
-                `ci`, // Changes to our CI configuration files and scripts (e.g. Jenkins, Bors, etc)
+                `ci`, // Changes to our CI configuration files and scripts (e.g. GitHub Actions, etc)
                 `deps`, // A change to the external dependencies (was already used by Dependabot)
                 `docs`, //  A change to the documentation
                 `feat`, // A new feature (both internal or user-facing)
