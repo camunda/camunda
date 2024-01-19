@@ -265,14 +265,14 @@
 
     <dependency>
       <groupId>org.bouncycastle</groupId>
-      <artifactId>bcpkix-jdk15on</artifactId>
-      <scope>test</scope>
+      <artifactId>bcpkix-jdk18on</artifactId>
+      <scope>runtime</scope>
     </dependency>
 
     <dependency>
       <groupId>org.bouncycastle</groupId>
-      <artifactId>bcprov-jdk15on</artifactId>
-      <scope>test</scope>
+      <artifactId>bcprov-jdk18on</artifactId>
+      <scope>runtime</scope>
     </dependency>
 
     <dependency>
@@ -400,6 +400,9 @@
             <dependency>org.openapitools:jackson-databind-nullable</dependency>
             <dependency>io.micrometer:micrometer-registry-prometheus</dependency>
 
+            <!-- Used to parse PKCS1 certificates -->
+            <dependency>org.bouncycastle:bcprov-jdk18on</dependency>
+            <dependency>org.bouncycastle:bcpkix-jdk18on</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
