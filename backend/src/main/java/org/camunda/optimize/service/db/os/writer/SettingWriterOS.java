@@ -41,18 +41,14 @@ public class SettingWriterOS implements SettingsWriter {
 
   @Override
   public void upsertSettings(final SettingsResponseDto settingsDto) {
-//        log.debug("Writing settings to OS");
-//        final UpdateRequest.Builder<Void, SettingsResponseDto> request = createSettingsUpsert(settingsDto);
-//
-//        osClient.update(request, e -> {
-//            final String errorMessage = "There were errors while writing settings to OS.";
-//            log.error(errorMessage, e);
-//            return "There were errors while writing settings to OS." + e.getMessage();
-//        });
-    //todo will be handled in the OPT-7376
+    log.debug("Writing settings to OpenSearch");
+    final UpdateRequest.Builder<SettingsResponseDto, Void> request = createSettingsUpsert(settingsDto);
+
+    final String errorMessage = "There were errors while writing settings to OpenSearch.";
+    osClient.update(request, errorMessage);
   }
 
-  private UpdateRequest.Builder<Void, SettingsResponseDto> createSettingsUpsert(final SettingsResponseDto settingsDto) {
+  private UpdateRequest.Builder<SettingsResponseDto, Void> createSettingsUpsert(final SettingsResponseDto settingsDto) {
     Set<String> fieldsToUpdate = new HashSet<>();
 
     if (settingsDto.getMetadataTelemetryEnabled().isPresent()) {
@@ -62,7 +58,6 @@ public class SettingWriterOS implements SettingsWriter {
       fieldsToUpdate.add(SHARING_ENABLED);
     }
     if (!fieldsToUpdate.isEmpty()) {
-      //todo why if there is not updated values for example
       // This always gets updated
       fieldsToUpdate.add(LAST_MODIFIED);
     } else {
@@ -74,17 +69,14 @@ public class SettingWriterOS implements SettingsWriter {
       settingsDto,
       objectMapper
     );
-    //todo will be handled in the OPT-7376
-    return new UpdateRequest.Builder<Void, SettingsResponseDto>()
+
+    return new UpdateRequest.Builder<SettingsResponseDto, Void>()
       .index(SETTINGS_INDEX_NAME)
       .id(SettingsIndex.ID)
-      .doc(settingsDto)
-      //todo commented because the first arg is Void
-      // (This is a way to indicate that no full document is associated with the update operation.)
-      //.upsert(objectMapper.writeValueAsString(settingsDto))
+      .upsert(settingsDto)
       .script(updateScript)
       .refresh(Refresh.True)
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-
   }
+
 }
