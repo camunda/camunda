@@ -256,7 +256,7 @@ public final class ClusterTopologyManagerImpl implements ClusterTopologyManager 
   private void logAndScheduleRetry(final TopologyChangeOperation operation, final Throwable error) {
     shouldRetry = true;
     final Duration delay = backoffRetry.nextDelay();
-    LOG.error(
+    LOG.warn(
         "Failed to apply topology change operation {}. Will be retried in {}.",
         operation,
         delay,
