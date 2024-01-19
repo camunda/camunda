@@ -10,10 +10,12 @@ package io.camunda.zeebe.engine.processing.bpmn;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
+import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
@@ -21,6 +23,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionList
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -53,6 +57,10 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   private final BpmnStateBehavior stateBehavior;
 
   private final BpmnJobBehavior jobBehavior;
+  private final EventTriggerBehavior eventTriggerBehavior;
+  private final BpmnEventSubscriptionBehavior bpmnEventSubscriptionBehavior;
+  private final VariableBehavior variableBehavior;
+  private final EventScopeInstanceState eventScopeInstanceState;
 
   public BpmnStreamProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -74,6 +82,10 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     processors = new BpmnElementProcessors(bpmnBehaviors, stateTransitionBehavior);
     stateBehavior = bpmnBehaviors.stateBehavior();
     jobBehavior = bpmnBehaviors.jobBehavior();
+    eventTriggerBehavior = bpmnBehaviors.eventTriggerBehavior();
+    bpmnEventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
+    variableBehavior = bpmnBehaviors.variableBehavior();
+    eventScopeInstanceState = processingState.getEventScopeInstanceState();
   }
 
   private BpmnElementContainerProcessor<ExecutableFlowElement> getContainerProcessor(
@@ -167,12 +179,12 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         break;
       case EXECUTION_LISTENER_COMPLETE:
         switch (stateBehavior.getElementInstance(context).getState()) {
-          case ELEMENT_ACTIVATING ->
-              onStartExecutionListenerComplete((ExecutableFlowNode) element, processor, context);
-          case ELEMENT_COMPLETING ->
-              onEndExecutionListenerComplete((ExecutableFlowNode) element, processor, context);
-          default ->
-              throw new UnsupportedOperationException("Unexpected element state: " + context);
+          case ELEMENT_ACTIVATING -> onStartExecutionListenerComplete(
+              (ExecutableFlowNode) element, processor, context);
+          case ELEMENT_COMPLETING -> onEndExecutionListenerComplete(
+              (ExecutableFlowNode) element, processor, context);
+          default -> throw new UnsupportedOperationException(
+              "Unexpected element state: " + context);
         }
         break;
       case TERMINATE_ELEMENT:
@@ -251,6 +263,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final BpmnElementProcessor<ExecutableFlowElement> processor,
       final BpmnElementContext context) {
 
+    mergeVariablesOfExecutionListener(context);
+
     final String currentExecutionListenerType =
         stateBehavior.getElementInstance(context).getExecutionListenerType();
 
@@ -262,10 +276,36 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             () -> processor.finalizeActivation(element, context));
   }
 
+  private void mergeVariablesOfExecutionListener(final BpmnElementContext context) {
+    Optional.ofNullable(eventScopeInstanceState.peekEventTrigger(context.getElementInstanceKey()))
+        .ifPresent(
+            eventTrigger -> {
+              if (eventTrigger.getVariables().capacity() > 0) {
+                variableBehavior.mergeLocalDocument(
+                    context.getElementInstanceKey(),
+                    context.getProcessDefinitionKey(),
+                    context.getProcessInstanceKey(),
+                    context.getBpmnProcessId(),
+                    context.getTenantId(),
+                    eventTrigger.getVariables());
+              }
+
+              eventTriggerBehavior.processEventTriggered(
+                  eventTrigger.getEventKey(),
+                  context.getProcessDefinitionKey(),
+                  eventTrigger.getProcessInstanceKey(),
+                  context.getTenantId(),
+                  context.getElementInstanceKey(),
+                  eventTrigger.getElementId());
+            });
+  }
+
   public void onEndExecutionListenerComplete(
       final ExecutableFlowNode element,
       final BpmnElementProcessor<ExecutableFlowElement> processor,
       final BpmnElementContext context) {
+
+    mergeVariablesOfExecutionListener(context);
 
     final String currentExecutionListenerType =
         stateBehavior.getElementInstance(context).getExecutionListenerType();

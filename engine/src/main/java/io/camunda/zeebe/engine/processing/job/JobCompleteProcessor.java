@@ -25,7 +25,6 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue.ActivityType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.slf4j.Logger;
 
 public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
@@ -77,18 +76,24 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
       if (value.getActivityType() == ActivityType.EXECUTION_LISTENER) {
         LOGGER.info(
             "DMK::ExecutionListener='{}_{}'", value.getType(), value.executionListenerEventType());
+
+        // to store the variable for merge - why to handle concurrent commands
+        eventHandle.triggeringProcessEvent(value);
+
         commandWriter.appendFollowUpCommand(
             serviceTaskKey,
             ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE,
             serviceTask.getValue());
 
-        variableBehavior.mergeDocument(
-            serviceTask.getKey(),
-            value.getProcessDefinitionKey(),
-            value.getProcessInstanceKey(),
-            BufferUtil.wrapString(value.getBpmnProcessId()),
-            value.getTenantId(),
-            value.getVariablesBuffer());
+        // don't merge the variable here, because of concurrent commands
+        //        variableBehavior.mergeDocument(
+        //            serviceTask.getKey(),
+        //            value.getProcessDefinitionKey(),
+        //            value.getProcessInstanceKey(),
+        //            BufferUtil.wrapString(value.getBpmnProcessId()),
+        //            value.getTenantId(),
+        //            value.getVariablesBuffer());
+
         return;
       }
 
