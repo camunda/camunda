@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -29,7 +30,9 @@ import io.camunda.zeebe.test.util.record.ProcessInstanceRecordStream;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -341,10 +344,39 @@ public class ExecutionListenerJobTest {
         processInstanceKey, 2, "d_end_el", JobIntent.CREATED, ActivityType.EXECUTION_LISTENER);
   }
 
+  @Ignore("Doesn't work because the EL listener is invoked before the output mapping")
+  @Test
+  public void shouldAccessJobVariablesInEndListener() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask("A", t -> t.zeebeJobType("task"))
+                .zeebeEndExecutionListener("after-A")
+                .endEvent()
+                .done())
+        .deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType("task").withVariable("x", 1).complete();
+
+    // then
+    final Optional<JobRecordValue> jobActivated =
+        ENGINE.jobs().withType("after-A").activate().getValue().getJobs().stream()
+            .filter(job -> job.getProcessInstanceKey() == processInstanceKey)
+            .findFirst();
+
+    assertThat(jobActivated).isPresent();
+    assertThat(jobActivated.get().getVariables()).contains(entry("x", "1"));
+  }
+
   @Test
   public void shouldCompleteExecutionListenerJobWithVariables() {
     // given
-    //    RecordingExporter.setMaximumWaitTime(60_000);
 
     ENGINE.deployment().withXmlClasspathResource("/processes/execution-listeners.bpmn").deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
