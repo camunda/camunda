@@ -10,6 +10,7 @@ package io.camunda.zeebe.logstreams.impl.log;
 import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.alignedLength;
 import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.lengthOffset;
 import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.messageOffset;
+import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.BitUtil.SIZE_OF_SHORT;
 
@@ -94,10 +95,7 @@ public final class LogEntryDescriptor {
     offset += SIZE_OF_LONG;
 
     METADATA_LENGTH_OFFSET = offset;
-    offset += SIZE_OF_SHORT;
-
-    // UNUSED BLOCK
-    offset += SIZE_OF_SHORT;
+    offset += SIZE_OF_INT;
 
     HEADER_BLOCK_LENGTH = offset;
 
