@@ -18,3 +18,6 @@ Please, describe the outcomes from the spike and create tasks/features issue tha
 
 ### Timebox
 <!-- How much time are we willing to spend into this spike? -->
+
+### Actual outcome
+<!-- Once spike/research is complete, summarize findings here for ease of reference -->

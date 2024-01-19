@@ -20,7 +20,7 @@ Scenario: As an Operate user
     Then this item should be shown in highlighted (in bold)
 ```
 ### Designs
-<!-- [Optional] <Zeplin Link> -->
+<!-- [Optional] <Figma Link> -->
 
 ### Acceptance Criteria
 <!-- [Mandatory field] The assignee will fill the Acceptance Criteria. -->
@@ -30,6 +30,10 @@ Scenario: As an Operate user
 <!-- the assignee will check the DOR. -->
 
 - [ ] The issue has a meaningful title, description, and testable acceptance criteria
+- [ ] If documentation needs to be updated, an issue is created in the [camunda-docs](https://github.com/camunda/camunda-docs) repo, and the issue is added to our Operate project board.
+- [ ] If HELM charts need to be updated, an issue is created in the [camunda-platform-heml](https://github.com/camunda/camunda-platform-helm) repo, and the issue is added to our Operate project board.
+- [ ] Potential Security risks have been considered and added to the product-hub issue risk assessment
+- [ ] Cross-team dependencies have been considered
 
 Optional:
 - [ ] Design input has been collected by the assignee
