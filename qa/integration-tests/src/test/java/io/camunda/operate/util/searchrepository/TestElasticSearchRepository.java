@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
@@ -99,11 +100,22 @@ public class TestElasticSearchRepository implements TestSearchRepository {
   }
 
   @Override
-  public boolean createOrUpdateDocument(String name, String id, Map<String, String> doc) throws IOException {
+  public boolean createOrUpdateDocument(String name, String id, Map<String, ?> doc) throws IOException {
     final IndexResponse response = esClient.index(new IndexRequest(name).id(id)
             .source(doc, XContentType.JSON), RequestOptions.DEFAULT);
     DocWriteResponse.Result result = response.getResult();
     return result.equals(DocWriteResponse.Result.CREATED) || result.equals(DocWriteResponse.Result.UPDATED);
+  }
+
+  @Override
+  public String createOrUpdateDocument(String name, Map<String, ?> doc) throws IOException {
+    String docId = UUID.randomUUID().toString();
+    if (createOrUpdateDocument(name, UUID.randomUUID().toString(), doc)) {
+      return docId;
+    }
+    else {
+      return null;
+    }
   }
 
   @Override

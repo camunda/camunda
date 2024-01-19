@@ -43,6 +43,11 @@
     <plugin.version.license>4.3</plugin.version.license>
     <license.header>${project.baseUri}/../license/license-header</license.header>
 
+    <includeITNames>**/*IT.java</includeITNames>
+    <excludeITNames>**/*5IT.java</excludeITNames>
+    <skipSurefire>false</skipSurefire>
+    <failsafeForkCount>${env.LIMITS_CPU}</failsafeForkCount>
+
     <!-- Version overrides from spring-boot parent pom, these should be re-reviewed anytime spring boot version is updated -->
     <commons-codec.version>1.16.0</commons-codec.version>
     <commons-lang3.version>3.13.0</commons-lang3.version>
@@ -323,9 +328,10 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.2.3</version>
+          <version>3.2.5</version>
           <configuration>
-            <forkCount>${env.LIMITS_CPU}</forkCount>
+            <skip>${skipSurefire}</skip>
+            <forkCount>${failsafeForkCount}</forkCount>
             <reuseForks>true</reuseForks>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
             <systemPropertyVariables>
@@ -337,9 +343,15 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-failsafe-plugin</artifactId>
-          <version>3.2.2</version>
+          <version>3.2.5</version>
           <configuration>
-            <forkCount>${env.LIMITS_CPU}</forkCount>
+            <includes>
+              <include>${includeITNames}</include>
+            </includes>
+            <excludes>
+              <exclude>${excludeITNames}</exclude>
+            </excludes>
+            <forkCount>${failsafeForkCount}</forkCount>
             <reuseForks>true</reuseForks>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
             <systemPropertyVariables>
@@ -428,6 +440,27 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>itStage1</id>
+      <properties>
+        <includeITNames>**/*IT.java</includeITNames>
+        <excludeITNames>**/*ZeebeIT.java</excludeITNames>
+        <failsafeForkCount>1</failsafeForkCount>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>itStage2</id>
+      <properties>
+        <includeITNames>**/*ZeebeIT.java</includeITNames>
+        <excludeITNames>none</excludeITNames>
+        <failsafeForkCount>${env.LIMITS_CPU}</failsafeForkCount>
+        <skipSurefire>true</skipSurefire>
+      </properties>
+    </profile>
+  </profiles>
 
   <distributionManagement>
     <snapshotRepository>

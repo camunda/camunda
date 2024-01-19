@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -80,10 +81,21 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   }
 
   @Override
-  public boolean createOrUpdateDocument(String indexName, String id, Map<String, String> doc) throws IOException {
+  public boolean createOrUpdateDocument(String indexName, String id, Map<String, ?> doc) throws IOException {
     return richOpenSearchClient.doc().indexWithRetries(
         indexRequestBuilder(indexName).id(id)
             .document(doc));
+  }
+
+  @Override
+  public String createOrUpdateDocument(String indexName, Map<String, ?> doc) throws IOException {
+    String docId = UUID.randomUUID().toString();
+    if (createOrUpdateDocument(indexName, UUID.randomUUID().toString(), doc)) {
+      return docId;
+    }
+    else {
+      return null;
+    }
   }
 
   @Override

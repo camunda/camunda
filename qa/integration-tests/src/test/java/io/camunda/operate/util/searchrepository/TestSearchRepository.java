@@ -30,7 +30,9 @@ public interface TestSearchRepository {
 
   boolean createIndex(String indexName, Map<String, ?> mapping) throws IOException, Exception;
 
-  boolean createOrUpdateDocument(String indexName, String string, Map<String, String> doc) throws IOException;
+  boolean createOrUpdateDocument(String indexName, String docId, Map<String, ?> doc) throws IOException;
+
+  String createOrUpdateDocument(String indexName, Map<String, ?> doc) throws IOException;
 
   void deleteById(String index, String id) throws IOException;
 

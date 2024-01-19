@@ -175,51 +175,58 @@ pipeline {
         }
       }
     }
-    stage('Unit tests') {
+    stage('Unit and Stage 1 Integration tests') {
       when {
         not {
           expression { BRANCH_NAME ==~ /(^fe-.*)/ }
         }
       }
       parallel {
-        stage('Backend - Tests') {
+        stage('Backend - Stage 1 Integration Tests') {
           steps {
             container('maven') {
               configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
                 // MaxRAMFraction = LIMITS_CPU+1 because there are LIMITS_CPU surefire threads + one maven thread
                 sh '''
                   JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU+OLD_ZEEBE_TESTS_THREADS+3))" \
-                  mvn verify -s $MAVEN_SETTINGS_XML -P -docker,skipFrontendBuild -B -T$LIMITS_CPU
+                  mvn verify -s $MAVEN_SETTINGS_XML -P -docker,skipFrontendBuild,itStage1 -B -T$LIMITS_CPU
+                  '''
+              }
+            }
+          }
+        }
+      }
+    }
+
+    stage('Stage 2 Integration tests') {
+      when {
+        not {
+          expression { BRANCH_NAME ==~ /(^fe-.*)/ }
+        }
+      }
+      parallel {
+        stage('Backend - Stage 2 Integration Tests') {
+          steps {
+            container('maven') {
+              configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
+                // MaxRAMFraction = LIMITS_CPU+1 because there are LIMITS_CPU surefire threads + one maven thread
+                sh '''
+                  JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU+OLD_ZEEBE_TESTS_THREADS+3))" \
+                  mvn verify -s $MAVEN_SETTINGS_XML -P -docker,skipFrontendBuild,itStage2 -B -T$LIMITS_CPU
                   '''
               }
             }
           }
           post {
             always {
-              junit testResults: 'qa/integration-tests/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
+              junit testResults: 'common/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
               junit testResults: 'importer/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
+              junit testResults: 'importer-common/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
+              junit testResults: 'webapp/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
+              junit testResults: 'qa/integration-tests/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
             }
           }
         }
-        //https://github.com/camunda/operate/issues/2471
-//        stage('Backend - Tests (old Zeebe)') {
-//          steps {
-//            container('maven') {
-//              configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-//                // MaxRAMFraction = LIMITS_CPU+1 because there are LIMITS_CPU surefire threads + one maven thread
-//                sh '''
-//                  JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU+OLD_ZEEBE_TESTS_THREADS+3))" \
-//                  mvn verify -f qa/integration-tests -s $MAVEN_SETTINGS_XML -P -docker,-skipTests,old-zeebe -B -T$OLD_ZEEBE_TESTS_THREADS --fail-at-end
-//                  '''
-//              }
-//            }
-//          }
-//          post {
-//            always {
-//              junit testResults: 'qa/integration-tests/target-old-zeebe/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
-//            }
-//          }
-//        }
       }
     }
     stage('Deploy') {

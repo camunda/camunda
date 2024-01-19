@@ -109,18 +109,6 @@
           <groupId>org.springframework.boot</groupId>
           <artifactId>spring-boot-starter-logging</artifactId>
         </exclusion>
-        <exclusion>
-          <groupId>org.junit.jupiter</groupId>
-          <artifactId>junit-jupiter</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.junit.vintage</groupId>
-          <artifactId>junit-vintage-engine</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.mockito</groupId>
-          <artifactId>mockito-junit-jupiter</artifactId>
-        </exclusion>
       </exclusions>
     </dependency>
 
@@ -134,6 +122,12 @@
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-core</artifactId>
       <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.vintage</groupId>
+      <artifactId>junit-vintage-engine</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -178,58 +172,6 @@
   </build>
 
   <profiles>
-    <profile>
-      <id>old-zeebe</id>
-      <dependencyManagement>
-        <dependencies>
-          <dependency>
-            <groupId>io.camunda</groupId>
-            <artifactId>zeebe-bom</artifactId>
-            <version>${version.zeebe.old}</version>
-            <type>pom</type>
-            <scope>import</scope>
-          </dependency>
-          <!-- Temporary fix, can be removed when next zeebe version is out -->
-          <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-tcnative-boringssl-static</artifactId>
-            <version>2.0.62.Final</version>
-          </dependency>
-        </dependencies>
-      </dependencyManagement>
-      <build>
-        <directory>${project.basedir}/target-old-zeebe</directory>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <skipTests>true</skipTests>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <configuration>
-              <forkCount>${env.OLD_ZEEBE_TESTS_THREADS}</forkCount>
-              <redirectTestOutputToFile>true</redirectTestOutputToFile>
-              <failIfNoTests>true</failIfNoTests>
-              <includes>
-                <include>io/camunda/operate/zeebeimport/**/*.java</include>
-              </includes>
-              <excludes>
-                <exclude>**/ImportSeveralVersionsIT.java</exclude>
-                <exclude>**/DecisionIT.java</exclude>
-              </excludes>
-              <systemPropertyVariables>
-                <spring.profiles.active>test,old-zeebe</spring.profiles.active>
-              </systemPropertyVariables>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
     <profile>
       <id>docker</id>
       <activation>
