@@ -696,6 +696,12 @@ service Gateway {
      INVALID_ARGUMENT:
       - type is blank (empty string, null)
       - timeout less than 1
+      - If multi-tenancy is enabled, and tenantIds is empty (empty list)
+      - If multi-tenancy is enabled, and an invalid tenant ID is provided. A tenant ID is considered invalid if:
+        - The tenant ID is blank (empty string, null)
+        - The tenant ID is longer than 31 characters
+        - The tenant ID contains anything other than alphanumeric characters, dot (.), dash (-), or underscore (_)
+      - If multi-tenancy is disabled, and tenantIds is not empty (empty list), or has an ID other than <default>
   */
   rpc StreamActivatedJobs (StreamActivatedJobsRequest) returns (stream ActivatedJob) {
   }
