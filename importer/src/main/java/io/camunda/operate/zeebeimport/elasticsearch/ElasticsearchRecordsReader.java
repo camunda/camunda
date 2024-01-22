@@ -157,14 +157,17 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   @Override
   public void readAndScheduleNextBatch(boolean autoContinue) {
     final int readerBackoff = operateProperties.getImporter().getReaderBackoff();
+    final boolean useOnlyPosition = operateProperties.getImporter().isUseOnlyPosition();
     try {
       metrics.registerGaugeQueueSize(GAUGE_IMPORT_QUEUE_SIZE, importJobs, TAG_KEY_PARTITION,
           String.valueOf(partitionId), TAG_KEY_TYPE, importValueType.name());
       ImportBatch importBatch;
       final ImportPositionEntity latestPosition = importPositionHolder.getLatestScheduledPosition(importValueType.getAliasTemplate(), partitionId);
-      if (latestPosition != null && latestPosition.getSequence() > 0) {
+      if (useOnlyPosition == false && latestPosition != null && latestPosition.getSequence() > 0) {
+        logger.debug("Use import for {} ( {} ) by sequence", importValueType.name(), partitionId);
         importBatch = readNextBatchBySequence(latestPosition.getSequence());
       } else {
+        logger.debug("Use import for {} ( {} ) by position", importValueType.name(), partitionId);
         importBatch = readNextBatchByPositionAndPartition(latestPosition.getPosition(), null);
       }
       Integer nextRunDelay = null;

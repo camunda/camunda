@@ -37,6 +37,9 @@ public class ImportProperties {
 
   private boolean postImporterIgnoreMissingData = false;
 
+  // used for cases where sequences are not valid
+  private boolean useOnlyPosition = false;
+
   private int readerThreadsCount = DEFAULT_READER_THREADS_COUNT;
 
   private int queueSize = DEFAULT_IMPORT_QUEUE_SIZE;
@@ -114,6 +117,15 @@ public class ImportProperties {
 
   public ImportProperties setPostImporterIgnoreMissingData(boolean postImporterIgnoreMissingData) {
     this.postImporterIgnoreMissingData = postImporterIgnoreMissingData;
+    return this;
+  }
+
+  public boolean isUseOnlyPosition() {
+    return useOnlyPosition;
+  }
+
+  public ImportProperties setUseOnlyPosition(boolean useOnlyPosition) {
+    this.useOnlyPosition = useOnlyPosition;
     return this;
   }
 
