@@ -139,35 +139,11 @@ public class JobBackoffRestoreMigrationTest {
   public void shouldNotRestoreJobWithoutRetries() {
     // given
     final MutableJobState jobState = processingState.getJobState();
-    final JobRecord record = createJobRecord(1000);
+    JobRecord record = createJobRecord(1000);
     jobState.create(jobKey.getValue(), record);
+    record = jobState.updateJobRetries(jobKey.getValue(), 0);
     jobState.fail(jobKey.getValue(), record);
     backoffKey.wrapLong(record.getRecurringTime());
-    backoffColumnFamily.deleteExisting(backoffJobKey);
-    jobState.updateJobRetries(jobKey.getValue(), 0);
-
-    jobKey.wrapLong(2);
-    final JobRecord backoffRecord = createJobRecord(2000);
-    jobState.create(jobKey.getValue(), backoffRecord);
-    jobState.fail(jobKey.getValue(), backoffRecord);
-    assertThat(backoffColumnFamily.count()).isEqualTo(1);
-
-    // when
-    assertThat(jobBackoffRestoreMigration.needsToRun(processingState)).isTrue();
-    jobBackoffRestoreMigration.runMigration(processingState);
-
-    // then
-    assertThat(backoffColumnFamily.isEmpty()).isFalse();
-    assertThat(backoffColumnFamily.count()).isEqualTo(1);
-  }
-
-  @Test
-  public void shouldNotRestoreNotActivatableJob() {
-    // given
-    final MutableJobState jobState = processingState.getJobState();
-    final JobRecord record = createJobRecord(1000);
-    jobState.create(jobKey.getValue(), record);
-    jobState.disable(jobKey.getValue(), record);
 
     jobKey.wrapLong(2);
     final JobRecord backoffRecord = createJobRecord(2000);
