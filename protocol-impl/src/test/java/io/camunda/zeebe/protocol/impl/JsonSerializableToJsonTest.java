@@ -640,6 +640,7 @@ final class JsonSerializableToJsonTest {
               "errorMessage": "failed message",
               "errorCode": "error",
               "customHeaders": {},
+              "activityType":"REGULAR",
               "deadline": 1000,
               "timeout": -1,
               "tenantId": "<default>"
@@ -739,6 +740,7 @@ final class JsonSerializableToJsonTest {
           "customHeaders": {
             "workerVersion": "42"
           },
+          "activityType":"REGULAR",
           "deadline": 13,
           "timeout": 14,
           "tenantId": "<default>"
@@ -769,6 +771,7 @@ final class JsonSerializableToJsonTest {
           "errorMessage": "",
           "errorCode": "",
           "customHeaders": {},
+          "activityType":"REGULAR",
           "deadline": -1,
           "timeout": -1,
           "tenantId": "<default>"
@@ -806,6 +809,7 @@ final class JsonSerializableToJsonTest {
           "errorCode": "",
           "processDefinitionVersion": -1,
           "customHeaders": {},
+          "activityType":"REGULAR",
           "tenantId": "<default>"
         }
         """
