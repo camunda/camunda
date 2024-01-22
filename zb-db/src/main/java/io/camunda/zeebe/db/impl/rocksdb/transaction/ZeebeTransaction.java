@@ -92,7 +92,7 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
     try {
       RocksDbInternal.removeWithHandle.invokeExact(
           transaction, nativeHandle, key, keyLength, columnFamilyHandle, false);
-    } catch (Throwable e) {
+    } catch (final Throwable e) {
       LangUtil.rethrowUnchecked(e);
     }
   }
@@ -159,6 +159,7 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
     transaction.rollback();
   }
 
+  @Override
   public void close() {
     transaction.close();
   }
