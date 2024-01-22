@@ -16,7 +16,7 @@ import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.db.reader.ProcessOverviewReader;
 import org.camunda.optimize.service.email.EmailService;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.RootUrlGenerator;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -27,17 +27,15 @@ import java.util.Optional;
 @Slf4j
 public class OnboardingEmailNotificationService {
 
-  public static final String MAGIC_LINK_TEMPLATE = "%s/collection/%s/dashboard/%s/";
+  public static final String DASHBOARD_LINK_TEMPLATE = "%s/dashboard/instant/%s";
   public static final String EMAIL_SUBJECT = "You've got insights from Optimize for your new process";
-  private static final String HTTP_PREFIX = "http://";
-  private static final String HTTPS_PREFIX = "https://";
   private static final String ONBOARDING_EMAIL_TEMPLATE = "onboardingEmailTemplate.ftl";
 
   private final EmailService emailService;
-  private final ConfigurationService configurationService;
   private final ProcessOverviewReader processOverviewReader;
   private final AbstractIdentityService identityService;
   private final DefinitionService definitionService;
+  private final RootUrlGenerator rootUrlGenerator;
 
   public void sendOnboardingEmailWithErrorHandling(@NonNull final String processKey) {
     final Optional<ProcessOverviewDto> optProcessOverview = processOverviewReader.getProcessOverviewByKey(processKey);
@@ -59,7 +57,7 @@ public class OnboardingEmailNotificationService {
           createInputsForTemplate(
             processOwner.getName(),
             definitionName,
-            generateMagicLinkForProcess(processKey)
+            generateDashboardLinkForProcess(processKey)
           )
         );
       } else {
@@ -73,27 +71,17 @@ public class OnboardingEmailNotificationService {
   }
 
   private Map<String, Object> createInputsForTemplate(final String ownerName, final String processDefinitionName,
-                                                      final String magicLink) {
+                                                      final String dashboardLink) {
     return Map.of(
       "ownerName", ownerName,
       "processName", processDefinitionName,
-      "magicLink", magicLink
+      "dashboardLink", dashboardLink
     );
   }
 
-  private String generateMagicLinkForProcess(final String processKey) {
-    final Optional<String> containerAccessUrl = configurationService.getContainerAccessUrl();
-    String rootUrl;
-    if (containerAccessUrl.isPresent()) {
-      rootUrl = containerAccessUrl.get();
-    } else {
-      Optional<Integer> containerHttpPort = configurationService.getContainerHttpPort();
-      String httpPrefix = containerHttpPort.map(p -> HTTP_PREFIX).orElse(HTTPS_PREFIX);
-      Integer port = containerHttpPort.orElse(configurationService.getContainerHttpsPort());
-      rootUrl = httpPrefix + configurationService.getContainerHost()
-        + ":" + port + configurationService.getContextPath().orElse("");
-    }
-    rootUrl += "/#";
-    return String.format(MAGIC_LINK_TEMPLATE, rootUrl, processKey, processKey);
+  public String generateDashboardLinkForProcess(final String processKey) {
+    String rootUrl = rootUrlGenerator.getRootUrl() + "/#";
+    return String.format(DASHBOARD_LINK_TEMPLATE, rootUrl, processKey);
   }
+
 }

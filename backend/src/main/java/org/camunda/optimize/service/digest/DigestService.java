@@ -33,6 +33,7 @@ import org.camunda.optimize.service.email.EmailService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.util.DurationFormatterUtil;
+import org.camunda.optimize.service.util.RootUrlGenerator;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.core.Tuple;
@@ -64,6 +65,7 @@ public class DigestService implements ConfigurationReloadable {
   private final ProcessOverviewWriter processOverviewWriter;
   private final ProcessOverviewReader processOverviewReader;
   private final ReportReader reportReader;
+  private final RootUrlGenerator rootUrlGenerator;
 
   private final Map<String, ScheduledFuture<?>> scheduledDigestTasks = new HashMap<>();
   private ThreadPoolTaskScheduler digestTaskScheduler;
@@ -242,25 +244,12 @@ public class DigestService implements ConfigurationReloadable {
     return new DigestTask(this, processDefinitionKey);
   }
 
-  private String getOptimizeUrl() {
-    final Optional<String> containerAccessUrl = configurationService.getContainerAccessUrl();
-
-    if (containerAccessUrl.isPresent()) {
-      return containerAccessUrl.get();
-    } else {
-      Optional<Integer> containerHttpPort = configurationService.getContainerHttpPort();
-      String httpPrefix = containerHttpPort.map(p -> HTTP_PREFIX).orElse(HTTPS_PREFIX);
-      Integer port = containerHttpPort.orElse(configurationService.getContainerHttpsPort());
-      return httpPrefix + configurationService.getContainerHost() + ":" + port + configurationService.getContextPath().orElse("");
-    }
-  }
-
   private String getOptimizeProcessPageLink() {
-    return getOptimizeUrl() + "/#/processes";
+    return rootUrlGenerator.getRootUrl() + "/#/processes";
   }
 
   private String getReportViewLink(final String reportId, final String collectionId) {
-    return getOptimizeUrl() + getReportViewLinkPath(reportId, collectionId);
+    return rootUrlGenerator.getRootUrl() + getReportViewLinkPath(reportId, collectionId);
   }
 
   private String getReportViewLinkPath(final String reportId, final String collectionId) {

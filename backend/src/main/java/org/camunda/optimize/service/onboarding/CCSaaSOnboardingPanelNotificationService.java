@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.cloud.panelnotifications.PanelNotificat
 import org.camunda.optimize.dto.optimize.cloud.panelnotifications.PanelNotificationRequestDto;
 import org.camunda.optimize.rest.cloud.CCSaaSNotificationClient;
 import org.camunda.optimize.service.DefinitionService;
+import org.camunda.optimize.service.util.RootUrlGenerator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.elasticsearch.core.List;
@@ -21,13 +22,10 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
-import java.util.Optional;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.rest.DashboardRestService.DASHBOARD_PATH;
 import static org.camunda.optimize.rest.DashboardRestService.INSTANT_PREVIEW_PATH;
-import static org.camunda.optimize.rest.constants.RestConstants.HTTPS_PREFIX;
-import static org.camunda.optimize.rest.constants.RestConstants.HTTP_PREFIX;
 import static org.camunda.optimize.service.util.PanelNotificationConstants.INITIAL_VISIT_TO_INSTANT_DASHBOARD_CONTENT;
 import static org.camunda.optimize.service.util.PanelNotificationConstants.INITIAL_VISIT_TO_INSTANT_DASHBOARD_ID;
 import static org.camunda.optimize.service.util.PanelNotificationConstants.INITIAL_VISIT_TO_INSTANT_DASHBOARD_LINK_LABEL;
@@ -46,6 +44,7 @@ public class CCSaaSOnboardingPanelNotificationService {
   private final CCSaaSNotificationClient notificationClient;
   private final ConfigurationService configurationService;
   private final DefinitionService definitionService;
+  private final RootUrlGenerator rootUrlGenerator;
 
   public void sendOnboardingPanelNotification(final String processKey) {
     notificationClient.sendPanelNotificationToOrg(
@@ -81,25 +80,15 @@ public class CCSaaSOnboardingPanelNotificationService {
   }
 
   private String createInstantPreviewDashboardLink(final String processKey) {
-    return String.format(INSTANT_DASHBOARD_LINK_TEMPLATE, getRootUrl(), processKey);
+    return String.format(INSTANT_DASHBOARD_LINK_TEMPLATE, generateRootDashboardLink(), processKey);
   }
 
   private String createUniqueNotificationId(final String processKey) {
     return String.format("%s_%s", INITIAL_VISIT_TO_INSTANT_DASHBOARD_ID, processKey);
   }
 
-  private String getRootUrl() {
-    final Optional<String> containerAccessUrl = configurationService.getContainerAccessUrl();
-    String rootUrl;
-    if (containerAccessUrl.isPresent()) {
-      rootUrl = containerAccessUrl.get();
-    } else {
-      Optional<Integer> containerHttpPort = configurationService.getContainerHttpPort();
-      String httpPrefix = containerHttpPort.map(p -> HTTP_PREFIX).orElse(HTTPS_PREFIX);
-      Integer port = containerHttpPort.orElse(configurationService.getContainerHttpsPort());
-      rootUrl = httpPrefix + configurationService.getContainerHost()
-        + ":" + port + configurationService.getContextPath().orElse("");
-    }
+  public String generateRootDashboardLink() {
+    String rootUrl = rootUrlGenerator.getRootUrl();
     return String.format(
       "%s/%s/#",
       rootUrl,

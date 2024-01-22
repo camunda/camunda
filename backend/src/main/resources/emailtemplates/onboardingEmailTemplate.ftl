@@ -416,7 +416,7 @@
                                         class="hs_cos_wrapper hs_cos_wrapper_widget hs_cos_wrapper_type_rich_text"
                                         style="color: inherit; font-size: inherit; line-height: inherit;"
                                         data-hs-cos-general-type="widget" data-hs-cos-type="rich_text">
-                                        <a class="btn" href="${magicLink}" style="background:#4893ff; padding: 10px; text-decoration: none; color: white; border-radius: 3px;">View in Optimize</a>
+                                        <a class="btn" href="${dashboardLink}" style="background:#4893ff; padding: 10px; text-decoration: none; color: white; border-radius: 3px;">View in Optimize</a>
                                     </div>
                                 </div>
                             </td>

@@ -153,7 +153,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
   }
 
   @Test
-  public void getEntityNames_usingMagicLinkReturnsOnlyDashboardName() {
+  public void getEntityNames_usingDashboardLinkReturnsOnlyDashboardName() {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram("aDefinitionKey"));
     importAllEngineEntitiesFromScratch();
