@@ -1,12 +1,12 @@
-@use '@carbon/styles/scss/spacing';
+@use '@carbon/styles/scss/spacing' as *;
 
 .OutlierControlPanel {
   background-color: var(--cds-layer);
-  padding: spacing.$spacing-04;
+  padding: $spacing-04;
   margin-bottom: 1em;
 
   .list {
-    margin-top: calc(-1 * spacing.$spacing-04);
+    margin-top: calc(-1 * $spacing-04);
 
     > .item {
       display: inline;
@@ -14,7 +14,7 @@
       &.definitionSelection {
         width: 220px;
         display: inline-block;
-        margin-top: spacing.$spacing-04;
+        margin-top: $spacing-04;
 
         .buttonWrapper {
           line-height: 30px;
@@ -22,7 +22,7 @@
       }
 
       &:not(:last-of-type) {
-        padding-right: 20px;
+        padding-right: $spacing-06;
       }
     }
   }
@@ -31,10 +31,10 @@
     .filterHeader {
       display: inline-flex;
       margin: 0;
-      margin-top: spacing.$spacing-04;
+      margin-top: $spacing-04;
 
       .dropdownLabel {
-        margin-right: 10px;
+        margin-right: $spacing-04;
         flex-grow: 1;
       }
 
@@ -54,7 +54,7 @@
       > .listItem {
         display: inline-flex;
         width: auto;
-        margin: spacing.$spacing-04 spacing.$spacing-04 spacing.$spacing-04 0;
+        margin: $spacing-04 $spacing-04 0 0;
       }
     }
   }

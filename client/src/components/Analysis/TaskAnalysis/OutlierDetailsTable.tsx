@@ -67,7 +67,7 @@ export default function OutlierDetailsTable({
         totalCount.toString(),
         getOutlierSummary(count, relation),
         getVariablesList(variables),
-        <Button kind="tertiary" size="md" onClick={() => onDetailsClick(taskId, taskData)}>
+        <Button kind="tertiary" size="sm" onClick={() => onDetailsClick(taskId, taskData)}>
           {t('common.viewDetails')}
         </Button>,
       ]);

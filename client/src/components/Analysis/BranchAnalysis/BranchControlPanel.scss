@@ -1,24 +1,24 @@
-@use '@carbon/styles/scss/spacing';
+@use '@carbon/styles/scss/spacing' as *;
 
 .BranchControlPanel {
   background-color: var(--cds-layer);
-  padding: spacing.$spacing-04;
+  padding: $spacing-04;
   margin-bottom: 1em;
 
   .list {
-    margin-top: -10px;
+    margin-top: -$spacing-04;
 
     .item {
       display: inline;
       position: relative;
-      padding-right: 20px;
+      padding-right: $spacing-06;
       list-style-position: inside;
 
       &.summary {
         .DefinitionSelection {
           width: 220px;
           display: inline-block;
-          margin: spacing.$spacing-04 spacing.$spacing-04 0 spacing.$spacing-04;
+          margin: $spacing-04 $spacing-04 0 $spacing-04;
 
           .buttonWrapper {
             line-height: 30px;
@@ -29,8 +29,7 @@
       .config {
         cursor: default;
         display: inline-block;
-        margin: 0 spacing.$spacing-04;
-        margin-top: spacing.$spacing-04;
+        margin: $spacing-04 $spacing-04 0 $spacing-04;
       }
     }
   }
@@ -39,12 +38,10 @@
     .filterHeader {
       position: relative;
       display: inline-flex;
-      margin-right: 20px;
-      margin-top: spacing.$spacing-04;
-      margin-bottom: 0;
+      margin: $spacing-04 $spacing-04 0 0;
 
       .dropdownLabel {
-        margin-right: 10px;
+        margin-right: $spacing-04;
         flex-grow: 1;
       }
 
@@ -64,7 +61,7 @@
       > .listItem {
         display: inline-flex;
         width: auto;
-        margin-right: 10px;
+        margin-right: $spacing-04;
       }
     }
   }

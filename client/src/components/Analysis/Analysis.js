@@ -7,7 +7,7 @@
 
 import React from 'react';
 import {Tab, TabList, Tabs} from '@carbon/react';
-import {Link, Route, Switch} from 'react-router-dom';
+import {Link, Route, Switch, useLocation} from 'react-router-dom';
 
 import {ErrorPage} from 'components';
 import {t} from 'translation';
@@ -18,9 +18,11 @@ import {TaskAnalysis} from './TaskAnalysis';
 import './Analysis.scss';
 
 export default function Analysis() {
+  const {pathname} = useLocation();
+
   return (
     <div className="Analysis">
-      <Tabs>
+      <Tabs selectedIndex={pathname.includes('analysis/branchAnalysis') ? 1 : 0}>
         <TabList aria-label="tabs" className="tabList">
           <Tab as={Link} to="/analysis/taskAnalysis">
             {t('analysis.task.label')}

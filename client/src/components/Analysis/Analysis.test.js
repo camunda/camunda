@@ -10,8 +10,13 @@ import {shallow} from 'enzyme';
 
 import Analysis from './Analysis';
 
-it('should render sub navigation', () => {
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'),
+  useLocation: jest.fn().mockReturnValue({pathname: '/analysis/branchAnalysis'}),
+}));
+
+it('should select the correct table', () => {
   const node = shallow(<Analysis />);
 
-  expect(node).toMatchSnapshot();
+  expect(node.find('Tabs').prop('selectedIndex')).toBe(1);
 });

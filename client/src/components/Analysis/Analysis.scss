@@ -1,14 +1,17 @@
-@use '@carbon/styles/scss/spacing';
+@use '@carbon/styles/scss/spacing' as *;
+
+$tabListHeight: 40px;
 
 .Analysis {
-  padding: 0 20px;
-  height: calc(100% - 42px - spacing.$spacing-04);
+  padding: 0 1rem;
+  height: calc(100% - $tabListHeight - $spacing-04);
 
   .tabList {
-    margin-bottom: spacing.$spacing-04;
-  }
+    margin-bottom: $spacing-04;
 
-  .tabList > .cds--tab--list > a {
-    line-height: 38px;
+    > .cds--tab--list > a {
+      display: flex;
+      align-items: center;
+    }
   }
 }
