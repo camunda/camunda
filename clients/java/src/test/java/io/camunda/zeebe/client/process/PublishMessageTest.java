@@ -155,6 +155,31 @@ public final class PublishMessageTest extends ClientTest {
   }
 
   @Test
+  public void shouldPublishMessageWithoutCorrelationKey() {
+    // given
+    final long messageKey = 456L;
+    gatewayService.onPublishMessageRequest(messageKey);
+
+    // when
+    final PublishMessageResponse response =
+        client
+            .newPublishMessageCommand()
+            .messageName("name_msg-without-correlation-key")
+            .withoutCorrelationKey()
+            .messageId("id_msg-without-correlation-key")
+            .send()
+            .join();
+
+    // then
+    final PublishMessageRequest request = gatewayService.getLastRequest();
+    assertThat(request.getName()).isEqualTo("name_msg-without-correlation-key");
+    assertThat(request.getCorrelationKey()).isEmpty();
+    assertThat(request.getMessageId()).isEqualTo("id_msg-without-correlation-key");
+    assertThat(request.getTenantId()).isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
+    assertThat(response.getMessageKey()).isEqualTo(messageKey);
+  }
+
+  @Test
   public void shouldThrowErrorWhenTryToPublishMessageWithNullVariable() {
     // when
     Assertions.assertThatThrownBy(

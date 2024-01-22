@@ -41,6 +41,18 @@ public interface PublishMessageCommandStep1 {
      * @return the builder for this command
      */
     PublishMessageCommandStep3 correlationKey(String correlationKey);
+
+    /**
+     * Skip specifying a correlation key for the message.
+     *
+     * <p>This method allows the message to be published without a correlation key, making it
+     * suitable for scenarios where the correlation key is not necessary (e.g. for the message start
+     * event). When used, this will create a new process instance without checking for an active
+     * instance with the same correlation key.
+     *
+     * @return the builder for this command, continuing to the next step without a correlation key.
+     */
+    PublishMessageCommandStep3 withoutCorrelationKey();
   }
 
   interface PublishMessageCommandStep3
