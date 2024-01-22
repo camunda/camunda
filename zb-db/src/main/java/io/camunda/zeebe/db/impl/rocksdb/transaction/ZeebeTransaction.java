@@ -44,8 +44,10 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
       final byte[] value,
       final int valueLength)
       throws Exception {
+    final int keyOffset = 0;
+    final int valueOffset = 0;
     RocksDbInternal.putWithHandle.invoke(
-        transaction, nativeHandle, key, keyLength, value, valueLength, columnFamilyHandle, false);
+        transaction, nativeHandle, key, keyOffset, keyLength, value, valueOffset, valueLength, columnFamilyHandle, false);
   }
 
   public byte[] get(
@@ -54,9 +56,10 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
       final byte[] key,
       final int keyLength)
       throws Exception {
+    final int keyOffset = 0;
     return (byte[])
         RocksDbInternal.getWithHandle.invoke(
-            transaction, nativeHandle, readOptionsHandle, key, keyLength, columnFamilyHandle);
+            transaction, nativeHandle, readOptionsHandle, key, keyOffset, keyLength, columnFamilyHandle);
   }
 
   public void delete(final long columnFamilyHandle, final byte[] key, final int keyLength)
@@ -127,6 +130,7 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
     transaction.rollback();
   }
 
+  @Override
   public void close() {
     transaction.close();
   }
