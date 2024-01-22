@@ -30,6 +30,8 @@ public class ImportProperties {
 
   private int readerThreadsCount = DEFAULT_READER_THREADS_COUNT;
 
+  private boolean useOnlyPosition = false;
+
   /**
    * The property is not used anymore. Instead of a backoff, the records reader gets rescheduled
    * once the queue has capacity.
@@ -109,5 +111,14 @@ public class ImportProperties {
 
   public void setImportPositionUpdateInterval(int importPositionUpdateInterval) {
     this.importPositionUpdateInterval = importPositionUpdateInterval;
+  }
+
+  public boolean isUseOnlyPosition() {
+    return useOnlyPosition;
+  }
+
+  public ImportProperties setUseOnlyPosition(boolean useOnlyPosition) {
+    this.useOnlyPosition = useOnlyPosition;
+    return this;
   }
 }

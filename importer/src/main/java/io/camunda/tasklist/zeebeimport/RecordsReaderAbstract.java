@@ -80,14 +80,17 @@ public abstract class RecordsReaderAbstract implements RecordsReader, Runnable {
 
   public int readAndScheduleNextBatch(boolean autoContinue) {
     final var readerBackoff = tasklistProperties.getImporter().getReaderBackoff();
+    final boolean useOnlyPosition = tasklistProperties.getImporter().isUseOnlyPosition();
     try {
       final ImportBatch importBatch;
       final var latestPosition =
           importPositionHolder.getLatestScheduledPosition(
               importValueType.getAliasTemplate(), partitionId);
-      if (latestPosition != null && latestPosition.getSequence() > 0) {
+      if (!useOnlyPosition && latestPosition != null && latestPosition.getSequence() > 0) {
+        LOGGER.debug("Use import for {} ( {} ) by sequence", importValueType.name(), partitionId);
         importBatch = readNextBatchBySequence(latestPosition.getSequence());
       } else {
+        LOGGER.debug("Use import for {} ( {} ) by position", importValueType.name(), partitionId);
         importBatch = readNextBatchByPositionAndPartition(latestPosition.getPosition(), null);
       }
       Integer nextRunDelay = null;
