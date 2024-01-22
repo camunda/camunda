@@ -75,9 +75,7 @@ public class OperateElasticsearchMetrics {
           .namespace(NAMESPACE)
           .name("record_conversion_duration_seconds")
           .help("Duration of conversion of Zeebe record into Operate entity in seconds")
-          .buckets(
-              .000005, .00001, .000015, .00002, .000025, .00003, .000035, .00004, .000045, .00005,
-              .075, .1)
+          .buckets(.005, .01, .015, .02, .025, .03, .035, .04, .045, .05, .075, .1, 2.5, 5, 7.5, 10)
           .labelNames(PARTITION_LABEL)
           .register();
 

@@ -45,6 +45,7 @@ import io.camunda.zeebe.exporter.operate.schema.templates.PostImporterQueueTempl
 import io.camunda.zeebe.exporter.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.zeebe.exporter.operate.schema.templates.VariableTemplate;
 import io.camunda.zeebe.protocol.record.Record;
+import io.prometheus.client.Histogram.Timer;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -82,6 +83,8 @@ public class OperateElasticsearchExporter implements Exporter {
   private OperateElasticsearchManager schemaManager;
   private ExportBatchWriter writer;
   private OperateElasticsearchMetrics metrics;
+
+  private Timer conversionTimer;
   private int numCurrentlyExportedRecords = 0;
 
   @Override
@@ -149,6 +152,7 @@ public class OperateElasticsearchExporter implements Exporter {
       metrics = new OperateElasticsearchMetrics(record.getPartitionId());
       requestManager.setMetrics(metrics);
       writer.setMetrics(metrics);
+      conversionTimer = metrics.measureRecordConversionDuration();
     }
 
     requestManager.eventLoop();
@@ -159,6 +163,8 @@ public class OperateElasticsearchExporter implements Exporter {
     this.lastExportedPosition = record.getPosition();
 
     if (writer.hasAtLeastEntities(batchSize)) {
+      metrics.incrementRecordConversionDuration(conversionTimer.observeDuration());
+      conversionTimer = metrics.measureRecordConversionDuration();
       flush();
     }
   }
