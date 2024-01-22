@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
+import static io.camunda.zeebe.protocol.record.intent.JobIntent.FAILED;
+import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
@@ -16,6 +18,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -29,6 +32,7 @@ import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.ProcessInstanceRecordStream;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.ClassRule;
@@ -287,7 +291,7 @@ public class ExecutionListenerJobTest {
     // resolve incident
     ENGINE.incident().ofInstance(processInstanceKey).withKey(firstIncident.getKey()).resolve();
 
-    // EL[start] job recreated
+    // complete EL[start] job again
     completeJobByType(processInstanceKey, "dmk_task_start_type", 1);
 
     // Job for service task should be created
@@ -336,12 +340,167 @@ public class ExecutionListenerJobTest {
     // and
     // resolve first incident
     ENGINE.incident().ofInstance(processInstanceKey).withKey(firstIncident.getKey()).resolve();
+    // complete service task job (NO need to re-complete EL[start] job(s))
     ENGINE.job().ofInstance(processInstanceKey).withType("d_service_task").complete();
 
     // then
     // EL[end] created
     assertJobLifecycle(
         processInstanceKey, 2, "d_end_el", JobIntent.CREATED, ActivityType.EXECUTION_LISTENER);
+  }
+
+  @Test
+  public void shouldRecurFailedExecutionListenerJobAfterBackoff() {
+    // given
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .serviceTask(
+                "task",
+                t -> t.zeebeJobType("d_service_task").zeebeStartExecutionListener("d_start_el"))
+            .endEvent("end")
+            .done();
+    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    // fail service task job
+    final Duration backOff = Duration.ofMinutes(30);
+    final Record<JobRecordValue> failedStartElJobRecord =
+        ENGINE
+            .job()
+            .ofInstance(processInstanceKey)
+            .withType("d_start_el")
+            .withBackOff(backOff)
+            .withRetries(2)
+            .fail();
+
+    Assertions.assertThat(failedStartElJobRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
+
+    // verify that our job didn't recur before backoff timeout
+    final Duration increasedTime = Duration.ofMinutes(5);
+    ENGINE.increaseTime(increasedTime);
+    assertThat(jobRecords(JobIntent.RECURRED_AFTER_BACKOFF).withType("d_start_el")).isEmpty();
+
+    ENGINE.increaseTime(backOff.minus(increasedTime));
+
+    // verify that our job recurred after backoff
+    final Record<JobRecordValue> recurredJob =
+        jobRecords(JobIntent.RECURRED_AFTER_BACKOFF).withType("d_start_el").getFirst();
+    assertThat(recurredJob.getKey()).isEqualTo(failedStartElJobRecord.getKey());
+
+    // when
+    // complete recreated job
+    ENGINE.job().ofInstance(processInstanceKey).withType("d_start_el").complete();
+
+    // job for service task should be created
+    assertJobLifecycle(
+        processInstanceKey, 1, "d_service_task", JobIntent.CREATED, ActivityType.REGULAR);
+  }
+
+  @Test
+  public void
+      shouldReCreateFirstElJobAfterResolvingIncidentCreatedDuringResolvingServiceJobExpressions() {
+    // given
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobTypeExpression("=service_task_job_name_var + \"_type\"")
+                        .zeebeStartExecutionListener("d_start_el"))
+            .endEvent("end")
+            .done();
+    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    // complete EL[start] job
+    ENGINE.job().ofInstance(processInstanceKey).withType("d_start_el").complete();
+
+    // an incident is created due to the unresolved job type expression in the service task
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incident.getValue())
+        .hasErrorMessage(
+            "Expected result of the expression 'service_task_job_name_var + \"_type\"' to "
+                + "be 'STRING', but was 'NULL'. The evaluation reported the following warnings:\n"
+                + "[NO_VARIABLE_FOUND] No variable found with name 'service_task_job_name_var'\n"
+                + "[INVALID_TYPE] Can't add '\"_type\"' to 'null'");
+
+    // and
+    // resolve incident
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then
+    // the first EL[start] job is re-created
+    assertJobLifecycle(
+        processInstanceKey, 1, "d_start_el", JobIntent.CREATED, ActivityType.EXECUTION_LISTENER);
+  }
+
+  @Test
+  public void shouldRecreateStartExecutionListenerJobsAndProceedAfterIncidentResolution() {
+    // given
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType("d_service_task")
+                        .zeebeStartExecutionListener("d_start_el_1")
+                        .zeebeStartExecutionListener("=var_name + \"_el\"")
+                        .zeebeStartExecutionListener("d_start_el_3"))
+            .endEvent("end")
+            .done();
+    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    // complete EL[start] job
+    ENGINE.job().ofInstance(processInstanceKey).withType("d_start_el_1").complete();
+
+    // an incident is created due to the unresolved job type expression in the 2-nd EL[start]
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incident.getValue())
+        .hasErrorMessage(
+            "Expected result of the expression 'var_name + \"_el\"' to be 'STRING', "
+                + "but was 'NULL'. The evaluation reported the following warnings:\n"
+                + "[NO_VARIABLE_FOUND] No variable found with name 'var_name'\n"
+                + "[INVALID_TYPE] Can't add '\"_el\"' to 'null'");
+
+    // fix issue with missing `var_name` variable, required by 2nd EL[start]
+    ENGINE
+        .variables()
+        .ofScope(processInstanceKey)
+        .withDocument(Map.of("var_name", "second_start"))
+        .update();
+    // and
+    // resolve incident
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then
+    // the first EL[start] job is re-created
+    assertJobLifecycle(
+        processInstanceKey, 1, "d_start_el_1", JobIntent.CREATED, ActivityType.EXECUTION_LISTENER);
+
+    // complete 1st re-created EL[start] job
+    completeJobByType(processInstanceKey, "d_start_el_1", 1);
+    // complete 2nd EL[start] job
+    ENGINE.job().ofInstance(processInstanceKey).withType("second_start_el").complete();
+
+    // TODO check this behaviour!
+    // then job for service task was created INSTEAD of 3rd EL[start]='d_start_el_3'
+    assertJobLifecycle(
+        processInstanceKey, 3, "d_service_task", JobIntent.CREATED, ActivityType.REGULAR);
   }
 
   @Ignore("Doesn't work because the EL listener is invoked before the output mapping")
