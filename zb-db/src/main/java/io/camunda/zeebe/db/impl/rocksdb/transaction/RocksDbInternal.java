@@ -82,7 +82,7 @@ public final class RocksDbInternal {
     method.setAccessible(true);
     try {
       putWithHandle = MethodHandles.lookup().unreflect(method);
-    } catch (IllegalAccessException e) {
+    } catch (final IllegalAccessException e) {
       throw new RuntimeException(e);
     }
   }
@@ -99,7 +99,7 @@ public final class RocksDbInternal {
     method.setAccessible(true);
     try {
       getWithHandle = MethodHandles.lookup().unreflect(method);
-    } catch (IllegalAccessException e) {
+    } catch (final IllegalAccessException e) {
       throw new RuntimeException(e);
     }
   }
@@ -111,7 +111,7 @@ public final class RocksDbInternal {
     method.setAccessible(true);
     try {
       removeWithHandle = MethodHandles.lookup().unreflect(method);
-    } catch (IllegalAccessException e) {
+    } catch (final IllegalAccessException e) {
       throw new RuntimeException(e);
     }
   }
