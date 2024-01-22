@@ -86,7 +86,7 @@
     "eslint-plugin-testing-library": "6.2.0",
     "http-proxy-middleware": "2.0.6",
     "husky": "8.0.3",
-    "jsdom": "23.0.1",
+    "jsdom": "24.0.0",
     "lint-staged": "15.2.0",
     "monaco-editor": "0.45.0",
     "msw": "2.1.2",
