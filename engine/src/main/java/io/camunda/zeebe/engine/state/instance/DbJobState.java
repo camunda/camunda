@@ -262,7 +262,7 @@ public final class DbJobState implements JobState, MutableJobState {
         key -> {
           jobKey.wrapLong(key);
           final var jobRecord = jobsColumnFamily.get(jobKey);
-          if (isValidForRestore(key, jobRecord)) {
+          if (isValidForRestore(jobRecord)) {
             addJobBackoff(key, jobRecord.getRecord().getRecurringTime());
           }
         });
@@ -505,24 +505,11 @@ public final class DbJobState implements JobState, MutableJobState {
     return backoffJobKeys;
   }
 
-  private boolean isValidForRestore(final long key, final JobRecordValue jobRecord) {
+  private boolean isValidForRestore(final JobRecordValue jobRecord) {
     if (jobRecord == null) {
       return false;
     }
     final var job = jobRecord.getRecord();
-    return job.getRecurringTime() > -1 && job.getRetries() > 0 && isJobActivatable(key, job);
-  }
-
-  private boolean isJobActivatable(final long key, final JobRecord job) {
-    final var type = job.getTypeBuffer();
-    final var tenantId = job.getTenantId();
-    EnsureUtil.ensureNotNullOrEmpty("type", job.getTypeBuffer());
-    EnsureUtil.ensureNotNullOrEmpty("tenantId", job.getTenantId());
-
-    jobTypeKey.wrapBuffer(type);
-    jobKey.wrapLong(key);
-    tenantIdKey.wrapString(tenantId);
-
-    return activatableColumnFamily.get(tenantAwareTypeJobKey) != null;
+    return job.getRecurringTime() > -1 && job.getRetries() > 0;
   }
 }
