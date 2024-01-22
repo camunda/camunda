@@ -163,9 +163,10 @@ public class OperateElasticsearchExporter implements Exporter {
     this.lastExportedPosition = record.getPosition();
 
     if (writer.hasAtLeastEntities(batchSize)) {
+      flush();
+
       metrics.incrementRecordConversionDuration(conversionTimer.observeDuration());
       conversionTimer = metrics.measureRecordConversionDuration();
-      flush();
     }
   }
 
@@ -261,6 +262,11 @@ public class OperateElasticsearchExporter implements Exporter {
 
   @Override
   public void close() {
+
+    if (conversionTimer != null) {
+      conversionTimer.close();
+    }
+
     requestManager.close();
 
     try {
