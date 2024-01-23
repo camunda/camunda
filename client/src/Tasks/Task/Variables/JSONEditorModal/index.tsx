@@ -6,8 +6,7 @@
  */
 
 import {Modal} from 'modules/components/Modal';
-import {useEffect, useLayoutEffect, useRef, useState} from 'react';
-import {useMonaco} from '@monaco-editor/react';
+import {useEffect, useRef, useState} from 'react';
 import {editor} from 'monaco-editor';
 import {isValidJSON} from 'modules/utils/isValidJSON';
 import {observer} from 'mobx-react-lite';
@@ -52,24 +51,10 @@ const JSONEditorModal: React.FC<Props> = observer(
     const [isValid, setIsValid] = useState(true);
     const [editedValue, setEditedValue] = useState('');
     const editorRef = useRef<null | editor.IStandaloneCodeEditor>(null);
-    const monaco = useMonaco();
 
     useEffect(() => {
       setEditedValue(beautifyJSON(value));
     }, [value]);
-
-    useLayoutEffect(() => {
-      monaco?.languages.json.jsonDefaults.setDiagnosticsOptions({
-        schemaValidation: 'error',
-        schemaRequest: 'error',
-      });
-    }, [monaco]);
-
-    useEffect(() => {
-      if (isValid) {
-        editorRef.current?.trigger('', 'closeMarkersNavigation', undefined);
-      }
-    }, [isValid]);
 
     return (
       <Modal
@@ -114,6 +99,10 @@ const JSONEditorModal: React.FC<Props> = observer(
               monaco.editor.setTheme(
                 themeStore.actualTheme === 'light' ? 'light' : 'vs-dark',
               );
+              monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
+                schemaValidation: 'error',
+                schemaRequest: 'error',
+              });
             }}
           />
         ) : (
