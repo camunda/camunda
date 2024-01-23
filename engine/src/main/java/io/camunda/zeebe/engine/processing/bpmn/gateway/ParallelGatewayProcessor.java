@@ -12,7 +12,9 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public final class ParallelGatewayProcessor implements BpmnElementProcessor<ExecutableFlowNode> {
@@ -32,7 +34,8 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
   }
 
   @Override
-  public void onActivate(final ExecutableFlowNode element, final BpmnElementContext context) {
+  public Either<Failure, Void> onActivate(
+      final ExecutableFlowNode element, final BpmnElementContext context) {
     // the joining of the incoming sequence flows into the parallel gateway happens in the
     // sequence flow processor. The activating event of the parallel gateway is written when all
     // incoming sequence flows are taken
@@ -47,6 +50,7 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
                 // gateway
                 stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
             failure -> bpmnIncidentBehavior.createIncident(failure, completing));
+    return EMPTY_RIGHT;
   }
 
   @Override

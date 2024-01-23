@@ -162,13 +162,9 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         final var activatingContext = stateTransitionBehavior.transitionToActivating(context);
         stateTransitionBehavior
             .onElementActivating(element, activatingContext)
+            .flatMap(ignore -> processor.onActivate(element, activatingContext))
             .ifRightOrLeft(
-                ok -> {
-                  processor.onActivate(element, activatingContext);
-                  // TODO: deal with incidents
-                  // look for execution listeners
-                  afterActivating(element, processor, activatingContext);
-                },
+                ok -> afterActivating(element, processor, activatingContext),
                 failure -> incidentBehavior.createIncident(failure, activatingContext));
         break;
       case COMPLETE_ELEMENT:
@@ -179,12 +175,12 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         break;
       case EXECUTION_LISTENER_COMPLETE:
         switch (stateBehavior.getElementInstance(context).getState()) {
-          case ELEMENT_ACTIVATING -> onStartExecutionListenerComplete(
-              (ExecutableFlowNode) element, processor, context);
-          case ELEMENT_COMPLETING -> onEndExecutionListenerComplete(
-              (ExecutableFlowNode) element, processor, context);
-          default -> throw new UnsupportedOperationException(
-              "Unexpected element state: " + context);
+          case ELEMENT_ACTIVATING ->
+              onStartExecutionListenerComplete((ExecutableFlowNode) element, processor, context);
+          case ELEMENT_COMPLETING ->
+              onEndExecutionListenerComplete((ExecutableFlowNode) element, processor, context);
+          default ->
+              throw new UnsupportedOperationException("Unexpected element state: " + context);
         }
         break;
       case TERMINATE_ELEMENT:

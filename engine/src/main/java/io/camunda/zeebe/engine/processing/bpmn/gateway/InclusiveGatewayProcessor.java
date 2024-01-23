@@ -46,7 +46,7 @@ public final class InclusiveGatewayProcessor
   }
 
   @Override
-  public void onActivate(
+  public Either<Failure, Void> onActivate(
       final ExecutableInclusiveGateway element, final BpmnElementContext activating) {
     // find outgoing sequence flow with fulfilled condition or the default (or none if implicit end)
     findSequenceFlowsToTake(element, activating)
@@ -67,6 +67,7 @@ public final class InclusiveGatewayProcessor
                       failure -> incidentBehavior.createIncident(failure, completing));
             },
             failure -> incidentBehavior.createIncident(failure, activating));
+    return EMPTY_RIGHT;
   }
 
   @Override

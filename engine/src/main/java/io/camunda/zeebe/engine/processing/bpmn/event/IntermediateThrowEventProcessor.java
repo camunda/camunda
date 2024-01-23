@@ -69,9 +69,10 @@ public class IntermediateThrowEventProcessor
   }
 
   @Override
-  public void onActivate(
+  public Either<Failure, Void> onActivate(
       final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating) {
     eventBehaviorOf(element).onActivate(element, activating);
+    return EMPTY_RIGHT;
   }
 
   @Override

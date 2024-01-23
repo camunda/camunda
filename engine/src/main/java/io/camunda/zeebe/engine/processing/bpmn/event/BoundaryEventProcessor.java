@@ -14,7 +14,9 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
+import io.camunda.zeebe.util.Either;
 
 public final class BoundaryEventProcessor implements BpmnElementProcessor<ExecutableBoundaryEvent> {
 
@@ -36,7 +38,8 @@ public final class BoundaryEventProcessor implements BpmnElementProcessor<Execut
   }
 
   @Override
-  public void onActivate(final ExecutableBoundaryEvent element, final BpmnElementContext context) {
+  public Either<Failure, Void> onActivate(
+      final ExecutableBoundaryEvent element, final BpmnElementContext context) {
     // the boundary event is activated by writing an ACTIVATING and ACTIVATED event to pass the
     // variables from the event for the output mapping
     throw new BpmnProcessingException(

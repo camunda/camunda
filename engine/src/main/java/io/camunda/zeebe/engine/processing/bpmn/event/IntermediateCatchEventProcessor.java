@@ -14,7 +14,9 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBeh
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
+import io.camunda.zeebe.util.Either;
 import java.util.List;
 
 public class IntermediateCatchEventProcessor
@@ -44,9 +46,10 @@ public class IntermediateCatchEventProcessor
   }
 
   @Override
-  public void onActivate(
+  public Either<Failure, Void> onActivate(
       final ExecutableCatchEventElement element, final BpmnElementContext activating) {
     eventBehaviorOf(element).onActivate(element, activating);
+    return EMPTY_RIGHT;
   }
 
   @Override

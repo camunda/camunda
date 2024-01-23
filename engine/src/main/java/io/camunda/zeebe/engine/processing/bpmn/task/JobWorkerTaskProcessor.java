@@ -17,7 +17,9 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
+import io.camunda.zeebe.util.Either;
 
 /**
  * A BPMN processor for tasks that are based on jobs and should be processed by job workers. For
@@ -50,10 +52,9 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   }
 
   @Override
-  public void onActivate(final ExecutableJobWorkerTask element, final BpmnElementContext context) {
-    variableMappingBehavior
-        .applyInputMappings(context, element)
-        .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
+  public Either<Failure, Void> onActivate(
+      final ExecutableJobWorkerTask element, final BpmnElementContext context) {
+    return variableMappingBehavior.applyInputMappings(context, element);
   }
 
   @Override

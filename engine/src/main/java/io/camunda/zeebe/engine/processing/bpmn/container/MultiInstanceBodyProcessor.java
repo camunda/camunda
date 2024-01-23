@@ -80,7 +80,7 @@ public final class MultiInstanceBodyProcessor
   }
 
   @Override
-  public void onActivate(
+  public Either<Failure, Void> onActivate(
       final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
     // verify that the input collection variable is present and valid
     readInputCollectionVariable(element, context)
@@ -92,6 +92,7 @@ public final class MultiInstanceBodyProcessor
         .ifRightOrLeft(
             inputCollection -> activate(element, context, inputCollection),
             failure -> incidentBehavior.createIncident(failure, context));
+    return EMPTY_RIGHT;
   }
 
   @Override

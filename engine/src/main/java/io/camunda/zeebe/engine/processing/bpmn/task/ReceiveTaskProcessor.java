@@ -15,7 +15,9 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableReceiveTask;
+import io.camunda.zeebe.util.Either;
 
 public final class ReceiveTaskProcessor implements BpmnElementProcessor<ExecutableReceiveTask> {
 
@@ -40,7 +42,8 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
   }
 
   @Override
-  public void onActivate(final ExecutableReceiveTask element, final BpmnElementContext context) {
+  public Either<Failure, Void> onActivate(
+      final ExecutableReceiveTask element, final BpmnElementContext context) {
 
     variableMappingBehavior
         .applyInputMappings(context, element)
@@ -48,6 +51,7 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
         .ifRightOrLeft(
             ok -> stateTransitionBehavior.transitionToActivated(context, element.getEventType()),
             failure -> incidentBehavior.createIncident(failure, context));
+    return EMPTY_RIGHT;
   }
 
   @Override

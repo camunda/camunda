@@ -17,7 +17,9 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
+import io.camunda.zeebe.util.Either;
 
 public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<ExecutableUserTask> {
 
@@ -61,7 +63,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   }
 
   @Override
-  protected void onActivateInternal(
+  protected Either<Failure, Void> onActivateInternal(
       final ExecutableUserTask element, final BpmnElementContext context) {
     variableMappingBehavior
         .applyInputMappings(context, element)
@@ -75,6 +77,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
               stateTransitionBehavior.transitionToActivated(context, element.getEventType());
             },
             failure -> incidentBehavior.createIncident(failure, context));
+    return EMPTY_RIGHT;
   }
 
   @Override

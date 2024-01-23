@@ -45,7 +45,7 @@ public final class ExclusiveGatewayProcessor
   }
 
   @Override
-  public void onActivate(
+  public Either<Failure, Void> onActivate(
       final ExecutableExclusiveGateway element, final BpmnElementContext activating) {
     // find outgoing sequence flow with fulfilled condition or the default (or none if implicit end)
     findSequenceFlowToTake(element, activating)
@@ -63,6 +63,7 @@ public final class ExclusiveGatewayProcessor
                       failure -> incidentBehavior.createIncident(failure, completing));
             },
             failure -> incidentBehavior.createIncident(failure, activating));
+    return EMPTY_RIGHT;
   }
 
   @Override

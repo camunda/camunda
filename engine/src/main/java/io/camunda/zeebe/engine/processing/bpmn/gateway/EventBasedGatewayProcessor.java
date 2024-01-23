@@ -14,7 +14,9 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEventBasedGateway;
+import io.camunda.zeebe.util.Either;
 
 public final class EventBasedGatewayProcessor
     implements BpmnElementProcessor<ExecutableEventBasedGateway> {
@@ -37,7 +39,7 @@ public final class EventBasedGatewayProcessor
   }
 
   @Override
-  public void onActivate(
+  public Either<Failure, Void> onActivate(
       final ExecutableEventBasedGateway element, final BpmnElementContext context) {
 
     eventSubscriptionBehavior
@@ -45,6 +47,7 @@ public final class EventBasedGatewayProcessor
         .ifRightOrLeft(
             ok -> stateTransitionBehavior.transitionToActivated(context, element.getEventType()),
             failure -> incidentBehavior.createIncident(failure, context));
+    return EMPTY_RIGHT;
   }
 
   @Override

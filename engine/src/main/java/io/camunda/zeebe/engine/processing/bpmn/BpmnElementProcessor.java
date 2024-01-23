@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn;
 
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.util.Either;
 
 /**
  * The business logic of a BPMN element.
@@ -19,6 +21,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
  * @param <T> the type that represents the BPMN element
  */
 public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
+
+  Either<Failure, Void> EMPTY_RIGHT = Either.right(null);
 
   /**
    * @return the class that represents the BPMN element
@@ -51,7 +55,9 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * @param element the instance of the BPMN element that is executed
    * @param context process instance-related data of the element that is executed
    */
-  default void onActivate(final T element, final BpmnElementContext context) {}
+  default Either<Failure, Void> onActivate(final T element, final BpmnElementContext context) {
+    return EMPTY_RIGHT;
+  }
 
   /**
    * Finalizes the activation of the BPMN element. This method is invoked after the element has been

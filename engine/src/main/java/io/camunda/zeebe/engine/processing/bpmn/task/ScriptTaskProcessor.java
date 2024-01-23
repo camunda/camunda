@@ -72,7 +72,7 @@ public final class ScriptTaskProcessor
   }
 
   @Override
-  protected void onActivateInternal(
+  protected Either<Failure, Void> onActivateInternal(
       final ExecutableScriptTask element, final BpmnElementContext context) {
     variableMappingBehavior
         .applyInputMappings(context, element)
@@ -84,6 +84,7 @@ public final class ScriptTaskProcessor
               stateTransitionBehavior.completeElement(activated);
             },
             failure -> incidentBehavior.createIncident(failure, context));
+    return EMPTY_RIGHT;
   }
 
   @Override

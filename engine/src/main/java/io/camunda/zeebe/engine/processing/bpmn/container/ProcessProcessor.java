@@ -56,9 +56,10 @@ public final class ProcessProcessor
   }
 
   @Override
-  public void onActivate(
+  public Either<Failure, Void> onActivate(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
     // nothing to do
+    return EMPTY_RIGHT;
   }
 
   @Override

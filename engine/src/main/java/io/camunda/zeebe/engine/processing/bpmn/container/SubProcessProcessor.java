@@ -16,8 +16,10 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
+import io.camunda.zeebe.util.Either;
 
 public final class SubProcessProcessor
     implements BpmnElementContainerProcessor<ExecutableFlowElementContainer> {
@@ -47,7 +49,7 @@ public final class SubProcessProcessor
   }
 
   @Override
-  public void onActivate(
+  public Either<Failure, Void> onActivate(
       final ExecutableFlowElementContainer element, final BpmnElementContext activating) {
 
     variableMappingBehavior
@@ -63,6 +65,7 @@ public final class SubProcessProcessor
               stateTransitionBehavior.activateChildInstance(activated, startEvent);
             },
             failure -> incidentBehavior.createIncident(failure, activating));
+    return EMPTY_RIGHT;
   }
 
   @Override

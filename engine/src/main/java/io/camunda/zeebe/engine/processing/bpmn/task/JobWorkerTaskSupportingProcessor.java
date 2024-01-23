@@ -11,7 +11,9 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
+import io.camunda.zeebe.util.Either;
 
 public abstract class JobWorkerTaskSupportingProcessor<T extends ExecutableJobWorkerTask>
     implements BpmnElementProcessor<T> {
@@ -25,11 +27,20 @@ public abstract class JobWorkerTaskSupportingProcessor<T extends ExecutableJobWo
   }
 
   @Override
-  public void onActivate(final T element, final BpmnElementContext context) {
+  public Either<Failure, Void> onActivate(final T element, final BpmnElementContext context) {
     if (isJobBehavior(element, context)) {
-      delegate.onActivate(element, context);
+      return delegate.onActivate(element, context);
     } else {
-      onActivateInternal(element, context);
+      return onActivateInternal(element, context);
+    }
+  }
+
+  @Override
+  public void finalizeActivation(final T element, final BpmnElementContext context) {
+    if (isJobBehavior(element, context)) {
+      delegate.finalizeActivation(element, context);
+    } else {
+      System.out.println("TODO implement `finalizeActivationInternal` method if needed");
     }
   }
 
@@ -39,6 +50,15 @@ public abstract class JobWorkerTaskSupportingProcessor<T extends ExecutableJobWo
       delegate.onComplete(element, context);
     } else {
       onCompleteInternal(element, context);
+    }
+  }
+
+  @Override
+  public void finalizeCompletion(final T element, final BpmnElementContext context) {
+    if (isJobBehavior(element, context)) {
+      delegate.finalizeCompletion(element, context);
+    } else {
+      System.out.println("TODO implement `finalizeCompletionInternal` method if needed");
     }
   }
 
@@ -53,7 +73,8 @@ public abstract class JobWorkerTaskSupportingProcessor<T extends ExecutableJobWo
 
   protected abstract boolean isJobBehavior(final T element, final BpmnElementContext context);
 
-  protected abstract void onActivateInternal(final T element, final BpmnElementContext context);
+  protected abstract Either<Failure, Void> onActivateInternal(
+      final T element, final BpmnElementContext context);
 
   protected abstract void onCompleteInternal(final T element, final BpmnElementContext context);
 

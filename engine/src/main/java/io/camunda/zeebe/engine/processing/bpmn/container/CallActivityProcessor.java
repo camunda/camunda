@@ -58,7 +58,8 @@ public final class CallActivityProcessor
   }
 
   @Override
-  public void onActivate(final ExecutableCallActivity element, final BpmnElementContext context) {
+  public Either<Failure, Void> onActivate(
+      final ExecutableCallActivity element, final BpmnElementContext context) {
     variableMappingBehavior
         .applyInputMappings(context, element)
         .flatMap(ok -> evaluateProcessId(context, element))
@@ -91,6 +92,7 @@ public final class CallActivityProcessor
               }
             },
             failure -> incidentBehavior.createIncident(failure, context));
+    return EMPTY_RIGHT;
   }
 
   @Override
