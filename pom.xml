@@ -39,7 +39,7 @@
     <elasticsearch.log4j.version>2.22.1</elasticsearch.log4j.version>
 
     <jackson.version>2.15.3</jackson.version>
-    <jsonpath.version>2.8.0</jsonpath.version>
+    <jsonpath.version>2.9.0</jsonpath.version>
     <apache.http5-client.version>5.3</apache.http5-client.version>
     <apache.http5-core.version>5.2.4</apache.http5-core.version>
     <guava.version>33.0.0-jre</guava.version>
