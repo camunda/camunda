@@ -56,6 +56,18 @@ if [ "$actualArchitecture" != "\"$arch\"" ]; then
   exit 1
 fi
 
+imageManifestMediaType="$(docker buildx imagetools inspect "${imageName}" --raw | jq -r '.mediaType')"
+# newer manifest types application/vnd.oci.image.index.v1+json (used when provenance is enabled when building
+# a docker image) are not always compatible with older customer Docker registries:
+imageManifestMediaTypeExpected="application/vnd.docker.distribution.manifest.list.v2+json"
+
+if [ "$imageManifestMediaType" != "$imageManifestMediaTypeExpected" ]; then
+  echo >&2 "The local Docker image ${imageName} has the wrong manifest media type ${imageManifestMediaType}, expected ${imageManifestMediaTypeExpected}."
+  echo "Full manifest:"
+  docker buildx imagetools inspect "${imageName}"
+  exit 1
+fi
+
 DIGEST_REGEX="BASE_DIGEST=\"(sha256\:[a-f0-9\:]+)\""
 DOCKERFILE=$(<"${BASH_SOURCE%/*}/../../Dockerfile")
 if [[ $DOCKERFILE =~ $DIGEST_REGEX ]]; then

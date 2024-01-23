@@ -117,6 +117,7 @@ jobs:
           cache-from: type=gha,ignore-error=true
           cache-to: type=gha,mode=max,ignore-error=true
           build-args: DIST=build
+          provenance: false
           target: app
   build-benchmark-images:
     name: Build Starter and Worker
