@@ -17,6 +17,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
+import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransaction.XIterator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -24,7 +25,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.rocksdb.ReadOptions;
-import org.rocksdb.RocksIterator;
 
 /**
  * Some code conventions that we should follow here:
@@ -325,7 +325,7 @@ class TransactionalColumnFamily<
         () -> operation.run((ZeebeTransaction) context.getCurrentTransaction()));
   }
 
-  RocksIterator newIterator(final TransactionContext context, final ReadOptions options) {
+  XIterator newIterator(final TransactionContext context, final ReadOptions options) {
     final var currentTransaction = (ZeebeTransaction) context.getCurrentTransaction();
     return currentTransaction.newIterator(options, transactionDb.getDefaultHandle());
   }
@@ -371,8 +371,7 @@ class TransactionalColumnFamily<
     columnFamilyContext.withPrefixKey(
         prefix,
         (prefixKey, prefixLength) -> {
-          try (final RocksIterator iterator =
-              newIterator(context, transactionDb.getPrefixReadOptions())) {
+          try (final var iterator = newIterator(context, transactionDb.getPrefixReadOptions())) {
 
             boolean shouldVisitNext = true;
 
@@ -417,7 +416,7 @@ class TransactionalColumnFamily<
     columnFamilyContext.withPrefixKey(
         prefix,
         (prefixKey, prefixLength) -> {
-          try (final RocksIterator iterator =
+          try (final XIterator iterator =
               newIterator(context, transactionDb.getPrefixReadOptions())) {
 
             for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
@@ -440,7 +439,7 @@ class TransactionalColumnFamily<
       final KeyType keyInstance,
       final ValueType valueInstance,
       final KeyValuePairVisitor<KeyType, ValueType> iteratorConsumer,
-      final RocksIterator iterator) {
+      final XIterator iterator) {
     final var keyBytes = iterator.key();
 
     columnFamilyContext.wrapKeyView(keyBytes);

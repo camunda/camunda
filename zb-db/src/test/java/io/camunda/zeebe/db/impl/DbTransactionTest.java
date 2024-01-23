@@ -66,6 +66,11 @@ public final class DbTransactionTest {
   }
 
   @Test
+  public void shouldOveruseMemory() {
+    oneKey.wrapLong(1);
+  }
+
+  @Test
   public void shouldUseTransaction() {
     // given
     oneKey.wrapLong(1);

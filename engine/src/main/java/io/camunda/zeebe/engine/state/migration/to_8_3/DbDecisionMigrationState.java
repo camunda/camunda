@@ -29,9 +29,11 @@ public class DbDecisionMigrationState {
 
   private final LegacyDecisionState from;
   private final DbDecisionState to;
+  private final ZeebeDb<ZbColumnFamilies> zeebeDb;
 
   public DbDecisionMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+    this.zeebeDb = zeebeDb;
     final var config = new EngineConfiguration();
     from = new LegacyDecisionState(zeebeDb, transactionContext, config);
     to = new DbDecisionState(zeebeDb, transactionContext);

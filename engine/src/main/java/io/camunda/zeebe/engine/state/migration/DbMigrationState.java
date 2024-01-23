@@ -119,10 +119,12 @@ public class DbMigrationState implements MutableMigrationState {
   private final DbProcessMessageSubscriptionMigrationState processMessageSubscriptionMigrationState;
   private final DbJobMigrationState jobMigrationState;
   private final DbSignalSubscriptionMigrationState signalSubscriptionMigrationState;
+  private final ZeebeDb<ZbColumnFamilies> zeebeDb;
 
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
 
+    this.zeebeDb = zeebeDb;
     messageSubscriptionElementInstanceKey = new DbLong();
     messageSubscriptionMessageName = new DbString();
     messageSubscriptionElementKeyAndMessageName =

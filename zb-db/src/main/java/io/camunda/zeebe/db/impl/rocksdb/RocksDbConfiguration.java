@@ -30,7 +30,7 @@ public final class RocksDbConfiguration {
    * copied for the period covering the start and end of the checkpoint, in order to provide a
    * consistent snapshot across column families. <<<
    */
-  public static final boolean DEFAULT_WAL_DISABLED = true;
+  public static final boolean DEFAULT_WAL_DISABLED = false;
 
   /**
    * Enabling this feature gives a hint to the RocksDB compaction to compact based on virtual column

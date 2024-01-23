@@ -61,4 +61,6 @@ public interface ZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType>> extend
    * @return {@code true} if the column is empty, otherwise {@code false}
    */
   boolean isEmpty(ColumnFamilyType column, TransactionContext context);
+
+  default void flush() {}
 }
