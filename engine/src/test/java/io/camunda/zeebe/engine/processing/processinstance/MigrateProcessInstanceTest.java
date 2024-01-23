@@ -488,6 +488,108 @@ public class MigrateProcessInstanceTest {
   }
 
   @Test
+  public void shouldWriteMigratedEventForUserTask() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withJsonClasspathResource("/form/test-form-1.form")
+            .withJsonClasspathResource("/form/test-form-2.form")
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask(
+                        "A",
+                        u ->
+                            u.zeebeUserTask()
+                                .zeebeAssigneeExpression("user")
+                                .zeebeCandidateUsersExpression("candidates")
+                                .zeebeCandidateGroupsExpression("candidates")
+                                .zeebeDueDateExpression("now() + duration(due)")
+                                .zeebeFollowUpDateExpression("now() + duration(followup)")
+                                .zeebeFormId("Form_0w7r08e"))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .userTask(
+                        "B",
+                        u ->
+                            u.zeebeUserTask()
+                                .zeebeAssigneeExpression("user2")
+                                .zeebeCandidateUsersExpression("candidates2")
+                                .zeebeCandidateGroupsExpression("candidates2")
+                                .zeebeDueDateExpression("now() + duration(due2)")
+                                .zeebeFollowUpDateExpression("now() + duration(followup2)")
+                                .zeebeFormId("Form_6s1b76p"))
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables(
+                Map.ofEntries(
+                    Map.entry("user", "user"),
+                    Map.entry("user2", "user2"),
+                    Map.entry("candidates", List.of("candidates")),
+                    Map.entry("candidates2", List.of("candidates2")),
+                    Map.entry("due", "PT2H"),
+                    Map.entry("due2", "PT20H"),
+                    Map.entry("followup", "PT1H"),
+                    Map.entry("followup2", "PT10H")))
+            .create();
+
+    // await user task creation
+    final var userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getValue();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .migrate();
+
+    // then
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that process definition is updated")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId)
+        .hasProcessDefinitionVersion(1)
+        .describedAs("Expect that element id changed due to mapping")
+        .hasElementId("B")
+        .describedAs(
+            """
+                Expect that the user task properties did not change even though they're different \
+                in the target process. Re-evaluation of these expression is not enabled for this \
+                migration""")
+        .hasAssignee(userTask.getAssignee())
+        .hasCandidateGroups(userTask.getCandidateGroups())
+        .hasCandidateUsers(userTask.getCandidateUsers())
+        .hasDueDate(userTask.getDueDate())
+        .hasFollowUpDate(userTask.getFollowUpDate())
+        .hasFormKey(userTask.getFormKey());
+  }
+
+  @Test
   public void shouldContinueFlowInTargetProcessForMigratedJob() {
     // given
     final String processId = helper.getBpmnProcessId();
