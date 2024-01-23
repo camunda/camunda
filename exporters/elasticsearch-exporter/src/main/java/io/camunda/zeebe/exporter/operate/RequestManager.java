@@ -88,6 +88,7 @@ public class RequestManager {
       // we don't care for the response content in the happy case that
       // no exception is thrown
       final Response response = request.getResponseFuture().get();
+
       request.getSuccessHandler().accept(response);
       this.inflightRequest = null;
 

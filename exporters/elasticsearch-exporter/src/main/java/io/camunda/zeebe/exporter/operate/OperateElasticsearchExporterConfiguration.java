@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.exporter.operate;
 
+import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
+
 public class OperateElasticsearchExporterConfiguration {
 
   private static final String DEFAULT_URL = "http://localhost:9200";
@@ -31,6 +33,14 @@ public class OperateElasticsearchExporterConfiguration {
 
   public int degreeOfConcurrency = 2;
 
+  /**
+   * Controls if besides the Operate entities the Zeebe records are also written to the Zeebe ES
+   * indexes (the behavior of the default exporter).
+   */
+  public boolean writeToZeebeIndexes = false;
+
+  private final IndexConfiguration zeebeIndex = new IndexConfiguration();
+
   private final AuthenticationConfiguration authentication = new AuthenticationConfiguration();
   private final BulkConfiguration bulk = new BulkConfiguration();
 
@@ -40,6 +50,10 @@ public class OperateElasticsearchExporterConfiguration {
 
   public AuthenticationConfiguration getAuthentication() {
     return authentication;
+  }
+
+  public IndexConfiguration getZeebeIndex() {
+    return zeebeIndex;
   }
 
   public BulkConfiguration getBulk() {
@@ -64,6 +78,14 @@ public class OperateElasticsearchExporterConfiguration {
 
   public boolean isCalculateTreePaths() {
     return calculateTreePaths;
+  }
+
+  public boolean isWriteToZeebeIndexes() {
+    return writeToZeebeIndexes;
+  }
+
+  public void setWriteToZeebeIndexes(boolean writeToZeebeIndexes) {
+    this.writeToZeebeIndexes = writeToZeebeIndexes;
   }
 
   public OperateElasticsearchExporterConfiguration setCalculateTreePaths(

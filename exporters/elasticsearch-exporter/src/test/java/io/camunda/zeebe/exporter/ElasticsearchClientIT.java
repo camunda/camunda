@@ -47,18 +47,22 @@ final class ElasticsearchClientIT {
   private final ProtocolFactory recordFactory = new ProtocolFactory();
   private final ElasticsearchExporterConfiguration config =
       new ElasticsearchExporterConfiguration();
-  private final TemplateReader templateReader = new TemplateReader(config);
-  private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);
   private final BulkIndexRequest bulkRequest = new BulkIndexRequest();
 
+  private TemplateReader templateReader;
+  private RecordIndexRouter indexRouter;
   private TestClient testClient;
   private ElasticsearchClient client;
 
   @BeforeEach
   public void beforeEach() {
+
     // as all tests use the same endpoint, we need a per-test unique prefix
     config.index.prefix = UUID.randomUUID() + "-test-record";
     config.url = CONTAINER.getHttpHostAddress();
+
+    templateReader = new TemplateReader(config);
+    indexRouter = new RecordIndexRouter(config.index);
 
     testClient = new TestClient(config, indexRouter);
     client =

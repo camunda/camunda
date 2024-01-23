@@ -17,17 +17,39 @@ import java.util.Map;
 
 /** Utility class to read index and component templates from the resources in a logical format. */
 @SuppressWarnings("ClassCanBeRecord") // not semantically a data class
-final class TemplateReader {
+public final class TemplateReader {
   @SuppressWarnings("java:S1075") // not an actual URI
   private static final String INDEX_TEMPLATE_FILENAME_PATTERN = "/zeebe-record-%s-template.json";
 
   private static final String ZEEBE_RECORD_TEMPLATE_JSON = "/zeebe-record-template.json";
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  private final ElasticsearchExporterConfiguration config;
+  private Integer numberOfShards;
+  private Integer numberOfReplicas;
+  private String retentionPolicyName;
+  private String indexPrefix;
 
   public TemplateReader(final ElasticsearchExporterConfiguration config) {
-    this.config = config;
+    this(
+        config.index.getNumberOfShards(),
+        config.index.getNumberOfReplicas(),
+        config.retention.isEnabled() ? config.retention.getPolicyName() : null,
+        config.index.prefix);
+  }
+
+  public TemplateReader(String indexPrefix) {
+    this(null, null, null, indexPrefix);
+  }
+
+  public TemplateReader(
+      Integer numberOfShards,
+      Integer numberOfReplicas,
+      String retentionPolicyName,
+      String indexPrefix) {
+    this.numberOfReplicas = numberOfReplicas;
+    this.numberOfShards = numberOfShards;
+    this.retentionPolicyName = retentionPolicyName;
+    this.indexPrefix = indexPrefix;
   }
 
   /** Reads the shared component template from the resources. */
@@ -45,7 +67,7 @@ final class TemplateReader {
     final Template template = readTemplate(findResourceForTemplate(valueType));
 
     // update prefix in template in case it was changed in configuration
-    template.composedOf().set(0, config.index.prefix);
+    template.composedOf().set(0, indexPrefix);
 
     template.patterns().set(0, searchPattern);
     template.template().aliases().clear();
@@ -73,20 +95,18 @@ final class TemplateReader {
 
   private void substituteConfiguration(final Map<String, Object> settings) {
     // update number of shards in template in case it was changed in configuration
-    final Integer numberOfShards = config.index.getNumberOfShards();
     if (numberOfShards != null) {
       settings.put("number_of_shards", numberOfShards);
     }
 
     // update number of replicas in template in case it was changed in configuration
-    final Integer numberOfReplicas = config.index.getNumberOfReplicas();
     if (numberOfReplicas != null) {
       settings.put("number_of_replicas", numberOfReplicas);
     }
 
     // update index.lifecycle in template in case a retention policy is configured
-    if (config.retention.isEnabled()) {
-      settings.put("index.lifecycle.name", config.retention.getPolicyName());
+    if (retentionPolicyName != null) {
+      settings.put("index.lifecycle.name", retentionPolicyName);
     }
   }
 

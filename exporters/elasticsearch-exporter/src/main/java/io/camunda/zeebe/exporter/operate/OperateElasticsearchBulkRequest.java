@@ -39,7 +39,15 @@ public class OperateElasticsearchBulkRequest implements ContentProducer {
   }
 
   public void index(String index, String routing, OperateEntity entity) {
-    operations.add(new BulkOperation(new BulkIndexAction(index, entity.getId(), routing), entity));
+    operations.add(
+        new BulkOperation(new BulkIndexAction(index, entity.getId(), routing), entity, null));
+  }
+
+  /*
+   * Kind of breaks the abstraction of this class (hiding BulkOperation), but fine for the prototype
+   */
+  public void index(List<BulkOperation> operations) {
+    this.operations.addAll(operations);
   }
 
   public void upsert(String index, OperateEntity entity, Map<String, Object> update) {
@@ -51,7 +59,8 @@ public class OperateElasticsearchBulkRequest implements ContentProducer {
     operations.add(
         new BulkOperation(
             new BulkUpdateAction(index, entity.getId(), routing),
-            new BulkUpdateSource(update, entity)));
+            new BulkUpdateSource(update, entity),
+            null));
   }
 
   /** Returns the number of operations indexed so far. */
@@ -83,7 +92,11 @@ public class OperateElasticsearchBulkRequest implements ContentProducer {
     for (final var operation : operations) {
       MAPPER.writeValue(outStream, operation.metadata());
       outStream.write('\n');
-      MAPPER.writeValue(outStream, operation.source());
+      if (operation.source() != null) {
+        MAPPER.writeValue(outStream, operation.source());
+      } else {
+        outStream.write(operation.serializedSource());
+      }
       outStream.write('\n');
     }
   }

@@ -11,9 +11,17 @@ import io.camunda.operate.entities.OperateEntity;
 import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.Tuple;
+import io.camunda.zeebe.exporter.BulkIndexRequest;
+import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
+import io.camunda.zeebe.exporter.ElasticsearchExporterException;
+import io.camunda.zeebe.exporter.RecordIndexRouter;
+import io.camunda.zeebe.exporter.RecordSequence;
+import io.camunda.zeebe.exporter.dto.BulkIndexAction;
+import io.camunda.zeebe.exporter.dto.BulkOperation;
 import io.camunda.zeebe.exporter.operate.handlers.DecisionInstanceHandler;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,7 +44,37 @@ public class ExportBatchWriter {
 
   private List<Tuple<String, Class<?>>> idFlushOrder = new ArrayList<>();
 
-  private OperateElasticsearchMetrics metrics;
+  private final RecordIndexRouter zeebeIndexRouter;
+  private List<BulkOperation> rawOperations = new ArrayList<>();
+
+  public ExportBatchWriter(RecordIndexRouter zeebeIndexRouter) {
+    this.zeebeIndexRouter = zeebeIndexRouter;
+  }
+
+  public void addZeebeIndexRecord(Record<?> record) {
+    final BulkIndexAction action =
+        new BulkIndexAction(
+            zeebeIndexRouter.indexFor(record),
+            zeebeIndexRouter.idFor(record),
+            zeebeIndexRouter.routingFor(record));
+
+    final byte[] source;
+    try {
+      // we are not creating unique values here because it doesn't matter for the prototype
+      // has to be correct in the proper implementation of course
+      RecordSequence dummyRecordSequence = new RecordSequence(record.getPartitionId(), 0);
+
+      source = BulkIndexRequest.serializeRecord(record, dummyRecordSequence);
+
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException(
+          String.format("Failed to serialize record to JSON for indexing action %s", action), e);
+    }
+
+    final BulkOperation command = new BulkOperation(action, null, source);
+
+    rawOperations.add(command);
+  }
 
   public void addRecord(Record<?> record) {
     // TODO: need to filter to only handle events
@@ -127,6 +165,8 @@ public class ExportBatchWriter {
       }
     }
 
+    request.index(rawOperations);
+
     reset();
   }
 
@@ -134,6 +174,7 @@ public class ExportBatchWriter {
     cachedEntities.clear();
     cachedDecisionInstanceEntities.clear();
     idFlushOrder.clear();
+    rawOperations.clear();
   }
 
   public List<ExportHandler<?, ?>> getHandlersForValueType(ValueType type) {
@@ -148,17 +189,12 @@ public class ExportBatchWriter {
     return cachedEntities.size() + cachedDecisionInstanceEntities.size();
   }
 
-  public ExportBatchWriter setMetrics(final OperateElasticsearchMetrics metrics) {
-    this.metrics = metrics;
-    return this;
-  }
-
   public static class Builder {
     private ExportBatchWriter writer;
 
-    public static Builder begin() {
+    public static Builder begin(IndexConfiguration zeebeIndexConfiguration) {
       final Builder builder = new Builder();
-      builder.writer = new ExportBatchWriter();
+      builder.writer = new ExportBatchWriter(new RecordIndexRouter(zeebeIndexConfiguration));
       return builder;
     }
 

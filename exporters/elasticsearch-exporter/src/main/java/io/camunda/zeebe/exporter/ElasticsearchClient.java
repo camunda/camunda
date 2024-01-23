@@ -17,8 +17,6 @@ import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.De
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Phases;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Policy;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyResponse;
-import io.camunda.zeebe.exporter.dto.PutIndexTemplateResponse;
-import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.prometheus.client.Histogram;
@@ -35,9 +33,10 @@ class ElasticsearchClient implements AutoCloseable {
 
   private final RestClient client;
   private final ElasticsearchExporterConfiguration configuration;
-  private final TemplateReader templateReader;
   private final RecordIndexRouter indexRouter;
   private final BulkIndexRequest bulkIndexRequest;
+
+  private ElasticsearchIndexManager indexManager;
 
   private ElasticsearchMetrics metrics;
 
@@ -68,8 +67,9 @@ class ElasticsearchClient implements AutoCloseable {
     this.bulkIndexRequest = bulkIndexRequest;
     this.client = client;
     this.indexRouter = indexRouter;
-    this.templateReader = templateReader;
     this.metrics = metrics;
+    this.indexManager =
+        new ElasticsearchIndexManager(client, templateReader, indexRouter, configuration.index);
   }
 
   @Override
@@ -130,14 +130,7 @@ class ElasticsearchClient implements AutoCloseable {
    * @return true if request was acknowledged
    */
   public boolean putIndexTemplate(final ValueType valueType) {
-    final String templateName = indexRouter.indexPrefixForValueType(valueType);
-    final Template template =
-        templateReader.readIndexTemplate(
-            valueType,
-            indexRouter.searchPatternForValueType(valueType),
-            indexRouter.aliasNameForValueType(valueType));
-
-    return putIndexTemplate(templateName, template);
+    return indexManager.putIndexTemplate(valueType);
   }
 
   /**
@@ -145,8 +138,7 @@ class ElasticsearchClient implements AutoCloseable {
    * from {@link TemplateReader#readComponentTemplate()}.
    */
   public boolean putComponentTemplate() {
-    final Template template = templateReader.readComponentTemplate();
-    return putComponentTemplate(template);
+    return indexManager.putComponentTemplate();
   }
 
   private void exportBulk() {
@@ -181,30 +173,6 @@ class ElasticsearchClient implements AutoCloseable {
                         errors.size(), errorType, errors.get(0).reason())));
 
     throw new ElasticsearchExporterException("Failed to flush bulk request: " + collectedErrors);
-  }
-
-  private boolean putIndexTemplate(final String templateName, final Template template) {
-    try {
-      final var request = new Request("PUT", "/_index_template/" + templateName);
-      request.setJsonEntity(MAPPER.writeValueAsString(template));
-
-      final var response = sendRequest(request, PutIndexTemplateResponse.class);
-      return response.acknowledged();
-    } catch (final IOException e) {
-      throw new ElasticsearchExporterException("Failed to put index template", e);
-    }
-  }
-
-  private boolean putComponentTemplate(final Template template) {
-    try {
-      final var request = new Request("PUT", "/_component_template/" + configuration.index.prefix);
-      request.setJsonEntity(MAPPER.writeValueAsString(template));
-
-      final var response = sendRequest(request, PutIndexTemplateResponse.class);
-      return response.acknowledged();
-    } catch (final IOException e) {
-      throw new ElasticsearchExporterException("Failed to put component template", e);
-    }
   }
 
   public boolean putIndexLifecycleManagementPolicy() {

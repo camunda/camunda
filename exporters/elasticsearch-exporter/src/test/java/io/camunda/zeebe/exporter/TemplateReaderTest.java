@@ -12,19 +12,31 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.Collections;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class TemplateReaderTest {
-  private final ElasticsearchExporterConfiguration config =
-      new ElasticsearchExporterConfiguration();
-  private final TemplateReader templateReader = new TemplateReader(config);
+
+  private TemplateReader buildDefaultTemplateReader() {
+    return buildTemplateReader(config -> {});
+  }
+
+  private TemplateReader buildTemplateReader(
+      Consumer<ElasticsearchExporterConfiguration> configModifier) {
+
+    final ElasticsearchExporterConfiguration config = new ElasticsearchExporterConfiguration();
+    configModifier.accept(config);
+
+    return new TemplateReader(config);
+  }
 
   @Test
   void shouldReadComponentTemplate() {
     // given
+    final TemplateReader templateReader = buildDefaultTemplateReader();
 
     // when
     final var template = templateReader.readComponentTemplate();
@@ -50,7 +62,11 @@ final class TemplateReaderTest {
   @Test
   void shouldSetNumberOfShardsInComponentTemplate() {
     // given
-    config.index.setNumberOfShards(30);
+    final TemplateReader templateReader =
+        buildTemplateReader(
+            config -> {
+              config.index.setNumberOfShards(30);
+            });
 
     // when
     final var template = templateReader.readComponentTemplate();
@@ -64,7 +80,11 @@ final class TemplateReaderTest {
   @Test
   void shouldSetNumberOfReplicasInComponentTemplate() {
     // given
-    config.index.setNumberOfReplicas(20);
+    final TemplateReader templateReader =
+        buildTemplateReader(
+            config -> {
+              config.index.setNumberOfReplicas(20);
+            });
 
     // when
     final var template = templateReader.readComponentTemplate();
@@ -78,8 +98,13 @@ final class TemplateReaderTest {
   @Test
   void shouldSetNumberOfShardsInIndexTemplate() {
     // given
+    final TemplateReader templateReader =
+        buildTemplateReader(
+            config -> {
+              config.index.setNumberOfShards(43);
+            });
+
     final var valueType = ValueType.VARIABLE;
-    config.index.setNumberOfShards(43);
 
     // when
     final var template = templateReader.readIndexTemplate(valueType, "searchPattern", "alias");
@@ -93,8 +118,13 @@ final class TemplateReaderTest {
   @Test
   void shouldSetNumberOfReplicasInIndexTemplate() {
     // given
+    final TemplateReader templateReader =
+        buildTemplateReader(
+            config -> {
+              config.index.setNumberOfReplicas(10);
+            });
+
     final var valueType = ValueType.VARIABLE;
-    config.index.setNumberOfReplicas(10);
 
     // when
     final var template = templateReader.readIndexTemplate(valueType, "searchPattern", "alias");
@@ -108,6 +138,8 @@ final class TemplateReaderTest {
   @Test
   void shouldReadIndexTemplate() {
     // given
+    final TemplateReader templateReader = buildDefaultTemplateReader();
+
     final var valueType = ValueType.VARIABLE;
 
     // when
@@ -116,7 +148,7 @@ final class TemplateReaderTest {
     // then
     assertThat(template.composedOf())
         .as("index template is composed of the component template")
-        .containsExactly(config.index.prefix);
+        .containsExactly("zeebe-record");
     assertThat(template.patterns()).containsExactly("searchPattern");
     assertThat(template.template().aliases())
         .containsExactlyEntriesOf(Map.of("alias", Collections.emptyMap()));
@@ -130,22 +162,31 @@ final class TemplateReaderTest {
   @Test
   void shouldReadIndexTemplateWithDifferentPrefix() {
     // given
-    config.index.prefix = "foo-bar";
+    final String indexPrefix = "foo-bar";
+
+    final TemplateReader templateReader =
+        buildTemplateReader(
+            config -> {
+              config.index.prefix = indexPrefix;
+            });
     final var valueType = ValueType.VARIABLE;
 
     // when
     final var template = templateReader.readIndexTemplate(valueType, "searchPattern", "alias");
 
     // then
-    assertThat(template.composedOf())
-        .allMatch(composedOf -> composedOf.equals(config.index.prefix));
+    assertThat(template.composedOf()).allMatch(composedOf -> composedOf.equals(indexPrefix));
   }
 
   @Test
   void shouldReadIndexTemplateWithIndexLifecycleManagementPolicy() {
     // given
-    config.retention.setEnabled(true);
-    config.retention.setPolicyName("auto-trash");
+    final TemplateReader templateReader =
+        buildTemplateReader(
+            config -> {
+              config.retention.setEnabled(true);
+              config.retention.setPolicyName("auto-trash");
+            });
     final var valueType = ValueType.VARIABLE;
 
     // when

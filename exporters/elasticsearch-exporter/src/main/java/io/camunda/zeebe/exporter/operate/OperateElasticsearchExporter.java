@@ -8,7 +8,11 @@
 package io.camunda.zeebe.exporter.operate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
 import io.camunda.zeebe.exporter.ElasticsearchExporterException;
+import io.camunda.zeebe.exporter.ElasticsearchIndexManager;
+import io.camunda.zeebe.exporter.RecordIndexRouter;
+import io.camunda.zeebe.exporter.TemplateReader;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -45,6 +49,7 @@ import io.camunda.zeebe.exporter.operate.schema.templates.PostImporterQueueTempl
 import io.camunda.zeebe.exporter.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.zeebe.exporter.operate.schema.templates.VariableTemplate;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.prometheus.client.Histogram.Timer;
 import java.io.IOException;
 import java.time.Duration;
@@ -81,6 +86,7 @@ public class OperateElasticsearchExporter implements Exporter {
   // dynamic state for the lifetime of the exporter
   private long lastExportedPosition = -1;
   private OperateElasticsearchManager schemaManager;
+  private ElasticsearchIndexManager zeebeSchemaManager;
   private ExportBatchWriter writer;
   private OperateElasticsearchMetrics metrics;
 
@@ -103,9 +109,14 @@ public class OperateElasticsearchExporter implements Exporter {
     this.esClient = createEsClient();
     this.controller = controller;
 
-    // TODO: init client
     schemaManager = new OperateElasticsearchManager(esClient);
-    schemaManager.createSchema();
+    zeebeSchemaManager =
+        new ElasticsearchIndexManager(
+            esClient.getLowLevelClient(),
+            new TemplateReader(configuration.getZeebeIndex().prefix),
+            new RecordIndexRouter(configuration.getZeebeIndex()),
+            configuration.getZeebeIndex());
+    createSchema();
 
     this.writer = createBatchWriter();
 
@@ -137,6 +148,136 @@ public class OperateElasticsearchExporter implements Exporter {
             configuration.getDegreeOfConcurrency());
   }
 
+  private void createSchema() {
+    schemaManager.createSchema();
+
+    if (configuration.isWriteToZeebeIndexes()) {
+      createZeebeSchema();
+    }
+  }
+
+  private void createZeebeSchema() {
+    final IndexConfiguration index = configuration.getZeebeIndex();
+
+    if (index.createTemplate) {
+      createComponentTemplate();
+
+      if (index.deployment) {
+        createValueIndexTemplate(ValueType.DEPLOYMENT);
+      }
+      if (index.process) {
+        createValueIndexTemplate(ValueType.PROCESS);
+      }
+      if (index.error) {
+        createValueIndexTemplate(ValueType.ERROR);
+      }
+      if (index.incident) {
+        createValueIndexTemplate(ValueType.INCIDENT);
+      }
+      if (index.job) {
+        createValueIndexTemplate(ValueType.JOB);
+      }
+      if (index.jobBatch) {
+        createValueIndexTemplate(ValueType.JOB_BATCH);
+      }
+      if (index.message) {
+        createValueIndexTemplate(ValueType.MESSAGE);
+      }
+      if (index.messageBatch) {
+        createValueIndexTemplate(ValueType.MESSAGE_BATCH);
+      }
+      if (index.messageSubscription) {
+        createValueIndexTemplate(ValueType.MESSAGE_SUBSCRIPTION);
+      }
+      if (index.variable) {
+        createValueIndexTemplate(ValueType.VARIABLE);
+      }
+      if (index.variableDocument) {
+        createValueIndexTemplate(ValueType.VARIABLE_DOCUMENT);
+      }
+      if (index.processInstance) {
+        createValueIndexTemplate(ValueType.PROCESS_INSTANCE);
+      }
+      if (index.processInstanceBatch) {
+        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_BATCH);
+      }
+      if (index.processInstanceCreation) {
+        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_CREATION);
+      }
+      if (index.processInstanceModification) {
+        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_MODIFICATION);
+      }
+      if (index.processMessageSubscription) {
+        createValueIndexTemplate(ValueType.PROCESS_MESSAGE_SUBSCRIPTION);
+      }
+      if (index.decisionRequirements) {
+        createValueIndexTemplate(ValueType.DECISION_REQUIREMENTS);
+      }
+      if (index.decision) {
+        createValueIndexTemplate(ValueType.DECISION);
+      }
+      if (index.decisionEvaluation) {
+        createValueIndexTemplate(ValueType.DECISION_EVALUATION);
+      }
+      if (index.checkpoint) {
+        createValueIndexTemplate(ValueType.CHECKPOINT);
+      }
+      if (index.timer) {
+        createValueIndexTemplate(ValueType.TIMER);
+      }
+      if (index.messageStartEventSubscription) {
+        createValueIndexTemplate(ValueType.MESSAGE_START_EVENT_SUBSCRIPTION);
+      }
+      if (index.processEvent) {
+        createValueIndexTemplate(ValueType.PROCESS_EVENT);
+      }
+      if (index.deploymentDistribution) {
+        createValueIndexTemplate(ValueType.DEPLOYMENT_DISTRIBUTION);
+      }
+      if (index.escalation) {
+        createValueIndexTemplate(ValueType.ESCALATION);
+      }
+      if (index.signal) {
+        createValueIndexTemplate(ValueType.SIGNAL);
+      }
+      if (index.signalSubscription) {
+        createValueIndexTemplate(ValueType.SIGNAL_SUBSCRIPTION);
+      }
+      if (index.resourceDeletion) {
+        createValueIndexTemplate(ValueType.RESOURCE_DELETION);
+      }
+      if (index.commandDistribution) {
+        createValueIndexTemplate(ValueType.COMMAND_DISTRIBUTION);
+      }
+      if (index.form) {
+        createValueIndexTemplate(ValueType.FORM);
+      }
+      if (index.userTask) {
+        createValueIndexTemplate(ValueType.USER_TASK);
+      }
+      if (index.processInstanceMigration) {
+        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_MIGRATION);
+      }
+      if (index.compensationSubscription) {
+        createValueIndexTemplate(ValueType.COMPENSATION_SUBSCRIPTION);
+      }
+    }
+  }
+
+  private void createComponentTemplate() {
+    if (!zeebeSchemaManager.putComponentTemplate()) {
+      LOGGER.warn("Failed to acknowledge the creation or update of the component template");
+    }
+  }
+
+  private void createValueIndexTemplate(final ValueType valueType) {
+    if (!zeebeSchemaManager.putIndexTemplate(valueType)) {
+      LOGGER.warn(
+          "Failed to acknowledge the creation or update of the index template for value type {}",
+          valueType);
+    }
+  }
+
   /*
    * TODO: could be interesting to get an array of currently avaiable records (e.g. sized to a
    * "batch" in zeebe, e.g. what is contained in the current Zeebe file buffer) => effect would be
@@ -151,13 +292,16 @@ public class OperateElasticsearchExporter implements Exporter {
       // we only know the partition id here
       metrics = new OperateElasticsearchMetrics(record.getPartitionId());
       requestManager.setMetrics(metrics);
-      writer.setMetrics(metrics);
       conversionTimer = metrics.measureRecordConversionDuration();
     }
 
     requestManager.eventLoop();
 
     writer.addRecord(record);
+    if (configuration.isWriteToZeebeIndexes()) {
+      writer.addZeebeIndexRecord(record);
+    }
+
     numCurrentlyExportedRecords++;
 
     this.lastExportedPosition = record.getPosition();
@@ -280,6 +424,10 @@ public class OperateElasticsearchExporter implements Exporter {
     return schemaManager;
   }
 
+  public ElasticsearchIndexManager getZeebeSchemaManager() {
+    return zeebeSchemaManager;
+  }
+
   private void updateLastExportedPosition() {
     controller.updateLastExportedRecordPosition(lastExportedPosition);
   }
@@ -343,7 +491,7 @@ public class OperateElasticsearchExporter implements Exporter {
 
     final OperateElasticsearchSoftHashMap<String, String> callActivityIdCache =
         new OperateElasticsearchSoftHashMap<>(configuration.getTreePathCacheSize());
-    return ExportBatchWriter.Builder.begin()
+    return ExportBatchWriter.Builder.begin(configuration.getZeebeIndex())
         // ImportBulkProcessor
         // #processDecisionRecords
         .withHandler(

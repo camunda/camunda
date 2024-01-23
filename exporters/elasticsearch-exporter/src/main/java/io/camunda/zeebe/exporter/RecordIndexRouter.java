@@ -16,7 +16,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
 /** Computes the name of the index, alias, or search pattern for a record or its value type. */
-final class RecordIndexRouter {
+public final class RecordIndexRouter {
   private static final DateTimeFormatter DEFAULT_FORMATTER =
       DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC);
   private static final String INDEX_DELIMITER = "_";
@@ -25,7 +25,7 @@ final class RecordIndexRouter {
   private final DateTimeFormatter formatter;
   private final IndexConfiguration config;
 
-  RecordIndexRouter(final IndexConfiguration config) {
+  public RecordIndexRouter(final IndexConfiguration config) {
     this(config, DEFAULT_FORMATTER);
   }
 
@@ -38,14 +38,17 @@ final class RecordIndexRouter {
    * Returns the name of the index for the given record. This consists of the configured prefix,
    * followed by the value type, the current broker version, and then the current date.
    */
-  String indexFor(final Record<?> record) {
+  public String indexFor(final Record<?> record) {
     final Instant timestamp = Instant.ofEpochMilli(record.getTimestamp());
-    return (indexPrefixForValueType(record.getValueType()) + INDEX_DELIMITER)
-        + formatter.format(timestamp);
+    return indexFor(record.getValueType(), formatter.format(timestamp));
+  }
+
+  public String indexFor(ValueType valueType, String formattedDay) {
+    return (indexPrefixForValueType(valueType) + INDEX_DELIMITER) + formattedDay;
   }
 
   /** Returns a cluster-unique ID for the record consisting of it's "partitionId-position". */
-  String idFor(final Record<?> record) {
+  public String idFor(final Record<?> record) {
     return record.getPartitionId() + "-" + record.getPosition();
   }
 
@@ -81,7 +84,7 @@ final class RecordIndexRouter {
    * Returns the routing for this record. The routing field of a document controls to which shard it
    * will be assigned.
    */
-  String routingFor(final Record<?> record) {
+  public String routingFor(final Record<?> record) {
     return String.valueOf(record.getPartitionId());
   }
 

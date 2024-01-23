@@ -7,4 +7,4 @@
  */
 package io.camunda.zeebe.exporter.dto;
 
-public record BulkOperation(Object metadata, Object source) {}
+public record BulkOperation(Object metadata, Object source, byte[] serializedSource) {}

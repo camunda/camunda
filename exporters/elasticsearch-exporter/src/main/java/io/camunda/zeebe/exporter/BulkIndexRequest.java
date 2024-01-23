@@ -23,7 +23,7 @@ import org.apache.http.entity.ContentProducer;
  * Buffers indexing requests of records. Each bulk operation is serialized before being buffered to
  * avoid having to serialize it again on retry.
  */
-final class BulkIndexRequest implements ContentProducer {
+public final class BulkIndexRequest implements ContentProducer {
 
   private static final ObjectMapper MAPPER =
       new ObjectMapper()
@@ -71,7 +71,7 @@ final class BulkIndexRequest implements ContentProducer {
     operations.add(command);
   }
 
-  private static byte[] serializeRecord(final Record<?> record, final RecordSequence recordSequence)
+  public static byte[] serializeRecord(final Record<?> record, final RecordSequence recordSequence)
       throws IOException {
     return MAPPER
         .writer()
