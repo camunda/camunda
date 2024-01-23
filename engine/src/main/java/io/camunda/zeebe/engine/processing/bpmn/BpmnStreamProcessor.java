@@ -179,12 +179,12 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         break;
       case EXECUTION_LISTENER_COMPLETE:
         switch (stateBehavior.getElementInstance(context).getState()) {
-          case ELEMENT_ACTIVATING ->
-              onStartExecutionListenerComplete((ExecutableFlowNode) element, processor, context);
-          case ELEMENT_COMPLETING ->
-              onEndExecutionListenerComplete((ExecutableFlowNode) element, processor, context);
-          default ->
-              throw new UnsupportedOperationException("Unexpected element state: " + context);
+          case ELEMENT_ACTIVATING -> onStartExecutionListenerComplete(
+              (ExecutableFlowNode) element, processor, context);
+          case ELEMENT_COMPLETING -> onEndExecutionListenerComplete(
+              (ExecutableFlowNode) element, processor, context);
+          default -> throw new UnsupportedOperationException(
+              "Unexpected element state: " + context);
         }
         break;
       case TERMINATE_ELEMENT:
@@ -263,7 +263,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final BpmnElementProcessor<ExecutableFlowElement> processor,
       final BpmnElementContext context) {
 
-    mergeVariablesOfExecutionListener(context);
+    mergeVariablesOfExecutionListener(context, true);
 
     final String currentExecutionListenerType =
         stateBehavior.getElementInstance(context).getExecutionListenerType();
@@ -276,13 +276,19 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             () -> processor.finalizeActivation(element, context));
   }
 
-  private void mergeVariablesOfExecutionListener(final BpmnElementContext context) {
+  private void mergeVariablesOfExecutionListener(
+      final BpmnElementContext context, final boolean local) {
     Optional.ofNullable(eventScopeInstanceState.peekEventTrigger(context.getElementInstanceKey()))
         .ifPresent(
             eventTrigger -> {
               if (eventTrigger.getVariables().capacity() > 0) {
+                final long scopeKey =
+                    local || context.getFlowScopeKey() <= 0
+                        ? context.getElementInstanceKey()
+                        : context.getFlowScopeKey();
+
                 variableBehavior.mergeLocalDocument(
-                    context.getElementInstanceKey(),
+                    scopeKey,
                     context.getProcessDefinitionKey(),
                     context.getProcessInstanceKey(),
                     context.getBpmnProcessId(),
@@ -305,7 +311,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final BpmnElementProcessor<ExecutableFlowElement> processor,
       final BpmnElementContext context) {
 
-    mergeVariablesOfExecutionListener(context);
+    mergeVariablesOfExecutionListener(context, false);
 
     final String currentExecutionListenerType =
         stateBehavior.getElementInstance(context).getExecutionListenerType();

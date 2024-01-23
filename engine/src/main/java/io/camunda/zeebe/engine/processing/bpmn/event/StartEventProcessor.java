@@ -57,7 +57,7 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
 
   @Override
   public void onComplete(final ExecutableStartEvent element, final BpmnElementContext context) {
-    // nothing to do
+    variableMappingBehavior.applyOutputMappings(context, element);
   }
 
   @Override
@@ -68,10 +68,8 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
     final BpmnElementContextImpl flowScopeInstanceContext =
         buildContextForFlowScopeInstance(context);
 
-    variableMappingBehavior
-        .applyOutputMappings(context, element)
-        .flatMap(
-            ok -> eventSubscriptionBehavior.subscribeToEvents(flowScope, flowScopeInstanceContext))
+    eventSubscriptionBehavior
+        .subscribeToEvents(flowScope, flowScopeInstanceContext)
         .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, context))
         .ifRightOrLeft(
             completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),

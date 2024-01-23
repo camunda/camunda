@@ -36,7 +36,6 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -503,7 +502,6 @@ public class ExecutionListenerJobTest {
         processInstanceKey, 3, "d_service_task", JobIntent.CREATED, ActivityType.REGULAR);
   }
 
-  @Ignore("Doesn't work because the EL listener is invoked before the output mapping")
   @Test
   public void shouldAccessJobVariablesInEndListener() {
     // given
@@ -530,7 +528,7 @@ public class ExecutionListenerJobTest {
             .findFirst();
 
     assertThat(jobActivated).isPresent();
-    assertThat(jobActivated.get().getVariables()).contains(entry("x", "1"));
+    assertThat(jobActivated.get().getVariables()).contains(entry("x", 1));
   }
 
   @Test
@@ -568,10 +566,7 @@ public class ExecutionListenerJobTest {
         .complete();
 
     // then
-    // TODO: assert the variable from the listener - currently this is not working because of the
-    // event trigger of the service task
-    //    assertVariable(processInstanceKey, VariableIntent.UPDATED, "se_output_a",
-    // "\"a_updated\"");
+    assertVariable(processInstanceKey, VariableIntent.UPDATED, "se_output_a", "\"a_updated\"");
 
     // when
     ENGINE.job().ofInstance(processInstanceKey).withType("dmk_task_end_type_2").complete();
@@ -581,12 +576,9 @@ public class ExecutionListenerJobTest {
         processInstanceKey,
         VariableIntent.CREATED,
         "merged_es_out_var_and_st_input_var",
-        "\"a_updated+b_updated\"");
+        "\"a+b_updated\"");
     assertVariable(
-        processInstanceKey,
-        VariableIntent.CREATED,
-        "merged_es_out_var_and_el_var",
-        "\"a_updated+c\"");
+        processInstanceKey, VariableIntent.CREATED, "merged_es_out_var_and_el_var", "\"a+c\"");
   }
 
   @Test

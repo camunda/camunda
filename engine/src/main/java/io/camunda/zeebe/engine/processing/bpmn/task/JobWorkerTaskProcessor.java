@@ -18,7 +18,6 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
-import io.camunda.zeebe.util.Either;
 
 /**
  * A BPMN processor for tasks that are based on jobs and should be processed by job workers. For
@@ -73,25 +72,21 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
 
   @Override
   public void onComplete(final ExecutableJobWorkerTask element, final BpmnElementContext context) {
-    // nothing to do
+    variableMappingBehavior
+        .applyOutputMappings(context, element)
+        .ifRight(ok -> eventSubscriptionBehavior.unsubscribeFromEvents(context));
   }
 
   @Override
   public void finalizeCompletion(
       final ExecutableJobWorkerTask element, final BpmnElementContext context) {
-    variableMappingBehavior
-        .applyOutputMappings(context, element)
-        .flatMap(
-            ok -> {
-              eventSubscriptionBehavior.unsubscribeFromEvents(context);
-              compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
-              return stateTransitionBehavior.transitionToCompleted(element, context);
-            })
-        .flatMap(
+    compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
+    stateTransitionBehavior
+        .transitionToCompleted(element, context)
+        .ifRight(
             completionContext -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(context, element);
               stateTransitionBehavior.takeOutgoingSequenceFlows(element, completionContext);
-              return Either.right(context);
             });
   }
 

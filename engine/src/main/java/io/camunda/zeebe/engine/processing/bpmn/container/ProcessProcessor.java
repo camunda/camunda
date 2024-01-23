@@ -72,15 +72,13 @@ public final class ProcessProcessor
   @Override
   public void onComplete(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
-    // nothing to do :(
+    eventSubscriptionBehavior.unsubscribeFromEvents(context);
+    compensationSubscriptionBehaviour.deleteNotTriggeredSubscriptions(context);
   }
 
   @Override
   public void finalizeCompletion(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
-    eventSubscriptionBehavior.unsubscribeFromEvents(context);
-    compensationSubscriptionBehaviour.deleteNotTriggeredSubscriptions(context);
-
     // we need to send the result before we transition to completed, since the
     // event applier will delete the element instance
     processResultSenderBehavior.sendResult(context);

@@ -96,7 +96,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
     stateTransitionGuard = new ProcessInstanceStateTransitionGuard(stateBehavior);
 
     variableMappingBehavior =
-        new BpmnVariableMappingBehavior(expressionBehavior, processingState, variableBehavior);
+        new BpmnVariableMappingBehavior(
+            expressionBehavior, processingState, variableBehavior, eventTriggerBehavior);
 
     eventSubscriptionBehavior =
         new BpmnEventSubscriptionBehavior(
