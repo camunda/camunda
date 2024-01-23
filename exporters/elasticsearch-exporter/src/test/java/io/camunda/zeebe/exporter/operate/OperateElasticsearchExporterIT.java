@@ -60,13 +60,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.apache.commons.io.IOUtils;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -430,13 +431,22 @@ public class OperateElasticsearchExporterIT {
 
     try {
       schemaManager.refresh(index); // ensure latest data is visible
-      final GetRequest request = new GetRequest(index).id(id);
-      final GetResponse response = esClient.get(request, RequestOptions.DEFAULT);
-      if (response.isExists()) {
-        return response.getSourceAsMap();
+      final SearchSourceBuilder searchSourceBuilder =
+          new SearchSourceBuilder().query(QueryBuilders.idsQuery().addIds(id));
+      final SearchRequest searchRequest =
+          new SearchRequest().indices(index).source(searchSourceBuilder);
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+
+      final SearchHits searchHits = response.getHits();
+      final long numberOfHits = searchHits.getTotalHits().value;
+      if (numberOfHits == 1) {
+        final SearchHit searchHit = searchHits.getAt(0);
+        return searchHit.getSourceAsMap();
       } else {
         throw new RuntimeException(
-            String.format("Could not find document with id %s in index %s", id, index));
+            String.format(
+                "Could not find a single document with id %s in index %s; got %s results",
+                id, index, numberOfHits));
       }
 
     } catch (final IOException e) {

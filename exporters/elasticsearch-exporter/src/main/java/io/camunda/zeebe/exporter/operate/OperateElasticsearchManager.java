@@ -290,8 +290,7 @@ public class OperateElasticsearchManager implements SchemaManager {
   }
 
   private Template getTemplateFrom(final TemplateDescriptor templateDescriptor) {
-    final String templateFilename =
-        String.format("/schema/create/template/operate-%s.json", templateDescriptor.getIndexName());
+    final String templateFilename = templateDescriptor.getTemplateDescriptorResourceName();
     // Easiest way to create Template from json file: create 'old' request ang retrieve needed info
     final Map<String, Object> templateConfig = readJSONFileToMap(templateFilename);
     final PutIndexTemplateRequest ptr =

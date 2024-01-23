@@ -39,4 +39,11 @@ public class VariableTemplate extends AbstractTemplateDescriptor
   public String getVersion() {
     return "8.3.0";
   }
+
+  @Override
+  public String getTemplateDescriptorResourceName() {
+    // overriding the one from operate-els-schema so that
+    // we can apply custom config
+    return "/operate-variable-template.json";
+  }
 }

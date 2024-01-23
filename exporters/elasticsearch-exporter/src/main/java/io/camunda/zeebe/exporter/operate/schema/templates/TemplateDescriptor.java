@@ -20,4 +20,9 @@ public interface TemplateDescriptor extends IndexDescriptor {
   default String getIndexPattern() {
     return getFullQualifiedName() + "*";
   }
+
+  /** on the classpath */
+  default String getTemplateDescriptorResourceName() {
+    return String.format("/schema/create/template/operate-%s.json", getIndexName());
+  }
 }
