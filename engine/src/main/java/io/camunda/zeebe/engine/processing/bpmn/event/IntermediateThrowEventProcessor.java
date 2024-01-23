@@ -76,9 +76,10 @@ public class IntermediateThrowEventProcessor
   }
 
   @Override
-  public void onComplete(
+  public Either<Failure, Void> onComplete(
       final ExecutableIntermediateThrowEvent element, final BpmnElementContext completing) {
     eventBehaviorOf(element).onComplete(element, completing);
+    return EMPTY_RIGHT;
   }
 
   @Override

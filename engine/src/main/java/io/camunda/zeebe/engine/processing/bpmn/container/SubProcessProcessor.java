@@ -69,7 +69,7 @@ public final class SubProcessProcessor
   }
 
   @Override
-  public void onComplete(
+  public Either<Failure, Void> onComplete(
       final ExecutableFlowElementContainer element, final BpmnElementContext completing) {
 
     variableMappingBehavior
@@ -82,6 +82,7 @@ public final class SubProcessProcessor
         .ifRightOrLeft(
             completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
             failure -> incidentBehavior.createIncident(failure, completing));
+    return EMPTY_RIGHT;
   }
 
   @Override

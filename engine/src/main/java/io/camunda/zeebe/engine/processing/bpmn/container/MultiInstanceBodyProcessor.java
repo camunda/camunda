@@ -96,7 +96,7 @@ public final class MultiInstanceBodyProcessor
   }
 
   @Override
-  public void onComplete(
+  public Either<Failure, Void> onComplete(
       final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
@@ -111,6 +111,7 @@ public final class MultiInstanceBodyProcessor
         .ifRightOrLeft(
             completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
             failure -> incidentBehavior.createIncident(failure, context));
+    return EMPTY_RIGHT;
   }
 
   @Override

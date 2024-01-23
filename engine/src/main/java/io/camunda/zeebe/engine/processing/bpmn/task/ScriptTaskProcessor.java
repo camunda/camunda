@@ -88,7 +88,7 @@ public final class ScriptTaskProcessor
   }
 
   @Override
-  protected void onCompleteInternal(
+  protected Either<Failure, Void> onCompleteInternal(
       final ExecutableScriptTask element, final BpmnElementContext context) {
     variableMappingBehavior
         .applyOutputMappings(context, element)
@@ -103,6 +103,7 @@ public final class ScriptTaskProcessor
               stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
             },
             failure -> incidentBehavior.createIncident(failure, context));
+    return EMPTY_RIGHT;
   }
 
   @Override

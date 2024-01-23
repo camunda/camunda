@@ -71,7 +71,7 @@ public final class InclusiveGatewayProcessor
   }
 
   @Override
-  public void onComplete(
+  public Either<Failure, Void> onComplete(
       final ExecutableInclusiveGateway element, final BpmnElementContext context) {
     throw new UnsupportedOperationException(
         String.format(

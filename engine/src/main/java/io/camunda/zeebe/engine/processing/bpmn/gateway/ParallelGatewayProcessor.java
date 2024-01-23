@@ -54,7 +54,8 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
   }
 
   @Override
-  public void onComplete(final ExecutableFlowNode element, final BpmnElementContext context) {
+  public Either<Failure, Void> onComplete(
+      final ExecutableFlowNode element, final BpmnElementContext context) {
     throw new UnsupportedOperationException(
         String.format(
             "Expected to explicitly process complete, but gateway %s has already been completed on processing activate",

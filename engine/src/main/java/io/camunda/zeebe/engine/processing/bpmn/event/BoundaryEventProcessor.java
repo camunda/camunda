@@ -48,7 +48,8 @@ public final class BoundaryEventProcessor implements BpmnElementProcessor<Execut
   }
 
   @Override
-  public void onComplete(final ExecutableBoundaryEvent element, final BpmnElementContext context) {
+  public Either<Failure, Void> onComplete(
+      final ExecutableBoundaryEvent element, final BpmnElementContext context) {
 
     variableMappingBehavior
         .applyOutputMappings(context, element)
@@ -56,6 +57,7 @@ public final class BoundaryEventProcessor implements BpmnElementProcessor<Execut
         .ifRightOrLeft(
             completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
             failure -> incidentBehavior.createIncident(failure, context));
+    return EMPTY_RIGHT;
   }
 
   @Override

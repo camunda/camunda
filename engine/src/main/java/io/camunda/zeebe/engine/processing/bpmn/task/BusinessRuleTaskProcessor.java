@@ -78,7 +78,7 @@ public final class BusinessRuleTaskProcessor
   }
 
   @Override
-  public void onCompleteInternal(
+  public Either<Failure, Void> onCompleteInternal(
       final ExecutableBusinessRuleTask element, final BpmnElementContext context) {
     variableMappingBehavior
         .applyOutputMappings(context, element)
@@ -86,6 +86,7 @@ public final class BusinessRuleTaskProcessor
         .ifRightOrLeft(
             completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
             failure -> incidentBehavior.createIncident(failure, context));
+    return EMPTY_RIGHT;
   }
 
   @Override

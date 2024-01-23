@@ -53,7 +53,7 @@ public class IntermediateCatchEventProcessor
   }
 
   @Override
-  public void onComplete(
+  public Either<Failure, Void> onComplete(
       final ExecutableCatchEventElement element, final BpmnElementContext completing) {
     variableMappingBehavior
         .applyOutputMappings(completing, element)
@@ -65,6 +65,8 @@ public class IntermediateCatchEventProcessor
         .ifRightOrLeft(
             completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
             failure -> incidentBehavior.createIncident(failure, completing));
+
+    return EMPTY_RIGHT;
   }
 
   @Override

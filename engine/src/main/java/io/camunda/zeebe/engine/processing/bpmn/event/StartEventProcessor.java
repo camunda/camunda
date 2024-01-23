@@ -60,8 +60,9 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
   }
 
   @Override
-  public void onComplete(final ExecutableStartEvent element, final BpmnElementContext context) {
-    variableMappingBehavior.applyOutputMappings(context, element);
+  public Either<Failure, Void> onComplete(
+      final ExecutableStartEvent element, final BpmnElementContext context) {
+    return variableMappingBehavior.applyOutputMappings(context, element);
   }
 
   @Override

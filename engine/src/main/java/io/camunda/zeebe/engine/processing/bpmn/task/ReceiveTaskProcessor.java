@@ -55,7 +55,8 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
   }
 
   @Override
-  public void onComplete(final ExecutableReceiveTask element, final BpmnElementContext context) {
+  public Either<Failure, Void> onComplete(
+      final ExecutableReceiveTask element, final BpmnElementContext context) {
 
     variableMappingBehavior
         .applyOutputMappings(context, element)
@@ -67,6 +68,7 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
         .ifRightOrLeft(
             completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
             failure -> incidentBehavior.createIncident(failure, context));
+    return EMPTY_RIGHT;
   }
 
   @Override

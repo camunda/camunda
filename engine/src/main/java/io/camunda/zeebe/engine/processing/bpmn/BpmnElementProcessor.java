@@ -90,7 +90,9 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * @param element the instance of the BPMN element that is executed
    * @param context process instance-related data of the element that is executed
    */
-  default void onComplete(final T element, final BpmnElementContext context) {}
+  default Either<Failure, Void> onComplete(final T element, final BpmnElementContext context) {
+    return EMPTY_RIGHT;
+  }
 
   /**
    * Finalizes the completion of the BPMN element. This method is called when the element has

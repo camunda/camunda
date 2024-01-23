@@ -71,10 +71,11 @@ public final class ProcessProcessor
   }
 
   @Override
-  public void onComplete(
+  public Either<Failure, Void> onComplete(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     compensationSubscriptionBehaviour.deleteNotTriggeredSubscriptions(context);
+    return EMPTY_RIGHT;
   }
 
   @Override

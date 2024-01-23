@@ -67,7 +67,7 @@ public final class ExclusiveGatewayProcessor
   }
 
   @Override
-  public void onComplete(
+  public Either<Failure, Void> onComplete(
       final ExecutableExclusiveGateway element, final BpmnElementContext context) {
     throw new UnsupportedOperationException(
         String.format(

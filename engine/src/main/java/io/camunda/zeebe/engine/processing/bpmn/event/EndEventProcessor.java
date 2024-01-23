@@ -75,8 +75,10 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
   }
 
   @Override
-  public void onComplete(final ExecutableEndEvent element, final BpmnElementContext context) {
+  public Either<Failure, Void> onComplete(
+      final ExecutableEndEvent element, final BpmnElementContext context) {
     eventBehaviorOf(element).onComplete(element, context);
+    return EMPTY_RIGHT;
   }
 
   @Override

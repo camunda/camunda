@@ -28,11 +28,9 @@ public abstract class JobWorkerTaskSupportingProcessor<T extends ExecutableJobWo
 
   @Override
   public Either<Failure, Void> onActivate(final T element, final BpmnElementContext context) {
-    if (isJobBehavior(element, context)) {
-      return delegate.onActivate(element, context);
-    } else {
-      return onActivateInternal(element, context);
-    }
+    return isJobBehavior(element, context)
+        ? delegate.onActivate(element, context)
+        : onActivateInternal(element, context);
   }
 
   @Override
@@ -45,12 +43,10 @@ public abstract class JobWorkerTaskSupportingProcessor<T extends ExecutableJobWo
   }
 
   @Override
-  public void onComplete(final T element, final BpmnElementContext context) {
-    if (isJobBehavior(element, context)) {
-      delegate.onComplete(element, context);
-    } else {
-      onCompleteInternal(element, context);
-    }
+  public Either<Failure, Void> onComplete(final T element, final BpmnElementContext context) {
+    return isJobBehavior(element, context)
+        ? delegate.onComplete(element, context)
+        : onCompleteInternal(element, context);
   }
 
   @Override
@@ -76,7 +72,8 @@ public abstract class JobWorkerTaskSupportingProcessor<T extends ExecutableJobWo
   protected abstract Either<Failure, Void> onActivateInternal(
       final T element, final BpmnElementContext context);
 
-  protected abstract void onCompleteInternal(final T element, final BpmnElementContext context);
+  protected abstract Either<Failure, Void> onCompleteInternal(
+      final T element, final BpmnElementContext context);
 
   protected abstract void onTerminateInternal(final T element, final BpmnElementContext context);
 }

@@ -72,10 +72,15 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   }
 
   @Override
-  public void onComplete(final ExecutableJobWorkerTask element, final BpmnElementContext context) {
-    variableMappingBehavior
+  public Either<Failure, Void> onComplete(
+      final ExecutableJobWorkerTask element, final BpmnElementContext context) {
+    return variableMappingBehavior
         .applyOutputMappings(context, element)
-        .ifRight(ok -> eventSubscriptionBehavior.unsubscribeFromEvents(context));
+        .flatMap(
+            ok -> {
+              eventSubscriptionBehavior.unsubscribeFromEvents(context);
+              return EMPTY_RIGHT;
+            });
   }
 
   @Override

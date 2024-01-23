@@ -51,7 +51,7 @@ public final class EventBasedGatewayProcessor
   }
 
   @Override
-  public void onComplete(
+  public Either<Failure, Void> onComplete(
       final ExecutableEventBasedGateway element, final BpmnElementContext context) {
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
@@ -77,6 +77,7 @@ public final class EventBasedGatewayProcessor
                     eventTrigger,
                     completed),
             failure -> incidentBehavior.createIncident(failure, context));
+    return EMPTY_RIGHT;
   }
 
   @Override

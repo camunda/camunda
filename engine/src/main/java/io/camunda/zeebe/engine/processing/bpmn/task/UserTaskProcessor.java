@@ -81,7 +81,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   }
 
   @Override
-  protected void onCompleteInternal(
+  protected Either<Failure, Void> onCompleteInternal(
       final ExecutableUserTask element, final BpmnElementContext context) {
     variableMappingBehavior
         .applyOutputMappings(context, element)
@@ -97,6 +97,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
               stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
             },
             failure -> incidentBehavior.createIncident(failure, context));
+    return EMPTY_RIGHT;
   }
 
   @Override

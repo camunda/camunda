@@ -46,7 +46,8 @@ public class UndefinedTaskProcessor implements BpmnElementProcessor<ExecutableAc
   }
 
   @Override
-  public void onComplete(final ExecutableActivity element, final BpmnElementContext context) {
+  public Either<Failure, Void> onComplete(
+      final ExecutableActivity element, final BpmnElementContext context) {
     compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
     stateTransitionBehavior
         .transitionToCompleted(element, context)
@@ -56,6 +57,7 @@ public class UndefinedTaskProcessor implements BpmnElementProcessor<ExecutableAc
               stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
             },
             failure -> incidentBehavior.createIncident(failure, context));
+    return EMPTY_RIGHT;
   }
 
   @Override

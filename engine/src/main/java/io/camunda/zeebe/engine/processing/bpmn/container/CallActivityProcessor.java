@@ -96,7 +96,8 @@ public final class CallActivityProcessor
   }
 
   @Override
-  public void onComplete(final ExecutableCallActivity element, final BpmnElementContext context) {
+  public Either<Failure, Void> onComplete(
+      final ExecutableCallActivity element, final BpmnElementContext context) {
     variableMappingBehavior
         .applyOutputMappings(context, element)
         .flatMap(
@@ -107,6 +108,7 @@ public final class CallActivityProcessor
         .ifRightOrLeft(
             completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
             failure -> incidentBehavior.createIncident(failure, context));
+    return EMPTY_RIGHT;
   }
 
   @Override

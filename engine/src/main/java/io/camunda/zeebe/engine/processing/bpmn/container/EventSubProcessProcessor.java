@@ -59,13 +59,14 @@ public final class EventSubProcessProcessor
   }
 
   @Override
-  public void onComplete(
+  public Either<Failure, Void> onComplete(
       final ExecutableFlowElementContainer element, final BpmnElementContext completing) {
 
     variableMappingBehavior
         .applyOutputMappings(completing, element)
         .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, completing))
         .ifLeft(failure -> incidentBehavior.createIncident(failure, completing));
+    return EMPTY_RIGHT;
   }
 
   @Override
