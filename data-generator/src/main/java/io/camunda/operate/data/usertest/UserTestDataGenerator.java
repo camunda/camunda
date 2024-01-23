@@ -80,6 +80,10 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     startProcessInstances(3);
 
+    deployVersion4();
+
+    startProcessInstances(4);
+
     createOperations();
 
     progressProcessInstances();
@@ -748,6 +752,10 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   protected void deployVersion3() {
 
     ZeebeTestUtil.deployDecision(client, getTenant(TENANT_B), "usertest/invoiceBusinessDecisions_v_2.dmn");
+
+  }
+
+  protected void deployVersion4() {
 
   }
 

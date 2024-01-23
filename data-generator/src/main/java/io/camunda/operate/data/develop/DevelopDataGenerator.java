@@ -441,7 +441,9 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(true, client, getTenant(TENANT_A), "call-activity-process",
             "{\"orders\": [" + ThreadLocalRandom.current().nextInt(10) + ", " + ThreadLocalRandom.current().nextInt(10) + "]}"));
       }
-
+      if(version == 4) {
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(true, client, getTenant(TENANT_A), "processAnnualLeave", "{\"leave_type\":\"fto\", \"days\":" + ThreadLocalRandom.current().nextInt(15) + "}"));
+      }
     }
     if (version == 1) {
       processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(true, client, getTenant(TENANT_A), "timerProcess", null));
@@ -488,6 +490,12 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
     ZeebeTestUtil.deployProcess(true, client, getTenant(TENANT_A), "develop/calledProcess_v_2.bpmn");
 
+  }
+
+  @Override
+  protected void deployVersion4() {
+    super.deployVersion4();
+    ZeebeTestUtil.deployProcess(true, client, getTenant(TENANT_A), "develop/user-task-annual-leave.bpmn");
   }
 
   public void setClient(ZeebeClient client) {
