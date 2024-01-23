@@ -229,11 +229,9 @@ public final class ResponseMapper {
     // is still exceeding the maximum response size, we remove the last added job from the response
     // and add it to the list of jobs to be reactivated.
     // We do this until the response size is below the maximum response size.
-    if (response.getSerializedSize() > maxResponseSize) {
-      while (!responseJobs.isEmpty() && response.getSerializedSize() > maxResponseSize) {
-        sizeExceedingJobs.add(responseJobs.removeLast());
-        response = ActivateJobsResponse.newBuilder().addAllJobs(responseJobs).build();
-      }
+    while (!responseJobs.isEmpty() && response.getSerializedSize() > maxResponseSize) {
+      sizeExceedingJobs.add(responseJobs.removeLast());
+      response = ActivateJobsResponse.newBuilder().addAllJobs(responseJobs).build();
     }
 
     return new JobActivationResult(response, sizeExceedingJobs);

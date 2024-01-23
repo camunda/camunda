@@ -10,7 +10,6 @@ package io.camunda.zeebe.it.network;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.worker.JobHandler;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
@@ -26,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Random;
+import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -175,25 +175,25 @@ public final class LargeMessageSizeTest {
 
     final int numberOfJobsToActivate = 5;
     for (int i = 0; i < numberOfJobsToActivate; i++) {
-      final ProcessInstanceEvent event =
-          CLIENT_RULE
-              .getClient()
-              .newCreateInstanceCommand()
-              .bpmnProcessId("foo")
-              .latestVersion()
-              .variables(Map.of("message_content", message))
-              .send()
-              .join();
+      CLIENT_RULE
+          .getClient()
+          .newCreateInstanceCommand()
+          .bpmnProcessId("foo")
+          .latestVersion()
+          .variables(Map.of("message_content", message))
+          .send();
     }
+
+    Assertions.assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withType("foo")
+                .limit(numberOfJobsToActivate))
+        .describedAs("Expect that all jobs are created.")
+        .hasSize(numberOfJobsToActivate);
 
     // when
     final JobWorkerBuilderStep3 builder =
         CLIENT_RULE.getClient().newWorker().jobType("foo").handler(COMPLETING_JOB_HANDLER);
-
-    RecordingExporter.jobRecords(JobIntent.CREATED)
-        .withType("foo")
-        .limit(numberOfJobsToActivate)
-        .await();
 
     // then
     try (final JobWorker ignored = builder.open()) {
@@ -246,25 +246,25 @@ public final class LargeMessageSizeTest {
 
     final int numberOfJobsToActivate = 5;
     for (int i = 0; i < numberOfJobsToActivate; i++) {
-      final ProcessInstanceEvent event =
-          CLIENT_RULE
-              .getClient()
-              .newCreateInstanceCommand()
-              .bpmnProcessId("foo")
-              .latestVersion()
-              .variables(Map.of("message_content", message))
-              .send()
-              .join();
+      CLIENT_RULE
+          .getClient()
+          .newCreateInstanceCommand()
+          .bpmnProcessId("foo")
+          .latestVersion()
+          .variables(Map.of("message_content", message))
+          .send();
     }
+
+    Assertions.assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withType("foo")
+                .limit(numberOfJobsToActivate))
+        .describedAs("Expect that all jobs are created.")
+        .hasSize(numberOfJobsToActivate);
 
     // when
     final JobWorkerBuilderStep3 builder =
         CLIENT_RULE.getClient().newWorker().jobType("foo").handler(COMPLETING_JOB_HANDLER);
-
-    RecordingExporter.jobRecords(JobIntent.CREATED)
-        .withType("foo")
-        .limit(numberOfJobsToActivate)
-        .await();
 
     // then
     try (final JobWorker ignored = builder.open()) {
