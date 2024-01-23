@@ -653,6 +653,120 @@ public class MigrateProcessInstanceTest {
   }
 
   @Test
+  public void shouldContinueFlowInTargetProcessForMigratedUserTask() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withJsonClasspathResource("/form/test-form-1.form")
+            .withJsonClasspathResource("/form/test-form-2.form")
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask(
+                        "A",
+                        u ->
+                            u.zeebeUserTask()
+                                .zeebeAssigneeExpression("user")
+                                .zeebeCandidateUsersExpression("candidates")
+                                .zeebeCandidateGroupsExpression("candidates")
+                                .zeebeDueDateExpression("now() + duration(due)")
+                                .zeebeFollowUpDateExpression("now() + duration(followup)")
+                                .zeebeFormId("Form_0w7r08e"))
+                    .endEvent("source_process_end")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .userTask(
+                        "B",
+                        u ->
+                            u.zeebeUserTask()
+                                .zeebeAssigneeExpression("user2")
+                                .zeebeCandidateUsersExpression("candidates2")
+                                .zeebeCandidateGroupsExpression("candidates2")
+                                .zeebeDueDateExpression("now() + duration(due2)")
+                                .zeebeFollowUpDateExpression("now() + duration(followup2)")
+                                .zeebeFormId("Form_6s1b76p"))
+                    .endEvent("target_process_end")
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables(
+                Map.ofEntries(
+                    Map.entry("user", "user"),
+                    Map.entry("user2", "user2"),
+                    Map.entry("candidates", List.of("candidates")),
+                    Map.entry("candidates2", List.of("candidates2")),
+                    Map.entry("due", "PT2H"),
+                    Map.entry("due2", "PT20H"),
+                    Map.entry("followup", "PT1H"),
+                    Map.entry("followup2", "PT10H")))
+            .create();
+
+    // await user task creation
+    final var userTaskKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .migrate();
+
+    // then we can do any operation on the user task again
+
+    // Note that while the user task is migrated, it's properties did not change even though they're
+    // different in the target process. Because re-evaluation of these expressions is not yet
+    // supported.
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .withKey(userTaskKey)
+        .withoutAssignee()
+        .assign();
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .withKey(userTaskKey)
+        .withAssignee("user2")
+        .assign();
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .withKey(userTaskKey)
+        .withAssignee("user3")
+        .claim();
+
+    // and finally complete the user task and continue the process
+    ENGINE.userTask().ofInstance(processInstanceKey).withKey(userTaskKey).complete();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.END_EVENT)
+                .withElementId("target_process_end")
+                .findAny())
+        .describedAs("Expect that the process instance is continued in the target process")
+        .isPresent();
+  }
+
+  @Test
   public void shouldWriteMigratedEventForGlobalVariable() {
     // given
     final String processId = helper.getBpmnProcessId();
