@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -51,6 +53,7 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
   private final JobState jobState;
+  private final UserTaskState userTaskState;
   private final VariableState variableState;
   private final IncidentState incidentState;
   private final EventScopeInstanceState eventScopeInstanceState;
@@ -63,6 +66,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     elementInstanceState = processingState.getElementInstanceState();
     processState = processingState.getProcessState();
     jobState = processingState.getJobState();
+    userTaskState = processingState.getUserTaskState();
     variableState = processingState.getVariableState();
     incidentState = processingState.getIncidentState();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
@@ -186,6 +190,20 @@ public class ProcessInstanceMigrationMigrateProcessor
             elementInstance.getJobKey(),
             JobIntent.MIGRATED,
             job.setProcessDefinitionKey(targetProcessDefinition.getKey())
+                .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
+                .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+                .setElementId(targetElementId));
+      }
+    }
+
+    if (elementInstance.getUserTaskKey() > 0) {
+      final var userTask = userTaskState.getUserTask(elementInstance.getUserTaskKey());
+      if (userTask != null) {
+        stateWriter.appendFollowUpEvent(
+            elementInstance.getUserTaskKey(),
+            UserTaskIntent.MIGRATED,
+            userTask
+                .setProcessDefinitionKey(targetProcessDefinition.getKey())
                 .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
                 .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
                 .setElementId(targetElementId));
