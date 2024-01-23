@@ -1,11 +1,18 @@
+---
 name: Tests
 on: push
+
+# This will limit the workflow to 1 concurrent run per ref (branch / PR).
+# If a new commits occurs, the current run will be canceled to save costs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   integration-tests:
     name: Docker container tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
+    runs-on: gcp-core-2-default
+    timeout-minutes: 20
     env:
       TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist:current-test
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
@@ -37,7 +44,10 @@ jobs:
         with:
           distribution: "adopt"
           java-version: "17"
-          cache: "maven"
+      - name: Setup Maven
+        uses: stCarolas/setup-maven@v4.5
+        with:
+          maven-version: "3.9.6"
       # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
       - name: 'Create settings.xml'
         uses: s4u/maven-settings-action@v3.0.0
