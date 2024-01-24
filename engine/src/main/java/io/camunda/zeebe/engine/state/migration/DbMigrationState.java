@@ -30,6 +30,7 @@ import io.camunda.zeebe.engine.state.migration.to_8_3.DbMessageStartEventSubscri
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbMessageSubscriptionMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbProcessMessageSubscriptionMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbProcessMigrationState;
+import io.camunda.zeebe.engine.state.migration.to_8_4.DbColumnFamilyCorrectionMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_4.DbSignalSubscriptionMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
@@ -119,6 +120,7 @@ public class DbMigrationState implements MutableMigrationState {
   private final DbProcessMessageSubscriptionMigrationState processMessageSubscriptionMigrationState;
   private final DbJobMigrationState jobMigrationState;
   private final DbSignalSubscriptionMigrationState signalSubscriptionMigrationState;
+  private final DbColumnFamilyCorrectionMigrationState columnFamilyCorrectionMigrationState;
 
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -265,6 +267,8 @@ public class DbMigrationState implements MutableMigrationState {
 
     signalSubscriptionMigrationState =
         new DbSignalSubscriptionMigrationState(zeebeDb, transactionContext);
+    columnFamilyCorrectionMigrationState =
+        new DbColumnFamilyCorrectionMigrationState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -456,6 +460,11 @@ public class DbMigrationState implements MutableMigrationState {
   @Override
   public void migrateSignalSubscriptionStateForMultiTenancy() {
     signalSubscriptionMigrationState.migrateSignalSubscriptionStateForMultiTenancy();
+  }
+
+  @Override
+  public void correctColumnFamilyPrefix() {
+    columnFamilyCorrectionMigrationState.correctColumnFamilyPrefix();
   }
 
   @Override
