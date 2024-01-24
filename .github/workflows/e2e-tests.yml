@@ -1,8 +1,16 @@
+---
 name: E2E Tests
 on: push
+
+# This will limit the workflow to 1 concurrent run per ref (branch / PR).
+# If a new commits occurs, the current run will be canceled to save costs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: gcp-core-4-default
     services:
       elasticsearch:
         image: docker.elastic.co/elasticsearch/elasticsearch:7.17.10
@@ -39,15 +47,20 @@ jobs:
           secrets: |
             secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
-      - name: Setup yarn cache
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "yarn"
-          cache-dependency-path: client/yarn.lock
+      - name: Setup yarn
+        run: npm install -g yarn
       - name: Install node dependencies
         working-directory: ./client
         run: yarn install
+      - name: Add Yarn binaries to Path
+        working-directory: ./client
+        run: |
+          echo "$(yarn bin)" >> $GITHUB_PATH
+          echo "$(yarn global bin)" >> $GITHUB_PATH
       - name: Install Playwright
         run: yarn exec playwright install -- --with-deps chromium
         working-directory: ./client
@@ -59,7 +72,10 @@ jobs:
         with:
           distribution: "adopt"
           java-version: "17"
-          cache: "maven"
+      - name: Setup Maven
+        uses: stCarolas/setup-maven@v4.5
+        with:
+          maven-version: "3.9.6"
       # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
       - name: "Create settings.xml"
         uses: s4u/maven-settings-action@v3.0.0
@@ -84,6 +100,8 @@ jobs:
       - name: Run tests
         working-directory: ./client
         run: yarn run test:e2e:ci
+        env:
+          ZEEBE_GATEWAY_ADDRESS: localhost:26500
       - name: Publish test results to TestRail
         if: always()
         working-directory: ./client
