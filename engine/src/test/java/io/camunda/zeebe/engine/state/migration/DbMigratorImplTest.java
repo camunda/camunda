@@ -45,7 +45,10 @@ public class DbMigratorImplTest {
 
     final var sut =
         new DbMigratorImpl(
-            mockProcessingState, transactionContext, Collections.singletonList(mockMigration));
+            mockProcessingState,
+            transactionContext,
+            Collections.singletonList(mockMigration),
+            null);
 
     // when
     sut.runMigrations();
@@ -65,7 +68,10 @@ public class DbMigratorImplTest {
 
     final var sut =
         new DbMigratorImpl(
-            mockProcessingState, transactionContext, Collections.singletonList(mockMigration));
+            mockProcessingState,
+            transactionContext,
+            Collections.singletonList(mockMigration),
+            null);
 
     // when
     sut.runMigrations();
@@ -87,7 +93,7 @@ public class DbMigratorImplTest {
 
     final var sut =
         new DbMigratorImpl(
-            mockProcessingState, transactionContext, List.of(mockMigration1, mockMigration2));
+            mockProcessingState, transactionContext, List.of(mockMigration1, mockMigration2), null);
 
     // when
     sut.runMigrations();

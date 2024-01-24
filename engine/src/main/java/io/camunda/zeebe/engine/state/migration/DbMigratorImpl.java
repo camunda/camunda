@@ -7,7 +7,10 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
+import static io.camunda.zeebe.util.VersionUtil.LOG;
+
 import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.migration.to_8_2.DecisionMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_2.DecisionRequirementsMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyDecisionStateMigration;
@@ -57,20 +60,25 @@ public class DbMigratorImpl implements DbMigrator {
   private final MutableProcessingState processingState;
   private final TransactionContext zeebeDbContext;
   private final List<MigrationTask> migrationTasks;
+  private final ZeebeDb zeebeDb;
 
   public DbMigratorImpl(
-      final MutableProcessingState processingState, final TransactionContext zeebeDbContext) {
-    this(processingState, zeebeDbContext, MIGRATION_TASKS);
+      final MutableProcessingState processingState,
+      final TransactionContext zeebeDbContext,
+      final ZeebeDb zeebeDb) {
+    this(processingState, zeebeDbContext, MIGRATION_TASKS, zeebeDb);
   }
 
   public DbMigratorImpl(
       final MutableProcessingState processingState,
       final TransactionContext zeebeDbContext,
-      final List<MigrationTask> migrationTasks) {
+      final List<MigrationTask> migrationTasks,
+      final ZeebeDb zeebeDb) {
 
     this.processingState = processingState;
     this.zeebeDbContext = zeebeDbContext;
     this.migrationTasks = migrationTasks;
+    this.zeebeDb = zeebeDb;
   }
 
   @Override
@@ -82,14 +90,29 @@ public class DbMigratorImpl implements DbMigrator {
       // one based index looks nicer in logs
 
       final var migration = migrationTasks.get(index - 1);
-      final int finalIndex = index;
-      zeebeDbContext.runInTransaction(
-          () -> {
-            final var executed = handleMigrationTask(migration, finalIndex, migrationTasks.size());
-            if (executed) {
-              executedMigrations.add(migration);
-            }
-          });
+
+      final var executed = handleMigrationTask(migration, index, migrationTasks.size());
+      if (executed) {
+        executedMigrations.add(migration);
+      }
+      LOG.debug("rocksdb.block-cache-usage: {}", zeebeDb.getProperty("rocksdb.block-cache-usage"));
+      LOG.debug(
+          "rocksdb.block-cache-pinned-usage: {}",
+          zeebeDb.getProperty("rocksdb.block-cache-pinned-usage"));
+      LOG.debug(
+          "rocksdb.cur-size-active-mem-table: {}",
+          zeebeDb.getProperty("rocksdb.cur-size-active-mem-table"));
+      LOG.debug(
+          "rocksdb.cur-size-all-mem-tables: {}",
+          zeebeDb.getProperty("rocksdb.cur-size-all-mem-tables"));
+      LOG.debug(
+          "rocksdb.size-all-mem-tables: {}", zeebeDb.getProperty("rocksdb.size-all-mem-tables"));
+      LOG.debug(
+          "rocksdb.mem-table-flush-pending: {}",
+          zeebeDb.getProperty("rocksdb.mem-table-flush-pending"));
+      LOG.debug(
+          "rocksdb.num-immutable-mem-table: {}",
+          zeebeDb.getProperty("rocksdb.num-immutable-mem-table"));
     }
     logSummary(executedMigrations);
   }

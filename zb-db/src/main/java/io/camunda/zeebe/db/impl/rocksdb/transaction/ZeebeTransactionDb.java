@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 import org.rocksdb.Checkpoint;
 import org.rocksdb.ColumnFamilyHandle;
+import org.rocksdb.FlushOptions;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.Options;
 import org.rocksdb.ReadOptions;
@@ -167,6 +168,17 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
       final ColumnFamilyNames columnFamilyName, final TransactionContext context) {
     return createColumnFamily(columnFamilyName, context, DbNullKey.INSTANCE, DbNil.INSTANCE)
         .isEmpty();
+  }
+
+  @Override
+  public void flush() {
+    try {
+      final FlushOptions flushOptions = new FlushOptions();
+      flushOptions.setWaitForFlush(true);
+      optimisticTransactionDB.flush(flushOptions);
+    } catch (final RocksDBException e) {
+      throw new ZeebeDbException("Failed to flush database", e);
+    }
   }
 
   @Override

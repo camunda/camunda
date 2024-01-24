@@ -181,43 +181,10 @@ public final class FileBasedSnapshotStore extends Actor
     final var snapshotId = optionalMeta.get();
     final var checksumPath = buildSnapshotsChecksumPath(snapshotId);
 
-    if (!Files.exists(checksumPath)) {
-      // checksum was not completely/successfully written, we can safely delete it and proceed
-      LOGGER.debug(
-          "Snapshot {} does not have a checksum file, which most likely indicates a partial write"
-              + " (e.g. crash during move), and will be deleted",
-          path);
-      try {
-        deleteFolder(path);
-      } catch (final Exception e) {
-        // it's fine to ignore failures to delete here, as it would constitute mostly noise
-        LOGGER.debug("Failed to delete partial snapshot {}", path, e);
-      }
-
-      return null;
-    }
-
     try {
-      final var expectedChecksum = SnapshotChecksum.read(checksumPath);
-      final var actualChecksum = SnapshotChecksum.calculate(path);
-      if (expectedChecksum.getCombinedValue() != actualChecksum.getCombinedValue()) {
-        LOGGER.warn(
-            "Expected snapshot {} to have checksum {}, but the actual checksum is {}; the snapshot is most likely corrupted. The startup will fail if there is no other valid snapshot and the log has been compacted.",
-            path,
-            expectedChecksum.getCombinedValue(),
-            actualChecksum.getCombinedValue());
-        return null;
-      }
-
       final var metadata = collectMetadata(path, snapshotId);
       return new FileBasedSnapshot(
-          path,
-          checksumPath,
-          actualChecksum.getCombinedValue(),
-          snapshotId,
-          metadata,
-          this::onSnapshotDeleted,
-          actor);
+          path, checksumPath, 0, snapshotId, metadata, this::onSnapshotDeleted, actor);
     } catch (final Exception e) {
       LOGGER.warn("Could not load snapshot in {}", path, e);
       return null;

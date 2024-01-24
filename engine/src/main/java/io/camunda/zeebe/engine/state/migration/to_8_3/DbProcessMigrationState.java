@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.state.deployment.PersistedProcess;
 import io.camunda.zeebe.engine.state.deployment.VersionInfo;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import org.agrona.collections.MutableInteger;
 
 public final class DbProcessMigrationState {
   private final DbLong processDefinitionKey;
@@ -160,44 +161,62 @@ public final class DbProcessMigrationState {
 
   public void migrateProcessStateForMultiTenancy() {
     tenantIdKey.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    final var memoryUsage = new MutableInteger();
+    final var txnLimit = 50 * 1024 * 1024;
 
-    deprecatedProcessCacheColumnFamily.forEach(
-        (key, value) -> {
-          value.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-          processDefinitionKey.wrapLong(key.getValue());
-          processColumnFamily.insert(tenantAwareProcessDefinitionKey, value);
-          deprecatedProcessCacheColumnFamily.deleteExisting(key);
-        });
+    while (!deprecatedProcessCacheColumnFamily.isEmpty()) {
+      memoryUsage.set(0);
+      deprecatedProcessCacheColumnFamily.whileTrue(
+          (key, value) -> {
+            value.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+            processDefinitionKey.wrapLong(key.getValue());
+            processColumnFamily.insert(tenantAwareProcessDefinitionKey, value);
+            deprecatedProcessCacheColumnFamily.deleteExisting(key);
+            return memoryUsage.addAndGet(key.getLength() + value.getLength()) < txnLimit;
+          });
+    }
 
-    deprecatedProcessCacheByIdAndVersionColumnFamily.forEach(
-        (key, value) -> {
-          value.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-          processId.wrapBuffer(value.getBpmnProcessId());
-          processVersion.wrapLong(value.getVersion());
-          processByIdAndVersionColumnFamily.insert(tenantAwareProcessIdAndVersionKey, value);
-          deprecatedProcessCacheByIdAndVersionColumnFamily.deleteExisting(key);
-        });
+    while (!deprecatedProcessCacheByIdAndVersionColumnFamily.isEmpty()) {
+      memoryUsage.set(0);
+      deprecatedProcessCacheByIdAndVersionColumnFamily.whileTrue(
+          (key, value) -> {
+            value.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+            processId.wrapBuffer(value.getBpmnProcessId());
+            processVersion.wrapLong(value.getVersion());
+            processByIdAndVersionColumnFamily.insert(tenantAwareProcessIdAndVersionKey, value);
+            deprecatedProcessCacheByIdAndVersionColumnFamily.deleteExisting(key);
+            return memoryUsage.addAndGet(key.getLength() + value.getLength()) < txnLimit;
+          });
+    }
 
-    deprecatedDigestByIdColumnFamily.forEach(
-        (key, value) -> {
-          processId.wrapBuffer(key.inner().getBuffer());
-          digestByIdColumnFamily.insert(fkTenantAwareProcessId, value);
-          deprecatedDigestByIdColumnFamily.deleteExisting(key);
-        });
+    while (!deprecatedDigestByIdColumnFamily.isEmpty()) {
+      memoryUsage.set(0);
+      deprecatedDigestByIdColumnFamily.whileTrue(
+          (key, value) -> {
+            processId.wrapBuffer(key.inner().getBuffer());
+            digestByIdColumnFamily.insert(fkTenantAwareProcessId, value);
+            deprecatedDigestByIdColumnFamily.deleteExisting(key);
+            return memoryUsage.addAndGet(key.getLength() + value.getLength()) < txnLimit;
+          });
+    }
 
-    deprecatedProcessVersionColumnFamily.forEach(
-        (key, value) -> {
-          idKey.wrapBuffer(key.getBuffer());
+    while (!deprecatedProcessVersionColumnFamily.isEmpty()) {
+      memoryUsage.set(0);
+      deprecatedProcessVersionColumnFamily.whileTrue(
+          (key, value) -> {
+            idKey.wrapBuffer(key.getBuffer());
 
-          final long highestVersion = value.getHighestVersion();
-          for (long version = 1; version <= highestVersion; version++) {
-            if (!value.getKnownVersions().contains(version)) {
-              value.addKnownVersion(version);
+            final long highestVersion = value.getHighestVersion();
+            for (long version = 1; version <= highestVersion; version++) {
+              if (!value.getKnownVersions().contains(version)) {
+                value.addKnownVersion(version);
+              }
             }
-          }
 
-          versionInfoColumnFamily.insert(tenantAwareIdKey, value);
-          deprecatedProcessVersionColumnFamily.deleteExisting(key);
-        });
+            versionInfoColumnFamily.insert(tenantAwareIdKey, value);
+            deprecatedProcessVersionColumnFamily.deleteExisting(key);
+            return memoryUsage.addAndGet(key.getLength() + value.getLength()) < txnLimit;
+          });
+    }
   }
 }
