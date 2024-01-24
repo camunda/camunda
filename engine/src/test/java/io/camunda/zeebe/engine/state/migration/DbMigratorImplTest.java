@@ -19,20 +19,10 @@ import io.camunda.zeebe.engine.state.mutable.MutableMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import java.util.Collections;
 import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 public class DbMigratorImplTest {
-
-  private TransactionContext transactionContext;
-  private ZeebeDbTransaction transaction;
-
-  @BeforeEach
-  void setup() {
-    transaction = mock(ZeebeDbTransaction.class);
-    transactionContext = new RunInTransactionContext(transaction);
-  }
 
   @Test
   void shouldRunMigrationThatNeedsToBeRun() {
@@ -44,8 +34,7 @@ public class DbMigratorImplTest {
     when(mockMigration.needsToRun(mockProcessingState)).thenReturn(true);
 
     final var sut =
-        new DbMigratorImpl(
-            mockProcessingState, transactionContext, Collections.singletonList(mockMigration));
+        new DbMigratorImpl(mockProcessingState, Collections.singletonList(mockMigration));
 
     // when
     sut.runMigrations();
@@ -64,8 +53,7 @@ public class DbMigratorImplTest {
     when(mockMigration.needsToRun(mockProcessingState)).thenReturn(false);
 
     final var sut =
-        new DbMigratorImpl(
-            mockProcessingState, transactionContext, Collections.singletonList(mockMigration));
+        new DbMigratorImpl(mockProcessingState, Collections.singletonList(mockMigration));
 
     // when
     sut.runMigrations();
@@ -86,8 +74,7 @@ public class DbMigratorImplTest {
     when(mockMigration2.needsToRun(mockProcessingState)).thenReturn(true);
 
     final var sut =
-        new DbMigratorImpl(
-            mockProcessingState, transactionContext, List.of(mockMigration1, mockMigration2));
+        new DbMigratorImpl(mockProcessingState, List.of(mockMigration1, mockMigration2));
 
     // when
     sut.runMigrations();
