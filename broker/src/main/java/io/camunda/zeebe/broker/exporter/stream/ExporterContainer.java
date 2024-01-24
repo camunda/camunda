@@ -41,10 +41,12 @@ final class ExporterContainer implements Controller {
   private ExporterMetrics metrics;
   private ActorControl actor;
 
-  ExporterContainer(final ExporterDescriptor descriptor) {
+  ExporterContainer(final ExporterDescriptor descriptor, final int partitionId) {
     context =
         new ExporterContext(
-            Loggers.getExporterLogger(descriptor.getId()), descriptor.getConfiguration());
+            Loggers.getExporterLogger(descriptor.getId()),
+            descriptor.getConfiguration(),
+            partitionId);
 
     exporter = descriptor.newInstance();
   }
@@ -129,6 +131,11 @@ final class ExporterContainer implements Controller {
   @Override
   public void updateLastExportedRecordPosition(final long position, final byte[] metadata) {
     actor.run(() -> updateExporterState(position, metadata));
+  }
+
+  @Override
+  public long getLastExportedRecordPosition() {
+    return getPosition();
   }
 
   @Override

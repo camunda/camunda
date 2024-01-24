@@ -88,7 +88,7 @@ public final class ExporterRepository {
   private void validate(final ExporterDescriptor descriptor) throws ExporterLoadException {
     try {
       final Exporter instance = descriptor.newInstance();
-      final ExporterContext context = new ExporterContext(LOG, descriptor.getConfiguration());
+      final ExporterContext context = new ExporterContext(LOG, descriptor.getConfiguration(), 0);
 
       ThreadContextUtil.runCheckedWithClassLoader(
           () -> instance.configure(context), instance.getClass().getClassLoader());

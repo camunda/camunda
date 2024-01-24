@@ -64,7 +64,7 @@ final class ExternalExporterContainerTest {
     final var exporterClass = createUnloadedExporter();
     final var jarFile = exporterClass.toJar(new File(jarDirectory, "exporter.jar"));
     final var descriptor = runtime.loadExternalExporter(jarFile, EXPORTER_CLASS_NAME);
-    final var container = runtime.newContainer(descriptor);
+    final var container = runtime.newContainer(descriptor, 0);
 
     // when
     container.configureExporter();
@@ -86,7 +86,7 @@ final class ExternalExporterContainerTest {
     final var jarFile = exporterClass.toJar(new File(jarDirectory, "exporter.jar"));
     final var descriptor = runtime.loadExternalExporter(jarFile, EXPORTER_CLASS_NAME);
     final var expectedClassLoader = descriptor.newInstance().getClass().getClassLoader();
-    final var container = runtime.newContainer(descriptor);
+    final var container = runtime.newContainer(descriptor, 0);
 
     // when
     container.openExporter();
@@ -106,7 +106,7 @@ final class ExternalExporterContainerTest {
     final var jarFile = exporterClass.toJar(new File(jarDirectory, "exporter.jar"));
     final var descriptor = runtime.loadExternalExporter(jarFile, EXPORTER_CLASS_NAME);
     final var expectedClassLoader = descriptor.newInstance().getClass().getClassLoader();
-    final var container = runtime.newContainer(descriptor);
+    final var container = runtime.newContainer(descriptor, 0);
 
     // when
     final var record = mock(TypedRecord.class);
@@ -129,7 +129,7 @@ final class ExternalExporterContainerTest {
     final var jarFile = exporterClass.toJar(new File(jarDirectory, "exporter.jar"));
     final var descriptor = runtime.loadExternalExporter(jarFile, EXPORTER_CLASS_NAME);
     final var expectedClassLoader = descriptor.newInstance().getClass().getClassLoader();
-    final var container = new ExporterContainer(descriptor);
+    final var container = new ExporterContainer(descriptor, 0);
 
     // when
     container.close();
