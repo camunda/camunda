@@ -98,8 +98,11 @@ public final class ProcessInstanceMigrationPreconditionChecker {
   private static final long NO_PARENT = -1L;
 
   /**
-   * Exception that can be thrown during the migration of a process instance, in case no process
-   * instance with the given key exists.
+   * Checks whether the given record exists. Throws exception if given process instance record is
+   * null.
+   *
+   * @param record process instance record to do the null check
+   * @param processInstanceKey process instance key to be logged
    */
   public static void requireNonNullProcessInstance(
       final ElementInstance record, final long processInstanceKey) {
@@ -112,8 +115,11 @@ public final class ProcessInstanceMigrationPreconditionChecker {
   }
 
   /**
-   * Exception that can be thrown during the migration of a process instance, in case given tenant
-   * is not authorized to migrate the process instance.
+   * Checks whether given tenant is authorized for the process given instance.
+   *
+   * @param authorizations list of authorizations available
+   * @param tenantId tenant id to be checked
+   * @param processInstanceKey process instance key to be logged
    */
   public static void requireAuthorizedTenant(
       final Map<String, Object> authorizations,
@@ -130,8 +136,11 @@ public final class ProcessInstanceMigrationPreconditionChecker {
   }
 
   /**
-   * Exception that can be thrown during the migration of a process instance, in case the process to
-   * migrate instance is a child process instance.
+   * Checks whether the given process instance key is a parent key. Throws exception if given parent
+   * process key is a parent.
+   *
+   * @param parentProcessInstanceKey parent process instance key to do the check
+   * @param processInstanceKey process instance key to be logged
    */
   public static void requireNullParent(
       final long parentProcessInstanceKey, final long processInstanceKey) {
@@ -143,8 +152,11 @@ public final class ProcessInstanceMigrationPreconditionChecker {
   }
 
   /**
-   * Exception that can be thrown during the migration of a process instance, in case no target
-   * process definition exist with given definition key.
+   * Checks whether the given target process definition exists. Throws exception if given target
+   * process definition is null.
+   *
+   * @param targetProcessDefinition target process definition to do the null check
+   * @param targetProcessDefinitionKey target process definition key to be logged
    */
   public static void requireNonNullTargetProcessDefinition(
       final DeployedProcess targetProcessDefinition, final long targetProcessDefinitionKey) {
@@ -157,8 +169,11 @@ public final class ProcessInstanceMigrationPreconditionChecker {
   }
 
   /**
-   * Exception that can be thrown during the migration of a process instance, in case the mapping
-   * instructions contains duplicated element ids.
+   * Checks whether the given mapping instructions contain duplicate source element ids. Throws an
+   * exception if duplicate source element ids are found.
+   *
+   * @param mappingInstructions mapping instructions to do the check
+   * @param processInstanceKey process instance key to be logged
    */
   public static void requireNonDuplicateSourceElementIds(
       final List<ProcessInstanceMigrationMappingInstructionValue> mappingInstructions,
@@ -187,18 +202,14 @@ public final class ProcessInstanceMigrationPreconditionChecker {
   }
 
   /**
-   * Exception that can be thrown during the migration of a process instance, in following cases:
+   * Checks whether the given mapping instructions refer to existing elements in the source and the
+   * target process definition. Throws an exception if any of the mapping instructions refers to a
+   * non-existing element.
    *
-   * <p>
-   *
-   * <ul>
-   *   <li>A mapping instruction contains a source element id that does not exist in the source
-   *       process definition.
-   *   <li>A mapping instruction contains a target element id that does not exist in the target
-   *       process definition.
-   * </ul>
-   *
-   * <p>
+   * @param sourceProcessDefinition source process definition
+   * @param targetProcessDefinition target process definition
+   * @param mappingInstructions mapping instructions to do the check
+   * @param processInstanceKey process instance key to be logged
    */
   public static void requireReferredElementsExist(
       final DeployedProcess sourceProcessDefinition,
@@ -229,16 +240,10 @@ public final class ProcessInstanceMigrationPreconditionChecker {
   }
 
   /**
-   * Exception that can be thrown during the migration of a process instance, in following cases:
+   * Checks whether the given source and target process definition contain event subprocesses.
    *
-   * <p>
-   *
-   * <ul>
-   *   <li>Source process definition contains an event subprocess.
-   *   <li>Target process definition contains an event subprocess.
-   * </ul>
-   *
-   * <p>
+   * @param sourceProcessDefinition source process definition
+   * @param targetProcessDefinition target process definition
    */
   public static void requireNoEventSubprocess(
       final DeployedProcess sourceProcessDefinition,
@@ -257,8 +262,11 @@ public final class ProcessInstanceMigrationPreconditionChecker {
   }
 
   /**
-   * Exception that can be thrown during the migration of a process instance, in case the engine
-   * attempts to migrate an element which is not supported at this time.
+   * Checks whether the given element instance is of a supported type. Throws an exception if the
+   * element instance is of an unsupported type.
+   *
+   * @param elementInstanceRecord element instance to do the check
+   * @param processInstanceKey process instance key to be logged
    */
   public static void requireSupportedElementType(
       final ProcessInstanceRecord elementInstanceRecord, final long processInstanceKey) {
@@ -275,8 +283,12 @@ public final class ProcessInstanceMigrationPreconditionChecker {
   }
 
   /**
-   * Exception that can be thrown during the migration of a process instance, in case the engine
-   * attempts to migrate an element which is not mapped.
+   * Checks whether the given target element id exists. Throws an exception if the target element id
+   * is null.
+   *
+   * @param targetElementId target element id to do the null check
+   * @param processInstanceKey process instance key to be logged
+   * @param sourceElementId source element id to be logged
    */
   public static void requireNonNullTargetElementId(
       final String targetElementId, final long processInstanceKey, final String sourceElementId) {
@@ -289,8 +301,11 @@ public final class ProcessInstanceMigrationPreconditionChecker {
   }
 
   /**
-   * Exception that can be thrown during the migration of a process instance, in case the engine
-   * attempts to migrate an element that has an incident.
+   * Checks whether the given element instance has an incident. Throws an exception if the element
+   * instance has an incident.
+   *
+   * @param incidentState incident state to check for incidents
+   * @param elementInstance element instance to do the check
    */
   public static void requireNoIncident(
       final IncidentState incidentState, final ElementInstance elementInstance) {
@@ -313,9 +328,13 @@ public final class ProcessInstanceMigrationPreconditionChecker {
   }
 
   /**
-   * Exception that can be thrown during the migration of a process instance, in case any of the
-   * mapping instructions of the command refer to a source and a target element with different
-   * element type, or different event type.
+   * Checks whether the given element instance has the same element type as the target element.
+   * Throws an exception if the element instance has a different type.
+   *
+   * @param targetProcessDefinition target process definition to retrieve the target element type
+   * @param targetElementId target element id
+   * @param elementInstanceRecord element instance to do the check
+   * @param processInstanceKey process instance key to be logged
    */
   public static void requireSameElementType(
       final DeployedProcess targetProcessDefinition,
@@ -339,8 +358,13 @@ public final class ProcessInstanceMigrationPreconditionChecker {
   }
 
   /**
-   * Exception that can be thrown during the migration of a process instance, in case the engine
-   * attempts to change element flow scope in the target process definition.
+   * Checks whether the given element instance has the same flow scope id as the target element.
+   * Throws an exception if the element instance has a different flow scope.
+   *
+   * @param elementInstanceState element instance state to retrieve the source flow scope element
+   * @param elementInstanceRecord element instance to do the check
+   * @param targetProcessDefinition target process definition to retrieve the target element
+   * @param targetElementId target element id to retrieve the target flow scope
    */
   public static void requireUnchangedFlowScope(
       final ElementInstanceState elementInstanceState,
@@ -374,8 +398,11 @@ public final class ProcessInstanceMigrationPreconditionChecker {
   }
 
   /**
-   * Exception that can be thrown during the migration of a process instance, in case process
-   * instance has an active element with a boundary event
+   * Checks whether the given source process definition contains a boundary event. Throws an
+   * exception if the source process definition contains a boundary event.
+   *
+   * @param sourceProcessDefinition source process definition to do the check
+   * @param elementInstanceRecord element instance to be logged
    */
   public static void requireNoBoundaryEventInSource(
       final DeployedProcess sourceProcessDefinition,
@@ -399,8 +426,12 @@ public final class ProcessInstanceMigrationPreconditionChecker {
   }
 
   /**
-   * Exception that can be thrown during the migration of a process instance, in case target process
-   * definition has an element with a boundary event
+   * Checks whether the given target process definition contains a boundary event. Throws an
+   * exception if the target process definition contains a boundary event.
+   *
+   * @param targetProcessDefinition target process definition to do the check
+   * @param targetElementId target element id to retrieve the target element
+   * @param elementInstanceRecord element instance to be logged
    */
   public static void requireNoBoundaryEventInTarget(
       final DeployedProcess targetProcessDefinition,
@@ -425,10 +456,16 @@ public final class ProcessInstanceMigrationPreconditionChecker {
   }
 
   /**
-   * Exception that can be thrown during the migration of a process instance, in case the engine
-   * processes another command concurrently for the process instance, for example, a job complete, a
-   * timer trigger, or a message correlation. Since the concurrent command modifies the process
-   * instance, it is not safe to apply the migration in between.
+   * Checks whether the given process instance has a concurrent command. Throws an exception if the
+   * given process instance has a concurrent command.
+   *
+   * <p>Some concurrent commands are a job complete, a timer trigger, or a message correlation.
+   * Since the concurrent command modifies the process instance, it is not safe to apply the
+   * migration in between.
+   *
+   * @param eventScopeInstanceState event scope instance state to retrieve the event trigger
+   * @param elementInstance element instance to do the check active sequence flows
+   * @param processInstanceKey process instance key to be logged
    */
   public static void requireNoConcurrentCommand(
       final EventScopeInstanceState eventScopeInstanceState,
