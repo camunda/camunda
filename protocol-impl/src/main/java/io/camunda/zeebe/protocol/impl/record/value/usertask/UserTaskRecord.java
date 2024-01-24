@@ -65,7 +65,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
       new ArrayProperty<>("changedAttributes", StringValue::new);
 
   public UserTaskRecord() {
-    super(15);
+    super(16);
     declareProperty(userTaskKeyProp)
         .declareProperty(assigneeProp)
         .declareProperty(candidateGroupsProp)
