@@ -33,6 +33,11 @@ public interface Context {
   Configuration getConfiguration();
 
   /**
+   * @return the partition id for this exporter
+   */
+  int getPartitionId();
+
+  /**
    * Apply the given filter to limit the records which are exported.
    *
    * @param filter the filter to apply.

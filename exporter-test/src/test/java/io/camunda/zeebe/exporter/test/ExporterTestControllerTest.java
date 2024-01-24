@@ -30,6 +30,7 @@ final class ExporterTestControllerTest {
 
     // then
     assertThat(controller.getPosition()).isEqualTo(1);
+    assertThat(controller.getLastExportedRecordPosition()).isEqualTo(1);
   }
 
   @Test

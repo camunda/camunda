@@ -39,6 +39,9 @@ public interface Controller {
    */
   void updateLastExportedRecordPosition(long position, byte[] metadata);
 
+  /** Gets the last acknowledged exported record position. */
+  long getLastExportedRecordPosition();
+
   /**
    * Schedules a cancellable {@param task} to be ran after {@param delay} has expired.
    *

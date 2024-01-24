@@ -33,6 +33,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 final class ExporterContainerTest {
 
   private static final String EXPORTER_ID = "fakeExporter";
+  private static final int PARTITION_ID = 123;
 
   private ExporterContainerRuntime runtime;
   private FakeExporter exporter;
@@ -44,7 +45,7 @@ final class ExporterContainerTest {
 
     final var descriptor =
         runtime.getRepository().load(EXPORTER_ID, FakeExporter.class, Map.of("key", "value"));
-    exporterContainer = runtime.newContainer(descriptor);
+    exporterContainer = runtime.newContainer(descriptor, PARTITION_ID);
     exporter = (FakeExporter) exporterContainer.getExporter();
   }
 
@@ -60,6 +61,7 @@ final class ExporterContainerTest {
     assertThat(exporter.getContext().getLogger()).isNotNull();
     assertThat(exporter.getContext().getConfiguration()).isNotNull();
     assertThat(exporter.getContext().getConfiguration().getId()).isEqualTo(EXPORTER_ID);
+    assertThat(exporter.getContext().getPartitionId()).isEqualTo(PARTITION_ID);
     assertThat(exporter.getContext().getConfiguration().getArguments())
         .isEqualTo(Map.of("key", "value"));
   }

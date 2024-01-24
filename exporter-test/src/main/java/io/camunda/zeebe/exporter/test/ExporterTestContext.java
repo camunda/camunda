@@ -36,14 +36,19 @@ public final class ExporterTestContext implements Context {
     return configuration;
   }
 
-  public ExporterTestContext setConfiguration(final Configuration configuration) {
-    this.configuration = Objects.requireNonNull(configuration, "must specify a configuration");
-    return this;
+  @Override
+  public int getPartitionId() {
+    return 0;
   }
 
   @Override
   public void setFilter(final RecordFilter filter) {
     recordFilter = filter;
+  }
+
+  public ExporterTestContext setConfiguration(final Configuration configuration) {
+    this.configuration = Objects.requireNonNull(configuration, "must specify a configuration");
+    return this;
   }
 
   public RecordFilter getRecordFilter() {
