@@ -8,16 +8,10 @@
 import React from 'react';
 import classnames from 'classnames';
 import deepEqual from 'fast-deep-equal';
-import {
-  Button,
-  TableSelectRow,
-  TableToolbar,
-  TableToolbarContent,
-  TableToolbarSearch,
-} from '@carbon/react';
+import {Button, TableSelectRow, TableToolbar, TableToolbarContent, Toggle} from '@carbon/react';
 import {ChevronDown, ChevronUp} from '@carbon/icons-react';
 
-import {Table, LoadingIndicator, Select, Switch} from 'components';
+import {Table, CarbonSelect} from 'components';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -198,10 +192,14 @@ export default withErrorHandling(
                 <TableToolbarContent>
                   <b>{t('events.list')}</b>
                   {eventSources.length === 1 && eventSources[0].configuration.includeAllGroups && (
-                    <Switch
-                      checked={showSuggested}
-                      label={t('events.table.showSuggestions')}
-                      onChange={({target: {checked}}) =>
+                    <Toggle
+                      id="showSuggestionsToggle"
+                      className="showSuggestionsToggle"
+                      size="sm"
+                      toggled={showSuggested}
+                      labelA={t('events.table.showSuggestions')}
+                      labelB={t('events.table.showSuggestions')}
+                      onToggle={(checked) =>
                         this.setState({showSuggested: checked}, async () => {
                           this.setState({events: await this.loadEvents(searchQuery)});
                           this.scrollToSelectedElement('instant');
@@ -209,13 +207,11 @@ export default withErrorHandling(
                       }
                     />
                   )}
-                  <EventsSources sources={eventSources} onChange={this.props.onSourcesChange} />
-                  <TableToolbarSearch
-                    expanded
-                    value={searchQuery}
-                    placeholder={t('home.search.name')}
-                    onChange={({target: {value}}) => this.searchFor(value)}
-                    onClear={() => this.searchFor('')}
+                  <EventsSources
+                    sources={eventSources}
+                    onChange={this.props.onSourcesChange}
+                    searchQuery={searchQuery}
+                    searchFor={this.searchFor}
                   />
                 </TableToolbarContent>
                 <Button
@@ -263,25 +259,25 @@ export default withErrorHandling(
                           }
                         />,
                         showDropdown ? (
-                          <Select
+                          <CarbonSelect
+                            size="sm"
+                            id={`${eventName}-${group}-${source}-mapping`}
                             value={mappedAs}
                             onChange={(value) =>
                               mappedAs !== value && onMappingChange(eventAsMapping, true, value)
                             }
                           >
-                            <Select.Option
+                            <CarbonSelect.Option
                               value="end"
                               disabled={mappedAs !== 'end' && numberOfMappings === 2}
-                            >
-                              {t('events.table.end')}
-                            </Select.Option>
-                            <Select.Option
+                              label={t('events.table.end')}
+                            />
+                            <CarbonSelect.Option
                               value="start"
                               disabled={mappedAs !== 'start' && numberOfMappings === 2}
-                            >
-                              {t('events.table.start')}
-                            </Select.Option>
-                          </Select>
+                              label={t('events.table.start')}
+                            />
+                          </CarbonSelect>
                         ) : (
                           <span className={classnames({disabled})}>
                             {mappedAs ? t(`events.table.${mappedAs}`) : '--'}
@@ -314,9 +310,9 @@ export default withErrorHandling(
                 : []
             }
             disablePagination
+            loading={!events}
             noData={
               <>
-                {!events && <LoadingIndicator />}
                 {events && searchQuery && t('events.table.noResults')}
                 {events && !!events.length && !searchQuery && t('events.table.allMapped')}
                 {events &&

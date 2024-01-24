@@ -17,23 +17,23 @@ exports[`should match snapshot 1`] = `
               name="OrderProcessed"
               onSelect={[Function]}
             />,
-            <Select
+            <CarbonSelect
+              id="OrderProcessed-eventGroup-order-service-mapping"
               onChange={[Function]}
+              size="sm"
               value="end"
             >
               <Option
                 disabled={false}
+                label="End"
                 value="end"
-              >
-                End
-              </Option>
+              />
               <Option
                 disabled={false}
+                label="Start"
                 value="start"
-              >
-                Start
-              </Option>
-            </Select>,
+              />
+            </CarbonSelect>,
             "Order Processed",
             "eventGroup",
             "order-service",
@@ -103,6 +103,7 @@ exports[`should match snapshot 1`] = `
         },
       ]
     }
+    loading={false}
     noData={
       <React.Fragment>
         
@@ -125,12 +126,18 @@ exports[`should match snapshot 1`] = `
           <b>
             Events list
           </b>
-          <Switch
-            checked={true}
-            label="Show suggested events"
-            onChange={[Function]}
+          <Toggle
+            className="showSuggestionsToggle"
+            id="showSuggestionsToggle"
+            labelA="Show suggested events"
+            labelB="Show suggested events"
+            onToggle={[Function]}
+            size="sm"
+            toggled={true}
           />
-          <EventSources
+          <EventsSources
+            searchFor={[Function]}
+            searchQuery=""
             sources={
               Array [
                 Object {
@@ -141,16 +148,6 @@ exports[`should match snapshot 1`] = `
                 },
               ]
             }
-          />
-          <TableToolbarSearch
-            expanded={true}
-            onChange={[Function]}
-            onClear={[Function]}
-            persistent={false}
-            placeholder="Search for name..."
-            tabIndex="0"
-            translateWithId={[Function]}
-            value=""
           />
         </TableToolbarContent>
         <Button
