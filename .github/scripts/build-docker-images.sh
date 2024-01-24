@@ -35,6 +35,7 @@ docker buildx build \
     --build-arg DATE="${DATE}" \
     --build-arg REVISION="${REVISION}" \
     --platform linux/arm64 \
+    --provenance false \
     --load \
     .
 export ARCHITECTURE=arm64
@@ -47,6 +48,7 @@ docker buildx build \
     --build-arg DATE="${DATE}" \
     --build-arg REVISION="${REVISION}" \
     --platform linux/amd64 \
+    --provenance false \
     --load \
     .
 export ARCHITECTURE=amd64
