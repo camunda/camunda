@@ -89,7 +89,7 @@
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
     <version.testcontainers>1.19.3</version.testcontainers>
-    <version.netflix.concurrency>0.4.0</version.netflix.concurrency>
+    <version.netflix.concurrency>0.4.1</version.netflix.concurrency>
     <version.zeebe-test-container>3.6.3</version.zeebe-test-container>
     <version.feel-scala>1.17.4</version.feel-scala>
     <version.dmn-scala>1.9.0</version.dmn-scala>
@@ -121,7 +121,7 @@
     <version.feign>13.1</version.feign>
     <version.google-sdk>26.30.0</version.google-sdk>
     <version.azure-sdk>1.2.19</version.azure-sdk>
-    <version.awssdk>2.23.7</version.awssdk>
+    <version.awssdk>2.23.9</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.0.2</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>

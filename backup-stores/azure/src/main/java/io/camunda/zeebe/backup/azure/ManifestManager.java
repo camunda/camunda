@@ -210,7 +210,7 @@ public final class ManifestManager {
   }
 
   public Collection<Manifest> listManifests(final BackupIdentifierWildcard wildcard) {
-
+    assureContainerCreated();
     return blobContainerClient
         .listBlobs(new ListBlobsOptions().setPrefix(wildcardPrefix(wildcard)), null)
         .stream()
