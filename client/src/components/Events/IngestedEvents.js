@@ -5,21 +5,22 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useCallback, useEffect, useState, useMemo} from 'react';
+import {useCallback, useEffect, useState, useMemo} from 'react';
 import debounce from 'debounce';
-import {TableSelectRow, TableSelectAll} from '@carbon/react';
-
 import {
-  Deleter,
-  DocsLink,
-  Dropdown,
-  Icon,
-  NoDataNotice,
-  PageTitle,
-  Table,
-  Tooltip,
-} from 'components';
-import {withErrorHandling} from 'HOC';
+  TableSelectRow,
+  TableSelectAll,
+  TableToolbar,
+  TableToolbarContent,
+  TableToolbarSearch,
+  InlineNotification,
+  TableBatchActions,
+  TableBatchAction,
+} from '@carbon/react';
+import {TrashCan} from '@carbon/icons-react';
+
+import {Deleter, DocsLink, NoDataNotice, PageTitle, Table} from 'components';
+import {useErrorHandling} from 'hooks';
 import {showError} from 'notifications';
 import {t} from 'translation';
 import debouncePromise from 'debouncePromise';
@@ -27,14 +28,13 @@ import debouncePromise from 'debouncePromise';
 import {deleteEvents, loadIngestedEvents} from './service';
 
 import './IngestedEvents.scss';
-import {TableToolbar, TableToolbarContent, TableToolbarSearch} from '@carbon/react';
 
 const debounceRequest = debouncePromise();
 
 const initialOffset = 0;
 const initialLimit = 20;
 
-export function IngestedEvents({mightFail}) {
+export default function IngestedEvents() {
   const [eventsResponse, setEventsResponse] = useState({results: []});
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState('');
@@ -43,6 +43,7 @@ export function IngestedEvents({mightFail}) {
   const [sortOrder, setSortOrder] = useState('desc');
   const [selected, setSelected] = useState([]);
   const [deleting, setDeleting] = useState(false);
+  const {mightFail} = useErrorHandling();
 
   const loadEvents = useCallback(
     async (payload = {limit: initialLimit, offset: initialOffset}) => {
@@ -123,6 +124,13 @@ export function IngestedEvents({mightFail}) {
     <div className="IngestedEvents">
       <PageTitle pageName={t('events.ingested.label')} />
       <h1 className="title">{t('events.ingested.eventSources')}</h1>
+      {maxDeletionReached && (
+        <InlineNotification
+          className="deleteLimitReached"
+          hideCloseButton
+          subtitle={t('events.ingested.deleteLimitReached')}
+        />
+      )}
       <Table
         size="md"
         title={t('events.ingested.label')}
@@ -135,27 +143,20 @@ export function IngestedEvents({mightFail}) {
                 onChange={(evt) => setQuery(evt.target.value)}
                 onClear={() => setQuery('')}
               />
-              {selected.length > 0 && (
-                <Dropdown
-                  className="selectionActions"
-                  primary
-                  label={selected.length + ' ' + t('common.selected')}
+              <TableBatchActions
+                shouldShowBatchActions={selected.length > 0}
+                totalSelected={selected.length}
+                translateWithId={(id, args) => t('common.' + id, args)}
+                onCancel={() => setSelected([])}
+              >
+                <TableBatchAction
+                  disabled={maxDeletionReached}
+                  onClick={() => setDeleting(true)}
+                  renderIcon={TrashCan}
                 >
-                  <Tooltip
-                    content={
-                      maxDeletionReached ? t('events.ingested.deleteLimitReached') : undefined
-                    }
-                  >
-                    <Dropdown.Option
-                      onClick={() => setDeleting(true)}
-                      disabled={maxDeletionReached}
-                    >
-                      <Icon type="delete" />
-                      {t('common.delete')}
-                    </Dropdown.Option>
-                  </Tooltip>
-                </Dropdown>
-              )}
+                  {t('common.delete')}
+                </TableBatchAction>
+              </TableBatchActions>
             </TableToolbarContent>
           </TableToolbar>
         }
@@ -211,5 +212,3 @@ export function IngestedEvents({mightFail}) {
     </div>
   );
 }
-
-export default withErrorHandling(IngestedEvents);

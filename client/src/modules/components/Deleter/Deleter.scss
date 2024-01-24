@@ -1,7 +1,3 @@
-.Deleter {
-  .Modal__content {
-    p:first-child {
-      margin-bottom: 0;
-    }
-  }
+.Deleter .cds--modal-content .deleter-loading {
+  margin: auto;
 }

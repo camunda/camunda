@@ -23,7 +23,7 @@ fixture('Events Processes')
 test('create a process from scratch', async (t) => {
   await t.click(e.navItem);
   await t.click(e.createDropdown);
-  await t.click(Common.option('Model a process'));
+  await t.click(Common.menuOption('Model a process'));
   await t.typeText(Common.nameEditField, 'Invoice Process', {replace: true});
   await t.click(e.firstEl);
   await t.click(e.activityTask);
@@ -139,7 +139,7 @@ test('add sources, map and publish a process', async (t) => {
 test('auto generate a process', async (t) => {
   await t.click(e.navItem);
   await t.click(e.createDropdown);
-  await t.click(Common.option('Autogenerate'));
+  await t.click(Common.menuOption('Autogenerate'));
   await t.click(e.addEventSourceBtn);
 
   await t.typeText(e.processTypeahead, 'Invoice', {replace: true});
@@ -172,11 +172,10 @@ test('delete multiple external events', async (t) => {
 
   await t.click(e.eventCheckbox(0));
   await t.click(e.eventCheckbox(3));
-  await t.click(e.selectionDropdown);
-  await t.hover(Common.option('Delete'));
+  await t.hover(e.batchDeleteButton);
 
   await t.takeScreenshot('additional-features/img/deleting-events.png', {fullPage: true});
 
-  await t.click(Common.option('Delete'));
+  await t.click(e.batchDeleteButton);
   await t.click(Common.modalConfirmButton);
 });

@@ -6,9 +6,10 @@
  */
 
 import React from 'react';
-import {Route, Switch} from 'react-router-dom';
+import {Link, Route, Switch, useLocation} from 'react-router-dom';
+import {Tab, TabList, Tabs} from '@carbon/react';
 
-import {SubNav, ErrorPage} from 'components';
+import {ErrorPage} from 'components';
 import {t} from 'translation';
 
 import EventsProcesses from './EventsProcesses';
@@ -17,20 +18,20 @@ import IngestedEvents from './IngestedEvents';
 import './Events.scss';
 
 export default function Events() {
+  const {pathname} = useLocation();
+
   return (
     <div className="Events">
-      <SubNav>
-        <SubNav.Item
-          name={t('events.label')}
-          linksTo="/events/processes/"
-          active="/events/processes"
-        />
-        <SubNav.Item
-          name={t('events.ingested.eventSources')}
-          linksTo="/events/ingested/"
-          active="/events/ingested"
-        />
-      </SubNav>
+      <Tabs selectedIndex={pathname.includes('events/processes') ? 0 : 1}>
+        <TabList aria-label="tabs" className="tabList">
+          <Tab as={Link} to="/events/processes/">
+            {t('events.label')}
+          </Tab>
+          <Tab as={Link} to="/events/ingested/">
+            {t('events.ingested.eventSources')}
+          </Tab>
+        </TabList>
+      </Tabs>
       <Switch>
         <Route path="/events/processes/" exact component={EventsProcesses} />
         <Route path="/events/ingested/" component={IngestedEvents} />

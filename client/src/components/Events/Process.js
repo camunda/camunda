@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {Component} from 'react';
 import {Redirect} from 'react-router-dom';
 
 import ProcessView from './ProcessView';
@@ -13,7 +13,7 @@ import ProcessEdit from './ProcessEdit';
 
 import './Process.scss';
 
-export default class Process extends React.Component {
+export default class Process extends Component {
   state = {
     redirect: null,
   };

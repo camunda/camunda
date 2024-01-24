@@ -1591,7 +1591,20 @@
       }
     },
     "expand": "Erweitern",
-    "collapse": "Ausblenden"
+    "collapse": "Ausblenden",
+    "carbon": {
+      "table": {
+        "batch": {
+          "cancel": "Abbrechen",
+          "items": {
+            "selected": "{totalSelected} Ausgewählt"
+          },
+          "item": {
+            "selected": "{totalSelected} Ausgewählt"
+          }
+        }
+      }
+    }
   },
   "apiErrors": {
     "serverError": "Es ist ein interner Server Fehler aufgetreten.",

@@ -1591,7 +1591,20 @@
       }
     },
     "expand": "Expand",
-    "collapse": "Collapse"
+    "collapse": "Collapse",
+    "carbon": {
+      "table": {
+        "batch": {
+          "cancel": "Cancel",
+          "items": {
+            "selected": "{totalSelected} selected"
+          },
+          "item": {
+            "selected": "{totalSelected} selected"
+          }
+        }
+      }
+    }
   },
   "apiErrors": {
     "serverError": "An internal server error occurred.",

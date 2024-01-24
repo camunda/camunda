@@ -1,15 +1,24 @@
+@use '@carbon/styles/scss/spacing';
+
 .ProcessView {
   height: 100%;
   display: flex;
   flex-direction: column;
 
-  .progressLabel {
-    margin-right: 15px;
-    font-size: 13px;
-    color: var(--grey-lighten-50);
+  .publishing {
+    display: flex;
+    align-items: center;
+    margin-right: spacing.$spacing-04;
+    align-self: center;
+
+    .progressLabel {
+      margin-right: spacing.$spacing-04;
+      color: var(--cds-text-secondary);
+    }
   }
 
-  .header .MessageBox {
-    margin-top: 10px;
+  .header .generationWarning {
+    margin-top: spacing.$spacing-04;
+    min-width: 100%;
   }
 }
