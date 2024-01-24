@@ -105,6 +105,8 @@ camunda-platform:
         value: io.camunda.zeebe.exporter.operate.OperateElasticsearchExporter
       - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL
         value: "{{ .Values.global.elasticsearch.protocol }}://{{ .Values.global.elasticsearch.host }}:{{ .Values.global.elasticsearch.port }}"
+      - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_WRITETOZEEBEINDEXES
+        value: "true"
       # 3-L cluster plan env vars below
       - name: ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK
         value: "0.87"
