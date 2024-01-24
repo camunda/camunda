@@ -160,44 +160,61 @@ public final class DbProcessMigrationState {
 
   public void migrateProcessStateForMultiTenancy() {
     tenantIdKey.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    final MemoryChecker memoryChecker = new MemoryChecker();
 
-    deprecatedProcessCacheColumnFamily.forEach(
-        (key, value) -> {
-          value.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-          processDefinitionKey.wrapLong(key.getValue());
-          processColumnFamily.insert(tenantAwareProcessDefinitionKey, value);
-          deprecatedProcessCacheColumnFamily.deleteExisting(key);
-        });
+    while (!deprecatedProcessCacheColumnFamily.isEmpty()) {
+      memoryChecker.reset();
+      deprecatedProcessCacheColumnFamily.whileTrue(
+          (key, value) -> {
+            value.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+            processDefinitionKey.wrapLong(key.getValue());
+            processColumnFamily.insert(tenantAwareProcessDefinitionKey, value);
+            deprecatedProcessCacheColumnFamily.deleteExisting(key);
+            return memoryChecker.isBelowLimit(key, value);
+          });
+    }
 
-    deprecatedProcessCacheByIdAndVersionColumnFamily.forEach(
-        (key, value) -> {
-          value.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-          processId.wrapBuffer(value.getBpmnProcessId());
-          processVersion.wrapLong(value.getVersion());
-          processByIdAndVersionColumnFamily.insert(tenantAwareProcessIdAndVersionKey, value);
-          deprecatedProcessCacheByIdAndVersionColumnFamily.deleteExisting(key);
-        });
+    while (!deprecatedProcessCacheByIdAndVersionColumnFamily.isEmpty()) {
+      memoryChecker.reset();
+      deprecatedProcessCacheByIdAndVersionColumnFamily.whileTrue(
+          (key, value) -> {
+            value.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+            processId.wrapBuffer(value.getBpmnProcessId());
+            processVersion.wrapLong(value.getVersion());
+            processByIdAndVersionColumnFamily.insert(tenantAwareProcessIdAndVersionKey, value);
+            deprecatedProcessCacheByIdAndVersionColumnFamily.deleteExisting(key);
+            return memoryChecker.isBelowLimit(key, value);
+          });
+    }
 
-    deprecatedDigestByIdColumnFamily.forEach(
-        (key, value) -> {
-          processId.wrapBuffer(key.inner().getBuffer());
-          digestByIdColumnFamily.insert(fkTenantAwareProcessId, value);
-          deprecatedDigestByIdColumnFamily.deleteExisting(key);
-        });
+    while (!deprecatedDigestByIdColumnFamily.isEmpty()) {
+      memoryChecker.reset();
+      deprecatedDigestByIdColumnFamily.whileTrue(
+          (key, value) -> {
+            processId.wrapBuffer(key.inner().getBuffer());
+            digestByIdColumnFamily.insert(fkTenantAwareProcessId, value);
+            deprecatedDigestByIdColumnFamily.deleteExisting(key);
+            return memoryChecker.isBelowLimit(key, value);
+          });
+    }
 
-    deprecatedProcessVersionColumnFamily.forEach(
-        (key, value) -> {
-          idKey.wrapBuffer(key.getBuffer());
+    while (!deprecatedProcessVersionColumnFamily.isEmpty()) {
+      memoryChecker.reset();
+      deprecatedProcessVersionColumnFamily.whileTrue(
+          (key, value) -> {
+            idKey.wrapBuffer(key.getBuffer());
 
-          final long highestVersion = value.getHighestVersion();
-          for (long version = 1; version <= highestVersion; version++) {
-            if (!value.getKnownVersions().contains(version)) {
-              value.addKnownVersion(version);
+            final long highestVersion = value.getHighestVersion();
+            for (long version = 1; version <= highestVersion; version++) {
+              if (!value.getKnownVersions().contains(version)) {
+                value.addKnownVersion(version);
+              }
             }
-          }
 
-          versionInfoColumnFamily.insert(tenantAwareIdKey, value);
-          deprecatedProcessVersionColumnFamily.deleteExisting(key);
-        });
+            versionInfoColumnFamily.insert(tenantAwareIdKey, value);
+            deprecatedProcessVersionColumnFamily.deleteExisting(key);
+            return memoryChecker.isBelowLimit(key, value);
+          });
+    }
   }
 }
