@@ -190,6 +190,24 @@ declare module '@carbon/react' {
     className?: string;
   }>;
 
+  export const Copy: React.FunctionComponent<{
+    children?: React.ReactNode;
+    className?: string;
+    align?:
+      | 'top'
+      | 'top-left'
+      | 'top-right'
+      | 'bottom'
+      | 'bottom-left'
+      | 'bottom-right'
+      | 'left'
+      | 'right';
+    feedback?: string;
+    feedbackTimeout?: number;
+    onAnimationEnd?: () => void;
+    onClick?: () => void;
+  }>;
+
   export const useTheme: () => {theme: ThemeType};
 
   export const usePrefix: () => string;
@@ -224,6 +242,7 @@ declare module '@carbon/react/icons' {
   export const WarningFilled: Icon;
   export const CheckmarkOutline: Icon;
   export const RadioButtonChecked: Icon;
+  export const Share: Icon;
 }
 
 declare module '@carbon/elements' {

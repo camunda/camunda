@@ -423,4 +423,35 @@ describe('<FormModal />', () => {
 
     expect(screen.queryByText('Something went wrong')).not.toBeInTheDocument();
   });
+
+  it('should copy the form link when clicking on share', async () => {
+    nodeMockServer.use(
+      http.get('/v1/forms/:formId', () => {
+        return HttpResponse.json(formMocks.form);
+      }),
+    );
+
+    const {user} = render(
+      <FormModal
+        process={createMockProcess('process-0')}
+        isOpen
+        onClose={() => Promise.resolve()}
+        onSubmit={() => Promise.resolve()}
+        isMultiTenancyEnabled={false}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    await waitForElementToBeRemoved(screen.queryByTestId('form-skeleton'));
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Share process URL',
+      }),
+    );
+
+    expect(await navigator.clipboard.readText()).toBe('http://localhost:3000/');
+  });
 });

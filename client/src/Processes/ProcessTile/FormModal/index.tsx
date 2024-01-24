@@ -17,7 +17,8 @@ import {
   InlineErrorContainer,
   InlineNotification,
 } from './styled';
-import {TextInputSkeleton, Loading, Modal} from '@carbon/react';
+import {TextInputSkeleton, Loading, Modal, Copy} from '@carbon/react';
+import {Share} from '@carbon/react/icons';
 import {match} from 'ts-pattern';
 import {FormJSRenderer} from 'modules/components/FormJSRenderer';
 import {createPortal} from 'react-dom';
@@ -71,7 +72,22 @@ const FormModal: React.FC<Props> = ({
     <>
       <Modal
         aria-label={`Start process ${processDisplayName}`}
-        modalHeading={`Start process ${processDisplayName}`}
+        modalHeading={
+          <>
+            {`Start process ${processDisplayName}`}
+            <Copy
+              feedback="Copied"
+              onClick={() => {
+                navigator.clipboard.writeText(window.location.href);
+              }}
+              align="bottom"
+              className="cds--copy-btn"
+              aria-label="Share process URL"
+            >
+              <Share />
+            </Copy>
+          </>
+        }
         secondaryButtonText="Cancel"
         primaryButtonText={
           <>
