@@ -1153,6 +1153,14 @@
         <artifactId>jakarta.json-api</artifactId>
         <version>${version.jakarta.json-api}</version>
       </dependency>
+
+      <!-- required for convergence between identity and identity, yay -->
+      <dependency>
+        <groupId>com.squareup.okio</groupId>
+        <artifactId>okio</artifactId>
+	<version>3.5.0</version>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 
