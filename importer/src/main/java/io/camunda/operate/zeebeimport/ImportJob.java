@@ -97,6 +97,7 @@ public class ImportJob implements Callable<Boolean> {
   private void processPossibleIndexChange() {
     //if there was index change, comparing with previous batch, or there are more than one index in current batch, refresh Zeebe indices
     final List<HitEntity> hits = importBatch.getHits();
+    final boolean useOnlyPosition = operateProperties.getImporter().isUseOnlyPosition();
     if (indexChange() || hits.stream().map(HitEntity::getIndex).collect(Collectors.toSet()).size() > 1) {
       refreshZeebeIndices();
       //reread batch
@@ -104,7 +105,7 @@ public class ImportJob implements Callable<Boolean> {
       if (recordsReader != null) {
         try {
           ImportBatch newImportBatch;
-          if (previousPosition.getSequence() > 0) {
+          if (useOnlyPosition == false && previousPosition.getSequence() > 0) {
             newImportBatch = recordsReader.readNextBatchBySequence(previousPosition.getSequence(), importBatch.getLastProcessedSequence(objectMapper));
 
             final Long lastSequenceFromInitialBatch = importBatch.getLastProcessedSequence(objectMapper);
