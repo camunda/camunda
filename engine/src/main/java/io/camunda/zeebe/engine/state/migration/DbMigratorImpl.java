@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
-import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.engine.state.migration.to_8_2.DecisionMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_2.DecisionRequirementsMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyDecisionStateMigration;
@@ -53,21 +52,15 @@ public class DbMigratorImpl implements DbMigrator {
   // should be solved first, before adding any migration that can take a long time
 
   private final MutableProcessingState processingState;
-  private final TransactionContext zeebeDbContext;
   private final List<MigrationTask> migrationTasks;
 
-  public DbMigratorImpl(
-      final MutableProcessingState processingState, final TransactionContext zeebeDbContext) {
-    this(processingState, zeebeDbContext, MIGRATION_TASKS);
+  public DbMigratorImpl(final MutableProcessingState processingState) {
+    this(processingState, MIGRATION_TASKS);
   }
 
   public DbMigratorImpl(
-      final MutableProcessingState processingState,
-      final TransactionContext zeebeDbContext,
-      final List<MigrationTask> migrationTasks) {
-
+      final MutableProcessingState processingState, final List<MigrationTask> migrationTasks) {
     this.processingState = processingState;
-    this.zeebeDbContext = zeebeDbContext;
     this.migrationTasks = migrationTasks;
   }
 
@@ -80,14 +73,11 @@ public class DbMigratorImpl implements DbMigrator {
       // one based index looks nicer in logs
 
       final var migration = migrationTasks.get(index - 1);
-      final int finalIndex = index;
-      zeebeDbContext.runInTransaction(
-          () -> {
-            final var executed = handleMigrationTask(migration, finalIndex, migrationTasks.size());
-            if (executed) {
-              executedMigrations.add(migration);
-            }
-          });
+
+      final var executed = handleMigrationTask(migration, index, migrationTasks.size());
+      if (executed) {
+        executedMigrations.add(migration);
+      }
     }
     logSummary(executedMigrations);
   }
