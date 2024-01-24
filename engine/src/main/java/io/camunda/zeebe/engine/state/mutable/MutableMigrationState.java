@@ -33,4 +33,6 @@ public interface MutableMigrationState extends MigrationState {
    * @param identifier the identifier of the migration
    */
   void markMigrationFinished(final String identifier);
+
+  void correctColumnFamilyPrefix();
 }
