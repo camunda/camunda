@@ -30,6 +30,7 @@ import io.camunda.zeebe.engine.state.migration.to_8_3.DbMessageStartEventSubscri
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbMessageSubscriptionMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbProcessMessageSubscriptionMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbProcessMigrationState;
+import io.camunda.zeebe.engine.state.migration.to_8_4.DbColumnFamilyCorrectionMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_4.DbSignalSubscriptionMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
@@ -120,9 +121,12 @@ public class DbMigrationState implements MutableMigrationState {
   private final DbProcessMessageSubscriptionMigrationState processMessageSubscriptionMigrationState;
   private final DbJobMigrationState jobMigrationState;
   private final DbSignalSubscriptionMigrationState signalSubscriptionMigrationState;
+
   private final ColumnFamily<DbString, DbString> migrationsState;
   private final DbString migratedByVersionKey = new DbString();
   private final DbString migratedByVersionValue = new DbString();
+
+  private final DbColumnFamilyCorrectionMigrationState columnFamilyCorrectionMigrationState;
 
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -277,6 +281,9 @@ public class DbMigrationState implements MutableMigrationState {
             transactionContext,
             migratedByVersionKey,
             migratedByVersionValue);
+
+    columnFamilyCorrectionMigrationState =
+        new DbColumnFamilyCorrectionMigrationState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -488,5 +495,10 @@ public class DbMigrationState implements MutableMigrationState {
   public void setMigratedByVersion(final String version) {
     migratedByVersionValue.wrapString(version);
     migrationsState.upsert(migratedByVersionKey, migratedByVersionValue);
+  }
+
+  @Override
+  public void correctColumnFamilyPrefix() {
+    columnFamilyCorrectionMigrationState.correctColumnFamilyPrefix();
   }
 }

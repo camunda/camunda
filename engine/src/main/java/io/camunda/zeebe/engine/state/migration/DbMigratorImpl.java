@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyMessageSubscri
 import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyProcessMessageSubscriptionStateMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyProcessStateMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_3.ProcessInstanceByProcessDefinitionMigration;
+import io.camunda.zeebe.engine.state.migration.to_8_4.ColumnFamilyPrefixCorrectionMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_4.MultiTenancySignalSubscriptionStateMigration;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.util.VersionUtil;
@@ -49,6 +50,7 @@ public class DbMigratorImpl implements DbMigrator {
           new MultiTenancyMessageSubscriptionStateMigration(),
           new MultiTenancyProcessMessageSubscriptionStateMigration(),
           new MultiTenancyJobStateMigration(),
+          new ColumnFamilyPrefixCorrectionMigration(),
           new MultiTenancySignalSubscriptionStateMigration(),
           new JobBackoffRestoreMigration());
   // Be mindful of https://github.com/camunda/zeebe/issues/7248. In particular, that issue
