@@ -20,7 +20,7 @@ import java.util.Map;
 import org.springframework.boot.Banner.Mode;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.http.client.reactive.ReactorResourceFactory;
+import org.springframework.http.client.ReactorResourceFactory;
 
 abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     implements TestApplication<T> {

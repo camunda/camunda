@@ -27,6 +27,7 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.testcontainers.GcsContainer;
 import io.camunda.zeebe.restore.BackupNotFoundException;
 import java.time.Duration;
+import java.util.concurrent.CompletionException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
@@ -70,7 +71,7 @@ final class GcsRestoreAcceptanceIT {
   void shouldFailForNonExistingBackup() {
     // then -- restore application exits with an error code
     assertThatCode(() -> restoreBackup(1234))
-        .isInstanceOf(IllegalStateException.class)
+        .isInstanceOf(CompletionException.class)
         .hasRootCauseExactlyInstanceOf(BackupNotFoundException.class);
   }
 
