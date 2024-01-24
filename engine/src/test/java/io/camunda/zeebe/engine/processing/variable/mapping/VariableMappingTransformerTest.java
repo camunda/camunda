@@ -106,6 +106,7 @@ public final class VariableMappingTransformerTest {
                 mapping("Hello\tWorld", "tab"),
                 mapping("Hello\nWorld", "newline"),
                 mapping("Hello\rWorld", "carriageReturn"),
+                mapping("\"My Name is \"Zeebe\", nice to meet you\"", "doubleQoutes"),
                 mapping("My Name is &#34;Zeebe&#34;, nice to meet you", "encodedQuotes")),
             expressionLanguage);
 
@@ -115,7 +116,7 @@ public final class VariableMappingTransformerTest {
         .isTrue();
     assertThat(expression.getExpression())
         .isEqualTo(
-            "{tab:\"Hello\tWorld\",newline:\"Hello\nWorld\",carriageReturn:\"Hello\rWorld\",encodedQuotes:\"My Name is &#34;Zeebe&#34;, nice to meet you\"}");
+            "{tab:\"Hello\tWorld\",newline:\"Hello\nWorld\",carriageReturn:\"Hello\rWorld\",doubleQoutes:\"\\\"My Name is \\\"Zeebe\\\", nice to meet you\\\"\",encodedQuotes:\"My Name is &#34;Zeebe&#34;, nice to meet you\"}");
   }
 
   private static ZeebeMapping mapping(final String source, final String target) {
