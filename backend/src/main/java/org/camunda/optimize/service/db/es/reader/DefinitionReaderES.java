@@ -362,7 +362,8 @@ public class DefinitionReaderES implements DefinitionReader {
                                                                   final String key,
                                                                   final Set<String> tenantIds) {
     final BoolQueryBuilder filterQuery = boolQuery()
-      .filter(termQuery(DEFINITION_KEY, key)).filter(termQuery(DEFINITION_DELETED, false));
+      .filter(termQuery(DEFINITION_KEY, key))
+      .filter(termQuery(DEFINITION_DELETED, false));
     addTenantIdFilter(tenantIds, filterQuery);
 
     final TermsAggregationBuilder versionTagAggregation = terms(VERSION_TAG_AGGREGATION)

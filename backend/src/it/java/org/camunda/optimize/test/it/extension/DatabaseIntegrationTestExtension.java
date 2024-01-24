@@ -25,6 +25,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Aggre
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.util.configuration.DatabaseType;
 import org.camunda.optimize.test.it.extension.db.DatabaseTestService;
@@ -349,6 +350,10 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
 
   public Map<AggregationDto, Double> calculateExpectedValueGivenDurations(final Number... setDuration) {
     return databaseTestService.calculateExpectedValueGivenDurations(setDuration);
+  }
+
+  public void update(final String indexName, final String entityId, final ScriptData script) {
+    databaseTestService.getDatabaseClient().update(indexName, entityId, script);
   }
 
 }

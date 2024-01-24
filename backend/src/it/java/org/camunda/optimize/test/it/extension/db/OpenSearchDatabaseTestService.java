@@ -177,10 +177,11 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
         List<BulkOperation> operations = new ArrayList<>();
         for (Map.Entry<String, Object> idAndObject : batch) {
           IndexOperation.Builder<Object> operation =
-            new IndexOperation.Builder<>().index(indexName).document(idAndObject.getValue()).id(idAndObject.getKey());
+            new IndexOperation.Builder<>().document(idAndObject.getValue()).id(idAndObject.getKey());
           operations.add(operation.build()._toBulkOperation());
         }
-        bulkRequestBuilder.operations(operations);
+        bulkRequestBuilder.operations(operations)
+          .index(indexName);
         OpenSearchWriterUtil.doBulkRequest(
           prefixAwareOptimizeOpenSearchClient,
           bulkRequestBuilder,
@@ -278,7 +279,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   public void deleteAllOptimizeData() {
     getOptimizeOpenSearchClient()
       .getRichOpenSearchClient().doc()
-      .deleteByQuery(QueryDSL.matchAll(), getIndexNameService().getIndexPrefix() + "*");
+      .deleteByQuery(QueryDSL.matchAll(), true, getIndexNameService().getIndexPrefix() + "*");
   }
 
   @SneakyThrows
@@ -292,7 +293,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
     getOptimizeOpenSearchClient()
       .getRichOpenSearchClient().doc()
       .deleteByQuery(
-        QueryDSL.matchAll(),
+        QueryDSL.matchAll(), true,
         getIndexNameService().getOptimizeIndexAliasForIndex(new SingleProcessReportIndexOS())
       );
   }

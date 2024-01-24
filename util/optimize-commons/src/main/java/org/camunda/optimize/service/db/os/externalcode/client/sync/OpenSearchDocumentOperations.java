@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
@@ -339,11 +340,14 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
       });
   }
 
-  public long deleteByQuery(Query query, String... indexes) {
+  public long deleteByQuery(final Query query, boolean refresh, final String... indexes) {
     List<String> listIndexes = List.of(indexes);
     Long status = executeWithRetries(
       () -> {
-        final DeleteByQueryRequest request = applyIndexPrefix(deleteByQueryRequestBuilder(listIndexes)).query(query).build();
+        final DeleteByQueryRequest request = applyIndexPrefix(deleteByQueryRequestBuilder(listIndexes))
+          .query(query)
+          .refresh(refresh)
+          .build();
         final DeleteByQueryResponse response = openSearchClient.deleteByQuery(request);
         return response.deleted();
       });
@@ -366,7 +370,9 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   public long updateByQuery(String index, Query query, Script script) {
     Long status = executeWithRetries(
       () -> {
-        final UpdateByQueryRequest request = applyIndexPrefix(updateByQueryRequestBuilder(List.of(index))).query(query)
+        final UpdateByQueryRequest request = applyIndexPrefix(updateByQueryRequestBuilder(List.of(index)))
+          .query(query)
+          .refresh(true)
           .script(script)
           .build();
         final UpdateByQueryResponse response = openSearchClient.updateByQuery(request);
@@ -392,6 +398,13 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   public boolean deleteWithRetries(String index, String id) {
     return executeWithRetries(() -> openSearchClient.delete(applyIndexPrefix(deleteRequestBuilder(index, id)).build())
       .result() == Result.Deleted);
+  }
+
+  public DeleteResponse delete(final String indexName, final String entityId) {
+    return safe(
+      () -> openSearchClient.delete(applyIndexPrefix(deleteRequestBuilder(indexName, entityId)).build()),
+      e -> defaultDeleteErrorMessage(indexName)
+    );
   }
 
   public <A> IndexResponse index(IndexRequest.Builder<A> requestBuilder) {

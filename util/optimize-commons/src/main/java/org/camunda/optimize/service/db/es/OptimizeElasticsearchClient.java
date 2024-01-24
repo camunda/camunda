@@ -17,9 +17,10 @@ import org.camunda.optimize.dto.optimize.DataImportSourceType;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.plugin.ElasticsearchCustomHeaderProvider;
 import org.camunda.optimize.service.db.DatabaseClient;
+import org.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
 import org.camunda.optimize.service.db.schema.IndexMappingCreator;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
+import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
@@ -93,11 +94,12 @@ import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.rest.RestStatus;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
-import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.springframework.context.ApplicationContext;
 
 import java.io.IOException;
@@ -110,6 +112,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -190,6 +193,7 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
 
     return highLevelClient.bulk(bulkRequest, requestOptions());
   }
+
   public final CountResponse count(final CountRequest countRequest) throws IOException {
     applyIndexPrefixes(countRequest);
     return highLevelClient.count(countRequest, requestOptions());
@@ -296,6 +300,28 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   public final BulkByScrollResponse updateByQuery(final UpdateByQueryRequest updateByQueryRequest) throws IOException {
     applyIndexPrefixes(updateByQueryRequest);
     return highLevelClient.updateByQuery(updateByQueryRequest, requestOptions());
+  }
+
+  @Override
+  public void update(final String indexName, final String entityId, final ScriptData script) {
+
+    final UpdateRequest updateRequest = new UpdateRequest()
+      .index(indexName)
+      .id(entityId)
+      .script(new Script(
+        ScriptType.INLINE,
+        Script.DEFAULT_SCRIPT_LANG,
+        script.scriptString(),
+        script.params()
+      ))
+      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+    try {
+      update(updateRequest);
+    } catch (IOException e) {
+      String errorMessage = String.format("The error occurs while updating OpenSearch entity %s with id %s", indexName, entityId);
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
   }
 
   public final RolloverResponse rollover(RolloverRequest rolloverRequest) throws IOException {

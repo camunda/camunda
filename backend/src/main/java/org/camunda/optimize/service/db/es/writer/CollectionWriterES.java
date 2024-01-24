@@ -6,29 +6,23 @@
 package org.camunda.optimize.service.db.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.ws.rs.NotFoundException;
 import lombok.AllArgsConstructor;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
-import org.camunda.optimize.dto.optimize.IdentityDto;
-import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.IdResponseDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
-import org.camunda.optimize.service.db.writer.CollectionWriter;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.db.writer.CollectionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.DocWriteResponse;
@@ -45,21 +39,18 @@ import org.elasticsearch.xcontent.XContentType;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import jakarta.ws.rs.NotFoundException;
-
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
-import static org.camunda.optimize.service.db.schema.index.CollectionIndex.DATA;
-import static org.camunda.optimize.service.db.schema.index.CollectionIndex.SCOPE;
-import static org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static org.camunda.optimize.service.db.DatabaseConstants.COLLECTION_INDEX_NAME;
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
+import static org.camunda.optimize.service.db.schema.index.CollectionIndex.DATA;
+import static org.camunda.optimize.service.db.schema.index.CollectionIndex.SCOPE;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -75,40 +66,7 @@ public class CollectionWriterES implements CollectionWriter {
   private final DateTimeFormatter formatter;
 
   @Override
-  public IdResponseDto createNewCollectionAndReturnId(@NonNull String userId,
-                                                      @NonNull PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto) {
-    return createNewCollectionAndReturnId(userId, partialCollectionDefinitionDto, IdGenerator.getNextId(), false);
-  }
-
-  @Override
-  public IdResponseDto createNewCollectionAndReturnId(@NonNull String userId,
-                                                      @NonNull PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto,
-                                                      @NonNull String id,
-                                                      boolean automaticallyCreated) {
-    log.debug("Writing new collection to Elasticsearch");
-    CollectionDefinitionDto collectionDefinitionDto = new CollectionDefinitionDto();
-    collectionDefinitionDto.setId(id);
-    collectionDefinitionDto.setCreated(LocalDateUtil.getCurrentDateTime());
-    collectionDefinitionDto.setLastModified(LocalDateUtil.getCurrentDateTime());
-    collectionDefinitionDto.setOwner(userId);
-    collectionDefinitionDto.setLastModifier(userId);
-    collectionDefinitionDto.setAutomaticallyCreated(automaticallyCreated);
-    collectionDefinitionDto.setName(Optional.ofNullable(partialCollectionDefinitionDto.getName())
-                                      .orElse(DEFAULT_COLLECTION_NAME));
-
-    final CollectionDataDto newCollectionDataDto = new CollectionDataDto();
-    newCollectionDataDto.getRoles()
-      .add(new CollectionRoleRequestDto(new IdentityDto(userId, IdentityType.USER), RoleType.MANAGER));
-    if (partialCollectionDefinitionDto.getData() != null) {
-      newCollectionDataDto.setConfiguration(partialCollectionDefinitionDto.getData().getConfiguration());
-    }
-    collectionDefinitionDto.setData(newCollectionDataDto);
-
-    persistCollection(id, collectionDefinitionDto);
-    return new IdResponseDto(id);
-  }
-
-  private void persistCollection(String id, CollectionDefinitionDto collectionDefinitionDto) {
+  public void persistCollection(String id, CollectionDefinitionDto collectionDefinitionDto) {
     try {
       IndexRequest request = new IndexRequest(COLLECTION_INDEX_NAME)
         .id(id)
@@ -129,11 +87,6 @@ public class CollectionWriterES implements CollectionWriter {
     }
 
     log.debug("Collection with id [{}] has successfully been created.", id);
-  }
-
-  @Override
-  public void createNewCollection(@NonNull CollectionDefinitionDto collectionDefinitionDto) {
-    persistCollection(collectionDefinitionDto.getId(), collectionDefinitionDto);
   }
 
   @Override
@@ -213,21 +166,7 @@ public class CollectionWriterES implements CollectionWriter {
       params.put("lastModifier", userId);
       params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
       final Script updateEntityScript = createDefaultScriptWithSpecificDtoParams(
-        "Map newScopes = ctx._source.data.scope.stream()" +
-          "  .collect(Collectors.toMap(s -> s.id, Function.identity()));\n" +
-          "params.scopeEntriesToUpdate" +
-          "  .forEach(newScope -> {" +
-          "     newScopes.computeIfPresent(newScope.id, (key, oldScope) -> {" +
-          "       newScope.tenants = Stream.concat(oldScope.tenants.stream(), newScope.tenants.stream())" +
-          "        .distinct()" +
-          "        .collect(Collectors.toList());\n" +
-          "       return newScope;\n" +
-          "     });" +
-          "     newScopes.putIfAbsent(newScope.id, newScope);\n" +
-          "  });\n" +
-          "ctx._source.data.scope = newScopes.values();" +
-          "ctx._source.lastModifier = params.lastModifier;" +
-          "ctx._source.lastModified = params.lastModified;",
+        UPDATE_ENTITY_SCRIPT_CODE,
         params,
         objectMapper
       );
@@ -262,10 +201,7 @@ public class CollectionWriterES implements CollectionWriter {
     Script removeScopeEntryFromCollectionsScript = new Script(
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
-      "def scopes = ctx._source.data.scope;" +
-        "if(scopes != null) {" +
-        "  scopes.removeIf(scope -> scope.id.equals(params.scopeEntryIdToRemove));" +
-        "}",
+      REMOVE_SCOPE_ENTRY_FROM_COLLECTION_SCRIPT_CODE,
       Collections.singletonMap("scopeEntryIdToRemove", scopeEntryId)
     );
 
@@ -297,13 +233,7 @@ public class CollectionWriterES implements CollectionWriter {
       params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
 
       final Script updateEntityScript = ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
-        "boolean removed = ctx._source.data.scope.removeIf(scope -> scope.id.equals(params.id));" +
-          "if (removed) { " +
-          "  ctx._source.lastModifier = params.lastModifier;" +
-          "  ctx._source.lastModified = params.lastModified;" +
-          "} else {" +
-          "  ctx.op = \"none\";" +
-          "}",
+        REMOVE_SCOPE_ENTRY_SCRIPT_CODE,
         params
       );
 
@@ -334,13 +264,7 @@ public class CollectionWriterES implements CollectionWriter {
     params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
 
     final Script updateEntityScript = ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
-      // @formatter:off
-                "for (id in params.ids) {" +
-                        "  ctx._source.data.scope.removeIf(scope -> scope.id.equals(id));" +
-                        "}" +
-                        "ctx._source.lastModifier = params.lastModifier;" +
-                        "ctx._source.lastModified = params.lastModified;",
-                // @formatter:on
+      REMOVE_SCOPE_ENTRIES_SCRIPT_CODE,
       params
     );
     try {
@@ -373,17 +297,7 @@ public class CollectionWriterES implements CollectionWriter {
       params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
 
       final Script updateEntityScript = createDefaultScriptWithSpecificDtoParams(
-        "def optionalEntry = ctx._source.data.scope.stream()" +
-          "  .filter(s -> s.id.equals(params.entryId))" +
-          "  .findFirst();" +
-          "if (optionalEntry.isPresent()) {" +
-          "  def entry = optionalEntry.get();" +
-          "  entry.tenants = params.entryDto.tenants;" +
-          "  ctx._source.lastModifier = params.lastModifier;" +
-          "  ctx._source.lastModified = params.lastModified;" +
-          "} else { " +
-          "  throw new Exception('Cannot find scope entry.');" +
-          "}",
+        UPDATE_SCOPE_ENTITY_SCRIPT_CODE,
         params,
         objectMapper
       );
@@ -438,25 +352,7 @@ public class CollectionWriterES implements CollectionWriter {
       params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
 
       final Script addEntityScript = createDefaultScriptWithSpecificDtoParams(
-        // @formatter:off
-                    "def newRoles = new ArrayList();" +
-                            "for (roleToAdd in params.rolesToAdd) {" +
-                            "boolean exists = ctx._source.data.roles.stream()" +
-                            ".anyMatch(existingRole -> existingRole.id.equals(roleToAdd.id));" +
-                            "if (!exists){ " +
-                            "newRoles.add(roleToAdd); " +
-                            "}" +
-                            "}" +
-                            "if (newRoles.size() == params.rolesToAdd.size()) {" +
-                            "ctx._source.data.roles.addAll(newRoles); " +
-                            "ctx._source.lastModifier = params.lastModifier; " +
-                            "ctx._source.lastModified = params.lastModified; " +
-                            "} else {" +
-                            // ES is inconsistent on the op value, for update queries it's 'none'
-                            // see https://github.com/elastic/elasticsearch/issues/30356
-                            "ctx.op = \"none\";" +
-                            "}",
-                    // @formatter:on
+        ADD_ROLE_TO_COLLECTION_SCRIPT_CODE,
         params,
         objectMapper
       );
@@ -501,29 +397,7 @@ public class CollectionWriterES implements CollectionWriter {
       params.put("role", roleUpdateDto.getRole().toString());
 
       final Script addEntityScript = ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
-        // @formatter:off
-                    "def optionalExistingEntry = ctx._source.data.roles.stream()" +
-                            ".filter(dto -> dto.id.equals(params.roleEntryId))" +
-                            ".findFirst();" +
-                            "if(optionalExistingEntry.isPresent()){ " +
-                            "def existingEntry = optionalExistingEntry.get();" +
-                            "def moreThanOneManagerPresent = ctx._source.data.roles.stream()" +
-                            ".filter(dto -> params.managerRole.equals(dto.role))" +
-                            ".limit(2)" +
-                            ".count()" +
-                            "== 2;" +
-                            "if (!moreThanOneManagerPresent && params.managerRole.equals(existingEntry.role)) {" +
-                            // updating of last manager is not allowed
-                            "ctx.op = \"none\";" +
-                            "} else {" +
-                            "existingEntry.role = params.role;" +
-                            "ctx._source.lastModifier = params.lastModifier; " +
-                            "ctx._source.lastModified = params.lastModified; " +
-                            "}" +
-                            "} else {" +
-                            "throw new Exception('Cannot find role.');" +
-                            "}",
-                    // @formatter:on
+        UPDATE_ROLE_IN_COLLECTION_SCRIPT_CODE,
         params
       );
 
@@ -576,23 +450,7 @@ public class CollectionWriterES implements CollectionWriter {
     log.debug("Deleting the role [{}] in collection with id [{}] in Elasticsearch.", roleEntryId, collectionId);
     try {
       final Script addEntityScript = ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
-        // @formatter:off
-                    "def optionalExistingEntry = ctx._source.data.roles.stream()" +
-                            ".filter(dto -> dto.id.equals(params.roleEntryId))" +
-                            ".findFirst();" +
-                            "if(optionalExistingEntry.isPresent()){ " +
-                            "def existingEntry = optionalExistingEntry.get();" +
-                            "ctx._source.data.roles.removeIf(entry -> entry.id.equals(params.roleEntryId));" +
-                            "if (params.containsKey(\"lastModifier\")) {" +
-                            "ctx._source.lastModifier = params.lastModifier;" +
-                            "}" +
-                            "if (params.containsKey(\"lastModified\")) {" +
-                            "ctx._source.lastModified = params.lastModified;" +
-                            "}" +
-                            "} else {" +
-                            "throw new Exception('Cannot find role.');" +
-                            "}",
-                    // @formatter:on
+        REMOVE_ROLE_FROM_COLLECTION_SCRIPT_CODE,
         params
       );
 
@@ -623,33 +481,7 @@ public class CollectionWriterES implements CollectionWriter {
     log.debug("Deleting the role [{}] in collection with id [{}] in Elasticsearch.", roleEntryId, collectionId);
     try {
       final Script addEntityScript = ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
-        // @formatter:off
-                    "def optionalExistingEntry = ctx._source.data.roles.stream()" +
-                            ".filter(dto -> dto.id.equals(params.roleEntryId))" +
-                            ".findFirst();" +
-                            "if(optionalExistingEntry.isPresent()){ " +
-                            "def existingEntry = optionalExistingEntry.get();" +
-                            "def moreThanOneManagerPresent = ctx._source.data.roles.stream()" +
-                            ".filter(dto -> params.managerRole.equals(dto.role))" +
-                            ".limit(2)" +
-                            ".count()" +
-                            "== 2;" +
-                            "if (!moreThanOneManagerPresent && params.managerRole.equals(existingEntry.role)) {" +
-                            // deletion of last manager is not allowed
-                            "ctx.op = \"none\";" +
-                            "} else {" +
-                            "ctx._source.data.roles.removeIf(entry -> entry.id.equals(params.roleEntryId));" +
-                            "if (params.containsKey(\"lastModifier\")) {" +
-                            "ctx._source.lastModifier = params.lastModifier;" +
-                            "}" +
-                            "if (params.containsKey(\"lastModified\")) {" +
-                            "ctx._source.lastModified = params.lastModified;" +
-                            "}" +
-                            "}" +
-                            "} else {" +
-                            "throw new Exception('Cannot find role.');" +
-                            "}",
-                    // @formatter:on
+        REMOVE_ROLE_FROM_COLLECTION_UNLESS_IS_LAST_MANAGER,
         params
       );
 
@@ -691,4 +523,5 @@ public class CollectionWriterES implements CollectionWriter {
     }
     return params;
   }
+
 }

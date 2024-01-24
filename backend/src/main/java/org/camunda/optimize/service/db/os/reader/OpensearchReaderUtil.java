@@ -64,7 +64,7 @@ public class OpensearchReaderUtil {
   public static <T> List<T> extractAggregatedResponseValues(final OpenSearchDocumentOperations.AggregatedResult<Hit<T>> searchResponse) {
     return Optional.ofNullable(searchResponse)
       .map(OpenSearchDocumentOperations.AggregatedResult::values)
-      .map(hits -> hits.stream().map(Hit::source).toList())
+      .map(hits -> hits.stream().map(Hit::source).collect(Collectors.toList()))
       .orElseThrow(() -> {
         String reason = "Was not able to parse response aggregations from OpenSearch";
         log.error(reason);

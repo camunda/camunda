@@ -443,7 +443,7 @@ public class ReportService implements CollectionReferencingService {
   private <T extends ReportDataDto> ReportDefinitionDto<T> getReportOrFail(final String reportId) {
     return reportReader.getReport(reportId)
       .orElseThrow(() -> new NotFoundException(
-        "Was not able to retrieve report with id [" + reportId + "] from Elasticsearch. Report does not exist."
+        "Was not able to retrieve report with id [" + reportId + "] from database. Report does not exist."
       ));
   }
 

@@ -50,7 +50,7 @@ public class TerminatedUserSessionWriterOS extends TerminatedUserSessionWriter {
     final Query filterQuery =
       QueryDSL.gt(TerminatedUserSessionIndex.TERMINATION_TIMESTAMP, dateTimeFormatter.format(timestamp));
 
-    osClient.deleteByQuery(filterQuery, TERMINATED_USER_SESSION_INDEX_NAME);
+    osClient.deleteByQuery(filterQuery, true, TERMINATED_USER_SESSION_INDEX_NAME);
   }
 
 }

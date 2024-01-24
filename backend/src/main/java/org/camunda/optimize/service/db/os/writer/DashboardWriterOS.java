@@ -147,7 +147,7 @@ public class DashboardWriterOS implements DashboardWriter {
 
   public void deleteDashboardsOfCollection(String collectionId) {
     Query query = QueryDSL.term(COLLECTION_ID, collectionId);
-    osClient.deleteByQuery(query, DASHBOARD_INDEX_NAME);
+    osClient.deleteByQuery(query, true, DASHBOARD_INDEX_NAME);
   }
 
   public void deleteDashboard(String dashboardId) {
@@ -172,7 +172,7 @@ public class DashboardWriterOS implements DashboardWriter {
 
   public void deleteManagementDashboard() {
     Query query = QueryDSL.term(MANAGEMENT_DASHBOARD, true);
-    osClient.deleteByQuery(query, DASHBOARD_INDEX_NAME);
+    osClient.deleteByQuery(query, true, DASHBOARD_INDEX_NAME);
   }
 
 }

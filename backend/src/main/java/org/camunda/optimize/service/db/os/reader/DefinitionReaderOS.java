@@ -41,12 +41,13 @@ import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.AggregationBuilders;
+import org.opensearch.client.opensearch._types.aggregations.Buckets;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregate;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregation;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregationSource;
 import org.opensearch.client.opensearch._types.aggregations.CompositeBucket;
-import org.opensearch.client.opensearch._types.aggregations.FilterAggregate;
 import org.opensearch.client.opensearch._types.aggregations.FiltersAggregation;
+import org.opensearch.client.opensearch._types.aggregations.FiltersBucket;
 import org.opensearch.client.opensearch._types.aggregations.MultiBucketAggregateBase;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
@@ -115,12 +116,12 @@ public class DefinitionReaderOS implements DefinitionReader {
     if (type == null || key == null) {
       return Optional.empty();
     }
-    final BoolQuery.Builder query = new BoolQuery.Builder()
+    BoolQuery.Builder query = new BoolQuery.Builder()
       .must(QueryDSL.term(DEFINITION_KEY, key))
       .must(QueryDSL.term(DEFINITION_DELETED, false));
 
     addVersionFilterToQuery(versions, latestVersionSupplier, query);
-    return getDefinitionWithTenantIdsDtos(query, type).stream().findFirst();
+    return getDefinitionWithTenantIdsDtos(query.build()._toQuery(), type).stream().findFirst();
   }
 
   @Override
@@ -129,7 +130,8 @@ public class DefinitionReaderOS implements DefinitionReader {
                                                                                    final Set<String> tenantIds) {
     final BoolQuery.Builder filterQuery = new BoolQuery.Builder();
     filterQuery.filter(
-      new BoolQuery.Builder().minimumShouldMatch("1")
+      new BoolQuery.Builder()
+        .minimumShouldMatch("1")
         .must(QueryDSL.term(DEFINITION_DELETED, false))
         // use separate 'should' queries as definition type may be null (returning both process and decision)
         .should(QueryDSL.exists(PROCESS_DEFINITION_XML))
@@ -144,7 +146,7 @@ public class DefinitionReaderOS implements DefinitionReader {
 
     addTenantIdFilter(tenantIds, filterQuery);
 
-    return getDefinitionWithTenantIdsDtos(filterQuery, type);
+    return getDefinitionWithTenantIdsDtos(filterQuery.build()._toQuery(), type);
   }
 
   @Override
@@ -232,33 +234,39 @@ public class DefinitionReaderOS implements DefinitionReader {
     );
 
     // 1. group by key, type and tenant (composite aggregation)
-    Map<String, CompositeAggregationSource> keyAndTypeAndTenantSources = new HashMap<>();
-    keyAndTypeAndTenantSources.put(
-      TENANT_AGGREGATION,
-      new CompositeAggregationSource.Builder()
-        .terms(new TermsAggregation.Builder()
-                 .missingBucket(true)
-                 .field(DEFINITION_TENANT_ID)
-                 .order(Collections.singletonMap("_key", SortOrder.Asc))
-                 .build())
-        .build()
-    );
-
-    keyAndTypeAndTenantSources.put(
-      DEFINITION_KEY_AGGREGATION,
-      new CompositeAggregationSource.Builder()
-        .terms(new TermsAggregation.Builder()
-                 .field(DEFINITION_KEY)
-                 .build())
-        .build()
-    );
+    List<Map<String, CompositeAggregationSource>> keyAndTypeAndTenantSources = new ArrayList<>();
+    keyAndTypeAndTenantSources
+      .add(Collections.singletonMap(
+             TENANT_AGGREGATION,
+             new CompositeAggregationSource.Builder()
+               .terms(new TermsAggregation.Builder()
+                        .missingBucket(true)
+                        .field(DEFINITION_TENANT_ID)
+                        .build())
+               .build()
+           )
+      );
 
     keyAndTypeAndTenantSources
-      .put(DEFINITION_TYPE_AGGREGATION, new CompositeAggregationSource.Builder()
-        .terms(new TermsAggregation.Builder()
-                 .field(DatabaseConstants.INDEX)
-                 .build())
-        .build());
+      .add(Collections.singletonMap(
+             DEFINITION_KEY_AGGREGATION,
+             new CompositeAggregationSource.Builder()
+               .terms(new TermsAggregation.Builder()
+                        .field(DEFINITION_KEY)
+                        .build())
+               .build()
+           )
+      );
+
+    keyAndTypeAndTenantSources
+      .add(Collections.singletonMap(
+             DEFINITION_TYPE_AGGREGATION, new CompositeAggregationSource.Builder()
+               .terms(new TermsAggregation.Builder()
+                        .field(DatabaseConstants.INDEX)
+                        .build())
+               .build()
+           )
+      );
 
     CompositeAggregation keyAndTypeAndTenantAggregation =
       new CompositeAggregation.Builder()
@@ -270,17 +278,14 @@ public class DefinitionReaderOS implements DefinitionReader {
       .aggregations(NAME_AGGREGATION, nameAggregation._toAggregation())
       .aggregations(ENGINE_AGGREGATION, enginesAggregation._toAggregation()));
 
-    SearchRequest.Builder searchBuilder = new SearchRequest.Builder()
-      .index(List.of(ALL_DEFINITION_INDEXES))
-      .query(QueryDSL.term(DEFINITION_DELETED, false))
-      .aggregations(Collections.singletonMap(DEFINITION_KEY_AND_TYPE_AND_TENANT_AGGREGATION, complexAggregation))
-      .size(0);
-
     final Map<String, List<CompositeBucket>> keyAndTypeAggBucketsByTenantId = new HashMap<>();
 
     OpenSearchCompositeAggregationScroller.create()
       .setClient(osClient)
-      .setSearchRequest(searchBuilder)
+      .query(QueryDSL.term(DEFINITION_DELETED, false))
+      .index(List.of(ALL_DEFINITION_INDEXES))
+      .aggregations(Collections.singletonMap(DEFINITION_KEY_AND_TYPE_AND_TENANT_AGGREGATION, complexAggregation))
+      .size(0)
       .setPathToAggregation(DEFINITION_KEY_AND_TYPE_AND_TENANT_AGGREGATION)
       .setCompositeBucketConsumer(
         bucket -> {
@@ -360,10 +365,14 @@ public class DefinitionReaderOS implements DefinitionReader {
       type,
       key
     );
-    SearchResponse searchResponse = osClient.search(searchBuilder, resolveDefinitionClassFromType(type), errorMessage);
+    SearchResponse<DefinitionOptimizeResponseDto> searchResponse = osClient.search(
+      searchBuilder,
+      resolveDefinitionClassFromType(type),
+      errorMessage
+    );
 
     if (searchResponse.hits().hits().size() == 1) {
-      return searchResponse.hits().hits().get(0).toString();
+      return searchResponse.hits().hits().get(0).source().getVersion();
     } else {
       throw new NotFoundException("Unable to retrieve latest version for " + type + " definition key: " + key);
     }
@@ -374,7 +383,8 @@ public class DefinitionReaderOS implements DefinitionReader {
                                                                   final String key,
                                                                   final Set<String> tenantIds) {
     final BoolQuery.Builder filterQuery = new BoolQuery.Builder()
-      .filter(QueryDSL.term(DEFINITION_KEY, key)).filter(QueryDSL.term(DEFINITION_DELETED, false));
+      .filter(QueryDSL.term(DEFINITION_KEY, key))
+      .filter(QueryDSL.term(DEFINITION_DELETED, false));
 
     addTenantIdFilter(tenantIds, filterQuery);
 
@@ -396,7 +406,7 @@ public class DefinitionReaderOS implements DefinitionReader {
         VERSION_AGGREGATION,
         AggregationDSL.withSubaggregations(
           versionAggregation,
-          Collections.singletonMap("versionTagAggregations", versionTagAggregation._toAggregation())
+          Collections.singletonMap(VERSION_TAG_AGGREGATION, versionTagAggregation._toAggregation())
         )
       ))
       .size(0);
@@ -417,10 +427,10 @@ public class DefinitionReaderOS implements DefinitionReader {
       .map(versionBucket -> {
         final String version = versionBucket.key();
         final Aggregate versionTags = versionBucket.aggregations().get(VERSION_TAG_AGGREGATION);
-        final String versionTag = Stream.of(versionTags.sterms())
+        final String versionTag = Optional.ofNullable(versionTags).map(Aggregate::sterms)
           .map(MultiBucketAggregateBase::buckets)
-          .flatMap(stringTermsBucketBuckets -> stringTermsBucketBuckets.array().stream())
-          .findFirst()
+          .map(Buckets::array)
+          .flatMap(a -> a.stream().findFirst())
           .map(StringTermsBucket::key)
           .orElse(null);
         return new DefinitionVersionResponseDto(version, versionTag);
@@ -478,7 +488,7 @@ public class DefinitionReaderOS implements DefinitionReader {
     final Class<T> typeClass = resolveDefinitionClassFromType(type);
     final OpenSearchDocumentOperations.AggregatedResult<Hit<T>> scrollResp;
     try {
-      scrollResp = osClient.scrollOs(searchBuilder, typeClass);
+      scrollResp = osClient.retrieveAllScrollResults(searchBuilder, typeClass);
     } catch (IOException e) {
       final String errorMsg = String.format("Was not able to retrieve definitions of type %s", type);
       log.error(errorMsg, e);
@@ -565,7 +575,8 @@ public class DefinitionReaderOS implements DefinitionReader {
             .must(QueryDSL.term(resolveDefinitionKeyFieldFromType(type), key))
             .must(QueryDSL.term(DEFINITION_DELETED, false))
             .must(QueryDSL.exists(resolveXmlFieldFromType(type)))
-            .build()._toQuery()
+            .build().
+            _toQuery()
         )
       );
 
@@ -645,7 +656,7 @@ public class DefinitionReaderOS implements DefinitionReader {
     return result;
   }
 
-  private List<DefinitionWithTenantIdsDto> getDefinitionWithTenantIdsDtos(final BoolQuery.Builder filterQuery,
+  private List<DefinitionWithTenantIdsDto> getDefinitionWithTenantIdsDtos(final Query filterQuery,
                                                                           final DefinitionType type) {
     // 2.1 group by tenant
     final TermsAggregation tenantsAggregation = new TermsAggregation.Builder()
@@ -707,7 +718,7 @@ public class DefinitionReaderOS implements DefinitionReader {
 
     final List<CompositeBucket> keyAndTypeAggBuckets =
       performSearchAndCollectAllKeyAndTypeBuckets(
-        filterQuery.build()._toQuery(),
+        filterQuery,
         resolveIndexNameForType(type),
         complexKeyAndTypeAggregationBuilder,
         keyAndTypeCompositeAggregation,
@@ -737,7 +748,7 @@ public class DefinitionReaderOS implements DefinitionReader {
             .map(StringTermsBucket::key)
             // convert null bucket back to a `null` id
             .map(tenantId -> TENANT_NOT_DEFINED_VALUE.equalsIgnoreCase(tenantId) ? null : tenantId)
-            .toList(),
+            .collect(Collectors.toList()),
           enginesResult.buckets().array().stream().map(StringTermsBucket::key).collect(Collectors.toSet())
         );
       })
@@ -765,17 +776,17 @@ public class DefinitionReaderOS implements DefinitionReader {
   private <T> List<CompositeBucket> performSearchAndCollectAllKeyAndTypeBuckets
     (final Query filterQuery,
      final String[] definitionIndexNames,
-     Aggregation.Builder keyTypeAggregation,
+     Aggregation.Builder keyTypeAggregationBuilder,
      CompositeAggregation.Builder keyAndTypeCompositeAggregation,
      final Class<T> typeResponse) {
 
     CompositeAggregation compositeAggregation = keyAndTypeCompositeAggregation.build();
+
+    Aggregation keyTypeAggregation = keyTypeAggregationBuilder.composite(compositeAggregation).build();
+
     SearchRequest.Builder searchReqBuilder = new SearchRequest.Builder()
       .index(List.of(definitionIndexNames))
-      .aggregations(
-        DEFINITION_KEY_AND_TYPE_AGGREGATION,
-        keyTypeAggregation.composite(compositeAggregation).build()
-      )
+      .aggregations(DEFINITION_KEY_AND_TYPE_AGGREGATION, keyTypeAggregation)
       .query(filterQuery)
       .size(0);
 
@@ -798,12 +809,16 @@ public class DefinitionReaderOS implements DefinitionReader {
         .stream()
         .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().to(String.class)));
 
-      Aggregation compositeWithAfterAggregation = keyTypeAggregation
+      Aggregation.Builder keyTypeAggregationTempBuilder =
+        new Aggregation.Builder().aggregations(keyTypeAggregation.aggregations());
+      Aggregation compositeWithAfterAggregation = keyTypeAggregationTempBuilder
         .composite(new CompositeAggregation.Builder()
                      .sources(compositeAggregation.sources())
                      .size(compositeAggregation.size())
                      .after(keysToTypes)
-                     .build()).build();
+                     .build())
+        .build();
+
       searchReqBuilder = new SearchRequest.Builder()
         .index(List.of(definitionIndexNames))
         .query(filterQuery)
@@ -824,9 +839,12 @@ public class DefinitionReaderOS implements DefinitionReader {
     final SearchResponse<T> searchResponse) {
     final Class<T> typeClass = resolveDefinitionClassFromType(type);
     List<T> results = new ArrayList<>();
-    final FilterAggregate filteredDefsAgg = searchResponse.aggregations()
+    final FiltersBucket filteredDefsAgg = searchResponse.aggregations()
       .get(DEFINITION_KEY_FILTER_AGGREGATION)
-      .filter();
+      .filters()
+      .buckets()
+      .keyed()
+      .get(DEFINITION_KEY_FILTER_AGGREGATION);
 
     final List<StringTermsBucket> tenantsAgg = filteredDefsAgg.aggregations()
       .get(TENANT_AGGREGATION)

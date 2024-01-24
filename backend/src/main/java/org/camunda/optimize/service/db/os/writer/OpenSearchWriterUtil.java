@@ -57,9 +57,8 @@ public class OpenSearchWriterUtil {
   }
 
   public static Script createDefaultScriptWithSpecificDtoParams(final String inlineUpdateScript,
-                                                                final Map<String, JsonData> params,
-                                                                final ObjectMapper objectMapper) {
-    return QueryDSL.scriptFromJsonData(inlineUpdateScript, mapParamsForScriptCreation(params, objectMapper));
+                                                                final Map<String, JsonData> params) {
+    return QueryDSL.scriptFromJsonData(inlineUpdateScript, params);
   }
 
   public static Map<String, JsonData> createFieldUpdateScriptParams(final Set<String> fields,

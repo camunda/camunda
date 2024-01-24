@@ -13,6 +13,7 @@ import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
 import org.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL;
 import org.camunda.optimize.service.db.schema.DatabaseMetadataService;
+import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.db.schema.index.MetadataIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;

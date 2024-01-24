@@ -132,7 +132,7 @@ public class EntitiesReaderOS implements EntitiesReader {
 
     OpenSearchDocumentOperations.AggregatedResult<Hit<CollectionEntity>> scrollResp;
     try {
-      scrollResp = osClient.scrollOs(requestBuilder, CollectionEntity.class);
+      scrollResp = osClient.retrieveAllScrollResults(requestBuilder, CollectionEntity.class);
     } catch (IOException e) {
       log.error("Was not able to retrieve private entities!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve private entities!", e);
@@ -205,7 +205,7 @@ public class EntitiesReaderOS implements EntitiesReader {
 
     OpenSearchDocumentOperations.AggregatedResult<Hit<CollectionEntity>> scrollResp;
     try {
-      scrollResp = osClient.scrollOs(requestBuilder, CollectionEntity.class);
+      scrollResp = osClient.retrieveAllScrollResults(requestBuilder, CollectionEntity.class);
     } catch (IOException e) {
       log.error("Was not able to retrieve collection entities!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve entities!", e);

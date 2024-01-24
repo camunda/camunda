@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import jakarta.ws.rs.core.Response;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto;
@@ -15,22 +16,18 @@ import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
+import org.camunda.optimize.service.db.DatabaseConstants;
+import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.sharing.AbstractSharingIT;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
-import org.camunda.optimize.service.db.DatabaseConstants;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.junit.jupiter.api.Test;
 
-import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.HashMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE;
 import static org.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
-import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static org.camunda.optimize.service.util.ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 public class SharingRestServiceIT extends AbstractSharingIT {
@@ -455,18 +452,14 @@ public class SharingRestServiceIT extends AbstractSharingIT {
       .build();
     final String reportId = reportClient.createSingleProcessReport(
       new SingleProcessReportDefinitionRequestDto(reportData));
-
-    final UpdateRequest update = new UpdateRequest()
-      .index(DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME)
-      .id(reportId)
-      .script(new Script(
-        ScriptType.INLINE,
-        Script.DEFAULT_SCRIPT_LANG,
-        "ctx._source.data.managementReport = true",
-        Collections.emptyMap()
-      ))
-      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-    databaseIntegrationTestExtension.getOptimizeElasticsearchClient().update(update);
+    databaseIntegrationTestExtension.update(
+      DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME,
+      reportId,
+      new ScriptData(
+        Collections.emptyMap(),
+        "ctx._source.data.managementReport = true"
+      )
+    );
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     return reportId;
   }
@@ -474,17 +467,14 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   @SneakyThrows
   protected String createManagementDashboard() {
     final String dashboardId = dashboardClient.createEmptyDashboard();
-    final UpdateRequest update = new UpdateRequest()
-      .index(DASHBOARD_INDEX_NAME)
-      .id(dashboardId)
-      .script(new Script(
-        ScriptType.INLINE,
-        Script.DEFAULT_SCRIPT_LANG,
-        "ctx._source.managementDashboard = true",
-        Collections.emptyMap()
-      ))
-      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-    databaseIntegrationTestExtension.getOptimizeElasticsearchClient().update(update);
+    databaseIntegrationTestExtension.update(
+      DASHBOARD_INDEX_NAME,
+      dashboardId,
+      new ScriptData(
+        Collections.emptyMap(),
+        "ctx._source.managementDashboard = true"
+      )
+    );
     databaseIntegrationTestExtension.refreshAllOptimizeIndices();
     return dashboardId;
   }

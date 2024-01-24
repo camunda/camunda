@@ -15,11 +15,13 @@ import org.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
 import org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
 import org.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.ClearScrollResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
+import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.Script;
@@ -61,6 +63,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.db.DatabaseConstants.GB_UNIT;
+import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 
@@ -111,12 +114,16 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return richOpenSearchClient.doc().delete(requestBuilder, e -> errorMessage);
   }
 
+  public DeleteResponse delete(final String indexName, final String entityId) {
+    return richOpenSearchClient.doc().delete(indexName, entityId);
+  }
+
   public UpdateResponse update(final UpdateRequest.Builder requestBuilder, final String errorMessage) {
     return richOpenSearchClient.doc().update(requestBuilder, e -> errorMessage);
   }
 
-  public long deleteByQuery(final Query query, final String... index) {
-    return richOpenSearchClient.doc().deleteByQuery(query, index);
+  public long deleteByQuery(final Query query, final boolean refresh, final String... index) {
+    return richOpenSearchClient.doc().deleteByQuery(query, refresh, index);
   }
 
   public long updateByQuery(final String index, final Query query, final Script script) {
@@ -213,10 +220,14 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     }
   }
 
+  public long count(final String indexName, final String errorMessage) {
+    return count(new String[]{indexName}, QueryDSL.matchAll(), errorMessage);
+  }
+
   //todo rename it in scope of OPT-7469
-  public <T> OpenSearchDocumentOperations.AggregatedResult<Hit<T>> scrollOs(final SearchRequest.Builder requestBuilder,
-                                                                            Class<T> responseType) throws
-                                                                                                   IOException {
+  public <T> OpenSearchDocumentOperations.AggregatedResult<Hit<T>> retrieveAllScrollResults(final SearchRequest.Builder requestBuilder,
+                                                                                            Class<T> responseType) throws
+                                                                                                                   IOException {
     return richOpenSearchClient.doc().scrollHits(requestBuilder, responseType);
   }
 
@@ -258,6 +269,29 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   @Override
   public void setDefaultRequestOptions() {
     // TODO Do nothing, will be handled with OPT-7400
+  }
+
+  @Override
+  public void update(final String indexName, final String entityId, final ScriptData script) {
+
+    Script scr = QueryDSL.scriptFromJsonData(
+      script.scriptString(),
+      script.params().entrySet().stream().collect(Collectors.toMap(
+        Map.Entry::getKey,
+        JsonData::of
+      ))
+    );
+
+    UpdateRequest.Builder updateReqBuilder = new UpdateRequest.Builder()
+      .id(entityId)
+      .index(indexName)
+      .script(scr)
+      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+
+    update(
+      updateReqBuilder,
+      String.format("The error occurs while updating OpenSearch entity %s with id %s", indexName, entityId)
+    );
   }
 
   @Override

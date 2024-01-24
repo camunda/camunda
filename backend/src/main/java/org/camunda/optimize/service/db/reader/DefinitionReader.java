@@ -16,6 +16,7 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -131,6 +132,9 @@ public interface DefinitionReader {
 
   @SuppressWarnings(UNCHECKED_CAST)
   default <T extends DefinitionOptimizeResponseDto> Class<T> resolveDefinitionClassFromType(final DefinitionType type) {
+    if (Objects.isNull(type)) {
+      return (Class<T>) DefinitionOptimizeResponseDto.class;
+    }
     return switch (type) {
       case PROCESS -> (Class<T>) ProcessDefinitionOptimizeDto.class;
       case DECISION -> (Class<T>) DecisionDefinitionOptimizeDto.class;

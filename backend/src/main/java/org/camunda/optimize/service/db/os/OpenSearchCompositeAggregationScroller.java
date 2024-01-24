@@ -6,16 +6,19 @@
 package org.camunda.optimize.service.db.os;
 
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregate;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregation;
 import org.opensearch.client.opensearch._types.aggregations.CompositeBucket;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +32,31 @@ public class OpenSearchCompositeAggregationScroller {
   private SearchRequest.Builder searchRequestBuilder;
   private Consumer<CompositeBucket> compositeBucketConsumer;
   private LinkedList<String> pathToAggregation;
+  private Query query;
+  private int requestSize;
+  private List<String> indices;
+
+  private Map<String, Aggregation> aggregations = new HashMap<>();
+
+  public OpenSearchCompositeAggregationScroller aggregations(final Map<String, Aggregation> aggregations) {
+    this.aggregations.putAll(aggregations);
+    return this;
+  }
+
+  public OpenSearchCompositeAggregationScroller query(final Query query) {
+    this.query = query;
+    return this;
+  }
+
+  public OpenSearchCompositeAggregationScroller index(final List<String> indices) {
+    this.indices = indices;
+    return this;
+  }
+
+  public OpenSearchCompositeAggregationScroller size(final int size) {
+    this.requestSize = size;
+    return this;
+  }
 
 
   public static OpenSearchCompositeAggregationScroller create() {
@@ -57,7 +85,13 @@ public class OpenSearchCompositeAggregationScroller {
     final String errorMessage = String.format(
       "Was not able to get next page of %s aggregation.", pathToAggregation.getLast()
     );
-    final SearchResponse searchResponse = osClient.search(searchRequestBuilder, String.class, errorMessage);
+    searchRequestBuilder = new SearchRequest.Builder()
+      .index(indices)
+      .query(query)
+      .aggregations(aggregations)
+      .size(requestSize);
+
+    final SearchResponse searchResponse = osClient.search(searchRequestBuilder, SimpleDefinitionDto.class, errorMessage);
 
     final CompositeAggregate compositeAggregationResult = extractCompositeAggregationResult(searchResponse);
 
@@ -68,20 +102,13 @@ public class OpenSearchCompositeAggregationScroller {
       .collect(Collectors.toMap(Map.Entry::getKey, key -> key.getValue().to(String.class)));
 
     // find aggregation and adjust after key for next invocation
-    CompositeAggregation.Builder upgradedCompositeAggregation = getCompositeAggregationBuilder().after(
-      convertedCompositeBucketConsumer);
+    CompositeAggregation upgradedCompositeAggregation = getCompositeAggregationBuilder().after(
+      convertedCompositeBucketConsumer)
+      .build();
 
-    redefineSearchReqBuilder(searchRequestBuilder.build());
-    searchRequestBuilder.aggregations(pathToAggregation.get(0), upgradedCompositeAggregation.build()._toAggregation());
+    this.aggregations.put(pathToAggregation.get(0), upgradedCompositeAggregation._toAggregation());
 
     return compositeAggregationResult.buckets().array();
-  }
-
-  private void redefineSearchReqBuilder(final SearchRequest currentSearchRequest) {
-    this.searchRequestBuilder = new SearchRequest.Builder()
-      .index(currentSearchRequest.index())
-      .size(currentSearchRequest.size())
-      .query(currentSearchRequest.query());
   }
 
   private CompositeAggregate extractCompositeAggregationResult(final SearchResponse searchResponse) {
@@ -95,7 +122,7 @@ public class OpenSearchCompositeAggregationScroller {
   }
 
   private CompositeAggregation.Builder getCompositeAggregationBuilder() {
-    Map<String, Aggregation> aggCol = searchRequestBuilder.build().aggregations();
+    Map<String, Aggregation> aggCol = this.aggregations;
     Aggregation currentAggregationFromPath;
 
     for (int i = 0; i < pathToAggregation.size() - 1; i++) {
@@ -119,11 +146,6 @@ public class OpenSearchCompositeAggregationScroller {
     CompositeAggregation compositeAggregationResult = currentAggregationFromPath.composite();
     return new CompositeAggregation.Builder().sources(compositeAggregationResult.sources())
       .size(compositeAggregationResult.size());
-  }
-
-  public OpenSearchCompositeAggregationScroller setSearchRequest(final SearchRequest.Builder searchRequestBuilder) {
-    this.searchRequestBuilder = searchRequestBuilder;
-    return this;
   }
 
   public OpenSearchCompositeAggregationScroller setClient(final OptimizeOpenSearchClient osClient) {

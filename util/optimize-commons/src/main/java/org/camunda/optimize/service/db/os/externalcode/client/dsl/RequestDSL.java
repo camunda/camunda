@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.db.os.externalcode.client.dsl;
 
 import org.opensearch.client.json.JsonData;
+import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
@@ -58,7 +59,7 @@ public interface RequestDSL {
   }
 
   static DeleteRequest.Builder deleteRequestBuilder(String index, String id) {
-    return new DeleteRequest.Builder().index(index).id(id);
+    return new DeleteRequest.Builder().index(index).id(id).refresh(Refresh.True);
   }
 
   static DeleteByQueryRequest.Builder deleteByQueryRequestBuilder(List<String> indexes) {
@@ -91,7 +92,8 @@ public interface RequestDSL {
       .dest(Destination.of(b -> b.index(dstIndex)));
   }
 
-  static ReindexRequest.Builder reindexRequestBuilder(String srcIndex, String dstIndex, String script, Map<String, Object> scriptParams) {
+  static ReindexRequest.Builder reindexRequestBuilder(String srcIndex, String dstIndex, String script,
+                                                      Map<String, Object> scriptParams) {
     var jsonParams = scriptParams.entrySet().stream().collect(Collectors.toMap(
       Map.Entry::getKey,
       e -> JsonData.of(e.getValue())

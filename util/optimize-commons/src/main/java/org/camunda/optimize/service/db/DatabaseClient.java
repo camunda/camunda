@@ -7,6 +7,7 @@ package org.camunda.optimize.service.db;
 
 import lombok.Getter;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.ClearScrollResponse;
@@ -49,11 +50,13 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
   public abstract SearchResponse search(final SearchRequest searchRequest) throws IOException;
 
   //todo will be handle in the OPT-7469
-  public abstract ClearScrollResponse clearScroll(final ClearScrollRequest clearScrollRequest) throws IOException ;
+  public abstract ClearScrollResponse clearScroll(final ClearScrollRequest clearScrollRequest) throws IOException;
 
-  public abstract String getElasticsearchVersion() throws IOException ;
+  public abstract String getElasticsearchVersion() throws IOException;
 
   public abstract void setDefaultRequestOptions();
+
+  public abstract void update(final String indexName, final String entityId, final ScriptData script);
 
   protected String[] convertToPrefixedAliasNames(final String[] indices) {
     return Arrays.stream(indices)
