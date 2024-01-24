@@ -40,109 +40,138 @@ public class DbDecisionMigrationState {
   public void migrateDecisionStateForMultiTenancy() {
     // setting the tenant id key once, because it's the same for all steps below
     to.tenantIdKey.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    final MemoryChecker memoryChecker = new MemoryChecker();
 
     /*
     `DEPRECATED_DMN_DECISIONS` -> `DMN_DECISIONS`
     - Prefix tenant to key
     - Set tenant in value (`PersistedDecision`)
     */
-    from.getDecisionsByKey()
-        .forEach(
-            (key, value) -> {
-              value.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-              to.dbDecisionKey.wrapLong(key.getValue());
-              to.decisionsByKey.insert(to.tenantAwareDecisionKey, value);
-              from.getDecisionsByKey().deleteExisting(key);
-            });
+    while (!from.getDecisionsByKey().isEmpty()) {
+      memoryChecker.reset();
+      from.getDecisionsByKey()
+          .whileTrue(
+              (key, value) -> {
+                value.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+                to.dbDecisionKey.wrapLong(key.getValue());
+                to.decisionsByKey.insert(to.tenantAwareDecisionKey, value);
+                from.getDecisionsByKey().deleteExisting(key);
+                return memoryChecker.isBelowLimit(key, value);
+              });
+    }
 
     /*
     `DEPRECATED_DMN_DECISION_REQUIREMENTS` -> `DMN_DECISION_REQUIREMENTS`
     - Prefix tenant to key
     - Set tenant in value (`PersistedDecisionRequirements`)
     */
-    from.getDecisionRequirementsByKey()
-        .forEach(
-            (key, value) -> {
-              value.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-              to.dbDecisionRequirementsKey.wrapLong(key.getValue());
-              to.decisionRequirementsByKey.insert(to.tenantAwareDecisionRequirementsKey, value);
-              from.getDecisionRequirementsByKey().deleteExisting(key);
-            });
+    while (!from.getDecisionRequirementsByKey().isEmpty()) {
+      memoryChecker.reset();
+      from.getDecisionRequirementsByKey()
+          .whileTrue(
+              (key, value) -> {
+                value.setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+                to.dbDecisionRequirementsKey.wrapLong(key.getValue());
+                to.decisionRequirementsByKey.insert(to.tenantAwareDecisionRequirementsKey, value);
+                from.getDecisionRequirementsByKey().deleteExisting(key);
+                return memoryChecker.isBelowLimit(key, value);
+              });
+    }
 
     /*
     `DEPRECATED_DMN_LATEST_DECISION_BY_ID` -> `DMN_LATEST_DECISION_BY_ID`
     - Prefix tenant to key
     - Prefix tenant to key in value (Foreign key to the Decision key)
      */
-    from.getLatestDecisionKeysByDecisionId()
-        .forEach(
-            (key, value) -> {
-              to.dbDecisionId.wrapBuffer(key.getBuffer());
-              to.dbDecisionKey.wrapLong(value.inner().getValue());
-              to.latestDecisionKeysByDecisionId.insert(to.tenantAwareDecisionId, to.fkDecision);
-              from.getLatestDecisionKeysByDecisionId().deleteExisting(key);
-            });
+    while (!from.getLatestDecisionKeysByDecisionId().isEmpty()) {
+      memoryChecker.reset();
+      from.getLatestDecisionKeysByDecisionId()
+          .whileTrue(
+              (key, value) -> {
+                to.dbDecisionId.wrapBuffer(key.getBuffer());
+                to.dbDecisionKey.wrapLong(value.inner().getValue());
+                to.latestDecisionKeysByDecisionId.insert(to.tenantAwareDecisionId, to.fkDecision);
+                from.getLatestDecisionKeysByDecisionId().deleteExisting(key);
+                return memoryChecker.isBelowLimit(key, value);
+              });
+    }
 
     /*
     `DEPRECATED_DMN_LATEST_DECISION_REQUIREMENTS_BY_ID` -> `DMN_LATEST_DECISION_REQUIREMENTS_BY_ID`
     - Prefix tenant to key
     - Prefix tenant to key in value (Foreign key to Decision Requirements key)
     */
-    from.getLatestDecisionRequirementsKeysById()
-        .forEach(
-            (key, value) -> {
-              to.dbDecisionRequirementsId.wrapBuffer(key.getBuffer());
-              to.dbDecisionRequirementsKey.wrapLong(value.inner().getValue());
-              to.latestDecisionRequirementsKeysById.insert(
-                  to.tenantAwareDecisionRequirementsId, to.fkDecisionRequirements);
-              from.getLatestDecisionRequirementsKeysById().deleteExisting(key);
-            });
+    while (!from.getLatestDecisionRequirementsKeysById().isEmpty()) {
+      memoryChecker.reset();
+      from.getLatestDecisionRequirementsKeysById()
+          .whileTrue(
+              (key, value) -> {
+                to.dbDecisionRequirementsId.wrapBuffer(key.getBuffer());
+                to.dbDecisionRequirementsKey.wrapLong(value.inner().getValue());
+                to.latestDecisionRequirementsKeysById.insert(
+                    to.tenantAwareDecisionRequirementsId, to.fkDecisionRequirements);
+                from.getLatestDecisionRequirementsKeysById().deleteExisting(key);
+                return memoryChecker.isBelowLimit(key, value);
+              });
+    }
 
     /*
     `DEPRECATED_DMN_DECISION_KEY_BY_DECISION_REQUIREMENTS_KEY` -> `DMN_DECISION_KEY_BY_DECISION_REQUIREMENTS_KEY`
     - The key for this CF is a composite key. The tenant must be prefixed to both pats of the composite key.
      */
-    from.getDecisionKeyByDecisionRequirementsKey()
-        .forEach(
-            (key, value) -> {
-              to.dbDecisionRequirementsKey.wrapLong(key.first().inner().getValue());
-              to.dbDecisionKey.wrapLong(key.second().inner().getValue());
-              to.decisionKeyByDecisionRequirementsKey.insert(
-                  to.dbDecisionRequirementsKeyAndDecisionKey, DbNil.INSTANCE);
-              from.getDecisionKeyByDecisionRequirementsKey().deleteExisting(key);
-            });
+    while (!from.getDecisionKeyByDecisionRequirementsKey().isEmpty()) {
+      memoryChecker.reset();
+      from.getDecisionKeyByDecisionRequirementsKey()
+          .whileTrue(
+              (key, value) -> {
+                to.dbDecisionRequirementsKey.wrapLong(key.first().inner().getValue());
+                to.dbDecisionKey.wrapLong(key.second().inner().getValue());
+                to.decisionKeyByDecisionRequirementsKey.insert(
+                    to.dbDecisionRequirementsKeyAndDecisionKey, DbNil.INSTANCE);
+                from.getDecisionKeyByDecisionRequirementsKey().deleteExisting(key);
+                return memoryChecker.isBelowLimit(key, value);
+              });
+    }
 
     /*
     `DEPRECATED_DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION` -> `DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION`
     - Prefix tenant to key
     - Prefix tenant to key in value (Foreign key to Decision key)
      */
-    from.getDecisionKeyByDecisionIdAndVersion()
-        .forEach(
-            (key, value) -> {
-              to.dbDecisionId.wrapBuffer(key.first().getBuffer());
-              to.dbDecisionVersion.wrapInt(key.second().getValue());
-              to.dbDecisionKey.wrapLong(value.inner().getValue());
-              to.decisionKeyByDecisionIdAndVersion.insert(
-                  to.tenantAwareDecisionIdAndVersion, to.fkDecision);
-              from.getDecisionKeyByDecisionIdAndVersion().deleteExisting(key);
-            });
+    while (!from.getDecisionKeyByDecisionIdAndVersion().isEmpty()) {
+      memoryChecker.reset();
+      from.getDecisionKeyByDecisionIdAndVersion()
+          .whileTrue(
+              (key, value) -> {
+                to.dbDecisionId.wrapBuffer(key.first().getBuffer());
+                to.dbDecisionVersion.wrapInt(key.second().getValue());
+                to.dbDecisionKey.wrapLong(value.inner().getValue());
+                to.decisionKeyByDecisionIdAndVersion.insert(
+                    to.tenantAwareDecisionIdAndVersion, to.fkDecision);
+                from.getDecisionKeyByDecisionIdAndVersion().deleteExisting(key);
+                return memoryChecker.isBelowLimit(key, value);
+              });
+    }
 
     /*
     `DEPRECATED_DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION` -> `DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION`
     - Prefix tenant to key
     - Prefix tenant to key in value (Foreign key to Decision Requirements key)
      */
-    from.getDecisionRequirementsKeyByIdAndVersion()
-        .forEach(
-            (key, value) -> {
-              to.dbDecisionRequirementsId.wrapBuffer(key.first().getBuffer());
-              to.dbDecisionRequirementsVersion.wrapInt(key.second().getValue());
-              to.dbDecisionRequirementsKey.wrapLong(value.inner().getValue());
-              to.decisionRequirementsKeyByIdAndVersion.insert(
-                  to.tenantAwareDecisionRequirementsIdAndVersion, to.fkDecisionRequirements);
-              from.getDecisionRequirementsKeyByIdAndVersion().deleteExisting(key);
-            });
+    while (!from.getDecisionRequirementsKeyByIdAndVersion().isEmpty()) {
+      memoryChecker.reset();
+      from.getDecisionRequirementsKeyByIdAndVersion()
+          .whileTrue(
+              (key, value) -> {
+                to.dbDecisionRequirementsId.wrapBuffer(key.first().getBuffer());
+                to.dbDecisionRequirementsVersion.wrapInt(key.second().getValue());
+                to.dbDecisionRequirementsKey.wrapLong(value.inner().getValue());
+                to.decisionRequirementsKeyByIdAndVersion.insert(
+                    to.tenantAwareDecisionRequirementsIdAndVersion, to.fkDecisionRequirements);
+                from.getDecisionRequirementsKeyByIdAndVersion().deleteExisting(key);
+                return memoryChecker.isBelowLimit(key, value);
+              });
+    }
   }
 
   private static final class DbDecisionState {
