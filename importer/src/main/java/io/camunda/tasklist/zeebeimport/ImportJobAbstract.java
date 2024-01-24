@@ -161,8 +161,9 @@ public abstract class ImportJobAbstract implements ImportJob {
         return;
       }
       try {
+        final boolean useOnlyPosition = tasklistProperties.getImporter().isUseOnlyPosition();
         final ImportBatch newImportBatch;
-        if (previousPosition.getSequence() > 0) {
+        if (!useOnlyPosition && previousPosition.getSequence() > 0) {
           newImportBatch =
               recordsReader.readNextBatchBySequence(
                   previousPosition.getSequence(),
