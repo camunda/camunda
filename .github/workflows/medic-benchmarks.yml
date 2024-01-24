@@ -83,8 +83,8 @@ jobs:
         --set camunda-platform.operate.enabled=true
         --set camunda-platform.operate.image.repository=gcr.io/zeebe-io/operate
         --set camunda-platform.operate.image.tag=${{ needs.benchmark-data.outputs.operate }}
-        --set camunda-platform.elasticsearch.master.persistence.size=128Gi \
-        --set camunda-platform.zeebe.retention.minimumAge=1d \
+        --set camunda-platform.elasticsearch.master.persistence.size=128Gi
+        --set camunda-platform.zeebe.retention.minimumAge=1d
   setup-latency-benchmark:
     name: Latency Benchmark
     uses: ./.github/workflows/benchmark.yml
