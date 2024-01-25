@@ -91,6 +91,9 @@
                 },
                 "tenantId": {
                   "type": "keyword"
+                },
+                "activityType": {
+                  "type": "keyword"
                 }
               }
             },
