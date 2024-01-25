@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 
 public final class ExporterRepository {
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
+  private static final int NULL_PARTITION_ID = Integer.MIN_VALUE;
   private final ExternalJarRepository jarRepository;
   private final Map<String, ExporterDescriptor> exporters;
 
@@ -88,7 +89,8 @@ public final class ExporterRepository {
   private void validate(final ExporterDescriptor descriptor) throws ExporterLoadException {
     try {
       final Exporter instance = descriptor.newInstance();
-      final ExporterContext context = new ExporterContext(LOG, descriptor.getConfiguration(), 0);
+      final ExporterContext context =
+          new ExporterContext(LOG, descriptor.getConfiguration(), NULL_PARTITION_ID);
 
       ThreadContextUtil.runCheckedWithClassLoader(
           () -> instance.configure(context), instance.getClass().getClassLoader());
