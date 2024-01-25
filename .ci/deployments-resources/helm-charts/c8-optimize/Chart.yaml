@@ -29,4 +29,4 @@ dependencies:
   version: 9.0.2
 - name: infra-preview-environments-ingress
   repository: oci://registry.camunda.cloud/library
-  version: 1.4.0
+  version: 1.4.1
