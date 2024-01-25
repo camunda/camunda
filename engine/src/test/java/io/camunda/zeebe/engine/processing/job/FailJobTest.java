@@ -202,6 +202,32 @@ public final class FailJobTest {
   }
 
   @Test
+  public void shouldFailJobWithBackOffAndRemainFailed() {
+    // given
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, PROCESS_ID);
+    final long jobKey = job.getKey();
+    final Duration backOff = Duration.ofDays(1);
+    final Record<JobRecordValue> failRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .ofInstance(job.getValue().getProcessInstanceKey())
+            .withRetries(3)
+            .withBackOff(backOff)
+            .fail();
+    Assertions.assertThat(failRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(FAILED)
+        .hasKey(jobKey);
+
+    // when
+    final var reactivatedJobs = ENGINE.jobs().withType(jobType).activate();
+
+    // then
+    assertThat(reactivatedJobs.getValue().getJobKeys()).doesNotContain(jobKey).isEmpty();
+  }
+
+  @Test
   public void shouldFailIfJobCreated() {
     // given
     final Record<JobRecordValue> job = ENGINE.createJob(jobType, PROCESS_ID);
