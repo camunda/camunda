@@ -10,6 +10,8 @@ package io.camunda.zeebe.engine.state.migration.to_8_4;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.message.DbMessageState;
@@ -26,6 +28,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @SuppressWarnings("deprecation") // we need to use deprecated column families
 public class ColumnFamilyPrefixCorrectionMigrationTest {
 
+  /**
+   * Test correction from DEPRECATED_DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION -> MESSAGE_STATS
+   */
   @Nested
   @ExtendWith(ProcessingStateExtension.class)
   class ColumnFamily48CorrectorTestTest {
@@ -41,6 +46,12 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
 
     private ColumnFamily<DbString, DbLong> correctMessageStatsColumnFamily;
 
+    private ColumnFamily<DbCompositeKey<DbString, DbInt>, DbLong> correctDecisionColumnFamily;
+    private DbString decisionId;
+    private DbInt decisionVersion;
+    private DbCompositeKey<DbString, DbInt> decisionIdAndVersion;
+    private DbLong decisionKey;
+
     @BeforeEach
     void setup() {
       sut = new ColumnFamily48Corrector(zeebeDb, transactionContext);
@@ -52,12 +63,23 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
           zeebeDb.createColumnFamily(
               ZbColumnFamilies.DEPRECATED_DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION,
               transactionContext,
-              new DbString(),
-              new DbLong());
+              messagesDeadlineCountKey,
+              messagesDeadlineCount);
 
       correctMessageStatsColumnFamily =
           zeebeDb.createColumnFamily(
               ZbColumnFamilies.MESSAGE_STATS, transactionContext, new DbString(), new DbLong());
+
+      decisionId = new DbString();
+      decisionVersion = new DbInt();
+      decisionIdAndVersion = new DbCompositeKey<>(decisionId, decisionVersion);
+      decisionKey = new DbLong();
+      correctDecisionColumnFamily =
+          zeebeDb.createColumnFamily(
+              ZbColumnFamilies.DEPRECATED_DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION,
+              transactionContext,
+              decisionIdAndVersion,
+              decisionKey);
     }
 
     @Test
@@ -94,6 +116,52 @@ public class ColumnFamilyPrefixCorrectionMigrationTest {
           .isNotNull()
           .extracting(DbLong::getValue)
           .isEqualTo(123L + 456L);
+    }
+
+    @Test
+    void shouldIgnoreDecisionKeyEntries() {
+      // given
+      decisionId.wrapString("decision");
+      decisionVersion.wrapInt(1);
+      decisionKey.wrapLong(123);
+      correctDecisionColumnFamily.insert(decisionIdAndVersion, decisionKey);
+
+      messagesDeadlineCount.wrapLong(123);
+      wrongMessageStatsColumnFamily.insert(messagesDeadlineCountKey, messagesDeadlineCount);
+
+      decisionId.wrapString("decision2");
+      decisionVersion.wrapInt(2);
+      decisionKey.wrapLong(234);
+      correctDecisionColumnFamily.insert(decisionIdAndVersion, decisionKey);
+
+      Assertions.assertThat(correctDecisionColumnFamily.count()).isEqualTo(3);
+
+      // when
+      sut.correctColumnFamilyPrefix();
+
+      // then
+      // we can no longer use wrongMessageStatsColumnFamily.isEmpty() as there are entries in there
+      // just no longer message stats entries, but we can simply count the entries
+      Assertions.assertThat(correctDecisionColumnFamily.count()).isEqualTo(2);
+
+      decisionId.wrapString("decision");
+      decisionVersion.wrapInt(1);
+      Assertions.assertThat(correctDecisionColumnFamily.get(decisionIdAndVersion))
+          .isNotNull()
+          .extracting(DbLong::getValue)
+          .isEqualTo(123L);
+
+      decisionId.wrapString("decision2");
+      decisionVersion.wrapInt(2);
+      Assertions.assertThat(correctDecisionColumnFamily.get(decisionIdAndVersion))
+          .isNotNull()
+          .extracting(DbLong::getValue)
+          .isEqualTo(234L);
+
+      Assertions.assertThat(correctMessageStatsColumnFamily.get(messagesDeadlineCountKey))
+          .isNotNull()
+          .extracting(DbLong::getValue)
+          .isEqualTo(123L);
     }
   }
 }
