@@ -1,6 +1,12 @@
 name: e2e cloud test
 
-on: [push]
+on:
+  pull_request:
+  push:
+    branches:
+    - master
+    - maintenance/*
+  workflow_dispatch: 
 
 jobs:
   e2e-cloud-test:
