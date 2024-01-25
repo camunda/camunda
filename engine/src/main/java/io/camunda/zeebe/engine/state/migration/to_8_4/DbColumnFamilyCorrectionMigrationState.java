@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.state.migration.to_8_4;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.migration.to_8_4.corrections.DmnDecisionKeyByDecisionIdAndVersionColumnFamilyCorrector;
+import io.camunda.zeebe.engine.state.migration.to_8_4.corrections.DmnDecisionRequirementsKeyByDecisionRequirementIdAndVersionColumnFamilyCorrector;
 import io.camunda.zeebe.engine.state.migration.to_8_4.corrections.SignalNameAndSubscriptionKeyColumnFamilyCorrector;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 
@@ -19,6 +20,8 @@ public final class DbColumnFamilyCorrectionMigrationState {
       signalNameAndSubscriptionKeyColumnFamilyCorrector;
   private final DmnDecisionKeyByDecisionIdAndVersionColumnFamilyCorrector
       dmnDecisionKeyByDecisionIdAndVersionColumnFamilyCorrector;
+  private final DmnDecisionRequirementsKeyByDecisionRequirementIdAndVersionColumnFamilyCorrector
+      dmnDecisionRequirementsKeyByDecisionRequirementIdAndVersionColumnFamilyCorrector;
 
   public DbColumnFamilyCorrectionMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -26,10 +29,15 @@ public final class DbColumnFamilyCorrectionMigrationState {
         new SignalNameAndSubscriptionKeyColumnFamilyCorrector(zeebeDb, transactionContext);
     dmnDecisionKeyByDecisionIdAndVersionColumnFamilyCorrector =
         new DmnDecisionKeyByDecisionIdAndVersionColumnFamilyCorrector(zeebeDb, transactionContext);
+    dmnDecisionRequirementsKeyByDecisionRequirementIdAndVersionColumnFamilyCorrector =
+        new DmnDecisionRequirementsKeyByDecisionRequirementIdAndVersionColumnFamilyCorrector(
+            zeebeDb, transactionContext);
   }
 
   public void correctColumnFamilyPrefix() {
     signalNameAndSubscriptionKeyColumnFamilyCorrector.correctColumnFamilyPrefix();
     dmnDecisionKeyByDecisionIdAndVersionColumnFamilyCorrector.correctColumnFamilyPrefix();
+    dmnDecisionRequirementsKeyByDecisionRequirementIdAndVersionColumnFamilyCorrector
+        .correctColumnFamilyPrefix();
   }
 }
