@@ -33,6 +33,16 @@ public interface Context {
   Configuration getConfiguration();
 
   /**
+   * Gets the partition id of the exporter context. During the loading phase, while the
+   * configuration for each exporter is being validated, this method will return a null value since
+   * on instantiating the Exporter Context, we pass a null partition id, which will get replaced by
+   * a valid one at runtime.
+   *
+   * <p>* @return the partition id for this exporter.
+   */
+  int getPartitionId();
+
+  /**
    * Apply the given filter to limit the records which are exported.
    *
    * @param filter the filter to apply.
