@@ -58,6 +58,11 @@ public final class ExporterTestController implements Controller {
   }
 
   @Override
+  public long getLastExportedRecordPosition() {
+    return getPosition();
+  }
+
+  @Override
   public synchronized ScheduledTask scheduleCancellableTask(
       final Duration delay, final Runnable task) {
     final var scheduledTask =

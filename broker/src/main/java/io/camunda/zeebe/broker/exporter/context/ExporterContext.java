@@ -20,12 +20,15 @@ public final class ExporterContext implements Context {
 
   private final Logger logger;
   private final Configuration configuration;
+  private final int partitionId;
 
   private RecordFilter filter = DEFAULT_FILTER;
 
-  public ExporterContext(final Logger logger, final Configuration configuration) {
+  public ExporterContext(
+      final Logger logger, final Configuration configuration, final int partitionId) {
     this.logger = logger;
     this.configuration = configuration;
+    this.partitionId = partitionId;
   }
 
   @Override
@@ -36,6 +39,11 @@ public final class ExporterContext implements Context {
   @Override
   public Configuration getConfiguration() {
     return configuration;
+  }
+
+  @Override
+  public int getPartitionId() {
+    return partitionId;
   }
 
   public RecordFilter getFilter() {
