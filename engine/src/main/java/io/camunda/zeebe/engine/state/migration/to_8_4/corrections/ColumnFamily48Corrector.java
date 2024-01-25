@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
  * {@link ZbColumnFamilies#MESSAGE_STATS}
  */
 @SuppressWarnings("deprecation") // deals with deprecated column families
-public final class DmnDecisionKeyByDecisionIdAndVersionColumnFamilyCorrector {
+public final class ColumnFamily48Corrector {
 
   private static final Logger LOG = LoggerFactory.getLogger(DbMigratorImpl.class.getPackageName());
 
@@ -49,7 +49,7 @@ public final class DmnDecisionKeyByDecisionIdAndVersionColumnFamilyCorrector {
   private final DbString messagesDeadlineCountKey;
   private final DbLong messagesDeadlineCount;
 
-  public DmnDecisionKeyByDecisionIdAndVersionColumnFamilyCorrector(
+  public ColumnFamily48Corrector(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     decisionId = new DbString();
     decisionVersion = new DbInt();
