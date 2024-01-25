@@ -115,6 +115,7 @@ jobs:
           cache-from: type=gha,ignore-error=true
           cache-to: type=gha,mode=max,ignore-error=true
           build-args: DIST=build
+          provenance: false
           target: app
   build-benchmark-images:
     name: Build Starter and Worker
@@ -192,7 +193,7 @@ jobs:
         with:
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - uses: google-github-actions/get-gke-credentials@v2.0.0
+      - uses: google-github-actions/get-gke-credentials@v2.1.0
         with:
           cluster_name: ${{ inputs.cluster }}
           location: ${{ inputs.cluster-region }}

@@ -16,7 +16,7 @@ jobs:
         with:
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - uses: google-github-actions/get-gke-credentials@v2.0.0
+      - uses: google-github-actions/get-gke-credentials@v2.1.0
         with:
           cluster_name: zeebe-cluster
           location: europe-west1-b
@@ -83,8 +83,8 @@ jobs:
         --set camunda-platform.operate.enabled=true
         --set camunda-platform.operate.image.repository=gcr.io/zeebe-io/operate
         --set camunda-platform.operate.image.tag=${{ needs.benchmark-data.outputs.operate }}
-        --set camunda-platform.elasticsearch.master.persistence.size=128Gi \
-        --set camunda-platform.zeebe.retention.minimumAge=1d \
+        --set camunda-platform.elasticsearch.master.persistence.size=128Gi
+        --set camunda-platform.zeebe.retention.minimumAge=1d
   setup-latency-benchmark:
     name: Latency Benchmark
     uses: ./.github/workflows/benchmark.yml

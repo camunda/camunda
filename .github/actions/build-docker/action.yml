@@ -85,6 +85,7 @@ runs:
         cache-to: type=gha,mode=max,ignore-error=true
         no-cache-filters: build,distball,dist
         platforms: ${{ inputs.platforms }}
+        provenance: false
         build-args: |
           DISTBALL=${{ steps.get-distball.outputs.result }}
           DATE=${{ steps.get-date.outputs.result }}
