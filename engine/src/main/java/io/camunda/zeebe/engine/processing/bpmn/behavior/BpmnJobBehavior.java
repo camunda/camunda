@@ -27,7 +27,6 @@ import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.protocol.record.value.ExecutionListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue.ActivityType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
@@ -146,10 +145,8 @@ public final class BpmnJobBehavior {
   public void createNewExecutionListenerJob(
       final BpmnElementContext context,
       final ExecutableFlowElement element,
-      final JobProperties jobProperties,
-      final ExecutionListenerEventType executionListenerEventType) {
-    writeExecutionListenerJobCreatedEvent(
-        context, element, jobProperties, executionListenerEventType);
+      final JobProperties jobProperties) {
+    writeExecutionListenerJobCreatedEvent(context, element, jobProperties);
     jobMetrics.jobCreated(jobProperties.getType());
   }
 
@@ -180,8 +177,7 @@ public final class BpmnJobBehavior {
         .setElementId(jobWorkerElement.getId())
         .setElementInstanceKey(context.getElementInstanceKey())
         .setTenantId(context.getTenantId())
-        .setActivityType(ActivityType.REGULAR)
-        .setExecutionListenerEventType(ExecutionListenerEventType.UNSPECIFIED);
+        .setActivityType(ActivityType.REGULAR);
 
     final var jobKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
@@ -192,8 +188,7 @@ public final class BpmnJobBehavior {
   private void writeExecutionListenerJobCreatedEvent(
       final BpmnElementContext context,
       final ExecutableFlowElement element,
-      final JobProperties props,
-      final ExecutionListenerEventType executionListenerEventType) {
+      final JobProperties props) {
 
     final var encodedHeaders = encodeHeaders(Collections.emptyMap(), props);
 
@@ -208,8 +203,7 @@ public final class BpmnJobBehavior {
         .setElementId(element.getId())
         .setElementInstanceKey(context.getElementInstanceKey())
         .setTenantId(context.getTenantId())
-        .setActivityType(ActivityType.EXECUTION_LISTENER)
-        .setExecutionListenerEventType(executionListenerEventType);
+        .setActivityType(ActivityType.EXECUTION_LISTENER);
 
     final var jobKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);

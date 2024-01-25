@@ -48,8 +48,6 @@ public interface JobRecordValue
 
   ActivityType getActivityType();
 
-  ExecutionListenerEventType executionListenerEventType();
-
   /**
    * @return remaining retries
    */

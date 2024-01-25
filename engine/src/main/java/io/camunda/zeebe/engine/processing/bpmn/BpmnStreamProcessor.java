@@ -177,12 +177,12 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         break;
       case EXECUTION_LISTENER_COMPLETE:
         switch (stateBehavior.getElementInstance(context).getState()) {
-          case ELEMENT_ACTIVATING ->
-              onStartExecutionListenerComplete((ExecutableFlowNode) element, processor, context);
-          case ELEMENT_COMPLETING ->
-              onEndExecutionListenerComplete((ExecutableFlowNode) element, processor, context);
-          default ->
-              throw new UnsupportedOperationException("Unexpected element state: " + context);
+          case ELEMENT_ACTIVATING -> onStartExecutionListenerComplete(
+              (ExecutableFlowNode) element, processor, context);
+          case ELEMENT_COMPLETING -> onEndExecutionListenerComplete(
+              (ExecutableFlowNode) element, processor, context);
+          default -> throw new UnsupportedOperationException(
+              "Unexpected element state: " + context);
         }
         break;
       case TERMINATE_ELEMENT:
@@ -251,8 +251,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         .evaluateJobExpressions(listener.getJobWorkerProperties(), context)
         .ifRightOrLeft(
             elJobProperties ->
-                jobBehavior.createNewExecutionListenerJob(
-                    context, element, elJobProperties, listener.getEventType()),
+                jobBehavior.createNewExecutionListenerJob(context, element, elJobProperties),
             failure -> incidentBehavior.createIncident(failure, context));
   }
 

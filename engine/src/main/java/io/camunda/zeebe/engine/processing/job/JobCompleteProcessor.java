@@ -74,8 +74,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
     if (serviceTask != null) {
       if (value.getActivityType() == ActivityType.EXECUTION_LISTENER) {
-        LOGGER.info(
-            "DMK::ExecutionListener='{}_{}'", value.getType(), value.executionListenerEventType());
+        LOGGER.info("DMK::ExecutionListener='{}'", value.getType());
 
         // to store the variable for merge - why to handle concurrent commands
         eventHandle.triggeringProcessEvent(value);
@@ -97,7 +96,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
         return;
       }
 
-      LOGGER.info("DMK::RegularJob='{}_{}'", value.getType(), value.executionListenerEventType());
+      LOGGER.info("DMK::RegularJob='{}'", value.getType());
       final long scopeKey = serviceTask.getValue().getFlowScopeKey();
       final ElementInstance scopeInstance = elementInstanceState.getInstance(scopeKey);
 
