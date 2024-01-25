@@ -16,16 +16,30 @@ public final class ColumnFamilyCorrectionException extends RuntimeException {
       final String reason,
       final DbBytes key,
       final DbBytes value,
+      final ZbColumnFamilies columnFamily) {
+    super(formatMessage(reason, key, value, columnFamily));
+  }
+
+  public ColumnFamilyCorrectionException(
+      final String reason,
+      final DbBytes key,
+      final DbBytes value,
       final ZbColumnFamilies columnFamily,
       final Throwable cause) {
-    super(
-        String.format(
-            "Failed to correct prefix of column family [%d] %s, due to %s - key[%s], value[%s]",
-            columnFamily.ordinal(),
-            columnFamily.name(),
-            reason,
-            BufferUtil.bufferAsHexString(key.getDirectBuffer()),
-            BufferUtil.bufferAsHexString(value.getDirectBuffer())),
-        cause);
+    super(formatMessage(reason, key, value, columnFamily), cause);
+  }
+
+  private static String formatMessage(
+      final String reason,
+      final DbBytes key,
+      final DbBytes value,
+      final ZbColumnFamilies columnFamily) {
+    return String.format(
+        "Failed to correct prefix of column family [%d] %s, due to %s - key[%s], value[%s]",
+        columnFamily.ordinal(),
+        columnFamily.name(),
+        reason,
+        BufferUtil.bufferAsHexString(key.getDirectBuffer()),
+        BufferUtil.bufferAsHexString(value.getDirectBuffer()));
   }
 }
