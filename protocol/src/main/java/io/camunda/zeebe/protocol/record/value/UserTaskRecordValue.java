@@ -49,6 +49,8 @@ public interface UserTaskRecordValue
 
   String getAction();
 
+  String getExternalReference();
+
   /**
    * @return the element id of the corresponding user task
    */

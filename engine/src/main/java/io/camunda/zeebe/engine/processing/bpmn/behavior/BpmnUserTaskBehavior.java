@@ -85,7 +85,11 @@ public final class BpmnUserTaskBehavior {
         .flatMap(
             p ->
                 evaluateFormIdExpressionToFormKey(userTaskProps.getFormId(), scopeKey, tenantId)
-                    .map(p::formKey));
+                    .map(p::formKey))
+        .flatMap(
+            p ->
+                evaluateExternalReferenceExpression(userTaskProps.getExternalReference(), scopeKey)
+                    .map(p::externalReference));
   }
 
   public long createNewUserTask(
@@ -172,6 +176,14 @@ public final class BpmnUserTaskBehavior {
             });
   }
 
+  public Either<Failure, String> evaluateExternalReferenceExpression(
+      final Expression externalReference, final long scopeKey) {
+    if (externalReference == null) {
+      return Either.right(null);
+    }
+    return expressionBehavior.evaluateStringExpression(externalReference, scopeKey);
+  }
+
   public void cancelUserTask(final BpmnElementContext context) {
     final var elementInstance = stateBehavior.getElementInstance(context);
     cancelUserTask(elementInstance);
@@ -204,6 +216,7 @@ public final class BpmnUserTaskBehavior {
         .setDueDate(props.getDueDate())
         .setFollowUpDate(props.getFollowUpDate())
         .setFormKey(props.getFormKey())
+        .setExternalReference(props.getExternalReference())
         .setBpmnProcessId(context.getBpmnProcessId())
         .setProcessDefinitionVersion(context.getProcessVersion())
         .setProcessDefinitionKey(context.getProcessDefinitionKey())
@@ -221,6 +234,7 @@ public final class BpmnUserTaskBehavior {
     private String candidateGroups;
     private String candidateUsers;
     private String dueDate;
+    private String externalReference;
     private String followUpDate;
     private Long formKey;
 
@@ -257,6 +271,15 @@ public final class BpmnUserTaskBehavior {
 
     public UserTaskProperties dueDate(final String dueDate) {
       this.dueDate = dueDate;
+      return this;
+    }
+
+    public String getExternalReference() {
+      return getOrEmpty(externalReference);
+    }
+
+    public UserTaskProperties externalReference(final String externalReference) {
+      this.externalReference = externalReference;
       return this;
     }
 

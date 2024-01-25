@@ -59,6 +59,7 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     transformTaskFormId(element, userTaskProperties);
 
     if (isZeebeUserTask) {
+      transformExternalReference(element, userTaskProperties);
       userTask.setUserTaskProperties(userTaskProperties);
     } else {
       final var jobWorkerProperties = new JobWorkerProperties();
@@ -220,6 +221,29 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
 
     if (formDefinition != null && formDefinition.getFormId() != null) {
       userTaskProperties.setFormId(expressionLanguage.parseExpression(formDefinition.getFormId()));
+    }
+  }
+
+  private void transformExternalReference(
+      final UserTask element, final UserTaskProperties userTaskProperties) {
+    final ZeebeFormDefinition formDefinition =
+        element.getSingleExtensionElement(ZeebeFormDefinition.class);
+
+    if (formDefinition != null) {
+      final var externalReference = formDefinition.getExternalReference();
+      if (externalReference != null && !externalReference.isBlank()) {
+        final var externalReferenceExpression =
+            expressionLanguage.parseExpression(externalReference);
+        if (externalReferenceExpression.isStatic()) {
+          // static assignee values are always treated as string literals
+          userTaskProperties.setExternalReference(
+              expressionLanguage.parseExpression(
+                  ExpressionTransformer.asFeelExpressionString(
+                      ExpressionTransformer.asStringLiteral(externalReference))));
+        } else {
+          userTaskProperties.setAssignee(externalReferenceExpression);
+        }
+      }
     }
   }
 }
