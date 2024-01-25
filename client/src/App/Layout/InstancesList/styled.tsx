@@ -64,4 +64,8 @@ const Container = styled.div<ContainerProps>`
   ${gridRowLayout}
 `;
 
-export {Container};
+const PanelContainer = styled.div`
+  overflow: auto;
+`;
+
+export {Container, PanelContainer};

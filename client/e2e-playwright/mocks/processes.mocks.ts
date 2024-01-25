@@ -688,6 +688,20 @@ const mockGroupedProcesses = [
       },
     ],
   },
+  {
+    bpmnProcessId: 'LotsOfTasks',
+    name: 'Lots Of Tasks',
+    tenantId: '<default>',
+    permissions: [],
+    processes: [
+      {
+        id: '2251799813686133',
+        name: 'Lots Of Tasks',
+        version: 1,
+        bpmnProcessId: 'LotsOfTasks',
+      },
+    ],
+  },
 ] as ProcessDto[];
 
 const mockNewDeleteOperation: OperationEntity = {
@@ -1867,6 +1881,24 @@ const mockProcessInstances: ProcessInstancesDto = {
       operations: [],
       parentInstanceId: '2251799813831231',
       rootInstanceId: '2251799813831225',
+      callHierarchy: [],
+      sortValues: [],
+      permissions: [],
+      tenantId: '',
+    },
+    {
+      id: '2251799813838240',
+      processId: '2251799813686133',
+      processName: 'Lots Of Tasks',
+      processVersion: 1,
+      startDate: '2023-08-28T12:52:47.586+0000',
+      endDate: null,
+      state: 'ACTIVE',
+      bpmnProcessId: 'LotsOfTasks',
+      hasActiveOperation: false,
+      operations: [],
+      parentInstanceId: null,
+      rootInstanceId: null,
       callHierarchy: [],
       sortValues: [],
       permissions: [],

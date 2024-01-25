@@ -9,7 +9,7 @@ import {
   ResizablePanel,
   SplitDirection,
 } from 'modules/components/ResizablePanel';
-import {Container} from './styled';
+import {Container, PanelContainer} from './styled';
 import {observer} from 'mobx-react';
 import {useEffect, useRef, useState} from 'react';
 
@@ -50,7 +50,7 @@ const InstancesList: React.FC<Props> = observer(
       >
         {leftPanel}
         {additionalTopContent && <>{additionalTopContent}</>}
-        <div ref={containerRef}>
+        <PanelContainer ref={containerRef}>
           <ResizablePanel
             panelId={`${type}-instances-vertical-panel`}
             direction={SplitDirection.Vertical}
@@ -59,7 +59,7 @@ const InstancesList: React.FC<Props> = observer(
             {topPanel}
             {bottomPanel}
           </ResizablePanel>
-        </div>
+        </PanelContainer>
         {rightPanel}
         {footer}
       </Container>
