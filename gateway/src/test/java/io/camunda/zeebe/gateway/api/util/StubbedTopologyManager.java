@@ -9,10 +9,10 @@ package io.camunda.zeebe.gateway.api.util;
 
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyListener;
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
+import io.camunda.zeebe.broker.client.api.BrokerClusterState;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.broker.client.impl.BrokerClusterStateImpl;
 import io.camunda.zeebe.topology.state.ClusterTopology;
 
 public final class StubbedTopologyManager implements BrokerTopologyManager {

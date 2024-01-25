@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.gateway.query;
 
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient.RequestStub;
-import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.gateway.query.impl.BrokerExecuteQuery;
 
 final class QueryStub implements RequestStub<BrokerExecuteQuery, BrokerResponse<String>> {

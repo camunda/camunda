@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.impl.probes.health;
 
 import static java.util.Objects.requireNonNull;
 
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
+import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.springframework.boot.actuate.health.Health;

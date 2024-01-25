@@ -21,6 +21,7 @@
     <module>atomix</module>
     <module>auth</module>
     <module>broker</module>
+    <module>broker-client</module>
     <module>protocol-test-util</module>
     <module>dist</module>
     <module>protocol</module>

@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
+import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;

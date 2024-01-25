@@ -9,15 +9,15 @@ package io.camunda.zeebe.gateway.api.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.gateway.cmd.BrokerErrorException;
-import io.camunda.zeebe.gateway.cmd.BrokerRejectionException;
-import io.camunda.zeebe.gateway.cmd.BrokerResponseException;
-import io.camunda.zeebe.gateway.cmd.IllegalBrokerResponseException;
-import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
-import io.camunda.zeebe.gateway.impl.broker.BrokerResponseConsumer;
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
-import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.BrokerResponseConsumer;
+import io.camunda.zeebe.broker.client.api.BrokerResponseException;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.broker.client.api.IllegalBrokerResponseException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.time.Duration;
@@ -35,9 +35,9 @@ public final class StubbedBrokerClient implements BrokerClient {
   final BrokerTopologyManager topologyManager = new StubbedTopologyManager();
   private Consumer<String> jobsAvailableHandler;
 
-  private final Map<Class<?>, RequestHandler> requestHandlers = new HashMap<>();
+  private final Map<Class<?>, RequestHandler<?, ?>> requestHandlers = new HashMap<>();
 
-  private final List<BrokerRequest> brokerRequests = new ArrayList<>();
+  private final List<BrokerRequest<?>> brokerRequests = new ArrayList<>();
 
   public StubbedBrokerClient() {}
 
@@ -141,7 +141,7 @@ public final class StubbedBrokerClient implements BrokerClient {
     return (T) brokerRequests.get(0);
   }
 
-  public List<BrokerRequest> getBrokerRequests() {
+  public List<BrokerRequest<?>> getBrokerRequests() {
     return brokerRequests;
   }
 

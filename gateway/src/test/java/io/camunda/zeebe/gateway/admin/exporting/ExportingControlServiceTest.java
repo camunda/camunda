@@ -18,12 +18,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerClusterState;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
+import io.camunda.zeebe.broker.client.impl.BrokerClusterStateImpl;
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
-import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Comparator;

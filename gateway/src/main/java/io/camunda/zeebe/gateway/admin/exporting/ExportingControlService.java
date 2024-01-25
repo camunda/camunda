@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.gateway.admin.exporting;
 
+import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.gateway.admin.BrokerAdminRequest;
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
-import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;

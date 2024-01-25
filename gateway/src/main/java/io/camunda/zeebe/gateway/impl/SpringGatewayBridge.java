@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.impl;
 
+import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.gateway.health.Status;
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import java.util.Optional;
 import java.util.function.Supplier;

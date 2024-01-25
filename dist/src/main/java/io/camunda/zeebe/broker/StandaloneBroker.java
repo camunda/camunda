@@ -9,9 +9,9 @@ package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.identity.sdk.IdentityConfiguration;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.shared.BrokerConfiguration;
 import io.camunda.zeebe.broker.system.SystemContext;
-import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.shared.MainSupport;
 import io.camunda.zeebe.shared.Profile;

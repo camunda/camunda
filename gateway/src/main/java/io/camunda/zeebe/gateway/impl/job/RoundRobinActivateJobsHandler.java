@@ -9,19 +9,18 @@ package io.camunda.zeebe.gateway.impl.job;
 
 import com.google.rpc.Code;
 import com.google.rpc.Status;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.broker.client.impl.PartitionIdIterator;
+import io.camunda.zeebe.broker.client.impl.RoundRobinDispatchStrategy;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.gateway.ResponseMapper;
-import io.camunda.zeebe.gateway.cmd.BrokerErrorException;
-import io.camunda.zeebe.gateway.cmd.BrokerRejectionException;
 import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
-import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
-import io.camunda.zeebe.gateway.impl.broker.PartitionIdIterator;
-import io.camunda.zeebe.gateway.impl.broker.RequestDispatchStrategy;
-import io.camunda.zeebe.gateway.impl.broker.RoundRobinDispatchStrategy;
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
-import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
@@ -45,7 +44,7 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
   private static final String ACTIVATE_JOB_NOT_SENT_MSG_WITH_REASON =
       ACTIVATE_JOB_NOT_SENT_MSG + ", failed with: %s";
 
-  private final Map<String, RequestDispatchStrategy> jobTypeToNextPartitionId =
+  private final Map<String, RoundRobinDispatchStrategy> jobTypeToNextPartitionId =
       new ConcurrentHashMap<>();
   private final BrokerClient brokerClient;
   private final BrokerTopologyManager topologyManager;
@@ -274,11 +273,12 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
 
   private PartitionIdIterator partitionIdIteratorForType(
       final String jobType, final int partitionsCount) {
-    final RequestDispatchStrategy nextPartitionSupplier =
-        jobTypeToNextPartitionId.computeIfAbsent(
-            jobType, t -> new RoundRobinDispatchStrategy(topologyManager));
+    final var nextPartitionSupplier =
+        jobTypeToNextPartitionId.computeIfAbsent(jobType, t -> new RoundRobinDispatchStrategy());
     return new PartitionIdIterator(
-        nextPartitionSupplier.determinePartition(), partitionsCount, topologyManager);
+        nextPartitionSupplier.determinePartition(topologyManager),
+        partitionsCount,
+        topologyManager);
   }
 
   private record ResponseObserverDelegate(

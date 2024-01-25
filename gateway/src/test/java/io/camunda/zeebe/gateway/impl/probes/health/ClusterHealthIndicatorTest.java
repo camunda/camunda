@@ -7,14 +7,14 @@
  */
 package io.camunda.zeebe.gateway.impl.probes.health;
 
-import static io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState.PARTITION_ID_NULL;
+import static io.camunda.zeebe.broker.client.api.BrokerClusterState.PARTITION_ID_NULL;
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
+import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.util.List;
 import java.util.Optional;

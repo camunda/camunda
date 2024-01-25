@@ -11,13 +11,13 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRejectionResponse;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient.RequestHandler;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
-import io.camunda.zeebe.gateway.impl.broker.response.BrokerRejection;
-import io.camunda.zeebe.gateway.impl.broker.response.BrokerRejectionResponse;
-import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;

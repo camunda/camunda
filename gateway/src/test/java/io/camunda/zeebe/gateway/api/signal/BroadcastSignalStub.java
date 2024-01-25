@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.gateway.api.signal;
 
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient.RequestStub;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerBroadcastSignalRequest;
-import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 
 public final class BroadcastSignalStub

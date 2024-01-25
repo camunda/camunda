@@ -8,10 +8,10 @@
 package io.camunda.zeebe.broker.system;
 
 import io.camunda.identity.sdk.IdentityConfiguration;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.Loggers;
-import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
