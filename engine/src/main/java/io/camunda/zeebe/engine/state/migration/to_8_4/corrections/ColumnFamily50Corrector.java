@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
  * ZbColumnFamilies#MIGRATIONS_STATE}
  */
 @SuppressWarnings("deprecation") // deals with deprecated column families
-public final class SignalNameAndSubscriptionKeyColumnFamilyCorrector {
+public final class ColumnFamily50Corrector {
 
   private static final Logger LOG = LoggerFactory.getLogger(DbMigratorImpl.class.getPackageName());
 
@@ -51,7 +51,7 @@ public final class SignalNameAndSubscriptionKeyColumnFamilyCorrector {
   private final MigrationTaskState migrationTaskState;
   private final ColumnFamily<DbString, MigrationTaskState> migrationStateColumnFamily;
 
-  public SignalNameAndSubscriptionKeyColumnFamilyCorrector(
+  public ColumnFamily50Corrector(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     recoverySignalNameAndSubscriptionKeyColumnFamily =
         zeebeDb.createColumnFamily(
