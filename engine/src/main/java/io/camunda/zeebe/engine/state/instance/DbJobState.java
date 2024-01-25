@@ -191,6 +191,7 @@ public final class DbJobState implements JobState, MutableJobState {
       if (updatedValue.getRetryBackoff() > 0) {
         addJobBackoff(key, updatedValue.getRecurringTime());
         updateJob(key, updatedValue, State.FAILED);
+        makeJobNotActivatable(updatedValue.getTypeBuffer(), updatedValue.getTenantId());
       } else {
         updateJob(key, updatedValue, State.ACTIVATABLE);
       }
