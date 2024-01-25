@@ -41,6 +41,7 @@ services:
       - cluster.initial_cluster_manager_nodes=opensearch
       - bootstrap.memory_lock=true # along with the memlock settings below, disables swapping
       - "OPENSEARCH_JAVA_OPTS=-Xms1G -Xmx1G" # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
+      - path.repo=/usr/local/os-snapshots
     ulimits:
       memlock:
         soft: -1
@@ -51,6 +52,8 @@ services:
     ports:
       - "9200:9200"
       - "9600:9600" # required for Performance Analyzer
+    volumes:
+      - ./os-snapshots:/usr/local/os-snapshots
 
   opensearch-init:
     image: bash
