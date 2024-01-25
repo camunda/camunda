@@ -47,8 +47,7 @@ public final class JobEventProcessors {
         .onCommand(
             ValueType.JOB,
             JobIntent.COMPLETE,
-            new JobCompleteProcessor(
-                processingState, bpmnBehaviors.variableBehavior(), jobMetrics, eventHandle))
+            new JobCompleteProcessor(processingState, jobMetrics, eventHandle))
         .onCommand(
             ValueType.JOB,
             JobIntent.FAIL,

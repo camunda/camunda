@@ -7,13 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -25,10 +23,8 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue.ActivityType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import org.slf4j.Logger;
 
 public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
-  private static final Logger LOGGER = Loggers.PROCESS_PROCESSOR_LOGGER;
 
   private static final String NO_JOB_FOUND_MESSAGE =
       "Expected to update retries for job with key '%d', but no such job was found";
@@ -36,20 +32,15 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
   private final JobState jobState;
   private final ElementInstanceState elementInstanceState;
   private final DefaultJobCommandPreconditionGuard defaultProcessor;
-  private final VariableBehavior variableBehavior;
   private final JobMetrics jobMetrics;
   private final EventHandle eventHandle;
 
   public JobCompleteProcessor(
-      final ProcessingState state,
-      final VariableBehavior variableBehavior,
-      final JobMetrics jobMetrics,
-      final EventHandle eventHandle) {
+      final ProcessingState state, final JobMetrics jobMetrics, final EventHandle eventHandle) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
     defaultProcessor =
         new DefaultJobCommandPreconditionGuard("complete", jobState, this::acceptCommand);
-    this.variableBehavior = variableBehavior;
     this.jobMetrics = jobMetrics;
     this.eventHandle = eventHandle;
   }
@@ -74,8 +65,6 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
     if (serviceTask != null) {
       if (value.getActivityType() == ActivityType.EXECUTION_LISTENER) {
-        LOGGER.info("DMK::ExecutionListener='{}'", value.getType());
-
         // to store the variable for merge - why to handle concurrent commands
         eventHandle.triggeringProcessEvent(value);
 
@@ -84,19 +73,9 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
             ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE,
             serviceTask.getValue());
 
-        // don't merge the variable here, because of concurrent commands
-        //        variableBehavior.mergeDocument(
-        //            serviceTask.getKey(),
-        //            value.getProcessDefinitionKey(),
-        //            value.getProcessInstanceKey(),
-        //            BufferUtil.wrapString(value.getBpmnProcessId()),
-        //            value.getTenantId(),
-        //            value.getVariablesBuffer());
-
         return;
       }
 
-      LOGGER.info("DMK::RegularJob='{}'", value.getType());
       final long scopeKey = serviceTask.getValue().getFlowScopeKey();
       final ElementInstance scopeInstance = elementInstanceState.getInstance(scopeKey);
 
