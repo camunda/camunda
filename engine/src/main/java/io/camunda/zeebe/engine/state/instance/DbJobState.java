@@ -262,7 +262,7 @@ public final class DbJobState implements JobState, MutableJobState {
         key -> {
           jobKey.wrapLong(key);
           final var jobRecord = jobsColumnFamily.get(jobKey);
-          if (jobRecord != null && jobRecord.getRecord().getRecurringTime() > -1) {
+          if (isValidForRestore(jobRecord)) {
             addJobBackoff(key, jobRecord.getRecord().getRecurringTime());
           }
         });
@@ -503,5 +503,13 @@ public final class DbJobState implements JobState, MutableJobState {
     backoffColumnFamily.forEach(
         (key, value) -> backoffJobKeys.add(key.second().inner().getValue()));
     return backoffJobKeys;
+  }
+
+  private boolean isValidForRestore(final JobRecordValue jobRecord) {
+    if (jobRecord == null) {
+      return false;
+    }
+    final var job = jobRecord.getRecord();
+    return job.getRecurringTime() > -1 && job.getRetries() > 0;
   }
 }
