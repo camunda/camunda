@@ -307,6 +307,71 @@ public class ExecutionListenerJobTest {
 
   @Test
   public void
+      shouldCreateIncidentDuringEvaluatingServiceTaskInputMappingsAndResumeWithStartELsAfterResolving() {
+    // given
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent("start")
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType("d_service_task")
+                        .zeebeInputExpression("assert(some_var, some_var != null)", "o_var_1")
+                        .zeebeStartExecutionListener("d_start_el")
+                        .zeebeEndExecutionListener("d_end_el_1"))
+            .endEvent("end")
+            .done();
+    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    // incident created
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    Assertions.assertThat(incident.getValue())
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasErrorType(ErrorType.IO_MAPPING_ERROR)
+        .hasErrorMessage(
+            "Assertion failure on evaluate the expression '{o_var_1:assert(some_var, some_var != null)}': The condition is not fulfilled The evaluation reported the following warnings:\n"
+                + "[NO_VARIABLE_FOUND] No variable found with name 'some_var'\n"
+                + "[NO_VARIABLE_FOUND] No variable found with name 'some_var'\n"
+                + "[ASSERT_FAILURE] The condition is not fulfilled");
+
+    // fix issue with missing `some_var` variable
+    ENGINE
+        .variables()
+        .ofScope(processInstanceKey)
+        .withDocument(Map.of("some_var", "foo_bar"))
+        .update();
+    // resolve incident
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then
+    // job for the 1st EL[start] should be created
+    assertJobLifecycle(
+        processInstanceKey, 0, "d_start_el", JobIntent.CREATED, ActivityType.EXECUTION_LISTENER);
+    ENGINE.job().ofInstance(processInstanceKey).withType("d_start_el").complete();
+    assertJobLifecycle(
+        processInstanceKey, 1, "d_service_task", JobIntent.CREATED, ActivityType.REGULAR);
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.EXECUTION_LISTENER_COMPLETE),
+            tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED));
+  }
+
+  @Test
+  public void
       shouldCreateIncidentDuringEvaluatingServiceTaskOutputMappingsAndResumeWithEndELsAfterResolving() {
     // given
     final BpmnModelInstance modelInstance =
