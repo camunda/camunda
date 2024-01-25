@@ -30,7 +30,7 @@ import org.agrona.collections.MutableBoolean;
 
 public final class DbMessageState implements MutableMessageState {
 
-  private static final String DEADLINE_MESSAGE_COUNT_KEY = "deadline_message_count";
+  public static final String DEADLINE_MESSAGE_COUNT_KEY = "deadline_message_count";
 
   /**
    * <pre>message key -> message
