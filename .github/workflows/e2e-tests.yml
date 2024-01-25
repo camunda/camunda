@@ -1,7 +1,11 @@
 name: e2e tests
 
 on:
+  pull_request:
   push:
+    branches:
+    - master
+    - maintenance/*
   workflow_dispatch: 
 
 # Will limit the workflow to 1 concurrent run per ref (branch / PR)
