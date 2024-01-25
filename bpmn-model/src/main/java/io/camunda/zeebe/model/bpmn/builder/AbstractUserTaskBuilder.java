@@ -156,13 +156,17 @@ public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<
     return myself;
   }
 
-  /**
-   * Marks the user task as native Zeebe user task.
-   *
-   * @return the builder object
-   */
+  @Override
   public B zeebeUserTask() {
     getCreateSingleExtensionElement(ZeebeUserTask.class);
+    return myself;
+  }
+
+  @Override
+  public B zeebeExternalReference(final String externalReference) {
+    final ZeebeFormDefinition formDefinition =
+        getCreateSingleExtensionElement(ZeebeFormDefinition.class);
+    formDefinition.setExternalReference(externalReference);
     return myself;
   }
 

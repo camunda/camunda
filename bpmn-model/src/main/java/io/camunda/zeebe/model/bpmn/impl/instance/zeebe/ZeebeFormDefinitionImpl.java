@@ -29,6 +29,7 @@ public class ZeebeFormDefinitionImpl extends BpmnModelElementInstanceImpl
 
   protected static Attribute<String> formKeyAttribute;
   protected static Attribute<String> formIdAttribute;
+  protected static Attribute<String> externalReferenceAttribute;
 
   public ZeebeFormDefinitionImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
@@ -54,6 +55,16 @@ public class ZeebeFormDefinitionImpl extends BpmnModelElementInstanceImpl
     formIdAttribute.setValue(this, formId);
   }
 
+  @Override
+  public String getExternalReference() {
+    return externalReferenceAttribute.getValue(this);
+  }
+
+  @Override
+  public void setExternalReference(final String externalReference) {
+    externalReferenceAttribute.setValue(this, externalReference);
+  }
+
   public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -70,6 +81,12 @@ public class ZeebeFormDefinitionImpl extends BpmnModelElementInstanceImpl
     formIdAttribute =
         typeBuilder
             .stringAttribute(ZeebeConstants.ATTRIBUTE_FORM_ID)
+            .namespace(BpmnModelConstants.ZEEBE_NS)
+            .build();
+
+    externalReferenceAttribute =
+        typeBuilder
+            .stringAttribute(ZeebeConstants.ATTRIBUTE_EXTERNAL_REFERENCE)
             .namespace(BpmnModelConstants.ZEEBE_NS)
             .build();
 

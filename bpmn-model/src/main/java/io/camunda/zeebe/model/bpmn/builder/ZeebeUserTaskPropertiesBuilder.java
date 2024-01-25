@@ -142,4 +142,19 @@ public interface ZeebeUserTaskPropertiesBuilder<B extends ZeebeUserTaskPropertie
    * @return the builder object
    */
   B zeebeFormId(String formId);
+
+  /**
+   * Marks the user task as native Zeebe user task.
+   *
+   * @return the builder object
+   */
+  B zeebeUserTask();
+
+  /**
+   * Sets the external reference of the build user task.
+   *
+   * @param externalReference the external reference to set
+   * @return the builder object
+   */
+  B zeebeExternalReference(String externalReference);
 }
