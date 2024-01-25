@@ -195,12 +195,14 @@ public final class ColumnFamily48Corrector {
 
     // it could be that there are already stats known for this key, in that case we don't want to
     // override it, but merge the values. For a count we can do so by simply adding the values.
-
+    // Note that we have to read the current value first, as the messagesDeadlineCount will receive
+    // a different value when looking up the current value.
+    final long valueToMove = messagesDeadlineCount.getValue();
     final var currentCount = messageStatsColumnFamily.get(messagesDeadlineCountKey);
     if (currentCount != null) {
       LOG.trace(
           "Found existing message stats entry with key [{}] and value [{}]", key, currentCount);
-      messagesDeadlineCount.wrapLong(messagesDeadlineCount.getValue() + currentCount.getValue());
+      messagesDeadlineCount.wrapLong(valueToMove + currentCount.getValue());
     }
 
     moveEntryFromRecoveryColumnFamilyToMessageStatsColumnFamily(
