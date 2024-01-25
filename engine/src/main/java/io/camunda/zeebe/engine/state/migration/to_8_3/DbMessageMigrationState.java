@@ -17,6 +17,7 @@ import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
+import io.camunda.zeebe.engine.state.migration.MemoryBoundedColumnIteration;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyMessageState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -36,6 +37,7 @@ public class DbMessageMigrationState {
   }
 
   public void migrateMessageStateForMultiTenancy() {
+    final var iterator = new MemoryBoundedColumnIteration();
     // setting the tenant id key once, because it's the same for all steps below
     to.tenantIdKey.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
@@ -43,16 +45,15 @@ public class DbMessageMigrationState {
      `DEPRECATED_MESSAGES` -> `MESSAGES`
     - Prefix first part of nested composite key with tenant
      */
-    from.getNameCorrelationMessageColumnFamily()
-        .forEach(
-            (key, value) -> {
-              to.messageName.wrapBuffer(key.first().first().getBuffer());
-              to.correlationKey.wrapBuffer(key.first().second().getBuffer());
-              to.messageKey.wrapLong(key.second().inner().getValue());
-              to.nameCorrelationMessageColumnFamily.insert(
-                  to.nameCorrelationMessageKey, DbNil.INSTANCE);
-              from.getNameCorrelationMessageColumnFamily().deleteExisting(key);
-            });
+    iterator.drain(
+        from.getNameCorrelationMessageColumnFamily(),
+        (key, value) -> {
+          to.messageName.wrapBuffer(key.first().first().getBuffer());
+          to.correlationKey.wrapBuffer(key.first().second().getBuffer());
+          to.messageKey.wrapLong(key.second().inner().getValue());
+          to.nameCorrelationMessageColumnFamily.insert(
+              to.nameCorrelationMessageKey, DbNil.INSTANCE);
+        });
   }
 
   private static final class DbMessageState {
