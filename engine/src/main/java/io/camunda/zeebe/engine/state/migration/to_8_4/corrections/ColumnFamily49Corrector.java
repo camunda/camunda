@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * -> {@link ZbColumnFamilies#PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY}
  */
 @SuppressWarnings("deprecation") // deals with deprecated column families
-public class DmnDecisionRequirementsKeyByDecisionRequirementIdAndVersionColumnFamilyCorrector {
+public class ColumnFamily49Corrector {
 
   private static final Logger LOG = LoggerFactory.getLogger(DbMigratorImpl.class.getPackageName());
 
@@ -49,7 +49,7 @@ public class DmnDecisionRequirementsKeyByDecisionRequirementIdAndVersionColumnFa
   private final DbLong processDefinitionKey;
   private final DbLong elementInstanceKey;
 
-  public DmnDecisionRequirementsKeyByDecisionRequirementIdAndVersionColumnFamilyCorrector(
+  public ColumnFamily49Corrector(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     recoverColumnFamily =
         zeebeDb.createColumnFamily(
