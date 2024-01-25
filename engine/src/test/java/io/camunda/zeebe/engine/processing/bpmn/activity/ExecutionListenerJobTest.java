@@ -258,6 +258,108 @@ public class ExecutionListenerJobTest {
   }
 
   @Test
+  public void shouldProceedWithRemainingExecutionListenersAfterResolvingIncidentForEndEL() {
+    // given
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent("start")
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType("d_service_task")
+                        .zeebeStartExecutionListener("d_start_el")
+                        .zeebeEndExecutionListener("d_end_el_1")
+                        .zeebeEndExecutionListener("d_end_el_2")
+                        .zeebeEndExecutionListener("d_end_el_3"))
+            .endEvent("end")
+            .done();
+    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // complete EL[start], service task, and 1st EL[end] jobs
+    ENGINE.job().ofInstance(processInstanceKey).withType("d_start_el").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("d_service_task").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("d_end_el_1").complete();
+
+    // when
+    // fail 2nd EL[end] job
+    ENGINE.job().ofInstance(processInstanceKey).withType("d_end_el_2").withRetries(0).fail();
+
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    Assertions.assertThat(incident.getValue())
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasErrorType(ErrorType.JOB_NO_RETRIES)
+        .hasErrorMessage("No more retries left.");
+
+    // and
+    // resolve incident & complete 2nd EL[end] job
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+    ENGINE.job().ofInstance(processInstanceKey).withType("d_end_el_2").complete();
+
+    // then
+    // 3rd EL[end] job should be created
+    assertJobLifecycle(
+        processInstanceKey, 4, "d_end_el_3", JobIntent.CREATED, ActivityType.EXECUTION_LISTENER);
+  }
+
+  @Test
+  public void
+      shouldCreateIncidentDuringEvaluatingServiceTaskOutputMappingsAndResumeWithEndELsAfterResolving() {
+    // given
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent("start")
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeJobType("d_service_task")
+                        .zeebeOutputExpression("assert(some_var, some_var != null)", "o_var_1")
+                        .zeebeStartExecutionListener("d_start_el")
+                        .zeebeEndExecutionListener("d_end_el_1"))
+            .endEvent("end")
+            .done();
+    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // complete EL[start], service task, and 1st EL[end] jobs
+    ENGINE.job().ofInstance(processInstanceKey).withType("d_start_el").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("d_service_task").complete();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    Assertions.assertThat(incident.getValue())
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasErrorType(ErrorType.IO_MAPPING_ERROR)
+        .hasErrorMessage(
+            "Assertion failure on evaluate the expression '{o_var_1:assert(some_var, some_var != null)}': The condition is not fulfilled The evaluation reported the following warnings:\n"
+                + "[NO_VARIABLE_FOUND] No variable found with name 'some_var'\n"
+                + "[NO_VARIABLE_FOUND] No variable found with name 'some_var'\n"
+                + "[ASSERT_FAILURE] The condition is not fulfilled");
+
+    // fix issue with missing `some_var` variable
+    ENGINE
+        .variables()
+        .ofScope(processInstanceKey)
+        .withDocument(Map.of("some_var", "foo_bar"))
+        .update();
+
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+    // ENGINE.job().ofInstance(processInstanceKey).withType("d_service_task").complete();
+
+    assertJobLifecycle(
+        processInstanceKey, 2, "d_end_el_1", JobIntent.CREATED, ActivityType.EXECUTION_LISTENER);
+    ENGINE.job().ofInstance(processInstanceKey).withType("d_end_el_1").complete();
+    assertJobLifecycle(
+        processInstanceKey, 2, "d_end_el_1", JobIntent.COMPLETED, ActivityType.EXECUTION_LISTENER);
+  }
+
+  @Test
   public void
       shouldCreateIncidentWhenCorrelationKeyNotProvidedBeforeProcessingTaskWithMessageBoundaryEvent() {
     // given
