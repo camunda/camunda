@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue.ActivityType;
@@ -279,6 +280,7 @@ public class ExecutionListenerJobTest {
     // incident created
     Assertions.assertThat(firstIncident.getValue())
         .hasProcessInstanceKey(processInstanceKey)
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             "Failed to extract the correlation key for 'order_id': The value must be either a string or a number, but was 'NULL'. "
                 + "The evaluation reported the following warnings:\n"
@@ -425,6 +427,8 @@ public class ExecutionListenerJobTest {
             .getFirst();
 
     Assertions.assertThat(incident.getValue())
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             "Expected result of the expression 'service_task_job_name_var + \"_type\"' to "
                 + "be 'STRING', but was 'NULL'. The evaluation reported the following warnings:\n"
@@ -470,6 +474,8 @@ public class ExecutionListenerJobTest {
             .getFirst();
 
     Assertions.assertThat(incident.getValue())
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             "Expected result of the expression 'var_name + \"_el\"' to be 'STRING', "
                 + "but was 'NULL'. The evaluation reported the following warnings:\n"
@@ -500,6 +506,48 @@ public class ExecutionListenerJobTest {
     // then job for service task was created INSTEAD of 3rd EL[start]='d_start_el_3'
     assertJobLifecycle(
         processInstanceKey, 3, "d_service_task", JobIntent.CREATED, ActivityType.REGULAR);
+  }
+
+  @Test
+  public void
+      whenErrorThrownDuringProcessingOfExecutionListenerJobThenUnhandledErrorEventIncidentShouldBeCreated() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask(
+                    "A",
+                    t ->
+                        t.zeebeJobType("task")
+                            .zeebeStartExecutionListener("start_el_1")
+                            .zeebeEndExecutionListener("end_el_1"))
+                .boundaryEvent("errorBoundary", b -> b.error("err"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("start_el_1")
+        .withErrorCode("err")
+        .throwError();
+
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incident.getValue())
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
+        .hasErrorMessage(
+            "Expected to throw an error event with the code 'err', but it was not caught. No error events are available in the scope.");
   }
 
   @Test
