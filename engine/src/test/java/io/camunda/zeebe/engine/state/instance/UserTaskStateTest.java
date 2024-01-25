@@ -83,20 +83,6 @@ public class UserTaskStateTest {
   }
 
   @Test
-  public void shouldUpdateUserTaskWithModifier() {
-    // given
-    final UserTaskRecord expectedRecord = createUserTask(5_000);
-    userTaskState.create(expectedRecord);
-
-    // when
-    userTaskState.update(5_000, record -> record.setAssignee("myNewAssignee"));
-
-    // then
-    final UserTaskRecord storedRecord = userTaskState.getUserTask(5_000);
-    assertThat(storedRecord).hasAssignee("myNewAssignee");
-  }
-
-  @Test
   public void shouldUpdateUserTaskState() {
     // given
     final UserTaskRecord expectedRecord = createUserTask(5_000);

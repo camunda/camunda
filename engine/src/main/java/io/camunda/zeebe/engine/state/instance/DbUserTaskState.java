@@ -19,7 +19,6 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
 public class DbUserTaskState implements UserTaskState, MutableUserTaskState {
 
@@ -70,13 +69,6 @@ public class DbUserTaskState implements UserTaskState, MutableUserTaskState {
     // do not persist variables in user task state
     userTaskRecordToWrite.setRecordWithoutVariables(userTask);
     userTasksColumnFamily.update(userTaskKey, userTaskRecordToWrite);
-  }
-
-  @Override
-  public void update(final long key, final Consumer<UserTaskRecord> modifier) {
-    final UserTaskRecord userTask = getUserTask(key);
-    modifier.accept(userTask);
-    update(userTask);
   }
 
   @Override
