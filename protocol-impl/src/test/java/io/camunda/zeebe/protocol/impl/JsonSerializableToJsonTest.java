@@ -2082,6 +2082,7 @@ final class JsonSerializableToJsonTest {
                     .setFollowUpDate("2023-11-12T11:11:00+01:00")
                     .setFormKey(456)
                     .setVariables(VARIABLES_MSGPACK)
+                    .setChangedAttributes(List.of("foo", "bar"))
                     .setBpmnProcessId("test-process")
                     .setProcessDefinitionKey(13)
                     .setProcessDefinitionVersion(12)
@@ -2101,6 +2102,7 @@ final class JsonSerializableToJsonTest {
         "candidateUsers": "myCandidateUsers",
         "dueDate": "2023-11-11T11:11:00+01:00",
         "followUpDate": "2023-11-12T11:11:00+01:00",
+        "changedAttributes": ["foo", "bar"],
         "variables": {
           "foo": "bar"
         },
@@ -2130,6 +2132,7 @@ final class JsonSerializableToJsonTest {
         "candidateUsers": "",
         "dueDate": "",
         "followUpDate": "",
+        "changedAttributes": [],
         "variables": {},
         "formKey": -1,
         "userTaskKey": -1,
@@ -2160,6 +2163,7 @@ final class JsonSerializableToJsonTest {
         "candidateUsers": "",
         "dueDate": "",
         "followUpDate": "",
+        "changedAttributes": [],
         "variables": {
           "foo": null
         },

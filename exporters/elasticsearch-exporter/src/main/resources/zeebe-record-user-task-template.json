@@ -31,6 +31,9 @@
             "candidateUsers": {
               "type": "text"
             },
+            "changedAttributes": {
+              "type": "text"
+            },
             "dueDate": {
               "type": "keyword"
             },

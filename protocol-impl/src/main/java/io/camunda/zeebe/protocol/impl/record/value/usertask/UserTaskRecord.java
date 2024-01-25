@@ -22,16 +22,21 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
 
 public final class UserTaskRecord extends UnifiedRecordValue implements UserTaskRecordValue {
 
+  public static final String CANDIDATE_GROUPS = "candidateGroups";
+  public static final String CANDIDATE_USERS = "candidateUsers";
+  public static final String DUE_DATE = "dueDate";
+  public static final String FOLLOW_UP_DATE = "followUpDate";
+
   private static final String EMPTY_STRING = "";
-  private static final String CANDIDATE_GROUPS = "candidateGroups";
-  private static final String CANDIDATE_USERS = "candidateUsers";
-  private static final String DUE_DATE = "dueDate";
-  private static final String FOLLOW_UP_DATE = "followUpDate";
   private static final StringValue CANDIDATE_GROUPS_VALUE = new StringValue(CANDIDATE_GROUPS);
   private static final StringValue CANDIDATE_USERS_VALUE = new StringValue(CANDIDATE_USERS);
   private static final StringValue DUE_DATE_VALUE = new StringValue(DUE_DATE);
@@ -166,6 +171,14 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   }
 
   @Override
+  public List<String> getChangedAttributes() {
+    return StreamSupport.stream(changedAttributesProp.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .collect(Collectors.toList());
+  }
+
+  @Override
   public String getElementId() {
     return bufferAsString(elementIdProp.getValue());
   }
@@ -222,6 +235,13 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public UserTaskRecord setElementId(final DirectBuffer elementId) {
     elementIdProp.setValue(elementId);
+    return this;
+  }
+
+  public UserTaskRecord setChangedAttributes(final List<String> changedAttributes) {
+    changedAttributesProp.reset();
+    changedAttributes.forEach(
+        attribute -> changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute)));
     return this;
   }
 

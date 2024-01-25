@@ -18,6 +18,7 @@ package io.camunda.zeebe.protocol.record.value;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import java.util.List;
 import org.immutables.value.Value;
 
 /**
@@ -43,6 +44,8 @@ public interface UserTaskRecordValue
   String getFollowUpDate();
 
   long getFormKey();
+
+  List<String> getChangedAttributes();
 
   /**
    * @return the element id of the corresponding user task
