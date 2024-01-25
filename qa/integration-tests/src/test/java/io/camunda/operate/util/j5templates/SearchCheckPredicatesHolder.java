@@ -25,11 +25,27 @@ public class SearchCheckPredicatesHolder {
   @Qualifier("processInstanceExistsCheck")
   private Predicate<Object[]> processInstanceExistsCheck;
 
+  @Autowired
+  @Qualifier("flowNodeIsCompletedCheck")
+  private Predicate<Object[]> flowNodeIsCompletedCheck;
+
+  @Autowired
+  @Qualifier("processInstancesAreFinishedCheck")
+  private Predicate<Object[]> processInstancesAreFinishedCheck;
+
   public Predicate<Object[]> getProcessIsDeployedCheck() {
     return processIsDeployedCheck;
   }
 
   public Predicate<Object[]> getProcessInstanceExistsCheck() {
     return processInstanceExistsCheck;
+  }
+
+  public Predicate<Object[]> getFlowNodeIsCompletedCheck() {
+    return flowNodeIsCompletedCheck;
+  }
+
+  public Predicate<Object[]> getProcessInstancesAreFinishedCheck() {
+    return processInstancesAreFinishedCheck;
   }
 }

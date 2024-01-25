@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.util.searchrepository;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.BatchOperationEntity;
@@ -105,6 +106,18 @@ public class TestElasticSearchRepository implements TestSearchRepository {
             .source(doc, XContentType.JSON), RequestOptions.DEFAULT);
     DocWriteResponse.Result result = response.getResult();
     return result.equals(DocWriteResponse.Result.CREATED) || result.equals(DocWriteResponse.Result.UPDATED);
+  }
+
+  @Override
+  public boolean createOrUpdateDocumentFromObject(String indexName, String docId, Object data) throws IOException {
+    Map<String, Object> entityMap = objectMapper.convertValue(data, new TypeReference<>() {});
+    return createOrUpdateDocument(indexName, docId, entityMap);
+  }
+
+  @Override
+  public String createOrUpdateDocumentFromObject(String indexName, Object data) throws IOException {
+    Map<String, Object> entityMap = objectMapper.convertValue(data, new TypeReference<>() {});
+    return createOrUpdateDocument(indexName, entityMap);
   }
 
   @Override

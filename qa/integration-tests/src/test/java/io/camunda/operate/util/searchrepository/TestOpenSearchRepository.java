@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.util.searchrepository;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.VariableEntity;
@@ -59,6 +61,9 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   @Autowired
   private ZeebeRichOpenSearchClient zeebeRichOpenSearchClient;
 
+  @Autowired
+  private ObjectMapper objectMapper;
+
   @Override
   public <R> List<R> searchAll(String index, Class<R> clazz) throws IOException {
     var requestBuilder = searchRequestBuilder(index).query(matchAll());
@@ -78,6 +83,18 @@ public class TestOpenSearchRepository implements TestSearchRepository {
   @Override
   public boolean createIndex(String indexName, Map<String, ?> mapping) throws Exception {
     return true;
+  }
+
+  @Override
+  public boolean createOrUpdateDocumentFromObject(String indexName, String docId, Object data) throws IOException {
+    Map<String, Object> entityMap = objectMapper.convertValue(data, new TypeReference<>() {});
+    return createOrUpdateDocument(indexName, docId, entityMap);
+  }
+
+  @Override
+  public String createOrUpdateDocumentFromObject(String indexName, Object data) throws IOException {
+    Map<String, Object> entityMap = objectMapper.convertValue(data, new TypeReference<>() {});
+    return createOrUpdateDocument(indexName, entityMap);
   }
 
   @Override

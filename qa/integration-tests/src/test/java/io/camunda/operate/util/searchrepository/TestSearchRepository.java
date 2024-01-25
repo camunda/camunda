@@ -28,8 +28,10 @@ public interface TestSearchRepository {
 
   boolean isZeebeConnected();
 
-  boolean createIndex(String indexName, Map<String, ?> mapping) throws IOException, Exception;
+  boolean createIndex(String indexName, Map<String, ?> mapping) throws Exception;
 
+  boolean createOrUpdateDocumentFromObject(String indexName, String docId, Object data) throws IOException;
+  String createOrUpdateDocumentFromObject(String indexName, Object data) throws IOException;
   boolean createOrUpdateDocument(String indexName, String docId, Map<String, ?> doc) throws IOException;
 
   String createOrUpdateDocument(String indexName, Map<String, ?> doc) throws IOException;

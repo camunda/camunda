@@ -62,10 +62,13 @@ public class OperateSearchAbstractIT {
   protected SearchContainerManager searchContainerManager;
 
   @Autowired
+  protected TestResourceManager testResourceManager;
+
+  @Autowired
   protected ObjectMapper objectMapper;
 
   @BeforeAll
-  public void beforeAllSetup() {
+  public void beforeAllSetup() throws Exception {
     // Mocks the authentication for search
     when(userService.getCurrentUser()).thenReturn(
         new UserDto().setUserId(DEFAULT_USER)
@@ -85,7 +88,7 @@ public class OperateSearchAbstractIT {
   }
 
   @BeforeEach
-  public void beforeEach() {
+  public void beforeEach() throws Exception {
     // Mocks are cleared between each test, reset the authentication mocks so interactions with search don't fail
     when(userService.getCurrentUser()).thenReturn(
         new UserDto().setUserId(DEFAULT_USER)
@@ -96,9 +99,9 @@ public class OperateSearchAbstractIT {
     runAdditionalBeforeEachSetup();
   }
 
-  protected void runAdditionalBeforeAllSetup() {}
+  protected void runAdditionalBeforeAllSetup() throws Exception {}
 
-  protected void runAdditionalBeforeEachSetup() {}
+  protected void runAdditionalBeforeEachSetup() throws Exception {}
 
   @AfterAll
   public void afterAllTeardown() {

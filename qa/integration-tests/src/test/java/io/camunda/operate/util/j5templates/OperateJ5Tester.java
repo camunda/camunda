@@ -7,6 +7,7 @@
 package io.camunda.operate.util.j5templates;
 
 import io.camunda.operate.util.SearchTestRuleProvider;
+import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.zeebe.client.ZeebeClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,6 +58,13 @@ public class OperateJ5Tester {
     searchTestRuleProvider.processAllRecordsAndWait(searchPredicates.getProcessInstanceExistsCheck(), Arrays.asList(processInstanceKey));
 
     return processInstanceKey;
+  }
+
+  public void completeTaskAndWaitForProcessFinish(Long processInstanceKey, String activityId, String jobKey, String payload) {
+    ZeebeTestUtil.completeTask(zeebeClient, jobKey, TestUtil.createRandomString(10), payload);
+    searchTestRuleProvider.processAllRecordsAndWait(searchPredicates.getFlowNodeIsCompletedCheck(), processInstanceKey, activityId);
+
+    searchTestRuleProvider.processAllRecordsAndWait(searchPredicates.getProcessInstancesAreFinishedCheck(), Arrays.asList(processInstanceKey));
   }
 
   public void refreshSearchIndices() {
