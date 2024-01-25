@@ -277,4 +277,6 @@ const Processes: React.FC = observer(() => {
   );
 });
 
-export {Processes};
+Processes.displayName = 'Processes';
+
+export {Processes as Component};

@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {Task} from './index';
+import {Component} from './index';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   render,
@@ -82,9 +82,16 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
+      http.post(
+        '/v1/tasks/search',
+        async () => {
+          return HttpResponse.json([taskMocks.unassignedTask()]);
+        },
+        {once: true},
+      ),
     );
 
-    render(<Task hasRemainingTasks />, {
+    render(<Component />, {
       wrapper: getWrapper(['/0']),
     });
 
@@ -130,9 +137,16 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
+      http.post(
+        '/v1/tasks/search',
+        async () => {
+          return HttpResponse.json([taskMocks.unassignedTask()]);
+        },
+        {once: true},
+      ),
     );
 
-    render(<Task hasRemainingTasks />, {
+    render(<Component />, {
       wrapper: getWrapper(['/0']),
     });
 
@@ -184,9 +198,16 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
+      http.post(
+        '/v1/tasks/search',
+        async () => {
+          return HttpResponse.json([taskMocks.unassignedTask()]);
+        },
+        {once: true},
+      ),
     );
 
-    render(<Task hasRemainingTasks />, {
+    render(<Component />, {
       wrapper: getWrapper(['/0']),
     });
 
@@ -224,9 +245,16 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
+      http.post(
+        '/v1/tasks/search',
+        async () => {
+          return HttpResponse.json([taskMocks.unassignedTask()]);
+        },
+        {once: true},
+      ),
     );
 
-    render(<Task hasRemainingTasks />, {
+    render(<Component />, {
       wrapper: getWrapper(['/0']),
     });
 
@@ -268,9 +296,16 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
+      http.post(
+        '/v1/tasks/search',
+        async () => {
+          return HttpResponse.json([taskMocks.unassignedTask()]);
+        },
+        {once: true},
+      ),
     );
 
-    render(<Task hasRemainingTasks />, {
+    render(<Component />, {
       wrapper: getWrapper(['/0']),
     });
 
@@ -310,9 +345,16 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
+      http.post(
+        '/v1/tasks/search',
+        async () => {
+          return HttpResponse.json([taskMocks.unassignedTask()]);
+        },
+        {once: true},
+      ),
     );
 
-    render(<Task hasRemainingTasks />, {
+    render(<Component />, {
       wrapper: getWrapper(['/0']),
     });
 
@@ -359,9 +401,16 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
+      http.post(
+        '/v1/tasks/search',
+        async () => {
+          return HttpResponse.json([taskMocks.unassignedTask()]);
+        },
+        {once: true},
+      ),
     );
 
-    const {user} = render(<Task hasRemainingTasks />, {
+    const {user} = render(<Component />, {
       wrapper: getWrapper(['/0']),
     });
 
@@ -404,9 +453,16 @@ describe('<Task />', () => {
       http.post('/v1/tasks/:taskId/variables/search', () => {
         return HttpResponse.json(variableMocks.variables);
       }),
+      http.post(
+        '/v1/tasks/search',
+        async () => {
+          return HttpResponse.json([taskMocks.unassignedTask()]);
+        },
+        {once: true},
+      ),
     );
 
-    const {user} = render(<Task hasRemainingTasks />, {
+    const {user} = render(<Component />, {
       wrapper: getWrapper(['/0']),
     });
 
@@ -460,9 +516,16 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
+      http.post(
+        '/v1/tasks/search',
+        async () => {
+          return HttpResponse.json([taskMocks.unassignedTask()]);
+        },
+        {once: true},
+      ),
     );
 
-    render(<Task hasRemainingTasks />, {
+    render(<Component />, {
       wrapper: getWrapper(['/0']),
     });
 
@@ -516,9 +579,16 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
+      http.post(
+        '/v1/tasks/search',
+        async () => {
+          return HttpResponse.json([taskMocks.unassignedTask()]);
+        },
+        {once: true},
+      ),
     );
 
-    const {user} = render(<Task hasRemainingTasks />, {
+    const {user} = render(<Component />, {
       wrapper: getWrapper(['/0']),
     });
 
@@ -576,9 +646,16 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
+      http.post(
+        '/v1/tasks/search',
+        async () => {
+          return HttpResponse.json([taskMocks.unassignedTask()]);
+        },
+        {once: true},
+      ),
     );
 
-    render(<Task hasRemainingTasks />, {
+    render(<Component />, {
       wrapper: getWrapper(['/0']),
     });
 

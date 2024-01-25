@@ -9,7 +9,7 @@ import {render, screen, fireEvent, waitFor} from 'modules/testing-library';
 import {MemoryRouter} from 'react-router-dom';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {generateTask} from 'modules/mock-schema/mocks/tasks';
-import {Tasks} from './index';
+import {Component} from './index';
 import {http, HttpResponse} from 'msw';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
@@ -70,7 +70,7 @@ describe('<Tasks />', () => {
       ),
     );
 
-    render(<Tasks />, {
+    render(<Component />, {
       wrapper: getWrapper(),
     });
 
@@ -110,7 +110,7 @@ describe('<Tasks />', () => {
       ),
     );
 
-    render(<Tasks />, {
+    render(<Component />, {
       wrapper: getWrapper(['/?candidateUser=demo&foo=bar']),
     });
 

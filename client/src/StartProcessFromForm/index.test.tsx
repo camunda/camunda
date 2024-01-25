@@ -12,7 +12,7 @@ import {
   waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {StartProcessFromForm} from './index';
+import {Component} from './index';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
@@ -69,7 +69,7 @@ describe('<StartProcessFromForm />', () => {
       ),
     );
 
-    const {user} = render(<StartProcessFromForm />, {
+    const {user} = render(<Component />, {
       wrapper: getWrapper({
         initialEntries: ['/new/foo'],
       }),
@@ -117,7 +117,7 @@ describe('<StartProcessFromForm />', () => {
       ),
     );
 
-    render(<StartProcessFromForm />, {
+    render(<Component />, {
       wrapper: getWrapper({
         initialEntries: ['/new/foo'],
       }),
@@ -152,7 +152,7 @@ describe('<StartProcessFromForm />', () => {
       ),
     );
 
-    const {user} = render(<StartProcessFromForm />, {
+    const {user} = render(<Component />, {
       wrapper: getWrapper({
         initialEntries: ['/new/foo'],
       }),
@@ -197,7 +197,7 @@ describe('<StartProcessFromForm />', () => {
       ),
     );
 
-    render(<StartProcessFromForm />, {
+    render(<Component />, {
       wrapper: getWrapper({
         initialEntries: ['/new/foo'],
       }),
@@ -222,7 +222,7 @@ describe('<StartProcessFromForm />', () => {
       ),
     );
 
-    render(<StartProcessFromForm />, {
+    render(<Component />, {
       wrapper: getWrapper({
         initialEntries: ['/new/foo'],
       }),

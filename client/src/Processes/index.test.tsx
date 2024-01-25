@@ -19,7 +19,7 @@ import {createMockProcess} from 'modules/queries/useProcesses';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {http, HttpResponse} from 'msw';
 import {MemoryRouter} from 'react-router-dom';
-import {Processes} from './index';
+import {Component} from './index';
 import {notificationsStore} from 'modules/stores/notifications';
 import * as formMocks from 'modules/mock-schema/mocks/form';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
@@ -90,7 +90,7 @@ describe('Processes', () => {
       ),
     );
 
-    render(<Processes />, {
+    render(<Component />, {
       wrapper: getWrapper(),
     });
 
@@ -131,7 +131,7 @@ describe('Processes', () => {
       }),
     );
 
-    render(<Processes />, {
+    render(<Component />, {
       wrapper: getWrapper(),
     });
 
@@ -154,7 +154,7 @@ describe('Processes', () => {
       }),
     );
 
-    render(<Processes />, {
+    render(<Component />, {
       wrapper: getWrapper(),
     });
 
@@ -189,7 +189,7 @@ describe('Processes', () => {
       }),
     );
 
-    render(<Processes />, {
+    render(<Component />, {
       wrapper: getWrapper(),
     });
 
@@ -217,7 +217,7 @@ describe('Processes', () => {
       ),
     );
 
-    render(<Processes />, {
+    render(<Component />, {
       wrapper: getWrapper(),
     });
 
@@ -251,7 +251,7 @@ describe('Processes', () => {
       ),
     );
 
-    render(<Processes />, {
+    render(<Component />, {
       wrapper: getWrapper(),
     });
 
@@ -289,7 +289,7 @@ describe('Processes', () => {
       ),
     );
 
-    render(<Processes />, {
+    render(<Component />, {
       wrapper: getWrapper(),
     });
 
@@ -326,7 +326,7 @@ describe('Processes', () => {
       ),
     );
 
-    render(<Processes />, {
+    render(<Component />, {
       wrapper: getWrapper(),
     });
 
@@ -351,7 +351,7 @@ describe('Processes', () => {
       }),
     );
 
-    render(<Processes />, {
+    render(<Component />, {
       wrapper: getWrapper([
         pages.interalStartProcessFromForm(mockProcess.bpmnProcessId),
       ]),
@@ -381,7 +381,7 @@ describe('Processes', () => {
       }),
     );
 
-    render(<Processes />, {
+    render(<Component />, {
       wrapper: getWrapper([
         pages.interalStartProcessFromForm(wrongBpmnProcessId),
       ]),

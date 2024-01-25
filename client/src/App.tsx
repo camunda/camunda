@@ -7,27 +7,56 @@
 
 /* istanbul ignore file */
 
-import {BrowserRouter, Route, Routes} from 'react-router-dom';
+import {
+  Outlet,
+  Route,
+  RouterProvider,
+  createBrowserRouter,
+  createRoutesFromElements,
+} from 'react-router-dom';
 import {Notifications} from 'modules/notifications';
 import {NetworkStatusWatcher} from './NetworkStatusWatcher';
-import {AuthenticationCheck} from './AuthenticationCheck';
-import {Layout} from './Layout';
-import {Login} from './Login';
-import {pages} from 'modules/routing';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {SessionWatcher} from './SessionWatcher';
-import {Tasks} from './Tasks';
 import {TrackPagination} from 'modules/tracking/TrackPagination';
-import {Processes} from 'Processes';
 import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
 
-import {Suspense, lazy} from 'react';
-import {Loading} from '@carbon/react';
+const Wrapper: React.FC = () => {
+  return (
+    <>
+      <SessionWatcher />
+      <TrackPagination />
+      <Outlet />
+    </>
+  );
+};
 
-const StartProcessFromForm = lazy(() =>
-  import('./StartProcessFromForm').then(({StartProcessFromForm}) => ({
-    default: StartProcessFromForm,
-  })),
+const router = createBrowserRouter(
+  createRoutesFromElements(
+    <Route path="/" element={<Wrapper />}>
+      <Route path="login" lazy={() => import('./Login')} />
+      <Route
+        path="new/:bpmnProcessId"
+        lazy={() => import('./StartProcessFromForm')}
+      />
+      <Route path="/" lazy={() => import('./Layout')}>
+        <Route path="processes">
+          <Route index lazy={() => import('./Processes')} />
+          <Route
+            path=":bpmnProcessId/start"
+            lazy={() => import('./Processes')}
+          />
+        </Route>
+        <Route path="/" lazy={() => import('./Tasks')}>
+          <Route index lazy={() => import('./Tasks/EmptyPage')} />
+          <Route path=":id" lazy={() => import('./Tasks/Task')} />
+        </Route>
+      </Route>
+    </Route>,
+  ),
+  {
+    basename: window.clientConfig?.contextPath ?? '/',
+  },
 );
 
 const App: React.FC = () => {
@@ -36,37 +65,7 @@ const App: React.FC = () => {
       <ReactQueryProvider>
         <Notifications />
         <NetworkStatusWatcher />
-        <BrowserRouter basename={window.clientConfig?.contextPath ?? '/'}>
-          <SessionWatcher />
-          <TrackPagination />
-          <Routes>
-            <Route path={pages.login} element={<Login />} />
-            <Route
-              path={pages.startProcessFromForm}
-              element={
-                <Suspense fallback={<Loading withOverlay />}>
-                  <StartProcessFromForm />
-                </Suspense>
-              }
-            />
-            <Route
-              path="*"
-              element={
-                <AuthenticationCheck redirectPath={pages.login}>
-                  <Layout />
-                </AuthenticationCheck>
-              }
-            >
-              <Route path="*" element={<Tasks />} />
-              <Route
-                path={pages.processes({
-                  matchAllChilren: true,
-                })}
-                element={<Processes />}
-              />
-            </Route>
-          </Routes>
-        </BrowserRouter>
+        <RouterProvider router={router} />
       </ReactQueryProvider>
     </ThemeProvider>
   );

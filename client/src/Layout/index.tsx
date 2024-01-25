@@ -9,14 +9,18 @@
 
 import {Outlet} from 'react-router-dom';
 import {Header} from './Header';
+import {AuthenticationCheck} from 'AuthenticationCheck';
+import {pages} from 'modules/routing';
 
 const Layout: React.FC = () => {
   return (
-    <>
+    <AuthenticationCheck redirectPath={pages.login}>
       <Header />
       <Outlet />
-    </>
+    </AuthenticationCheck>
   );
 };
 
-export {Layout};
+Layout.displayName = 'Layout';
+
+export {Layout as Component};

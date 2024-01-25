@@ -8,7 +8,7 @@
 import {fireEvent, render, screen, waitFor} from 'modules/testing-library';
 import {Link, MemoryRouter} from 'react-router-dom';
 import {http, HttpResponse} from 'msw';
-import {Login} from './index';
+import {Component} from './index';
 import {authenticationStore} from 'modules/stores/authentication';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
@@ -65,7 +65,7 @@ describe('<Login />', () => {
       ),
     );
 
-    const {user} = render(<Login />, {
+    const {user} = render(<Component />, {
       wrapper: createWrapper(),
     });
 
@@ -94,7 +94,7 @@ describe('<Login />', () => {
         },
       ),
     );
-    const {user} = render(<Login />, {
+    const {user} = render(<Component />, {
       wrapper: createWrapper(),
     });
 
@@ -124,7 +124,7 @@ describe('<Login />', () => {
         },
       ),
     );
-    const {user} = render(<Login />, {
+    const {user} = render(<Component />, {
       wrapper: createWrapper(),
     });
 
@@ -151,7 +151,7 @@ describe('<Login />', () => {
         },
       ),
     );
-    const {user} = render(<Login />, {
+    const {user} = render(<Component />, {
       wrapper: createWrapper(),
     });
 
@@ -191,7 +191,7 @@ describe('<Login />', () => {
       ),
     );
 
-    const {user} = render(<Login />, {
+    const {user} = render(<Component />, {
       wrapper: createWrapper(),
     });
 
@@ -210,7 +210,7 @@ describe('<Login />', () => {
     vi.useFakeTimers();
     const mockYear = 1984;
     vi.setSystemTime(new Date(mockYear, 0));
-    render(<Login />, {
+    render(<Component />, {
       wrapper: createWrapper(),
     });
 
@@ -244,7 +244,7 @@ describe('<Login />', () => {
       ),
     );
 
-    const {user} = render(<Login />, {
+    const {user} = render(<Component />, {
       wrapper: createWrapper(),
     });
 

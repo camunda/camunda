@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {useRef, useState} from 'react';
+import {Suspense, lazy, useRef, useState} from 'react';
 import {Field, Form} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
 import intersection from 'lodash/intersection';
@@ -44,7 +44,6 @@ import {FormValues} from './types';
 import {LoadingTextarea} from './LoadingTextarea';
 import {usePermissions} from 'modules/hooks/usePermissions';
 import {OnNewVariableAdded} from './OnNewVariableAdded';
-import {JSONEditorModal} from './JSONEditorModal';
 import {TextInput} from './TextInput';
 import {IconButton} from './IconButton';
 import {DelayedErrorField} from 'Tasks/Task/DelayedErrorField';
@@ -70,6 +69,17 @@ import {Separator} from 'modules/components/Separator';
 import {useAllVariables} from 'modules/queries/useAllVariables';
 import {match, Pattern} from 'ts-pattern';
 import {FailedVariableFetchError} from 'modules/components/FailedVariableFetchError';
+
+const JSONEditorModal = lazy(async () => {
+  const [{loadMonaco}, {JSONEditorModal}] = await Promise.all([
+    import('loadMonaco'),
+    import('./JSONEditorModal'),
+  ]);
+
+  await loadMonaco();
+
+  return {default: JSONEditorModal};
+});
 
 const CODE_EDITOR_BUTTON_TOOLTIP_LABEL = 'Open JSON code editor';
 
@@ -533,20 +543,22 @@ const Variables: React.FC<Props> = ({
                 </DetailsFooter>
               </TaskDetailsContainer>
 
-              <JSONEditorModal
-                isOpen={isModalOpen}
-                title="Edit Variable"
-                onClose={() => {
-                  setEditingVariable(undefined);
-                }}
-                onSave={(value) => {
-                  if (isModalOpen) {
-                    form.change(editingVariable, value);
+              <Suspense>
+                <JSONEditorModal
+                  isOpen={isModalOpen}
+                  title="Edit Variable"
+                  onClose={() => {
                     setEditingVariable(undefined);
-                  }
-                }}
-                value={isModalOpen ? get(values, editingVariable) : ''}
-              />
+                  }}
+                  onSave={(value) => {
+                    if (isModalOpen) {
+                      form.change(editingVariable, value);
+                      setEditingVariable(undefined);
+                    }
+                  }}
+                  value={isModalOpen ? get(values, editingVariable) : ''}
+                />
+              </Suspense>
             </StyledForm>
           </ScrollableContent>
         </>

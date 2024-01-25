@@ -12,7 +12,6 @@ import {App} from './App';
 import {tracking} from 'modules/tracking';
 import './index.scss';
 import {StrictMode} from 'react';
-import {loadMonaco} from 'loadMonaco';
 
 function mock(): Promise<void> {
   return new Promise((resolve) => {
@@ -34,11 +33,7 @@ function mock(): Promise<void> {
 const container = document.querySelector('#root');
 const root = createRoot(container!);
 
-Promise.all([
-  tracking.loadAnalyticsToWillingUsers(),
-  mock(),
-  loadMonaco(),
-]).then(() => {
+Promise.all([tracking.loadAnalyticsToWillingUsers(), mock()]).then(() => {
   root.render(
     <StrictMode>
       <App />

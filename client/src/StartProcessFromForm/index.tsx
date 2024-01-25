@@ -152,4 +152,6 @@ const StartProcessFromForm: React.FC = () => {
   );
 };
 
-export {StartProcessFromForm};
+StartProcessFromForm.displayName = 'StartProcessFromForm';
+
+export {StartProcessFromForm as Component};

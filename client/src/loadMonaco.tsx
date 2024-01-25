@@ -12,17 +12,16 @@ import 'monaco-editor/esm/vs/editor/contrib/find/browser/findController.js';
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
 
-self.MonacoEnvironment = {
-  getWorker() {
-    return new jsonWorker();
-  },
-};
-
-loader.config({
-  monaco,
-});
-
 function loadMonaco() {
+  self.MonacoEnvironment = {
+    getWorker() {
+      return new jsonWorker();
+    },
+  };
+
+  loader.config({
+    monaco,
+  });
   return loader.init();
 }
 

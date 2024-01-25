@@ -24,6 +24,7 @@ import {useTask} from 'modules/queries/useTask';
 import {isRequestError} from 'modules/request';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {decodeTaskOpenedRef} from 'modules/utils/reftags';
+import {useTasks} from 'modules/queries/useTasks';
 
 const CAMUNDA_FORMS_PREFIX = 'camunda-forms:bpmn:';
 
@@ -35,12 +36,10 @@ function getFormId(formKey: NonNullable<TaskType['formKey']>): string {
   return formKey.replace(CAMUNDA_FORMS_PREFIX, '');
 }
 
-type Props = {
-  hasRemainingTasks: boolean;
-  onCompleted?: () => void;
-};
-
-const Task: React.FC<Props> = ({hasRemainingTasks, onCompleted}) => {
+const Task: React.FC = () => {
+  const {data, refetch: onCompleted} = useTasks();
+  const tasks = data?.pages.flat() ?? [];
+  const hasRemainingTasks = tasks.length > 0;
   const {id} = useTaskDetailsParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -153,4 +152,6 @@ const Task: React.FC<Props> = ({hasRemainingTasks, onCompleted}) => {
   );
 };
 
-export {Task};
+Task.displayName = 'Task';
+
+export {Task as Component};

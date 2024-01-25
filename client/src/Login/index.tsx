@@ -196,4 +196,6 @@ const Login: React.FC = () => {
   );
 };
 
-export {Login};
+Login.displayName = 'Login';
+
+export {Login as Component};

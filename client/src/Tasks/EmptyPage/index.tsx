@@ -16,13 +16,12 @@ import {
 import CheckImage from 'modules/images/orange-check-mark.svg';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {Restricted} from 'modules/components/Restricted';
+import {useTasks} from 'modules/queries/useTasks';
 
-type Props = {
-  isLoadingTasks: boolean;
-  hasNoTasks: boolean;
-};
-
-const EmptyPage: React.FC<Props> = ({hasNoTasks, isLoadingTasks}) => {
+const EmptyPage: React.FC = () => {
+  const {isLoading: isLoadingTasks, data} = useTasks();
+  const tasks = data?.pages.flat() ?? [];
+  const hasNoTasks = tasks.length === 0;
   const isOldUser = getStateLocally('hasCompletedTask') === true;
 
   if (isLoadingTasks) {
@@ -94,4 +93,6 @@ const EmptyPage: React.FC<Props> = ({hasNoTasks, isLoadingTasks}) => {
   );
 };
 
-export {EmptyPage};
+EmptyPage.displayName = 'EmptyPage';
+
+export {EmptyPage as Component};

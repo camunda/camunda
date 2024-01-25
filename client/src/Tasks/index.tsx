@@ -6,12 +6,9 @@
  */
 
 import {Container, TasksPanel, DetailsPanel} from './styled';
-import {Task} from './Task';
 import {Filters} from './Filters';
 import {AvailableTasks} from './AvailableTasks';
-import {EmptyPage} from './EmptyPage';
-import {Route, Routes} from 'react-router-dom';
-import {pages} from 'modules/routing';
+import {Outlet} from 'react-router-dom';
 import {useTasks} from 'modules/queries/useTasks';
 
 const Tasks: React.FC = () => {
@@ -21,7 +18,6 @@ const Tasks: React.FC = () => {
     isInitialLoading,
     isLoading,
     data,
-    refetch,
   } = useTasks();
   const tasks = data?.pages.flat() ?? [];
 
@@ -37,29 +33,12 @@ const Tasks: React.FC = () => {
         />
       </TasksPanel>
       <DetailsPanel>
-        <Routes>
-          <Route
-            index
-            element={
-              <EmptyPage
-                hasNoTasks={tasks.length === 0}
-                isLoadingTasks={isLoading}
-              />
-            }
-          />
-          <Route
-            path={pages.taskDetails()}
-            element={
-              <Task
-                hasRemainingTasks={tasks.length > 0}
-                onCompleted={refetch}
-              />
-            }
-          />
-        </Routes>
+        <Outlet />
       </DetailsPanel>
     </Container>
   );
 };
 
-export {Tasks};
+Tasks.displayName = 'Tasks';
+
+export {Tasks as Component};

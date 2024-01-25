@@ -5,8 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import {EmptyPage} from './index';
-import {render, screen} from 'modules/testing-library';
+import {Component} from './index';
+import {
+  render,
+  screen,
+  waitForElementToBeRemoved,
+} from 'modules/testing-library';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {MemoryRouter} from 'react-router-dom';
 import {storeStateLocally, clearStateLocally} from 'modules/utils/localStorage';
@@ -15,6 +19,7 @@ import {http, HttpResponse} from 'msw';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
+import {generateTask} from 'modules/mock-schema/mocks/tasks';
 
 const getWrapper = () => {
   const mockClient = getMockQueryClient();
@@ -46,9 +51,12 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
         },
         {once: true},
       ),
+      http.post('/v1/tasks/search', async () => {
+        return HttpResponse.json([]);
+      }),
     );
 
-    render(<EmptyPage isLoadingTasks={false} hasNoTasks />, {
+    render(<Component />, {
       wrapper: getWrapper(),
     });
 
@@ -72,9 +80,12 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
         },
         {once: true},
       ),
+      http.post('/v1/tasks/search', async () => {
+        return HttpResponse.json([generateTask('0')]);
+      }),
     );
 
-    render(<EmptyPage isLoadingTasks={false} hasNoTasks={false} />, {
+    render(<Component />, {
       wrapper: getWrapper(),
     });
 
@@ -110,11 +121,14 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
         },
         {once: true},
       ),
+      http.post('/v1/tasks/search', async () => {
+        return HttpResponse.json([generateTask('0')]);
+      }),
     );
 
     storeStateLocally('hasCompletedTask', true);
 
-    render(<EmptyPage isLoadingTasks={false} hasNoTasks={false} />, {
+    render(<Component />, {
       wrapper: getWrapper(),
     });
 
@@ -134,22 +148,21 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
         },
         {once: true},
       ),
+      http.post('/v1/tasks/search', async () => {
+        return HttpResponse.json([]);
+      }),
     );
 
     storeStateLocally('hasCompletedTask', true);
 
-    const {container, rerender} = render(
-      <EmptyPage isLoadingTasks hasNoTasks />,
-      {
-        wrapper: getWrapper(),
-      },
+    const {container} = render(<Component />, {
+      wrapper: getWrapper(),
+    });
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('loading-state'),
     );
 
-    expect(screen.getByTestId('loading-state')).toBeInTheDocument();
-
-    rerender(<EmptyPage isLoadingTasks={false} hasNoTasks />);
-
-    expect(screen.queryByTestId('loading-state')).not.toBeInTheDocument();
     expect(container).toBeEmptyDOMElement();
   });
 
@@ -162,11 +175,14 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
         },
         {once: true},
       ),
+      http.post('/v1/tasks/search', async () => {
+        return HttpResponse.json([generateTask('0')]);
+      }),
     );
 
     storeStateLocally('hasCompletedTask', true);
 
-    render(<EmptyPage isLoadingTasks={false} hasNoTasks={false} />, {
+    render(<Component />, {
       wrapper: getWrapper(),
     });
 

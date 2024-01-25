@@ -32,18 +32,6 @@ export default defineConfig(({mode}) => ({
       input: {
         index: './index.prod.html',
       },
-      output: {
-        manualChunks(id) {
-          if (
-            id.includes('node_modules/monaco-editor') ||
-            id.includes('node_modules/@monaco-editor')
-          ) {
-            return 'monaco-editor';
-          }
-
-          return undefined;
-        },
-      },
     },
     target: browserslistToEsbuild(),
     sourcemap: true,
