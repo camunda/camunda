@@ -169,9 +169,11 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         break;
       case COMPLETE_ELEMENT:
         final var completingContext = stateTransitionBehavior.transitionToCompleting(context);
-        processor.onComplete(element, completingContext);
-        // TODO: deal with incidents
-        afterCompleting(element, processor, completingContext);
+        processor
+            .onComplete(element, completingContext)
+            .ifRightOrLeft(
+                ok -> afterCompleting(element, processor, completingContext),
+                failure -> incidentBehavior.createIncident(failure, completingContext));
         break;
       case EXECUTION_LISTENER_COMPLETE:
         switch (stateBehavior.getElementInstance(context).getState()) {

@@ -311,7 +311,7 @@ public class ExecutionListenerJobTest {
   }
 
   @Test
-  public void shouldCreateIncidentWhenWhenServiceTaskWithExecutionListenersFailed() {
+  public void shouldCreateIncidentWhenServiceTaskWithExecutionListenersFailed() {
     // given
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess("process")
@@ -538,6 +538,7 @@ public class ExecutionListenerJobTest {
         .withErrorCode("err")
         .throwError();
 
+    // then
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
