@@ -13,6 +13,7 @@ import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.UserDetails;
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
 import io.camunda.identity.sdk.authentication.exception.TokenDecodeException;
+import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
 import jakarta.servlet.http.Cookie;
 import jakarta.ws.rs.NotAuthorizedException;
 import jakarta.ws.rs.container.ContainerRequestContext;
@@ -135,8 +136,8 @@ public class CCSMTokenService {
       return refreshTokenExpiresAt;
     } catch (final TokenDecodeException e) {
       log.trace(
-          "Refresh token is not a JWT and expire date can not be determined. Error message: {}",
-          e.getMessage()
+        "Refresh token is not a JWT and expiry date can not be determined. Error message: {}",
+        e.getMessage()
       );
       return null;
     }
@@ -154,11 +155,15 @@ public class CCSMTokenService {
   }
 
   public AccessToken verifyToken(final String accessToken) {
-    final AccessToken verifiedToken = authentication().verifyToken(extractTokenFromAuthorizationValue(accessToken));
-    if (!userHasOptimizeAuthorization(verifiedToken)) {
-      throw new NotAuthorizedException("User is not authorized to access Optimize");
+    try {
+      final AccessToken verifiedToken = authentication().verifyToken(extractTokenFromAuthorizationValue(accessToken));
+      if (!userHasOptimizeAuthorization(verifiedToken)) {
+        throw new NotAuthorizedException("User is not authorized to access Optimize");
+      }
+      return verifiedToken;
+    } catch (TokenVerificationException ex) {
+      throw new NotAuthorizedException("Token could not be verified", ex);
     }
-    return verifiedToken;
   }
 
   public Tokens renewToken(final String refreshToken) {
