@@ -43,6 +43,9 @@ public final class DeploymentDmnTest {
       "/dmn/decision-table-with-invalid-expression.dmn";
   private static final String DMN_WITH_TWO_DECISIONS = "/dmn/drg-force-user.dmn";
 
+  private static final String DMN_MISSING_DECISION_NAME =
+      "/dmn/decision-table-with-missing-decision-name.dmn";
+
   @Rule public final EngineRule engine = EngineRule.singlePartition();
 
   @Rule
@@ -106,6 +109,25 @@ public final class DeploymentDmnTest {
 
     assertThat(deploymentEvent.getRejectionReason())
         .contains("FEEL unary-tests: failed to parse expression");
+  }
+
+  @Test
+  public void shouldRejectDmnResourceWithMissingDecisionName() {
+    // when
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withXmlClasspathResource(DMN_MISSING_DECISION_NAME)
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentEvent.getRejectionReason()).contains("because \"value\" is null");
   }
 
   @Test
