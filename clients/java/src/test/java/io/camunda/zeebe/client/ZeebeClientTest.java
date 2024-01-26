@@ -37,6 +37,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -739,40 +740,12 @@ public final class ZeebeClientTest extends ClientTest {
   }
 
   @Test
-  @DisplayName("should throw when gatewayTarget is invalid")
-  public void shouldThrowWhenGatewayTargetIsInvalid() {
-    // given
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
-
-    // when
-    Assertions.assertThrows(RuntimeException.class, () -> builder.gatewayTarget("0.0.0.0:26500"));
-  }
-
-  @Test
-  @DisplayName("should use gatewayAddress when gatewayAddress is valid ip:port")
-  public void shouldUseGatewayAddressWhenGatewayAddressIsValidIpPort() {
+  @DisplayName("should GATEWAY_TARGET has value when gatewayTarget is set")
+  public void shouldGatewayTargetHasValueWhenGatewayTargetIsSet() {
     // given
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
     final Properties properties = new Properties();
-    properties.putIfAbsent(ClientProperties.GATEWAY_ADDRESS, "0.0.0.0:26500");
-    builder.withProperties(properties);
-
-    // when
-    builder.build();
-
-    // then
-    Assertions.assertNull(builder.getGatewayTarget());
-
-    Assertions.assertEquals("0.0.0.0:26500", builder.getGatewayAddress());
-  }
-
-  @Test
-  @DisplayName("should use gatewayTarget when gatewayAddress is not valid ip:port")
-  public void shouldUseGatewayTargetWhenGatewayAddressIsNotValidIpPort() {
-    // given
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
-    final Properties properties = new Properties();
-    properties.putIfAbsent(ClientProperties.GATEWAY_ADDRESS, "gateway.zeebe.com:26500");
+    properties.putIfAbsent(ClientProperties.GATEWAY_TARGET, "gateway.zeebe.com:26500");
 
     // use
     builder.withProperties(properties);
@@ -791,7 +764,7 @@ public final class ZeebeClientTest extends ClientTest {
     when(zeebeClientConfiguration.getGatewayTarget()).thenReturn(null);
     when(zeebeClientConfiguration.getKeepAlive().toMillis()).thenReturn(1L);
     when(zeebeClientConfiguration.getInterceptors()).thenReturn(new ArrayList<>());
-    when(zeebeClientConfiguration.getGatewayAddress()).thenReturn("0.0.0.0:26500");
+    when(zeebeClientConfiguration.getGatewayAddress()).thenReturn("192.168.1.1:26500");
 
     // use & verify
     Assertions.assertDoesNotThrow(
@@ -804,8 +777,8 @@ public final class ZeebeClientTest extends ClientTest {
   }
 
   @Test
-  @DisplayName("should use gatewayTarget to buildChannel when gatewayTarget is null")
-  public void shouldUseGatewayTargetToBuildChannelWhenGatewayTargetIsNull() {
+  @DisplayName("should use gatewayTarget to buildChannel when gatewayTarget is not null")
+  public void shouldUseGatewayTargetToBuildChannelWhenGatewayTargetIsNotNull() {
 
     // given
     final ZeebeClientConfiguration zeebeClientConfiguration =
@@ -822,8 +795,8 @@ public final class ZeebeClientTest extends ClientTest {
         });
 
     // verify
-    verify(zeebeClientConfiguration, times(0)).getGatewayAddress();
-    verify(zeebeClientConfiguration, times(2)).getGatewayTarget();
+    verify(zeebeClientConfiguration, never()).getGatewayAddress();
+    verify(zeebeClientConfiguration, times(3)).getGatewayTarget();
   }
 
   @Test

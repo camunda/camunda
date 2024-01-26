@@ -137,19 +137,22 @@ public final class ZeebeClientImpl implements ZeebeClient {
   public static ManagedChannel buildChannel(final ZeebeClientConfiguration config) {
     final NettyChannelBuilder channelBuilder;
     if (config.getGatewayTarget() == null) {
-      final URI address;
-
-      try {
-        address = new URI("zb://" + config.getGatewayAddress());
-      } catch (final URISyntaxException e) {
-        throw new RuntimeException("Failed to parse broker contact point", e);
-      }
+      final URI address = parseAddress("zb://" + config.getGatewayAddress());
       channelBuilder = NettyChannelBuilder.forAddress(address.getHost(), address.getPort());
     } else {
+      parseAddress(config.getGatewayTarget());
       channelBuilder = NettyChannelBuilder.forTarget(config.getGatewayTarget());
     }
 
     return configureNettyChannel(config, channelBuilder).build();
+  }
+
+  private static URI parseAddress(final String address) {
+    try {
+      return new URI(address);
+    } catch (final URISyntaxException e) {
+      throw new RuntimeException("Failed to parse broker contact point", e);
+    }
   }
 
   private static NettyChannelBuilder configureNettyChannel(

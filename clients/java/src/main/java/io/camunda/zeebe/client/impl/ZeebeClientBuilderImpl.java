@@ -68,7 +68,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
   private final List<ClientInterceptor> interceptors = new ArrayList<>();
   private String gatewayAddress = DEFAULT_GATEWAY_ADDRESS;
-  private String gatewayTarget = null;
+  private String gatewayTarget;
   private String defaultTenantId = CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
   private List<String> defaultJobWorkerTenantIds =
       Collections.singletonList(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
@@ -214,16 +214,10 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
               properties.getProperty(ClientProperties.APPLY_ENVIRONMENT_VARIABLES_OVERRIDES)));
     }
     if (properties.containsKey(ClientProperties.GATEWAY_ADDRESS)) {
-      final String gatewayAddress = properties.getProperty(ClientProperties.GATEWAY_ADDRESS);
-
-      // check if the gateway address is in the format of an IP address with port: ip:port
-      String ipPortPattern = "^\\b(?:\\d{1,3}\\.){3}\\d{1,3}:\\d{1,5}\\b";
-      Pattern pattern = Pattern.compile(ipPortPattern);
-      if (pattern.matcher(gatewayAddress).matches()) {
-        gatewayAddress(gatewayAddress);
-      } else {
-        gatewayTarget(gatewayAddress);
-      }
+      gatewayAddress(properties.getProperty(ClientProperties.GATEWAY_ADDRESS));
+    }
+    if (properties.containsKey(ClientProperties.GATEWAY_TARGET)) {
+      gatewayTarget(properties.getProperty(ClientProperties.GATEWAY_TARGET));
     }
     if (properties.containsKey(ClientProperties.DEFAULT_TENANT_ID)) {
       defaultTenantId(properties.getProperty(ClientProperties.DEFAULT_TENANT_ID));
@@ -314,14 +308,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
   @Override
   public ZeebeClientBuilder gatewayTarget(final String gatewayTarget) {
-    final URI targetUri;
-    try {
-      // use URI api to check if the gatewayTarget is a valid URI
-      targetUri = new URI(gatewayTarget);
-    } catch (URISyntaxException e) {
-      throw new RuntimeException("Failed to parse gateway target uri", e);
-    }
-    this.gatewayTarget = targetUri.toString();
+    this.gatewayTarget = gatewayTarget;
     return this;
   }
 
