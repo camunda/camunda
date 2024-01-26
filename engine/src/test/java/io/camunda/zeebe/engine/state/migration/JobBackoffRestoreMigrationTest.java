@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -107,6 +108,7 @@ public class JobBackoffRestoreMigrationTest {
 
     // then
     assertThat(backoffColumnFamily.isEmpty()).isFalse();
+    assertThat(countBackoffRecords()).isEqualTo(2);
   }
 
   // regression test of https://github.com/camunda/zeebe/issues/14329
@@ -129,6 +131,7 @@ public class JobBackoffRestoreMigrationTest {
 
     // then
     assertThat(backoffColumnFamily.isEmpty()).isFalse();
+    assertThat(countBackoffRecords()).isEqualTo(2);
   }
 
   @Test
@@ -145,7 +148,7 @@ public class JobBackoffRestoreMigrationTest {
     final JobRecord backoffRecord = createJobRecord(2000);
     jobState.create(jobKey.getValue(), backoffRecord);
     jobState.fail(jobKey.getValue(), backoffRecord);
-    assertThat(backoffColumnFamily.count()).isEqualTo(1);
+    assertThat(countBackoffRecords()).isEqualTo(1);
 
     // when
     assertThat(jobBackoffRestoreMigration.needsToRun(processingState)).isTrue();
@@ -153,7 +156,7 @@ public class JobBackoffRestoreMigrationTest {
 
     // then
     assertThat(backoffColumnFamily.isEmpty()).isFalse();
-    assertThat(backoffColumnFamily.count()).isEqualTo(1);
+    assertThat(countBackoffRecords()).isEqualTo(1);
   }
 
   private static JobRecord createJobRecord(final long retryBackoff) {
@@ -162,5 +165,11 @@ public class JobBackoffRestoreMigrationTest {
         .setRetries(3)
         .setRetryBackoff(retryBackoff)
         .setRecurringTime(System.currentTimeMillis() + retryBackoff);
+  }
+
+  private int countBackoffRecords() {
+    final AtomicInteger counter = new AtomicInteger();
+    backoffColumnFamily.forEach(record -> counter.incrementAndGet());
+    return counter.get();
   }
 }
