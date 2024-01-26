@@ -17,7 +17,7 @@ package io.camunda.zeebe.protocol;
 
 // New Column families should be added at the bottom as ColumnFamilyContext uses
 // this class as ordinal()
-public enum ZbColumnFamilies {
+public enum ZbColumnFamilies implements EnumValue {
   DEFAULT,
 
   // util
@@ -120,5 +120,16 @@ public enum ZbColumnFamilies {
 
   PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY,
 
-  MIGRATIONS_STATE
+  MIGRATIONS_STATE;
+
+  private final int value;
+
+  ZbColumnFamilies() {
+    value = ordinal();
+  }
+
+  @Override
+  public int getValue() {
+    return value;
+  }
 }
