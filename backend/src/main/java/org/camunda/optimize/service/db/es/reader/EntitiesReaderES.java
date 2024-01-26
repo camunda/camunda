@@ -219,7 +219,7 @@ public class EntitiesReaderES implements EntitiesReader {
           result.setCollectionName(entity.getName());
         }
 
-        if (entityId.equals(requestDto.getDashboardId())) { // no "else if" here in case request comes from a magic link
+        if (entityId.equals(requestDto.getDashboardId())) {
           result.setDashboardName(getLocalizedDashboardName((DashboardDefinitionRestDto) entity, locale));
         } else if (entityId.equals(requestDto.getReportId())) {
           result.setReportName(getLocalizedReportName(localizationService, entity, locale));

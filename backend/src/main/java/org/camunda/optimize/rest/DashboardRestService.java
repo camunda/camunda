@@ -97,20 +97,7 @@ public class DashboardRestService {
   public AuthorizedDashboardDefinitionResponseDto getDashboard(@Context ContainerRequestContext requestContext,
                                                                @PathParam("id") String dashboardId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    AuthorizedDashboardDefinitionResponseDto dashboardDefinition;
-    try {
-      dashboardDefinition = dashboardService.getDashboardDefinition(dashboardId, userId);
-    } catch (NotFoundException | ForbiddenException e) {
-      // This is potentially a case of magic link creation, let's wait a bit and give it another chance
-      try {
-        Thread.sleep(1500);
-      } catch (InterruptedException ex) {
-        // Not critical, do nothing
-        Thread.currentThread().interrupt();
-      }
-      dashboardDefinition = dashboardService.getDashboardDefinition(dashboardId, userId);
-    }
-
+    AuthorizedDashboardDefinitionResponseDto dashboardDefinition = dashboardService.getDashboardDefinition(dashboardId, userId);
     dashboardRestMapper.prepareRestResponse(dashboardDefinition, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
     return dashboardDefinition;
   }

@@ -74,32 +74,9 @@ public class EntitiesService {
       ).collect(Collectors.toList());
   }
 
-  public EntityNameResponseDto getEntityNames(final EntityNameRequestDto requestDto, final String userId, final String locale) {
-    Optional<EntityNameResponseDto> entityNames;
-    // If it's a click for a magic link, direct it to the default instant dashboard for that process key, as the
-    // magic link functionality is discontinued
-    if (requestDto.getCollectionId() != null && requestDto.getDashboardId() != null &&
-      requestDto.getDashboardId().equals(requestDto.getCollectionId())) {
-      try {
-        // In a magic link situation, the dashboard ID is the same as the process definition key, this is why we're
-        // using the dashboard ID as argument in the method below
-        final AuthorizedDashboardDefinitionResponseDto dashboardData =
-          instantPreviewDashboardService.getInstantPreviewDashboard(
-            requestDto.getDashboardId(),
-            INSTANT_DASHBOARD_DEFAULT_TEMPLATE,
-            userId
-          );
-        final EntityNameResponseDto instantDashboardEntityNames = new EntityNameResponseDto();
-        instantDashboardEntityNames.setDashboardName(dashboardData.getDefinitionDto().getName());
-        entityNames = Optional.of(instantDashboardEntityNames);
-      } catch (NotFoundException | NotAuthorizedException e) {
-        log.warn("No instant dashboard found for {}. Either the process definition {} doesn't exist or the user {} " +
-                   "is not authorized to access it", requestDto.getDashboardId(), requestDto.getDashboardId(), userId);
-        entityNames = Optional.empty();
-      }
-    } else {
-      entityNames = entitiesReader.getEntityNames(requestDto, locale);
-    }
+  public EntityNameResponseDto getEntityNames(final EntityNameRequestDto requestDto, final String locale) {
+    Optional<EntityNameResponseDto> entityNames = entitiesReader.getEntityNames(requestDto, locale);
+
     return entityNames.orElseThrow(() -> {
       String reason = String.format("Could not get entity names search request %s", requestDto);
       return new NotFoundException(reason);
