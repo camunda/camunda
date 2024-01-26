@@ -68,7 +68,7 @@ class TransactionalColumnFamily<
     this.context = context;
     this.keyInstance = keyInstance;
     this.valueInstance = valueInstance;
-    columnFamilyContext = new ColumnFamilyContext(columnFamily.ordinal());
+    columnFamilyContext = new ColumnFamilyContext(columnFamily.getValue());
     foreignKeyChecker = new ForeignKeyChecker(transactionDb, consistencyChecksSettings);
   }
 
