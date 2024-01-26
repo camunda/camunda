@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.jayway.jsonpath.ReadContext;
 import com.jayway.jsonpath.TypeRef;
+import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -17,7 +18,6 @@ import org.camunda.optimize.dto.optimize.ZeebeConfigDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.datasource.IngestedDataSourceDto;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.analytics.AnalyticsConfiguration;
 import org.camunda.optimize.service.util.configuration.archive.DataArchiveConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
@@ -245,24 +245,20 @@ public class ConfigurationService {
   }
 
   public static DatabaseType getDatabaseType(Environment environment) {
-    final String configuredProperty = environment.getProperty(CAMUNDA_OPTIMIZE_DATABASE);
+    final String configuredProperty = environment.getProperty(CAMUNDA_OPTIMIZE_DATABASE, ELASTICSEARCH_DATABASE_PROPERTY);
     return convertToDatabaseProperty(configuredProperty);
   }
 
-  public static DatabaseType convertToDatabaseProperty(final String configuredProperty) {
-    if (configuredProperty != null) {
-      if (configuredProperty.equalsIgnoreCase(OPENSEARCH_DATABASE_PROPERTY)) {
-        return DatabaseType.OPENSEARCH;
-      } else if (configuredProperty.equalsIgnoreCase(ELASTICSEARCH_DATABASE_PROPERTY)) {
-        return DatabaseType.ELASTICSEARCH;
-      } else {
-        final String reason = String.format("Cannot start Optimize. Invalid database configured %s", configuredProperty);
-        log.error(reason);
-        throw new OptimizeConfigurationException(reason);
-      }
+  public static DatabaseType convertToDatabaseProperty(final @NonNull String configuredProperty) {
+    if (configuredProperty.equalsIgnoreCase(ELASTICSEARCH_DATABASE_PROPERTY)) {
+      return DatabaseType.ELASTICSEARCH;
+    } else if (configuredProperty.equalsIgnoreCase(OPENSEARCH_DATABASE_PROPERTY)) {
+      return DatabaseType.OPENSEARCH;
+    } else {
+      final String reason = String.format("Cannot start Optimize. Invalid database configured %s", configuredProperty);
+      log.error(reason);
+      throw new OptimizeConfigurationException(reason);
     }
-    log.info("The database type was not specified. Reverting to default of Elasticsearch");
-    return DatabaseType.ELASTICSEARCH;
   }
 
   public ElasticSearchConfiguration getElasticSearchConfiguration() {
