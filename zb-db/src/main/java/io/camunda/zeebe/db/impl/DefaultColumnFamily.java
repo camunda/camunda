@@ -7,10 +7,23 @@
  */
 package io.camunda.zeebe.db.impl;
 
+import io.camunda.zeebe.protocol.EnumValue;
+
 /**
  * Contains only one column family {@link #DEFAULT}, which can be used for tests or simple
  * databases.
  */
-public enum DefaultColumnFamily {
-  DEFAULT
+public enum DefaultColumnFamily implements EnumValue {
+  DEFAULT(0);
+
+  private final int value;
+
+  DefaultColumnFamily(final int value) {
+    this.value = value;
+  }
+
+  @Override
+  public int getValue() {
+    return value;
+  }
 }

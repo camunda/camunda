@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.db;
 
+import io.camunda.zeebe.protocol.EnumValue;
 import java.io.File;
 
 /**
@@ -15,7 +16,7 @@ import java.io.File;
  *
  * @param <ColumnFamilyNames> the names of the column families
  */
-public interface ZeebeDbFactory<ColumnFamilyNames extends Enum<ColumnFamilyNames>> {
+public interface ZeebeDbFactory<ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue> {
 
   /**
    * Creates a zeebe database in the given directory.
