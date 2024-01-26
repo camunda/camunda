@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.db;
 
+import io.camunda.zeebe.protocol.EnumValue;
 import java.io.File;
 import java.util.Optional;
 
@@ -19,7 +20,8 @@ import java.util.Optional;
  * If the column family instances are created they are type save, which makes it possible that only
  * the defined key and value types are stored in the column family.
  */
-public interface ZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType>> extends AutoCloseable {
+public interface ZeebeDb<ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue>
+    extends AutoCloseable {
 
   /**
    * Creates an instance of a specific column family to access and store key-value pairs in that
