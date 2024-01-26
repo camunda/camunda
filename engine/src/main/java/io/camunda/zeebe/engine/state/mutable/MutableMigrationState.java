@@ -46,4 +46,6 @@ public interface MutableMigrationState extends MigrationState {
   void migrateJobStateForMultiTenancy();
 
   void migrateSignalSubscriptionStateForMultiTenancy();
+
+  void correctColumnFamilyPrefix();
 }
