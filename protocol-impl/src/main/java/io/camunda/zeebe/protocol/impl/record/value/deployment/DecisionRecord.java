@@ -21,15 +21,15 @@ import org.agrona.DirectBuffer;
 
 public final class DecisionRecord extends UnifiedRecordValue implements DecisionRecordValue {
 
-  private final StringProperty decisionIdProp = new StringProperty("decisionId");
-  private final StringProperty decisionNameProp = new StringProperty("decisionName");
-  private final IntegerProperty versionProp = new IntegerProperty("version");
-  private final LongProperty decisionKeyProp = new LongProperty("decisionKey");
+  private final StringProperty decisionIdProp = new StringProperty("decisionId", "");
+  private final StringProperty decisionNameProp = new StringProperty("decisionName", "");
+  private final IntegerProperty versionProp = new IntegerProperty("version", -1);
+  private final LongProperty decisionKeyProp = new LongProperty("decisionKey", -1);
 
   private final StringProperty decisionRequirementsIdProp =
-      new StringProperty("decisionRequirementsId");
+      new StringProperty("decisionRequirementsId", "");
   private final LongProperty decisionRequirementsKeyProp =
-      new LongProperty("decisionRequirementsKey");
+      new LongProperty("decisionRequirementsKey", -1);
 
   private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
   private final StringProperty tenantIdProp =
