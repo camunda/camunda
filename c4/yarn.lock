@@ -1981,15 +1981,15 @@ __metadata:
   linkType: hard
 
 "@carbon/icons-react@npm:^11.28.0":
-  version: 11.34.0
-  resolution: "@carbon/icons-react@npm:11.34.0"
+  version: 11.34.1
+  resolution: "@carbon/icons-react@npm:11.34.1"
   dependencies:
     "@carbon/icon-helpers": "npm:^10.45.0"
     "@carbon/telemetry": "npm:0.1.0"
     prop-types: "npm:^15.7.2"
   peerDependencies:
     react: ">=16"
-  checksum: f3e32f6ec846af545c203c08674999bb259d57a0a583ba7c23b13358de9e9e874858662a70952350e6ed8e9668900288827b8561fccd7345d21ef9e45051b028
+  checksum: adc89576f3d15f4347084836fc3367fc3d475a64d32916842506612518e33fd75360d41a061b1bbb618a9df8ed4803fe45b919d88c5b728ac111fd86c4388675
   languageName: node
   linkType: hard
 
