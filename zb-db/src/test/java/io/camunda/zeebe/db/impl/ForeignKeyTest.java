@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
+import io.camunda.zeebe.protocol.EnumValue;
 import org.junit.jupiter.api.Test;
 
 final class ForeignKeyTest {
@@ -72,7 +73,18 @@ final class ForeignKeyTest {
     assertThat(tenantAwareKey.containedForeignKeys()).containsExactly(key1, key2);
   }
 
-  private enum TestColumnFamilies {
-    TEST_COLUMN_FAMILY
+  private enum TestColumnFamilies implements EnumValue {
+    TEST_COLUMN_FAMILY(0);
+
+    private final int value;
+
+    TestColumnFamilies(final int value) {
+      this.value = value;
+    }
+
+    @Override
+    public int getValue() {
+      return value;
+    }
   }
 }

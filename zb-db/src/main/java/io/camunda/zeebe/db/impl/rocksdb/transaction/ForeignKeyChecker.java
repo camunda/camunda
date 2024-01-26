@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.ZeebeDbConstants;
+import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.nio.ByteBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -49,7 +50,8 @@ public final class ForeignKeyChecker {
       return;
     }
 
-    keyBuffer.putLong(0, foreignKey.columnFamily().ordinal(), ZeebeDbConstants.ZB_DB_BYTE_ORDER);
+    final int columnFamilyValue = ((EnumValue) foreignKey.columnFamily()).getValue();
+    keyBuffer.putLong(0, columnFamilyValue, ZeebeDbConstants.ZB_DB_BYTE_ORDER);
     foreignKey.write(keyBuffer, Long.BYTES);
     final var keyBufferLength = Long.BYTES + foreignKey.getLength();
 
