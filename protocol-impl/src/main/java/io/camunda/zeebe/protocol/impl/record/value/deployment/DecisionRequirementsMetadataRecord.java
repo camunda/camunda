@@ -20,22 +20,23 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class DecisionRequirementsMetadataRecord extends UnifiedRecordValue
     implements DecisionRequirementsMetadataValue {
 
   private final StringProperty decisionRequirementsIdProp =
-      new StringProperty("decisionRequirementsId");
+      new StringProperty("decisionRequirementsId", "");
   private final StringProperty decisionRequirementsNameProp =
-      new StringProperty("decisionRequirementsName");
+      new StringProperty("decisionRequirementsName", "");
   private final IntegerProperty decisionRequirementsVersionProp =
-      new IntegerProperty("decisionRequirementsVersion");
+      new IntegerProperty("decisionRequirementsVersion", -1);
   private final LongProperty decisionRequirementsKeyProp =
-      new LongProperty("decisionRequirementsKey");
-  private final StringProperty namespaceProp = new StringProperty("namespace");
+      new LongProperty("decisionRequirementsKey", -1);
+  private final StringProperty namespaceProp = new StringProperty("namespace", "");
 
-  private final StringProperty resourceNameProp = new StringProperty("resourceName");
-  private final BinaryProperty checksumProp = new BinaryProperty("checksum");
+  private final StringProperty resourceNameProp = new StringProperty("resourceName", "");
+  private final BinaryProperty checksumProp = new BinaryProperty("checksum", new UnsafeBuffer());
 
   private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
   private final StringProperty tenantIdProp =
