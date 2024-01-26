@@ -10,6 +10,7 @@ package io.camunda.zeebe.db.impl;
 import io.camunda.zeebe.db.ContainsForeignKeys;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.protocol.EnumValue;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Predicate;
@@ -25,14 +26,15 @@ import org.agrona.MutableDirectBuffer;
  * @param <K>
  */
 public record DbForeignKey<K extends DbKey>(
-    K inner, Enum<?> columnFamily, MatchType match, Predicate<K> skip)
+    K inner, Enum<? extends EnumValue> columnFamily, MatchType match, Predicate<K> skip)
     implements DbKey, DbValue, ContainsForeignKeys {
 
-  public DbForeignKey(final K inner, final Enum<?> columnFamily) {
+  public DbForeignKey(final K inner, final Enum<? extends EnumValue> columnFamily) {
     this(inner, columnFamily, MatchType.Full);
   }
 
-  public DbForeignKey(final K inner, final Enum<?> columnFamily, final MatchType match) {
+  public DbForeignKey(
+      final K inner, final Enum<? extends EnumValue> columnFamily, final MatchType match) {
     this(inner, columnFamily, match, (k) -> false);
   }
 
