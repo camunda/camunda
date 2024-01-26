@@ -21,7 +21,6 @@ import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePublishMessage;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeScript;
@@ -30,9 +29,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.function.Function;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 
 public final class ZeebeDesignTimeValidators {
@@ -90,15 +87,7 @@ public final class ZeebeDesignTimeValidators {
         ZeebeElementValidator.verifyThat(ZeebeSubscription.class)
             .hasNonEmptyAttribute(
                 ZeebeSubscription::getCorrelationKey, ZeebeConstants.ATTRIBUTE_CORRELATION_KEY));
-    validators.add(
-        ZeebeElementValidator.verifyThat(ZeebeFormDefinition.class)
-            .hasOnlyOneAttributeInGroup(
-                new HashMap<String, Function<ZeebeFormDefinition, String>>() {
-                  {
-                    put(ZeebeConstants.ATTRIBUTE_FORM_KEY, ZeebeFormDefinition::getFormKey);
-                    put(ZeebeConstants.ATTRIBUTE_FORM_ID, ZeebeFormDefinition::getFormId);
-                  }
-                }));
+    validators.add(new ZeebeFormDefinitionValidator());
     validators.add(new ZeebeUserTaskFormValidator());
     validators.add(
         ZeebeElementValidator.verifyThat(ZeebeCalledDecision.class)

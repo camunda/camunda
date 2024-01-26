@@ -22,6 +22,7 @@ import static java.util.Collections.singletonList;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
+import java.util.Arrays;
 import org.junit.runners.Parameterized.Parameters;
 
 public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
@@ -29,6 +30,9 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
   @Parameters(name = "{index}: {1}")
   public static Object[][] parameters() {
     return new Object[][] {
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////// Job-based user tasks ///////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
@@ -57,8 +61,60 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .userTask("task")
+            .zeebeExternalReference("")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, formKey' must be present and not blank"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
             .zeebeFormId("")
             .zeebeFormKey("")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, formKey' must be present and not blank"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeFormId("")
+            .zeebeExternalReference("")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, formKey' must be present and not blank"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeFormKey("")
+            .zeebeExternalReference("")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, formKey' must be present and not blank"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeFormId("")
+            .zeebeFormKey("")
+            .zeebeExternalReference("")
             .endEvent()
             .done(),
         singletonList(
@@ -83,6 +139,106 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .userTask("task")
+            .zeebeFormId("form-id")
+            .zeebeExternalReference("reference")
+            .endEvent()
+            .done(),
+        EMPTY_LIST
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeFormKey("form-key")
+            .zeebeExternalReference("reference")
+            .endEvent()
+            .done(),
+        EMPTY_LIST
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeFormId("form-id")
+            .zeebeFormKey("form-key")
+            .zeebeExternalReference("reference")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, formKey' must be present and not blank"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeFormId(" ")
+            .zeebeFormKey("form-key")
+            .endEvent()
+            .done(),
+        EMPTY_LIST
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeFormId("form-id")
+            .zeebeFormKey(" ")
+            .endEvent()
+            .done(),
+        EMPTY_LIST
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeFormId(" ")
+            .zeebeExternalReference("reference")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, formKey' must be present and not blank"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeFormId("form-id")
+            .zeebeExternalReference(" ")
+            .endEvent()
+            .done(),
+        EMPTY_LIST
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeFormKey(" ")
+            .zeebeExternalReference("reference")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, formKey' must be present and not blank"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeFormKey("form-key")
+            .zeebeExternalReference(" ")
+            .endEvent()
+            .done(),
+        EMPTY_LIST
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
             .zeebeFormId(" ")
             .endEvent()
             .done(),
@@ -96,6 +252,18 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
             .startEvent()
             .userTask("task")
             .zeebeFormKey(" ")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, formKey' must be present and not blank"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeExternalReference(" ")
             .endEvent()
             .done(),
         singletonList(
@@ -131,6 +299,18 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .userTask("task")
+            .zeebeExternalReference("  ")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, formKey' must be present and not blank"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
             .zeebeUserTaskForm("")
             .endEvent()
             .done(),
@@ -153,6 +333,295 @@ public class ZeebeTaskValidatorFormTest extends AbstractZeebeValidationTest {
             .startEvent()
             .userTask("task")
             .zeebeFormKey("form-key")
+            .endEvent()
+            .done(),
+        EMPTY_LIST
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeExternalReference("reference")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, formKey' must be present and not blank"))
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////// Native user tasks ////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeUserTask()
+            .zeebeFormKey("")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, externalReference' must be present and not blank for native user tasks"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeUserTask()
+            .zeebeFormId("")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, externalReference' must be present and not blank for native user tasks"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeUserTask()
+            .zeebeExternalReference("")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, externalReference' must be present and not blank for native user tasks"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeUserTask()
+            .zeebeFormId("")
+            .zeebeFormKey("")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, externalReference' must be present and not blank for native user tasks"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeUserTask()
+            .zeebeFormId("")
+            .zeebeExternalReference("")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, externalReference' must be present and not blank for native user tasks"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeUserTask()
+            .zeebeFormKey("")
+            .zeebeExternalReference("")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, externalReference' must be present and not blank for native user tasks"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeUserTask()
+            .zeebeFormId("")
+            .zeebeFormKey("")
+            .zeebeExternalReference("")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, externalReference' must be present and not blank for native user tasks"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeUserTask()
+            .zeebeFormId("form-id")
+            .zeebeFormKey("form-key")
+            .endEvent()
+            .done(),
+        EMPTY_LIST
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeUserTask()
+            .zeebeFormId("form-id")
+            .zeebeExternalReference("reference")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, externalReference' must be present and not blank for native user tasks"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeUserTask()
+            .zeebeFormKey("form-key")
+            .zeebeExternalReference("reference")
+            .endEvent()
+            .done(),
+        EMPTY_LIST
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeUserTask()
+            .zeebeFormId("form-id")
+            .zeebeFormKey("form-key")
+            .zeebeExternalReference("reference")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, externalReference' must be present and not blank for native user tasks"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeUserTask()
+            .zeebeFormId(" ")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, externalReference' must be present and not blank for native user tasks"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeUserTask()
+            .zeebeFormKey(" ")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, externalReference' must be present and not blank for native user tasks"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeUserTask()
+            .zeebeExternalReference(" ")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, externalReference' must be present and not blank for native user tasks"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeUserTask()
+            .zeebeFormId("  ")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, externalReference' must be present and not blank for native user tasks"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeUserTask()
+            .zeebeFormKey("  ")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, externalReference' must be present and not blank for native user tasks"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeUserTask()
+            .zeebeExternalReference("  ")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, externalReference' must be present and not blank for native user tasks"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeUserTask()
+            .zeebeUserTaskForm("")
+            .endEvent()
+            .done(),
+        Arrays.asList(
+            expect(
+                ZeebeUserTaskForm.class,
+                "User task form text content has to be present and not empty"),
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, externalReference' must be present and not blank for native user tasks"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeUserTask()
+            .zeebeFormId("form-id")
+            .endEvent()
+            .done(),
+        EMPTY_LIST
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeUserTask()
+            .zeebeFormKey("form-key")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeFormDefinition.class,
+                "Exactly one of the attributes 'formId, externalReference' must be present and not blank for native user tasks"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task")
+            .zeebeUserTask()
+            .zeebeExternalReference("reference")
             .endEvent()
             .done(),
         EMPTY_LIST
