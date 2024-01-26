@@ -89,11 +89,12 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
     compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
     stateTransitionBehavior
         .transitionToCompleted(element, context)
-        .ifRight(
-            completionContext -> {
+        .ifRightOrLeft(
+            completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(context, element);
-              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completionContext);
-            });
+              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+            },
+            failure -> incidentBehavior.createIncident(failure, context));
   }
 
   @Override
