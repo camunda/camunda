@@ -11,10 +11,11 @@ import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.protocol.EnumValue;
 
 public final class DefaultZeebeDbFactory {
 
-  public static <ColumnFamilyType extends Enum<ColumnFamilyType>>
+  public static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue>
       ZeebeDbFactory<ColumnFamilyType> getDefaultFactory() {
     // enable consistency checks for tests
     final var consistencyChecks = new ConsistencyChecksSettings(true, true);

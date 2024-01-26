@@ -17,6 +17,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
+import io.camunda.zeebe.protocol.EnumValue;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -40,7 +41,7 @@ import org.rocksdb.RocksIterator;
  * </ul>
  */
 class TransactionalColumnFamily<
-        ColumnFamilyNames extends Enum<ColumnFamilyNames>,
+        ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue,
         KeyType extends DbKey,
         ValueType extends DbValue>
     implements ColumnFamily<KeyType, ValueType> {
