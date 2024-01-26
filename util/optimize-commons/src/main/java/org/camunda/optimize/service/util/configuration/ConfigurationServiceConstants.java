@@ -122,6 +122,7 @@ public class ConfigurationServiceConstants {
   public static final String CONTAINER_ENABLE_SNI_CHECK = "$.container.enableSniCheck";
   public static final String CONTAINER_HTTPS_PORT = "$.container.ports.https";
   public static final String CONTAINER_HTTP_PORT = "$.container.ports.http";
+  public static final String CONTAINER_HTTP2_ENABLED = "$.container.http2Enabled";
 
   public static final String CONTAINER_ACTUATOR_PORT = "$.container.ports.actuator";
   public static final String CONTAINER_STATUS_MAX_CONNECTIONS = "$.container.status.connections.max";

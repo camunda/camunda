@@ -134,6 +134,8 @@ container:
   maxRequestHeaderSizeInBytes: ${CAMUNDA_OPTIMIZE_CONTAINER_MAX_REQUEST_HEADER_SIZE_BYTES:8192}
   # Maximum size of a single response header. Note that higher values consume more memory
   maxResponseHeaderSizeInBytes: ${CAMUNDA_OPTIMIZE_CONTAINER_MAX_RESPONSE_HEADER_SIZE_BYTES:8192}
+  # Enable HTTP/2 support
+  http2Enabled: ${CAMUNDA_OPTIMIZE_CONTAINER_HTTP2_ENABLED:false}
 
 # Configuration for fetching user data
 users:

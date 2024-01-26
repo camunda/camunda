@@ -140,6 +140,7 @@ public class ConfigurationService {
   private Boolean containerEnableSniCheck;
   private Integer containerHttpsPort;
   private Integer actuatorPort;
+  private Boolean containerHttp2Enabled;
 
   // we use optional field here in order to allow restoring defaults with BeanUtils.copyProperties
   // if only the getter is of type Optional the value won't get reset properly
@@ -711,6 +712,15 @@ public class ConfigurationService {
       );
     }
     return containerEnableSniCheck;
+  }
+
+  public Boolean getContainerHttp2Enabled() {
+    if (containerHttp2Enabled == null) {
+      containerHttp2Enabled = configJsonContext.read(
+              ConfigurationServiceConstants.CONTAINER_HTTP2_ENABLED, Boolean.class
+      );
+    }
+    return containerHttp2Enabled;
   }
 
   public Integer getContainerHttpsPort() {
