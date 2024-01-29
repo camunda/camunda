@@ -161,11 +161,38 @@ public final class NativeUserTaskTest {
   }
 
   @Test
+  public void shouldPickUpCustomFormForUserTask() {
+    // given
+    final String externalReference = "http://example.com/my-external-form";
+
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeExternalReference(externalReference)))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<UserTaskRecordValue> userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(userTask.getValue())
+        .hasFormKey(-1L)
+        .hasExternalReference(externalReference);
+  }
+
+  @Test
   public void shouldNotPickUpEmbeddedFormForUserTask() {
     // given
     final String formKey = Strings.newRandomValidBpmnId();
 
-    ENGINE.deployment().withXmlResource(process(t -> t.zeebeFormKey(formKey))).deploy();
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeFormKey(formKey).zeebeExternalReference("foo")))
+        .deploy();
 
     // when
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -186,7 +213,9 @@ public final class NativeUserTaskTest {
 
     ENGINE
         .deployment()
-        .withXmlResource(process(t -> t.zeebeUserTaskForm(formKey, "User Task Form")))
+        .withXmlResource(
+            process(
+                t -> t.zeebeUserTaskForm(formKey, "User Task Form").zeebeExternalReference("foo")))
         .deploy();
 
     // when
