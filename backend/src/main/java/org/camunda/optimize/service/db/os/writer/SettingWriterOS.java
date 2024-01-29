@@ -45,7 +45,7 @@ public class SettingWriterOS implements SettingsWriter {
     final UpdateRequest.Builder<SettingsResponseDto, Void> request = createSettingsUpsert(settingsDto);
 
     final String errorMessage = "There were errors while writing settings to OpenSearch.";
-    osClient.update(request, errorMessage);
+    osClient.upsert(request, SettingsResponseDto.class, e -> errorMessage);
   }
 
   private UpdateRequest.Builder<SettingsResponseDto, Void> createSettingsUpsert(final SettingsResponseDto settingsDto) {

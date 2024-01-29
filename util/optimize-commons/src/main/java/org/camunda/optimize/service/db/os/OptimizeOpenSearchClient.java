@@ -61,10 +61,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.db.DatabaseConstants.GB_UNIT;
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static org.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.getRequestBuilder;
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 
@@ -111,16 +113,36 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return richOpenSearchClient.doc().get(requestBuilder, responseClass, e -> errorMessage);
   }
 
+  public final <T> GetResponse<T> get(final String index,
+                                      final String id,
+                                      final Class<T> responseClass,
+                                      final String errorMessage) {
+    var requestBuilder = getRequestBuilder(index).id(id);
+    return get(requestBuilder, responseClass, errorMessage);
+  }
+
+  public DeleteResponse delete(final DeleteRequest.Builder requestBuilder, Function<Exception, String> errorMessageSupplier) {
+    return richOpenSearchClient.doc().delete(requestBuilder, errorMessageSupplier);
+  }
+
   public DeleteResponse delete(final DeleteRequest.Builder requestBuilder, final String errorMessage) {
-    return richOpenSearchClient.doc().delete(requestBuilder, e -> errorMessage);
+    return delete(requestBuilder, e -> errorMessage);
   }
 
   public DeleteResponse delete(final String indexName, final String entityId) {
     return richOpenSearchClient.doc().delete(indexName, entityId);
   }
 
-  public UpdateResponse update(final UpdateRequest.Builder requestBuilder, final String errorMessage) {
-    return richOpenSearchClient.doc().update(requestBuilder, e -> errorMessage);
+  public <A, B> UpdateResponse<A> upsert(final UpdateRequest.Builder<A, B> requestBuilder, Class<A> clazz, Function<Exception, String> errorMessageSupplier) {
+    return richOpenSearchClient.doc().upsert(requestBuilder, clazz, errorMessageSupplier);
+  }
+
+  public <T> UpdateResponse<Void> update(final UpdateRequest.Builder<Void, T> requestBuilder, Function<Exception, String> errorMessageSupplier) {
+    return richOpenSearchClient.doc().update(requestBuilder, errorMessageSupplier);
+  }
+
+  public <T> UpdateResponse<Void> update(final UpdateRequest.Builder<Void, T> requestBuilder, final String errorMessage) {
+    return update(requestBuilder, e -> errorMessage);
   }
 
   public long deleteByQuery(final Query query, final boolean refresh, final String... index) {
@@ -232,6 +254,10 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return richOpenSearchClient.doc().scrollHits(requestBuilder, responseType);
   }
 
+  public <R> List<R> scrollValues(SearchRequest.Builder requestBuilder, Class<R> entityClass) {
+    return richOpenSearchClient.doc().scrollValues(requestBuilder, entityClass);
+  }
+
   @Override
   public org.elasticsearch.action.search.SearchResponse scroll(final SearchScrollRequest scrollRequest) throws IOException {
     //todo will be handle in the OPT-7469
@@ -254,6 +280,10 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
                                       final Class<T> responseType,
                                       final String errorMessage) {
     return richOpenSearchClient.doc().search(requestBuilder, responseType, e -> errorMessage);
+  }
+
+  public <R> List<R> searchValues(SearchRequest.Builder requestBuilder, Class<R> entityClass) {
+    return richOpenSearchClient.doc().searchValues(requestBuilder, entityClass);
   }
 
   @Override
@@ -294,7 +324,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       ))
     );
 
-    UpdateRequest.Builder updateReqBuilder = new UpdateRequest.Builder()
+    UpdateRequest.Builder<Void, Void> updateReqBuilder = new UpdateRequest.Builder<Void, Void>()
       .id(entityId)
       .index(indexName)
       .script(scr)

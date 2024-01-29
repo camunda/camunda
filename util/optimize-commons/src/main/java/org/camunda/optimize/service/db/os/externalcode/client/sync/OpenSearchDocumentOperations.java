@@ -422,6 +422,15 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     );
   }
 
+  public <A, B> UpdateResponse<A> upsert(final UpdateRequest.Builder<A, B> requestBuilder,
+                                         final Class<A> clazz,
+                                         final Function<Exception, String> errorMessageSupplier) {
+    return safe(
+      () -> openSearchClient.update(applyIndexPrefix(requestBuilder).build(), clazz),
+      errorMessageSupplier
+    );
+  }
+
   public DeleteResponse delete(DeleteRequest.Builder requestBuilder, Function<Exception, String> errorMessageSupplier) {
     return safe(
       () -> openSearchClient.delete(applyIndexPrefix(requestBuilder).build()),

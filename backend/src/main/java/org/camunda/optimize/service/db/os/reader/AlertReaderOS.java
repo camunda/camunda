@@ -8,16 +8,26 @@ package org.camunda.optimize.service.db.os.reader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
-import org.camunda.optimize.service.db.reader.AlertReader;
 import org.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
+import org.camunda.optimize.service.db.reader.AlertReader;
+import org.camunda.optimize.service.db.schema.index.AlertIndex;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
+import org.opensearch.client.opensearch.core.GetResponse;
+import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import static java.lang.String.format;
+import static org.camunda.optimize.service.db.DatabaseConstants.ALERT_INDEX_NAME;
+import static org.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
+import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.matchAll;
+import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.stringTerms;
+import static org.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.term;
+import static org.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.searchRequestBuilder;
 
 @RequiredArgsConstructor
 @Component
@@ -30,36 +40,50 @@ public class AlertReaderOS implements AlertReader {
 
   @Override
   public long getAlertCount() {
-    //todo will be handled in the OPT-7230
-    return 1L;
+    return osClient.count(ALERT_INDEX_NAME, "Was not able to retrieve alert count!");
   }
 
   @Override
   public List<AlertDefinitionDto> getStoredAlerts() {
-    //todo will be handled in the OPT-7230
-    return new ArrayList<>();
+    log.debug("getting all stored alerts");
+
+    SearchRequest.Builder requestBuilder = searchRequestBuilder(ALERT_INDEX_NAME)
+      .query(matchAll())
+      .size(LIST_FETCH_LIMIT);
+
+    return osClient.scrollValues(requestBuilder, AlertDefinitionDto.class);
   }
 
   @Override
   public Optional<AlertDefinitionDto> getAlert(String alertId) {
-    //todo will be handled in the OPT-7230
-    return Optional.empty();
+    log.debug("Fetching alert with id [{}]", alertId);
+
+    String errorMsg = format("Could not fetch alert with id [%s]", alertId);
+    GetResponse<AlertDefinitionDto> result = osClient.get(ALERT_INDEX_NAME, alertId, AlertDefinitionDto.class, errorMsg);
+
+    return result.found() ? Optional.ofNullable(result.source()) : Optional.empty();
   }
 
   @Override
   public List<AlertDefinitionDto> getAlertsForReport(String reportId) {
-    //todo will be handled in the OPT-7230
-    return new ArrayList<>();
+    log.debug("Fetching first {} alerts using report with id {}", LIST_FETCH_LIMIT, reportId);
+
+    SearchRequest.Builder requestBuilder = searchRequestBuilder(ALERT_INDEX_NAME)
+      .query(term(AlertIndex.REPORT_ID, reportId))
+      .size(LIST_FETCH_LIMIT);
+
+    return osClient.searchValues(requestBuilder, AlertDefinitionDto.class);
   }
 
   @Override
   public List<AlertDefinitionDto> getAlertsForReports(List<String> reportIds) {
-    //todo will be handled in the OPT-7230
-    return new ArrayList<>();
-  }
+    log.debug("Fetching first {} alerts using reports with ids {}", LIST_FETCH_LIMIT, reportIds);
 
-  private void logError(String alertId) {
-    log.error("Was not able to retrieve alert with id [{}] from Elasticsearch.", alertId);
+    SearchRequest.Builder requestBuilder = searchRequestBuilder(ALERT_INDEX_NAME)
+      .query(stringTerms(AlertIndex.REPORT_ID, reportIds))
+      .size(LIST_FETCH_LIMIT);
+
+    return osClient.searchValues(requestBuilder, AlertDefinitionDto.class);
   }
 
 }

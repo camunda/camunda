@@ -29,7 +29,7 @@ public interface EntitiesReader {
 
   List<CollectionEntity> getAllPrivateEntitiesForOwnerId(final String ownerId);
 
-  Map<String, Map<EntityType, Long>> countEntitiesForCollections(final List<? extends BaseCollectionDefinitionDto> collections);
+  Map<String, Map<EntityType, Long>> countEntitiesForCollections(final List<? extends BaseCollectionDefinitionDto<?>> collections);
 
   List<CollectionEntity> getAllEntitiesForCollection(final String collectionId);
 
@@ -38,10 +38,10 @@ public interface EntitiesReader {
   default String getLocalizedReportName(final LocalizationService localizationService,
                                         final CollectionEntity reportEntity,
                                         final String locale) {
-    if (reportEntity instanceof SingleProcessReportDefinitionRequestDto) {
-      if (((SingleProcessReportDefinitionRequestDto) reportEntity).getData().isInstantPreviewReport()) {
+    if (reportEntity instanceof SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionRequestDto) {
+      if (singleProcessReportDefinitionRequestDto.getData().isInstantPreviewReport()) {
         return localizationService.getLocalizationForInstantPreviewReportCode(locale, reportEntity.getName());
-      } else if (((SingleProcessReportDefinitionRequestDto) reportEntity).getData().isManagementReport()) {
+      } else if (singleProcessReportDefinitionRequestDto.getData().isManagementReport()) {
         return localizationService.getLocalizationForManagementReportCode(locale, reportEntity.getName());
       }
     }

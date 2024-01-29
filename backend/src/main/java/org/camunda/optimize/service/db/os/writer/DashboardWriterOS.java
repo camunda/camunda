@@ -114,7 +114,7 @@ public class DashboardWriterOS implements DashboardWriter {
       dashboard.getName()
     );
 
-    UpdateResponse<DashboardDefinitionUpdateDto> updateResponse = osClient.update(request, errorMessage);
+    UpdateResponse<Void> updateResponse = osClient.update(request, errorMessage);
 
     if (updateResponse.shards().failed().intValue() > 0) {
       log.error(

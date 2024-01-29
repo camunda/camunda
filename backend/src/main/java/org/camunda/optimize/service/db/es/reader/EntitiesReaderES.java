@@ -143,10 +143,10 @@ public class EntitiesReaderES implements EntitiesReader {
   }
 
   @Override
-  public Map<String, Map<EntityType, Long>> countEntitiesForCollections(final List<? extends BaseCollectionDefinitionDto> collections) {
+  public Map<String, Map<EntityType, Long>> countEntitiesForCollections(final List<? extends BaseCollectionDefinitionDto<?>> collections) {
     log.debug(
       "Counting all available entities for collection ids [{}]",
-      collections.stream().map(BaseCollectionDefinitionDto::getId).collect(Collectors.toList())
+      collections.stream().map(BaseCollectionDefinitionDto::getId).toList()
     );
 
     if (collections.isEmpty()) {
@@ -157,7 +157,7 @@ public class EntitiesReaderES implements EntitiesReader {
       COLLECTION_ID,
       collections.stream()
         .map(BaseCollectionDefinitionDto::getId)
-        .collect(Collectors.toList())
+        .toList()
     )).size(0);
 
     collections.forEach(collection -> {
@@ -181,7 +181,7 @@ public class EntitiesReaderES implements EntitiesReader {
       return searchResponse.getAggregations()
         .asList()
         .stream()
-        .map(agg -> (Filter) agg)
+        .map(Filter.class::cast)
         .map(collectionFilterAggregation -> new AbstractMap.SimpleEntry<>(
           collectionFilterAggregation.getName(),
           extractEntityIndexCounts(collectionFilterAggregation)
@@ -246,7 +246,7 @@ public class EntitiesReaderES implements EntitiesReader {
     );
   }
 
-  private long getDocCountForIndex(final Terms byIndexNameTerms, final IndexMappingCreator indexMapper) {
+  private long getDocCountForIndex(final Terms byIndexNameTerms, final IndexMappingCreator<?> indexMapper) {
     if (indexMapper.isCreateFromTemplate()) {
       throw new OptimizeRuntimeException("Cannot fetch the document count for indices created from template");
     }
@@ -283,7 +283,7 @@ public class EntitiesReaderES implements EntitiesReader {
     try {
       multiGetItemResponses = esClient.mget(request);
     } catch (IOException e) {
-      String reason = String.format("Could not get entity names search request %s", requestDto.toString());
+      String reason = String.format("Could not get entity names search request %s", requestDto);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }

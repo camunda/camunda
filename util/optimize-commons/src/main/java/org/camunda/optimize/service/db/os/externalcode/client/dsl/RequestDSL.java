@@ -62,6 +62,10 @@ public interface RequestDSL {
     return new DeleteRequest.Builder().index(index).id(id).refresh(Refresh.True);
   }
 
+  static DeleteByQueryRequest.Builder deleteByQueryRequestBuilder(String index) {
+    return new DeleteByQueryRequest.Builder().index(List.of(index));
+  }
+
   static DeleteByQueryRequest.Builder deleteByQueryRequestBuilder(List<String> indexes) {
     return new DeleteByQueryRequest.Builder().index(indexes);
   }
@@ -117,7 +121,7 @@ public interface RequestDSL {
     return new GetSnapshotRequest.Builder().repository(repository).snapshot(snapshot);
   }
 
-  static <A, R> UpdateRequest.Builder<R, A> updateRequestBuilder(String index) {
+  static <R, A> UpdateRequest.Builder<R, A> updateRequestBuilder(String index) {
     return new UpdateRequest.Builder<R, A>().index(index);
   }
 

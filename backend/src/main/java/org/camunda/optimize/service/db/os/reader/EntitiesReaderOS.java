@@ -142,7 +142,7 @@ public class EntitiesReaderOS implements EntitiesReader {
   }
 
   @Override
-  public Map<String, Map<EntityType, Long>> countEntitiesForCollections(final List<? extends BaseCollectionDefinitionDto> collections) {
+  public Map<String, Map<EntityType, Long>> countEntitiesForCollections(final List<? extends BaseCollectionDefinitionDto<?>> collections) {
     List<String> collectionIds = collections.stream().map(BaseCollectionDefinitionDto::getId).toList();
     log.debug(
       "Counting all available entities for collection ids [{}]",
@@ -263,7 +263,7 @@ public class EntitiesReaderOS implements EntitiesReader {
     );
   }
 
-  private long getDocCountForIndex(final Map<String, Long> keysDocToCount, final IndexMappingCreator indexMapper) {
+  private long getDocCountForIndex(final Map<String, Long> keysDocToCount, final IndexMappingCreator<?> indexMapper) {
     if (indexMapper.isCreateFromTemplate()) {
       throw new OptimizeRuntimeException("Cannot fetch the document count for indices created from template");
     }
