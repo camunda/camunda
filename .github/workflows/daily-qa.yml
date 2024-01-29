@@ -35,10 +35,10 @@ jobs:
       - run: git fetch --tags
       - run: |
           versions=$(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sed -E -e 's/\.[0-9]+$//' | sort -Vr | uniq)
-          latest=$(echo "$versions" | head -n1)
-          second_last=$(echo "$versions" | head -n2)
-          third_last=$(echo "$versions" | head -n3)
-          fourth_last=$(echo "$versions" | head -n4)
+          latest=$(echo "$versions" | head -n1 | tail -n1)
+          second_last=$(echo "$versions" | head -n2 | tail -n1)
+          third_last=$(echo "$versions" | head -n3 | tail -n1)
+          fourth_last=$(echo "$versions" | head -n4 | tail -n1)
           if [ ! -z $latest ] && [ ! -z $second_last ] && [ ! -z $third_last ] && [ ! -z $fourth_last ]; then
             echo "Successfully computed latest versions: ${latest} and ${second_last} and ${third_last} and ${fourth_last}"
           else
