@@ -24,6 +24,7 @@ const TasksPanel = styled(Stack)`
     min-width: ${rem(300)};
     max-width: ${rem(300)};
     height: 100%;
+    grid-template-rows: min-content 1fr min-content;
   `}
 `;
 

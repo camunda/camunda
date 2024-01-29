@@ -25,6 +25,9 @@ import {isRequestError} from 'modules/request';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {decodeTaskOpenedRef} from 'modules/utils/reftags';
 import {useTasks} from 'modules/queries/useTasks';
+import {useAutoSelectNextTask} from 'modules/auto-select-task/useAutoSelectNextTask';
+import {observer} from 'mobx-react-lite';
+import {autoSelectNextTaskStore} from 'modules/stores/autoSelectFirstTask';
 
 const CAMUNDA_FORMS_PREFIX = 'camunda-forms:bpmn:';
 
@@ -36,8 +39,8 @@ function getFormId(formKey: NonNullable<TaskType['formKey']>): string {
   return formKey.replace(CAMUNDA_FORMS_PREFIX, '');
 }
 
-const Task: React.FC = () => {
-  const {data, refetch: onCompleted} = useTasks();
+const Task: React.FC = observer(() => {
+  const {data, refetch: refetchAllTasks} = useTasks();
   const tasks = data?.pages.flat() ?? [];
   const hasRemainingTasks = tasks.length > 0;
   const {id} = useTaskDetailsParams();
@@ -52,6 +55,8 @@ const Task: React.FC = () => {
   const {mutateAsync: completeTask} = useCompleteTask();
   const {filter} = useTaskFilters();
   const {formKey, processDefinitionKey, formId, id: taskId} = task ?? {id};
+  const {enabled: autoSelectNextTaskEnabled} = autoSelectNextTaskStore;
+  const {goToTask: autoSelectGoToTask} = useAutoSelectNextTask();
 
   useEffect(() => {
     const search = new URLSearchParams(searchParams);
@@ -76,8 +81,6 @@ const Task: React.FC = () => {
       variables,
     });
 
-    onCompleted?.();
-
     tracking.track({
       eventName: 'task-completed',
       isCamundaForm: formKey ? isCamundaForms(formKey) : false,
@@ -92,12 +95,26 @@ const Task: React.FC = () => {
     });
   }
 
-  function handleSubmissionSuccess() {
+  async function handleSubmissionSuccess() {
     storeStateLocally('hasCompletedTask', true);
-    navigate({
-      pathname: pages.initial,
-      search: location.search,
-    });
+
+    if (autoSelectNextTaskEnabled) {
+      const newTasks = (await refetchAllTasks()).data?.pages[0] ?? [];
+      if (newTasks.length > 0) {
+        autoSelectGoToTask(tasks[0].id);
+      } else {
+        navigate({
+          pathname: pages.initial,
+          search: location.search,
+        });
+      }
+    } else {
+      refetchAllTasks();
+      navigate({
+        pathname: pages.initial,
+        search: location.search,
+      });
+    }
   }
 
   function handleSubmissionFailure(error: Error) {
@@ -150,7 +167,7 @@ const Task: React.FC = () => {
       )}
     </Details>
   );
-};
+});
 
 Task.displayName = 'Task';
 

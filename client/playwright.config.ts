@@ -17,6 +17,7 @@ const config: PlaywrightTestConfig = {
   testDir: './e2e',
   expect: {
     timeout: 10000,
+    toHaveScreenshot: {threshold: 0.1},
   },
   fullyParallel: !IS_E2E,
   forbidOnly: IS_CI,

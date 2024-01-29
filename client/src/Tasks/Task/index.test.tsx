@@ -31,6 +31,12 @@ vi.mock('modules/stores/notifications', () => ({
   },
 }));
 
+vi.mock('modules/stores/autoSelectFirstTask', () => ({
+  autoSelectNextTaskStore: {
+    enabled: false,
+  },
+}));
+
 const getWrapper = (
   initialEntries: React.ComponentProps<typeof MemoryRouter>['initialEntries'],
 ) => {

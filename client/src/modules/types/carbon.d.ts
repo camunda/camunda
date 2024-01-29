@@ -190,6 +190,23 @@ declare module '@carbon/react' {
     className?: string;
   }>;
 
+  export const Toggle: React.FC<{
+    'aria-labelledby'?: string;
+    id: string;
+    labelA?: string;
+    labelB?: string;
+    labelText?: string;
+    hideLabel?: boolean;
+    onClick?:
+      | React.MouseEventHandler<HTMLDivElement>
+      | React.KeyboardEventHandler<HTMLDivElement>;
+    onToggle?(checked: boolean): void;
+    size?: 'sm' | 'md';
+    readOnly?: boolean;
+    defaultToggled?: boolean;
+    toggled?: boolean;
+  }>;
+
   export const Copy: React.FunctionComponent<{
     children?: React.ReactNode;
     className?: string;

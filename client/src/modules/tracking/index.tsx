@@ -33,7 +33,7 @@ type Events =
     }
   | {
       eventName: 'task-opened';
-      by?: 'user';
+      by?: 'user' | 'auto-select';
       position?: number;
       filter?: TaskFilters['filter'];
       sorting?: TaskFilters['sortBy'];

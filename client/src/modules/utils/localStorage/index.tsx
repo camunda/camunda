@@ -13,6 +13,7 @@ const validators = {
   wasReloaded: z.boolean(),
   hasConsentedToStartProcess: z.boolean(),
   theme: z.enum(['light', 'dark', 'system']),
+  autoSelectNextTask: z.boolean(),
 } as const;
 
 type Validators = typeof validators;

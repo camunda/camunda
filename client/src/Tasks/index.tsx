@@ -8,10 +8,71 @@
 import {Container, TasksPanel, DetailsPanel} from './styled';
 import {Filters} from './Filters';
 import {AvailableTasks} from './AvailableTasks';
-import {Outlet} from 'react-router-dom';
+import {Outlet, useLocation} from 'react-router-dom';
 import {useTasks} from 'modules/queries/useTasks';
+import {Options} from './Options';
+import {useEffect, useMemo, useState} from 'react';
+import {useTaskFilters} from 'modules/hooks/useTaskFilters';
+import {useAutoSelectNextTask} from 'modules/auto-select-task/useAutoSelectNextTask';
+import {observer} from 'mobx-react-lite';
+import {autoSelectNextTaskStore} from 'modules/stores/autoSelectFirstTask';
+import {pages} from 'modules/routing';
 
-const Tasks: React.FC = () => {
+function useAutoSelectNextTaskSideEffects() {
+  const {enabled} = autoSelectNextTaskStore;
+  const {isLoading, isFetching, data} = useTasks();
+  const {filter, sortBy} = useTaskFilters();
+  const location = useLocation();
+  const tasks = useMemo(() => data?.pages[0] ?? [], [data?.pages]);
+
+  const {goToTask} = useAutoSelectNextTask();
+
+  // We cannot call `navigate` during a render, we need to defer this with useEffect
+
+  // If the filters change, pick the first task when we finish fetching...
+  const filters = [filter, sortBy].join(' ');
+  const [previousFilters, setPreviousFilters] = useState<string>(filters);
+  useEffect(() => {
+    if (previousFilters !== filters && !isFetching) {
+      setPreviousFilters(filters);
+      if (
+        enabled &&
+        tasks.length > 0 &&
+        location.pathname !== pages.taskDetails(tasks[0].id)
+      ) {
+        goToTask(tasks[0].id);
+      }
+    }
+  }, [
+    enabled,
+    filters,
+    goToTask,
+    isFetching,
+    location.pathname,
+    previousFilters,
+    tasks,
+  ]);
+
+  // If we are on the initial page, when we finish loading tasks...
+  const [isFinishedLoading, setIsFinishedLoading] = useState(false);
+  useEffect(() => {
+    if (!isFinishedLoading && !isLoading) {
+      setIsFinishedLoading(true);
+      if (enabled && tasks.length > 0 && location.pathname === pages.initial) {
+        goToTask(tasks[0].id);
+      }
+    }
+  }, [
+    location.pathname,
+    tasks,
+    isLoading,
+    isFinishedLoading,
+    enabled,
+    goToTask,
+  ]);
+}
+
+const Tasks: React.FC = observer(() => {
   const {
     fetchPreviousTasks,
     fetchNextTasks,
@@ -20,6 +81,16 @@ const Tasks: React.FC = () => {
     data,
   } = useTasks();
   const tasks = data?.pages.flat() ?? [];
+
+  useAutoSelectNextTaskSideEffects();
+
+  const {goToTask: autoSelectGoToTask} = useAutoSelectNextTask();
+
+  const onAutoSelectToggle = (state: boolean) => {
+    if (state && tasks.length > 0 && location.pathname === pages.initial) {
+      autoSelectGoToTask(tasks[0].id);
+    }
+  };
 
   return (
     <Container>
@@ -31,13 +102,14 @@ const Tasks: React.FC = () => {
           onScrollUp={fetchPreviousTasks}
           tasks={tasks}
         />
+        <Options onAutoSelectToggle={onAutoSelectToggle} />
       </TasksPanel>
       <DetailsPanel>
         <Outlet />
       </DetailsPanel>
     </Container>
   );
-};
+});
 
 Tasks.displayName = 'Tasks';
 
