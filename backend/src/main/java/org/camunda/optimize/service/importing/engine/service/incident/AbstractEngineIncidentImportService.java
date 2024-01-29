@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentType;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -29,17 +30,21 @@ public abstract class AbstractEngineIncidentImportService implements ImportServi
   protected DatabaseImportJobExecutor databaseImportJobExecutor;
   protected EngineContext engineContext;
   protected final ConfigurationService configurationService;
+  protected final DatabaseClient databaseClient;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
+
 
   protected AbstractEngineIncidentImportService(final ConfigurationService configurationService,
                                                 final EngineContext engineContext,
-                                                final ProcessDefinitionResolverService processDefinitionResolverService) {
+                                                final ProcessDefinitionResolverService processDefinitionResolverService,
+                                                final DatabaseClient databaseClient) {
     this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.engineContext = engineContext;
     this.processDefinitionResolverService = processDefinitionResolverService;
     this.configurationService = configurationService;
+    this.databaseClient = databaseClient;
   }
 
   @Override

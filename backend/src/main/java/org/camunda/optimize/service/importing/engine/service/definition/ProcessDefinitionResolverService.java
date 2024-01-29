@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import org.springframework.stereotype.Component;
 
@@ -21,6 +22,7 @@ import java.util.function.Function;
 @Slf4j
 public class ProcessDefinitionResolverService extends AbstractDefinitionResolverService<ProcessDefinitionOptimizeDto> {
 
+  protected final DatabaseClient databaseClient;
   private final ProcessDefinitionReader processDefinitionReader;
 
   @Override

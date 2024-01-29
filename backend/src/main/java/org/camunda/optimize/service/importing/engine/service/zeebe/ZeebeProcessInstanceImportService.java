@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.db.writer.ZeebeProcessInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -52,8 +53,9 @@ public class ZeebeProcessInstanceImportService
   public ZeebeProcessInstanceImportService(final ConfigurationService configurationService,
                                            final ZeebeProcessInstanceWriter processInstanceWriter,
                                            final int partitionId,
-                                           final ProcessDefinitionReader processDefinitionReader) {
-    super(configurationService, processInstanceWriter, partitionId, processDefinitionReader);
+                                           final ProcessDefinitionReader processDefinitionReader,
+                                           final DatabaseClient databaseClient) {
+    super(configurationService, processInstanceWriter, partitionId, processDefinitionReader, databaseClient);
   }
 
   @Override

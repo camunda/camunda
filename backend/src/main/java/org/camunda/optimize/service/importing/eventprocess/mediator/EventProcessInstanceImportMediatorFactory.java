@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.EventProcessEventDt
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventSourceType;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.reader.BusinessKeyReader;
 import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.db.reader.VariableUpdateInstanceReader;
@@ -45,6 +46,7 @@ public class EventProcessInstanceImportMediatorFactory {
   private final ProcessDefinitionReader processDefinitionReader;
   private final VariableUpdateInstanceReader variableUpdateInstanceReader;
   private final BusinessKeyReader businessKeyReader;
+  private final DatabaseClient databaseClient;
 
   @SuppressWarnings(UNCHECKED_CAST)
   public <T extends EventProcessEventDto> List<EventProcessInstanceImportMediator<T>> createEventProcessInstanceMediators(
@@ -88,7 +90,8 @@ public class EventProcessInstanceImportMediatorFactory {
     return new EventProcessInstanceImportService(
       configurationService,
       eventProcessPublishStateDto,
-      eventProcessInstanceWriterFactory.createEventProcessInstanceWriter(eventProcessPublishStateDto)
+      eventProcessInstanceWriterFactory.createEventProcessInstanceWriter(eventProcessPublishStateDto),
+      databaseClient
     );
   }
 

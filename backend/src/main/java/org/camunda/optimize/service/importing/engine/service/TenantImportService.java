@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.TenantEngineDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.TenantWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
@@ -20,18 +21,22 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class TenantImportService implements ImportService<TenantEngineDto> {
+
   private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final EngineContext engineContext;
   private final TenantWriter tenantWriter;
+  private final DatabaseClient databaseClient;
 
   public TenantImportService(final ConfigurationService configurationService,
                              final EngineContext engineContext,
-                             final TenantWriter tenantWriter) {
+                             final TenantWriter tenantWriter,
+                             final DatabaseClient databaseClient) {
     this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.engineContext = engineContext;
     this.tenantWriter = tenantWriter;
+    this.databaseClient = databaseClient;
   }
 
   @Override
@@ -60,10 +65,11 @@ public class TenantImportService implements ImportService<TenantEngineDto> {
   }
 
   private DatabaseImportJob<TenantDto> createDatabaseImportJob(final List<TenantDto> tenantDtos,
-                                                                    final Runnable importCompleteCallback) {
+                                                               final Runnable importCompleteCallback) {
     final TenantDatabaseImportJob importJob = new TenantDatabaseImportJob(
       tenantWriter,
-      importCompleteCallback
+      importCompleteCallback,
+      databaseClient
     );
     importJob.setEntitiesToImport(tenantDtos);
     return importJob;

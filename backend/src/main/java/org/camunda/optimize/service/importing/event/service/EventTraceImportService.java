@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing.event.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import org.camunda.optimize.service.importing.job.EventCountAndTracesImportJob;
 import org.camunda.optimize.service.events.EventTraceStateService;
@@ -20,13 +21,16 @@ public class EventTraceImportService implements ImportService<EventDto> {
 
   private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final EventTraceStateService eventTraceStateService;
+  private final DatabaseClient databaseClient;
 
   public EventTraceImportService(final ConfigurationService configurationService,
-                                 final EventTraceStateService eventTraceStateService) {
+                                 final EventTraceStateService eventTraceStateService,
+                                 final DatabaseClient databaseClient) {
     this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.eventTraceStateService = eventTraceStateService;
+    this.databaseClient = databaseClient;
   }
 
   @Override
@@ -52,7 +56,7 @@ public class EventTraceImportService implements ImportService<EventDto> {
   private EventCountAndTracesImportJob createDatabaseImportJob(final List<EventDto> events,
                                                                final Runnable callback) {
     final EventCountAndTracesImportJob importJob = new EventCountAndTracesImportJob(
-      eventTraceStateService, callback
+      eventTraceStateService, callback, databaseClient
     );
     importJob.setEntitiesToImport(events);
     return importJob;

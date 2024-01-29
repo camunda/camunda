@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.TenantWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
@@ -22,13 +23,15 @@ import java.util.List;
 
 @Component
 public class TenantImportMediatorFactory extends AbstractEngineImportMediatorFactory {
+
   private final TenantWriter tenantWriter;
 
   public TenantImportMediatorFactory(final BeanFactory beanFactory,
                                      final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                      final ConfigurationService configurationService,
-                                     final TenantWriter tenantWriter) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService);
+                                     final TenantWriter tenantWriter,
+                                     final DatabaseClient databaseClient) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService, databaseClient);
     this.tenantWriter = tenantWriter;
   }
 
@@ -42,7 +45,7 @@ public class TenantImportMediatorFactory extends AbstractEngineImportMediatorFac
     return new TenantImportMediator(
       importIndexHandlerRegistry.getTenantImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(TenantFetcher.class, engineContext),
-      new TenantImportService(configurationService, engineContext, tenantWriter),
+      new TenantImportService(configurationService, engineContext, tenantWriter, databaseClient),
       configurationService,
       new BackoffCalculator(configurationService)
     );

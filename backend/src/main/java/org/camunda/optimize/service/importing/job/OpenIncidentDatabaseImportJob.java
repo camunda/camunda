@@ -7,9 +7,9 @@ package org.camunda.optimize.service.importing.job;
 
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.incident.OpenIncidentWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
-import org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.ArrayList;
@@ -22,8 +22,9 @@ public class OpenIncidentDatabaseImportJob extends DatabaseImportJob<IncidentDto
 
   public OpenIncidentDatabaseImportJob(final OpenIncidentWriter openIncidentWriter,
                                        final ConfigurationService configurationService,
-                                       final Runnable callback) {
-    super(callback);
+                                       final Runnable callback,
+                                       final DatabaseClient databaseClient) {
+    super(callback, databaseClient);
     this.openIncidentWriter = openIncidentWriter;
     this.configurationService = configurationService;
   }
@@ -32,8 +33,7 @@ public class OpenIncidentDatabaseImportJob extends DatabaseImportJob<IncidentDto
   protected void persistEntities(List<IncidentDto> newOptimizeEntities) {
     final List<ImportRequestDto> importRequests =
       new ArrayList<>(openIncidentWriter.generateIncidentImports(newOptimizeEntities));
-    //todo handle it in the OPT-7228
-    ElasticsearchWriterUtil.executeImportRequestsAsBulk(
+    databaseClient.executeImportRequestsAsBulk(
       "Open incidents",
       importRequests,
       configurationService.getSkipDataAfterNestedDocLimitReached()

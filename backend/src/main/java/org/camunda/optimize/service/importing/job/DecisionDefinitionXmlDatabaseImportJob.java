@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.job;
 
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.DecisionDefinitionXmlWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 
@@ -16,8 +17,9 @@ public class DecisionDefinitionXmlDatabaseImportJob extends DatabaseImportJob<De
   private final DecisionDefinitionXmlWriter decisionDefinitionXmlWriter;
 
   public DecisionDefinitionXmlDatabaseImportJob(final DecisionDefinitionXmlWriter decisionDefinitionXmlWriter,
-                                                final Runnable importCompleteCallback) {
-    super(importCompleteCallback);
+                                                final Runnable importCompleteCallback,
+                                                final DatabaseClient databaseClient) {
+    super(importCompleteCallback, databaseClient);
     this.decisionDefinitionXmlWriter = decisionDefinitionXmlWriter;
   }
 

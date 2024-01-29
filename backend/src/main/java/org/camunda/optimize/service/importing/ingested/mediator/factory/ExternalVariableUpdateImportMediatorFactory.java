@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.ingested.mediator.factory;
 
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
@@ -24,15 +25,18 @@ public class ExternalVariableUpdateImportMediatorFactory extends AbstractIngeste
 
   private final ProcessVariableUpdateWriter variableWriter;
   private final ObjectVariableService objectVariableService;
+  private final DatabaseClient databaseClient;
 
   public ExternalVariableUpdateImportMediatorFactory(final BeanFactory beanFactory,
                                                      final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                      final ConfigurationService configurationService,
                                                      final ProcessVariableUpdateWriter variableWriter,
-                                                     final ObjectVariableService objectVariableService) {
+                                                     final ObjectVariableService objectVariableService,
+                                                     final DatabaseClient databaseClient) {
     super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.variableWriter = variableWriter;
     this.objectVariableService = objectVariableService;
+    this.databaseClient = databaseClient;
   }
 
   @Override
@@ -44,7 +48,7 @@ public class ExternalVariableUpdateImportMediatorFactory extends AbstractIngeste
     return new ExternalVariableUpdateEngineImportMediator(
       importIndexHandlerRegistry.getExternalVariableUpdateImportIndexHandler(),
       beanFactory.getBean(ExternalVariableUpdateInstanceFetcher.class),
-      new ExternalVariableUpdateImportService(configurationService, variableWriter, objectVariableService),
+      new ExternalVariableUpdateImportService(configurationService, variableWriter, objectVariableService, databaseClient),
       configurationService,
       new BackoffCalculator(configurationService)
     );

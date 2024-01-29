@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.job;
 
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 
@@ -15,8 +16,10 @@ public class DecisionInstanceDatabaseImportJob extends DatabaseImportJob<Decisio
 
   private final DecisionInstanceWriter decisionInstanceWriter;
 
-  public DecisionInstanceDatabaseImportJob(DecisionInstanceWriter decisionInstanceWriter, Runnable callback) {
-    super(callback);
+  public DecisionInstanceDatabaseImportJob(final DecisionInstanceWriter decisionInstanceWriter,
+                                           final Runnable callback,
+                                           final DatabaseClient databaseClient) {
+    super(callback, databaseClient);
     this.decisionInstanceWriter = decisionInstanceWriter;
   }
 

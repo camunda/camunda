@@ -66,10 +66,6 @@ public class BusinessKeyWriterOS implements BusinessKeyWriter {
     //todo will be handled in the OPT-7376
   }
 
-  private BusinessKeyDto extractBusinessKey(final ProcessInstanceDto processInstance) {
-    return new BusinessKeyDto(processInstance.getProcessInstanceId(), processInstance.getBusinessKey());
-  }
-
   private IndexRequest.Builder<BusinessKeyDto> createIndexRequestForBusinessKey(BusinessKeyDto businessKeyDto) {
     return new IndexRequest.Builder<BusinessKeyDto>()
       .index(BUSINESS_KEY_INDEX_NAME)

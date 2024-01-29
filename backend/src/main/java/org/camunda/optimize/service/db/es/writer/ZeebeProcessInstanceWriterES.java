@@ -9,14 +9,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.service.db.writer.ZeebeProcessInstanceWriter;
+import org.camunda.optimize.dto.optimize.RequestType;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.db.schema.ScriptData;
+import org.camunda.optimize.service.db.writer.DatabaseWriterUtil;
+import org.camunda.optimize.service.db.writer.ZeebeProcessInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.xcontent.XContentType;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -26,10 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 
 @Component
 @Slf4j
@@ -58,21 +57,15 @@ public class ZeebeProcessInstanceWriterES extends AbstractProcessInstanceDataWri
              params.put(NEW_INSTANCE, procInst);
              params.put(FORMATTER, OPTIMIZE_DATE_FORMAT);
              try {
-               final Script updateScript = createDefaultScriptWithSpecificDtoParams(
-                 createProcessInstanceUpdateScript(),
-                 params,
-                 objectMapper
-               );
                String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
                return ImportRequestDto.builder()
                  .importName(importItemName)
-                 .client(esClient)
-                 .request(new UpdateRequest()
-                            .index(getProcessInstanceIndexAliasName(procInst.getProcessDefinitionKey()))
-                            .id(procInst.getProcessInstanceId())
-                            .script(updateScript)
-                            .upsert(newEntryIfAbsent, XContentType.JSON)
-                            .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT))
+                 .type(RequestType.UPDATE)
+                 .id(procInst.getProcessInstanceId())
+                 .indexName(getProcessInstanceIndexAliasName(procInst.getProcessDefinitionKey()))
+                 .source(newEntryIfAbsent)
+                 .retryNumbOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+                 .scriptData(DatabaseWriterUtil.createScriptData(createProcessInstanceUpdateScript(), params, objectMapper))
                  .build();
              } catch (IOException e) {
                String reason = String.format(

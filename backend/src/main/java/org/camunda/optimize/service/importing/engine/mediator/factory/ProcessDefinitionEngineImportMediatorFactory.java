@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.db.writer.ProcessDefinitionXmlWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
@@ -36,8 +37,9 @@ public class ProcessDefinitionEngineImportMediatorFactory extends AbstractEngine
                                                       final ConfigurationService configurationService,
                                                       final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                       final ProcessDefinitionXmlWriter processDefinitionXmlWriter,
-                                                      final ProcessDefinitionResolverService processDefinitionResolverService) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService);
+                                                      final ProcessDefinitionResolverService processDefinitionResolverService,
+                                                      final DatabaseClient databaseClient) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService, databaseClient);
     this.processDefinitionWriter = processDefinitionWriter;
     this.processDefinitionXmlWriter = processDefinitionXmlWriter;
     this.processDefinitionResolverService = processDefinitionResolverService;
@@ -57,7 +59,7 @@ public class ProcessDefinitionEngineImportMediatorFactory extends AbstractEngine
       importIndexHandlerRegistry.getProcessDefinitionImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(ProcessDefinitionFetcher.class, engineContext),
       new ProcessDefinitionImportService(
-        configurationService, engineContext, processDefinitionWriter, processDefinitionResolverService
+        configurationService, engineContext, processDefinitionWriter, processDefinitionResolverService, databaseClient
       ),
       configurationService,
       new BackoffCalculator(configurationService)
@@ -68,7 +70,7 @@ public class ProcessDefinitionEngineImportMediatorFactory extends AbstractEngine
     return new ProcessDefinitionXmlEngineImportMediator(
       importIndexHandlerRegistry.getProcessDefinitionXmlImportIndexHandler(engineContext.getEngineAlias()),
       beanFactory.getBean(ProcessDefinitionXmlFetcher.class, engineContext, processDefinitionWriter),
-      new ProcessDefinitionXmlImportService(configurationService, engineContext, processDefinitionXmlWriter),
+      new ProcessDefinitionXmlImportService(configurationService, engineContext, processDefinitionXmlWriter, databaseClient),
       configurationService,
       new BackoffCalculator(configurationService)
     );

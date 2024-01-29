@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.job;
 
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 
@@ -16,8 +17,9 @@ public class ProcessDefinitionDatabaseImportJob extends DatabaseImportJob<Proces
   private final ProcessDefinitionWriter processDefinitionWriter;
 
   public ProcessDefinitionDatabaseImportJob(final ProcessDefinitionWriter processDefinitionWriter,
-                                            final Runnable importCompleteCallback) {
-    super(importCompleteCallback);
+                                            final Runnable importCompleteCallback,
+                                            final DatabaseClient databaseClient) {
+    super(importCompleteCallback, databaseClient);
     this.processDefinitionWriter = processDefinitionWriter;
   }
 

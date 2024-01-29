@@ -8,6 +8,7 @@ package org.camunda.optimize.service.importing.engine.mediator.factory;
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.plugin.BusinessKeyImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.db.writer.RunningProcessInstanceWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
@@ -42,8 +43,9 @@ public class ProcessInstanceEngineImportMediatorFactory extends AbstractEngineIm
                                                     final CompletedProcessInstanceWriter completedProcessInstanceWriter,
                                                     final RunningProcessInstanceWriter runningProcessInstanceWriter,
                                                     final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider,
-                                                    final ProcessDefinitionResolverService processDefinitionResolverService) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService);
+                                                    final ProcessDefinitionResolverService processDefinitionResolverService,
+                                                    final DatabaseClient databaseClient) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService, databaseClient);
     this.camundaEventImportServiceFactory = camundaEventImportServiceFactory;
     this.completedProcessInstanceWriter = completedProcessInstanceWriter;
     this.runningProcessInstanceWriter = runningProcessInstanceWriter;
@@ -70,7 +72,8 @@ public class ProcessInstanceEngineImportMediatorFactory extends AbstractEngineIm
         businessKeyImportAdapterProvider,
         completedProcessInstanceWriter,
         camundaEventImportServiceFactory.createCamundaEventService(engineContext),
-        processDefinitionResolverService
+        processDefinitionResolverService,
+        databaseClient
       ),
       configurationService,
       new BackoffCalculator(configurationService)
@@ -88,7 +91,8 @@ public class ProcessInstanceEngineImportMediatorFactory extends AbstractEngineIm
         businessKeyImportAdapterProvider,
         runningProcessInstanceWriter,
         camundaEventImportServiceFactory.createCamundaEventService(engineContext),
-        processDefinitionResolverService
+        processDefinitionResolverService,
+        databaseClient
       ),
       configurationService,
       new BackoffCalculator(configurationService)

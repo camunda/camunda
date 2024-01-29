@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.job;
 
 import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.PositionBasedImportIndexWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 
@@ -16,8 +17,9 @@ public class StorePositionBasedIndexDatabaseImportJob extends DatabaseImportJob<
   private final PositionBasedImportIndexWriter positionBasedImportIndexWriter;
 
   public StorePositionBasedIndexDatabaseImportJob(final PositionBasedImportIndexWriter positionBasedImportIndexWriter,
-                                                  final Runnable importCompleteCallback) {
-    super(importCompleteCallback);
+                                                  final Runnable importCompleteCallback,
+                                                  final DatabaseClient databaseClient) {
+    super(importCompleteCallback, databaseClient);
     this.positionBasedImportIndexWriter = positionBasedImportIndexWriter;
   }
 

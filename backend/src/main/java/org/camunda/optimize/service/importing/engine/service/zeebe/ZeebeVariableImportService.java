@@ -20,6 +20,7 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableUpdateDto
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableDataDto;
 import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.db.writer.ZeebeProcessInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -60,8 +61,9 @@ public class ZeebeVariableImportService extends ZeebeProcessInstanceSubEntityImp
                                     final int partitionId,
                                     final ObjectMapper objectMapper,
                                     final ProcessDefinitionReader processDefinitionReader,
-                                    final ObjectVariableService objectVariableService) {
-    super(configurationService, processInstanceWriter, partitionId, processDefinitionReader);
+                                    final ObjectVariableService objectVariableService,
+                                    final DatabaseClient databaseClient) {
+    super(configurationService, processInstanceWriter, partitionId, processDefinitionReader, databaseClient);
     this.objectMapper = objectMapper;
     this.objectVariableService = objectVariableService;
   }

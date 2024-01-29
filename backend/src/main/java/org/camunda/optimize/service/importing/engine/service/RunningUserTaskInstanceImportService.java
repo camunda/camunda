@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.usertask.RunningUserTaskInstanceWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
@@ -27,11 +28,13 @@ public class RunningUserTaskInstanceImportService implements ImportService<Histo
   private final RunningUserTaskInstanceWriter runningUserTaskInstanceWriter;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final ConfigurationService configurationService;
+  private final DatabaseClient databaseClient;
 
   public RunningUserTaskInstanceImportService(final ConfigurationService configurationService,
                                               final RunningUserTaskInstanceWriter runningUserTaskInstanceWriter,
                                               final EngineContext engineContext,
-                                              final ProcessDefinitionResolverService processDefinitionResolverService) {
+                                              final ProcessDefinitionResolverService processDefinitionResolverService,
+                                              final DatabaseClient databaseClient) {
     this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
@@ -39,6 +42,7 @@ public class RunningUserTaskInstanceImportService implements ImportService<Histo
     this.runningUserTaskInstanceWriter = runningUserTaskInstanceWriter;
     this.processDefinitionResolverService = processDefinitionResolverService;
     this.configurationService = configurationService;
+    this.databaseClient = databaseClient;
   }
 
   @Override
@@ -80,11 +84,12 @@ public class RunningUserTaskInstanceImportService implements ImportService<Histo
   }
 
   private DatabaseImportJob<FlowNodeInstanceDto> createDatabaseImportJob(final List<FlowNodeInstanceDto> userTasks,
-                                                                              Runnable callback) {
+                                                                         Runnable callback) {
     final RunningUserTaskDatabaseImportJob importJob = new RunningUserTaskDatabaseImportJob(
       runningUserTaskInstanceWriter,
       configurationService,
-      callback
+      callback,
+      databaseClient
     );
     importJob.setEntitiesToImport(userTasks);
     return importJob;

@@ -8,6 +8,7 @@ package org.camunda.optimize.service.importing.engine.service.incident;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.incident.OpenIncidentWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
 import org.camunda.optimize.service.importing.job.OpenIncidentDatabaseImportJob;
@@ -24,15 +25,16 @@ public class OpenIncidentImportService extends AbstractEngineIncidentImportServi
   public OpenIncidentImportService(final ConfigurationService configurationService,
                                    final OpenIncidentWriter openIncidentWriter,
                                    final EngineContext engineContext,
-                                   final ProcessDefinitionResolverService processDefinitionResolverService) {
-    super(configurationService, engineContext, processDefinitionResolverService);
+                                   final ProcessDefinitionResolverService processDefinitionResolverService,
+                                   final DatabaseClient databaseClient) {
+    super(configurationService, engineContext, processDefinitionResolverService, databaseClient);
     this.openIncidentWriter = openIncidentWriter;
   }
 
   protected DatabaseImportJob<IncidentDto> createDatabaseImportJob(List<IncidentDto> incidents,
                                                                         Runnable callback) {
     OpenIncidentDatabaseImportJob incidentImportJob =
-      new OpenIncidentDatabaseImportJob(openIncidentWriter, configurationService, callback);
+      new OpenIncidentDatabaseImportJob(openIncidentWriter, configurationService, callback, databaseClient);
     incidentImportJob.setEntitiesToImport(incidents);
     return incidentImportJob;
   }

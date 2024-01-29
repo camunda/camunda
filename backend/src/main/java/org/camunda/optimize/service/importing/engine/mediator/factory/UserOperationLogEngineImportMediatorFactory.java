@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.RunningProcessInstanceWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
@@ -34,8 +35,9 @@ public class UserOperationLogEngineImportMediatorFactory extends AbstractEngineI
                                                      final ConfigurationService configurationService,
                                                      final RunningProcessInstanceWriter runningProcessInstanceWriter,
                                                      final ProcessDefinitionResolverService processDefinitionResolverService,
-                                                     final ProcessInstanceResolverService processInstanceResolverService) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService);
+                                                     final ProcessInstanceResolverService processInstanceResolverService,
+                                                     final DatabaseClient databaseClient) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService, databaseClient);
     this.runningProcessInstanceWriter = runningProcessInstanceWriter;
     this.processDefinitionResolverService = processDefinitionResolverService;
     this.processInstanceResolverService = processInstanceResolverService;
@@ -58,7 +60,8 @@ public class UserOperationLogEngineImportMediatorFactory extends AbstractEngineI
         runningProcessInstanceWriter,
         importIndexHandlerRegistry.getRunningProcessInstanceImportIndexHandler(engineContext.getEngineAlias()),
         processDefinitionResolverService,
-        processInstanceResolverService
+        processInstanceResolverService,
+        databaseClient
       ),
       configurationService,
       new BackoffCalculator(configurationService)

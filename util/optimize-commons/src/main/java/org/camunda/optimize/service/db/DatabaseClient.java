@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.db;
 
 import lombok.Getter;
+import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.db.schema.ScriptData;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
@@ -17,6 +18,7 @@ import org.elasticsearch.action.search.SearchScrollRequest;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -57,6 +59,10 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
   public abstract void setDefaultRequestOptions();
 
   public abstract void update(final String indexName, final String entityId, final ScriptData script);
+
+  public abstract void executeImportRequestsAsBulk(final String bulkRequestName,
+                                                   final List<ImportRequestDto> importRequestDtos,
+                                                   final Boolean retryFailedRequestsOnNestedDocLimit);
 
   protected String[] convertToPrefixedAliasNames(final String[] indices) {
     return Arrays.stream(indices)

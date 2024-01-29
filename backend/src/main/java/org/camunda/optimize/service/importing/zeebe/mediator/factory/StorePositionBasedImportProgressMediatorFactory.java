@@ -38,7 +38,7 @@ public class StorePositionBasedImportProgressMediatorFactory extends AbstractZee
   public List<ImportMediator> createMediators(final ZeebeDataSourceDto dataSourceDto) {
     return List.of(new StorePositionBasedImportProgressMediator(
       importIndexHandlerRegistry,
-      new StorePositionBasedIndexImportService(configurationService, importIndexWriter),
+      new StorePositionBasedIndexImportService(configurationService, importIndexWriter, databaseClient),
       configurationService,
       dataSourceDto
     ));

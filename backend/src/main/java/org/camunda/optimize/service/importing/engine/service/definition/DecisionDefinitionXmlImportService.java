@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.DecisionDefinitionXmlWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
@@ -34,17 +35,20 @@ public class DecisionDefinitionXmlImportService implements ImportService<Decisio
   private final EngineContext engineContext;
   private final DecisionDefinitionXmlWriter decisionDefinitionXmlWriter;
   private final DecisionDefinitionResolverService decisionDefinitionResolverService;
+  private final DatabaseClient databaseClient;
 
   public DecisionDefinitionXmlImportService(final ConfigurationService configurationService,
                                             final EngineContext engineContext,
                                             final DecisionDefinitionXmlWriter decisionDefinitionXmlWriter,
-                                            final DecisionDefinitionResolverService decisionDefinitionResolverService) {
+                                            final DecisionDefinitionResolverService decisionDefinitionResolverService,
+                                            final DatabaseClient databaseClient) {
     this.databaseImportJobExecutor = new DatabaseImportJobExecutor(
       getClass().getSimpleName(), configurationService
     );
     this.engineContext = engineContext;
     this.decisionDefinitionXmlWriter = decisionDefinitionXmlWriter;
     this.decisionDefinitionResolverService = decisionDefinitionResolverService;
+    this.databaseClient = databaseClient;
   }
 
   @Override
@@ -79,7 +83,7 @@ public class DecisionDefinitionXmlImportService implements ImportService<Decisio
     final List<DecisionDefinitionOptimizeDto> optimizeDtos,
     final Runnable importCompleteCallback) {
     DecisionDefinitionXmlDatabaseImportJob importJob = new DecisionDefinitionXmlDatabaseImportJob(
-      decisionDefinitionXmlWriter, importCompleteCallback
+      decisionDefinitionXmlWriter, importCompleteCallback, databaseClient
     );
     importJob.setEntitiesToImport(optimizeDtos);
     return importJob;

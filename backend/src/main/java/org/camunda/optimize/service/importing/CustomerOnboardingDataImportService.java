@@ -12,10 +12,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.db.writer.RunningProcessInstanceWriter;
-import org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.OptimizeProfile;
@@ -46,6 +46,7 @@ public class CustomerOnboardingDataImportService {
   private final ConfigurationService configurationService;
   private final CompletedProcessInstanceWriter completedProcessInstanceWriter;
   private final RunningProcessInstanceWriter runningProcessInstanceWriter;
+  private final DatabaseClient databaseClient;
   private final Environment environment;
 
   private static final String CUSTOMER_ONBOARDING_DEFINITION = "customer_onboarding_definition.json";
@@ -170,8 +171,7 @@ public class CustomerOnboardingDataImportService {
       .collect(Collectors.toList());
     List<ImportRequestDto> completedProcessInstanceImports =
       completedProcessInstanceWriter.generateProcessInstanceImports(completedProcessInstances);
-    //todo handle that in the OPT-7228
-    ElasticsearchWriterUtil.executeImportRequestsAsBulk(
+    databaseClient.executeImportRequestsAsBulk(
       "Completed process instances",
       completedProcessInstanceImports,
       configurationService.getSkipDataAfterNestedDocLimitReached()
@@ -179,8 +179,7 @@ public class CustomerOnboardingDataImportService {
     List<ImportRequestDto> runningProcessInstanceImports =
       runningProcessInstanceWriter.generateProcessInstanceImports(runningProcessInstances);
     if (!runningProcessInstanceImports.isEmpty()) {
-      //todo handle that in the OPT-7228
-      ElasticsearchWriterUtil.executeImportRequestsAsBulk(
+      databaseClient.executeImportRequestsAsBulk(
         "Running process instances",
         runningProcessInstanceImports,
         configurationService.getSkipDataAfterNestedDocLimitReached()

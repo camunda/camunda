@@ -8,9 +8,9 @@ package org.camunda.optimize.service.importing.job;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.service.CamundaEventImportService;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.RunningProcessInstanceWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
-import org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.ArrayList;
@@ -25,8 +25,9 @@ public class RunningProcessInstanceDatabaseImportJob extends DatabaseImportJob<P
   public RunningProcessInstanceDatabaseImportJob(final RunningProcessInstanceWriter runningProcessInstanceWriter,
                                                  final CamundaEventImportService camundaEventImportService,
                                                  final ConfigurationService configurationService,
-                                                 final Runnable callback) {
-    super(callback);
+                                                 final Runnable callback,
+                                                 final DatabaseClient databaseClient) {
+    super(callback, databaseClient);
     this.runningProcessInstanceWriter = runningProcessInstanceWriter;
     this.camundaEventImportService = camundaEventImportService;
     this.configurationService = configurationService;
@@ -36,8 +37,7 @@ public class RunningProcessInstanceDatabaseImportJob extends DatabaseImportJob<P
     List<ImportRequestDto> importBulks = new ArrayList<>();
     importBulks.addAll(runningProcessInstanceWriter.generateProcessInstanceImports(runningProcessInstances));
     importBulks.addAll(camundaEventImportService.generateRunningProcessInstanceImports(runningProcessInstances));
-    //todo handle it in the OPT-7228
-    ElasticsearchWriterUtil.executeImportRequestsAsBulk(
+    databaseClient.executeImportRequestsAsBulk(
       "Running process instances",
       importBulks,
       configurationService.getSkipDataAfterNestedDocLimitReached()

@@ -7,9 +7,9 @@ package org.camunda.optimize.service.importing.job;
 
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.ZeebeProcessInstanceWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
-import org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
@@ -21,8 +21,9 @@ public class ZeebeProcessInstanceDatabaseImportJob extends DatabaseImportJob<Pro
 
   public ZeebeProcessInstanceDatabaseImportJob(final ZeebeProcessInstanceWriter zeebeProcessInstanceWriter,
                                                final ConfigurationService configurationService,
-                                               final Runnable importCompleteCallback) {
-    super(importCompleteCallback);
+                                               final Runnable importCompleteCallback,
+                                               final DatabaseClient databaseClient) {
+    super(importCompleteCallback, databaseClient);
     this.zeebeProcessInstanceWriter = zeebeProcessInstanceWriter;
     this.configurationService = configurationService;
   }
@@ -31,8 +32,7 @@ public class ZeebeProcessInstanceDatabaseImportJob extends DatabaseImportJob<Pro
   protected void persistEntities(List<ProcessInstanceDto> completedProcessInstances) {
     final List<ImportRequestDto> importRequests =
       zeebeProcessInstanceWriter.generateProcessInstanceImports(newOptimizeEntities);
-    //todo handle it in the OPT-7228
-    ElasticsearchWriterUtil.executeImportRequestsAsBulk(
+    databaseClient.executeImportRequestsAsBulk(
       "Zeebe process instances",
       importRequests,
       configurationService.getSkipDataAfterNestedDocLimitReached()

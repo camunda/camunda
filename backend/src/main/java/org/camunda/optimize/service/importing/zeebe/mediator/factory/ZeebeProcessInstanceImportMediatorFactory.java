@@ -57,7 +57,8 @@ public class ZeebeProcessInstanceImportMediatorFactory extends AbstractZeebeImpo
           configurationService,
           zeebeProcessInstanceWriter,
           zeebeDataSourceDto.getPartitionId(),
-          processDefinitionReader
+          processDefinitionReader,
+          databaseClient
         ),
         configurationService,
         new BackoffCalculator(configurationService)

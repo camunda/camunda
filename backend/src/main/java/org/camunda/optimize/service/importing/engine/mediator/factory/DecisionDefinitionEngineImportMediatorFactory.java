@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.DecisionDefinitionWriter;
 import org.camunda.optimize.service.db.writer.DecisionDefinitionXmlWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
@@ -38,8 +39,9 @@ public class DecisionDefinitionEngineImportMediatorFactory extends AbstractEngin
                                                        final ConfigurationService configurationService,
                                                        final DecisionDefinitionWriter decisionDefinitionWriter,
                                                        final DecisionDefinitionXmlWriter decisionDefinitionXmlWriter,
-                                                       final DecisionDefinitionResolverService decisionDefinitionResolverService) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService);
+                                                       final DecisionDefinitionResolverService decisionDefinitionResolverService,
+                                                       final DatabaseClient databaseClient) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService, databaseClient);
     this.decisionDefinitionWriter = decisionDefinitionWriter;
     this.decisionDefinitionXmlWriter = decisionDefinitionXmlWriter;
     this.decisionDefinitionResolverService = decisionDefinitionResolverService;
@@ -64,7 +66,8 @@ public class DecisionDefinitionEngineImportMediatorFactory extends AbstractEngin
         configurationService,
         engineContext,
         decisionDefinitionWriter,
-        decisionDefinitionResolverService
+        decisionDefinitionResolverService,
+        databaseClient
       ),
       configurationService,
       new BackoffCalculator(configurationService)
@@ -80,7 +83,8 @@ public class DecisionDefinitionEngineImportMediatorFactory extends AbstractEngin
         configurationService,
         engineContext,
         decisionDefinitionXmlWriter,
-        decisionDefinitionResolverService
+        decisionDefinitionResolverService,
+        databaseClient
       ),
       configurationService,
       new BackoffCalculator(configurationService)

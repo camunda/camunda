@@ -97,35 +97,7 @@ public class ElasticsearchWriterUtil {
     );
   }
 
-  public static void executeImportRequestsAsBulk(String bulkRequestName, List<ImportRequestDto> importRequestDtos,
-                                                 boolean retryFailedRequestsOnNestedDocLimit) {
-    final Map<OptimizeElasticsearchClient, List<ImportRequestDto>> esClientToImportRequests = importRequestDtos.stream()
-      .collect(groupingBy(ImportRequestDto::getClient));
-    esClientToImportRequests.forEach((esClient, requestList) -> {
-      if (requestList.isEmpty()) {
-        log.warn("No requests supplied, cannot create bulk request");
-      } else {
-        final BulkRequest bulkRequest = new BulkRequest();
-        final Map<String, List<ImportRequestDto>> requestsByType = requestList.stream()
-          .collect(groupingBy(ImportRequestDto::getImportName));
-        requestsByType.forEach((type, requests) -> {
-          log.debug("Adding [{}] requests of type {} to bulk request", requests.size(), type);
-          requests.forEach(importRequest -> {
-            if (importRequest.getRequest() != null) {
-              bulkRequest.add(importRequest.getRequest());
-            } else {
-              log.warn(
-                "Cannot add request to bulk as no request was provided. Import type [{}]",
-                importRequest.getImportName()
-              );
-            }
-          });
-        });
-        doBulkRequest(esClient, bulkRequest, bulkRequestName, retryFailedRequestsOnNestedDocLimit);
-      }
-    });
-  }
-
+  //TODO will be removed with 11399
   public static <T> void doImportBulkRequestWithList(OptimizeElasticsearchClient esClient,
                                                      String importItemName,
                                                      Collection<T> entityCollection,
@@ -256,6 +228,7 @@ public class ElasticsearchWriterUtil {
     }
   }
 
+  //TODO will be removed with 11399
   private static void doBulkRequestWithoutRetries(OptimizeElasticsearchClient esClient,
                                                   BulkRequest bulkRequest,
                                                   String itemName) {
@@ -280,6 +253,7 @@ public class ElasticsearchWriterUtil {
     }
   }
 
+  //TODO will be removed with 11399
   private static void doBulkRequestWithNestedDocHandling(OptimizeElasticsearchClient esClient,
                                                          BulkRequest bulkRequest,
                                                          String itemName) {
@@ -318,10 +292,12 @@ public class ElasticsearchWriterUtil {
     }
   }
 
+  //TODO will be removed with 11399
   private static boolean containsNestedDocumentLimitErrorMessage(final BulkResponse bulkResponse) {
     return bulkResponse.buildFailureMessage().contains(NESTED_DOC_LIMIT_MESSAGE);
   }
 
+  //TODO will be removed with 11399
   private static String getHintForErrorMsg(final BulkResponse bulkResponse) {
     if (containsNestedDocumentLimitErrorMessage(bulkResponse)) {
       // exception potentially related to nested object limit

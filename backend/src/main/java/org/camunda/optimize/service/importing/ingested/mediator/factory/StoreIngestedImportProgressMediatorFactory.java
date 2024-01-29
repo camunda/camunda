@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.ingested.mediator.factory;
 
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.ImportIndexWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
@@ -20,20 +21,23 @@ import java.util.List;
 public class StoreIngestedImportProgressMediatorFactory extends AbstractIngestedImportMediatorFactory {
 
   private final ImportIndexWriter importIndexWriter;
+  private final DatabaseClient databaseClient;
 
   public StoreIngestedImportProgressMediatorFactory(final BeanFactory beanFactory,
                                                     final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                     final ConfigurationService configurationService,
-                                                    final ImportIndexWriter importIndexWriter) {
+                                                    final ImportIndexWriter importIndexWriter,
+                                                    final DatabaseClient databaseClient) {
     super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.importIndexWriter = importIndexWriter;
+    this.databaseClient = databaseClient;
   }
 
   @Override
   public List<ImportMediator> createMediators() {
     return List.of(new StoreIngestedImportProgressMediator(
       importIndexHandlerRegistry,
-      new StoreIndexesEngineImportService(configurationService, importIndexWriter),
+      new StoreIndexesEngineImportService(configurationService, importIndexWriter, databaseClient),
       configurationService
     ));
   }

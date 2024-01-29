@@ -327,7 +327,8 @@ public class EmbeddedOptimizeExtension
           camundaEventServiceFactory.createCamundaEventService(configuredEngine),
           configuredEngine,
           getConfigurationService(),
-          processDefinitionResolverService
+          processDefinitionResolverService,
+          getOptimizeDatabaseClient()
         );
       try {
         CompletableFuture<Void> done = new CompletableFuture<>();

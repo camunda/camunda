@@ -8,9 +8,9 @@ package org.camunda.optimize.service.importing.job;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.service.CamundaEventImportService;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
-import org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.ArrayList;
@@ -18,16 +18,17 @@ import java.util.List;
 
 public class VariableUpdateDatabaseImportJob extends DatabaseImportJob<ProcessVariableDto> {
 
-  private final ProcessVariableUpdateWriter variableWriter;
+  private final ProcessVariableUpdateWriter processVariableUpdateWriter;
   private final CamundaEventImportService camundaEventImportService;
   private final ConfigurationService configurationService;
 
   public VariableUpdateDatabaseImportJob(final ProcessVariableUpdateWriter variableWriter,
                                          final CamundaEventImportService camundaEventImportService,
                                          final ConfigurationService configurationService,
-                                         final Runnable callback) {
-    super(callback);
-    this.variableWriter = variableWriter;
+                                         final Runnable callback,
+                                         final DatabaseClient databaseClient) {
+    super(callback, databaseClient);
+    this.processVariableUpdateWriter = variableWriter;
     this.camundaEventImportService = camundaEventImportService;
     this.configurationService = configurationService;
   }
@@ -35,10 +36,9 @@ public class VariableUpdateDatabaseImportJob extends DatabaseImportJob<ProcessVa
   @Override
   protected void persistEntities(List<ProcessVariableDto> variableUpdates) {
     List<ImportRequestDto> importBulks = new ArrayList<>();
-    importBulks.addAll(variableWriter.generateVariableUpdateImports(variableUpdates));
+    importBulks.addAll(processVariableUpdateWriter.generateVariableUpdateImports(variableUpdates));
     importBulks.addAll(camundaEventImportService.generateVariableUpdateImports(variableUpdates));
-    //todo handle it in the OPT-7228
-    ElasticsearchWriterUtil.executeImportRequestsAsBulk(
+    databaseClient.executeImportRequestsAsBulk(
       "Variable updates",
       importBulks,
       configurationService.getSkipDataAfterNestedDocLimitReached()

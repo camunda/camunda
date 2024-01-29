@@ -7,9 +7,9 @@ package org.camunda.optimize.service.importing.job;
 
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.usertask.RunningUserTaskInstanceWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
-import org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
@@ -21,8 +21,9 @@ public class RunningUserTaskDatabaseImportJob extends DatabaseImportJob<FlowNode
 
   public RunningUserTaskDatabaseImportJob(final RunningUserTaskInstanceWriter runningUserTaskInstanceWriter,
                                           final ConfigurationService configurationService,
-                                          final Runnable callback) {
-    super(callback);
+                                          final Runnable callback,
+                                          final DatabaseClient databaseClient) {
+    super(callback, databaseClient);
     this.runningUserTaskInstanceWriter = runningUserTaskInstanceWriter;
     this.configurationService = configurationService;
   }
@@ -31,8 +32,7 @@ public class RunningUserTaskDatabaseImportJob extends DatabaseImportJob<FlowNode
   protected void persistEntities(List<FlowNodeInstanceDto> newOptimizeEntities) {
     final List<ImportRequestDto> importRequests = runningUserTaskInstanceWriter.generateUserTaskImports(
       newOptimizeEntities);
-    //todo handle it in the OPT-7228
-    ElasticsearchWriterUtil.executeImportRequestsAsBulk(
+    databaseClient.executeImportRequestsAsBulk(
       "Running user tasks",
       importRequests,
       configurationService.getSkipDataAfterNestedDocLimitReached()

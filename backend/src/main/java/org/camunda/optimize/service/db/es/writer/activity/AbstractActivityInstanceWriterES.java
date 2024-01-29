@@ -8,18 +8,18 @@ package org.camunda.optimize.service.db.es.writer.activity;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.RequestType;
 import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
-import org.camunda.optimize.service.db.writer.activity.AbstractActivityInstanceWriter;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.db.es.writer.AbstractProcessInstanceDataWriterES;
+import org.camunda.optimize.service.db.schema.ScriptData;
+import org.camunda.optimize.service.db.writer.DatabaseWriterUtil;
+import org.camunda.optimize.service.db.writer.activity.AbstractActivityInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.xcontent.XContentType;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -30,14 +30,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
-import static org.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
-import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static org.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
+import static org.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 
 @Component
 @Conditional(ElasticSearchCondition.class)
-public abstract class AbstractActivityInstanceWriterES extends AbstractProcessInstanceDataWriterES<FlowNodeEventDto> implements AbstractActivityInstanceWriter {
+public abstract class AbstractActivityInstanceWriterES extends AbstractProcessInstanceDataWriterES<FlowNodeEventDto>
+  implements AbstractActivityInstanceWriter {
 
   private final ObjectMapper objectMapper;
 
@@ -64,11 +64,7 @@ public abstract class AbstractActivityInstanceWriterES extends AbstractProcessIn
     }
 
     return processInstanceToEvents.entrySet().stream()
-      .map(entry -> ImportRequestDto.builder()
-        .importName(importItemName)
-        .client(esClient)
-        .request(createImportRequestForActivityInstance(entry))
-        .build())
+      .map(entry -> createImportRequestForActivityInstance(entry, importItemName))
       .collect(Collectors.toList());
   }
 
@@ -93,7 +89,7 @@ public abstract class AbstractActivityInstanceWriterES extends AbstractProcessIn
 
   protected abstract String createInlineUpdateScript();
 
-  private UpdateRequest createImportRequestForActivityInstance(Map.Entry<String, List<FlowNodeEventDto>> activitiesByProcessInstance) {
+  private ImportRequestDto createImportRequestForActivityInstance(Map.Entry<String, List<FlowNodeEventDto>> activitiesByProcessInstance, final String importItemName) {
     final List<FlowNodeEventDto> activityInstances = activitiesByProcessInstance.getValue();
     final String processInstanceId = activitiesByProcessInstance.getKey();
 
@@ -102,7 +98,7 @@ public abstract class AbstractActivityInstanceWriterES extends AbstractProcessIn
     // see https://discuss.elastic.co/t/how-to-update-nested-objects-in-elasticsearch-2-2-script-via-java-api/43135
     try {
       params.put(FLOW_NODE_INSTANCES, flowNodeInstanceDtos);
-      final Script updateScript = createDefaultScriptWithSpecificDtoParams(
+      final ScriptData updateScript = DatabaseWriterUtil.createScriptData(
         createInlineUpdateScript(),
         params,
         objectMapper
@@ -115,12 +111,15 @@ public abstract class AbstractActivityInstanceWriterES extends AbstractProcessIn
         .flowNodeInstances(flowNodeInstanceDtos)
         .build();
       String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
-      return new UpdateRequest()
-        .index(getProcessInstanceIndexAliasName(procInst.getProcessDefinitionKey()))
+      return ImportRequestDto.builder()
+        .indexName(getProcessInstanceIndexAliasName(procInst.getProcessDefinitionKey()))
         .id(processInstanceId)
-        .script(updateScript)
-        .upsert(newEntryIfAbsent, XContentType.JSON)
-        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+        .scriptData(updateScript)
+        .type(RequestType.UPDATE)
+        .importName(importItemName)
+        .source(newEntryIfAbsent)
+        .retryNumbOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+        .build();
     } catch (IOException e) {
       String reason = String.format(
         "Error while processing JSON for activity instances for process instance ID [%s].",

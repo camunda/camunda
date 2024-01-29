@@ -13,7 +13,10 @@ import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.FailsafeException;
 import net.jodah.failsafe.FailsafeExecutor;
 import net.jodah.failsafe.RetryPolicy;
+import org.apache.tika.utils.StringUtils;
 import org.camunda.optimize.dto.optimize.DataImportSourceType;
+import org.camunda.optimize.dto.optimize.ImportRequestDto;
+import org.camunda.optimize.dto.optimize.RequestType;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.plugin.ElasticsearchCustomHeaderProvider;
 import org.camunda.optimize.service.db.DatabaseClient;
@@ -47,6 +50,7 @@ import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.action.admin.indices.template.delete.DeleteIndexTemplateRequest;
+import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -100,6 +104,7 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
+import org.elasticsearch.xcontent.XContentType;
 import org.springframework.context.ApplicationContext;
 
 import java.io.IOException;
@@ -109,9 +114,11 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.groupingBy;
 import static org.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static org.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
@@ -131,6 +138,8 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 @Slf4j
 public class OptimizeElasticsearchClient extends DatabaseClient {
 
+  private static final String NESTED_DOC_LIMIT_MESSAGE = "The number of nested documents has exceeded the allowed " +
+    "limit of";
   private static final int DEFAULT_SNAPSHOT_IN_PROGRESS_RETRY_DELAY = 30;
 
   // we had to introduce our own options due to a regression with the client's behaviour with the 7.16
@@ -373,6 +382,193 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   @SneakyThrows
   public void setDefaultRequestOptions() {
     highLevelClient.info(RequestOptions.DEFAULT);
+  }
+
+  @Override
+  public void executeImportRequestsAsBulk(final String bulkRequestName,
+                                          final List<ImportRequestDto> importRequestDtos,
+                                          final Boolean retryFailedRequestsOnNestedDocLimit) {
+    final BulkRequest bulkRequest = new BulkRequest();
+    final Map<String, List<ImportRequestDto>> requestsByType = importRequestDtos.stream()
+      .filter(this::validateImportName)
+      .collect(groupingBy(ImportRequestDto::getImportName));
+    requestsByType.forEach((type, requests) -> {
+      log.debug("Adding [{}] requests of type {} to bulk request", requests.size(), type);
+      requests.forEach(importRequest -> applyOperationToBulkRequest(bulkRequest, importRequest));
+    });
+    doBulkRequest(bulkRequest, bulkRequestName, retryFailedRequestsOnNestedDocLimit);
+  }
+
+  private void applyOperationToBulkRequest(final BulkRequest bulkRequest, final ImportRequestDto requestDto) {
+
+    validateOperationParams(requestDto);
+
+    switch (requestDto.getType()) {
+      case INDEX -> bulkRequest.add(new IndexRequest()
+                                      .id(requestDto.getId())
+                                      .source(requestDto.getSource(), XContentType.JSON)
+                                      .index(requestDto.getIndexName()));
+      case UPDATE -> bulkRequest.add(new UpdateRequest()
+                                       .id(requestDto.getId())
+                                       .index(requestDto.getIndexName())
+                                       .upsert(requestDto.getSource(), XContentType.JSON)
+                                       .script(createDefaultScriptWithPrimitiveParams(
+                                         requestDto.getScriptData().scriptString(),
+                                         requestDto.getScriptData().params()
+                                       ))
+                                       .retryOnConflict(requestDto.getRetryNumbOnConflict()));
+    }
+  }
+
+  private boolean validateImportName(final ImportRequestDto importRequestDto) {
+    if (StringUtils.isBlank(importRequestDto.getImportName())) {
+      throw new OptimizeRuntimeException(generateErrorMessageForValidationImportRequestDto(
+        importRequestDto.getType(),
+        ImportRequestDto.Fields.importName.name()
+      ));
+    }
+    return true;
+  }
+
+  private void validateOperationParams(final ImportRequestDto importRequestDto) {
+
+    if (Objects.isNull(importRequestDto.getType())) {
+      throw new OptimizeRuntimeException(String.format(
+        "The %s param of ImportRequestDto is not set for request",
+        ImportRequestDto.Fields.type.name()
+      ));
+    }
+    if (StringUtils.isBlank(importRequestDto.getIndexName())) {
+      throw new OptimizeRuntimeException(generateErrorMessageForValidationImportRequestDto(
+        importRequestDto.getType(),
+        ImportRequestDto.Fields.indexName.name()
+      ));
+    }
+    if (StringUtils.isBlank(importRequestDto.getId())) {
+      throw new OptimizeRuntimeException(generateErrorMessageForValidationImportRequestDto(
+        importRequestDto.getType(),
+        ImportRequestDto.Fields.id.name()
+      ));
+    }
+
+    switch (importRequestDto.getType()) {
+      case INDEX -> {
+        if (StringUtils.isBlank(importRequestDto.getSource())) {
+          throw new OptimizeRuntimeException(generateErrorMessageForValidationImportRequestDto(
+            RequestType.INDEX,
+            ImportRequestDto.Fields.source.name()
+          ));
+        }
+      }
+      case UPDATE -> {
+        if (Objects.isNull(importRequestDto.getScriptData())) {
+          throw new OptimizeRuntimeException(generateErrorMessageForValidationImportRequestDto(
+            RequestType.UPDATE,
+            ImportRequestDto.Fields.scriptData.name()
+          ));
+        }
+      }
+    }
+  }
+
+  private String generateErrorMessageForValidationImportRequestDto(final RequestType type, final String fieldName) {
+    return String.format("The %s param of ImportRequestDto is not valid for request type %s", fieldName, type);
+  }
+
+  //to avoid cross-dependency, we copied that method from the ElasticsearchWriterUtil
+  private static Script createDefaultScriptWithPrimitiveParams(final String inlineUpdateScript,
+                                                               final Map<String, Object> params) {
+    return new Script(
+      ScriptType.INLINE,
+      Script.DEFAULT_SCRIPT_LANG,
+      inlineUpdateScript,
+      params
+    );
+  }
+
+  public void doBulkRequest(BulkRequest bulkRequest,
+                            String itemName,
+                            boolean retryRequestIfNestedDocLimitReached) {
+    if (retryRequestIfNestedDocLimitReached) {
+      doBulkRequestWithNestedDocHandling(bulkRequest, itemName);
+    } else {
+      doBulkRequestWithoutRetries(bulkRequest, itemName);
+    }
+  }
+
+  private void doBulkRequestWithoutRetries(BulkRequest bulkRequest,
+                                           String itemName) {
+    if (bulkRequest.numberOfActions() > 0) {
+      try {
+        BulkResponse bulkResponse = this.bulk(bulkRequest);
+        if (bulkResponse.hasFailures()) {
+          throw new OptimizeRuntimeException(String.format(
+            "There were failures while performing bulk on %s.%n%s Message: %s",
+            itemName,
+            getHintForErrorMsg(bulkResponse),
+            bulkResponse.buildFailureMessage()
+          ));
+        }
+      } catch (IOException e) {
+        String reason = String.format("There were errors while performing a bulk on %s.", itemName);
+        log.error(reason, e);
+        throw new OptimizeRuntimeException(reason, e);
+      }
+    } else {
+      log.debug("Bulkrequest on {} not executed because it contains no actions.", itemName);
+    }
+  }
+
+  private void doBulkRequestWithNestedDocHandling(BulkRequest bulkRequest,
+                                                  String itemName) {
+    if (bulkRequest.numberOfActions() > 0) {
+      log.info("Executing bulk request on {} items of {}", bulkRequest.requests().size(), itemName);
+      try {
+        BulkResponse bulkResponse = this.bulk(bulkRequest);
+        if (bulkResponse.hasFailures()) {
+          if (containsNestedDocumentLimitErrorMessage(bulkResponse)) {
+            final Set<String> failedItemIds = Arrays.stream(bulkResponse.getItems())
+              .filter(BulkItemResponse::isFailed)
+              .filter(responseItem -> responseItem.getFailureMessage().contains(NESTED_DOC_LIMIT_MESSAGE))
+              .map(BulkItemResponse::getId)
+              .collect(Collectors.toSet());
+            log.warn("There were failures while performing bulk on {} due to the nested document limit being reached." +
+                       " Removing {} failed items and retrying", itemName, failedItemIds.size());
+            bulkRequest.requests().removeIf(request -> failedItemIds.contains(request.id()));
+            if (!bulkRequest.requests().isEmpty()) {
+              doBulkRequestWithNestedDocHandling(bulkRequest, itemName);
+            }
+          } else {
+            throw new OptimizeRuntimeException(String.format(
+              "There were failures while performing bulk on %s. Message: %s",
+              itemName,
+              bulkResponse.buildFailureMessage()
+            ));
+          }
+        }
+      } catch (IOException e) {
+        String reason = String.format("There were errors while performing a bulk on %s.", itemName);
+        log.error(reason, e);
+        throw new OptimizeRuntimeException(reason, e);
+      }
+    } else {
+      log.debug("Bulkrequest on {} not executed because it contains no actions.", itemName);
+    }
+  }
+
+  private static boolean containsNestedDocumentLimitErrorMessage(final BulkResponse bulkResponse) {
+    return bulkResponse.buildFailureMessage().contains(NESTED_DOC_LIMIT_MESSAGE);
+  }
+
+  private static String getHintForErrorMsg(final BulkResponse bulkResponse) {
+    if (containsNestedDocumentLimitErrorMessage(bulkResponse)) {
+      // exception potentially related to nested object limit
+      return "If you are experiencing failures due to too many nested documents, try carefully increasing the " +
+        "configured nested object limit (es.settings.index.nested_documents_limit) or enabling the skipping of " +
+        "documents that have reached this limit during import (import.skipDataAfterNestedDocLimitReached). " +
+        "See Optimize documentation for details.";
+    }
+    return "";
   }
 
   public void createIndex(final CreateIndexRequest request) throws IOException {

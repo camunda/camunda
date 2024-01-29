@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import org.camunda.optimize.plugin.VariableImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
@@ -24,6 +25,7 @@ import java.util.List;
 
 @Component
 public class VariableUpdateEngineImportMediatorFactory extends AbstractEngineImportMediatorFactory {
+
   private final CamundaEventImportServiceFactory camundaEventImportServiceFactory;
   private final ProcessVariableUpdateWriter variableWriter;
   private final VariableImportAdapterProvider variableImportAdapterProvider;
@@ -37,8 +39,9 @@ public class VariableUpdateEngineImportMediatorFactory extends AbstractEngineImp
                                                    final ProcessVariableUpdateWriter variableWriter,
                                                    final VariableImportAdapterProvider variableImportAdapterProvider,
                                                    final ProcessDefinitionResolverService processDefinitionResolverService,
-                                                   final ObjectVariableService objectVariableService) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService);
+                                                   final ObjectVariableService objectVariableService,
+                                                   final DatabaseClient databaseClient) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService, databaseClient);
     this.camundaEventImportServiceFactory = camundaEventImportServiceFactory;
     this.variableWriter = variableWriter;
     this.variableImportAdapterProvider = variableImportAdapterProvider;
@@ -63,7 +66,8 @@ public class VariableUpdateEngineImportMediatorFactory extends AbstractEngineImp
         camundaEventImportServiceFactory.createCamundaEventService(engineContext),
         engineContext,
         processDefinitionResolverService,
-        objectVariableService
+        objectVariableService,
+        databaseClient
       ),
       configurationService,
       new BackoffCalculator(configurationService)

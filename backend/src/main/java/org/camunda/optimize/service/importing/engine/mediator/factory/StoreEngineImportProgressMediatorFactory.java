@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.ImportIndexWriter;
 import org.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.ImportMediator;
@@ -25,8 +26,9 @@ public class StoreEngineImportProgressMediatorFactory extends AbstractEngineImpo
   public StoreEngineImportProgressMediatorFactory(final BeanFactory beanFactory,
                                                   final ImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                   final ConfigurationService configurationService,
-                                                  final ImportIndexWriter importIndexWriter) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService);
+                                                  final ImportIndexWriter importIndexWriter,
+                                                  final DatabaseClient databaseClient) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService, databaseClient);
     this.importIndexWriter = importIndexWriter;
   }
 
@@ -34,7 +36,7 @@ public class StoreEngineImportProgressMediatorFactory extends AbstractEngineImpo
   public List<ImportMediator> createMediators(final EngineContext engineContext) {
     return List.of(new StoreEngineImportProgressMediator(
       importIndexHandlerRegistry,
-      new StoreIndexesEngineImportService(configurationService, importIndexWriter),
+      new StoreIndexesEngineImportService(configurationService, importIndexWriter, databaseClient),
       engineContext,
       configurationService
     ));

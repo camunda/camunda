@@ -32,8 +32,8 @@ public class ZeebeProcessDefinitionImportMediatorFactory extends AbstractZeebeIm
                                                        final ConfigurationService configurationService,
                                                        final ProcessDefinitionWriter processDefinitionWriter,
                                                        final ObjectMapper objectMapper,
-                                                       final DatabaseClient esClient) {
-    super(beanFactory, importIndexHandlerRegistry, configurationService, objectMapper, esClient);
+                                                       final DatabaseClient databaseClient) {
+    super(beanFactory, importIndexHandlerRegistry, configurationService, objectMapper, databaseClient);
     this.processDefinitionWriter = processDefinitionWriter;
   }
 
@@ -52,7 +52,8 @@ public class ZeebeProcessDefinitionImportMediatorFactory extends AbstractZeebeIm
         new ZeebeProcessDefinitionImportService(
           configurationService,
           processDefinitionWriter,
-          zeebeDataSourceDto.getPartitionId()
+          zeebeDataSourceDto.getPartitionId(),
+          databaseClient
         ),
         configurationService,
         new BackoffCalculator(configurationService)

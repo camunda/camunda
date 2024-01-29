@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing;
 
 import org.camunda.optimize.dto.optimize.OptimizeDto;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,13 +22,16 @@ public abstract class DatabaseImportJob<OPT extends OptimizeDto> implements Runn
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
+  protected final DatabaseClient databaseClient;
+
   private final BackoffCalculator backoffCalculator = new BackoffCalculator(1L, 30L);
   private final Runnable importCompleteCallback;
 
   protected List<OPT> newOptimizeEntities = Collections.emptyList();
 
-  protected DatabaseImportJob(final Runnable importCompleteCallback) {
+  protected DatabaseImportJob(final Runnable importCompleteCallback, final DatabaseClient databaseClient) {
     this.importCompleteCallback = importCompleteCallback;
+    this.databaseClient = databaseClient;
   }
 
   /**

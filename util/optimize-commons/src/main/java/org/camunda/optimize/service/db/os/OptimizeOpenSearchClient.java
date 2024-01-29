@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DataImportSourceType;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
+import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.es.schema.RequestOptionsProvider;
@@ -271,6 +272,17 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     // TODO Do nothing, will be handled with OPT-7400
   }
 
+  public void executeImportRequestsAsBulk(final String bulkRequestName,
+                                          final List<ImportRequestDto> importRequestDtos,
+                                          final Boolean retryRequestIfNestedDocLimitReached) {
+
+    if (importRequestDtos.isEmpty()) {
+      log.warn("Cannot perform bulk request with empty collection of {}.", bulkRequestName);
+    } else {
+    }
+   //todo will be implemented at 11391
+  }
+
   @Override
   public void update(final String indexName, final String entityId, final ScriptData script) {
 
@@ -288,7 +300,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       .script(scr)
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
-    update(
+    this.update(
       updateReqBuilder,
       String.format("The error occurs while updating OpenSearch entity %s with id %s", indexName, entityId)
     );

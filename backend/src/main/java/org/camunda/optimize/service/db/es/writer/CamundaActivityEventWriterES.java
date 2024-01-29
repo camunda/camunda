@@ -10,23 +10,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
+import org.camunda.optimize.dto.optimize.RequestType;
 import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
-import org.camunda.optimize.service.db.reader.CamundaActivityEventReader;
-import org.camunda.optimize.service.db.writer.CamundaActivityEventWriter;
 import org.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.db.es.schema.index.events.CamundaActivityEventIndexES;
+import org.camunda.optimize.service.db.reader.CamundaActivityEventReader;
+import org.camunda.optimize.service.db.schema.index.events.CamundaActivityEventIndex;
+import org.camunda.optimize.service.db.writer.CamundaActivityEventWriter;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.xcontent.XContentType;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -54,17 +52,13 @@ public class CamundaActivityEventWriterES implements CamundaActivityEventWriter 
       .stream()
       .map(CamundaActivityEventDto::getProcessDefinitionKey)
       .collect(Collectors.toList());
+
     createMissingActivityIndicesForProcessDefinitions(processDefinitionKeysInBatch);
 
     return camundaActivityEvents.stream()
-      .map(this::createIndexRequestForActivityEvent)
+      .map(entry -> createIndexRequestForActivityEvent(entry, importItemName))
       .filter(Optional::isPresent)
-      .map(request -> ImportRequestDto.builder()
-        .importName(importItemName)
-        .client(esClient)
-        .request(request.get())
-        .build())
-      .filter(importRequest -> Objects.nonNull(importRequest.getRequest()))
+      .map(Optional::get)
       .collect(Collectors.toList());
   }
 
@@ -78,7 +72,7 @@ public class CamundaActivityEventWriterES implements CamundaActivityEventWriter 
     ElasticsearchWriterUtil.tryDeleteByQueryRequest(
       esClient,
       filterQuery,
-      String.format("camunda activity events of %d process instances" , processInstanceIds.size()),
+      String.format("camunda activity events of %d process instances", processInstanceIds.size()),
       false,
       // use wildcarded index name to catch all indices that exist after potential rollover
       esClient.getIndexNameService()
@@ -86,13 +80,15 @@ public class CamundaActivityEventWriterES implements CamundaActivityEventWriter 
     );
   }
 
-  private Optional<IndexRequest> createIndexRequestForActivityEvent(CamundaActivityEventDto camundaActivityEventDto) {
+  private Optional<ImportRequestDto> createIndexRequestForActivityEvent(CamundaActivityEventDto camundaActivityEventDto, final String importName) {
     try {
-      return Optional.of(
-        new IndexRequest(CamundaActivityEventIndex.constructIndexName(camundaActivityEventDto.getProcessDefinitionKey()))
-          .id(IdGenerator.getNextId())
-          .source(objectMapper.writeValueAsString(camundaActivityEventDto), XContentType.JSON)
-      );
+      return Optional.of(ImportRequestDto.builder()
+                           .indexName(CamundaActivityEventIndex.constructIndexName(camundaActivityEventDto.getProcessDefinitionKey()))
+                           .id(IdGenerator.getNextId())
+                           .type(RequestType.INDEX)
+                           .source(objectMapper.writeValueAsString(camundaActivityEventDto))
+                           .importName(importName)
+                           .build());
     } catch (JsonProcessingException e) {
       log.warn("Could not serialize Camunda Activity Event: {}", camundaActivityEventDto, e);
       return Optional.empty();

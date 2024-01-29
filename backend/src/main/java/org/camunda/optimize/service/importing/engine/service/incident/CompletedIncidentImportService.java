@@ -8,10 +8,11 @@ package org.camunda.optimize.service.importing.engine.service.incident;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.db.DatabaseClient;
 import org.camunda.optimize.service.db.writer.incident.CompletedIncidentWriter;
 import org.camunda.optimize.service.importing.DatabaseImportJob;
-import org.camunda.optimize.service.importing.job.CompletedIncidentDatabaseImportJob;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
+import org.camunda.optimize.service.importing.job.CompletedIncidentDatabaseImportJob;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.util.List;
@@ -24,15 +25,16 @@ public class CompletedIncidentImportService extends AbstractEngineIncidentImport
   public CompletedIncidentImportService(final ConfigurationService configurationService,
                                         final CompletedIncidentWriter completedIncidentWriter,
                                         final EngineContext engineContext,
-                                        final ProcessDefinitionResolverService processDefinitionResolverService) {
-    super(configurationService, engineContext, processDefinitionResolverService);
+                                        final ProcessDefinitionResolverService processDefinitionResolverService,
+                                        final DatabaseClient databaseClient) {
+    super(configurationService, engineContext, processDefinitionResolverService, databaseClient);
     this.completedIncidentWriter = completedIncidentWriter;
   }
 
-  protected DatabaseImportJob<IncidentDto> createDatabaseImportJob(List<IncidentDto> incidents,
-                                                                        Runnable callback) {
+  protected DatabaseImportJob<IncidentDto> createDatabaseImportJob(final List<IncidentDto> incidents,
+                                                                   final Runnable callback) {
     CompletedIncidentDatabaseImportJob incidentImportJob =
-      new CompletedIncidentDatabaseImportJob(completedIncidentWriter, configurationService, callback);
+      new CompletedIncidentDatabaseImportJob(completedIncidentWriter, configurationService, callback, databaseClient);
     incidentImportJob.setEntitiesToImport(incidents);
     return incidentImportJob;
   }

@@ -98,11 +98,7 @@ public class IdentityLinkLogWriterES extends AbstractUserTaskWriterES implements
     createInstanceIndicesIfMissing(userTaskInstances, FlowNodeInstanceDto::getDefinitionKey);
 
     return processInstanceIdToUserTasks.entrySet().stream()
-      .map(entry -> ImportRequestDto.builder()
-        .importName(importItemName)
-        .client(esClient)
-        .request(createUserTaskUpdateImportRequest(entry))
-        .build())
+      .map(entry -> createUserTaskUpdateImportRequest(entry, importItemName))
       .collect(Collectors.toList());
   }
 
