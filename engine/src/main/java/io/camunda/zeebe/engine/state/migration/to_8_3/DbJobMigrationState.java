@@ -17,6 +17,7 @@ import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
+import io.camunda.zeebe.engine.state.migration.MemoryBoundedColumnIteration;
 import io.camunda.zeebe.engine.state.migration.to_8_3.legacy.LegacyJobState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -33,6 +34,7 @@ public class DbJobMigrationState {
   }
 
   public void migrateJobStateForMultiTenancy() {
+    final var iterator = new MemoryBoundedColumnIteration();
     // setting the tenant id key once, because it's the same for all steps below
     to.tenantIdKey.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
@@ -40,14 +42,13 @@ public class DbJobMigrationState {
     `DEPRECATED_JOB_ACTIVATABLE` -> `JOB_ACTIVATABLE`
     - Suffix tenant to key
     */
-    from.getActivatableColumnFamily()
-        .forEach(
-            (key, value) -> {
-              to.jobTypeKey.wrapString(key.first().toString());
-              to.fkJob.inner().wrapLong(key.second().inner().getValue());
-              to.activatableColumnFamily.insert(to.tenantAwareTypeJobKey, DbNil.INSTANCE);
-              from.getActivatableColumnFamily().deleteExisting(key);
-            });
+    iterator.drain(
+        from.getActivatableColumnFamily(),
+        (key, value) -> {
+          to.jobTypeKey.wrapString(key.first().toString());
+          to.fkJob.inner().wrapLong(key.second().inner().getValue());
+          to.activatableColumnFamily.insert(to.tenantAwareTypeJobKey, DbNil.INSTANCE);
+        });
   }
 
   private static final class DbJobState {
