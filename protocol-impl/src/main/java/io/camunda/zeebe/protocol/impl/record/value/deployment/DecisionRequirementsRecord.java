@@ -18,23 +18,24 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public final class DecisionRequirementsRecord extends UnifiedRecordValue
     implements DecisionRequirementsRecordValue {
 
   private final StringProperty decisionRequirementsIdProp =
-      new StringProperty("decisionRequirementsId");
+      new StringProperty("decisionRequirementsId", "");
   private final StringProperty decisionRequirementsNameProp =
-      new StringProperty("decisionRequirementsName");
+      new StringProperty("decisionRequirementsName", "");
   private final IntegerProperty decisionRequirementsVersionProp =
-      new IntegerProperty("decisionRequirementsVersion");
+      new IntegerProperty("decisionRequirementsVersion", -1);
   private final LongProperty decisionRequirementsKeyProp =
-      new LongProperty("decisionRequirementsKey");
+      new LongProperty("decisionRequirementsKey", -1);
   private final StringProperty namespaceProp = new StringProperty("namespace", "");
 
-  private final StringProperty resourceNameProp = new StringProperty("resourceName");
-  private final BinaryProperty checksumProp = new BinaryProperty("checksum");
-  private final BinaryProperty resourceProp = new BinaryProperty("resource");
+  private final StringProperty resourceNameProp = new StringProperty("resourceName", "");
+  private final BinaryProperty checksumProp = new BinaryProperty("checksum", new UnsafeBuffer());
+  private final BinaryProperty resourceProp = new BinaryProperty("resource", new UnsafeBuffer());
 
   public DecisionRequirementsRecord() {
     super(8);
